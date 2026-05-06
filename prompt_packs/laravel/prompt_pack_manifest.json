@@ -1,0 +1,23 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "laravel",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_LARAVEL_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_PROJECT_SETUP_PROMPT.md",
+    "02_ENV_AND_DATABASE_PROMPT.md",
+    "03_AUTH_USERS_PROMPT.md",
+    "04_ROLES_PERMISSIONS_PROMPT.md",
+    "05_ADMIN_DASHBOARD_PROMPT.md",
+    "06_CORE_MODELS_PROMPT.md",
+    "07_SETTINGS_FEATURE_FLAGS_PROMPT.md",
+    "08_ACTIVITY_AUDIT_LOGS_PROMPT.md",
+    "09_MEDIA_FOUNDATION_PROMPT.md",
+    "10_CMS_FOUNDATION_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md"
+  ],
+  "rule": "Use one prompt at a time. Do not use prompts to build the whole application at once."
+}
