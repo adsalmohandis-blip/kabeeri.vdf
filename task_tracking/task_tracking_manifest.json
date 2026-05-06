@@ -1,0 +1,25 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "folder": "task_tracking",
+  "version": "v0.1.1",
+  "issue": "#6",
+  "issue_title": "[Task Tracking] Define first task tracking format",
+  "based_on_existing_files": [
+    "README.md",
+    "task.schema.example.json"
+  ],
+  "files": [
+    "README.md",
+    "README_AR.md",
+    "TASK_TEMPLATE.md",
+    "TASK_STATES.md",
+    "TASK_REVIEW_CHECKLIST.md",
+    "AI_EXECUTION_LOG_TEMPLATE.md",
+    "EXAMPLE_TASK.md",
+    "task.schema.json",
+    "task.schema.example.json",
+    "task_tracking_manifest.json"
+  ],
+  "purpose": "Improve the current task_tracking folder into a reusable task tracking format for AI-assisted software development.",
+  "status": "foundation"
+}

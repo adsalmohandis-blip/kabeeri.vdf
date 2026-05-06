@@ -1,14 +1,54 @@
 {
+  "version": "v0.1.1",
   "tasks": [
     {
-      "id": "T001",
-      "title": "Example task",
-      "status": "pending",
-      "prompt_id": "P001",
-      "folder": "05_EXECUTION_PLAN",
+      "id": "T006",
+      "title": "Define first task tracking format",
+      "status": "in_progress",
+      "type": "task-tracking",
+      "priority": "medium",
+      "prompt_id": "P-TASK-001",
+      "folder": "task_tracking",
+      "issue": "#6",
+      "milestone": "v0.1.1",
       "depends_on": [],
-      "tests": [],
-      "review_notes": ""
+      "allowed_files": [
+        "task_tracking/README.md",
+        "task_tracking/README_AR.md",
+        "task_tracking/TASK_TEMPLATE.md",
+        "task_tracking/TASK_STATES.md",
+        "task_tracking/TASK_REVIEW_CHECKLIST.md",
+        "task_tracking/AI_EXECUTION_LOG_TEMPLATE.md",
+        "task_tracking/EXAMPLE_TASK.md",
+        "task_tracking/task.schema.json",
+        "task_tracking/task.schema.example.json",
+        "task_tracking/task_tracking_manifest.json"
+      ],
+      "forbidden_files": [
+        "docs/",
+        "generators/",
+        "questionnaires/",
+        "prompt_packs/",
+        "acceptance_checklists/",
+        "examples/",
+        ".github/",
+        "LICENSE"
+      ],
+      "tests": [
+        "Manual review",
+        "git status"
+      ],
+      "acceptance_criteria": [
+        "Task tracking README exists",
+        "Reusable task template exists",
+        "Task states are documented",
+        "JSON schema and example exist",
+        "Review checklist exists",
+        "AI execution log template exists",
+        "Format is beginner-friendly and works with GitHub Issues"
+      ],
+      "review_notes": "Improved from the original minimal README and task schema example.",
+      "commit_message": "Define first task tracking format for v0.1.1"
     }
   ]
 }

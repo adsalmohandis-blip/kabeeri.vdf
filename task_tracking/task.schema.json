@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kabeeri-vdf/task.schema.json",
+  "title": "Kabeeri VDF Task Tracking Schema",
+  "type": "object",
+  "required": [
+    "tasks"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema or framework version.",
+      "default": "v0.1.1"
+    },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "status",
+          "folder"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique task ID.",
+            "examples": [
+              "T001",
+              "T006"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "description": "Short clear task title."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "todo",
+              "in_progress",
+              "blocked",
+              "review",
+              "done",
+              "closed"
+            ],
+            "description": "Current task status."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "docs",
+              "generator",
+              "questionnaire",
+              "prompt-pack",
+              "task-tracking",
+              "acceptance",
+              "example",
+              "cli",
+              "review",
+              "release",
+              "other"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "default": "medium"
+          },
+          "prompt_id": {
+            "type": "string",
+            "description": "Related prompt ID if any.",
+            "examples": [
+              "P001"
+            ]
+          },
+          "folder": {
+            "type": "string",
+            "description": "Related framework folder.",
+            "examples": [
+              "05_EXECUTION_PLAN",
+              "task_tracking"
+            ]
+          },
+          "issue": {
+            "type": "string",
+            "description": "Related GitHub Issue.",
+            "examples": [
+              "#6"
+            ]
+          },
+          "milestone": {
+            "type": "string",
+            "description": "Related milestone.",
+            "examples": [
+              "v0.1.1"
+            ]
+          },
+          "depends_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "allowed_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "forbidden_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "tests": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "acceptance_criteria": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "review_notes": {
+            "type": "string",
+            "default": ""
+          },
+          "commit_message": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
