@@ -112,48 +112,60 @@
 
 ---
 
-## Phase 6 — VS Code Extension (v2.1.0)
+## Phase 6 — Platform Integration Track (v2.1.0 - v3.0.0)
 
-- [ ] Side panel for questionnaires
-- [ ] Generate prompts from answered documents
-- [ ] Task tracking view
-- [ ] Acceptance checklist view
-- [ ] AI handoff export
-- [ ] Sprint dashboard
-- [ ] Cost tracking dashboard
+The v3.0.0 plan now focuses on making Kabeeri operable as a local platform through `.kabeeri/` state, GitHub CLI sync, VS Code integration, live dashboards, Owner-only verification, and AI token cost analytics.
 
----
+**Planning files:**
+- [platform_integration/README.md](platform_integration/README.md)
+- [platform_integration/V3_0_UPDATED_PLAN.md](platform_integration/V3_0_UPDATED_PLAN.md)
+- [platform_integration/milestones_and_issues.v3.0.0.json](platform_integration/milestones_and_issues.v3.0.0.json)
 
-## Phase 7 — Dashboard & Analytics (v2.2.0)
+### v2.1.0 — Local Project State and Source of Truth
+- [ ] Define `.kabeeri/` canonical state structure
+- [ ] Define dashboard state files
+- [ ] Define project audit log
 
-- [ ] Web dashboard for project overview
-- [ ] Real-time task tracking
-- [ ] Cost analytics and forecasting
-- [ ] Team velocity tracking
-- [ ] Feature roadmap visualization
-- [ ] Export reports (PDF, CSV)
+### v2.2.0 — GitHub CLI Integration
+- [ ] Define GitHub sync configuration
+- [ ] Define task-to-issue mapping
+- [ ] Define GitHub issue and milestone CLI commands
 
----
+### v2.3.0 — VS Code Integration Foundation
+- [ ] Define VS Code extension architecture
+- [ ] Define command palette plan
+- [ ] Define editor-agnostic integration rules
 
-## Phase 8 — Desktop App (v2.3.0)
+### v2.4.0 — Live Technical Dashboard
+- [ ] Define technical dashboard sections
+- [ ] Define backend/frontend/admin/database/docs/testing progress model
+- [ ] Define live developer progress model
 
-- [ ] Local project manager
-- [ ] Offline-first templates
-- [ ] Guided wizard for non-technical users
-- [ ] Export to ZIP and GitHub
-- [ ] Automatic backups
+### v2.5.0 — Business Dashboard
+- [ ] Define business dashboard sections
+- [ ] Define feature readiness model
+- [ ] Define onboarding and user journey model
 
----
+### v2.6.0 — Owner-Only Task Verification
+- [ ] Define Owner-only final verify rules
+- [ ] Define dashboard verify action
+- [ ] Define CLI verify/reject/reopen commands
 
-## Phase 9 — SaaS / Team Workspace (v3.0.0)
+### v2.7.0 — AI Token Cost Dashboard
+- [ ] Define token usage dashboard sections
+- [ ] Define configurable token cost calculator
+- [ ] Define workstream token breakdown
+- [ ] Define developer token efficiency analysis
 
-- [ ] Team projects
-- [ ] Shared questionnaires
-- [ ] AI provider integrations
-- [ ] Review workflows
-- [ ] Template marketplace
-- [ ] Permissioned team collaboration
-- [ ] Multi-project management
+### v2.8.0 — Agile Sprint Cost Analytics
+- [ ] Define sprint token cost model
+- [ ] Define sprint cost dashboard view
+- [ ] Define sprint pricing notes
+
+### v3.0.0 — Stable Platform Integration Release
+- [ ] Prepare integration release checklist
+- [ ] Prepare release notes
+- [ ] Publish v3.0.0 GitHub release
 
 ---
 
@@ -189,7 +201,12 @@
 | 1.6.0 | Generators | TBD | ⏳ Planned |
 | 1.7.0 | Prompt Packs | TBD | ⏳ Planned |
 | 2.0.0 | CLI Tool | TBD | ⏳ Planned |
-| 2.1.0 | VS Code Ext | TBD | ⏳ Planned |
-| 2.2.0 | Dashboard | TBD | ⏳ Planned |
-| 2.3.0 | Desktop App | TBD | ⏳ Planned |
-| 3.0.0 | SaaS | TBD | ⏳ Planned |
+| 2.1.0 | Local Project State | TBD | ⏳ Planned |
+| 2.2.0 | GitHub CLI Integration | TBD | ⏳ Planned |
+| 2.3.0 | VS Code Integration Foundation | TBD | ⏳ Planned |
+| 2.4.0 | Live Technical Dashboard | TBD | ⏳ Planned |
+| 2.5.0 | Business Dashboard | TBD | ⏳ Planned |
+| 2.6.0 | Owner-Only Task Verification | TBD | ⏳ Planned |
+| 2.7.0 | AI Token Cost Dashboard | TBD | ⏳ Planned |
+| 2.8.0 | Agile Sprint Cost Analytics | TBD | ⏳ Planned |
+| 3.0.0 | Stable Platform Integration | TBD | ⏳ Planned |

@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased] — v3.0.0 Platform Integration Plan
+
+### Added
+
+- Added the v3.0.0 updated planning track for GitHub CLI, VS Code, live dashboards, Owner Verify, and AI token cost analytics.
+- Added `platform_integration/` as the documentation home for the 9 milestones and 28 planned GitHub issues.
+- Added machine-readable GitHub planning source at `platform_integration/milestones_and_issues.v3.0.0.json`.
+- Added local `.kabeeri/` source-of-truth specification, dashboard state rules, GitHub sync rules, VS Code integration rules, owner-only verification rules, token cost dashboard rules, and sprint cost analytics rules.
+
+### Changed
+
+- Updated the roadmap so v2.1.0 through v3.0.0 now represent the Stable Platform Integration path instead of a generic future app/SaaS track.
+
+---
+
 ## [1.5.0] — AI Usage Accounting Foundation
 
 **Released:** May 2026

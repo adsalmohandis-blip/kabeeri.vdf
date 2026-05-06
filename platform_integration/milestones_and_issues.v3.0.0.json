@@ -1,0 +1,122 @@
+{
+  "version": "v3.0.0",
+  "document_type": "github_milestones_and_issues_plan",
+  "source_of_truth": ".kabeeri/",
+  "totals": {
+    "milestones": 9,
+    "issues": 28
+  },
+  "rules": [
+    "Dashboard displays state but is not the source of truth.",
+    "Final task verify is Owner-only.",
+    "GitHub writes require dry-run and explicit confirmation.",
+    "AI token costs must be reportable by task, sprint, workstream, developer, and version."
+  ],
+  "labels": [
+    {"name": "delivery-mode", "color": "5319E7", "description": "Delivery modes: Structured and Agile"},
+    {"name": "structured-delivery", "color": "0075CA", "description": "Structured/sequential delivery"},
+    {"name": "agile", "color": "0E8A16", "description": "Backlog, sprint, and story work"},
+    {"name": "project-intake", "color": "1D76DB", "description": "New or adopted project intake"},
+    {"name": "task-governance", "color": "D93F0B", "description": "Task creation and management rules"},
+    {"name": "provenance", "color": "FBCA04", "description": "Task source tracing"},
+    {"name": "ai-usage", "color": "7057FF", "description": "AI token usage and cost records"},
+    {"name": "dashboard", "color": "C5DEF5", "description": "Project dashboard work"},
+    {"name": "github", "color": "0075CA", "description": "GitHub integration"},
+    {"name": "vscode", "color": "5319E7", "description": "VS Code integration"},
+    {"name": "cli", "color": "5319E7", "description": "CLI commands"},
+    {"name": "permissions", "color": "D93F0B", "description": "Roles and permissions"},
+    {"name": "token-access", "color": "B60205", "description": "Access token lifecycle"},
+    {"name": "priority-high", "color": "B60205", "description": "High priority"},
+    {"name": "priority-medium", "color": "FBCA04", "description": "Medium priority"},
+    {"name": "good-first-issue", "color": "7057FF", "description": "Good first contributor task"},
+    {"name": "owner-verify", "color": "B60205", "description": "Owner-only final verification"},
+    {"name": "business-dashboard", "color": "0E8A16", "description": "Business status and value dashboard"},
+    {"name": "technical-dashboard", "color": "0075CA", "description": "Technical progress dashboard"},
+    {"name": "cost-analytics", "color": "FBCA04", "description": "Token cost analytics"}
+  ],
+  "milestones": [
+    {
+      "title": "v2.1.0 - Local Project State and Source of Truth",
+      "goal": "Make Dashboard, CLI, and GitHub read from one local state.",
+      "issues": [
+        {"title": "Define .kabeeri source of truth structure", "labels": ["docs", "cli", "priority-high"]},
+        {"title": "Add dashboard state file specification", "labels": ["dashboard", "docs", "priority-high"]},
+        {"title": "Add project audit log specification", "labels": ["docs", "task-governance", "priority-high"]}
+      ]
+    },
+    {
+      "title": "v2.2.0 - GitHub CLI Integration",
+      "goal": "Sync Kabeeri tasks with GitHub Issues and Milestones.",
+      "issues": [
+        {"title": "Design GitHub sync configuration", "labels": ["github", "cli", "priority-high"]},
+        {"title": "Add GitHub issue mapping rules", "labels": ["github", "task-tracking", "priority-high"]},
+        {"title": "Design CLI commands for GitHub issues and milestones", "labels": ["github", "cli", "priority-high"]}
+      ]
+    },
+    {
+      "title": "v2.3.0 - VS Code Integration Foundation",
+      "goal": "Run Kabeeri from VS Code through CLI and panels.",
+      "issues": [
+        {"title": "Design VS Code extension integration architecture", "labels": ["vscode", "docs", "priority-high"]},
+        {"title": "Add VS Code command palette plan", "labels": ["vscode", "cli", "priority-medium"]},
+        {"title": "Design editor-agnostic integration rules", "labels": ["vscode", "docs", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v2.4.0 - Live Technical Dashboard",
+      "goal": "Show technical development status from .kabeeri and GitHub sync.",
+      "issues": [
+        {"title": "Design technical dashboard sections", "labels": ["technical-dashboard", "dashboard", "priority-high"]},
+        {"title": "Add backend frontend admin frontend progress model", "labels": ["technical-dashboard", "docs", "priority-high"]},
+        {"title": "Add live developer progress model", "labels": ["dashboard", "task-tracking", "priority-high"]}
+      ]
+    },
+    {
+      "title": "v2.5.0 - Business Dashboard",
+      "goal": "Show product capabilities, value, user journey, and audience.",
+      "issues": [
+        {"title": "Design business dashboard sections", "labels": ["business-dashboard", "dashboard", "priority-high"]},
+        {"title": "Add feature readiness business model", "labels": ["business-dashboard", "docs", "priority-medium"]},
+        {"title": "Add onboarding and user journey dashboard model", "labels": ["business-dashboard", "example", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v2.6.0 - Owner-Only Task Verification",
+      "goal": "Prevent final task completion without Owner verification.",
+      "issues": [
+        {"title": "Add owner-only verify rules", "labels": ["owner-verify", "permissions", "priority-high"]},
+        {"title": "Design dashboard verify action", "labels": ["owner-verify", "dashboard", "priority-high"]},
+        {"title": "Design CLI task verify reject reopen commands", "labels": ["owner-verify", "cli", "priority-high"]}
+      ]
+    },
+    {
+      "title": "v2.7.0 - AI Token Cost Dashboard",
+      "goal": "Turn AI token usage into pricing and quality analytics.",
+      "issues": [
+        {"title": "Add AI token usage dashboard sections", "labels": ["ai-usage", "dashboard", "cost-analytics", "priority-high"]},
+        {"title": "Add token cost calculator specification", "labels": ["ai-usage", "dashboard", "priority-high"]},
+        {"title": "Add workstream token breakdown", "labels": ["ai-usage", "cost-analytics", "priority-high"]},
+        {"title": "Add developer token efficiency analysis", "labels": ["ai-usage", "dashboard", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v2.8.0 - Agile Sprint Cost Analytics",
+      "goal": "Price and learn from each sprint increment.",
+      "issues": [
+        {"title": "Add sprint token cost model", "labels": ["agile", "ai-usage", "cost-analytics", "priority-high"]},
+        {"title": "Add sprint cost dashboard view", "labels": ["agile", "dashboard", "ai-usage", "priority-high"]},
+        {"title": "Add sprint pricing notes", "labels": ["agile", "docs", "cost-analytics", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.0.0 - Stable Platform Integration Release",
+      "goal": "Stabilize GitHub, VS Code, dashboards, verify, and token analytics.",
+      "issues": [
+        {"title": "Prepare v3.0.0 integration release checklist", "labels": ["acceptance", "docs", "priority-high"]},
+        {"title": "Prepare v3.0.0 release notes", "labels": ["docs", "priority-high"]},
+        {"title": "Publish v3.0.0 GitHub release", "labels": ["docs", "priority-high"]}
+      ]
+    }
+  ]
+}
+
