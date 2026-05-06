@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "codeigniter",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_CODEIGNITER_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_APP_STRUCTURE_PROMPT.md",
+    "03_ENV_CONFIG_DATABASE_PROMPT.md",
+    "04_ROUTES_CONTROLLERS_API_PROMPT.md",
+    "05_AUTH_USERS_PROMPT.md",
+    "06_ROLES_FILTERS_PERMISSIONS_PROMPT.md",
+    "07_MODELS_MIGRATIONS_PROMPT.md",
+    "08_SERVICES_BUSINESS_LOGIC_PROMPT.md",
+    "09_VALIDATION_FORMS_PROMPT.md",
+    "10_ADMIN_BACKOFFICE_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install CodeIgniter or create projects by itself."
+}

@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "strapi",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_STRAPI_PROMPT_PACK_INDEX.md",
+    "00_STRAPI_SAFETY_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_CONTENT_MODELING_PROMPT.md",
+    "03_COMPONENTS_DYNAMIC_ZONES_PROMPT.md",
+    "04_ROLES_PERMISSIONS_PROMPT.md",
+    "05_API_ACCESS_PROMPT.md",
+    "06_MEDIA_LIBRARY_PROMPT.md",
+    "07_FRONTEND_INTEGRATION_PROMPT.md",
+    "08_CUSTOM_CONTROLLERS_SERVICES_PROMPT.md",
+    "09_WEBHOOKS_AUTOMATION_PROMPT.md",
+    "10_I18N_LOCALIZATION_PROMPT.md",
+    "11_TESTING_SECURITY_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install Strapi or create projects by itself."
+}

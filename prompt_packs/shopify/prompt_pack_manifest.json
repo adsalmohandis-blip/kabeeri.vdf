@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "shopify",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_SHOPIFY_PROMPT_PACK_INDEX.md",
+    "00_SHOPIFY_SAFETY_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_STORE_STRUCTURE_PROMPT.md",
+    "03_THEME_SECTIONS_BLOCKS_PROMPT.md",
+    "04_LIQUID_TEMPLATES_PROMPT.md",
+    "05_SHOPIFY_APP_STRUCTURE_PROMPT.md",
+    "06_ADMIN_API_INTEGRATION_PROMPT.md",
+    "07_STOREFRONT_API_PROMPT.md",
+    "08_WEBHOOKS_EVENTS_PROMPT.md",
+    "09_PRODUCTS_COLLECTIONS_METAFIELDS_PROMPT.md",
+    "10_CHECKOUT_FUNCTIONS_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not create a Shopify store or modify production without approval."
+}

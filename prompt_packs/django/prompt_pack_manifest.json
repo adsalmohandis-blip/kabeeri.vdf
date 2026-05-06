@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "django",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_DJANGO_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_PROJECT_STRUCTURE_PROMPT.md",
+    "03_SETTINGS_ENV_DATABASE_PROMPT.md",
+    "04_USERS_AUTH_PROMPT.md",
+    "05_PERMISSIONS_ADMIN_PROMPT.md",
+    "06_APPS_MODELS_PROMPT.md",
+    "07_VIEWS_URLS_API_PROMPT.md",
+    "08_FORMS_VALIDATION_PROMPT.md",
+    "09_ADMIN_BACKOFFICE_PROMPT.md",
+    "10_MEDIA_STATIC_FILES_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install Django or create projects by itself."
+}

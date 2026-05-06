@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "fastapi",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_FASTAPI_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_PROJECT_STRUCTURE_PROMPT.md",
+    "03_ENV_CONFIG_DATABASE_PROMPT.md",
+    "04_API_ROUTING_FOUNDATION_PROMPT.md",
+    "05_AUTH_USERS_PROMPT.md",
+    "06_ROLES_PERMISSIONS_PROMPT.md",
+    "07_CORE_MODELS_SCHEMAS_PROMPT.md",
+    "08_SERVICES_REPOSITORIES_PROMPT.md",
+    "09_BACKGROUND_TASKS_INTEGRATIONS_PROMPT.md",
+    "10_LOGGING_ERROR_HANDLING_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install FastAPI or create projects by itself."
+}

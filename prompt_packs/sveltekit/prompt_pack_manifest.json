@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "sveltekit",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_SVELTEKIT_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_APP_STRUCTURE_PROMPT.md",
+    "03_ENV_CONFIG_API_PROMPT.md",
+    "04_ROUTING_LAYOUTS_PROMPT.md",
+    "05_COMPONENTS_DESIGN_SYSTEM_PROMPT.md",
+    "06_LOAD_FUNCTIONS_DATA_PROMPT.md",
+    "07_AUTH_USERS_PROMPT.md",
+    "08_FORMS_ACTIONS_VALIDATION_PROMPT.md",
+    "09_API_ROUTES_SERVER_LOGIC_PROMPT.md",
+    "10_CORE_FEATURES_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install SvelteKit or create projects by itself."
+}

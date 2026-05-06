@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "flutter",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_FLUTTER_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_MOBILE_PROJECT_CONTEXT_PROMPT.md",
+    "02_PROJECT_STRUCTURE_NAVIGATION_PROMPT.md",
+    "03_ENV_CONFIG_API_PROMPT.md",
+    "04_THEME_DESIGN_SYSTEM_PROMPT.md",
+    "05_AUTH_ONBOARDING_PROMPT.md",
+    "06_API_DATA_STATE_PROMPT.md",
+    "07_CORE_SCREENS_FEATURES_PROMPT.md",
+    "08_FORMS_VALIDATION_PROMPT.md",
+    "09_LOCAL_STORAGE_OFFLINE_PROMPT.md",
+    "10_DEVICE_PERMISSIONS_NOTIFICATIONS_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install Flutter or create projects by itself."
+}
