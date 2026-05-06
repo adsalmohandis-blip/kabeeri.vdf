@@ -1,0 +1,27 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "folder": "acceptance_checklists",
+  "version": "v0.1.1",
+  "issue": "#7",
+  "issue_title": "[Acceptance] Create first acceptance checklist templates",
+  "based_on_existing_files": [
+    "README.md"
+  ],
+  "files": [
+    "README.md",
+    "README_AR.md",
+    "ACCEPTANCE_CHECKLIST_FORMAT.md",
+    "ACCEPTANCE_CHECKLIST_TEMPLATE.md",
+    "ACCEPTANCE_DECISIONS.md",
+    "AI_OUTPUT_ACCEPTANCE_CHECKLIST.md",
+    "TASK_COMPLETION_ACCEPTANCE_CHECKLIST.md",
+    "FOLDER_OUTPUT_ACCEPTANCE_CHECKLIST.md",
+    "PROMPT_PACK_ACCEPTANCE_CHECKLIST.md",
+    "RELEASE_ACCEPTANCE_CHECKLIST.md",
+    "acceptance.schema.json",
+    "acceptance.schema.example.json",
+    "acceptance_checklists_manifest.json"
+  ],
+  "purpose": "Provide reusable acceptance checklist templates for reviewing AI-generated outputs before closing tasks or releases.",
+  "status": "foundation"
+}

@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kabeeri-vdf/acceptance.schema.json",
+  "title": "Kabeeri VDF Acceptance Checklist Schema",
+  "type": "object",
+  "required": [
+    "checklists"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v0.1.1"
+    },
+    "checklists": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "type",
+          "decision"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "examples": [
+              "A001",
+              "A007"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ai-output",
+              "task-completion",
+              "folder-output",
+              "prompt-pack",
+              "document-set",
+              "release",
+              "security",
+              "manual-review"
+            ]
+          },
+          "related_task": {
+            "type": "string",
+            "examples": [
+              "T007"
+            ]
+          },
+          "issue": {
+            "type": "string",
+            "examples": [
+              "#7"
+            ]
+          },
+          "milestone": {
+            "type": "string",
+            "examples": [
+              "v0.1.1"
+            ]
+          },
+          "reviewed_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "reviewer": {
+            "type": "string",
+            "default": ""
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "needs_changes",
+              "blocked",
+              "rejected",
+              "not_applicable"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "result"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "result": {
+                  "type": "string",
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ]
+                },
+                "notes": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            },
+            "default": []
+          },
+          "remaining_risks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "notes": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
