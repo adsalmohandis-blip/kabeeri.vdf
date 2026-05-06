@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kabeeri-vdf/cli.commands.schema.json",
+  "title": "Kabeeri VDF CLI Commands Schema",
+  "type": "object",
+  "required": [
+    "commands"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "default": "v0.1.1"
+    },
+    "cli_name": {
+      "type": "string",
+      "default": "kvdf"
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "purpose",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "designed",
+              "planned",
+              "experimental",
+              "implemented",
+              "deprecated"
+            ]
+          },
+          "examples": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": []
+          },
+          "safe_by_default": {
+            "type": "boolean",
+            "default": true
+          },
+          "writes_files": {
+            "type": "boolean",
+            "default": false
+          },
+          "requires_confirmation": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

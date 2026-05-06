@@ -1,0 +1,23 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "folder": "cli",
+  "version": "v0.1.1",
+  "issue": "#9",
+  "issue_title": "[CLI] Design kvdf command structure",
+  "files": [
+    "README.md",
+    "README_AR.md",
+    "CLI_COMMANDS.md",
+    "CLI_COMMANDS_AR.md",
+    "CLI_ROADMAP.md",
+    "CLI_SAFETY_RULES.md",
+    "CLI_USER_FLOWS.md",
+    "CLI_COMMAND_REFERENCE.md",
+    "cli.commands.schema.json",
+    "cli.commands.example.json",
+    "cli_manifest.json"
+  ],
+  "purpose": "Design the future kvdf CLI command structure without implementing executable CLI code.",
+  "status": "design-only",
+  "important_note": "This is not a working CLI implementation."
+}

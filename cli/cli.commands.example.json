@@ -1,0 +1,120 @@
+{
+  "version": "v0.1.1",
+  "cli_name": "kvdf",
+  "commands": [
+    {
+      "name": "init",
+      "purpose": "Create a Kabeeri VDF workspace inside an existing repository.",
+      "status": "designed",
+      "examples": [
+        "kvdf init",
+        "kvdf init --profile standard --lang both"
+      ],
+      "options": [
+        "--profile",
+        "--lang",
+        "--dry-run"
+      ],
+      "safe_by_default": true,
+      "writes_files": true,
+      "requires_confirmation": true
+    },
+    {
+      "name": "generate",
+      "purpose": "Generate framework planning structure for a selected profile.",
+      "status": "designed",
+      "examples": [
+        "kvdf generate --profile lite",
+        "kvdf generate --profile enterprise --dry-run"
+      ],
+      "options": [
+        "--profile",
+        "--dry-run"
+      ],
+      "safe_by_default": true,
+      "writes_files": true,
+      "requires_confirmation": true
+    },
+    {
+      "name": "prompt-pack",
+      "purpose": "List, show, use, or validate prompt packs.",
+      "status": "designed",
+      "examples": [
+        "kvdf prompt-pack list",
+        "kvdf prompt-pack show laravel"
+      ],
+      "options": [
+        "list",
+        "show",
+        "use",
+        "validate"
+      ],
+      "safe_by_default": true,
+      "writes_files": false,
+      "requires_confirmation": false
+    },
+    {
+      "name": "task",
+      "purpose": "Create and manage task tracking records.",
+      "status": "designed",
+      "examples": [
+        "kvdf task create --title \"Add auth foundation\" --type prompt-pack --issue 12"
+      ],
+      "options": [
+        "create",
+        "list",
+        "status",
+        "review"
+      ],
+      "safe_by_default": true,
+      "writes_files": true,
+      "requires_confirmation": true
+    },
+    {
+      "name": "acceptance",
+      "purpose": "Create or review acceptance checklist scaffolds.",
+      "status": "designed",
+      "examples": [
+        "kvdf acceptance create --type task-completion --issue 12"
+      ],
+      "options": [
+        "create",
+        "review",
+        "list"
+      ],
+      "safe_by_default": true,
+      "writes_files": true,
+      "requires_confirmation": true
+    },
+    {
+      "name": "validate",
+      "purpose": "Validate framework files, JSON, manifests, and folder structure.",
+      "status": "designed",
+      "examples": [
+        "kvdf validate",
+        "kvdf validate prompt-packs"
+      ],
+      "options": [
+        "task",
+        "acceptance",
+        "prompt-packs",
+        "generators"
+      ],
+      "safe_by_default": true,
+      "writes_files": false,
+      "requires_confirmation": false
+    },
+    {
+      "name": "doctor",
+      "purpose": "Check local Kabeeri VDF workspace health.",
+      "status": "designed",
+      "examples": [
+        "kvdf doctor"
+      ],
+      "options": [],
+      "safe_by_default": true,
+      "writes_files": false,
+      "requires_confirmation": false
+    }
+  ]
+}
