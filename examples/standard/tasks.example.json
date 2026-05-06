@@ -1,0 +1,51 @@
+{
+  "version": "v0.1.1",
+  "example": "standard",
+  "tasks": [
+    {
+      "id": "STD-T001",
+      "title": "Create appointment request data model",
+      "status": "todo",
+      "type": "example",
+      "priority": "high",
+      "prompt_id": "LARAVEL-07",
+      "folder": "examples/standard",
+      "depends_on": [],
+      "tests": [
+        "Run migration",
+        "Run model tests if available"
+      ],
+      "acceptance_criteria": [
+        "Appointment request model exists",
+        "Required fields exist",
+        "Statuses are documented",
+        "No patient medical records are added"
+      ],
+      "review_notes": ""
+    },
+    {
+      "id": "STD-T002",
+      "title": "Create appointment request API",
+      "status": "todo",
+      "type": "example",
+      "priority": "high",
+      "prompt_id": "LARAVEL-04",
+      "folder": "examples/standard",
+      "depends_on": [
+        "STD-T001"
+      ],
+      "tests": [
+        "Create request",
+        "Validate required fields",
+        "Reject invalid input"
+      ],
+      "acceptance_criteria": [
+        "API endpoint exists",
+        "Validation works",
+        "Error response is clear",
+        "No unrelated endpoints are added"
+      ],
+      "review_notes": ""
+    }
+  ]
+}

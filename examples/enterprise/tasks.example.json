@@ -1,0 +1,50 @@
+{
+  "version": "v0.1.1",
+  "example": "enterprise",
+  "tasks": [
+    {
+      "id": "ENT-T001",
+      "title": "Define roles and access model",
+      "status": "todo",
+      "type": "example",
+      "priority": "high",
+      "prompt_id": "DOTNET-06",
+      "folder": "examples/enterprise",
+      "depends_on": [],
+      "tests": [
+        "Manual access review",
+        "Role matrix review"
+      ],
+      "acceptance_criteria": [
+        "Roles are documented",
+        "Admin-only actions are clear",
+        "Manager actions are clear",
+        "Normal user restrictions are clear"
+      ],
+      "review_notes": ""
+    },
+    {
+      "id": "ENT-T002",
+      "title": "Define branch and service request data model",
+      "status": "todo",
+      "type": "example",
+      "priority": "high",
+      "prompt_id": "DOTNET-07",
+      "folder": "examples/enterprise",
+      "depends_on": [
+        "ENT-T001"
+      ],
+      "tests": [
+        "Database model review",
+        "Relationship review"
+      ],
+      "acceptance_criteria": [
+        "Branch model exists",
+        "Service request model exists",
+        "Assignment relationship is clear",
+        "Audit history is planned"
+      ],
+      "review_notes": ""
+    }
+  ]
+}

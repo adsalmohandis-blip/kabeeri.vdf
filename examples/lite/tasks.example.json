@@ -1,0 +1,49 @@
+{
+  "version": "v0.1.1",
+  "example": "lite",
+  "tasks": [
+    {
+      "id": "LITE-T001",
+      "title": "Create public landing page structure",
+      "status": "todo",
+      "type": "example",
+      "priority": "medium",
+      "prompt_id": "ASTRO-04",
+      "folder": "examples/lite",
+      "depends_on": [],
+      "tests": [
+        "Manual page review",
+        "npm run build if applicable"
+      ],
+      "acceptance_criteria": [
+        "Landing page exists",
+        "Page explains the service",
+        "Navigation is simple",
+        "No unrelated future features are added"
+      ],
+      "review_notes": ""
+    },
+    {
+      "id": "LITE-T002",
+      "title": "Add booking request form",
+      "status": "todo",
+      "type": "example",
+      "priority": "high",
+      "prompt_id": "ASTRO-08",
+      "folder": "examples/lite",
+      "depends_on": [
+        "LITE-T001"
+      ],
+      "tests": [
+        "Submit empty form",
+        "Submit valid form"
+      ],
+      "acceptance_criteria": [
+        "Form has required fields",
+        "Validation messages are clear",
+        "Success message appears after submit"
+      ],
+      "review_notes": ""
+    }
+  ]
+}

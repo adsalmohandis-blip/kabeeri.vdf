@@ -1,0 +1,36 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "folder": "examples",
+  "version": "v0.1.1",
+  "issue": "#8",
+  "issue_title": "[Examples] Add first example project",
+  "based_on_existing_files": [
+    "examples/lite/README.md",
+    "examples/standard/README.md",
+    "examples/enterprise/README.md"
+  ],
+  "profiles": [
+    "lite",
+    "standard",
+    "enterprise"
+  ],
+  "files": [
+    "README.md",
+    "EXAMPLE_SELECTION_GUIDE.md",
+    "examples_manifest.json",
+    "lite/README.md",
+    "lite/PRODUCT_BRIEF.md",
+    "lite/WORKFLOW.md",
+    "lite/tasks.example.json",
+    "standard/README.md",
+    "standard/PRODUCT_BRIEF.md",
+    "standard/WORKFLOW.md",
+    "standard/tasks.example.json",
+    "enterprise/README.md",
+    "enterprise/PRODUCT_BRIEF.md",
+    "enterprise/WORKFLOW.md",
+    "enterprise/tasks.example.json"
+  ],
+  "purpose": "Provide first practical example workflows for Lite, Standard, and Enterprise Kabeeri VDF usage.",
+  "status": "foundation"
+}
