@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "wordpress",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_WORDPRESS_PROMPT_PACK_INDEX.md",
+    "00_WORDPRESS_SAFETY_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_PLUGIN_STRUCTURE_PROMPT.md",
+    "03_CUSTOM_POST_TYPES_TAXONOMIES_PROMPT.md",
+    "04_ADMIN_SETTINGS_PAGE_PROMPT.md",
+    "05_SHORTCODES_BLOCKS_PROMPT.md",
+    "06_REST_API_ENDPOINTS_PROMPT.md",
+    "07_WOOCOMMERCE_EXTENSION_PROMPT.md",
+    "08_THEME_CHILD_THEME_PROMPT.md",
+    "09_SECURITY_CAPABILITIES_NONCES_PROMPT.md",
+    "10_MIGRATION_HELPERS_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install WordPress and never modifies WordPress core files."
+}
