@@ -1,154 +1,366 @@
 {
   "framework": "Kabeeri Vibe Developer Framework",
+  "generator_version": "0.1.1",
+  "schema_version": "0.1",
+  "language_support": [
+    "ar",
+    "en"
+  ],
+  "generation_mode": "skeleton_only",
+  "core_rule": "Create folders, architecture guide files inside 00_SYSTEM_INDEX, and questionnaire files inside each folder only. Do not create detailed empty project documents before the folder questionnaire is answered.",
+  "default_files": {
+    "architecture_guides": [
+      "00_SYSTEM_INDEX/08_PROJECT_FILES_ARCHITECTURE_AND_FOLDER_GUIDE_AR.docx",
+      "00_SYSTEM_INDEX/08_PROJECT_FILES_ARCHITECTURE_AND_FOLDER_GUIDE_EN.docx"
+    ],
+    "folder_questionnaires": [
+      "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+      "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+    ]
+  },
+  "word_file_rule": "All .docx files must be valid Word documents. Architecture guide and questionnaire files must contain useful starter content. Do not create zero-byte or corrupted .docx files.",
+  "ai_instruction": "When this generator is given to an AI assistant, create a compressed ZIP project skeleton according to this JSON. Do not generate detailed folder documents yet. Detailed documents are generated later from answered folder questionnaires.",
+  "layers": {
+    "core": "Essential planning and execution folders required to understand and build the first usable version.",
+    "production": "Operational readiness folders used for security, design, QA, deployment, monitoring, analytics, and support.",
+    "extension": "Future growth folders used to plan optional modules and post-launch extensions without damaging the core.",
+    "archive": "Superseded or deprecated material that must not be used as current source of truth."
+  },
   "profile": "enterprise",
-  "language": "ar/en",
+  "recommended_for": [
+    "large platforms",
+    "multi-tenant SaaS",
+    "ERP-style systems",
+    "marketplaces",
+    "AI platforms",
+    "long-term product ecosystems"
+  ],
+  "not_recommended_for": [
+    "small MVPs",
+    "simple landing pages",
+    "one-page tools"
+  ],
   "description": "Large system skeleton with core, production readiness, extension, governance, and archive layers.",
+  "folder_count": 29,
   "folders": [
     {
       "path": "00_SYSTEM_INDEX",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Project entry point, architecture guide, version notes, manifests, and instructions for using the skeleton.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "01_STRATEGY_AND_BUSINESS",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines product strategy, target users, business model, pricing, go-to-market, and positioning.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "02_FOUNDATION_ARCHITECTURE",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines the product foundation, operating model, ownership rules, roles, permissions, and module boundaries.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "03_RELEASE_SPECS",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines V1 to future releases, release gates, out-of-scope rules, and version boundaries.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "04_DATABASE_ARCHITECTURE",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Plans data, relationships, tenancy, privacy, indexes, seed data, reporting sources, and future data addendums.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "05_EXECUTION_PLAN",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines the build order, stack assumptions, implementation stages, sprints, and AI coding flow.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "06_ENGINEERING_STANDARDS",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines coding standards, APIs, validation, tests, Git workflow, review rules, and definition of done.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "07_CODING_READY_EXECUTION",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Breaks the project into executable task cards and safe AI implementation units.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "08_AI_CODE_PROMPTS",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Stores AI prompt packs, prompt rules, and stack-specific coding instructions.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "09_TASK_TRACKING",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Tracks implementation tasks, statuses, prompt references, tests, blockers, and verification.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "10_ACCEPTANCE_CHECKLISTS",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines acceptance checklists for features, releases, security, APIs, database, UI, and documentation.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "11_TECHNOLOGY_GOVERNANCE",
       "layer": "core",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Records technology decisions, stack choices, change control, and AI tool usage rules.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "12_SECURITY_COMPLIANCE",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines security, privacy, compliance, sensitive data, audit logs, and AI safety guardrails.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "13_UI_UX_DESIGN_SYSTEM",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines design system, screens, navigation, components, forms, accessibility, RTL/LTR, and UX rules.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "14_API_INTEGRATION_CENTER",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines internal APIs, public APIs, webhooks, integrations, API versioning, and error responses.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "15_QA_TESTING_RELEASE_GATES",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines QA strategy, testing levels, regression rules, release gates, and review requirements.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "16_DEVOPS_DEPLOYMENT_OPERATIONS",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines deployment, environments, CI/CD, backup, restore, queues, cron jobs, and disaster recovery.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "17_OBSERVABILITY_MONITORING",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines logging, error tracking, performance monitoring, health checks, audit monitoring, and incident response.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "18_DATA_ANALYTICS_REPORTING",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines analytics, metrics, dashboards, event tracking, reporting, BI roadmap, and data export rules.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "19_DOCUMENTATION_TRAINING_SUPPORT",
       "layer": "production",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines user documentation, admin guides, developer docs, support workflows, FAQs, and onboarding.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "30_EXTENSION_GOVERNANCE",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Controls future features, extension classification, approval, deprecation, and promotion-to-core rules.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "31_EXTENSION_BUSINESS_ARCHITECTURE",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines business value, pricing, packaging, users, and go-to-market for future extensions.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "32_EXTENSION_TECHNICAL_ARCHITECTURE",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines technical boundaries, services, jobs, events, permissions, and integration rules for extensions.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "33_EXTENSION_DATABASE_API_ADDENDUM",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Defines database and API changes for approved extensions without altering core files prematurely.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "34_EXTENSION_AI_CODE_PROMPTS",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Stores AI prompt packs dedicated to approved extensions.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "35_EXTENSION_ACCEPTANCE_CHECKLISTS",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Stores acceptance checklists used to review future extensions.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "36_EXTENSION_TASK_TRACKING",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Tracks extension-specific tasks separately from core tasks when needed.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "37_EXTENSION_RELEASE_PLANS",
       "layer": "extension",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Plans extension releases, compatibility, rollback, changelog, and versioning.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
     {
       "path": "99_ARCHIVE_SUPERSEDED",
       "layer": "archive",
-      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+      "purpose": "Stores old or replaced material so AI tools do not treat it as current guidance.",
+      "create_questionnaires": true,
+      "questionnaire_files": [
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      ],
+      "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     }
-  ],
-  "rule": "Create folders, architecture guide, and questionnaires only. Do not create detailed empty documents."
+  ]
 }
