@@ -1,0 +1,24 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "pack": "nextjs",
+  "version": "v0.1.1",
+  "files": [
+    "README.md",
+    "00_NEXTJS_PROMPT_PACK_INDEX.md",
+    "00_PROMPT_USAGE_RULES.md",
+    "01_PROJECT_CONTEXT_PROMPT.md",
+    "02_APP_STRUCTURE_PROMPT.md",
+    "03_ENV_CONFIG_PROMPT.md",
+    "04_ROUTING_LAYOUTS_PROMPT.md",
+    "05_DESIGN_SYSTEM_UI_PROMPT.md",
+    "06_AUTH_USERS_PROMPT.md",
+    "07_DATA_API_INTEGRATION_PROMPT.md",
+    "08_CORE_FEATURES_PROMPT.md",
+    "09_ADMIN_DASHBOARD_PROMPT.md",
+    "10_FORMS_VALIDATION_PROMPT.md",
+    "11_TESTING_REVIEW_PROMPT.md",
+    "12_RELEASE_HANDOFF_PROMPT.md",
+    "prompt_pack_manifest.json"
+  ],
+  "rule": "Use one prompt at a time. This pack does not install Next.js or create projects by itself."
+}
