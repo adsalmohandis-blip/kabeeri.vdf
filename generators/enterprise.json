@@ -1,0 +1,154 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "profile": "enterprise",
+  "language": "ar/en",
+  "description": "Large system skeleton with core, production readiness, extension, governance, and archive layers.",
+  "folders": [
+    {
+      "path": "00_SYSTEM_INDEX",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "01_STRATEGY_AND_BUSINESS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "02_FOUNDATION_ARCHITECTURE",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "03_RELEASE_SPECS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "04_DATABASE_ARCHITECTURE",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "05_EXECUTION_PLAN",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "06_ENGINEERING_STANDARDS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "07_CODING_READY_EXECUTION",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "08_AI_CODE_PROMPTS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "09_TASK_TRACKING",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "10_ACCEPTANCE_CHECKLISTS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "11_TECHNOLOGY_GOVERNANCE",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "12_SECURITY_COMPLIANCE",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "13_UI_UX_DESIGN_SYSTEM",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "14_API_INTEGRATION_CENTER",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "15_QA_TESTING_RELEASE_GATES",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "16_DEVOPS_DEPLOYMENT_OPERATIONS",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "17_OBSERVABILITY_MONITORING",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "18_DATA_ANALYTICS_REPORTING",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "19_DOCUMENTATION_TRAINING_SUPPORT",
+      "layer": "production",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "30_EXTENSION_GOVERNANCE",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "31_EXTENSION_BUSINESS_ARCHITECTURE",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "32_EXTENSION_TECHNICAL_ARCHITECTURE",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "33_EXTENSION_DATABASE_API_ADDENDUM",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "34_EXTENSION_AI_CODE_PROMPTS",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "35_EXTENSION_ACCEPTANCE_CHECKLISTS",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "36_EXTENSION_TASK_TRACKING",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "37_EXTENSION_RELEASE_PLANS",
+      "layer": "extension",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "99_ARCHIVE_SUPERSEDED",
+      "layer": "archive",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    }
+  ],
+  "rule": "Create folders, architecture guide, and questionnaires only. Do not create detailed empty documents."
+}

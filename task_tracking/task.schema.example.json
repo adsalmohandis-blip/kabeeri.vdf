@@ -1,0 +1,14 @@
+{
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Example task",
+      "status": "pending",
+      "prompt_id": "P001",
+      "folder": "05_EXECUTION_PLAN",
+      "depends_on": [],
+      "tests": [],
+      "review_notes": ""
+    }
+  ]
+}

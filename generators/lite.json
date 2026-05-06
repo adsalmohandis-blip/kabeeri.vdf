@@ -1,0 +1,49 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "profile": "lite",
+  "language": "ar/en",
+  "description": "Small project skeleton with core planning folders only.",
+  "folders": [
+    {
+      "path": "00_SYSTEM_INDEX",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "01_STRATEGY_AND_BUSINESS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "02_FOUNDATION_ARCHITECTURE",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "03_RELEASE_SPECS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "04_EXECUTION_PLAN",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "05_AI_CODE_PROMPTS",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "06_TASK_TRACKING",
+      "layer": "core",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    },
+    {
+      "path": "99_ARCHIVE_SUPERSEDED",
+      "layer": "archive",
+      "questionnaire": "00_FOLDER_OWNER_QUESTIONNAIRE"
+    }
+  ],
+  "rule": "Create folders, architecture guide, and questionnaires only. Do not create detailed empty documents."
+}

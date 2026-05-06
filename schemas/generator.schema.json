@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri VDF Generator Schema",
+  "type": "object",
+  "required": [
+    "framework",
+    "profile",
+    "language",
+    "folders"
+  ],
+  "properties": {
+    "framework": {
+      "const": "Kabeeri Vibe Developer Framework"
+    },
+    "profile": {
+      "enum": [
+        "lite",
+        "standard",
+        "enterprise"
+      ]
+    },
+    "language": {
+      "enum": [
+        "ar",
+        "en"
+      ]
+    },
+    "folders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "layer",
+          "questionnaire"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "layer": {
+            "enum": [
+              "core",
+              "production",
+              "extension",
+              "archive"
+            ]
+          },
+          "questionnaire": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
