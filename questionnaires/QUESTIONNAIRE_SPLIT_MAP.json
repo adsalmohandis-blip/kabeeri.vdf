@@ -1,0 +1,47 @@
+{
+  "framework": "Kabeeri Vibe Developer Framework",
+  "version_target": "v0.1.1",
+  "source": "AI_READY_PROJECT_SKELETON_AR/EN uploaded skeleton zips",
+  "purpose": "Split generated folder questionnaires into exactly three repository groups: core, production, extension.",
+  "rule": "Do not create detailed folder documents here. These are questionnaire templates only. Detailed documents are generated later from answered questionnaires.",
+  "groups": {
+    "core": [
+      "00_SYSTEM_INDEX",
+      "01_STRATEGY_AND_BUSINESS",
+      "02_FOUNDATION_ARCHITECTURE",
+      "03_RELEASE_SPECS",
+      "04_DATABASE_ARCHITECTURE",
+      "05_EXECUTION_PLAN",
+      "06_ENGINEERING_STANDARDS",
+      "07_CODING_READY_EXECUTION",
+      "08_AI_CODE_PROMPTS",
+      "09_TASK_TRACKING",
+      "10_ACCEPTANCE_CHECKLISTS",
+      "11_TECHNOLOGY_GOVERNANCE",
+      "99_ARCHIVE_SUPERSEDED"
+    ],
+    "production": [
+      "12_SECURITY_COMPLIANCE",
+      "13_UI_UX_DESIGN_SYSTEM",
+      "14_API_INTEGRATION_CENTER",
+      "15_QA_TESTING_RELEASE_GATES",
+      "16_DEVOPS_DEPLOYMENT_OPERATIONS",
+      "17_OBSERVABILITY_MONITORING",
+      "18_DATA_ANALYTICS_REPORTING",
+      "19_DOCUMENTATION_TRAINING_SUPPORT"
+    ],
+    "extension": [
+      "30_EXTENSION_GOVERNANCE",
+      "31_EXTENSION_BUSINESS_ARCHITECTURE",
+      "32_EXTENSION_TECHNICAL_ARCHITECTURE",
+      "33_EXTENSION_DATABASE_API_ADDENDUM",
+      "34_EXTENSION_AI_CODE_PROMPTS",
+      "35_EXTENSION_ACCEPTANCE_CHECKLISTS",
+      "36_EXTENSION_TASK_TRACKING",
+      "37_EXTENSION_RELEASE_PLANS"
+    ]
+  },
+  "notes": [
+    "99_ARCHIVE_SUPERSEDED is placed under core because only three groups are allowed and archive is a baseline system-maintenance folder."
+  ]
+}

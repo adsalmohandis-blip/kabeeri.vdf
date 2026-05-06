@@ -1,3 +1,3 @@
-# questionnaires/extension
+# Extension Questionnaires
 
-This directory is part of Kabeeri Vibe Developer Framework. Add framework assets here according to the official documentation.
+Questionnaires for post-core growth and future feature layers. These help teams plan extensions without changing or damaging the core project architecture.

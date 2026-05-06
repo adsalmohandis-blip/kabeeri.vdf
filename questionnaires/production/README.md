@@ -1,3 +1,3 @@
-# questionnaires/production
+# Production Readiness Questionnaires
 
-This directory is part of Kabeeri Vibe Developer Framework. Add framework assets here according to the official documentation.
+Questionnaires for folders that prepare a project for real production usage: security, UI/UX, integrations, QA, deployment, monitoring, analytics, and support documentation.
