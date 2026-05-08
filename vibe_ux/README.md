@@ -1,0 +1,41 @@
+# Vibe UX
+
+Vibe UX is Kabeeri's human-first interaction layer. It keeps `.kabeeri/` as source of truth and keeps the CLI as the background engine, while normal users work through VS Code, dashboard, chat, cards, and guided flows.
+
+## Core Principle
+
+Files are the source of truth. CLI is the engine. VS Code, dashboard, and chat are the main human experience.
+
+## Goals
+
+- Let users describe intent in natural language.
+- Turn intent into suggested tasks, not silent execution.
+- Keep governance visible only when it matters.
+- Capture free coding after the work and connect it to tasks.
+- Make common CLI commands available as UI actions.
+- Show cost, locks, and Owner verification in human-readable language.
+
+## Relationship To Existing Layers
+
+- v2 delivery modes decide whether work is Structured or Agile.
+- v3 platform surfaces provide CLI, VS Code, dashboard, GitHub sync, and Owner verify.
+- v4 governance controls roles, tokens, locks, assignment, and verification.
+- v5 intelligence supplies adaptive questions, capability maps, memory, policies, and handoff.
+- v6 Vibe UX makes those capabilities usable without forcing a terminal-first workflow.
+
+## Files
+
+- `VIBE_UX_PRINCIPLES.md`
+- `CLI_AS_ENGINE.md`
+- `INTERACTION_SURFACES.md`
+- `CHAT_INTERACTION_MODEL.md`
+- `NATURAL_LANGUAGE_TASK_CREATION.md`
+- `INTENT_CLASSIFICATION_RULES.md`
+- `SUGGESTED_TASK_CARD.md`
+- `VAGUE_REQUEST_DETECTION.md`
+- `WORKSTREAM_DETECTION_RULES.md`
+- `POST_WORK_CAPTURE.md`
+- `COMMAND_ABSTRACTION_RULES.md`
+- `INTERACTION_MODES.md`
+- `UX_FRICTION_RULES.md`
+

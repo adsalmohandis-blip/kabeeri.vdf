@@ -1,5 +1,9 @@
 # Roadmap
 
+## Current State Note
+
+This roadmap contains historical/staged planning plus later roadmap tracks. The repository now includes more implemented local CLI and planning assets than some older checklist rows imply. Phase 04 stabilizes wording and points readers to [docs/production/V1_CURRENT_STATE.md](docs/production/V1_CURRENT_STATE.md) for the current v1 snapshot without rewriting roadmap history.
+
 ## Phase 0 — Foundation Docs ✅
 
 - ✅ Define vision, architecture, lifecycle, and governance.
@@ -169,6 +173,63 @@ The v3.0.0 plan now focuses on making Kabeeri operable as a local platform throu
 
 ---
 
+## Phase 7 — Multi-AI Governance Track (v3.1.0 - v4.0.0)
+
+The v4.0.0 plan adds governance for multiple human developers and AI Developers on one project through identity, roles, single Owner authority, access tokens, locks, budgets, output contracts, and audit reports.
+
+**Planning files:**
+- [multi_ai_governance/README.md](multi_ai_governance/README.md)
+- [multi_ai_governance/V4_0_UPDATED_PLAN.md](multi_ai_governance/V4_0_UPDATED_PLAN.md)
+- [multi_ai_governance/milestones_and_issues.v4.0.0.json](multi_ai_governance/milestones_and_issues.v4.0.0.json)
+
+### v3.1.0 — Collaboration Identity and Role Model
+- [ ] Define collaboration identity model
+- [ ] Define role and permission model
+- [ ] Define workstream ownership rules
+
+### v3.2.0 — Single Owner and Owner Transfer
+- [ ] Enforce single Owner rule
+- [ ] Define owner transfer token lifecycle
+- [ ] Define owner transfer audit log rules
+
+### v3.3.0 — Task Access Tokens Lifecycle
+- [ ] Define task access token schema
+- [ ] Define access token lifecycle rules
+- [ ] Define token issue/revoke/list CLI commands
+
+### v3.4.0 — Locks and Conflict Prevention
+- [ ] Define task/file/folder/workstream lock types
+- [ ] Define conflict detection rules
+- [ ] Define lock dashboard view
+
+### v3.5.0 — Assignment and Execution Governance
+- [ ] Define multi-developer assignment rules
+- [ ] Define backend/frontend/admin frontend task separation rules
+- [ ] Define reviewer independence rule
+
+### v3.6.0 — AI Developer Sessions and Output Contracts
+- [ ] Define AI Developer session schema
+- [ ] Define AI output contract rules
+- [ ] Define random prompt prevention rules
+
+### v3.7.0 — Token Budgets and Cost Controls
+- [ ] Define task token budget fields
+- [ ] Define budget warning and approval rules
+- [ ] Define cost control dashboard metrics
+
+### v3.8.0 — Owner Verify, Token Revocation, and Audit
+- [ ] Link Owner verify to token revocation
+- [ ] Define Owner rejection and reissue rules
+- [ ] Define final verification audit report
+
+### v4.0.0 — Stable Multi-AI Governance Release
+- [ ] Prepare governance release checklist
+- [ ] Run multi-ai collaboration scenario review
+- [ ] Prepare release notes
+- [ ] Publish v4.0.0 GitHub release
+
+---
+
 ## Current Status
 
 **Latest Release:** v1.5.0 (May 2026)
@@ -190,6 +251,8 @@ The v3.0.0 plan now focuses on making Kabeeri operable as a local platform throu
 
 ## Version Release Schedule
 
+The table below is retained as a planning schedule. `TBD` rows should be read as timeline/status placeholders unless a dedicated phase report marks the area complete.
+
 | Version | Phase | Timeline | Status |
 |---------|-------|----------|--------|
 | 0.1.0 | Foundation Docs | Jan 2026 | ✅ Released |
@@ -210,3 +273,12 @@ The v3.0.0 plan now focuses on making Kabeeri operable as a local platform throu
 | 2.7.0 | AI Token Cost Dashboard | TBD | ⏳ Planned |
 | 2.8.0 | Agile Sprint Cost Analytics | TBD | ⏳ Planned |
 | 3.0.0 | Stable Platform Integration | TBD | ⏳ Planned |
+| 3.1.0 | Collaboration Identity and Role Model | TBD | ⏳ Planned |
+| 3.2.0 | Single Owner and Owner Transfer | TBD | ⏳ Planned |
+| 3.3.0 | Task Access Tokens Lifecycle | TBD | ⏳ Planned |
+| 3.4.0 | Locks and Conflict Prevention | TBD | ⏳ Planned |
+| 3.5.0 | Assignment and Execution Governance | TBD | ⏳ Planned |
+| 3.6.0 | AI Developer Sessions and Output Contracts | TBD | ⏳ Planned |
+| 3.7.0 | Token Budgets and Cost Controls | TBD | ⏳ Planned |
+| 3.8.0 | Owner Verify, Token Revocation, and Audit | TBD | ⏳ Planned |
+| 4.0.0 | Stable Multi-AI Governance | TBD | ⏳ Planned |

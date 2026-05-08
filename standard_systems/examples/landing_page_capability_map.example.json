@@ -1,0 +1,44 @@
+{
+  "project_type": "landing_page",
+  "profile": "marketing_site",
+  "areas": [
+    {
+      "area_key": "product_business",
+      "status": "required",
+      "reason": "Landing pages need offer, audience, and conversion goals."
+    },
+    {
+      "area_key": "public_frontend",
+      "status": "required",
+      "reason": "The public experience is the primary product surface."
+    },
+    {
+      "area_key": "seo",
+      "status": "required",
+      "reason": "Discovery and metadata are important for marketing pages."
+    },
+    {
+      "area_key": "payments_billing",
+      "status": "not_applicable",
+      "reason": "No checkout is planned for this profile."
+    },
+    {
+      "area_key": "multi_tenancy",
+      "status": "not_applicable",
+      "reason": "A static or simple marketing site does not need tenant isolation."
+    },
+    {
+      "area_key": "analytics_reporting",
+      "status": "optional",
+      "reason": "Conversion tracking is useful but can be added after launch."
+    }
+  ],
+  "recommended_question_groups": [
+    "entry",
+    "product_identity",
+    "public_frontend",
+    "content_seo",
+    "operations_release"
+  ]
+}
+

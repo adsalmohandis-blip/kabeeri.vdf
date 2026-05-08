@@ -1,6 +1,6 @@
 # CLI User Flows
 
-This file explains the main user flows for the future `kvdf` CLI.
+This file explains the main user flows for the current and future `kvdf` CLI. Some flows are already executable in the MVP; others remain staged roadmap behavior. Confirm current behavior with `kvdf --help` or `npm run kvdf -- --help`.
 
 ## Flow 1 — New framework workspace
 

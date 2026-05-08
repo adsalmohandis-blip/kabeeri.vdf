@@ -1,6 +1,10 @@
 # CLI Roadmap
 
-This file defines the staged roadmap for the future `kvdf` CLI.
+This file defines the staged roadmap for the `kvdf` CLI.
+
+## Current state note
+
+The repository now contains a working CLI MVP in `bin/kvdf.js`, with package scripts and integration tests. The roadmap below is retained as historical/staged planning, not as a claim that `kvdf` is still only a future idea. Use [CLI_COMMAND_REFERENCE.md](CLI_COMMAND_REFERENCE.md) and `kvdf --help` for the current command surface.
 
 ## v0.1.1 — Command design only
 

@@ -94,6 +94,19 @@ acceptance_checklists_manifest.json
 
 ## Minimum acceptance rule
 
+## v1 Checklist Coverage
+
+The v1 checklist set covers:
+
+- task completion review
+- folder output review
+- prompt pack review
+- AI output review
+- release candidate review
+- acceptance decision recording
+
+These checklists are human review aids. They do not replace tests, expert code review, security review, or Owner verification rules introduced in later roadmap phases.
+
 A task should not be marked as Done unless:
 
 ```text

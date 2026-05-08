@@ -1,0 +1,143 @@
+[
+  {
+    "name": "delivery-mode",
+    "color": "5319E7",
+    "description": "Structured, Agile, and interaction mode work"
+  },
+  {
+    "name": "structured-delivery",
+    "color": "0075CA",
+    "description": "Sequential documentation-led delivery"
+  },
+  {
+    "name": "agile",
+    "color": "0E8A16",
+    "description": "Backlog, epics, stories, sprint planning, and review"
+  },
+  {
+    "name": "project-intake",
+    "color": "1D76DB",
+    "description": "New or existing project intake and adoption"
+  },
+  {
+    "name": "task-governance",
+    "color": "D93F0B",
+    "description": "Task creation, source, provenance, assignment, and acceptance"
+  },
+  {
+    "name": "provenance",
+    "color": "FBCA04",
+    "description": "Source tracing for questions, docs, stories, issues, and AI suggestions"
+  },
+  {
+    "name": "ai-usage",
+    "color": "7057FF",
+    "description": "AI token usage, run history, pricing, and cost analytics"
+  },
+  {
+    "name": "cost-control",
+    "color": "D93F0B",
+    "description": "Low-cost mode, preflight estimates, budgets, and waste visibility"
+  },
+  {
+    "name": "dashboard",
+    "color": "C5DEF5",
+    "description": "Technical, business, sprint, and AI cost dashboards"
+  },
+  {
+    "name": "github",
+    "color": "0075CA",
+    "description": "GitHub sync, labels, milestones, issues, and release import"
+  },
+  {
+    "name": "vscode",
+    "color": "5319E7",
+    "description": "VS Code extension and command palette integration"
+  },
+  {
+    "name": "cli",
+    "color": "5319E7",
+    "description": "kvdf CLI engine and command abstractions"
+  },
+  {
+    "name": "permissions",
+    "color": "D93F0B",
+    "description": "Roles, permissions, Owner auth, and approval gates"
+  },
+  {
+    "name": "token-access",
+    "color": "B60205",
+    "description": "Task access token lifecycle and revocation"
+  },
+  {
+    "name": "multi-ai",
+    "color": "5319E7",
+    "description": "Multiple human and AI developers working safely"
+  },
+  {
+    "name": "locking",
+    "color": "D93F0B",
+    "description": "Task, file, folder, workstream, database, and prompt-pack locks"
+  },
+  {
+    "name": "owner-transfer",
+    "color": "B60205",
+    "description": "Single Owner rule and transfer tokens"
+  },
+  {
+    "name": "vibe-ux",
+    "color": "1D76DB",
+    "description": "Human-first Kabeeri interaction surfaces"
+  },
+  {
+    "name": "natural-language",
+    "color": "5319E7",
+    "description": "Natural language intent and suggested task cards"
+  },
+  {
+    "name": "post-work-capture",
+    "color": "FBCA04",
+    "description": "Capture free coding after work and map it to tasks"
+  },
+  {
+    "name": "design-governance",
+    "color": "0E8A16",
+    "description": "Design source intake, approved text specs, and visual acceptance"
+  },
+  {
+    "name": "frontend",
+    "color": "C5DEF5",
+    "description": "Public, user, admin, and dashboard frontend work"
+  },
+  {
+    "name": "security",
+    "color": "B60205",
+    "description": "Secrets, privacy, safe AI context, and release security checks"
+  },
+  {
+    "name": "docs",
+    "color": "0075CA",
+    "description": "Documentation, guides, reports, and handoff packages"
+  },
+  {
+    "name": "acceptance",
+    "color": "0E8A16",
+    "description": "Acceptance checklists, review, verification, and release gates"
+  },
+  {
+    "name": "priority-high",
+    "color": "B60205",
+    "description": "High priority"
+  },
+  {
+    "name": "priority-medium",
+    "color": "FBCA04",
+    "description": "Medium priority"
+  },
+  {
+    "name": "good-first-issue",
+    "color": "7057FF",
+    "description": "Suitable for a small first contribution"
+  }
+]
+

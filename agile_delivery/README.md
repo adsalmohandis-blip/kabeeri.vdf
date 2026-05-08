@@ -1,5 +1,14 @@
 # Agile Delivery Mode
 
+Phase 05 canonical Agile templates:
+
+- [PRODUCT_BACKLOG_TEMPLATE.md](PRODUCT_BACKLOG_TEMPLATE.md)
+- [EPIC_TEMPLATE.md](EPIC_TEMPLATE.md)
+- [USER_STORY_TEMPLATE.md](USER_STORY_TEMPLATE.md)
+- [SPRINT_PLANNING_TEMPLATE.md](SPRINT_PLANNING_TEMPLATE.md)
+- [SPRINT_REVIEW_TEMPLATE.md](SPRINT_REVIEW_TEMPLATE.md)
+- [SPRINT_COST_METADATA_SCHEMA.json](SPRINT_COST_METADATA_SCHEMA.json)
+
 **Agile Delivery** is the iterative, sprint-based approach to Kabeeri VDF. It leverages v1.0.0 components but reorganizes them into an adaptive workflow suited for fast-moving teams and uncertain requirements.
 
 ---

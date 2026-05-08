@@ -1,5 +1,14 @@
 # Task Tracking
 
+Phase 05 canonical governance files in this folder:
+
+- [TASK_CREATION_RULES.md](TASK_CREATION_RULES.md)
+- [TASK_INTAKE_TEMPLATE.md](TASK_INTAKE_TEMPLATE.md)
+- [TASK_DEFINITION_OF_READY.md](TASK_DEFINITION_OF_READY.md)
+- [TASK_ASSIGNMENT_RULES.md](TASK_ASSIGNMENT_RULES.md)
+- [TASK_SOURCE_RULES.md](TASK_SOURCE_RULES.md)
+- [TASK_PROVENANCE_SCHEMA.json](TASK_PROVENANCE_SCHEMA.json)
+
 This directory defines the task tracking layer for **Kabeeri Vibe Developer Framework**.
 
 The current folder started as a simple framework asset placeholder. This improved version turns it into a practical workflow for tracking AI-assisted development tasks from idea to review and completion.
@@ -32,6 +41,14 @@ This folder provides:
 - a review checklist
 - an AI execution log template
 - an example task for GitHub Issue usage
+
+## Relationship to task_governance/
+
+Use `task_tracking/` for the v1 task record format, examples, task states, and review checklist.
+
+Use `task_governance/` for stricter rules about whether a task is valid, ready, traceable, and safe to execute.
+
+Do not merge or rename these folders during v1 stabilization. `task_tracking/` is the practical tracking format; `task_governance/` is the policy layer that explains how tasks should be created and approved.
 
 ## What this folder is not
 

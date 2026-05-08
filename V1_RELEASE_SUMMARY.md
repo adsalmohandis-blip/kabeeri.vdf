@@ -162,6 +162,8 @@
 
 ## 📁 Complete File Structure (New)
 
+Phase 04 note: the tree below was written as a v1.1-v1.5 development summary. Entries marked `TBD` are retained as roadmap/deferred notes unless the current repository already contains the corresponding concrete files. See [docs/production/V1_CURRENT_STATE.md](docs/production/V1_CURRENT_STATE.md) for the current v1 stabilization snapshot.
+
 ```
 kabeeri-vdf/
 ├── delivery_modes/

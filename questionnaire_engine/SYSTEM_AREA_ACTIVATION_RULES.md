@@ -1,0 +1,9 @@
+# System Area Activation Rules
+
+Activation is based on project type and entry answers.
+
+- SaaS, ecommerce, booking, internal tools, APIs, and mobile apps usually require backend, data, users, and security coverage.
+- Public pages require public frontend, SEO, and accessibility coverage.
+- Payments become required only when the answer says `yes` or the project is ecommerce.
+- Multi-tenancy becomes required only when explicitly needed; SaaS with unknown tenancy stays `unknown`.
+- Unknown answers trigger follow-up instead of skipping the area.

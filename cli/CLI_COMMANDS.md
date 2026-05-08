@@ -1,6 +1,6 @@
 # KVDF CLI Commands
 
-This file defines the proposed command structure for the future `kvdf` CLI.
+This file tracks the `kvdf` CLI command structure. The current executable entrypoint is `bin/kvdf.js`; see `CLI_COMMAND_REFERENCE.md` for implemented command behavior.
 
 ## Main command
 

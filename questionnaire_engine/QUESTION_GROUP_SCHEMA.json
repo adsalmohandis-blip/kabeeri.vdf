@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri Questionnaire Group",
+  "type": "object",
+  "required": ["group_id", "title", "questions"],
+  "properties": {
+    "group_id": { "type": "string" },
+    "title": { "type": "string" },
+    "system_area_keys": { "type": "array", "items": { "type": "string" } },
+    "activation_state": {
+      "type": "string",
+      "enum": ["required", "optional", "deferred", "not_applicable", "unknown", "needs_follow_up"]
+    },
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["question_id", "text", "answer_type"],
+        "properties": {
+          "question_id": { "type": "string" },
+          "text": { "type": "string" },
+          "answer_type": { "type": "string" },
+          "choices": { "type": "array", "items": { "type": "string" } },
+          "required": { "type": "boolean" },
+          "help": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -107,6 +107,17 @@ The actual repository currently stores packs directly under `prompt_packs/<pack-
 
 The categories below are logical categories for documentation and future organization.
 
+## v1 Prompt Pack Status
+
+| Item | Current State |
+| --- | --- |
+| Stack folders | Many concrete stack packs exist directly under `prompt_packs/<pack-name>/`. |
+| Common layer | Still recommended/deferred; no `prompt_packs/common/` folder is part of this Phase 04 patch. |
+| React Native / Expo | Listed as an important mobile pack. If the folder is missing in a checkout, treat it as deferred until the prompt-pack implementation phase. |
+| Categories | Documented as logical categories; the repository does not need to physically reorganize folders during v1 stabilization. |
+
+Phase 04 does not rename prompt-pack folders or create a new common layer. That would be a larger prompt-pack implementation pass.
+
 ---
 
 # 1. PHP Framework Prompt Packs

@@ -1,5 +1,7 @@
 # Kabeeri Vibe Developer Framework
 
+> Current CLI status note: `kvdf` is no longer only a planned command. This repository includes a working CLI MVP. From the repository root, use `npm run kvdf -- --help`; after local linking or package installation, use `kvdf --help`. The CLI is still not the full production platform, but it can already support local validation, project creation, dashboard export/serve, and governance workflows. See `README.md`, `cli/README.md`, and `docs/production/V1_CURRENT_STATE.md` for the current status.
+
 **Kabeeri Vibe Developer Framework** — ويُختصر عمليًا إلى **Kabeeri VDF** أو **kabeeri.vdf** — هو فريمورك مفتوح المصدر مخصص لمطوري البرمجيات بالذكاء الاصطناعي، أو ما يُعرف باسم **Vibe Developers**.
 
 هو ليس بديلًا عن Laravel أو .NET أو Next.js أو Django أو WordPress، بل يعمل كطبقة أعلى منهم.

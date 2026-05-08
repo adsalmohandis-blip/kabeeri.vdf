@@ -22,6 +22,14 @@ Kabeeri VDF prevents random or unclear work by enforcing task governance:
 
 ## The Problem This Solves
 
+## Relationship to task_tracking/
+
+Use `task_governance/` when deciding whether a task is valid, ready, traceable, and safe to execute.
+
+Use `task_tracking/` for the concrete task records, examples, task states, schema, and AI execution log template used by the v1 framework.
+
+The two folders are intentionally separate in the current repository. This avoids risky renames while making the boundary clear for users and contributors.
+
 Without governance:
 
 ❌ Tasks are vague ("Build feature X")  

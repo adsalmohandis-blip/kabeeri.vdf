@@ -79,6 +79,18 @@ examples/
 
 ## Recommended starting point
 
+## v1 Example Coverage
+
+Each profile folder currently includes:
+
+| Profile | Product brief | Workflow | Task example | Notes |
+| --- | --- | --- | --- | --- |
+| Lite | yes | yes | yes | Small-project learning path. |
+| Standard | yes | yes | yes | Normal product/client-project path. |
+| Enterprise | yes | yes | yes | Larger governance-heavy path. |
+
+Generated full project documents are not bundled in Phase 04. The examples remain reference workflows, not production apps.
+
 New users should start with:
 
 ```text

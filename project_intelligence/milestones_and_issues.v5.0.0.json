@@ -1,0 +1,141 @@
+{
+  "version": "v5.0.0",
+  "title": "Adaptive Questionnaire Flow + System Capability Map + Project Intelligence Trust Layer",
+  "totals": {
+    "milestones": 9,
+    "issues": 68
+  },
+  "milestones": [
+    {
+      "version": "v5.1.0",
+      "title": "Adaptive Questionnaire Flow and System Capability Coverage",
+      "goal": "Build an adaptive questionnaire engine that asks only relevant questions, activates system areas, and generates coverage reports and task provenance.",
+      "issues": [
+        { "title": "Create adaptive questionnaire flow engine", "labels": ["questionnaire", "priority-high"] },
+        { "title": "Add entry question groups", "labels": ["questionnaire", "priority-high"] },
+        { "title": "Add system area activation rules", "labels": ["questionnaire", "priority-high"] },
+        { "title": "Add conditional question group rules", "labels": ["questionnaire", "priority-medium"] },
+        { "title": "Add progressive questionnaire expansion rules", "labels": ["questionnaire", "priority-medium"] },
+        { "title": "Add questionnaire minimization rules", "labels": ["questionnaire", "priority-high"] },
+        { "title": "Add unknown answer follow-up rules", "labels": ["questionnaire", "docs", "priority-medium"] },
+        { "title": "Create standard system capability map", "labels": ["questionnaire", "docs", "priority-high"] },
+        { "title": "Add system areas index", "labels": ["questionnaire", "docs", "priority-high"] },
+        { "title": "Add coverage matrix and missing answers report", "labels": ["questionnaire", "acceptance", "priority-high"] },
+        { "title": "Connect answers to generated tasks and provenance", "labels": ["task-governance", "task-provenance", "priority-high"] },
+        { "title": "Add project type to required system areas mapping", "labels": ["generator", "questionnaire", "priority-high"] }
+      ]
+    },
+    {
+      "version": "v5.2.0",
+      "title": "Professional Questionnaire Intake",
+      "goal": "Build schema-driven questionnaire intake, answer storage, answer provenance, conditional questions, and UI-ready flow.",
+      "issues": [
+        { "title": "Add questionnaire intake engine", "labels": ["questionnaire", "priority-high"] },
+        { "title": "Add questionnaire intake schema", "labels": ["questionnaire", "priority-high"] },
+        { "title": "Add questionnaire answer storage rules", "labels": ["questionnaire", "docs", "priority-high"] },
+        { "title": "Add answer provenance rules", "labels": ["questionnaire", "task-provenance", "priority-high"] },
+        { "title": "Add conditional question rules", "labels": ["questionnaire", "priority-medium"] },
+        { "title": "Add AI help for answers", "labels": ["questionnaire", "docs", "priority-medium"] },
+        { "title": "Design VS Code questionnaire webview flow", "labels": ["questionnaire", "docs", "priority-high"] }
+      ]
+    },
+    {
+      "version": "v5.3.0",
+      "title": "Task Governance and Provenance",
+      "goal": "Trace every task to a question, document, story, scan, or AI suggestion before execution.",
+      "issues": [
+        { "title": "Add task creation governance rules", "labels": ["task-governance", "acceptance", "priority-high"] },
+        { "title": "Add task intake template", "labels": ["task-governance", "docs", "priority-high"] },
+        { "title": "Add task definition of ready", "labels": ["task-governance", "acceptance", "priority-high"] },
+        { "title": "Add task assignment rules", "labels": ["task-governance", "priority-medium"] },
+        { "title": "Add task conflict rules", "labels": ["task-governance", "priority-high"] },
+        { "title": "Add task provenance rules", "labels": ["task-provenance", "questionnaire", "priority-high"] },
+        { "title": "Add task source schema", "labels": ["task-provenance", "task-governance", "priority-medium"] }
+      ]
+    },
+    {
+      "version": "v5.4.0",
+      "title": "Project Memory and Decisions",
+      "goal": "Maintain official memory for decisions, assumptions, constraints, risks, and deferred features.",
+      "issues": [
+        { "title": "Add project memory structure", "labels": ["project-memory", "priority-high"] },
+        { "title": "Add architecture decision records", "labels": ["adr", "docs", "priority-high"] },
+        { "title": "Add assumptions log", "labels": ["project-memory", "good-first-issue"] },
+        { "title": "Add constraints log", "labels": ["project-memory", "priority-medium"] },
+        { "title": "Add risk register", "labels": ["project-memory", "acceptance", "priority-high"] },
+        { "title": "Add deferred features log", "labels": ["project-memory", "docs", "priority-medium"] },
+        { "title": "Add decision approval rules", "labels": ["project-memory", "policy-engine", "priority-medium"] }
+      ]
+    },
+    {
+      "version": "v5.5.0",
+      "title": "AI Run History and Waste Detection",
+      "goal": "Track prompt runs, accepted/rejected outputs, token usage, and wasted or untracked AI usage.",
+      "issues": [
+        { "title": "Add AI prompt run history", "labels": ["ai-run-history", "ai-usage", "priority-high"] },
+        { "title": "Add accepted and rejected AI run logs", "labels": ["ai-run-history", "acceptance", "priority-medium"] },
+        { "title": "Add AI output contract enforcement", "labels": ["ai-run-history", "policy-engine", "priority-high"] },
+        { "title": "Add AI token waste detector", "labels": ["ai-usage", "priority-high"] },
+        { "title": "Add random usage report", "labels": ["ai-usage", "docs", "priority-medium"] },
+        { "title": "Add token efficiency report", "labels": ["ai-usage", "priority-medium"] },
+        { "title": "Add AI run review rules", "labels": ["ai-run-history", "acceptance", "priority-medium"] }
+      ]
+    },
+    {
+      "version": "v5.6.0",
+      "title": "Policy Engine and Approval Gates",
+      "goal": "Turn Kabeeri rules into checkable policies before task verification, releases, migrations, and publish actions.",
+      "issues": [
+        { "title": "Add policy engine structure", "labels": ["policy-engine", "priority-high"] },
+        { "title": "Add task verification policy", "labels": ["policy-engine", "task-governance", "priority-high"] },
+        { "title": "Add owner verify policy", "labels": ["policy-engine", "priority-high"] },
+        { "title": "Add token usage policy", "labels": ["policy-engine", "ai-usage", "priority-medium"] },
+        { "title": "Add lock policy", "labels": ["policy-engine", "task-governance", "priority-high"] },
+        { "title": "Add release policy", "labels": ["policy-engine", "acceptance", "priority-high"] },
+        { "title": "Add human approval gates", "labels": ["policy-engine", "acceptance", "priority-high"] }
+      ]
+    },
+    {
+      "version": "v5.7.0",
+      "title": "Identity, Compatibility, and Migration Safety",
+      "goal": "Make projects version-aware and safe to migrate between Kabeeri versions.",
+      "issues": [
+        { "title": "Add project identity file", "labels": ["migration", "docs", "priority-high"] },
+        { "title": "Add version compatibility file", "labels": ["migration", "priority-high"] },
+        { "title": "Add migration state file", "labels": ["migration", "priority-medium"] },
+        { "title": "Add migration plan template", "labels": ["migration", "docs", "priority-high"] },
+        { "title": "Add migration dry-run rules", "labels": ["migration", "cli", "priority-high"] },
+        { "title": "Add rollback plan template", "labels": ["migration", "acceptance", "priority-high"] },
+        { "title": "Add migration audit log", "labels": ["migration", "docs", "priority-medium"] }
+      ]
+    },
+    {
+      "version": "v5.8.0",
+      "title": "Health, Security, and Secrets Protection",
+      "goal": "Add doctor checks, privacy rules, secrets policies, and safety reports.",
+      "issues": [
+        { "title": "Add kvdf doctor specification", "labels": ["security", "docs", "priority-high"] },
+        { "title": "Add deep health check rules", "labels": ["security", "migration", "priority-high"] },
+        { "title": "Add secrets policy", "labels": ["security", "priority-high"] },
+        { "title": "Add privacy policy for AI usage", "labels": ["security", "ai-usage", "priority-high"] },
+        { "title": "Add AI data sharing rules", "labels": ["security", "ai-run-history", "priority-medium"] },
+        { "title": "Add secrets scan report format", "labels": ["security", "good-first-issue"] },
+        { "title": "Add security readiness checklist", "labels": ["security", "acceptance", "priority-medium"] }
+      ]
+    },
+    {
+      "version": "v5.9.0",
+      "title": "Client Handoff and Commercial Reports",
+      "goal": "Generate professional handoff and business reports for clients and owners.",
+      "issues": [
+        { "title": "Add technical handoff summary", "labels": ["handoff", "docs", "priority-high"] },
+        { "title": "Add business handoff summary", "labels": ["handoff", "docs", "priority-high"] },
+        { "title": "Add feature readiness report", "labels": ["handoff", "acceptance", "priority-medium"] },
+        { "title": "Add production vs publish status report", "labels": ["handoff", "acceptance", "priority-high"] },
+        { "title": "Add AI token cost report", "labels": ["handoff", "ai-usage", "priority-high"] },
+        { "title": "Add next roadmap report", "labels": ["handoff", "docs", "priority-medium"] },
+        { "title": "Add client handoff package template", "labels": ["handoff", "docs", "priority-high"] }
+      ]
+    }
+  ]
+}

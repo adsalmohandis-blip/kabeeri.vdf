@@ -136,6 +136,54 @@
             },
             "default": []
           },
+          "delivery_mode": {
+            "type": "string",
+            "enum": [
+              "structured",
+              "agile"
+            ],
+            "description": "Kabeeri delivery mode for this task."
+          },
+          "intake_mode": {
+            "type": "string",
+            "enum": [
+              "new_project",
+              "existing_kabeeri",
+              "existing_non_kabeeri"
+            ],
+            "description": "How the project or task entered Kabeeri."
+          },
+          "workstream": {
+            "type": "string",
+            "description": "Business, technical, or delivery workstream."
+          },
+          "source_type": {
+            "type": "string",
+            "description": "Task source type. See TASK_SOURCE_RULES.md."
+          },
+          "source_mode": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "indirect",
+              "derived",
+              "suggested",
+              "required"
+            ]
+          },
+          "source_reference": {
+            "type": "string",
+            "description": "Reference to the source question, document, story, issue, scan, or decision."
+          },
+          "creator": {
+            "type": "string"
+          },
+          "assignee": {
+            "type": "string"
+          },
+          "reviewer": {
+            "type": "string"
+          },
           "review_notes": {
             "type": "string",
             "default": ""

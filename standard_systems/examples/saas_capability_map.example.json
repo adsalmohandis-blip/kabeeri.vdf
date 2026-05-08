@@ -1,0 +1,46 @@
+{
+  "project_type": "saas",
+  "profile": "multi_tenant_product",
+  "areas": [
+    {
+      "area_key": "product_business",
+      "status": "required",
+      "reason": "SaaS products need clear value proposition, pricing, MVP, and roadmap boundaries."
+    },
+    {
+      "area_key": "users_roles",
+      "status": "required",
+      "reason": "SaaS products usually include owners, admins, staff, and customers."
+    },
+    {
+      "area_key": "multi_tenancy",
+      "status": "required",
+      "reason": "Tenant isolation and ownership rules are central to SaaS architecture."
+    },
+    {
+      "area_key": "payments_billing",
+      "status": "optional",
+      "reason": "Billing is common for SaaS but can be deferred for internal or pilot products."
+    },
+    {
+      "area_key": "admin_frontend",
+      "status": "required",
+      "reason": "SaaS teams need a controlled operational surface for users, plans, and support."
+    },
+    {
+      "area_key": "ai_product_features",
+      "status": "unknown",
+      "reason": "AI capabilities should be activated only when the product needs them."
+    }
+  ],
+  "recommended_question_groups": [
+    "entry",
+    "product_identity",
+    "users_access",
+    "frontend_split",
+    "backend_data",
+    "payments_billing",
+    "operations_release"
+  ]
+}
+

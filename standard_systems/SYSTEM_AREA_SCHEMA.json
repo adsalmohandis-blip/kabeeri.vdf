@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri System Area",
+  "type": "object",
+  "required": ["id", "key", "name", "group", "activation_states"],
+  "properties": {
+    "id": { "type": "integer" },
+    "key": { "type": "string" },
+    "name": { "type": "string" },
+    "group": { "type": "string" },
+    "activation_states": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["required", "optional", "deferred", "not_applicable", "unknown", "needs_follow_up"]
+      }
+    },
+    "question_group": { "type": "string" }
+  }
+}

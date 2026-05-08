@@ -8,6 +8,62 @@ Kabeeri VDF does not replace those frameworks. Instead, it helps users understan
 
 ---
 
+## Working CLI MVP
+
+Kabeeri now includes an early executable CLI named `kvdf`.
+
+Run it from this repository with:
+
+```bash
+npm run kvdf -- --help
+npm run kvdf -- doctor
+npm run kvdf -- validate
+npm run kvdf -- create --profile lite --output my-project
+npm test
+```
+
+The CLI can initialize `.kabeeri/` workspace state, validate framework files, inspect generators, prompt packs, examples, v3/v4 plans, scaffold project folders, and manage local tasks, sprints, Owner sessions, agents, tokens, locks, AI sessions, pricing, and usage records.
+
+After local linking, the command is available directly:
+
+```bash
+kvdf --help
+kvdf create --profile lite --output my-project
+kvdf create --profule lite --output my-project
+```
+
+`--profule` is accepted as a compatibility alias for the common `--profile` typo.
+
+It can also export a local HTML dashboard from `.kabeeri` state:
+
+```bash
+npm run kvdf -- app create --username acme --name "ACME Portal"
+npm run kvdf -- dashboard export
+npm run kvdf -- dashboard serve --port 4177
+```
+
+The exported public page lives at `.kabeeri/site/index.html`. Customer app pages use username routes such as `/customer/apps/acme`; numeric public IDs such as `/customer/apps/3` are rejected. The technical dashboard is kept on the private route `/__kvdf/dashboard`, with live JSON state available at `/__kvdf/api/state` while the local server is running.
+
+v5 project intelligence is also executable from the CLI:
+
+```bash
+kvdf capability list
+kvdf questionnaire answer entry.project_type --value saas
+kvdf questionnaire coverage
+kvdf questionnaire generate-tasks
+kvdf memory add --type decision --text "Use PostgreSQL"
+```
+
+The adaptive questionnaire engine writes coverage and missing-answer reports under `.kabeeri/questionnaires/` and generated tasks include provenance back to system areas, questions, and answers.
+
+It is not yet the full production platform. The CLI implementation now covers the core local governance loop, dashboard export/serve, live dashboard state, GitHub sync through `gh --confirm`, VS Code workspace/extension scaffolding, and Owner verification enforcement.
+
+The repository includes CLI integration tests and a GitHub Actions workflow for CI.
+
+For a concise v1 readiness snapshot, see [docs/production/V1_CURRENT_STATE.md](docs/production/V1_CURRENT_STATE.md).
+
+---
+
 ## What is Kabeeri VDF?
 
 Traditional development frameworks usually start at the code level:
@@ -90,7 +146,7 @@ Core workflow
 
 Project profiles
 
-Kabeeri VDF is planned around three project profiles.
+Kabeeri VDF is organized around three project profiles.
 
 Lite
 
@@ -183,25 +239,31 @@ For now, the recommended usage is:
 8. Use prompt packs to start implementation with your preferred stack.
 9. Track tasks and review output using the framework checklists.
 
-Future versions will include a CLI tool to automate this flow.
+The CLI now automates parts of this flow, but the v1 foundation still treats the documents, generators, questionnaires, prompt packs, task tracking files, and acceptance checklists as the framework core.
 
-Planned CLI
+Current CLI
 
-The planned command name is:
+The executable command name is:
 
+```text
 kvdf
+```
 
-Possible future commands:
+Use `npm run kvdf -- --help` from this repository, or `kvdf --help` after local linking or package installation.
 
-kvdf new my-project --profile lite --lang en
-kvdf new my-project --profile standard --lang ar
-kvdf new my-project --profile enterprise --lang en
+Common current commands include:
+
+```text
+kvdf --help
+kvdf create --profile lite --output my-project
+kvdf create --profule lite --output my-project
+kvdf doctor
 kvdf validate
-kvdf export-ai-handoff
-kvdf tasks list
-kvdf tasks next
+kvdf dashboard export
+kvdf questionnaire coverage
+```
 
-The CLI is not the first goal. The first goal is to stabilize the framework structure, documentation, generators, questionnaires, and prompt packs.
+Future roadmap items may add higher-level UX, docs-site pages, and deeper integrations, but this README should no longer describe `kvdf` itself as only planned.
 
 Roadmap
 v0.1.x — Foundation

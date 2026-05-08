@@ -1,6 +1,6 @@
 # CLI Safety Rules
 
-The future `kvdf` CLI must be safe by default.
+The current and future `kvdf` CLI must be safe by default.
 
 ## Main rule
 

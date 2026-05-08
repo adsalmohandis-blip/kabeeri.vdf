@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kabeeri.vdf/schemas/task-provenance.schema.json",
+  "title": "Kabeeri Task Provenance Schema",
+  "type": "object",
+  "required": ["source_type", "source_mode", "source_reference"],
+  "properties": {
+    "source_type": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "questionnaire_answer",
+        "generated_document",
+        "user_story",
+        "epic",
+        "sprint_planning",
+        "acceptance_review",
+        "bug_report",
+        "github_issue",
+        "ai_suggestion",
+        "existing_project_scan",
+        "migration_report",
+        "production_check",
+        "publish_check"
+      ]
+    },
+    "source_mode": {
+      "type": "string",
+      "enum": ["direct", "indirect", "derived", "suggested", "required"]
+    },
+    "source_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "question_id": {
+      "type": "string"
+    },
+    "answer_id": {
+      "type": "string"
+    },
+    "document_path": {
+      "type": "string"
+    },
+    "document_section": {
+      "type": "string"
+    },
+    "user_story_id": {
+      "type": "string"
+    },
+    "epic_id": {
+      "type": "string"
+    },
+    "sprint_id": {
+      "type": "string"
+    },
+    "issue": {
+      "type": "string"
+    },
+    "source_reason": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

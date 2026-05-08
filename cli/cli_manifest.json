@@ -17,7 +17,7 @@
     "cli.commands.example.json",
     "cli_manifest.json"
   ],
-  "purpose": "Design the future kvdf CLI command structure without implementing executable CLI code.",
-  "status": "design-only",
-  "important_note": "This is not a working CLI implementation."
+  "purpose": "Track the implemented kvdf CLI command structure and its local runtime behavior.",
+  "status": "implemented-mvp",
+  "important_note": "The working CLI entrypoint is bin/kvdf.js. Command behavior is covered by tests/cli.integration.test.js."
 }

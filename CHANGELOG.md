@@ -1,5 +1,80 @@
 # Changelog
 
+## [Unreleased] — Working CLI MVP
+
+### Added
+
+- Added the first executable `kvdf` CLI implementation with Node.js and no external runtime dependencies.
+- Added local workspace initialization for `.kabeeri/` state files.
+- Added validation for core repository files, generator JSON, prompt pack manifests, v3/v4 planning files, and local workspace state.
+- Added CLI commands for generators, prompt packs, examples, questionnaires, v3/v4 plans, tasks, acceptance records, developers, AI agents, locks, task tokens, dashboard state generation, and GitHub dry-run/spec mode.
+- Added smoke test script through `npm run test:smoke`.
+- Added GitHub dry-run planning output for labels, milestones, issues, and release preparation.
+- Added release check, release notes, and release checklist generation from v3/v4 planning files.
+- Added AI usage recording, listing, summary rollups, cost breakdown files, and task budget warnings.
+- Added workspace governance validation for single Owner, duplicate identities, active lock conflicts, audit JSONL, and AI usage JSONL.
+- Added static dashboard export and a built-in local dashboard server.
+- Added final verification report generation when a task is Owner-verified.
+- Added project skeleton generation from `generators/*.json`.
+- Added prompt pack export into local project folders.
+- Added confirmed GitHub writes for label, milestone, issue, and release sync through GitHub CLI (`gh`), protected by `--confirm`.
+- Added issue sync persistence into `.kabeeri/github/issue_map.json` when a workspace exists.
+- Added local Owner auth with passphrase hashing, Owner login/logout/status, expiring sessions, and Owner-session enforcement for task verification when auth is configured.
+- Added AI pricing rule management and automatic usage cost calculation when `--cost` is omitted.
+- Added CLI integration test suite covering workspace init, Owner auth, task verify, pricing, AI usage, dashboard export, generators, prompt pack export, and GitHub dry-runs.
+- Added GitHub Actions CI workflow for Node 20 test execution.
+- Added local sprint management and sprint cost summaries linked to tasks and AI usage.
+- Added AI Developer session tracking with session handoff report generation and validation.
+- Added role-based permission enforcement for governed workspaces, including reviewer independence and actor checks.
+- Added task access token expiry checks and allowed/forbidden file scope enforcement for AI session handoffs.
+- Added `kvdf create --profile <name>` as a shortcut for project skeleton generation and accepted common `--profule` typo as `--profile`.
+- Added command-specific help for common CLI groups, terminal-friendly command aliases, and typo suggestions for unknown commands.
+- Implemented `questionnaire create`, `prompt-pack use`, `acceptance review`, and real `validate task` / `validate acceptance` checks.
+- Implemented Owner transfer lifecycle commands with one-use transfer tokens and single Owner role migration.
+- Implemented stronger lock conflict prevention for overlapping file and folder scopes.
+- Implemented budget overrun approval commands and optional enforcement for guarded task tokens.
+- Implemented workstream assignment governance and explicit integration-task rules for cross-workstream tasks.
+- Enforced real task lookup, governed assignee matching, and explicit assignment before governed AI session execution.
+- Added untracked AI usage recording and dashboard visibility for random/ad-hoc prompt cost.
+- Added VS Code workspace scaffolding for common KVDF commands.
+- Added audit list/report commands.
+- Added `kvdf app` customer app management with public `username` routes and validation that rejects numeric customer app URLs like `/customer/apps/3`.
+- Changed dashboard export/serve so the customer-facing page is public at `/`, app pages use `/customer/apps/<username>`, and the technical dashboard is kept on `/__kvdf/dashboard`.
+- Added live dashboard state output through `kvdf dashboard state` and the local `/__kvdf/api/state` endpoint.
+- Added local VS Code Webview extension scaffolding under `.vscode/kvdf-extension`.
+- Added v5.0.0 project intelligence planning, including the adaptive questionnaire flow and 53-area system capability map.
+- Implemented adaptive questionnaire runtime commands for answers, coverage matrix generation, missing-answer reports, and provenance task generation.
+- Added project memory runtime commands for decisions, assumptions, constraints, risks, and deferred features.
+- Added business feature readiness and user journey models with dashboard and validation support.
+- Added local GitHub sync configuration commands.
+- Made release checks run real repository validation and support strict failure mode.
+- Enforced acceptance evidence before Owner verification.
+- Enforced active lock coverage for governed AI session file changes.
+- Added usage cost report export and developer efficiency analysis.
+- Added v4 Multi-AI scenario review reports.
+- Added limited task token reissue flow after Owner rejection.
+
+### Notes
+
+- This is the first real runtime slice. It now includes confirmed GitHub CLI writes, local VS Code extension scaffolding, live dashboard state, and role/session enforcement for governed workspaces.
+
+---
+
+## [Unreleased] — v4.0.0 Multi-AI Governance Plan
+
+### Added
+
+- Added the v4.0.0 updated planning track for Multi-AI Developer Governance, single Owner authority, scoped access tokens, locks, budgets, and audit reports.
+- Added `multi_ai_governance/` as the documentation home for the 9 milestones and 28 planned GitHub issues.
+- Added machine-readable GitHub planning source at `multi_ai_governance/milestones_and_issues.v4.0.0.json`.
+- Added governance specs for collaboration identity, role permissions, workstream ownership, Owner transfer, task tokens, conflict locks, assignment flow, AI session output contracts, token budgets, and final verification audit reports.
+
+### Changed
+
+- Extended the roadmap with the v3.1.0 through v4.0.0 Multi-AI Governance track.
+
+---
+
 ## [Unreleased] — v3.0.0 Platform Integration Plan
 
 ### Added

@@ -1,5 +1,11 @@
 # Delivery Modes
 
+Phase 05 canonical files:
+
+- [DELIVERY_MODE_SELECTION_GUIDE.md](DELIVERY_MODE_SELECTION_GUIDE.md)
+- [STRUCTURED_DELIVERY.md](STRUCTURED_DELIVERY.md)
+- [AGILE_DELIVERY.md](AGILE_DELIVERY.md)
+
 Kabeeri VDF supports **two official delivery modes** to accommodate different project needs, team structures, and development philosophies. Both modes are equally valid and share the same foundation established in v1.0.0.
 
 ## Overview

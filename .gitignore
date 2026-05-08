@@ -1,0 +1,9 @@
+.kabeeri/
+node_modules/
+coverage/
+*.log
+dashboard.html
+RELEASE_NOTES.md
+RELEASE_CHECKLIST.md
+github-*.dry-run.txt
+

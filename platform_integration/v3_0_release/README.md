@@ -4,21 +4,21 @@ Goal: ship a stable local platform integration release covering GitHub, VS Code,
 
 ## Integration Checklist
 
-- [ ] `.kabeeri/` source-of-truth structure documented.
-- [ ] Dashboard state files documented as derived views.
-- [ ] GitHub sync config documented.
-- [ ] GitHub issue mapping documented.
-- [ ] GitHub CLI commands support dry-run.
-- [ ] VS Code extension architecture documented.
-- [ ] VS Code command palette mapped to CLI.
-- [ ] Technical dashboard state documented.
-- [ ] Business dashboard state documented.
-- [ ] Owner-only final verify documented.
-- [ ] Verify/reject/reopen CLI commands documented.
-- [ ] AI token cost dashboard documented.
-- [ ] Token calculator uses configurable prices.
-- [ ] Sprint cost analytics documented.
-- [ ] Release notes prepared.
+- [x] `.kabeeri/` source-of-truth structure documented and initialized by `kvdf init`.
+- [x] Dashboard state files documented as derived views.
+- [x] GitHub sync config documented and manageable through `kvdf github config`.
+- [x] GitHub issue mapping documented and persisted for confirmed sync.
+- [x] GitHub CLI commands support dry-run and confirmed `gh` writes.
+- [x] VS Code extension architecture scaffolded locally through `kvdf vscode scaffold`.
+- [x] VS Code command palette mapped to CLI.
+- [x] Technical dashboard state generated and exposed through `kvdf dashboard state`.
+- [x] Business dashboard state generated with customer apps, features, and journeys.
+- [x] Owner-only final verify enforced when Owner auth is configured.
+- [x] Verify/reject/reopen CLI commands implemented.
+- [x] AI token cost dashboard state implemented.
+- [x] Token calculator uses configurable prices.
+- [x] Sprint cost analytics implemented.
+- [x] Release notes prepared.
 
 ## Release Notes Draft
 
@@ -35,8 +35,8 @@ Goal: ship a stable local platform integration release covering GitHub, VS Code,
 
 ### Limitations
 
-- This release defines the platform integration contract; it is not yet a full runtime implementation.
-- GitHub writes must remain dry-run by default until explicit confirmation is implemented.
+- This release has a working local CLI runtime. Some hosted product surfaces may still be implemented by downstream apps.
+- GitHub writes remain dry-run by default and require explicit `--confirm`.
 - Dashboard files are derived and may be regenerated from canonical `.kabeeri` files.
 - AI pricing is user-configured and must be reviewed against current provider prices before cost reporting.
 
@@ -59,4 +59,3 @@ Publishing requires Owner confirmation after all checklist items are complete.
 - Release notes are ready.
 - Publish process is documented.
 - `v3.0.0` is published only after Owner verification.
-

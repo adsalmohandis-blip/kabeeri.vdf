@@ -1,14 +1,110 @@
 # KVDF CLI Design
 
-This directory defines the first command structure design for the future **Kabeeri Vibe Developer Framework CLI**.
+This directory defines and documents the current **Kabeeri Vibe Developer Framework CLI**.
 
-## Important clarification
+## Current implementation status
 
-This folder is **not** a working CLI implementation yet.
+The repository now includes a working `kvdf` CLI implementation.
 
-It does not install packages, run commands, generate real projects, or modify the repository automatically.
+It is still an early MVP, but it can already:
 
-It is a design/specification layer for the future command-line tool.
+```text
+- initialize local .kabeeri workspace state
+- validate repository JSON, prompt pack manifests, generator files, and planning files
+- list/show generator profiles
+- generate local project skeleton folders from generator profiles
+- run `kvdf create --profile <name>` as a shortcut, including the common `--profule` typo
+- list/show prompt packs
+- export prompt packs into a project folder
+- install a prompt pack into a standard project prompt folder with `prompt-pack use`
+- list/show example profiles
+- list questionnaire files
+- export questionnaire `.docx` files by profile or group
+- list/show v3/v4 planning milestones
+- create/list/status local tasks
+- create/list/status customer apps with public `username` routes
+- run v5 adaptive questionnaire answers, coverage, missing-answer reports, and provenance task generation
+- inspect the 53-area system capability map
+- add/list/summarize project memory decisions, assumptions, constraints, risks, and deferred features
+- create/list/status business features and user journeys
+- create/list/summarize Agile sprints and sprint costs
+- create/list local acceptance records
+- review acceptance records and store reviewer notes
+- list audit events and export Markdown audit reports
+- add/list human developer identities
+- configure local Owner auth and Owner sessions
+- transfer single Owner authority using one-use Owner transfer tokens
+- add/list AI Developer identities
+- create/list/release local locks
+- prevent exact lock conflicts and file/folder scope overlap
+- move tasks through approve/assign/start/review/verify/reject/reopen states
+- enforce role permissions for governed workspaces using `--actor` and Owner sessions
+- enforce workstream ownership during task assignment and require integration type for cross-workstream tasks
+- regenerate derived dashboard state files
+- export a customer-facing static site plus a private technical dashboard
+- serve the customer page at `/`, app pages at `/customer/apps/<username>`, the dashboard at `/__kvdf/dashboard`, and live state at `/__kvdf/api/state`
+- scaffold VS Code workspace task files and local VS Code Webview extension files for common KVDF commands
+- issue/list/revoke local task access token records
+- enforce that task access tokens target real tasks and governed assignees
+- enforce token expiry and allowed/forbidden file scopes for AI session handoffs
+- revoke tokens on Owner rejection and reissue limited rework tokens
+- require active task locks to cover governed AI session file changes
+- approve/list/revoke budget overrun approvals for guarded task tokens
+- record/list/summarize AI token usage and cost
+- export AI usage cost reports and developer efficiency analysis
+- configure AI pricing rules and auto-calculate usage cost
+- start/end/list AI Developer sessions and generate handoff reports
+- generate final verification reports when Owner verifies a task
+- run GitHub commands in dry-run/spec mode
+- configure local GitHub sync settings
+- sync GitHub labels, milestones, issues, and releases through `gh` when `--confirm` is provided
+- generate release checks, release notes, and release checklists from v3/v4 plans
+- run Multi-AI scenario reviews for governed workspaces
+```
+
+GitHub writes are available through `gh` only when `--confirm` is provided.
+
+## Running locally
+
+From the repository root:
+
+```bash
+npm run kvdf -- --help
+npm run kvdf -- create --help
+npm run kvdf -- doctor
+npm run kvdf -- validate
+npm run kvdf -- create --profile lite --output my-project
+npm run kvdf -- init --profile standard --mode structured
+npm run kvdf -- app create --username acme --name "ACME Portal"
+npm run kvdf -- questionnaire answer entry.project_type --value saas
+npm run kvdf -- questionnaire coverage
+npm run kvdf -- capability list
+npm run kvdf -- dashboard export
+npm test
+```
+
+For local development, you can also run:
+
+```bash
+node bin/kvdf.js --help
+```
+
+After publishing or linking the package, the intended command is:
+
+```bash
+kvdf --help
+kvdf create --profile lite --output my-project
+kvdf create --profule lite --output my-project
+```
+
+## Tests
+
+```bash
+npm test
+npm run test:smoke
+```
+
+The integration test suite runs the CLI in temporary workspaces and verifies workspace init, Owner auth, task verify, pricing, AI usage, customer app username routes, dashboard export, generator scaffolding, prompt-pack export, and safe GitHub dry-run behavior.
 
 ## Proposed CLI name
 
@@ -25,7 +121,7 @@ kabeeri.vdf
 
 ## Purpose
 
-The future CLI should help vibe developers use Kabeeri VDF from the terminal in a simple and predictable way.
+The current CLI MVP helps vibe developers use Kabeeri VDF from the terminal in a simple and predictable way. Future CLI work should keep the same safety and clarity goals while expanding coverage.
 
 It should help with:
 
@@ -71,11 +167,17 @@ Raw idea
 → handoff
 ```
 
-## Suggested first CLI scope
+## Suggested next CLI scope
 
-For `v0.1.1`, only design the command structure.
+The next implementation slice should add real command enforcement for:
 
-For future `v0.2.0` or later, implement a minimal CLI.
+```text
+- GitHub dry-run diff output
+- GitHub write operations behind explicit confirmation
+- stronger role/session enforcement
+- persistent release notes generation
+- VS Code extension and webview shell
+```
 
 ## Proposed command family
 
@@ -135,4 +237,4 @@ cli_manifest.json
 
 ## Status
 
-CLI command structure design for `v0.1.1`.
+Working CLI MVP plus command structure documentation. Some command families are implemented today; others remain roadmap items and should be checked with `kvdf --help` or [CLI_COMMAND_REFERENCE.md](CLI_COMMAND_REFERENCE.md).

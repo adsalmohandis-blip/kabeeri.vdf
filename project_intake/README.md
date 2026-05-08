@@ -1,5 +1,11 @@
 # Project Intake and Existing System Adoption
 
+Phase 05 canonical intake files:
+
+- [NEW_PROJECT.md](NEW_PROJECT.md)
+- [EXISTING_KABEERI_PROJECT.md](EXISTING_KABEERI_PROJECT.md)
+- [EXISTING_NON_KABEERI_PROJECT.md](EXISTING_NON_KABEERI_PROJECT.md)
+
 **v1.2.0** defines how Kabeeri VDF handles three project scenarios:
 
 1. **New Project** — Starting from scratch

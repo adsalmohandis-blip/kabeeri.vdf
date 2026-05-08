@@ -1,0 +1,123 @@
+{
+  "version": "v4.0.0",
+  "document_type": "github_milestones_and_issues_plan",
+  "source_of_truth": ".kabeeri/",
+  "totals": {
+    "milestones": 9,
+    "issues": 28
+  },
+  "rules": [
+    "Exactly one Owner exists at any time.",
+    "Every developer or AI Developer works through a task-specific access token.",
+    "No task executes without source, acceptance, assignment, and required lock coverage.",
+    "Owner verification revokes task access tokens and writes audit events.",
+    "Token budgets are tracked by task, sprint, developer, workstream, and version."
+  ],
+  "labels": [
+    {"name": "delivery-mode", "color": "5319E7", "description": "Delivery modes: Structured and Agile"},
+    {"name": "structured-delivery", "color": "0075CA", "description": "Structured/sequential delivery"},
+    {"name": "agile", "color": "0E8A16", "description": "Backlog, sprint, and story work"},
+    {"name": "project-intake", "color": "1D76DB", "description": "New or adopted project intake"},
+    {"name": "task-governance", "color": "D93F0B", "description": "Task creation and management rules"},
+    {"name": "provenance", "color": "FBCA04", "description": "Task source tracing"},
+    {"name": "ai-usage", "color": "7057FF", "description": "AI token usage and cost records"},
+    {"name": "dashboard", "color": "C5DEF5", "description": "Project dashboard work"},
+    {"name": "github", "color": "0075CA", "description": "GitHub integration"},
+    {"name": "vscode", "color": "5319E7", "description": "VS Code integration"},
+    {"name": "cli", "color": "5319E7", "description": "CLI commands"},
+    {"name": "permissions", "color": "D93F0B", "description": "Roles and permissions"},
+    {"name": "token-access", "color": "B60205", "description": "Access token lifecycle"},
+    {"name": "priority-high", "color": "B60205", "description": "High priority"},
+    {"name": "priority-medium", "color": "FBCA04", "description": "Medium priority"},
+    {"name": "good-first-issue", "color": "7057FF", "description": "Good first contributor task"},
+    {"name": "multi-ai", "color": "5319E7", "description": "Multiple AI Developers or AI-assisted developers"},
+    {"name": "locking", "color": "D93F0B", "description": "Task, file, folder, and workstream locks"},
+    {"name": "owner-transfer", "color": "B60205", "description": "Single Owner transfer"},
+    {"name": "budget-control", "color": "FBCA04", "description": "Token and task cost budgets"}
+  ],
+  "milestones": [
+    {
+      "title": "v3.1.0 - Collaboration Identity and Role Model",
+      "goal": "Allow multiple developers or AI Agents to work without overlap.",
+      "issues": [
+        {"title": "Define collaboration identity model", "labels": ["multi-ai", "permissions", "priority-high"]},
+        {"title": "Define role and permission model", "labels": ["permissions", "multi-ai", "priority-high"]},
+        {"title": "Add workstream ownership rules", "labels": ["multi-ai", "task-governance", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.2.0 - Single Owner and Owner Transfer",
+      "goal": "Prevent top-authority conflict while allowing safe transfer.",
+      "issues": [
+        {"title": "Enforce single owner rule", "labels": ["permissions", "owner-transfer", "priority-high"]},
+        {"title": "Design owner transfer token lifecycle", "labels": ["owner-transfer", "token-access", "priority-high"]},
+        {"title": "Add owner transfer audit log rules", "labels": ["owner-transfer", "docs", "priority-high"]}
+      ]
+    },
+    {
+      "title": "v3.3.0 - Task Access Tokens Lifecycle",
+      "goal": "Allow task-specific scoped work that expires when done.",
+      "issues": [
+        {"title": "Define task access token schema", "labels": ["token-access", "task-governance", "priority-high"]},
+        {"title": "Add access token lifecycle rules", "labels": ["token-access", "priority-high"]},
+        {"title": "Add token issue and revoke commands design", "labels": ["token-access", "cli", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.4.0 - Locks and Conflict Prevention",
+      "goal": "Prevent task, file, folder, and risky parallel-work conflicts.",
+      "issues": [
+        {"title": "Define task file folder workstream lock types", "labels": ["locking", "task-governance", "priority-high"]},
+        {"title": "Add conflict detection rules", "labels": ["locking", "priority-high"]},
+        {"title": "Design lock dashboard view", "labels": ["locking", "dashboard", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.5.0 - Assignment and Execution Governance",
+      "goal": "Prevent AI Developers from working on unapproved or unassigned tasks.",
+      "issues": [
+        {"title": "Add task assignment rules for multi developer work", "labels": ["multi-ai", "task-governance", "priority-high"]},
+        {"title": "Add backend frontend admin frontend task separation rules", "labels": ["multi-ai", "task-governance", "priority-high"]},
+        {"title": "Add reviewer independence rule", "labels": ["acceptance", "permissions", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.6.0 - AI Developer Sessions and Output Contracts",
+      "goal": "Make AI output readable, reviewable, costed, and auditable.",
+      "issues": [
+        {"title": "Define AI developer session schema", "labels": ["multi-ai", "ai-usage", "priority-high"]},
+        {"title": "Add AI output contract rules", "labels": ["multi-ai", "acceptance", "priority-high"]},
+        {"title": "Add random prompt prevention rules", "labels": ["ai-usage", "task-governance", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.7.0 - Token Budgets and Cost Controls",
+      "goal": "Prevent random AI token consumption and support pricing analytics.",
+      "issues": [
+        {"title": "Add task token budget fields", "labels": ["budget-control", "ai-usage", "priority-high"]},
+        {"title": "Add budget warning and approval rules", "labels": ["budget-control", "dashboard", "priority-high"]},
+        {"title": "Add cost control dashboard metrics", "labels": ["budget-control", "dashboard", "ai-usage", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v3.8.0 - Owner Verify, Token Revocation, and Audit",
+      "goal": "Close each task only after Owner verification and audit.",
+      "issues": [
+        {"title": "Link owner verify to token revocation", "labels": ["owner-verify", "token-access", "priority-high"]},
+        {"title": "Add owner rejection and reissue rules", "labels": ["owner-verify", "task-governance", "priority-medium"]},
+        {"title": "Add final verification audit report", "labels": ["owner-verify", "docs", "priority-medium"]}
+      ]
+    },
+    {
+      "title": "v4.0.0 - Stable Multi-AI Governance Release",
+      "goal": "Ship a strong governance model for AI-assisted team development.",
+      "issues": [
+        {"title": "Prepare v4.0.0 governance release checklist", "labels": ["acceptance", "docs", "priority-high"]},
+        {"title": "Run multi-ai collaboration scenario review", "labels": ["multi-ai", "acceptance", "priority-high"]},
+        {"title": "Prepare v4.0.0 release notes", "labels": ["docs", "priority-high"]},
+        {"title": "Publish v4.0.0 GitHub release", "labels": ["docs", "priority-high"]}
+      ]
+    }
+  ]
+}
+
