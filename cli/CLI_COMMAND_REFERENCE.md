@@ -49,9 +49,15 @@ kvdf init --lang user
 kvdf init --lang ar
 kvdf init --lang en
 kvdf init --lang both
+kvdf init --goal "Build ecommerce store with Laravel backend and Next.js frontend"
+kvdf init --no-intake
 ```
 
 Without `--lang`, Kabeeri stores `language: user`, so adaptive intake and generated guidance should follow the user's detected language unless a command explicitly overrides it.
+
+When `kvdf init` is run interactively, Kabeeri asks one short question: what software application the developer wants to build. The answer immediately creates an adaptive intake plan and docs-first tasks. In non-interactive automation, use `--goal "<one sentence>"` to trigger the same flow, or `--no-intake` to initialize state only.
+
+The docs-first tasks are intentional. They make Kabeeri ask and document the project before implementation tasks start, reducing the chance that an AI assistant skips project documentation and jumps directly into code.
 
 ## Generators
 

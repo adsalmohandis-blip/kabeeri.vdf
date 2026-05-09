@@ -43,6 +43,8 @@
 - Added Repository Foldering System with `standard_systems/REPOSITORY_FOLDERING_MAP.json`, `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, `kvdf structure`, and `kvdf validate foldering` to organize Kabeeri's growing root folders into stable core, knowledge, packs, integrations, contracts, docs, quality, and runtime-state groups.
 - Added adaptive questionnaire intake planning with `kvdf questionnaire plan`, combining Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor into focused developer questions stored in `.kabeeri/questionnaires/adaptive_intake_plan.json`.
 - Added user-language runtime behavior for adaptive intake so generated plans record input/output language and follow the user's language unless explicitly overridden.
+- Added init-time guided intake: interactive `kvdf init` can ask for the application goal, while `kvdf init --goal "..."` creates adaptive questions and docs-first tasks in non-interactive flows.
+- Added a docs-first gate so implementation tasks cannot start while init-generated project documentation tasks are still open.
 - Added automatic generator governance tasks inside initialized workspaces so Next.js/Laravel or other skeleton generation cannot silently bypass the task tracker.
 - Added non-task AI usage buckets through `kvdf usage inquiry`, `kvdf usage admin`, `kvdf usage question`, `kvdf usage planning`, and `kvdf usage docs`.
 - Improved live dashboard refresh artifacts for task tracker, usage summaries, generated scaffold tasks, and dashboard section explanations.

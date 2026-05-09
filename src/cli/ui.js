@@ -785,6 +785,7 @@ Commands:
 
 Examples:
   kvdf init --profile standard --mode structured
+  kvdf init --profile standard --goal "Build ecommerce store with Laravel backend and Next.js frontend"
   kvdf validate
   kvdf validate runtime-schemas
   kvdf reports live --json

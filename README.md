@@ -153,6 +153,20 @@ Inside the folder where you want Kabeeri runtime state:
 kvdf init --profile standard --mode structured
 ```
 
+If the command runs in an interactive terminal, Kabeeri asks one short question about the application you want to build, then creates the adaptive intake questions and docs-first tasks immediately.
+
+For automation, or when asking your AI assistant to do it directly:
+
+```bash
+kvdf init --profile standard --goal "Build ecommerce store with Laravel backend and Next.js frontend"
+```
+
+Use this only when you want state initialization without the first intake flow:
+
+```bash
+kvdf init --no-intake
+```
+
 By default, Kabeeri stores `language: user`, which means adaptive intake and generated guidance should follow the user's detected language unless you override it:
 
 ```bash
@@ -195,15 +209,17 @@ kvdf create --profile standard --output my-project --no-tasks
 A practical flow with any AI assistant:
 
 1. Initialize Kabeeri.
-2. Describe the product in normal language.
-3. Let Kabeeri recommend blueprint, delivery mode, data design, UI direction, and framework prompt packs.
-4. Ask only the missing questions.
-5. Convert approved suggestions into tasks.
-6. Work on one task at a time.
+2. Answer the one-sentence application goal prompt.
+3. Let Kabeeri generate the adaptive intake questions.
+4. Complete the docs-first tasks: intake answers, scope, architecture, data design, UI direction, and implementation backlog.
+5. Convert approved documentation into implementation tasks.
+6. Work on one implementation task at a time.
 7. Use task tokens and locks for execution scope.
 8. Record AI token usage.
 9. Capture any work done outside the normal flow.
 10. Review, verify, and hand off.
+
+This docs-first gate is deliberate. AI assistants should not jump from a vague idea directly into Laravel, Next.js, React, WordPress, or mobile implementation before the project documentation tasks are created and reviewed.
 
 The AI assistant may use commands like these behind the scenes:
 

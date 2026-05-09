@@ -133,7 +133,7 @@ function validate(scope) {
   if (!result.ok) process.exitCode = 1;
 }
 
-function init(flags) {
+async function init(flags) {
   const profile = flags.profile || "standard";
   const mode = flags.mode || "structured";
   const lang = flags.lang || flags.language || "user";
@@ -141,7 +141,101 @@ function init(flags) {
 
   console.log("Initialized Kabeeri workspace state.");
   console.log(table(["File", "Status"], created.map((item) => [item.path, item.status])));
+  const intake = await runInitIntake(flags);
   refreshDashboardArtifacts();
+  if (!intake) {
+    console.log("");
+    console.log("Next: tell your AI assistant what you want to build, or run:");
+    console.log('kvdf init --goal "Build ecommerce store with Laravel backend and Next.js frontend"');
+  }
+}
+
+async function runInitIntake(flags = {}) {
+  if (flags["no-intake"] || flags.skipIntake) return null;
+  const goal = flags.goal || flags.app || flags.description || flags.project || flags.text || await promptForInitialProjectGoal(flags);
+  if (!goal) return null;
+  const plan = questionnaireIntakePlan(goal, {
+    ...flags,
+    description: goal,
+    source: "init_intake",
+    silent: true,
+    json: false
+  });
+  const docsTasks = createDocsFirstTasksFromIntakePlan(plan, flags);
+  console.log("");
+  console.log("Initial project intake created.");
+  console.log(table(["Item", "Value"], [
+    ["Goal", goal],
+    ["Blueprint", `${plan.blueprint.name} (${plan.blueprint.key})`],
+    ["Questions", plan.generated_questions.length],
+    ["Docs-first tasks", docsTasks.length]
+  ]));
+  console.log("");
+  console.log("Ask the developer only these generated questions first. Do not start implementation until docs-first tasks are reviewed.");
+  return { plan, docsTasks };
+}
+
+async function promptForInitialProjectGoal(flags = {}) {
+  if (flags.yes || flags.nonInteractive || flags["non-interactive"]) return "";
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return "";
+  const readline = require("readline/promises");
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    const answer = await rl.question("What software application do you want to build? Write one short sentence: ");
+    return String(answer || "").trim();
+  } finally {
+    rl.close();
+  }
+}
+
+function createDocsFirstTasksFromIntakePlan(plan, flags = {}) {
+  if (!plan || flags["no-doc-tasks"]) return [];
+  const file = ".kabeeri/tasks.json";
+  const data = readJsonFile(file);
+  data.tasks = data.tasks || [];
+  const alreadyCreated = data.tasks.some((taskItem) => taskItem.source === `init_intake:${plan.plan_id}`);
+  if (alreadyCreated) return [];
+  const existing = new Set(data.tasks.map((item) => item.id));
+  const nextId = () => {
+    let index = data.tasks.length + 1;
+    let id = `task-${String(index).padStart(3, "0")}`;
+    while (existing.has(id)) {
+      index += 1;
+      id = `task-${String(index).padStart(3, "0")}`;
+    }
+    existing.add(id);
+    return id;
+  };
+  const createdAt = new Date().toISOString();
+  const seeds = [
+    ["Project intake answers", "Record the developer/client answers for the generated intake questions."],
+    ["Product scope document", "Document product goal, app boundaries, users, modules, and out-of-scope items."],
+    ["Architecture and stack decision", "Document backend, frontend, mobile, database, integrations, and delivery mode decisions."],
+    ["Data design document", "Document core entities, relationships, snapshots, indexes, constraints, audit, and migration safety."],
+    ["UI/UX direction document", "Document user journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations."],
+    ["Implementation task backlog", "Convert approved documentation into implementation tasks only after the docs-first gate is reviewed."]
+  ];
+  const tasks = seeds.map(([title, acceptance]) => ({
+    id: nextId(),
+    title,
+    status: "proposed",
+    type: "documentation",
+    workstream: "docs",
+    workstreams: ["docs"],
+    source: `init_intake:${plan.plan_id}`,
+    intake_plan_id: plan.plan_id,
+    phase: "docs_first",
+    docs_first_gate: true,
+    implementation_blocker: title !== "Implementation task backlog",
+    acceptance_criteria: [acceptance],
+    created_at: createdAt
+  }));
+  data.tasks.push(...tasks);
+  writeJsonFile(file, data);
+  for (const taskItem of tasks) {
+    appendAudit("task.created", "task", taskItem.id, `Docs-first task created: ${taskItem.title}`);
+  }
+  return tasks;
 }
 
 function generator(action, value, flags) {
@@ -1538,8 +1632,11 @@ function questionnaireIntakePlan(value, flags = {}) {
   state.current_plan_id = plan.plan_id;
   writeJsonFile(file, state);
   appendAudit("questionnaire.intake_plan_created", "questionnaire", plan.plan_id, `Questionnaire intake plan created for ${blueprintKey}`);
-  if (flags.json) console.log(JSON.stringify(plan, null, 2));
-  else renderQuestionnaireIntakePlan(plan);
+  if (!flags.silent) {
+    if (flags.json) console.log(JSON.stringify(plan, null, 2));
+    else renderQuestionnaireIntakePlan(plan);
+  }
+  return plan;
 }
 
 function vibe(action, value, flags = {}, rest = []) {
@@ -3971,6 +4068,7 @@ function task(action, id, flags) {
     } else if (action === "start") {
       requireTaskExecutor(flags, found);
       assertTaskCanStart(found);
+      assertDocsFirstGateAllowsTaskStart(found);
       found.status = "in_progress";
     } else if (action === "review") {
       if (flags.actor && found.assignee_id && flags.actor === found.assignee_id) {
@@ -4010,6 +4108,22 @@ function task(action, id, flags) {
   }
 
   throw new Error(`Unknown task action: ${action}`);
+}
+
+function assertDocsFirstGateAllowsTaskStart(taskItem) {
+  if (isDocsFirstTask(taskItem)) return;
+  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
+  const openDocsFirst = tasks.filter((item) => isDocsFirstTask(item) && !["owner_verified", "done", "closed"].includes(item.status));
+  if (openDocsFirst.length === 0) return;
+  throw new Error(`Docs-first gate blocks implementation. Complete or verify ${openDocsFirst.length} documentation task(s) before starting ${taskItem.id}.`);
+}
+
+function isDocsFirstTask(taskItem) {
+  return Boolean(
+    taskItem &&
+    (taskItem.docs_first_gate || taskItem.phase === "docs_first" || taskItem.type === "documentation" || taskItem.workstream === "docs") &&
+    String(taskItem.source || "").startsWith("init_intake:")
+  );
 }
 
 function validateTaskWorkstreamCreation(type, workstreams) {

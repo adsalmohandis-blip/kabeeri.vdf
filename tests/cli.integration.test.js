@@ -133,6 +133,23 @@ test("init creates workspace state files", () => withTempDir((dir) => {
   assert.strictEqual(upgrade.current_cli_version, "0.2.0");
 }));
 
+test("init goal creates adaptive questions and docs-first tasks before implementation", () => withTempDir((dir) => {
+  runKvdf(["init", "--profile", "standard", "--goal", "Build ecommerce store with Laravel backend and Next.js frontend"], { cwd: dir });
+  const plans = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json"), "utf8"));
+  assert.strictEqual(plans.plans.length, 1);
+  assert.ok(plans.plans[0].generated_questions.length > 0);
+  const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
+  assert.ok(tasks.some((task) => task.phase === "docs_first" && task.type === "documentation"));
+  runKvdf(["task", "create", "--id", "task-implementation", "--title", "Build checkout API", "--workstream", "backend"], { cwd: dir });
+  runKvdf(["task", "assign", "task-implementation", "--assignee", "agent-001"], { cwd: dir });
+  runKvdf(["token", "issue", "--task", "task-implementation", "--assignee", "agent-001"], { cwd: dir });
+  runKvdf(["lock", "create", "--task", "task-implementation", "--type", "folder", "--scope", "src/api/checkout", "--owner", "agent-001"], { cwd: dir });
+  assert.match(
+    runKvdf(["task", "start", "task-implementation"], { cwd: dir, expectFailure: true }).stderr,
+    /Docs-first gate blocks implementation/
+  );
+}));
+
 test("v5 adaptive questionnaire creates coverage and provenance tasks", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   assert.match(runKvdf(["capability", "list"], { cwd: dir }).stdout, /Payments \/ Billing/);
