@@ -25,6 +25,8 @@ The goal is simple: the developer speaks naturally, the AI assistant uses Kabeer
 
 Kabeeri is built for vibe coding first.
 
+If you are a vibe coder, do not start by learning the CLI. Start by describing your product to an AI assistant and ask it to use Kabeeri to organize the work.
+
 The normal developer experience is not memorizing terminal commands. The normal experience is:
 
 ```text
@@ -42,9 +44,9 @@ an admin dashboard, payments, shipping, and a mobile app later.
 
 The AI assistant should then use Kabeeri to identify the product blueprint, ask missing questions, recommend Agile or Structured delivery, split the work into tasks, track token usage, and keep the live dashboard updated.
 
-## What The CLI Is For
+## What `kvdf` Is For
 
-Kabeeri includes a working Node.js CLI named `kvdf`, but the CLI is the engine, not the main user experience.
+Kabeeri includes a working Node.js CLI named `kvdf`, but `kvdf` is the engine, not the main product experience.
 
 The CLI exists so AI assistants, automation, and advanced developers can reliably update the project state. It can initialize `.kabeeri/`, create project skeletons, generate governed tasks, run validation, track AI usage, manage task access tokens, serve the live dashboard, enforce policy gates, and export readiness/governance reports.
 
@@ -55,7 +57,7 @@ Source of truth:
 - The dashboard reads `.kabeeri/` state.
 - AI assistants should work through tasks, scopes, captures, and reports instead of editing randomly.
 
-For most vibe coders, the important idea is: talk to your AI assistant normally, and let it use `kvdf` when the project needs traceability or governance.
+For most vibe coders, the important idea is: talk to your AI assistant normally, and let it use `kvdf` only when the project needs traceability, dashboard updates, task records, usage logs, or governance checks.
 
 For the complete capability map, read:
 
@@ -92,7 +94,9 @@ AI assistants are powerful, but software projects still fail when:
 
 Kabeeri provides the governance layer around the AI workflow.
 
-## Quick Setup
+## Quick Setup For The Engine
+
+This setup is mainly for the AI assistant, automation, or advanced users who need the local engine available.
 
 Install dependencies from this repository:
 
@@ -122,7 +126,26 @@ dashboard updated. Do not implement outside approved tasks.
 
 The assistant can then use Kabeeri's runtime records and CLI engine behind the scenes.
 
-## Start A New Kabeeri Workspace
+## What To Ask The AI To Do First
+
+For a new product, the developer can simply say:
+
+```text
+Use Kabeeri as the operating system for this project.
+Start by understanding the product, ask me only the missing questions,
+choose the right delivery mode with my approval, create governed tasks,
+track AI usage, and keep the live dashboard updated.
+```
+
+For an existing project, say:
+
+```text
+Use Kabeeri to analyze this existing codebase.
+Do not rewrite it. Identify the app boundaries, tech stack, risks,
+missing tasks, dashboard state, and what should be done next.
+```
+
+## Workspace State
 
 Inside the folder where you want Kabeeri runtime state:
 
@@ -137,7 +160,7 @@ kvdf init --profile standard --lang en
 kvdf init --profile standard --lang ar
 ```
 
-## Create A Project Skeleton
+## Project Profiles
 
 Kabeeri has three project profiles:
 
@@ -147,7 +170,7 @@ Kabeeri has three project profiles:
 | `standard` | SaaS apps, ecommerce, CMS, booking, business systems |
 | `enterprise` | ERP, marketplaces, multi-tenant systems, large long-term platforms |
 
-The AI assistant can create a skeleton, or an advanced developer can run:
+The AI assistant can create a skeleton from the selected profile. An advanced developer can run:
 
 ```bash
 kvdf create --profile standard --output my-project
@@ -192,7 +215,7 @@ kvdf design recommend ecommerce --json
 kvdf delivery recommend "Build a regulated ERP with accounting and approvals" --json
 ```
 
-## CLI Examples For Automation
+## `kvdf` Examples For Automation
 
 These examples are mainly for AI assistants, scripts, and advanced users. They are not the primary way a vibe coder has to think about Kabeeri:
 
