@@ -1,0 +1,1 @@
+{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "KVDF Generic Object State", "type": "object", "additionalProperties": true }

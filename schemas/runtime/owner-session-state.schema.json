@@ -1,0 +1,1 @@
+{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "KVDF Owner Session State", "type": "object", "required": ["active"], "properties": { "active": { "type": "boolean" }, "owner_id": { "type": ["string", "null"] }, "started_at": { "type": "string" }, "expires_at": { "type": "string" } }, "additionalProperties": true }

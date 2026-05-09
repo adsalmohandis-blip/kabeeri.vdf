@@ -1,69 +1,87 @@
 # Gap Report
 
-This report identifies gaps between roadmap sources v1-v7 and the current repository state. It does not apply fixes.
+Updated: 2026-05-09
+
+This report compares the current repository state with the intended Kabeeri VDF
+product direction. It focuses on active gaps only. Historical roadmap gaps that
+have since been implemented are not repeated as missing.
 
 ## Executive Summary
 
-The repository has a strong foundation for v1-v5 and a working CLI engine, but it is not yet complete against the full DEEP roadmap.
+Kabeeri VDF now has a working local runtime around `.kabeeri` state, CLI
+commands, schemas, policy gates, Vibe-first flows, task tracker live JSON,
+dashboard exports/API, Agile records, AI cost controls, design governance,
+ADR/AI run history, packaging checks, and GitHub dry-run/policy-gated flows.
 
-Primary gaps:
+Last verified:
 
-1. v6 vibe-first interaction layer is not implemented as its own documented layer.
-2. v7 design source governance is missing.
-3. Static bilingual documentation website is missing.
-4. GitHub import/backlog files are missing.
-5. Some existing areas are partial and need consolidation, especially task governance and docs.
-6. v5 policy/security/handoff/ADR details are only partially present.
+- `node bin\kvdf.js validate` passed.
+- `node bin\kvdf.js validate runtime-schemas` passed.
+- `npm test` passed with 48 integration tests.
+- `npm run pack:check` reported packaging status `ready`.
 
-## Critical Gaps
+## Implemented Since Original Gap Snapshot
 
-| Gap ID | Area | Source | Current State | Risk | Recommended Action |
-| --- | --- | --- | --- | --- | --- |
-| GAP-001 | Dirty working tree | Cross-cutting | Many modified/untracked files exist. | High risk of overwriting prior work. | Create safe branch/session policy before implementation. |
-| GAP-002 | v6 Vibe UX | v6 | No `vibe_ux/` folder found. | CLI remains primary interface, contrary to v6. | Create v6 docs/spec layer before code changes. |
-| GAP-003 | v7 Design Governance | v7 | No `design_sources/`, `design_system/`, or `frontend_specs/`. | Frontend work may be driven from raw images/PDFs/links. | Implement design source governance docs/templates. |
-| GAP-004 | Docs website | v1/v6/v7 cross-cutting | No `docs_site/`. | Project is harder to onboard and publish. | Build static AR/EN docs site after reports. |
-| GAP-005 | GitHub import package | Phase 13 | No `github/labels.json`, `github/issues_backlog.md`, import guide. | Manual GitHub setup likely inconsistent. | Prepare import files, do not mutate GitHub without Owner approval. |
+| Area | Current Evidence |
+| --- | --- |
+| Vibe-first runtime | `kvdf vibe`, `kvdf ask`, `kvdf capture`; `.kabeeri/interactions/*`; Vibe docs. |
+| Post-work capture | `.kabeeri/interactions/post_work_captures.json`; capture command and tests. |
+| Task tracker live JSON | `.kabeeri/dashboard/task_tracker_state.json`; `kvdf task tracker`; `/__kvdf/api/tasks`. |
+| Runtime schemas | `schemas/runtime/schema_registry.json`; 68 JSON mappings and 13 JSONL mappings. |
+| Policy gates | task, release, handoff, security, migration, and GitHub write policies. |
+| Security governance | `kvdf security scan/report/gate/list/show`; readiness state. |
+| Migration safety | plan, rollback-plan, check, report, audit, and migration gate. |
+| ADR / AI run history | `kvdf adr`; `kvdf ai-run`; accepted/rejected output review state. |
+| Agile runtime | backlog, epic, story, sprint, and sprint summary commands. |
+| Common prompt layer | `prompt_packs/common/`; prompt composition runtime. |
+| React Native Expo pack | `prompt_packs/react-native-expo/` and integration tests. |
+| Design governance | design source intake, text/page/component specs, visual review, audit, and gates. |
+| Dashboard UX governance | dashboard UX audit docs and runtime command. |
+| Release/GitHub publish gates | release and GitHub writes are blocked unless policy gates pass. |
+| Product packaging | packaging command, packaging guide, upgrade guide, and ready pack check. |
 
-## Major Partial Areas
+## Active Gaps
 
-| Gap ID | Area | Current Assets | Missing or Partial |
-| --- | --- | --- | --- |
-| GAP-006 | v1 docs parity | `docs/ar` has 20 files; `docs/en` has 5 files. | English coverage appears much smaller than Arabic. |
-| GAP-007 | Task governance duplication | `task_tracking/` and `task_governance/` both exist. | Need source-of-truth consolidation and cross-links. |
-| GAP-008 | Agile delivery | `agile_delivery/README.md`, `SPRINT_AND_BACKLOG_CORE.md`. | Specific backlog/epic/story/sprint planning/review templates requested by v2 are not obvious. |
-| GAP-009 | v3 specs | `platform_integration/` exists; runtime CLI exists. | Separate `github_sync/`, `dashboard/`, `vscode_extension/` spec folders from DEEP commands are not present. |
-| GAP-010 | v4 governance | `multi_ai_governance/` exists; CLI supports many flows. | DEEP command expects `governance/` folder and `.kabeeri/*.example` files. |
-| GAP-011 | v5 policy engine | `.kabeeri/policies` is runtime-created by init; docs minimal. | Policy evaluation commands and example policies are missing. |
-| GAP-012 | v5 security | No committed `.kabeeri/security` docs/templates in repo. | Secrets/privacy/security readiness docs missing. |
-| GAP-013 | v5 handoff | No committed handoff templates found. | Client handoff package template missing. |
-| GAP-014 | v5 ADR | Runtime init creates ADR folder in workspaces. | Repo-level ADR template is missing. |
-| GAP-015 | AI cost control layer | AI usage runtime exists. | Dedicated `ai_cost_control/` low-cost mode layer missing. |
+| Gap ID | Area | Current State | Risk | Recommended Action |
+| --- | --- | --- | --- | --- |
+| GAP-001 | Working tree release safety | The repo is in active development with many modified/deleted/untracked files. | Release or publish could accidentally include unfinished work. | Commit, branch, or snapshot before public release. |
+| GAP-002 | VS Code extension product | `kvdf vscode scaffold` exists, but full sidebar/webview extension is not built. | Kabeeri remains CLI/dashboard-first instead of editor-native. | Build extension views for Ask Kabeeri, task board, tracker, verify queue, and dashboard. |
+| GAP-003 | Dashboard product polish | Live dashboard and task tracker exist; UX is still basic. | Teams may need filters, role views, drilldowns, and better large-project navigation. | Deepen dashboard UX with tabs, filters, saved views, role visibility, and richer empty/error states. |
+| GAP-004 | Security/privacy depth | Scanner and gates exist but are lightweight. | PII, privacy, framework-specific secrets, and enterprise checks may be missed. | Add privacy/PII policy, stack-specific patterns, and readiness checklist depth. |
+| GAP-005 | Migration execution adapters | Migration governance exists but does not run real database migrations. | Users may assume it executes migrations instead of governing readiness. | Add Laravel/MySQL/etc. adapters later, explicitly gated and dry-run first. |
+| GAP-006 | Design QA automation depth | Design governance and visual review records exist; browser screenshot/contrast automation is still limited. | Frontend work may pass governance without strong visual regression evidence. | Add contrast checks, screenshot review helpers, theme audit, and visual issue tracking. |
+| GAP-007 | Bilingual documentation parity | Arabic/English docs exist and parity policy exists; full line-by-line parity is not guaranteed. | Onboarding may differ by language. | Continue parity passes for root docs, docs site, and numbered docs. |
+| GAP-008 | Historical report freshness | Some phase reports intentionally preserve old snapshots. | Future sessions may read a historical report as current. | Keep current reports clearly dated and mark older phase reports as historical. |
 
-## Runtime Gaps
+## No Longer Active Gaps
 
-| Gap ID | Area | Status |
-| --- | --- | --- |
-| GAP-016 | Policy command | No `kvdf policy` command observed. |
-| GAP-017 | Migration command | No `kvdf migrate` command observed. |
-| GAP-018 | Post-work capture command | No `kvdf capture` or equivalent observed. |
-| GAP-019 | Natural-language task command | No `kvdf ask` or intent classifier command observed. |
-| GAP-020 | Design-source command | No `kvdf design` or design intake command observed. |
-| GAP-021 | Handoff command | No `kvdf handoff` command observed. |
-| GAP-022 | Docs site run command | No docs site exists yet. |
+| Former Gap | Current Status |
+| --- | --- |
+| Missing Vibe-first runtime | Implemented. |
+| Missing post-work capture | Implemented. |
+| Missing policy engine | Implemented. |
+| Missing security scan/report/gate | Implemented. |
+| Missing migration safety runtime | Implemented as governance dry-run. |
+| Missing ADR command | Implemented. |
+| Missing AI run history workflow | Implemented. |
+| Missing common prompt layer | Implemented. |
+| Missing React Native Expo prompt pack | Implemented. |
+| Missing runtime schemas | Implemented and validated. |
+| Missing product packaging / upgrade docs | Implemented. |
+| Missing task tracker dashboard live JSON | Implemented. |
+| Missing release/GitHub publish gates | Implemented. |
 
-## Deferred / Owner Decision Items
+## Recommended Next Implementation Order
 
-- Whether v2/v3/v4/v5 docs should remain in their current folders or be mirrored into the DEEP command folder names.
-- Whether to preserve both `task_tracking/` and `task_governance/` or merge one into the other.
-- Whether v6/v7 should be documentation-only first or include CLI commands in the same phase.
-- Whether to create GitHub issues from machine-readable plans now or wait for Owner approval.
+1. Stabilize the current working tree with an Owner-approved branch/commit.
+2. Deepen the live dashboard product UX and VS Code extension surface.
+3. Expand security/privacy scanner rules and readiness checklists.
+4. Add design QA automation around screenshots, contrast, themes, and visual issues.
+5. Add framework-specific migration adapters after the current governance-only model is stable.
 
-## No-Go Items Before Implementation
+## No-Go Items
 
-- Do not push to main.
-- Do not run `gh` confirmed write commands.
-- Do not delete/rename existing folders during consolidation without a migration plan.
-- Do not implement frontend from raw images/PDFs/links without v7 text specs.
-- Do not treat dashboard/VS Code as source of truth.
-
+- Do not push or publish without explicit Owner approval.
+- Do not run confirmed GitHub writes unless the GitHub write policy gate passes.
+- Do not treat dashboard or VS Code UI as source of truth; `.kabeeri` remains canonical.
+- Do not recreate removed duplicate folders such as `task_governance/`.

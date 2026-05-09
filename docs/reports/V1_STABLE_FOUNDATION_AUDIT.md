@@ -2,6 +2,24 @@
 
 Generated for Phase 03 only. This audit does not implement fixes.
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This report is a historical Phase 03 audit. Several findings below were true
+at the time of the audit but are no longer current:
+
+- `docs_site/` now exists.
+- `prompt_packs/common/` now exists.
+- `prompt_packs/react-native-expo/` now exists.
+- task governance is consolidated into `governance/TASK_GOVERNANCE.md` and
+  `task_tracking/`; `task_governance/` was removed.
+- runtime schemas now cover the active `.kabeeri` state.
+- validation, runtime schema validation, tests, and packaging checks pass in
+  the current working tree.
+
+Use `CURRENT_REPOSITORY_ANALYSIS.md` and `GAP_REPORT.md` for current status.
+
 ## Scope
 
 Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
@@ -28,7 +46,7 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | generators | ok | `generators/lite.json`, `standard.json`, `enterprise.json`. | Generator profiles exist and are used by CLI. | Add/confirm validation examples and update any stale docs. |
 | schemas | partial | `schemas/generator.schema.json`, `schemas/questionnaire.schema.json`. | Core schemas exist. Further alignment with current runtime task/governance schema may be needed. | Validate schema coverage against current generators/questionnaires and task provenance requirements. |
 | questionnaires | ok | 63 files across core/production/extension. | Bilingual DOCX questionnaire packs exist across core, production, and extension. | Add answered examples and audit report before v1 stabilization fixes. |
-| prompt_packs | partial | 386 files across 24 prompt-pack folders. | Strong prompt-pack coverage exists. Root/common layer standardization still needs focused audit; React Native Expo pack appears missing from current folder list. | Audit common layer references, manifests, and missing React Native Expo requirement. |
+| prompt_packs | historical partial; current implemented | Historical evidence: 386 files across 24 prompt-pack folders. Current evidence: common layer and React Native Expo pack exist. | Strong prompt-pack coverage exists. The original audit predated the current common layer and Expo pack. | Keep manifests and composition tests current as packs evolve. |
 | task_tracking | partial | 10 files including schema, templates, states, review checklist. | Practical task tracking exists. Some docs describe the folder as improved from an original placeholder. | Reconcile with `task_governance/`; clarify source of truth for task schema and workflow. |
 | task_governance | partial | 5 governance files. | Governance rules, intake template, Definition of Ready, and source rules exist. | Cross-link with `task_tracking/` and remove ambiguity without deleting either folder. |
 | acceptance_checklists | ok | 13 files including schemas and multiple checklists. | Acceptance checklist layer is present and useful for v1. | Confirm examples and release checklist are current. |
@@ -36,7 +54,7 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | CLI design/runtime | partial | `cli/` docs plus `bin/kvdf.js`, `src/cli/*`, `package.json`. | Working CLI exists with tests. Some CLI docs still use "future CLI" wording. | Update CLI docs to distinguish implemented runtime from future UI/extension work. |
 | VS Code planning | partial | CLI scaffold exists; VS Code planning docs exist in CLI and runtime scaffold. | VS Code extension planning and scaffold exist, but v1 source asks for sidebar/task/checklist/prompt browser design. | Create/refresh VS Code planning index in a later implementation phase. |
 | Roadmap/release docs | partial | `ROADMAP.md`, `CHANGELOG.md`, `V1_RELEASE_SUMMARY.md`. | Release and roadmap docs exist. Several roadmap rows still show TBD/planned for items with current runtime or later plan files. | Update after Owner approves stabilization fixes; do not rewrite release history blindly. |
-| Documentation website readiness | missing | No `docs_site/` folder found. | v1 includes documentation website plan/readiness, but no static docs site exists. | Implement in the dedicated docs-site phase, not during v1 audit. |
+| Documentation website readiness | historical missing; current implemented | Historical evidence: no `docs_site/` folder at audit time. Current evidence: `docs_site/` exists. | The original audit predated the static docs site. | Keep docs site aligned with bilingual docs and current runtime. |
 
 ## V1 Requirement Coverage Notes
 
@@ -66,4 +84,3 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 ## Do Not Fix Yet
 
 Per Phase 03, this audit only classifies the current state. Apply fixes only after Owner approval of Phase 04.
-

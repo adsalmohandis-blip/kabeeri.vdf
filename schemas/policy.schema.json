@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri VDF Policy Definition Schema",
+  "type": "object",
+  "required": [
+    "policy_id",
+    "version",
+    "subject_type",
+    "required_checks"
+  ],
+  "properties": {
+    "policy_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+_policy$"
+    },
+    "version": {
+      "type": "string"
+    },
+    "subject_type": {
+      "type": "string"
+    },
+    "required_checks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "check_id",
+          "severity",
+          "description"
+        ],
+        "properties": {
+          "check_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "severity": {
+            "enum": [
+              "fail",
+              "warn"
+            ]
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "manual_override": {
+      "type": "object",
+      "properties": {
+        "allowed": {
+          "type": "boolean"
+        },
+        "requires_owner": {
+          "type": "boolean"
+        },
+        "requires_reason": {
+          "type": "boolean"
+        },
+        "audit_event_required": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

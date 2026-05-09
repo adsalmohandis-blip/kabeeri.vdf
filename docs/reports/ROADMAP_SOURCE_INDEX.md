@@ -2,6 +2,16 @@
 
 Updated during Phase 1 from `00_DEEP_MASTER_COMMANDS.md` using the roadmap ingestion rules in `codex_commands/01_ROADMAP_SOURCE_INGESTION.md`. No implementation changes were made.
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This index is a historical ingestion index for v1-v7 roadmap sources. The
+status counts below are not the current implementation status. Many items that
+were counted as `missing` or `partial` have since been implemented in runtime.
+Use `CURRENT_REPOSITORY_ANALYSIS.md`, `GAP_REPORT.md`, and
+`MISSING_REQUIREMENTS_BACKLOG.md` for active status.
+
 ## Indexed Sources
 
 | Version | Source | Lines | Words | Indexed Requirements | Completeness | Notes |
@@ -29,6 +39,8 @@ Updated during Phase 1 from `00_DEEP_MASTER_COMMANDS.md` using the roadmap inges
 
 ## Status Summary
 
+Historical ingestion counts:
+
 | Status | Count |
 | --- | ---: |
 | deferred | 4 |
@@ -40,5 +52,7 @@ Updated during Phase 1 from `00_DEEP_MASTER_COMMANDS.md` using the roadmap inges
 
 - v1-v7 roadmap source files are present under `codex_context/roadmap_sources/`.
 - v5 includes both the adaptive questionnaire/system capability layer and the preserved original v5 trust-layer issues.
-- v7 is indexed from the conversation-approved design governance source file and is currently mostly missing in repository folders.
+- v7 was indexed from the conversation-approved design governance source file.
+  Current design governance docs and runtime now exist; deeper design QA
+  automation remains active work.
 - No roadmap source is currently marked missing or blocked.

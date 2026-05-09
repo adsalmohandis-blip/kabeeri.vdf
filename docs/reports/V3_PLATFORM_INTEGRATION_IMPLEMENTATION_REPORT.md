@@ -1,5 +1,21 @@
 # V3 Platform Integration Implementation Report
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This is a historical implementation report for the original v3 phase. The
+current runtime has advanced beyond specs/examples:
+
+- `kvdf dashboard generate/export/serve` exists.
+- live dashboard APIs exist, including `/__kvdf/api/state` and
+  `/__kvdf/api/tasks`.
+- `.kabeeri/dashboard/task_tracker_state.json` and `kvdf task tracker` exist.
+- GitHub commands remain dry-run by default and confirmed writes are blocked by
+  policy gates before mutation.
+- VS Code support currently scaffolds workspace helper tasks; the full extension
+  UI remains an active gap.
+
 ## Summary
 
 Phase 06 applied the v3 platform integration specification files. The work added `.kabeeri` examples, GitHub sync specs, VS Code integration docs, dashboard specs, AI token cost dashboard specs, sprint cost dashboard specs, and Owner-only verification rules.

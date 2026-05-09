@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Live Reports State",
+  "type": "object",
+  "required": ["generated_at", "source", "summary", "reports", "action_items"],
+  "properties": {
+    "generated_at": { "type": ["string", "null"] },
+    "source": { "type": "string" },
+    "live_json_path": { "type": "string" },
+    "live_api_path": { "type": "string" },
+    "update_policy": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "status": { "type": "string" },
+        "readiness": { "type": "string" },
+        "governance": { "type": "string" },
+        "package": { "type": "string" },
+        "upgrade": { "type": "string" },
+        "task_tracker_open": { "type": "number" },
+        "task_tracker_blocked": { "type": "number" },
+        "dashboard_ux": { "type": "string" },
+        "security": { "type": "string" },
+        "migration": { "type": "string" },
+        "action_items": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "reports": {
+      "type": "object",
+      "properties": {
+        "readiness": { "type": "object" },
+        "governance": { "type": "object" },
+        "package": { "type": "object" },
+        "upgrade": { "type": "object" },
+        "task_tracker": { "type": "object" },
+        "dashboard_ux": { "type": "object" },
+        "security": { "type": "object" },
+        "migration": { "type": "object" }
+      },
+      "additionalProperties": true
+    },
+    "action_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["severity", "area", "message", "next_action"],
+        "properties": {
+          "severity": { "type": "string" },
+          "area": { "type": "string" },
+          "message": { "type": "string" },
+          "next_action": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

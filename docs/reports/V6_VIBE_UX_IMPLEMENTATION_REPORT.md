@@ -1,5 +1,14 @@
 # V6 Vibe UX Implementation Report
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This is a historical implementation report. The current runtime now includes
+`kvdf vibe`, `kvdf ask`, and `kvdf capture`, plus interaction state for
+suggested tasks, post-work captures, Vibe sessions, context briefs, and intent
+JSONL records. The full VS Code/webview product remains a future UI layer.
+
 ## Summary
 
 Phase 10 added the v6 Vibe-First Human Experience layer. The work created `vibe_ux/` specs for human-first interaction, CLI-as-engine behavior, natural language task creation, intent classification, suggested task cards, vague request detection, workstream detection, post-work capture, command abstraction, interaction modes, and UX friction rules.
@@ -45,4 +54,3 @@ Phase 10 added the v6 Vibe-First Human Experience layer. The work created `vibe_
 ## Stop Point
 
 Phase 10 is complete. Do not continue to Phase 11 until Owner approval.
-

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Agile State",
+  "type": "object",
+  "required": ["backlog", "epics", "stories", "sprint_reviews"],
+  "properties": {
+    "backlog": { "type": "array", "items": { "type": "object" } },
+    "epics": { "type": "array", "items": { "type": "object" } },
+    "stories": { "type": "array", "items": { "type": "object" } },
+    "sprint_reviews": { "type": "array", "items": { "type": "object" } },
+    "impediments": { "type": "array", "items": { "type": "object" } },
+    "retrospectives": { "type": "array", "items": { "type": "object" } },
+    "releases": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": true
+}

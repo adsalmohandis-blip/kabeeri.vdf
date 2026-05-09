@@ -1,5 +1,15 @@
 # V4 Multi-AI Governance Implementation Report
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This is a historical implementation report. The current runtime now includes
+live enforcement commands and validation for Owner, developer, agent, token,
+lock, session, budget, audit, workstream, app boundary, task access token, and
+Owner verification flows. The older risk line saying this phase did not include
+live enforcement commands is preserved only as phase history.
+
 ## Summary
 
 Phase 07 applied the v4 Multi-AI Governance layer. The work added a canonical `governance/` folder with role, Owner, token, lock, assignment, AI output, budget, and verify/audit rules, plus `.kabeeri` example metadata for developers, agents, locks, and access tokens.
@@ -10,8 +20,8 @@ Phase 07 applied the v4 Multi-AI Governance layer. The work added a canonical `g
 - `governance/ROLE_PERMISSION_MATRIX.md`
 - `governance/SINGLE_OWNER_RULE.md`
 - `governance/OWNER_TRANSFER_TOKEN.md`
-- `governance/TASK_ACCESS_TOKENS.md`
-- `governance/ACCESS_TOKEN_LIFECYCLE.md`
+- `governance/EXECUTION_SCOPE_GOVERNANCE.md`
+- `governance/WORKSTREAM_GOVERNANCE.md`
 - `governance/LOCKING_RULES.md`
 - `governance/ASSIGNMENT_EXECUTION_GOVERNANCE.md`
 - `governance/AI_DEVELOPER_OUTPUT_CONTRACT.md`
@@ -30,8 +40,9 @@ Phase 07 applied the v4 Multi-AI Governance layer. The work added a canonical `g
 
 ## Risks
 
-- This phase adds governance specs and example state, not live enforcement commands.
-- Real task access tokens must never commit secret token values.
+- Historical note: this phase originally added governance specs and example
+  state. Current runtime now includes live enforcement commands.
+- Real task access tokens must never commit secret token values. Current runtime scopes tokens through task app and workstream boundaries.
 - The existing `multi_ai_governance/` planning folder remains in place; `governance/` is now the operational spec surface.
 
 ## Checks Performed
@@ -43,4 +54,3 @@ Phase 07 applied the v4 Multi-AI Governance layer. The work added a canonical `g
 ## Stop Point
 
 Phase 07 is complete. Do not continue to Phase 08 until Owner approval.
-

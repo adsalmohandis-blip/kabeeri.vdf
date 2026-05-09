@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Delivery Decisions State",
+  "type": "object",
+  "required": ["recommendations", "decisions"],
+  "properties": {
+    "recommendations": { "type": "array", "items": { "type": "object" } },
+    "decisions": { "type": "array", "items": { "type": "object" } },
+    "current_mode": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

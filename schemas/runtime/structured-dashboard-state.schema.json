@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Structured Delivery Dashboard State",
+  "type": "object",
+  "required": ["generated_at", "source", "summary", "phases", "traceability", "gates", "action_items"],
+  "properties": {
+    "generated_at": { "type": ["string", "null"] },
+    "source": { "type": "string" },
+    "live_json_path": { "type": "string" },
+    "live_api_path": { "type": "string" },
+    "summary": { "type": "object" },
+    "phases": { "type": "array", "items": { "type": "object" } },
+    "traceability": { "type": "object" },
+    "gates": { "type": "array", "items": { "type": "object" } },
+    "risks": { "type": "array", "items": { "type": "object" } },
+    "change_requests": { "type": "array", "items": { "type": "object" } },
+    "action_items": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": true
+}

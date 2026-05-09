@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kabeeri.dev/schemas/repository-foldering.schema.json",
+  "title": "Kabeeri Repository Foldering Map",
+  "type": "object",
+  "required": ["map_version", "name", "purpose", "target_root_groups", "current_to_target", "allowed_top_level", "migration_phases"],
+  "properties": {
+    "map_version": { "type": "string" },
+    "name": { "type": "string" },
+    "purpose": { "type": "string" },
+    "status": { "type": "string" },
+    "principles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "target_root_groups": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["group", "target_path", "description", "current_paths"],
+        "properties": {
+          "group": { "type": "string" },
+          "target_path": { "type": "string" },
+          "description": { "type": "string" },
+          "current_paths": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "laravel_analogy": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "current_to_target": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "target_group", "role", "migration_status"],
+        "properties": {
+          "path": { "type": "string" },
+          "target_group": { "type": "string" },
+          "role": { "type": "string" },
+          "migration_status": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "allowed_top_level": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "new_folder_policy": { "type": "object" },
+    "migration_phases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["phase", "status", "goal"],
+        "properties": {
+          "phase": { "type": "string" },
+          "status": { "type": "string" },
+          "goal": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "ai_usage": { "type": "object" }
+  },
+  "additionalProperties": true
+}

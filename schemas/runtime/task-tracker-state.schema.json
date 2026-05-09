@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Task Tracker Dashboard State",
+  "type": "object",
+  "required": ["generated_at", "source", "summary", "board", "tasks", "action_items"],
+  "properties": {
+    "generated_at": { "type": ["string", "null"] },
+    "source": { "type": "string" },
+    "live_json_path": { "type": "string" },
+    "live_api_path": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": "number" },
+        "open": { "type": "number" },
+        "verified": { "type": "number" },
+        "rejected": { "type": "number" },
+        "blocked": { "type": "number" },
+        "by_status": { "type": "object" },
+        "by_workstream": { "type": "object" },
+        "by_app": { "type": "object" },
+        "active_tokens": { "type": "number" },
+        "active_locks": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "board": { "type": "object" },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "status", "blockers", "next_action"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "workstreams": { "type": "array", "items": { "type": "string" } },
+          "app_usernames": { "type": "array", "items": { "type": "string" } },
+          "active_tokens": { "type": "array", "items": { "type": "string" } },
+          "active_locks": { "type": "array", "items": { "type": "string" } },
+          "blockers": { "type": "array", "items": { "type": "string" } },
+          "next_action": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "action_items": { "type": "array" },
+    "recently_updated": { "type": "array" }
+  },
+  "additionalProperties": true
+}

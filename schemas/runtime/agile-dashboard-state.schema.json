@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Agile Dashboard State",
+  "type": "object",
+  "required": ["generated_at", "source", "summary", "active_sprints", "velocity", "impediments", "action_items"],
+  "properties": {
+    "generated_at": { "type": ["string", "null"] },
+    "source": { "type": "string" },
+    "live_json_path": { "type": "string" },
+    "live_api_path": { "type": "string" },
+    "summary": { "type": "object" },
+    "active_sprints": { "type": "array", "items": { "type": "object" } },
+    "velocity": { "type": "object" },
+    "forecast": { "type": "object" },
+    "impediments": { "type": "array", "items": { "type": "object" } },
+    "retrospectives": { "type": "array", "items": { "type": "object" } },
+    "action_items": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": true
+}

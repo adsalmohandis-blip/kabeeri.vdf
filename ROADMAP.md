@@ -54,10 +54,11 @@ This roadmap contains historical/staged planning plus later roadmap tracks. The 
 
 **Completed features:**
 - [task_governance/README.md](task_governance/README.md) — Task governance overview
-- [task_governance/TASK_CREATION_RULES.md](task_governance/TASK_CREATION_RULES.md) — Governance rules
-- [task_governance/TASK_INTAKE_TEMPLATE.md](task_governance/TASK_INTAKE_TEMPLATE.md) — Task template
-- [task_governance/TASK_DEFINITION_OF_READY.md](task_governance/TASK_DEFINITION_OF_READY.md) — DoR criteria
-- [task_governance/TASK_SOURCE_RULES.md](task_governance/TASK_SOURCE_RULES.md) — Source tracing
+- [governance/TASK_GOVERNANCE.md](governance/TASK_GOVERNANCE.md) — Task governance policy
+- [task_tracking/TASK_CREATION_RULES.md](task_tracking/TASK_CREATION_RULES.md) — Task creation rules
+- [task_tracking/TASK_INTAKE_TEMPLATE.md](task_tracking/TASK_INTAKE_TEMPLATE.md) — Task template
+- [task_tracking/TASK_DEFINITION_OF_READY.md](task_tracking/TASK_DEFINITION_OF_READY.md) — DoR criteria
+- [task_tracking/TASK_SOURCE_RULES.md](task_tracking/TASK_SOURCE_RULES.md) — Source tracing
 
 ### v1.4.0 — Agile Delivery Core ✅
 - ✅ Create product backlog management
@@ -77,7 +78,7 @@ This roadmap contains historical/staged planning plus later roadmap tracks. The 
 - ✅ Enable cost forecasting
 
 **Completed features:**
-- [ai_usage/README.md](ai_usage/README.md) — AI usage accounting foundation
+- [ai_cost_control/README.md](ai_cost_control/README.md) — AI usage accounting and cost control
 
 ---
 

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri Product Blueprint Catalog",
+  "type": "object",
+  "required": ["catalog_version", "core_platform", "blueprints"],
+  "properties": {
+    "catalog_version": { "type": "string" },
+    "purpose": { "type": "string" },
+    "core_platform": {
+      "type": "object",
+      "required": ["backend_modules", "frontend_pages", "database_entities", "governance_links"],
+      "properties": {
+        "backend_modules": { "type": "array", "items": { "type": "string" } },
+        "frontend_pages": { "type": "array", "items": { "type": "string" } },
+        "database_entities": { "type": "array", "items": { "type": "string" } },
+        "governance_links": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "blueprints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "name", "category", "recommended_delivery", "channels", "backend_modules", "frontend_pages", "database_entities", "workstreams", "risk_flags"],
+        "properties": {
+          "key": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "aliases": { "type": "array", "items": { "type": "string" } },
+          "description": { "type": "string" },
+          "recommended_delivery": { "type": "string", "enum": ["agile", "structured", "hybrid"] },
+          "channels": { "type": "array", "items": { "type": "string" } },
+          "backend_modules": { "type": "array", "items": { "type": "string" } },
+          "frontend_pages": { "type": "array", "items": { "type": "string" } },
+          "database_entities": { "type": "array", "items": { "type": "string" } },
+          "workstreams": { "type": "array", "items": { "type": "string" } },
+          "risk_flags": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

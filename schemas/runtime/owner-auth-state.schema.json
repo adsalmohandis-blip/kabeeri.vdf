@@ -1,0 +1,1 @@
+{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "KVDF Owner Auth State", "type": "object", "required": ["configured"], "properties": { "configured": { "type": "boolean" }, "owner_id": { "type": "string" }, "algorithm": { "type": "string" }, "salt": { "type": "string" }, "passphrase_hash": { "type": "string" } }, "additionalProperties": true }

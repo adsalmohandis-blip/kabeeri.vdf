@@ -1,5 +1,15 @@
 # V7 Design Source Governance Implementation Report
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This is a historical implementation report. The current runtime now includes
+`kvdf design` support for design source intake, snapshots, text specs, page
+specs, component contracts, visual reviews, missing reports, approvals, and
+audits. Design QA automation can still deepen through contrast checks,
+screenshot evidence, theme audits, and visual issue tracking.
+
 ## Summary
 
 Phase 11 added the v7 Design Source Governance and Frontend Control layer. The work created design source intake and extraction rules, source snapshot and audit rules, missing design and change request templates, reference website and do-not-copy rules, design token and brand/component templates, UI acceptance checklist, page and component spec templates, and the Codex frontend task prompt template.
@@ -46,4 +56,3 @@ Phase 11 added the v7 Design Source Governance and Frontend Control layer. The w
 ## Stop Point
 
 Phase 11 is complete. Do not continue to Phase 12 until Owner approval.
-

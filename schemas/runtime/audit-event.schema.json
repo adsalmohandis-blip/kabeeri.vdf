@@ -1,0 +1,1 @@
+{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "KVDF Audit Event", "type": "object", "properties": { "event_id": { "type": "string" }, "timestamp": { "type": "string" }, "event_type": { "type": "string" }, "entity_type": { "type": "string" }, "entity_id": { "type": "string" }, "summary": { "type": "string" } }, "additionalProperties": true }

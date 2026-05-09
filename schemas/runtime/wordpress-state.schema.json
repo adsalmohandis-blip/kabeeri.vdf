@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF WordPress Capability State",
+  "type": "object",
+  "required": ["analyses", "plans", "scaffolds"],
+  "properties": {
+    "analyses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["analysis_id", "generated_at", "relative_path", "detected_type", "risk_level", "next_actions"],
+        "properties": {
+          "analysis_id": { "type": "string" },
+          "generated_at": { "type": "string" },
+          "relative_path": { "type": "string" },
+          "detected_type": { "type": "string" },
+          "detected_features": { "type": "array", "items": { "type": "string" } },
+          "plugins": { "type": "array", "items": { "type": "string" } },
+          "themes": { "type": "array", "items": { "type": "string" } },
+          "recommended_blueprint": { "type": "string" },
+          "recommended_prompt_pack": { "type": "string" },
+          "risk_level": { "type": "string" },
+          "risk_signals": { "type": "array", "items": { "type": "string" } },
+          "next_actions": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["plan_id", "created_at", "mode", "site_type", "blueprint_key", "phases", "task_templates"],
+        "properties": {
+          "plan_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "mode": { "type": "string" },
+          "site_type": { "type": "string" },
+          "blueprint_key": { "type": "string" },
+          "delivery_mode": { "type": "string" },
+          "recommended_prompt_pack": { "type": "string" },
+          "phases": { "type": "array", "items": { "type": "object" } },
+          "task_templates": { "type": "array", "items": { "type": "object" } },
+          "recommended_commands": { "type": "array", "items": { "type": "string" } },
+          "acceptance_checklist": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "plugin_plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["plugin_plan_id", "created_at", "name", "slug", "plugin_type", "target_path", "architecture", "task_templates"],
+        "properties": {
+          "plugin_plan_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "name": { "type": "string" },
+          "slug": { "type": "string" },
+          "description": { "type": "string" },
+          "plugin_type": { "type": "string" },
+          "target_path": { "type": "string" },
+          "delivery_mode": { "type": "string" },
+          "recommended_prompt_pack": { "type": "string" },
+          "recommended_commands": { "type": "array", "items": { "type": "string" } },
+          "architecture": { "type": "array", "items": { "type": "object" } },
+          "task_templates": { "type": "array", "items": { "type": "object" } },
+          "acceptance_checklist": { "type": "array", "items": { "type": "string" } },
+          "safety_rules": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "scaffolds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["scaffold_id", "created_at", "type", "slug", "path", "files"],
+        "properties": {
+          "scaffold_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "type": { "type": "string" },
+          "slug": { "type": "string" },
+          "path": { "type": "string" },
+          "files": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    },
+    "current_analysis_id": { "type": ["string", "null"] },
+    "current_plan_id": { "type": ["string", "null"] },
+    "current_plugin_plan_id": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

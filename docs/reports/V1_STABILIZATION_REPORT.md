@@ -1,5 +1,14 @@
 # V1 Stabilization Report
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This is a historical Phase 04 report. It says some items were deferred at that
+time; several have since been implemented, including `docs_site/`,
+`prompt_packs/common/`, `prompt_packs/react-native-expo/`, runtime schemas,
+task governance consolidation, and broader CLI/runtime features.
+
 ## Summary
 
 Phase 04 was completed as a safe v1 stabilization pass. The changes are documentation/status updates only. No runtime CLI behavior, schemas, generated project behavior, GitHub state, or DOCX questionnaire content was changed.

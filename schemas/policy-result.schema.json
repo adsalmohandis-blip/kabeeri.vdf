@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri VDF Policy Result Schema",
+  "type": "object",
+  "required": [
+    "results"
+  ],
+  "properties": {
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "result_id",
+          "policy_id",
+          "policy_version",
+          "subject_type",
+          "subject_id",
+          "stage",
+          "status",
+          "evaluated_at",
+          "evaluated_by",
+          "checks"
+        ],
+        "properties": {
+          "result_id": {
+            "type": "string"
+          },
+          "policy_id": {
+            "type": "string"
+          },
+          "policy_version": {
+            "type": "string"
+          },
+          "subject_type": {
+            "type": "string"
+          },
+          "subject_id": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "warning",
+              "blocked",
+              "overridden"
+            ]
+          },
+          "evaluated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "evaluated_by": {
+            "type": "string"
+          },
+          "blockers": {
+            "type": "array"
+          },
+          "warnings": {
+            "type": "array"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "check_id",
+                "severity",
+                "result"
+              ],
+              "properties": {
+                "check_id": {
+                  "type": "string"
+                },
+                "severity": {
+                  "enum": [
+                    "fail",
+                    "warn"
+                  ]
+                },
+                "result": {
+                  "enum": [
+                    "pass",
+                    "warn",
+                    "fail"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "evidence": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

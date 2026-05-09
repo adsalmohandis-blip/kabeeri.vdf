@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri Product Blueprint Runtime State",
+  "type": "object",
+  "required": ["selected_blueprints", "recommendations"],
+  "properties": {
+    "selected_blueprints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["selection_id", "blueprint_key", "selected_at"],
+        "properties": {
+          "selection_id": { "type": "string" },
+          "blueprint_key": { "type": "string" },
+          "selected_at": { "type": "string" },
+          "delivery_mode": { "type": "string" },
+          "reason": { "type": "string" },
+          "channels": { "type": "array", "items": { "type": "string" } },
+          "backend_modules": { "type": "array", "items": { "type": "string" } },
+          "frontend_pages": { "type": "array", "items": { "type": "string" } },
+          "database_entities": { "type": "array", "items": { "type": "string" } },
+          "workstreams": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["recommendation_id", "created_at", "input", "matches"],
+        "properties": {
+          "recommendation_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "input": { "type": "string" },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["blueprint_key", "score"],
+              "properties": {
+                "blueprint_key": { "type": "string" },
+                "name": { "type": "string" },
+                "score": { "type": "number" },
+                "reasons": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          },
+          "ai_context_summary": { "type": "object" }
+        }
+      }
+    },
+    "current_blueprint": { "type": ["string", "null"] }
+  }
+}

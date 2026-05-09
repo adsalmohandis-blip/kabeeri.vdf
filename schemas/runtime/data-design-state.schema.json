@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Kabeeri Data Design Runtime State",
+  "type": "object",
+  "required": ["contexts", "reviews"],
+  "properties": {
+    "contexts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["context_id", "created_at", "blueprint_key", "modules", "entities", "checklist"],
+        "properties": {
+          "context_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "blueprint_key": { "type": "string" },
+          "modules": { "type": "array", "items": { "type": "string" } },
+          "entities": { "type": "array", "items": { "type": "string" } },
+          "must_have": { "type": "array", "items": { "type": "string" } },
+          "indexes": { "type": "array", "items": { "type": "string" } },
+          "risk_flags": { "type": "array", "items": { "type": "string" } },
+          "checklist": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "reviews": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["review_id", "created_at", "target", "status", "findings"],
+        "properties": {
+          "review_id": { "type": "string" },
+          "created_at": { "type": "string" },
+          "target": { "type": "string" },
+          "status": { "type": "string" },
+          "findings": { "type": "array", "items": { "type": "string" } },
+          "checked_rules": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "current_context": { "type": ["string", "null"] }
+  }
+}

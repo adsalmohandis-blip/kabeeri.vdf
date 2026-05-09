@@ -1,0 +1,189 @@
+{
+  "catalog_version": "1.0.0",
+  "purpose": "Database design guidance for AI-assisted software delivery across business, content, and mobile products.",
+  "universal_principles": [
+    {
+      "key": "workflow_first",
+      "title": "Start from business workflow, not screens",
+      "why": "Screens change faster than core business operations.",
+      "apply": ["List real workflow steps before tables", "Convert each business event into entities", "Keep page specs separate from data ownership"],
+      "avoid": ["checkout_data mega tables", "page-shaped tables", "storing repeated product columns on orders"]
+    },
+    {
+      "key": "core_modules_channels",
+      "title": "Split data into Core Platform, Business Modules, and Channels",
+      "why": "Most products grow from one channel into multiple apps, portals, and modules.",
+      "apply": ["Keep users, roles, organizations, files, notifications, audit logs in core", "Keep commerce, CMS, inventory, booking, delivery, mobile, and accounting modular", "Treat website, admin, mobile, POS, and API as channels"],
+      "avoid": ["generic data/items/records tables", "mixing every domain in one module"]
+    },
+    {
+      "key": "relationships_integrity",
+      "title": "Model relationships with primary keys, foreign keys, and constraints",
+      "why": "The database must protect integrity even when imports, scripts, or APIs bypass normal UI flows.",
+      "apply": ["Use PKs on every table", "Use FKs for important relationships", "Use unique, not-null, check constraints where supported", "Use pivot tables for many-to-many"],
+      "avoid": ["comma-separated IDs", "orphan records", "trusting application code only"]
+    },
+    {
+      "key": "normalize_with_snapshots",
+      "title": "Normalize master data but snapshot historical operations",
+      "why": "Invoices, orders, payments, and published content must keep historical truth after master data changes.",
+      "apply": ["Normalize customers, products, categories, authors", "Snapshot product name, SKU, price, tax, customer billing info inside order/invoice lines", "Use revision tables for content"],
+      "avoid": ["rendering old invoices from current product data", "duplicating master data everywhere without reason"]
+    },
+    {
+      "key": "statuses_history_workflows",
+      "title": "Design status, history, and workflow tables explicitly",
+      "why": "Operational systems need traceable transitions and approvals.",
+      "apply": ["Define allowed status transitions", "Add status history for orders, payments, articles, tickets, appointments", "Use approval_requests and approval_steps for multi-step approvals"],
+      "avoid": ["invalid transitions such as delivered to pending", "many approval boolean columns"]
+    },
+    {
+      "key": "audit_activity_logs",
+      "title": "Add audit logs and activity timelines early",
+      "why": "Commercial systems need accountability, support history, and incident investigation.",
+      "apply": ["Use audit_logs for who changed what", "Use activity_logs for customer/order/ticket journey events", "Capture old_values and new_values as JSON where appropriate"],
+      "avoid": ["adding audit only after a production dispute", "mixing legal audit and operational timeline without distinction"]
+    },
+    {
+      "key": "money_ledger_inventory",
+      "title": "Treat money, ledgers, wallets, loyalty, and stock as movements",
+      "why": "Balances without transaction history cannot be audited or reconciled.",
+      "apply": ["Use decimal or integer cents, never float", "Use wallet_transactions and loyalty_transactions", "Use stock_movements plus stock_balances", "Do not delete financial operations"],
+      "avoid": ["direct balance edits without ledger", "products.stock_quantity as the only inventory truth", "deleting invoices or payments"]
+    },
+    {
+      "key": "performance_reporting",
+      "title": "Plan indexes, read models, summaries, search, and reporting",
+      "why": "Operational tables should not carry every heavy report and screen query forever.",
+      "apply": ["Index frequent filters and joins", "Use composite indexes from real queries", "Use summary tables for daily/monthly metrics", "Use read models for expensive list screens", "Use search engines for larger search needs"],
+      "avoid": ["indexing every column", "loading huge lists without pagination", "running BI reports directly on hot transactional tables"]
+    },
+    {
+      "key": "security_multitenancy",
+      "title": "Design for security, privacy, and multi-tenancy before growth",
+      "why": "Adding tenant separation or sensitive-data protection late is expensive and risky.",
+      "apply": ["Add organization_id to tenant-owned tables", "Keep users distinct from customers, employees, drivers, vendors, and authors", "Hash passwords", "Do not store card data", "Encrypt or hash tokens where appropriate"],
+      "avoid": ["single users.type table for every actor detail", "SaaS without tenant scoping", "sensitive data in unprotected generic JSON"]
+    },
+    {
+      "key": "integration_reliability",
+      "title": "Use transactions, idempotency, outbox, and integration logs",
+      "why": "Payments, webhooks, mobile retries, inventory, and notifications fail in real systems.",
+      "apply": ["Wrap sensitive workflows in transactions", "Use idempotency_keys for create/payment/webhook APIs", "Use outbox_events for reliable async work", "Store integration_logs and external IDs"],
+      "avoid": ["double payment/order creation", "sending webhooks without retry state", "losing provider responses"]
+    },
+    {
+      "key": "platform_operations",
+      "title": "Plan migrations, backups, time zones, archiving, and restore tests",
+      "why": "Production data needs traceable change and recovery strategy.",
+      "apply": ["Use migrations for all schema changes", "Store timestamps in UTC", "Add organization/branch/user timezone when needed", "Plan backup and restore tests", "Archive old logs and stats"],
+      "avoid": ["manual production ALTER TABLE", "local time without timezone context", "backup without restore testing"]
+    }
+  ],
+  "module_patterns": {
+    "core": {
+      "entities": ["organizations", "branches", "users", "roles", "permissions", "role_permissions", "user_roles", "settings", "files", "notifications", "audit_logs", "activity_logs", "api_keys", "sessions"],
+      "must_have": ["primary_keys", "foreign_keys", "created_at_updated_at", "role_permission_model", "audit_logs"],
+      "indexes": ["users.email", "users.organization_id", "branches.organization_id", "audit_logs.entity_type_entity_id", "activity_logs.entity_type_entity_id"]
+    },
+    "commerce": {
+      "entities": ["customers", "products", "product_variants", "product_translations", "prices", "carts", "cart_items", "orders", "order_items", "payments", "invoices", "invoice_items", "shipments", "returns", "return_items", "refunds", "coupons"],
+      "must_have": ["money_decimal_or_cents", "order_number", "snapshots_on_order_items", "payment_status", "idempotency_keys", "transactions", "returns_not_order_delete"],
+      "indexes": ["orders.organization_id_status_created_at", "orders.customer_id", "orders.order_number", "products.sku", "products.slug", "payments.provider_transaction_id"]
+    },
+    "inventory": {
+      "entities": ["warehouses", "stock_balances", "stock_movements", "stock_reservations", "stock_transfers", "stock_transfer_items", "batches", "serial_numbers"],
+      "must_have": ["stock_movements_as_truth", "stock_balances_for_fast_read", "warehouse_id", "movement_reference", "reservation_expiry", "concurrency_protection"],
+      "indexes": ["stock_balances.product_id_warehouse_id", "stock_movements.product_id_created_at", "stock_reservations.expires_at_status"]
+    },
+    "accounting": {
+      "entities": ["accounts", "journal_entries", "journal_entry_lines", "expenses", "bank_accounts", "bank_transactions", "tax_rates"],
+      "must_have": ["balanced_journal_entries", "no_destructive_delete", "entry_numbers", "audit_logs", "period_close_policy"],
+      "indexes": ["journal_entries.organization_id_date", "accounts.organization_id_code", "bank_transactions.created_at"]
+    },
+    "cms_news": {
+      "entities": ["authors", "articles", "article_revisions", "categories", "tags", "article_tags", "media", "comments", "breaking_news", "news_sources", "editorial_assignments", "homepage_blocks", "live_updates", "redirects", "seo_metadata"],
+      "must_have": ["slug_strategy", "revision_history", "publish_status", "scheduled_publish", "seo_metadata", "redirects_on_slug_change"],
+      "indexes": ["articles.status_published_at", "article_revisions.slug", "categories.slug", "tags.slug"]
+    },
+    "mobile": {
+      "entities": ["devices", "push_tokens", "app_versions", "app_sessions", "deep_links", "sync_logs", "user_preferences"],
+      "must_have": ["device_tracking", "push_tokens", "force_update", "secure_storage_assumptions", "idempotency_for_retries", "offline_sync_if_needed"],
+      "indexes": ["devices.user_id", "push_tokens.user_id", "app_sessions.user_id_started_at", "sync_logs.device_id_synced_at"]
+    },
+    "booking": {
+      "entities": ["services", "staff", "staff_availability", "appointments", "appointment_payments", "cancellations", "reminders"],
+      "must_have": ["start_at_end_at", "overlap_prevention", "timezone_policy", "cancellation_policy", "reminders"],
+      "indexes": ["appointments.staff_id_start_at_end_at", "appointments.customer_id", "staff_availability.staff_id_day_of_week"]
+    },
+    "delivery": {
+      "entities": ["drivers", "delivery_orders", "routes", "delivery_zones", "tracking_events", "proof_of_delivery", "cash_collections"],
+      "must_have": ["tracking_events", "proof_of_delivery", "cod_reconciliation", "driver_assignment_history"],
+      "indexes": ["delivery_orders.status_created_at", "tracking_events.delivery_id_created_at", "drivers.user_id"]
+    },
+    "support": {
+      "entities": ["tickets", "ticket_messages", "agents", "sla_rules", "ticket_categories", "attachments", "ratings"],
+      "must_have": ["ticket_number", "status_history", "sla_timer", "internal_notes", "attachments"],
+      "indexes": ["tickets.status_priority_created_at", "tickets.customer_id", "ticket_messages.ticket_id_created_at"]
+    },
+    "hr": {
+      "entities": ["employees", "attendance", "leaves", "payroll", "contracts", "deductions", "bonuses", "performance_reviews"],
+      "must_have": ["salary_privacy", "approval_workflows", "leave_balances", "audit_logs"],
+      "indexes": ["employees.organization_id", "attendance.employee_id_created_at", "leaves.employee_id_status"]
+    },
+    "analytics": {
+      "entities": ["daily_sales_summary", "monthly_revenue_summary", "product_sales_summary", "branch_performance_summary", "article_daily_stats", "report_definitions", "report_exports"],
+      "must_have": ["summary_tables", "read_models", "export_security", "query_performance_review"],
+      "indexes": ["daily_sales_summary.date_branch_id", "article_daily_stats.article_id_date", "report_exports.created_at"]
+    },
+    "integration": {
+      "entities": ["integrations", "integration_logs", "webhooks", "outbox_events", "idempotency_keys", "external_ids"],
+      "must_have": ["outbox_pattern", "retry_attempts", "provider_external_ids", "request_response_logs", "idempotency"],
+      "indexes": ["outbox_events.status_next_retry_at", "idempotency_keys.key", "integration_logs.provider_created_at"]
+    }
+  },
+  "blueprint_module_map": {
+    "pos": ["core", "commerce", "inventory", "analytics", "integration"],
+    "ecommerce": ["core", "commerce", "inventory", "mobile", "analytics", "integration"],
+    "marketplace": ["core", "commerce", "inventory", "accounting", "mobile", "analytics", "integration"],
+    "erp": ["core", "commerce", "inventory", "accounting", "hr", "analytics", "integration"],
+    "crm": ["core", "support", "analytics", "integration"],
+    "inventory_wms": ["core", "inventory", "analytics", "integration"],
+    "accounting_billing": ["core", "accounting", "commerce", "analytics", "integration"],
+    "restaurant": ["core", "commerce", "inventory", "delivery", "analytics", "integration"],
+    "booking": ["core", "booking", "commerce", "mobile", "analytics", "integration"],
+    "delivery_logistics": ["core", "delivery", "mobile", "analytics", "integration"],
+    "helpdesk": ["core", "support", "cms_news", "analytics", "integration"],
+    "hr_payroll": ["core", "hr", "accounting", "analytics"],
+    "loyalty_system": ["core", "commerce", "analytics", "integration"],
+    "bi_dashboard": ["core", "analytics", "integration"],
+    "blog": ["core", "cms_news", "analytics", "integration"],
+    "news_website": ["core", "cms_news", "mobile", "analytics", "integration"],
+    "corporate_website": ["core", "cms_news", "analytics", "integration"],
+    "knowledge_base": ["core", "cms_news", "support", "analytics"],
+    "documentation_website": ["core", "cms_news", "integration"],
+    "customer_mobile_app": ["core", "mobile", "integration"],
+    "driver_mobile_app": ["core", "mobile", "delivery", "integration"],
+    "sales_rep_mobile_app": ["core", "mobile", "commerce", "crm", "integration"],
+    "employee_mobile_app": ["core", "mobile", "hr", "integration"],
+    "news_mobile_app": ["core", "mobile", "cms_news", "analytics", "integration"],
+    "newsletter_paid_content": ["core", "cms_news", "commerce", "analytics", "integration"]
+  },
+  "approval_checklist": [
+    "Every table has a primary key.",
+    "Important relationships have foreign keys.",
+    "Tenant-owned tables include organization_id when SaaS or multi-company is possible.",
+    "Tables have created_at and updated_at where appropriate.",
+    "Soft delete is used only on suitable master data.",
+    "Money uses decimal or integer minor units, never float.",
+    "Orders, invoices, payments, tax, and published content preserve snapshots or revisions.",
+    "Inventory uses stock_movements as the source of truth.",
+    "Important operations have audit_logs and status_history.",
+    "High-volume screens have indexes, pagination, and read-model strategy.",
+    "Reports use summaries/read models when operational joins become expensive.",
+    "Sensitive data is separated, hashed, encrypted, or delegated to providers.",
+    "Payments, inventory, wallets, bookings, and external webhooks use transactions and idempotency.",
+    "Outbox events and integration logs exist for async/provider work.",
+    "Migrations, backup, restore testing, timezone, archiving, and ERD are planned before implementation."
+  ]
+}

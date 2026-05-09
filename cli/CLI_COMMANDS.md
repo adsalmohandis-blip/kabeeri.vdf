@@ -150,8 +150,10 @@ List or copy prompt packs.
 ```bash
 kvdf prompt-pack list
 kvdf prompt-pack show laravel
+kvdf prompt-pack show react-native-expo
 kvdf prompt-pack use laravel
 kvdf prompt-pack use nextjs
+kvdf prompt-pack compose react-native-expo --task task-mobile-001
 kvdf prompt-pack validate laravel
 ```
 
@@ -267,6 +269,7 @@ kvdf validate
 kvdf validate task
 kvdf validate acceptance
 kvdf validate prompt-packs
+kvdf validate runtime-schemas
 kvdf validate generators
 ```
 
@@ -295,6 +298,8 @@ Prepare release files and check milestone readiness.
 
 ```bash
 kvdf release check
+kvdf release gate --version v4.0.0
+kvdf release publish-gate --version v4.0.0
 kvdf release notes --version v0.1.1
 kvdf release checklist --version v0.1.1
 ```
@@ -313,7 +318,48 @@ Help prepare GitHub Release notes and release acceptance review.
 
 ---
 
-# 10. doctor
+# 10. readiness / governance reports
+
+Export standalone review reports.
+
+## Commands
+
+```bash
+kvdf readiness report
+kvdf readiness report --json
+kvdf governance report
+kvdf governance report --json
+```
+
+## Purpose
+
+Give owners, AI assistants, CI jobs, and handoff workflows a compact view of
+workspace readiness and governance health without requiring the live dashboard.
+
+---
+
+# 11. package / upgrade
+
+Validate product packaging and workspace upgrade compatibility.
+
+## Commands
+
+```bash
+kvdf package check
+kvdf package check --json
+kvdf upgrade guide
+kvdf upgrade check
+kvdf upgrade check --json
+```
+
+## Purpose
+
+Make package distribution and workspace upgrades reviewable before npm packing,
+release, or team adoption.
+
+---
+
+# 12. doctor
 
 Check the local Kabeeri VDF workspace health.
 

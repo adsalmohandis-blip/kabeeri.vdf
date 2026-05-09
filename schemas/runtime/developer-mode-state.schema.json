@@ -1,0 +1,1 @@
+{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "KVDF Developer Mode State", "type": "object", "required": ["mode"], "properties": { "mode": { "type": "string" }, "solo_developer_id": { "type": ["string", "null"] }, "workstreams": { "type": "array", "items": { "type": "string" } } }, "additionalProperties": true }

@@ -1,0 +1,1 @@
+{ "$schema": "https://json-schema.org/draft/2020-12/schema", "title": "KVDF Generic Reports State", "type": "object", "required": ["reports"], "properties": { "reports": { "type": "array", "items": { "type": "object" } } }, "additionalProperties": true }

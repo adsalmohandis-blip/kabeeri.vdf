@@ -1,5 +1,15 @@
 # V5 Intelligence And Trust Layer Implementation Report
 
+## Current Status Addendum
+
+Updated: 2026-05-09.
+
+This is a historical implementation report. The current runtime now includes
+policy evaluation/gates, ADR commands, AI run history, handoff packages,
+security commands, migration governance commands, context packs, preflights,
+and model routing. Older wording that says this phase did not add live policy
+or migration commands is retained only as phase history.
+
 ## Summary
 
 Phase 08 completed the v5 trust-layer specification surface around the existing adaptive questionnaire and system capability map. The work added capability examples, project memory, ADR, AI run history, policy, event, security, and handoff templates under the `.kabeeri` source-of-truth model.
@@ -26,7 +36,9 @@ Phase 08 completed the v5 trust-layer specification surface around the existing 
 
 ## Risks
 
-- This phase adds specs, templates, and examples. It does not add new live policy evaluation or migration commands.
+- Historical note: this phase originally added specs, templates, and examples.
+  Current runtime now includes live policy evaluation and migration governance
+  commands.
 - The existing v5 runtime already supports adaptive questionnaire, coverage, memory commands, and capability commands; this phase extends the documented trust layer around those capabilities.
 - Real project memory, AI runs, policy results, and handoff exports should be generated per workspace and reviewed before client delivery.
 
@@ -40,4 +52,3 @@ Phase 08 completed the v5 trust-layer specification surface around the existing 
 ## Stop Point
 
 Phase 08 is complete. Do not continue to Phase 09 until Owner approval.
-

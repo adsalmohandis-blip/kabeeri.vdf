@@ -12,6 +12,9 @@ Kabeeri VDF does not replace those frameworks. Instead, it helps users understan
 
 Kabeeri now includes an early executable CLI named `kvdf`.
 
+For a single organized map of the framework capabilities, see
+[docs/SYSTEM_CAPABILITIES_REFERENCE.md](docs/SYSTEM_CAPABILITIES_REFERENCE.md).
+
 Run it from this repository with:
 
 ```bash

@@ -1,0 +1,189 @@
+{
+  "map_version": "2.0.0",
+  "name": "Kabeeri Repository Foldering System",
+  "purpose": "Define the physical, Laravel-like repository taxonomy for Kabeeri VDF after reducing root folder noise.",
+  "status": "physical_reorganized",
+  "principles": [
+    "The repository root should expose only major architectural groups.",
+    "Runtime code, knowledge, packs, integrations, contracts, docs, tests, and local runtime state stay separated.",
+    "Legacy paths remain readable through CLI asset aliases while docs and package publishing move to the new physical structure.",
+    "New capabilities must live inside an existing top-level group unless a documented exception is approved.",
+    "AI tools should read this map before broad filesystem scans."
+  ],
+  "target_root_groups": [
+    {
+      "group": "core",
+      "target_path": "src/",
+      "description": "Executable KVDF runtime, CLI command handlers, shared runtime utilities, and command entrypoints.",
+      "current_paths": ["src/", "bin/", "cli/"],
+      "laravel_analogy": "app/, artisan, routes/console.php"
+    },
+    {
+      "group": "knowledge",
+      "target_path": "knowledge/",
+      "description": "Reusable product intelligence, delivery systems, governance rules, design guidance, and AI-facing project knowledge.",
+      "current_paths": [
+        "knowledge/standard_systems/",
+        "knowledge/project_intelligence/",
+        "knowledge/project_intake/",
+        "knowledge/questionnaires/",
+        "knowledge/questionnaire_engine/",
+        "knowledge/delivery_modes/",
+        "knowledge/agile_delivery/",
+        "knowledge/governance/",
+        "knowledge/task_tracking/",
+        "knowledge/ai_cost_control/",
+        "knowledge/vibe_ux/",
+        "knowledge/design_system/",
+        "knowledge/design_sources/",
+        "knowledge/frontend_specs/",
+        "knowledge/acceptance_checklists/"
+      ],
+      "laravel_analogy": "config/, app domain knowledge, resources/lang"
+    },
+    {
+      "group": "packs",
+      "target_path": "packs/",
+      "description": "Reusable generators, templates, examples, and AI prompt packs that can be exported into customer projects.",
+      "current_paths": ["packs/generators/", "packs/templates/", "packs/examples/", "packs/prompt_packs/"],
+      "laravel_analogy": "stubs/, starter kits, resources/views"
+    },
+    {
+      "group": "integrations",
+      "target_path": "integrations/",
+      "description": "External tool integrations and platform connectors such as GitHub, VS Code, dashboards, and multi-AI adapters.",
+      "current_paths": [
+        "integrations/github_sync/",
+        "integrations/github/",
+        "integrations/vscode_extension/",
+        "integrations/platform_integration/",
+        "integrations/multi_ai_governance/",
+        "integrations/dashboard/"
+      ],
+      "laravel_analogy": "services/, notifications/, packages"
+    },
+    {
+      "group": "contracts",
+      "target_path": "schemas/",
+      "description": "JSON schemas and runtime contracts that validate KVDF state and shared machine-readable data.",
+      "current_paths": ["schemas/"],
+      "laravel_analogy": "validation rules, contracts, migrations"
+    },
+    {
+      "group": "documentation",
+      "target_path": "docs/",
+      "description": "Human documentation, architecture notes, reports, bilingual guides, static docs site, and roadmap source context.",
+      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
+      "laravel_analogy": "docs/, README, changelog"
+    },
+    {
+      "group": "quality",
+      "target_path": "tests/",
+      "description": "Automated tests, smoke checks, and validation fixtures.",
+      "current_paths": ["tests/"],
+      "laravel_analogy": "tests/"
+    },
+    {
+      "group": "runtime_state",
+      "target_path": ".kabeeri/",
+      "description": "Per-workspace live state, generated reports, task tracking, dashboard JSON, and local governance records.",
+      "current_paths": [".kabeeri/"],
+      "laravel_analogy": "storage/"
+    }
+  ],
+  "current_to_target": [
+    { "path": "bin/", "target_group": "core", "role": "CLI binary entrypoint", "migration_status": "physical_root" },
+    { "path": "src/", "target_group": "core", "role": "runtime source", "migration_status": "physical_root" },
+    { "path": "cli/", "target_group": "core", "role": "CLI documentation", "migration_status": "physical_root" },
+    { "path": "knowledge/", "target_group": "knowledge", "role": "knowledge super-folder", "migration_status": "physical_root" },
+    { "path": "packs/", "target_group": "packs", "role": "exportable packs super-folder", "migration_status": "physical_root" },
+    { "path": "integrations/", "target_group": "integrations", "role": "integration super-folder", "migration_status": "physical_root" },
+    { "path": "schemas/", "target_group": "contracts", "role": "schemas and runtime contracts", "migration_status": "physical_root" },
+    { "path": "docs/", "target_group": "documentation", "role": "human documentation and docs site", "migration_status": "physical_root" },
+    { "path": "tests/", "target_group": "quality", "role": "integration tests", "migration_status": "physical_root" },
+    { "path": ".kabeeri/", "target_group": "runtime_state", "role": "local workspace state", "migration_status": "local_only" }
+  ],
+  "legacy_aliases": {
+    "standard_systems/": "knowledge/standard_systems/",
+    "project_intelligence/": "knowledge/project_intelligence/",
+    "project_intake/": "knowledge/project_intake/",
+    "questionnaires/": "knowledge/questionnaires/",
+    "questionnaire_engine/": "knowledge/questionnaire_engine/",
+    "delivery_modes/": "knowledge/delivery_modes/",
+    "agile_delivery/": "knowledge/agile_delivery/",
+    "governance/": "knowledge/governance/",
+    "task_tracking/": "knowledge/task_tracking/",
+    "ai_cost_control/": "knowledge/ai_cost_control/",
+    "vibe_ux/": "knowledge/vibe_ux/",
+    "design_system/": "knowledge/design_system/",
+    "design_sources/": "knowledge/design_sources/",
+    "frontend_specs/": "knowledge/frontend_specs/",
+    "acceptance_checklists/": "knowledge/acceptance_checklists/",
+    "generators/": "packs/generators/",
+    "templates/": "packs/templates/",
+    "examples/": "packs/examples/",
+    "prompt_packs/": "packs/prompt_packs/",
+    "github_sync/": "integrations/github_sync/",
+    "github/": "integrations/github/",
+    "vscode_extension/": "integrations/vscode_extension/",
+    "platform_integration/": "integrations/platform_integration/",
+    "multi_ai_governance/": "integrations/multi_ai_governance/",
+    "dashboard/": "integrations/dashboard/",
+    "docs_site/": "docs/site/",
+    "codex_context/": "docs/codex_context/"
+  },
+  "allowed_top_level": [
+    ".git",
+    ".github",
+    ".kabeeri",
+    ".gitignore",
+    "LICENSE",
+    "README.md",
+    "README_AR.md",
+    "ROADMAP.md",
+    "CHANGELOG.md",
+    "package.json",
+    "package-lock.json",
+    "bin",
+    "src",
+    "cli",
+    "knowledge",
+    "packs",
+    "integrations",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "new_folder_policy": {
+    "default": "Do not create a new top-level folder when an existing root group can own the feature.",
+    "preferred_locations": {
+      "new CLI/runtime command": "src/cli/",
+      "new product/system catalog": "knowledge/standard_systems/",
+      "new human docs": "docs/",
+      "new schema": "schemas/",
+      "new reusable prompt or template": "packs/prompt_packs/ or packs/templates/",
+      "new integration": "integrations/"
+    }
+  },
+  "migration_phases": [
+    {
+      "phase": "phase_1_map_and_validate",
+      "status": "completed",
+      "goal": "Document target foldering and validate the repository root."
+    },
+    {
+      "phase": "phase_2_physical_reorganization",
+      "status": "completed",
+      "goal": "Move noisy top-level folders into knowledge, packs, integrations, docs/site, and docs/codex_context."
+    },
+    {
+      "phase": "phase_3_deep_reference_cleanup",
+      "status": "active",
+      "goal": "Gradually update old documentation references from legacy aliases to physical paths."
+    }
+  ],
+  "ai_usage": {
+    "context_summary": "Start from src/ for runtime, knowledge/ for system knowledge and governance, packs/ for generators/prompts/templates, integrations/ for dashboard/GitHub/VS Code/platform work, docs/ for human references, schemas/ for contracts, .kabeeri/ for live state.",
+    "token_saving_rule": "Prefer this map before broad filesystem exploration. Use legacy aliases only for compatibility."
+  }
+}

@@ -1,9 +1,24 @@
 {
   "name": "kabeeri-vdf",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Kabeeri VDF command line tool for project state, validation, prompts, tasks, and governance plans.",
   "license": "MIT",
   "type": "commonjs",
+  "files": [
+    "bin/",
+    "src/",
+    "knowledge/",
+    "packs/",
+    "integrations/",
+    "schemas/",
+    "docs/",
+    "cli/",
+    "README.md",
+    "README_AR.md",
+    "ROADMAP.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "bin": {
     "kvdf": "bin/kvdf.js"
   },
@@ -11,6 +26,7 @@
     "kvdf": "node bin/kvdf.js",
     "test": "node tests/cli.integration.test.js",
     "test:smoke": "node bin/kvdf.js --version && node bin/kvdf.js doctor && node bin/kvdf.js validate && node bin/kvdf.js prompt-pack list && node bin/kvdf.js plan list",
+    "pack:check": "node bin/kvdf.js package check",
     "check": "npm test && npm run test:smoke"
   },
   "engines": {

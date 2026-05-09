@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Structured Delivery State",
+  "type": "object",
+  "required": ["requirements", "phases", "milestones", "deliverables", "approvals", "change_requests", "risks", "gates"],
+  "properties": {
+    "requirements": { "type": "array", "items": { "type": "object" } },
+    "phases": { "type": "array", "items": { "type": "object" } },
+    "milestones": { "type": "array", "items": { "type": "object" } },
+    "deliverables": { "type": "array", "items": { "type": "object" } },
+    "approvals": { "type": "array", "items": { "type": "object" } },
+    "change_requests": { "type": "array", "items": { "type": "object" } },
+    "risks": { "type": "array", "items": { "type": "object" } },
+    "gates": { "type": "array", "items": { "type": "object" } }
+  },
+  "additionalProperties": true
+}

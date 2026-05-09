@@ -67,10 +67,11 @@
 | Document | Purpose |
 |----------|---------|
 | [task_governance/README.md](task_governance/README.md) | Overview of task governance |
-| [task_governance/TASK_CREATION_RULES.md](task_governance/TASK_CREATION_RULES.md) | Governance rules for tasks |
-| [task_governance/TASK_INTAKE_TEMPLATE.md](task_governance/TASK_INTAKE_TEMPLATE.md) | Template for creating tasks |
-| [task_governance/TASK_DEFINITION_OF_READY.md](task_governance/TASK_DEFINITION_OF_READY.md) | When task is ready to start |
-| [task_governance/TASK_SOURCE_RULES.md](task_governance/TASK_SOURCE_RULES.md) | Source tracing rules |
+| [governance/TASK_GOVERNANCE.md](governance/TASK_GOVERNANCE.md) | Governance policy for tasks |
+| [task_tracking/TASK_CREATION_RULES.md](task_tracking/TASK_CREATION_RULES.md) | Task creation rules |
+| [task_tracking/TASK_INTAKE_TEMPLATE.md](task_tracking/TASK_INTAKE_TEMPLATE.md) | Template for creating tasks |
+| [task_tracking/TASK_DEFINITION_OF_READY.md](task_tracking/TASK_DEFINITION_OF_READY.md) | When task is ready to start |
+| [task_tracking/TASK_SOURCE_RULES.md](task_tracking/TASK_SOURCE_RULES.md) | Source tracing rules |
 
 **Governance Framework:**
 
@@ -128,7 +129,7 @@
 
 | Document | Purpose |
 |----------|---------|
-| [ai_usage/README.md](ai_usage/README.md) | AI usage accounting system |
+| [ai_cost_control/README.md](ai_cost_control/README.md) | AI usage accounting and cost control |
 
 **Folder Structure & Files:**
 
@@ -296,7 +297,7 @@ kabeeri-vdf/
 2. Choose Structured or Agile mode
 3. Follow [project_intake/NEW_PROJECT_RULES.md](project_intake/NEW_PROJECT_RULES.md)
 4. Begin with questionnaires (Structured) or vision workshop (Agile)
-5. Use [task_governance/TASK_INTAKE_TEMPLATE.md](task_governance/TASK_INTAKE_TEMPLATE.md) for tasks
+5. Use [task_tracking/TASK_INTAKE_TEMPLATE.md](task_tracking/TASK_INTAKE_TEMPLATE.md) for tasks
 
 ### For Existing Projects Adopting Kabeeri
 
@@ -316,7 +317,7 @@ kabeeri-vdf/
 ### For Teams Tracking Costs
 
 1. Set up `.kabeeri/ai_usage/` folder
-2. Configure [ai_usage/README.md](ai_usage/README.md) pricing rules
+2. Configure [ai_cost_control/README.md](ai_cost_control/README.md) pricing rules
 3. Log usage events after each AI session
 4. Review cost breakdowns weekly
 5. Forecast MVP cost

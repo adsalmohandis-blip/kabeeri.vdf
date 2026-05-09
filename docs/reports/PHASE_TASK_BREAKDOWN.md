@@ -1,6 +1,25 @@
 # Phase Task Breakdown
 
-Generated from the updated Requirements Traceability Matrix. This file is a planning report only; no implementation was performed.
+Current overlay updated: 2026-05-09.
+
+The original phase task rows below are historical planning output from the
+requirements matrix. Many rows still say `partial` or `missing` because they
+preserve the ingestion snapshot. Use this current overlay before using the old
+rows as active work.
+
+## Current Active Phase Breakdown
+
+| Phase | Focus | Current Status | Next Work |
+| --- | --- | --- | --- |
+| Phase A | Stabilize current worktree | active | Review dirty tree, group commits, keep Owner state updated. |
+| Phase B | Dashboard and VS Code product surface | active gap | Deepen live dashboard and build VS Code webviews over `.kabeeri`. |
+| Phase C | Security and privacy depth | active gap | Add PII/privacy and stack-specific scanner rules. |
+| Phase D | Design QA automation | active gap | Add visual issue tracking, contrast checks, screenshot evidence, and theme audit. |
+| Phase E | Framework adapters | future | Add gated migration/execution adapters after governance dry-runs are stable. |
+
+## Historical Phase Rows
+
+Generated from the older Requirements Traceability Matrix. Kept for traceability.
 
 ## Phase 04
 
@@ -11,7 +30,7 @@ Generated from the updated Requirements Traceability Matrix. This file is a plan
 | Phase-04-003 | REQ-V1-003: Add shared AI coding rules | partial | medium | Complete missing docs/examples/runtime checks and re-run validation. |
 | Phase-04-004 | REQ-V1-004: Add shared scope testing and handoff rules | partial | medium | Complete missing docs/examples/runtime checks and re-run validation. |
 | Phase-04-005 | REQ-V1-005: Update prompt packs to reference common layer | partial | medium | Complete missing docs/examples/runtime checks and re-run validation. |
-| Phase-04-006 | REQ-V1-006: Complete react native expo prompt pack | missing | medium | Create required files, templates, or runtime support in assigned phase. |
+| Phase-04-006 | REQ-V1-006: Complete react native expo prompt pack | implemented | medium | `prompt_packs/react-native-expo/` now includes manifest, prompt sequence, common-layer composition support, and tests. |
 | Phase-04-007 | REQ-V1-007: Standardize prompt pack manifests | partial | medium | Complete missing docs/examples/runtime checks and re-run validation. |
 | Phase-04-008 | REQ-V1-008: Clean placeholder template and RFC files | partial | medium | Complete missing docs/examples/runtime checks and re-run validation. |
 | Phase-04-009 | REQ-V1-009: Align root roadmap with current repository state | partial | medium | Complete missing docs/examples/runtime checks and re-run validation. |

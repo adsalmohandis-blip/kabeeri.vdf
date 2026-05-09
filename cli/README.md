@@ -23,15 +23,22 @@ It is still an early MVP, but it can already:
 - list/show v3/v4 planning milestones
 - create/list/status local tasks
 - create/list/status customer apps with public `username` routes
+- enforce App Boundary Governance for same-product multi-app workspaces
 - run v5 adaptive questionnaire answers, coverage, missing-answer reports, and provenance task generation
 - inspect the 53-area system capability map
 - add/list/summarize project memory decisions, assumptions, constraints, risks, and deferred features
 - create/list/status business features and user journeys
+- use optional Vibe-first commands to turn natural language into suggested task cards
+- generate compact Vibe briefs and next actions to reduce session resume time and AI token waste
+- manage Agile backlog, epics, user stories, sprint planning, and sprint reviews as runtime records
+- convert ready Agile stories into governed `.kabeeri` tasks
 - create/list/summarize Agile sprints and sprint costs
 - create/list local acceptance records
 - review acceptance records and store reviewer notes
 - list audit events and export Markdown audit reports
 - add/list human developer identities
+- configure Solo Developer Mode for one full-stack developer across all standard workstreams
+- manage a runtime workstream registry with path rules and dashboard rollups
 - configure local Owner auth and Owner sessions
 - transfer single Owner authority using one-use Owner transfer tokens
 - add/list AI Developer identities
@@ -40,16 +47,30 @@ It is still an early MVP, but it can already:
 - move tasks through approve/assign/start/review/verify/reject/reopen states
 - enforce role permissions for governed workspaces using `--actor` and Owner sessions
 - enforce workstream ownership during task assignment and require integration type for cross-workstream tasks
+- enforce workstream file boundaries when governed AI sessions end
+- enforce app ownership during task/session execution and require integration type for cross-app tasks
 - regenerate derived dashboard state files
+- show Vibe-first suggestions and post-work captures in the private dashboard
+- show Vibe sessions and context briefs in the private dashboard
 - export a customer-facing static site plus a private technical dashboard
 - serve the customer page at `/`, app pages at `/customer/apps/<username>`, the dashboard at `/__kvdf/dashboard`, and live state at `/__kvdf/api/state`
+- auto-refresh the served private dashboard when local project state changes
+- summarize same-product apps in one KVDF workspace and list separate KVDF folders through `--workspaces`, `KVDF_WORKSPACES`, or `dashboard workspace add`
 - scaffold VS Code workspace task files and local VS Code Webview extension files for common KVDF commands
 - issue/list/revoke local task access token records
 - enforce that task access tokens target real tasks and governed assignees
+- derive task access token execution scopes from app and workstream boundaries
 - enforce token expiry and allowed/forbidden file scopes for AI session handoffs
 - revoke tokens on Owner rejection and reissue limited rework tokens
 - require active task locks to cover governed AI session file changes
 - approve/list/revoke budget overrun approvals for guarded task tokens
+- evaluate policy checks and enforce task, release, handoff, security, and migration policy gates
+- block confirmed GitHub writes behind a policy gate before any `gh` command runs
+- inspect latest policy gate status and validate policy runtime state
+- generate context packs, cost preflights, and model route recommendations for cost-aware AI execution
+- generate client and Owner handoff packages with business, technical, readiness, publish, AI cost, and roadmap reports
+- scan for secrets and feed policy gates before AI handoff, release, or publish workflows
+- create migration plans, rollback plans, dry-run checks, reports, and audit trails without executing migrations
 - record/list/summarize AI token usage and cost
 - export AI usage cost reports and developer efficiency analysis
 - configure AI pricing rules and auto-calculate usage cost

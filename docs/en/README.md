@@ -1,25 +1,47 @@
 # English Documentation Index
 
-This index is part of the v1 stabilization pass. It shows what English documentation is currently available and where Arabic documentation is still broader.
+This index is the English counterpart to `docs/ar/README.md`. The goal is
+documentation parity: both languages should expose the same primary topics even
+when one side later gains more detail.
 
-## Current English Docs
+## Canonical Files
 
-| File | Purpose | Status |
+| No. | File | Topic |
 | --- | --- | --- |
-| `01_VISION_AND_POSITIONING.md` | Product vision and positioning | available |
-| `02_ARCHITECTURE.md` | Architecture overview | available |
-| `03_REPOSITORY_STRUCTURE.md` | Repository structure | available |
-| `04_ROADMAP.md` | Roadmap overview | available |
-| `05_MARKET_RESEARCH_AND_DIFFERENTIATION.md` | Market and differentiation notes | available |
+| 01 | `01_VISION_AND_POSITIONING.md` | Vision and positioning |
+| 02 | `02_CORE_CONCEPTS.md` | Core concepts |
+| 03 | `03_FRAMEWORK_ARCHITECTURE.md` | Framework architecture |
+| 04 | `04_REPOSITORY_STRUCTURE.md` | Repository structure |
+| 05 | `05_PROJECT_LIFECYCLE.md` | Project lifecycle |
+| 06 | `06_GENERATOR_SYSTEM.md` | Generator system |
+| 07 | `07_QUESTIONNAIRE_SYSTEM.md` | Questionnaire system |
+| 08 | `08_DOCUMENT_GENERATION_FLOW.md` | Document generation flow |
+| 09 | `09_PROMPT_PACKS.md` | Prompt packs |
+| 10 | `10_TASK_TRACKING.md` | Task tracking |
+| 11 | `11_ACCEPTANCE_CHECKLISTS.md` | Acceptance checklists |
+| 12 | `12_EXTENSION_LAYER.md` | Extension layer |
+| 13 | `13_PRODUCT_ROADMAP_AND_DISTRIBUTION.md` | Product roadmap and distribution |
+| 14 | `14_OPEN_SOURCE_STRATEGY.md` | Open-source strategy |
+| 15 | `15_MARKET_RESEARCH_AND_DIFFERENTIATION.md` | Market research and differentiation |
+| 16 | `16_CONTRIBUTOR_ROLES.md` | Contributor roles |
+| 17 | `17_GOVERNANCE_AND_RELEASE_MODEL.md` | Governance and release model |
+| 18 | `18_LICENSING_AND_RIGHTS.md` | Licensing and rights |
+| 19 | `19_MVP_BUILD_PLAN.md` | MVP build plan |
+| 20 | `20_AI_USAGE_RULES.md` | AI usage rules |
 
-## Arabic Docs With No Direct English Pair Yet
+## Legacy English Files
 
-The Arabic documentation currently has deeper v1 coverage for lifecycle, generators, questionnaires, prompt packs, task tracking, acceptance checklists, extension layer, governance, licensing, MVP build planning, and AI usage rules.
+These files existed before the parity pass and are kept to avoid breaking links:
 
-Full translation is intentionally not part of Phase 04. This file records the gap so new English readers can understand the current state without assuming the missing files are accidental.
+- `02_ARCHITECTURE.md`
+- `03_REPOSITORY_STRUCTURE.md`
+- `04_ROADMAP.md`
+- `05_MARKET_RESEARCH_AND_DIFFERENTIATION.md`
 
-## Related Current-State Files
+Prefer the canonical numbered files above for new links.
 
-- [Root README](../../README.md)
-- [v1 Current State](../production/V1_CURRENT_STATE.md)
-- [Phase 04 Stabilization Report](../reports/V1_STABILIZATION_REPORT.md)
+## Maintenance Rule
+
+- Add Arabic and English counterparts together.
+- Keep file numbers and topic names aligned.
+- Put current runtime capability details in `docs/SYSTEM_CAPABILITIES_REFERENCE.md`.

@@ -1,0 +1,102 @@
+{
+  "catalog_version": "1.0.0",
+  "purpose": "UI/UX design guidance for AI-assisted frontend planning across SEO sites, web apps, dashboards, commerce, content, and mobile products.",
+  "foundations": [
+    "brand_identity",
+    "design_tokens",
+    "typography_system",
+    "color_system",
+    "spacing_system",
+    "layout_grid",
+    "component_library",
+    "interaction_patterns",
+    "accessibility_rules",
+    "responsive_rules",
+    "seo_geo_rules",
+    "content_guidelines"
+  ],
+  "component_sets": {
+    "core": ["button", "icon_button", "input", "textarea", "select", "checkbox", "radio", "switch", "date_picker", "file_upload", "avatar", "badge", "tag", "tooltip", "popover", "dropdown_menu", "accordion", "tabs", "modal", "drawer", "card", "alert", "toast", "breadcrumb", "pagination", "skeleton", "empty_state", "error_state", "search_box"],
+    "content": ["article_card", "article_header", "author_box", "table_of_contents", "faq_block", "related_posts", "newsletter_signup", "quote_block", "callout_box", "source_list", "share_buttons", "reading_time", "last_updated", "topic_cluster_links"],
+    "commerce": ["product_card", "product_gallery", "price", "discount_badge", "variant_selector", "quantity_selector", "cart_drawer", "checkout_stepper", "order_summary", "review_stars", "wishlist_button", "shipping_method", "payment_method", "coupon_input", "filter_sidebar", "sort_dropdown"],
+    "dashboard": ["sidebar", "topbar", "metric_card", "chart_card", "data_table", "data_grid", "filter_bar", "date_range_picker", "bulk_actions", "status_badge", "activity_timeline", "audit_log_item", "user_menu", "permission_matrix", "export_button", "command_palette"],
+    "mobile": ["app_bar", "bottom_navigation", "list_item", "pull_to_refresh", "mobile_tabs", "bottom_sheet", "mobile_toast", "profile_screen", "settings_screen", "offline_state", "push_permission_prompt"]
+  },
+  "experience_patterns": {
+    "seo_content_site": {
+      "best_for": ["blog", "news_website", "corporate_website", "knowledge_base", "documentation_website", "newsletter_paid_content"],
+      "recommended_stacks": ["Astro + Tailwind", "Next.js + Tailwind + shadcn/ui", "Nuxt + Tailwind", "WordPress custom theme"],
+      "layout_priorities": ["semantic_html", "fast_loading", "readable_typography", "clear_headings", "internal_links", "breadcrumbs", "author_date", "faq", "structured_data"],
+      "seo_geo": ["Article/NewsArticle/Product/FAQ/Breadcrumb schema as appropriate", "direct answer near top", "H1/H2/H3 hierarchy", "short paragraphs", "comparison tables", "source list", "last updated", "topic clusters"],
+      "avoid": ["JS-only navigation", "critical content hidden behind client-only widgets", "heavy sliders above the fold", "image-only text"]
+    },
+    "commerce_storefront": {
+      "best_for": ["ecommerce", "marketplace", "loyalty_system"],
+      "recommended_stacks": ["Next.js + Tailwind + shadcn/ui", "Shopify theme/app UI", "Nuxt + Tailwind"],
+      "layout_priorities": ["product_discovery", "fast_product_pages", "filter_sidebar", "cart_drawer", "checkout_steps", "trust_signals", "reviews", "breadcrumb_schema"],
+      "seo_geo": ["Product schema", "Review schema", "BreadcrumbList schema", "canonical URLs", "SEO-friendly category pages", "optimized image dimensions"],
+      "avoid": ["hidden add-to-cart", "unclear price/tax/shipping", "infinite scroll without crawlable pagination"]
+    },
+    "data_heavy_web_app": {
+      "best_for": ["erp", "crm", "inventory_wms", "accounting_billing", "helpdesk", "hr_payroll", "bi_dashboard"],
+      "recommended_stacks": ["Ant Design", "MUI", "Mantine", "PrimeReact", "Fluent UI", "TanStack Table + custom UI"],
+      "layout_priorities": ["data_density", "keyboard_navigation", "role_based_menus", "tables_filters", "bulk_actions", "empty_states", "clear_errors", "audit_visibility"],
+      "seo_geo": ["Usually behind login; prioritize accessibility, performance, and operator clarity over public SEO."],
+      "avoid": ["marketing hero layouts", "oversized cards for dense operations", "too many columns without visibility controls"]
+    },
+    "pos_operations": {
+      "best_for": ["pos", "restaurant"],
+      "recommended_stacks": ["React + lightweight component system", "Flutter for tablet POS", "Ionic for hybrid POS"],
+      "layout_priorities": ["touch_targets", "fast_actions", "offline_status", "receipt_flow", "cash_drawer_visibility", "kitchen_or_shift_status"],
+      "seo_geo": ["Not SEO-driven; prioritize speed, resilience, touch ergonomics, and error recovery."],
+      "avoid": ["small touch controls", "network-only critical actions", "slow modal-heavy sales flow"]
+    },
+    "mobile_app": {
+      "best_for": ["customer_mobile_app", "driver_mobile_app", "sales_rep_mobile_app", "employee_mobile_app", "news_mobile_app", "delivery_logistics"],
+      "recommended_stacks": ["Flutter", "React Native + Tamagui", "React Native Paper", "NativeBase", "Ionic"],
+      "layout_priorities": ["bottom_navigation", "app_bar", "offline_states", "push_permission_ux", "deep_links", "large_touch_targets", "fast_lists"],
+      "seo_geo": ["Use app store metadata, deep links, accessible copy, and consistent content APIs when paired with public web."],
+      "avoid": ["web-only hover interactions", "tiny controls", "unclear permissions prompts", "no offline/error states"]
+    }
+  },
+  "blueprint_experience_map": {
+    "pos": "pos_operations",
+    "restaurant": "pos_operations",
+    "ecommerce": "commerce_storefront",
+    "marketplace": "commerce_storefront",
+    "loyalty_system": "commerce_storefront",
+    "blog": "seo_content_site",
+    "news_website": "seo_content_site",
+    "corporate_website": "seo_content_site",
+    "knowledge_base": "seo_content_site",
+    "documentation_website": "seo_content_site",
+    "newsletter_paid_content": "seo_content_site",
+    "erp": "data_heavy_web_app",
+    "crm": "data_heavy_web_app",
+    "inventory_wms": "data_heavy_web_app",
+    "accounting_billing": "data_heavy_web_app",
+    "helpdesk": "data_heavy_web_app",
+    "hr_payroll": "data_heavy_web_app",
+    "bi_dashboard": "data_heavy_web_app",
+    "booking": "commerce_storefront",
+    "delivery_logistics": "mobile_app",
+    "customer_mobile_app": "mobile_app",
+    "driver_mobile_app": "mobile_app",
+    "sales_rep_mobile_app": "mobile_app",
+    "employee_mobile_app": "mobile_app",
+    "news_mobile_app": "mobile_app"
+  },
+  "approval_checklist": [
+    "Brand identity and tone are defined or intentionally deferred.",
+    "Design tokens define colors, typography, spacing, radius, breakpoints, and motion.",
+    "Page specs define purpose, audience, layout, data requirements, required states, responsive behavior, and accessibility.",
+    "Repeated components have approved component contracts.",
+    "Buttons, links, forms, dialogs, drawers, dropdowns, accordions, and tables have keyboard and focus behavior.",
+    "Mobile, tablet, desktop, RTL/LTR, loading, empty, error, success, disabled, and permission states are covered.",
+    "SEO/GEO pages use semantic HTML, structured data, breadcrumbs, clear headings, readable content, author/date where relevant, and optimized images.",
+    "Dashboards prioritize scanability, data density, filters, table ergonomics, role visibility, and clear error states.",
+    "Mobile screens use large touch targets, offline/error states, push permission UX, and deep-link-aware flows.",
+    "Core Web Vitals risks are reviewed: LCP, INP, CLS, image dimensions, JS weight, and lazy loading.",
+    "Visual review evidence exists before Owner/client visual verification."
+  ]
+}
