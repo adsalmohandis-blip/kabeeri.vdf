@@ -122,6 +122,9 @@ function printCommandHelp(command) {
 Aliases:
   kvdf generate --profile lite --output my-project
   kvdf generator create lite --output my-project
+
+Notes:
+  Inside an initialized .kabeeri workspace, generators also create proposed governance tasks for review, implementation, and validation unless --no-tasks is used.
 `,
     task: `Usage:
   kvdf task create --title "Task title" --workstream backend
@@ -162,15 +165,18 @@ Notes:
 `,
     capture: `Usage:
   kvdf capture --summary "Updated dashboard filters" --files src/cli/index.js --checks "npm test"
+  kvdf capture scan --summary "Finished a small cleanup" --files src/cli/index.js
   kvdf capture list
   kvdf capture show capture-001
+  kvdf capture evidence capture-001 --checks "npm test" --evidence "manual review"
   kvdf capture link capture-001 --task task-001
   kvdf capture convert capture-001 --task task-002
+  kvdf capture reject capture-001 --reason "Exploration will not continue"
   kvdf capture resolve capture-001 --reason "Linked in review notes"
   kvdf vibe capture --summary "Finished a small docs cleanup"
 
 Notes:
-  Capture records post-work notes and changed files under .kabeeri/interactions without reverting user changes. Captures can be linked to existing tasks, converted to governed tasks, or resolved after review.
+  Capture records post-work notes and changed files under .kabeeri/interactions without reverting user changes. Use scan to preview classification without writing. Captures can receive evidence, be linked to existing tasks, converted to governed tasks, rejected, or resolved after review.
 `,
     package: `Usage:
   kvdf package check
@@ -473,6 +479,8 @@ Notes:
     usage: `Usage:
   kvdf usage record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500 --cached-tokens 0
   kvdf usage record --untracked --input-tokens 1000 --output-tokens 500 --cost 0.25 --source ad-hoc-prompt
+  kvdf usage inquiry --input-tokens 300 --output-tokens 120 --cost 0.04 --operation owner-question
+  kvdf usage admin --input-tokens 500 --output-tokens 200 --operation dashboard-review
   kvdf usage list
   kvdf usage summary
   kvdf usage efficiency
@@ -762,7 +770,7 @@ Commands:
   token list|issue|revoke      Manage local task access token records
   budget approve|list|revoke   Manage over-budget usage approvals
   pricing set|list|show        Manage AI pricing rules
-  usage record|list|summary    Track AI token usage and cost
+  usage record|admin|inquiry   Track task and non-task AI token usage and cost
   policy list|show|evaluate    Evaluate governance policies and approval gates
   context-pack create|list      Generate focused task context packs
   preflight estimate|list       Estimate AI cost and approval needs before execution

@@ -1,362 +1,343 @@
 # Kabeeri Vibe Developer Framework
 
-**Kabeeri Vibe Developer Framework** — also known as **Kabeeri VDF** or **kabeeri.vdf** — is an open-source meta-framework for AI-powered software builders, vibe developers, founders, and small teams.
+Kabeeri VDF, also known as `kabeeri.vdf`, is an open-source meta-framework for building software with AI assistants.
 
-It sits above traditional coding frameworks such as **Laravel**, **.NET**, **Next.js**, **Django**, and **WordPress**.
+It does not replace Laravel, Next.js, React, Vue, Angular, WordPress, Django, .NET, Flutter, or React Native. Instead, it gives the developer and the AI assistant a governed working environment before, during, and after code generation.
 
-Kabeeri VDF does not replace those frameworks. Instead, it helps users understand what to build, organize the idea, generate project documentation, create AI-ready prompts, track implementation tasks, and review AI-generated output before and during coding.
+Kabeeri helps turn a product idea into:
 
----
+- clear questions for the developer or client
+- application boundaries
+- Agile or Structured delivery plans
+- product blueprints
+- database design guidance
+- UI/UX guidance
+- governed tasks
+- AI prompt context
+- token and cost records
+- live dashboard visibility
+- readiness and release gates
+- handoff reports
 
-## Working CLI MVP
+The goal is simple: let the developer speak naturally, let the AI assistant work inside rules, and keep the project understandable when sessions stop and resume.
 
-Kabeeri now includes an early executable CLI named `kvdf`.
+## Current Status
 
-For a single organized map of the framework capabilities, see
-[docs/SYSTEM_CAPABILITIES_REFERENCE.md](docs/SYSTEM_CAPABILITIES_REFERENCE.md).
+The repository now includes a working Node.js CLI named `kvdf`.
 
-Run it from this repository with:
+The CLI is not only a future idea. It can initialize `.kabeeri/` workspace state, create project skeletons, generate governed tasks, run validation, track AI usage, manage task access tokens, serve the live dashboard, enforce policy gates, and export readiness/governance reports.
+
+Current package version:
 
 ```bash
+kvdf --version
+```
+
+Source of truth:
+
+- `.kabeeri/` is the runtime state folder for a project.
+- The CLI updates `.kabeeri/` records.
+- The dashboard reads `.kabeeri/` state.
+- AI assistants should work through tasks, scopes, captures, and reports instead of editing randomly.
+
+For the complete capability map, read:
+
+- [System Capabilities Reference](docs/SYSTEM_CAPABILITIES_REFERENCE.md)
+- [CLI Command Reference](cli/CLI_COMMAND_REFERENCE.md)
+- [Documentation Site](docs/site/index.html)
+
+## Who Is Kabeeri For?
+
+Kabeeri is useful for:
+
+- vibe coders and AI-powered builders
+- founders building software with AI
+- developers who want AI work to be traceable
+- small teams using AI assistants
+- agencies delivering repeated AI-assisted projects
+- product owners who need clearer planning before coding
+- developers working on multiple apps in the same product
+
+You can use it with any AI coding assistant. Kabeeri is not tied to one AI tool.
+
+## Why Use It?
+
+AI assistants are powerful, but software projects still fail when:
+
+- the product is vague
+- the AI starts coding before tasks exist
+- backend, frontend, and mobile work get mixed together
+- two developers edit the same files
+- token usage is invisible
+- the dashboard is stale
+- work is done outside the agreed task
+- the owner cannot tell what is ready, blocked, or risky
+
+Kabeeri provides the governance layer around the AI workflow.
+
+## Install And Run
+
+From this repository:
+
+```bash
+npm install
 npm run kvdf -- --help
 npm run kvdf -- doctor
 npm run kvdf -- validate
-npm run kvdf -- create --profile lite --output my-project
+```
+
+After local linking or package installation, use `kvdf` directly:
+
+```bash
+kvdf --help
+kvdf doctor
+kvdf validate
+```
+
+## Start A New Kabeeri Workspace
+
+Inside the folder where you want Kabeeri runtime state:
+
+```bash
+kvdf init --profile standard --mode structured
+```
+
+By default, Kabeeri stores `language: user`, which means adaptive intake and generated guidance should follow the user's detected language unless you override it:
+
+```bash
+kvdf init --profile standard --lang en
+kvdf init --profile standard --lang ar
+```
+
+## Create A Project Skeleton
+
+Kabeeri has three project profiles:
+
+| Profile | Best For |
+| --- | --- |
+| `lite` | landing pages, small MVPs, simple tools |
+| `standard` | SaaS apps, ecommerce, CMS, booking, business systems |
+| `enterprise` | ERP, marketplaces, multi-tenant systems, large long-term platforms |
+
+Create a skeleton:
+
+```bash
+kvdf create --profile standard --output my-project
+```
+
+or:
+
+```bash
+kvdf generate --profile standard --output my-project
+```
+
+When this command runs inside an initialized `.kabeeri` workspace, Kabeeri also creates proposed governance tasks for review, implementation, and validation. This prevents generated Laravel, Next.js, WordPress, or other skeletons from bypassing the task tracker.
+
+Use this only when you want a raw skeleton without tasks:
+
+```bash
+kvdf create --profile standard --output my-project --no-tasks
+```
+
+## Recommended AI Workflow
+
+A practical flow with any AI assistant:
+
+1. Initialize Kabeeri.
+2. Describe the product in normal language.
+3. Let Kabeeri recommend blueprint, delivery mode, data design, UI direction, and framework prompt packs.
+4. Ask only the missing questions.
+5. Convert approved suggestions into tasks.
+6. Work on one task at a time.
+7. Use task tokens and locks for execution scope.
+8. Record AI token usage.
+9. Capture any work done outside the normal flow.
+10. Review, verify, and hand off.
+
+Useful commands:
+
+```bash
+kvdf questionnaire plan "Build an ecommerce store with Laravel backend, Next.js frontend, payments, shipping, and a mobile app" --json
+kvdf blueprint recommend "Build ecommerce store with catalog cart checkout payments shipping"
+kvdf data-design context ecommerce --json
+kvdf design recommend ecommerce --json
+kvdf delivery recommend "Build a regulated ERP with accounting and approvals" --json
+```
+
+## Vibe-First Usage
+
+The developer does not need to memorize every CLI command. The intended experience is:
+
+```text
+Developer speaks naturally to an AI assistant.
+The AI assistant uses Kabeeri commands behind the scenes when useful.
+Kabeeri records decisions, suggestions, tasks, usage, captures, and dashboard state.
+```
+
+Runtime commands still exist for automation and traceability:
+
+```bash
+kvdf vibe suggest "Add a checkout page for customers"
+kvdf vibe plan "Build ecommerce store with products cart checkout admin and tests"
+kvdf vibe convert suggestion-001
+kvdf capture --summary "Implemented checkout validation" --files src/checkout.ts --checks "npm test" --evidence "checkout tests passed"
+```
+
+Post-work captures are important. If files changed without a linked task, readiness can become blocked until the capture is linked, converted, rejected, or resolved.
+
+## Task Governance
+
+Kabeeri expects implementation to happen through tasks.
+
+```bash
+kvdf task create --title "Build product catalog API" --workstream backend
+kvdf task approve task-001
+kvdf task assign task-001 --assignee agent-001
+kvdf token issue --task task-001 --assignee agent-001 --max-usage-tokens 50000
+kvdf lock acquire --task task-001 --type folder --scope src/api/products --owner agent-001
+kvdf task start task-001 --actor agent-001
+```
+
+The task tracker is available as both CLI output and live JSON:
+
+```bash
+kvdf task tracker
+kvdf task tracker --json
+```
+
+## AI Usage And Cost Tracking
+
+Task usage:
+
+```bash
+kvdf usage record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500 --cost 0.25
+```
+
+Non-task usage, such as owner questions, planning, documentation, or dashboard review:
+
+```bash
+kvdf usage inquiry --input-tokens 300 --output-tokens 120 --cost 0.04 --operation owner-question
+kvdf usage admin --input-tokens 500 --output-tokens 200 --cost 0.08 --operation dashboard-review
+```
+
+Summary:
+
+```bash
+kvdf usage summary
+kvdf usage efficiency
+```
+
+## Live Dashboard
+
+Serve the local dashboard:
+
+```bash
+kvdf dashboard serve --port 4177
+```
+
+Routes:
+
+- customer page: `http://127.0.0.1:4177/`
+- private dashboard: `http://127.0.0.1:4177/__kvdf/dashboard`
+- full live state: `http://127.0.0.1:4177/__kvdf/api/state`
+- task tracker state: `http://127.0.0.1:4177/__kvdf/api/tasks`
+- live reports: `http://127.0.0.1:4177/__kvdf/api/reports`
+
+The dashboard shows apps, task tracker, execution scopes, workstreams, Vibe suggestions, post-work captures, Agile/Structured state, AI usage, policies, readiness, security, migrations, and developer efficiency. Each dashboard section includes a short explanation so the developer remembers why the table exists.
+
+## Readiness, Governance, And Release Gates
+
+Generate independent reports:
+
+```bash
+kvdf readiness report --output readiness.md
+kvdf governance report --output governance.md
+kvdf reports live
+```
+
+Release and GitHub publishing are guarded by policy gates:
+
+```bash
+kvdf policy evaluate --release v0.2.0
+kvdf release publish --version v0.2.0 --dry-run
+```
+
+Open tasks may produce a readiness warning. That is not always a hard blocker. Actual blockers include failed validation, blocked policies, blocked migration/security checks, or ungoverned changed files captured without a task.
+
+## Agile And Structured Delivery
+
+Kabeeri supports two delivery styles:
+
+- Agile: backlog, epics, stories, sprints, reviews, impediments, retrospectives, velocity.
+- Structured: requirements, phases, deliverables, risks, approvals, gates, traceability.
+
+The delivery advisor can recommend one, but the developer or owner decides:
+
+```bash
+kvdf delivery recommend "Build CRM with pipeline, reporting, and integrations" --json
+kvdf delivery choose agile --reason "Client wants iterative delivery"
+```
+
+## Repository Layout
+
+The current repository is organized into stable groups:
+
+```text
+src/                 CLI source code
+bin/                 executable kvdf entrypoint
+knowledge/           governance, task, design, agile, data, and workflow knowledge
+packs/               generators, templates, prompt packs, examples
+integrations/        dashboard, GitHub, VS Code, multi-AI integration knowledge
+schemas/             runtime and contract schemas
+docs/                documentation, reports, docs site, production guides
+cli/                 command reference
+tests/               CLI integration tests
+```
+
+Runtime project state is stored in:
+
+```text
+.kabeeri/
+```
+
+## Documentation
+
+Start here:
+
+- [System Capabilities Reference](docs/SYSTEM_CAPABILITIES_REFERENCE.md)
+- [CLI Command Reference](cli/CLI_COMMAND_REFERENCE.md)
+- [Production State](docs/production/V1_CURRENT_STATE.md)
+- [Docs Site](docs/site/index.html)
+
+Open the docs site:
+
+```bash
+kvdf docs open
+kvdf docs serve --port 4180
+```
+
+## Development
+
+Run tests:
+
+```bash
 npm test
 ```
 
-The CLI can initialize `.kabeeri/` workspace state, validate framework files, inspect generators, prompt packs, examples, v3/v4 plans, scaffold project folders, and manage local tasks, sprints, Owner sessions, agents, tokens, locks, AI sessions, pricing, and usage records.
-
-After local linking, the command is available directly:
+Run smoke checks:
 
 ```bash
-kvdf --help
-kvdf create --profile lite --output my-project
+npm run test:smoke
 ```
 
-It can also export a local HTML dashboard from `.kabeeri` state:
+Run full check:
 
 ```bash
-npm run kvdf -- app create --username acme --name "ACME Portal"
-npm run kvdf -- dashboard export
-npm run kvdf -- dashboard serve --port 4177
+npm run check
 ```
 
-The exported public page lives at `.kabeeri/site/index.html`. Customer app pages use username routes such as `/customer/apps/acme`; numeric public IDs such as `/customer/apps/3` are rejected. The technical dashboard is kept on the private route `/__kvdf/dashboard`, with live JSON state available at `/__kvdf/api/state` while the local server is running.
-
-v5 project intelligence is also executable from the CLI:
-
-```bash
-kvdf capability list
-kvdf questionnaire answer entry.project_type --value saas
-kvdf questionnaire coverage
-kvdf questionnaire generate-tasks
-kvdf memory add --type decision --text "Use PostgreSQL"
-```
-
-The adaptive questionnaire engine writes coverage and missing-answer reports under `.kabeeri/questionnaires/` and generated tasks include provenance back to system areas, questions, and answers.
-
-It is not yet the full production platform. The CLI implementation now covers the core local governance loop, dashboard export/serve, live dashboard state, GitHub sync through `gh --confirm`, VS Code workspace/extension scaffolding, and Owner verification enforcement.
-
-The repository includes CLI integration tests and a GitHub Actions workflow for CI.
-
-For a concise v1 readiness snapshot, see [docs/production/V1_CURRENT_STATE.md](docs/production/V1_CURRENT_STATE.md).
-
----
-
-## What is Kabeeri VDF?
-
-Traditional development frameworks usually start at the code level:
-
-```text
-Routes
-Controllers
-Models
-Migrations
-Views
-Tests
-
-Kabeeri VDF starts before code:
-
-Raw idea
-→ beginner-friendly questions
-→ structured project folders
-→ folder-specific documents
-→ AI-ready prompts
-→ implementation tasks
-→ generated code
-→ review and acceptance
-→ future extensions
-
-The goal is to give vibe developers a repeatable system for turning product ideas into software projects that can be built with AI tools.
-
-Why this framework exists
-
-AI coding tools are powerful, but many users struggle with:
-
-not knowing what to ask the AI
-starting coding before the product is clear
-mixing core features with future ideas
-generating too many random files
-losing track of what has been done
-accepting AI output without proper review
-rebuilding the same planning structure for every project
-
-Kabeeri VDF solves this by providing a structured workflow for AI-driven development.
-
-Who is it for?
-
-Kabeeri VDF is designed for:
-
-vibe developers
-AI-powered software builders
-founders building software with AI
-product owners who want structured project planning
-small teams using ChatGPT, Codex, Cursor, Claude Code, Windsurf, GitHub Copilot, or similar tools
-agencies that want a repeatable AI delivery method
-developers who want a clean planning layer before coding
-
-You do not need deep programming experience to start using the framework, but it can also support experienced developers who want a better AI workflow.
-
-What Kabeeri VDF is not
-
-Kabeeri VDF is not:
-
-a replacement for Laravel, .NET, Next.js, Django, or WordPress
-a low-code platform
-a no-code app builder
-only a prompt collection
-only a folder template
-only a code generator
-
-It is a meta-framework for organizing AI-driven software development before, during, and after code generation.
-
-Core workflow
-
-1. Choose a project profile
-2. Generate the project skeleton
-3. Open the architecture guide
-4. Answer folder questionnaires
-5. Ask AI to generate folder documents from the answered questionnaires
-6. Generate coding prompts
-7. Execute one task at a time using an AI coding tool
-8. Track task progress
-9. Review output using acceptance checklists
-10. Plan future extensions without damaging the core project
-
-Project profiles
-
-Kabeeri VDF is organized around three project profiles.
-
-Lite
-
-For small projects, quick MVPs, landing pages, simple dashboards, and small internal tools.
-
-Standard
-
-For normal SaaS products, web apps, booking systems, CMS-style products, e-commerce systems, and business applications.
-
-Enterprise
-
-For large systems, multi-tenant platforms, ERP-style products, marketplaces, AI platforms, and long-term product ecosystems.
-
-Repository layout
-
-kabeeri.vdf/
-│
-├── generators/
-│   ├── lite.json
-│   ├── standard.json
-│   └── enterprise.json
-│
-├── templates/
-│   ├── arabic/
-│   └── english/
-│
-├── questionnaires/
-│   ├── core/
-│   ├── production/
-│   └── extension/
-│
-├── prompt_packs/
-│   ├── laravel/
-│   ├── dotnet/
-│   ├── nextjs/
-│   └── wordpress/
-│
-├── task_tracking/
-├── acceptance_checklists/
-├── schemas/
-├── examples/
-└── docs/
-    ├── ar/
-    └── en/
-
-Main parts of the framework
-Generators
-
-JSON files that describe which folders and starter files should be created for each project profile.
-
-Templates
-
-Reusable document templates in Arabic and English.
-
-Questionnaires
-
-Beginner-friendly question files that help project owners describe their product clearly.
-
-Each folder can have its own questionnaire. After the owner answers it, the answered file can be sent to an AI assistant to generate the detailed documents for that folder.
-
-Prompt packs
-
-AI-ready prompt packs for different coding stacks such as Laravel, .NET, Next.js, and WordPress.
-
-Task tracking
-
-A simple structure for tracking AI-assisted development tasks from idea to verification.
-
-Acceptance checklists
-
-Review checklists that help users decide whether AI-generated work is actually complete and safe to accept.
-
-Docs
-
-Arabic and English documentation for understanding and using the framework.
-
-How to use it today
-
-Kabeeri VDF is currently in an early foundation stage.
-
-For now, the recommended usage is:
-
-1. Download or clone this repository.
-2. Choose a generator profile: Lite, Standard, or Enterprise.
-3. Use the generator instructions to create a project skeleton.
-4. Open the architecture guide inside the generated project.
-5. Answer the questionnaire inside each folder.
-6. Send the answered questionnaire to an AI assistant.
-7. Let the AI generate the detailed documents for that folder.
-8. Use prompt packs to start implementation with your preferred stack.
-9. Track tasks and review output using the framework checklists.
-
-The CLI now automates parts of this flow, but the v1 foundation still treats the documents, generators, questionnaires, prompt packs, task tracking files, and acceptance checklists as the framework core.
-
-Current CLI
-
-The executable command name is:
-
-```text
-kvdf
-```
-
-Use `npm run kvdf -- --help` from this repository, or `kvdf --help` after local linking or package installation.
-
-Common current commands include:
-
-```text
-kvdf --help
-kvdf create --profile lite --output my-project
-kvdf doctor
-kvdf validate
-kvdf dashboard export
-kvdf questionnaire coverage
-```
-
-Future roadmap items may add higher-level UX, docs-site pages, and deeper integrations, but this README should no longer describe `kvdf` itself as only planned.
-
-Roadmap
-v0.1.x — Foundation
-improve README files
-complete Arabic and English docs
-review generator structure
-improve beginner-friendly questionnaires
-define task tracking format
-create acceptance checklist templates
-v0.2.0 — Generator system
-stabilize Lite, Standard, and Enterprise generators
-add schemas and validation rules
-improve generated skeleton examples
-v0.3.0 — CLI prototype
-introduce the first kvdf command-line interface
-support project creation from profiles
-support validation and AI handoff export
-v0.4.0 — Prompt packs
-create the first real Laravel prompt pack
-add Next.js prompt pack draft
-prepare .NET and WordPress prompt pack structures
-v0.5.0 — VS Code extension prototype
-create projects from inside VS Code
-open questionnaires
-validate structure
-manage task tracking
-v1.0.0 — Stable framework
-stable generators
-stable CLI
-complete docs
-real examples
-contributor-ready workflow
-tested framework lifecycle
-
-Example positioning
-
-Laravel helps developers write code faster.
-Kabeeri VDF helps vibe developers know what to ask AI, in what order, and how to review the result.
-
-Current status
-
-Kabeeri VDF is in early public development.
-
-The first public foundation release is:
-
-v0.1.0
-
-The next development milestone is:
-
-v0.1.1
-
-Focus of v0.1.1:
-
-repository cleanup
-README improvement
-documentation improvement
-generator review
-questionnaire improvement
-
-Contributing
-
-Contributions are welcome, especially in:
-
-documentation
-beginner-friendly questionnaires
-project generators
-prompt packs
-examples
-task tracking
-acceptance checklists
-CLI design
-
-Before contributing, please read:
-
-CONTRIBUTING.md
-CODE_OF_CONDUCT.md
-GOVERNANCE.md
-SECURITY.md
-
-Good first contribution areas:
-
-improve wording
-fix documentation
-simplify beginner questions
-add examples
-review prompt templates
-
-License
+## License
 
 Kabeeri Vibe Developer Framework is open-source software released under the MIT License.
 
-See:
-
-LICENSE
-Short definition
-
-Kabeeri Vibe Developer Framework is a meta-framework for AI-driven software development. It helps vibe developers turn raw product ideas into structured folders, beginner-friendly questionnaires, AI-ready documents, coding prompts, implementation tasks, and acceptance checklists before writing code with Laravel, .NET, Next.js, WordPress, or any other stack.
+See [LICENSE](LICENSE).

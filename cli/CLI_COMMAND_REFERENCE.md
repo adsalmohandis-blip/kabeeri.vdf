@@ -45,10 +45,13 @@ kvdf init
 kvdf init --profile lite
 kvdf init --profile standard
 kvdf init --profile enterprise
+kvdf init --lang user
 kvdf init --lang ar
 kvdf init --lang en
 kvdf init --lang both
 ```
+
+Without `--lang`, Kabeeri stores `language: user`, so adaptive intake and generated guidance should follow the user's detected language unless a command explicitly overrides it.
 
 ## Generators
 
@@ -61,7 +64,7 @@ kvdf generate --profile standard --output my-project
 kvdf generator create standard --output my-project
 ```
 
-Generator commands create a folder skeleton with README files and `kabeeri.generated.json`.
+Generator commands create a folder skeleton with README files and `kabeeri.generated.json`. When they run inside an initialized `.kabeeri` workspace, they also create proposed governance tasks for review, implementation, and validation so scaffolding does not bypass the task tracker. Use `--no-tasks` for a raw folder skeleton only.
 
 ## Questionnaires
 
@@ -246,15 +249,18 @@ kvdf vibe session start --title "Ecommerce planning"
 kvdf vibe brief
 kvdf vibe next
 kvdf capture --summary "Updated dashboard filters" --files src/cli/index.js --checks "npm test"
+kvdf capture scan --summary "Finished a small cleanup" --files src/cli/index.js
 kvdf capture list
 kvdf capture show capture-001
+kvdf capture evidence capture-001 --checks "npm test" --evidence "manual review"
 kvdf capture link capture-001 --task task-001
 kvdf capture convert capture-001 --task task-002
+kvdf capture reject capture-001 --reason "Exploration will not continue"
 kvdf capture resolve capture-001 --reason "Evidence reviewed"
 kvdf validate capture
 ```
 
-Vibe-first commands are optional. They classify natural-language intent, create reviewable suggested task cards, split larger product requests into safer cards, capture post-work notes, link or convert captured work into governed tasks, generate compact briefs for the next session, and then hand off to normal governed tasks. They store interaction records under `.kabeeri/interactions/`; the regular CLI remains fully usable without them. See `vibe_ux/VIBE_FIRST_RUNTIME.md`.
+Vibe-first commands are optional. They classify natural-language intent, create reviewable suggested task cards, split larger product requests into safer cards, capture post-work notes, preview captures with `capture scan`, add missing evidence with `capture evidence`, link or convert captured work into governed tasks, reject captures that should not continue, generate compact briefs for the next session, and then hand off to normal governed tasks. They store interaction records under `.kabeeri/interactions/`; the regular CLI remains fully usable without them. See `vibe_ux/VIBE_FIRST_RUNTIME.md`.
 
 ## Delivery Mode Advisor
 
@@ -492,13 +498,15 @@ kvdf pricing show
 kvdf usage record --task task-001 --developer agent-001 --provider openai --model gpt --input-tokens 1000 --output-tokens 500 --cached-tokens 0 --cost 0.25 --workstream backend
 kvdf usage record --task task-001 --developer agent-001 --provider openai --model gpt --input-tokens 1000 --output-tokens 500 --cached-tokens 0 --workstream backend
 kvdf usage record --untracked --input-tokens 1000 --output-tokens 500 --cost 0.25 --source ad-hoc-prompt
+kvdf usage inquiry --input-tokens 300 --output-tokens 120 --cost 0.04 --operation owner-question
+kvdf usage admin --input-tokens 500 --output-tokens 200 --operation dashboard-review
 kvdf usage list
 kvdf usage summary
 kvdf usage efficiency
 kvdf usage report --output usage-report.md
 ```
 
-Usage records are stored in `.kabeeri/ai_usage/usage_events.jsonl` and rolled up into `.kabeeri/ai_usage/usage_summary.json`. If `--cost` is omitted, Kabeeri calculates cost from `.kabeeri/ai_usage/pricing_rules.json` when a matching provider/model rule exists.
+Usage records are stored in `.kabeeri/ai_usage/usage_events.jsonl` and rolled up into `.kabeeri/ai_usage/usage_summary.json`. If `--cost` is omitted, Kabeeri calculates cost from `.kabeeri/ai_usage/pricing_rules.json` when a matching provider/model rule exists. `usage inquiry`, `usage admin`, `usage question`, `usage planning`, and `usage docs` record non-task AI operations under `admin:<operation>` buckets so owner questions, dashboard reviews, planning, and documentation conversations are visible beside task cost.
 
 Completed AI sessions generate `.kabeeri/reports/<session-id>.handoff.md`.
 
@@ -728,7 +736,7 @@ kvdf dashboard workspace remove --path ../store-a
 
 `dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
 
-When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, usage records, locks, delivery status, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace and can show separate KVDF folders as linked workspace summaries.
+When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, generated scaffold tasks, usage records, locks, delivery status, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace and can show separate KVDF folders as linked workspace summaries. Each dashboard section adds an inline explanation describing what the table means and why it exists.
 
 Use `--workspaces`, `KVDF_WORKSPACES`, or `kvdf dashboard workspace add` to add summary rows for other KVDF folders that have their own `.kabeeri` state. Linked workspaces are summarized, not merged into the current workspace.
 

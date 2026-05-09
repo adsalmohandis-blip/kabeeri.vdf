@@ -1748,7 +1748,10 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js vibe plan \"Build an ecommerce store\"", "Split a larger natural request into safer suggested cards.", "يقسم طلبًا كبيرًا إلى كروت اقتراح أصغر."),
     c("node bin/kvdf.js vibe session start --title \"Planning\"", "Start a Vibe planning session.", "يبدأ جلسة تخطيط Vibe."),
     c("node bin/kvdf.js vibe brief", "Generate a compact brief for resuming the next session.", "ينشئ ملخصًا صغيرًا لاستكمال الجلسة التالية."),
+    c("node bin/kvdf.js capture scan --summary \"Updated filters\" --files src/cli/index.js", "Preview post-work classification, task matches, missing evidence, and next action without writing a record.", "يعرض تصنيف عمل post-work والتاسكات القريبة والأدلة الناقصة دون تسجيل."),
     c("node bin/kvdf.js capture --summary \"Updated filters\" --files src/cli/index.js --checks \"npm test\"", "Record post-work changes that happened outside a planned task.", "يسجل تغييرات تمت بعد العمل أو خارج تاسك مخطط."),
+    c("node bin/kvdf.js capture evidence capture-001 --checks \"npm test\" --evidence \"manual review\"", "Attach checks and acceptance evidence before resolving the capture.", "يضيف الفحوصات ودليل القبول قبل إغلاق الالتقاط."),
+    c("node bin/kvdf.js capture reject capture-001 --reason \"Exploration will not continue\"", "Reject a capture that should not become governed work.", "يرفض الالتقاط إذا لن يتحول إلى عمل محكوم."),
     c("node bin/kvdf.js validate capture", "Validate post-work capture records.", "يفحص سجلات post-work capture.")
   ],
   "wordpress-development": [

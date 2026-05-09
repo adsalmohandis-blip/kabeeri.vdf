@@ -264,13 +264,13 @@ Generated from the older Requirements Traceability Matrix. Kept for traceability
 | Phase-10-019 | REQ-V6-019: Design owner verify queue in VS Code | missing | high | Create required files, templates, or runtime support in assigned phase. |
 | Phase-10-020 | REQ-V6-020: Design token cost panel for VS Code | partial | high | Complete missing docs/examples/runtime checks and re-run validation. |
 | Phase-10-021 | REQ-V6-021: Design VS Code onboarding flow for Kabeeri | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-022 | REQ-V6-022: Add post-work capture concept | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-023 | REQ-V6-023: Add changed files detection rules | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-024 | REQ-V6-024: Add retroactive task capture flow | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-025 | REQ-V6-025: Add changeset summary generation rules | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-026 | REQ-V6-026: Add unapproved work classification | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-027 | REQ-V6-027: Add post-work acceptance review | missing | high | Create required files, templates, or runtime support in assigned phase. |
-| Phase-10-028 | REQ-V6-028: Add free coding safety boundaries | missing | high | Create required files, templates, or runtime support in assigned phase. |
+| Phase-10-022 | REQ-V6-022: Add post-work capture concept | implemented | high | `kvdf capture` records free coding and restores traceability through link/convert/resolve. |
+| Phase-10-023 | REQ-V6-023: Add changed files detection rules | implemented | high | `kvdf capture scan` and capture records include git/manual file details and inferred workstreams. |
+| Phase-10-024 | REQ-V6-024: Add retroactive task capture flow | implemented | high | Captures can be converted into governed tasks with capture source and acceptance criteria. |
+| Phase-10-025 | REQ-V6-025: Add changeset summary generation rules | implemented | medium | Scan previews show files, intent, risk, task matches, missing evidence, and next action. |
+| Phase-10-026 | REQ-V6-026: Add unapproved work classification | implemented | high | Capture classification and audit make unapproved or broad work visible. |
+| Phase-10-027 | REQ-V6-027: Add post-work acceptance review | implemented | high | Evidence, reject, and guarded resolve actions support review after the work. |
+| Phase-10-028 | REQ-V6-028: Add free coding safety boundaries | partial | high | Evidence and owner-verify boundaries exist; deeper lock/security/migration interruption can be added later. |
 | Phase-10-029 | REQ-V6-029: Add command abstraction rules | missing | high | Create required files, templates, or runtime support in assigned phase. |
 | Phase-10-030 | REQ-V6-030: Add UI action registry | missing | high | Create required files, templates, or runtime support in assigned phase. |
 | Phase-10-031 | REQ-V6-031: Add command result contract | missing | high | Create required files, templates, or runtime support in assigned phase. |

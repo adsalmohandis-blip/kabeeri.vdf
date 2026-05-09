@@ -14,7 +14,7 @@ Kabeeri VDF currently has:
 - governed `.kabeeri` workspace state.
 - runtime schemas for core JSON and JSONL state.
 - task governance, workstreams, app boundaries, tokens, locks, sessions, audit.
-- Vibe-first commands and post-work capture.
+- Vibe-first commands and post-work capture lifecycle.
 - live dashboard, task tracker live JSON, and dashboard API endpoints.
 - Agile records and sprint cost summaries.
 - AI usage, budgets, context packs, preflights, and model routing.

@@ -217,6 +217,16 @@ test("adaptive questionnaire planning uses blueprints frameworks data design and
   assert.strictEqual(state.plans.length, 1);
 }));
 
+test("adaptive questionnaire planning follows user language", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const arabicPlan = JSON.parse(runKvdf(["questionnaire", "plan", "أريد بناء متجر إلكتروني بواجهة React وباك اند Laravel", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(arabicPlan.input_language, "ar");
+  assert.strictEqual(arabicPlan.output_language, "ar");
+  const englishPlan = JSON.parse(runKvdf(["questionnaire", "plan", "Build a CRM with sales pipeline and reports", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(englishPlan.input_language, "en");
+  assert.strictEqual(englishPlan.output_language, "en");
+}));
+
 test("UI design advisor recommends frontend patterns from product blueprints", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const news = JSON.parse(runKvdf(["design", "recommend", "news_website", "--json"], { cwd: dir }).stdout);
@@ -340,6 +350,9 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   runKvdf(["vibe", "convert", "suggestion-001"], { cwd: dir });
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
   assert.strictEqual(tasks[0].source, "vibe:intent-001");
+  const scan = JSON.parse(runKvdf(["capture", "scan", "--summary", "Adjusted internal CLI parser plumbing", "--files", "bin/kvdf.js"], { cwd: dir }).stdout);
+  assert.strictEqual(scan.classification, "needs_new_task");
+  assert.strictEqual(scan.would_create_capture, true);
   runKvdf(["capture", "--summary", "Adjusted internal CLI parser plumbing", "--files", "bin/kvdf.js", "--checks", "npm test"], { cwd: dir });
   let captures = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/interactions/post_work_captures.json"), "utf8")).captures;
   assert.strictEqual(captures[0].classification, "needs_new_task");
@@ -348,6 +361,8 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   assert.deepStrictEqual(captures[0].missing_evidence, ["acceptance_evidence"]);
   assert.match(runKvdf(["capture", "list"], { cwd: dir }).stdout, /capture-001/);
   assert.strictEqual(JSON.parse(runKvdf(["capture", "show", "capture-001"], { cwd: dir }).stdout).capture_id, "capture-001");
+  const updatedCapture = JSON.parse(runKvdf(["capture", "evidence", "capture-001", "--evidence", "manual review"], { cwd: dir }).stdout);
+  assert.deepStrictEqual(updatedCapture.missing_evidence, []);
   runKvdf(["capture", "convert", "capture-001", "--task", "task-002"], { cwd: dir });
   captures = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/interactions/post_work_captures.json"), "utf8")).captures;
   assert.strictEqual(captures[0].classification, "converted_to_task");
@@ -360,6 +375,9 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   runKvdf(["capture", "resolve", "capture-002", "--reason", "Evidence reviewed"], { cwd: dir });
   captures = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/interactions/post_work_captures.json"), "utf8")).captures;
   assert.strictEqual(captures[1].status, "resolved");
+  runKvdf(["capture", "--summary", "Explored a throwaway docs note", "--files", "notes.md", "--classification", "exploration", "--checks", "manual", "--evidence", "not needed"], { cwd: dir });
+  const rejectedCapture = JSON.parse(runKvdf(["capture", "reject", "capture-003", "--reason", "Exploration will not continue"], { cwd: dir }).stdout);
+  assert.strictEqual(rejectedCapture.status, "rejected");
   assert.match(runKvdf(["validate", "capture"], { cwd: dir }).stdout, /post-work captures checked/);
   assert.match(runKvdf(["vibe", "brief"], { cwd: dir }).stdout, /Vibe brief/);
   assert.match(runKvdf(["vibe", "next"], { cwd: dir }).stdout, /review_suggestion|approve_or_refine_task/);
@@ -731,13 +749,16 @@ test("budget approval gates enforced cost overruns", () => withTempDir((dir) => 
 test("untracked AI usage is recorded and shown in dashboard", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   runKvdf(["usage", "record", "--untracked", "--input-tokens", "100", "--output-tokens", "25", "--cost", "0.75", "--source", "ad-hoc-prompt"], { cwd: dir });
+  runKvdf(["usage", "inquiry", "--input-tokens", "10", "--output-tokens", "5", "--cost", "0.05", "--operation", "owner-question"], { cwd: dir });
   const summary = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/ai_usage/usage_summary.json"), "utf8"));
-  assert.strictEqual(summary.tracked_vs_untracked.untracked.events, 1);
-  assert.strictEqual(summary.tracked_vs_untracked.untracked.cost, 0.75);
+  assert.strictEqual(summary.tracked_vs_untracked.untracked.events, 2);
+  assert.strictEqual(summary.tracked_vs_untracked.untracked.cost, 0.8);
+  assert.ok(summary.by_task["admin:owner-question"]);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
   const html = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
   assert.match(html, /Tracked vs Untracked AI Usage/);
   assert.match(html, /untracked/);
+  assert.match(html, /admin:owner-question/);
 }));
 
 test("developer token efficiency separates accepted rejected and rework cost", () => withTempDir((dir) => {
@@ -1120,12 +1141,17 @@ test("vscode scaffold creates workspace task files", () => withTempDir((dir) => 
 }));
 
 test("generator scaffolds project and exports prompt pack", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
   runKvdf(["generate", "--profile", "standard", "--output", "my-project"], { cwd: dir });
   runKvdf(["prompt-pack", "export", "react", "--output", "my-project/07_AI_CODE_PROMPTS/react"], { cwd: dir });
   runKvdf(["prompt-pack", "use", "vue", "--output", "my-project/07_AI_CODE_PROMPTS/vue"], { cwd: dir });
   assert.ok(fs.existsSync(path.join(dir, "my-project/kabeeri.generated.json")));
   assert.ok(fs.existsSync(path.join(dir, "my-project/07_AI_CODE_PROMPTS/react/prompt_pack_manifest.json")));
   assert.ok(fs.existsSync(path.join(dir, "my-project/07_AI_CODE_PROMPTS/vue/prompt_pack_manifest.json")));
+  const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
+  assert.ok(tasks.some((task) => task.source === "generator" && task.generated_output === "my-project"));
+  const tracker = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/dashboard/task_tracker_state.json"), "utf8"));
+  assert.ok(tracker.summary.total >= 3);
 }));
 
 test("create shortcut accepts profile and command aliases", () => withTempDir((dir) => {

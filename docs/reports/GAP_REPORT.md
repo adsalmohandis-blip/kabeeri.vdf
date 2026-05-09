@@ -16,16 +16,16 @@ ADR/AI run history, packaging checks, and GitHub dry-run/policy-gated flows.
 Last verified:
 
 - `node bin\kvdf.js validate` passed.
-- `node bin\kvdf.js validate runtime-schemas` passed.
-- `npm test` passed with 48 integration tests.
-- `npm run pack:check` reported packaging status `ready`.
+- `node bin\kvdf.js validate capture` passed.
+- `node bin\kvdf.js capture scan --summary "Reviewed capture lifecycle" --files src/cli/index.js` returned a preview without writing a capture.
+- `npm test` was not completed in this sandbox because Node child process spawning returned `EPERM`.
 
 ## Implemented Since Original Gap Snapshot
 
 | Area | Current Evidence |
 | --- | --- |
 | Vibe-first runtime | `kvdf vibe`, `kvdf ask`, `kvdf capture`; `.kabeeri/interactions/*`; Vibe docs. |
-| Post-work capture | `.kabeeri/interactions/post_work_captures.json`; capture command and tests. |
+| Post-work capture | `.kabeeri/interactions/post_work_captures.json`; `capture scan/evidence/link/convert/reject/resolve`; dashboard visibility; tests. |
 | Task tracker live JSON | `.kabeeri/dashboard/task_tracker_state.json`; `kvdf task tracker`; `/__kvdf/api/tasks`. |
 | Runtime schemas | `schemas/runtime/schema_registry.json`; 68 JSON mappings and 13 JSONL mappings. |
 | Policy gates | task, release, handoff, security, migration, and GitHub write policies. |
@@ -59,6 +59,7 @@ Last verified:
 | --- | --- |
 | Missing Vibe-first runtime | Implemented. |
 | Missing post-work capture | Implemented. |
+| Missing post-work acceptance review | Implemented with evidence, reject, and guarded resolve actions. |
 | Missing policy engine | Implemented. |
 | Missing security scan/report/gate | Implemented. |
 | Missing migration safety runtime | Implemented as governance dry-run. |

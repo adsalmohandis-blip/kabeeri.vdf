@@ -136,11 +136,12 @@ function validate(scope) {
 function init(flags) {
   const profile = flags.profile || "standard";
   const mode = flags.mode || "structured";
-  const lang = flags.lang || "both";
+  const lang = flags.lang || flags.language || "user";
   const created = createWorkspace({ profile, mode, lang });
 
   console.log("Initialized Kabeeri workspace state.");
   console.log(table(["File", "Status"], created.map((item) => [item.path, item.status])));
+  refreshDashboardArtifacts();
 }
 
 function generator(action, value, flags) {
@@ -223,7 +224,79 @@ function createProjectSkeleton(generatorData, flags) {
 
   writeIfAllowed(path.join(outputPath, "kabeeri.generated.json"), `${JSON.stringify(manifest, null, 2)}\n`, force);
   writeIfAllowed(path.join(outputPath, "README.md"), buildProjectReadme(generatorData), force);
+  const createdTasks = createGeneratorGovernanceTasks(generatorData, output, flags);
+  refreshDashboardArtifacts();
   console.log(`Generated ${folders.length} folders in ${output}`);
+  if (createdTasks.length) console.log(`Created ${createdTasks.length} governance task(s) for ${output}.`);
+}
+
+function createGeneratorGovernanceTasks(generatorData, output, flags = {}) {
+  if (flags["no-tasks"] || flags.noTasks || !localFileExists(".kabeeri/tasks.json")) return [];
+  const file = ".kabeeri/tasks.json";
+  const data = readJsonFile(file);
+  data.tasks = data.tasks || [];
+  const profile = generatorData.profile || "generated";
+  const existing = new Set(data.tasks.map((item) => item.id));
+  const nextId = () => {
+    let index = data.tasks.length + 1;
+    let id = `task-${String(index).padStart(3, "0")}`;
+    while (existing.has(id)) {
+      index += 1;
+      id = `task-${String(index).padStart(3, "0")}`;
+    }
+    existing.add(id);
+    return id;
+  };
+  const createdAt = new Date().toISOString();
+  const taskSeeds = [
+    {
+      title: `Review generated ${profile} project skeleton`,
+      workstream: "docs",
+      acceptance: `Generated folder map for ${output} is reviewed and matches the intended application boundary.`
+    },
+    {
+      title: `Implement ${profile} foundation from approved tasks`,
+      workstream: inferGeneratorWorkstream(profile),
+      acceptance: "No implementation work starts until the owner approves the scoped task list."
+    },
+    {
+      title: `Validate ${profile} generated project and dashboard state`,
+      workstream: "qa",
+      acceptance: "Dashboard, task tracker, readiness, and usage summaries refresh after generation."
+    }
+  ];
+  const created = taskSeeds.map((seed) => ({
+    id: nextId(),
+    title: seed.title,
+    status: "proposed",
+    type: "project_setup",
+    workstream: seed.workstream,
+    workstreams: [seed.workstream],
+    app_username: null,
+    app_usernames: [],
+    app_paths: [output],
+    sprint_id: flags.sprint || null,
+    source: "generator",
+    generator_profile: profile,
+    generated_output: output,
+    acceptance_criteria: [seed.acceptance],
+    created_at: createdAt
+  }));
+  data.tasks.push(...created);
+  writeJsonFile(file, data);
+  for (const taskItem of created) {
+    appendAudit("task.created", "task", taskItem.id, `Generator task created: ${taskItem.title}`);
+  }
+  return created;
+}
+
+function inferGeneratorWorkstream(profile) {
+  const value = String(profile || "").toLowerCase();
+  if (/laravel|api|backend|server/.test(value)) return "backend";
+  if (/next|react|vue|angular|frontend|website|web/.test(value)) return "public_frontend";
+  if (/mobile|expo|native|flutter/.test(value)) return "mobile";
+  if (/database|sql|data/.test(value)) return "database";
+  return "unassigned";
 }
 
 function writeIfAllowed(filePath, content, force) {
@@ -1550,6 +1623,7 @@ function vibe(action, value, flags = {}, rest = []) {
   data.suggested_tasks.push(...createdSuggestions);
   writeJsonFile(file, data);
   attachSuggestionsToVibeSession(createdSuggestions, flags);
+  refreshDashboardArtifacts();
   for (const suggestion of createdSuggestions) {
     appendAudit("vibe.task_suggested", "suggestion", suggestion.suggestion_id, `Suggested task: ${suggestion.title}`);
   }
@@ -1820,6 +1894,7 @@ function convertVibeSuggestion(id, flags = {}) {
   item.converted_at = new Date().toISOString();
   writeJsonFile(tasksFile, data);
   writeJsonFile(suggestionsFile, suggestions);
+  refreshDashboardArtifacts();
   appendAudit("vibe.suggestion_converted", "task", taskId, `Vibe suggestion converted: ${id}`);
   console.log(`Converted ${id} to ${taskId}`);
 }
@@ -1834,16 +1909,52 @@ function updateVibeSuggestionStatus(id, status, reason) {
   item.status_reason = reason;
   item.updated_at = new Date().toISOString();
   writeJsonFile(file, data);
+  refreshDashboardArtifacts();
   appendAudit(`vibe.suggestion_${status}`, "suggestion", id, `Vibe suggestion ${status}`);
   console.log(`Suggestion ${id} is ${status}`);
 }
 
 function capturePostWork(message, flags = {}) {
   const parts = String(message || "").trim().split(/\s+/).filter(Boolean);
-  const captureActions = new Set(["list", "show", "link", "convert", "resolve"]);
-  if (parts.length > 0 && captureActions.has(parts[0]) && !flags.summary) {
+  const captureActions = new Set(["list", "show", "scan", "detect", "evidence", "reject", "link", "convert", "resolve"]);
+  if (parts.length > 0 && captureActions.has(parts[0]) && (["scan", "detect"].includes(parts[0]) || !flags.summary)) {
     return capturePostWorkAction(parts[0], parts[1] || flags.id, flags);
   }
+  const analysis = analyzePostWorkCapture(message || flags.summary, flags);
+  if (flags.task && !analysis.matchedTask) throw new Error(`Task not found: ${flags.task}`);
+  const file = ".kabeeri/interactions/post_work_captures.json";
+  const data = readJsonFile(file);
+  data.captures = data.captures || [];
+  const capture = {
+    capture_id: `capture-${String(data.captures.length + 1).padStart(3, "0")}`,
+    captured_at: new Date().toISOString(),
+    task_id: analysis.matchedTask ? analysis.matchedTask.id : null,
+    summary: analysis.text,
+    files_changed: analysis.changedFiles,
+    file_details: analysis.changedFileDetails,
+    detected_workstreams: analysis.intent.detected_workstreams,
+    app_usernames: analysis.appUsernames,
+    risk_level: analysis.intent.risk_level,
+    classification: analysis.classification,
+    task_matches: analysis.taskMatches,
+    checks_run: parseCsv(flags.checks),
+    risks: parseCsv(flags.risks),
+    acceptance_evidence: parseCsv(flags.evidence || flags.acceptance),
+    missing_evidence: buildCaptureMissingEvidence(flags, analysis.changedFiles),
+    owner_verify_required: captureOwnerVerifyRequired(analysis.classification, analysis.intent.risk_level),
+    recommended_next_action: captureNextAction(analysis.classification, analysis.matchedTask),
+    status: analysis.classification === "matches_existing_task" ? "linked" : "captured"
+  };
+  data.captures.push(capture);
+  writeJsonFile(file, data);
+  attachCaptureToVibeSession(capture, flags);
+  appendJsonLine(".kabeeri/interactions/user_intents.jsonl", analysis.intent);
+  refreshDashboardArtifacts();
+  appendAudit("vibe.post_work_captured", "capture", capture.capture_id, `Post-work capture recorded`);
+  console.log(JSON.stringify(capture, null, 2));
+}
+
+function analyzePostWorkCapture(message, flags = {}) {
   const changedFileDetails = flags.files
     ? parseCsv(flags.files).map((file) => ({ file, status: "manual", raw: file }))
     : getGitChangedFileDetails();
@@ -1852,45 +1963,37 @@ function capturePostWork(message, flags = {}) {
   const intent = classifyVibeIntent(`${text} ${changedFiles.join(" ")}`, { ...flags, type: "capture_work" });
   const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
   const matchedTask = flags.task ? getTaskById(flags.task) : inferCaptureTaskMatch(text, changedFiles, intent.detected_workstreams, tasks);
-  if (flags.task && !matchedTask) throw new Error(`Task not found: ${flags.task}`);
   const appUsernames = inferCaptureApps(changedFiles);
   const classification = classifyCapture(flags, matchedTask, changedFiles, appUsernames);
   const taskMatches = buildCaptureTaskMatches(text, changedFiles, intent.detected_workstreams, tasks).slice(0, 5);
-  const file = ".kabeeri/interactions/post_work_captures.json";
-  const data = readJsonFile(file);
-  data.captures = data.captures || [];
-  const capture = {
-    capture_id: `capture-${String(data.captures.length + 1).padStart(3, "0")}`,
-    captured_at: new Date().toISOString(),
-    task_id: matchedTask ? matchedTask.id : null,
-    summary: text,
-    files_changed: changedFiles,
-    file_details: changedFileDetails,
-    detected_workstreams: intent.detected_workstreams,
-    app_usernames: appUsernames,
-    risk_level: intent.risk_level,
+  return {
+    scan_id: `capture-scan-${Date.now()}`,
+    generated_at: new Date().toISOString(),
+    text,
+    changedFileDetails,
+    changedFiles,
+    intent,
+    matchedTask,
+    appUsernames,
     classification,
-    task_matches: taskMatches,
-    checks_run: parseCsv(flags.checks),
-    risks: parseCsv(flags.risks),
-    acceptance_evidence: parseCsv(flags.evidence || flags.acceptance),
+    taskMatches,
     missing_evidence: buildCaptureMissingEvidence(flags, changedFiles),
     owner_verify_required: captureOwnerVerifyRequired(classification, intent.risk_level),
     recommended_next_action: captureNextAction(classification, matchedTask),
-    status: classification === "matches_existing_task" ? "linked" : "captured"
+    would_create_capture: true
   };
-  data.captures.push(capture);
-  writeJsonFile(file, data);
-  attachCaptureToVibeSession(capture, flags);
-  appendJsonLine(".kabeeri/interactions/user_intents.jsonl", intent);
-  appendAudit("vibe.post_work_captured", "capture", capture.capture_id, `Post-work capture recorded`);
-  console.log(JSON.stringify(capture, null, 2));
 }
 
 function capturePostWorkAction(action, id, flags = {}) {
   const file = ".kabeeri/interactions/post_work_captures.json";
   const data = readJsonFile(file);
   data.captures = data.captures || [];
+
+  if (action === "scan" || action === "detect") {
+    const analysis = analyzePostWorkCapture(flags.summary || "", flags);
+    console.log(JSON.stringify(analysis, null, 2));
+    return;
+  }
 
   if (action === "list") {
     const rows = data.captures.map((item) => [
@@ -1913,6 +2016,34 @@ function capturePostWorkAction(action, id, flags = {}) {
     return;
   }
 
+  if (action === "evidence") {
+    capture.checks_run = uniqueList([...(capture.checks_run || []), ...parseCsv(flags.checks)]);
+    capture.acceptance_evidence = uniqueList([...(capture.acceptance_evidence || []), ...parseCsv(flags.evidence || flags.acceptance)]);
+    capture.risks = uniqueList([...(capture.risks || []), ...parseCsv(flags.risks)]);
+    capture.missing_evidence = buildCaptureMissingEvidenceFromRecord(capture);
+    capture.updated_at = new Date().toISOString();
+    capture.recommended_next_action = capture.missing_evidence.length
+      ? "add missing capture evidence before resolving"
+      : captureNextAction(capture.classification, capture.task_id ? getTaskById(capture.task_id) : null);
+    writeJsonFile(file, data);
+    refreshDashboardArtifacts();
+    appendAudit("vibe.capture_evidence_added", "capture", capture.capture_id, `Capture evidence updated`);
+    console.log(JSON.stringify(capture, null, 2));
+    return;
+  }
+
+  if (action === "reject") {
+    capture.status = "rejected";
+    capture.rejected_at = new Date().toISOString();
+    capture.rejection_reason = flags.reason || "rejected";
+    capture.recommended_next_action = "no further action unless work should be recaptured";
+    writeJsonFile(file, data);
+    refreshDashboardArtifacts();
+    appendAudit("vibe.capture_rejected", "capture", capture.capture_id, `Capture rejected`);
+    console.log(JSON.stringify(capture, null, 2));
+    return;
+  }
+
   if (action === "link") {
     const taskId = flags.task || flags.to || flags.id;
     if (!taskId) throw new Error("Missing --task.");
@@ -1924,6 +2055,7 @@ function capturePostWorkAction(action, id, flags = {}) {
     capture.linked_at = new Date().toISOString();
     capture.recommended_next_action = `review task ${taskId} and attach capture evidence`;
     writeJsonFile(file, data);
+    refreshDashboardArtifacts();
     appendAudit("vibe.capture_linked", "capture", capture.capture_id, `Capture linked to ${taskId}`);
     console.log(JSON.stringify(capture, null, 2));
     return;
@@ -1937,16 +2069,21 @@ function capturePostWorkAction(action, id, flags = {}) {
     capture.converted_at = new Date().toISOString();
     capture.recommended_next_action = `review and approve ${taskId}`;
     writeJsonFile(file, data);
+    refreshDashboardArtifacts();
     appendAudit("vibe.capture_converted", "task", taskId, `Capture converted to task`);
     console.log(JSON.stringify(capture, null, 2));
     return;
   }
 
   if (action === "resolve") {
+    if ((capture.missing_evidence || []).length && flags.force !== true && flags.force !== "true") {
+      throw new Error(`Capture still has missing evidence: ${capture.missing_evidence.join(", ")}. Add evidence or use --force true.`);
+    }
     capture.status = "resolved";
     capture.resolved_at = new Date().toISOString();
     capture.resolution = flags.reason || flags.summary || "resolved";
     writeJsonFile(file, data);
+    refreshDashboardArtifacts();
     appendAudit("vibe.capture_resolved", "capture", capture.capture_id, `Capture resolved`);
     console.log(JSON.stringify(capture, null, 2));
   }
@@ -2018,6 +2155,14 @@ function buildCaptureMissingEvidence(flags, changedFiles) {
   if (!parseCsv(flags.checks).length) missing.push("checks_run");
   if (!parseCsv(flags.evidence || flags.acceptance).length) missing.push("acceptance_evidence");
   if (!changedFiles.length) missing.push("files_changed");
+  return missing;
+}
+
+function buildCaptureMissingEvidenceFromRecord(capture) {
+  const missing = [];
+  if (!(capture.checks_run || []).length) missing.push("checks_run");
+  if (!(capture.acceptance_evidence || []).length) missing.push("acceptance_evidence");
+  if (!(capture.files_changed || []).length) missing.push("files_changed");
   return missing;
 }
 
@@ -2246,6 +2391,23 @@ function matchesWords(text, words) {
 
 function detectLanguage(text) {
   return /[\u0600-\u06ff]/.test(String(text || "")) ? "ar" : "en";
+}
+
+function resolveOutputLanguage(flags = {}, text = "") {
+  const requested = flags.lang || flags.language || flags["output-language"];
+  if (requested && !["auto", "user", "same"].includes(String(requested).toLowerCase())) {
+    return String(requested).toLowerCase();
+  }
+  const project = localFileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const projectLanguage = String(project.language || "").toLowerCase();
+  if (projectLanguage && !["both", "auto", "user"].includes(projectLanguage)) return projectLanguage;
+  return detectLanguage(text);
+}
+
+function localFileExists(relativePath) {
+  const fs = require("fs");
+  const path = require("path");
+  return fs.existsSync(path.join(repoRoot(), relativePath));
 }
 
 function capability(action, value) {
@@ -2942,6 +3104,7 @@ function inferQuestionnaireBlueprint(description, flags = {}) {
 function buildQuestionnaireIntakePlan(description, blueprintKey, flags = {}) {
   const blueprint = findProductBlueprint(blueprintKey);
   if (!blueprint) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const outputLanguage = resolveOutputLanguage(flags, description);
   const blueprintContext = buildBlueprintContext(blueprint, getProductBlueprintCatalog().core_platform);
   const dataContext = buildDataDesignContext(blueprint.key, flags);
   const uiContext = buildUiDesignRecommendation(blueprint.key, flags);
@@ -2964,6 +3127,9 @@ function buildQuestionnaireIntakePlan(description, blueprintKey, flags = {}) {
     plan_id: `questionnaire-intake-${Date.now()}`,
     created_at: new Date().toISOString(),
     description,
+    input_language: detectLanguage(description),
+    output_language: outputLanguage,
+    language_policy: "follow_user_language_unless_overridden",
     goal: "Generate focused developer questions that identify product type, framework stack, database model, UI approach, and delivery methodology before task generation.",
     blueprint: {
       key: blueprint.key,
@@ -3000,6 +3166,7 @@ function buildQuestionnaireIntakePlan(description, blueprintKey, flags = {}) {
     generated_questions: questions,
     answer_commands: questions.slice(0, 8).map((question) => `kvdf questionnaire answer ${question.question_id} --value "<answer>" --areas ${question.area_ids.join(",")}`),
     next_actions: [
+      `Answer and documentation language should be ${outputLanguage === "ar" ? "Arabic" : outputLanguage === "en" ? "English" : "the user's language"}.`,
       "Ask only the generated questions that are not already known from the developer's natural-language request.",
       "Record confirmed answers with `kvdf questionnaire answer` so coverage and missing-answer reports update.",
       "Use `kvdf delivery choose <mode>` after the developer approves Agile or Structured.",
@@ -3780,7 +3947,7 @@ function task(action, id, flags) {
     };
     data.tasks.push(item);
     writeJsonFile(file, data);
-    refreshTaskTrackerState();
+    refreshDashboardArtifacts();
     appendAudit("task.created", "task", item.id, `Task created: ${item.title}`);
     console.log(`Created task ${item.id}`);
     return;
@@ -3836,7 +4003,7 @@ function task(action, id, flags) {
 
     found.updated_at = new Date().toISOString();
     writeJsonFile(file, data);
-    refreshTaskTrackerState();
+    refreshDashboardArtifacts();
     appendAudit(`task.${action}`, "task", found.id, `Task ${action}: ${found.title}`);
     console.log(`Task ${found.id} is now ${found.status}`);
     return;
@@ -8334,6 +8501,7 @@ function renderPackageCheck(report) {
     `Generated at: ${report.generated_at}`,
     `Package: ${report.package.name}@${report.package.version}`,
     `Status: ${report.status}`,
+    `Interpretation: ${report.status === "warning" && report.blockers.length === 0 ? "Warning means open work or missing checks, not a hard blocker." : report.status === "blocked" ? "Blocked means release or handoff should stop until blockers are resolved." : "Ready means no blockers or warnings were detected."}`,
     "",
     "## Blockers",
     "",
@@ -8563,6 +8731,8 @@ function buildReadinessReport() {
   const unreadyJourneys = journeys.filter((item) => !(item.ready_to_show || item.status === "ready_to_show"));
   const unreviewedAiRuns = state.records.ai_run_report.totals.unreviewed || 0;
   const unresolvedCaptures = state.records.vibe_captures.filter((item) => !["resolved", "converted_to_task", "linked"].includes(item.status));
+  const ungovernedCaptures = state.records.vibe_captures.filter((item) => !item.task_id && !["resolved", "converted_to_task", "linked"].includes(item.status));
+  const activeUngovernedCaptures = state.records.vibe_captures.filter((item) => !item.task_id && (item.files_changed || []).length && !["resolved", "converted_to_task", "linked", "rejected"].includes(item.status));
   const blockers = [];
   const warnings = [];
 
@@ -8577,6 +8747,8 @@ function buildReadinessReport() {
   if (unreadyJourneys.length) warnings.push(`${unreadyJourneys.length} journey record(s) are not ready to show.`);
   if (unreviewedAiRuns) warnings.push(`${unreviewedAiRuns} AI run(s) are unreviewed.`);
   if (unresolvedCaptures.length) warnings.push(`${unresolvedCaptures.length} post-work capture(s) still need resolution.`);
+  if (activeUngovernedCaptures.length) blockers.push(`${activeUngovernedCaptures.length} post-work capture(s) changed files without a linked task.`);
+  else if (ungovernedCaptures.length) warnings.push(`${ungovernedCaptures.length} post-work capture(s) are not linked to tasks.`);
 
   return {
     report_type: "readiness",
@@ -8598,7 +8770,8 @@ function buildReadinessReport() {
       security_status: securityScan ? securityScan.status : "missing",
       handoff_packages: state.records.handoff_packages.length,
       unreviewed_ai_runs: unreviewedAiRuns,
-      unresolved_captures: unresolvedCaptures.length
+      unresolved_captures: unresolvedCaptures.length,
+      ungoverned_captures: ungovernedCaptures.length
     },
     validation: {
       ok: validation.ok,
@@ -8610,7 +8783,8 @@ function buildReadinessReport() {
       unready_journeys: unreadyJourneys.map((item) => ({ id: item.id, name: item.name, status: item.status || "draft" })),
       policy_blockers: policyBlockers.map(policyReportItem),
       migration_blockers: migrationBlockers.map((item) => ({ check_id: item.check_id, plan_id: item.plan_id, status: item.status })),
-      latest_security_scan: securityScan ? { scan_id: securityScan.scan_id, status: securityScan.status, findings_total: securityScan.findings_total || 0 } : null
+      latest_security_scan: securityScan ? { scan_id: securityScan.scan_id, status: securityScan.status, findings_total: securityScan.findings_total || 0 } : null,
+      ungoverned_captures: ungovernedCaptures.map((item) => ({ capture_id: item.capture_id, classification: item.classification, files_changed: item.files_changed || [], status: item.status }))
     }
   };
 }
@@ -8687,6 +8861,7 @@ function renderReadinessReport(report) {
     "",
     `Generated at: ${report.generated_at}`,
     `Status: ${report.status}`,
+    `Interpretation: ${report.status === "warning" && report.blockers.length === 0 ? "Warning means open work or missing checks, not a hard blocker." : report.status === "blocked" ? "Blocked means release or handoff should stop until blockers are resolved." : "Ready means no blockers or warnings were detected."}`,
     "",
     "## Summary",
     "",
@@ -10527,11 +10702,28 @@ function readStateArray(file, key) {
 }
 
 function writeDashboardStateFiles(state) {
+  const usageSummary = state && state.records && state.records.usage ? state.records.usage : summarizeUsage();
   writeJsonFile(".kabeeri/dashboard/technical_state.json", state.technical);
   writeJsonFile(".kabeeri/dashboard/business_state.json", state.business);
   writeJsonFile(".kabeeri/dashboard/task_tracker_state.json", state.task_tracker || buildTaskTrackerStateFromFiles());
   writeJsonFile(".kabeeri/dashboard/agile_state.json", state.records && state.records.agile_live ? state.records.agile_live : refreshAgileDashboardState());
   writeJsonFile(".kabeeri/dashboard/structured_state.json", state.records && state.records.structured_live ? state.records.structured_live : refreshStructuredDashboardState());
+  writeJsonFile(".kabeeri/ai_usage/usage_summary.json", usageSummary);
+  writeJsonFile(".kabeeri/ai_usage/cost_breakdown.json", {
+    by_task: usageSummary.by_task || {},
+    by_developer: usageSummary.by_developer || {},
+    by_workstream: usageSummary.by_workstream || {},
+    by_provider: usageSummary.by_provider || {},
+    by_sprint: usageSummary.by_sprint || {},
+    tracked_vs_untracked: usageSummary.tracked_vs_untracked || {}
+  });
+}
+
+function refreshDashboardArtifacts(options = {}) {
+  if (!localFileExists(".kabeeri/project.json")) return null;
+  const state = collectDashboardState(options);
+  writeDashboardStateFiles(state);
+  return state;
 }
 
 function buildClientHomeHtml() {
@@ -10714,6 +10906,7 @@ function buildDashboardHtml() {
     .metric { font-size: 30px; font-weight: 700; }
     .muted { color: #5f6b7a; font-size: 13px; }
     .source-note { margin-top: 8px; font-size: 13px; color: #d7e8ff; }
+    .section-help { margin: -6px 0 12px; color: #5f6b7a; font-size: 13px; max-width: 920px; }
     .table-wrap { width: 100%; overflow-x: auto; margin-bottom: 24px; }
     .empty-state { color: #5f6b7a; font-style: italic; }
     .severity-blocker { color: #991b1b; font-weight: 700; }
@@ -10919,6 +11112,46 @@ function buildDashboardHtml() {
         if (appFilter.value) window.location.href = "/customer/apps/" + encodeURIComponent(appFilter.value);
       });
     }
+
+    const dashboardDescriptions = {
+      "Action Center": "The first place to look. It explains blockers, warnings, and next actions derived from readiness, governance, reports, and task state.",
+      "Task Tracker Live Board": "Shows every governed task, its current status, assignee, active tokens, locks, usage, blockers, and the next recommended move.",
+      "Live Reports": "Summarizes readiness, governance, package, security, migration, Agile, Structured, and dashboard UX state from live JSON files.",
+      "Applications": "Lists registered apps inside this KVDF workspace so same-product apps stay connected while unrelated products remain separate.",
+      "App Boundary Governance": "Explains whether this workspace is single-app, same-product multi-app, or blocked from unrelated app work.",
+      "Workstream Governance": "Connects tasks, sessions, token usage, and folders to backend, frontend, mobile, QA, docs, and other workstreams.",
+      "Execution Scopes": "Shows task access tokens and the file boundaries each AI assistant or developer is allowed to touch.",
+      "Vibe-first Suggestions": "Natural-language requests that became reviewable task cards instead of immediate implementation.",
+      "Post-work Captures": "Detects work done outside the normal task flow and shows whether it was linked, converted, resolved, or still ungoverned.",
+      "Vibe Sessions and Briefs": "Groups natural-language intents, suggestions, captures, and context briefs so a resumed AI session knows where to continue.",
+      "Agile Backlog and Stories": "Scrum-style backlog, stories, reviews, and impediments for iterative delivery.",
+      "Structured Delivery": "Waterfall-style requirements, phases, gates, risks, and approvals for predictable enterprise delivery.",
+      "ADR and AI Run History": "Records architectural decisions and AI runs so reasoning, cost, and review status stay auditable.",
+      "Common Prompt Layer": "Tracks composed prompt packs and task-specific context to reduce repeated tokens and inconsistent instructions.",
+      "KVDF Workspaces": "Shows the current workspace and any linked KVDF workspaces for developers running multiple products side by side.",
+      "Feature Readiness": "Maps user-visible features to readiness states so demos and releases do not depend on vague progress claims.",
+      "User Journeys": "Shows end-user flows and whether they are ready to show, test, or hand off.",
+      "Tasks": "Raw task list from .kabeeri/tasks.json, useful when checking the source records behind the live board.",
+      "Active Locks": "Files or scopes currently reserved by a task to prevent developers or AI tools from overwriting each other.",
+      "AI Usage by Task": "Token and cost totals grouped by task, including admin operation buckets when no task exists.",
+      "Tracked vs Untracked AI Usage": "Separates governed task usage from admin, inquiry, planning, or other non-task AI usage.",
+      "Policy Results": "Latest policy gate evaluations that can block unsafe execution, review, release, or publishing.",
+      "Cost Preflights": "AI cost estimates and approval requirements before expensive work begins.",
+      "Handoff Packages": "Delivery bundles prepared for owners, reviewers, developers, or clients.",
+      "Security Scans": "Security checks and severity counts that affect readiness and release confidence.",
+      "Migration Safety": "Database or system migration plans, risk levels, and rollback visibility.",
+      "Developer Token Efficiency": "Token cost and accepted/rejected/rework signals by developer or AI assistant.",
+      "Developer Mode": "Shows whether the workspace is solo or team mode and which workstreams are owned."
+    };
+
+    document.querySelectorAll("main section > h2").forEach((heading) => {
+      const text = heading.textContent.trim();
+      if (!dashboardDescriptions[text] || heading.nextElementSibling?.classList?.contains("section-help")) return;
+      const help = document.createElement("p");
+      help.className = "section-help";
+      help.textContent = dashboardDescriptions[text];
+      heading.insertAdjacentElement("afterend", help);
+    });
 
     function stableDashboardFingerprint(state) {
       return JSON.stringify(state, (key, value) => key === "generated_at" ? undefined : value);
@@ -12554,6 +12787,7 @@ function usage(action, value, flags) {
       by_provider: summary.by_provider,
       by_sprint: summary.by_sprint
     });
+    refreshDashboardArtifacts();
     console.log(JSON.stringify(summary, null, 2));
     return;
   }
@@ -12580,54 +12814,70 @@ function usage(action, value, flags) {
   }
 
   if (action === "record") {
-    const isUntracked = Boolean(flags.untracked);
-    const taskId = flags.task || value || (isUntracked ? "untracked" : null);
-    const developerId = flags.developer || flags.assignee || (isUntracked ? "untracked" : null);
-    if (!taskId) throw new Error("Missing --task.");
-    if (!developerId) throw new Error("Missing --developer.");
-    const inputTokens = Number(flags["input-tokens"] || 0);
-    const outputTokens = Number(flags["output-tokens"] || 0);
-    const cachedTokens = Number(flags["cached-tokens"] || 0);
-    const totalTokens = inputTokens + outputTokens + cachedTokens;
-    const calculated = calculateUsageCost({
-      provider: flags.provider || "unknown",
-      model: flags.model || "unknown",
-      inputTokens,
-      outputTokens,
-      cachedTokens
+    return recordUsageEvent(value, flags);
+  }
+
+  if (["admin", "inquiry", "question", "planning", "docs"].includes(action)) {
+    return recordUsageEvent(value, {
+      ...flags,
+      untracked: true,
+      operation: flags.operation || action,
+      source: flags.source || `ai_${action}_usage`
     });
-    const cost = flags.cost !== undefined ? Number(flags.cost || 0) : calculated.cost;
-    const event = {
-      event_id: `usage-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      task_id: taskId,
-      sprint_id: flags.sprint || getTaskSprint(taskId),
-      developer_id: developerId,
-      workstream: flags.workstream || "untracked",
-      provider: flags.provider || "unknown",
-      model: flags.model || "unknown",
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cached_tokens: cachedTokens,
-      total_tokens: totalTokens,
-      cost,
-      currency: flags.currency || "USD",
-      cost_source: flags.cost !== undefined ? "manual" : calculated.source,
-      source: flags.source || (isUntracked ? "untracked_ai_usage" : "manual_entry"),
-      tracked: isUntracked ? false : flags.tracked !== "false"
-    };
-    if (!isUntracked) enforceBudgetApproval(taskId, totalTokens, cost);
-    appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", event);
-    const summary = summarizeUsage();
-    writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summary);
-    appendAudit("ai_usage.recorded", "task", taskId, `AI usage recorded: ${totalTokens} tokens`);
-    const warning = getBudgetWarning(taskId, summary);
-    console.log(`Recorded usage event ${event.event_id}`);
-    if (warning) console.log(`WARN ${warning}`);
-    return;
   }
 
   throw new Error(`Unknown usage action: ${action}`);
+}
+
+function recordUsageEvent(value, flags = {}) {
+  const isUntracked = Boolean(flags.untracked);
+  const operationType = flags.operation || flags.kind || flags.type || (isUntracked ? "untracked" : "task");
+  const taskId = flags.task || value || (isUntracked ? `admin:${operationType}` : null);
+  const developerId = flags.developer || flags.assignee || flags.actor || (isUntracked ? "untracked" : null);
+  if (!taskId) throw new Error("Missing --task.");
+  if (!developerId) throw new Error("Missing --developer.");
+  const inputTokens = Number(flags["input-tokens"] || 0);
+  const outputTokens = Number(flags["output-tokens"] || 0);
+  const cachedTokens = Number(flags["cached-tokens"] || 0);
+  const totalTokens = inputTokens + outputTokens + cachedTokens;
+  const calculated = calculateUsageCost({
+    provider: flags.provider || "unknown",
+    model: flags.model || "unknown",
+    inputTokens,
+    outputTokens,
+    cachedTokens
+  });
+  const cost = flags.cost !== undefined ? Number(flags.cost || 0) : calculated.cost;
+  const event = {
+    event_id: `usage-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    task_id: taskId,
+    sprint_id: isUntracked ? flags.sprint || null : flags.sprint || getTaskSprint(taskId),
+    developer_id: developerId,
+    workstream: flags.workstream || (isUntracked ? "admin" : "untracked"),
+    provider: flags.provider || "unknown",
+    model: flags.model || "unknown",
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    cached_tokens: cachedTokens,
+    total_tokens: totalTokens,
+    cost,
+    currency: flags.currency || "USD",
+    cost_source: flags.cost !== undefined ? "manual" : calculated.source,
+    source: flags.source || (isUntracked ? "untracked_ai_usage" : "manual_entry"),
+    operation_type: operationType,
+    prompt_kind: flags.prompt || flags["prompt-kind"] || operationType,
+    tracked: isUntracked ? false : flags.tracked !== "false"
+  };
+  if (!isUntracked) enforceBudgetApproval(taskId, totalTokens, cost);
+  appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", event);
+  const summary = summarizeUsage();
+  writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summary);
+  refreshDashboardArtifacts();
+  appendAudit("ai_usage.recorded", isUntracked ? "operation" : "task", taskId, `AI usage recorded: ${totalTokens} tokens`);
+  const warning = isUntracked ? null : getBudgetWarning(taskId, summary);
+  console.log(`Recorded usage event ${event.event_id}`);
+  if (warning) console.log(`WARN ${warning}`);
 }
 
 function pricing(action, value, flags) {

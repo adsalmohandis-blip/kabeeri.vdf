@@ -32,7 +32,7 @@
 - Added Execution Scope Governance tying task access tokens to app and workstream boundaries, with automatic token scopes, broad-scope blocking, dashboard visibility, and consolidated documentation.
 - Added optional Vibe-first runtime commands (`kvdf vibe`, `kvdf ask`, `kvdf capture`) with intent records, suggested task cards, post-work captures, task conversion, dashboard visibility, and documentation.
 - Expanded Vibe-first runtime with planning splits, Vibe sessions, compact context briefs, next-action recommendations, and dashboard visibility for lower-token team handoffs.
-- Expanded post-work capture into a full lifecycle with git/manual changed-file details, task matching, link/convert/resolve commands, capture validation, missing-evidence tracking, and dashboard next actions.
+- Expanded post-work capture into a full lifecycle with git/manual changed-file details, scan previews, task matching, evidence updates, link/convert/reject/resolve commands, capture validation, missing-evidence tracking, and dashboard next actions.
 - Added Agile Templates Runtime with `.kabeeri/agile.json`, backlog/epic/story/sprint planning/sprint review commands, story-to-task conversion, Agile validation, dashboard visibility, and documentation.
 - Expanded Agile into a Scrum-grade operational runtime with stricter Definition of Ready checks, impediments, retrospectives, velocity/forecast health, `.kabeeri/dashboard/agile_state.json`, and `/__kvdf/api/agile`.
 - Added Structured Delivery Runtime for Waterfall-style enterprise delivery with approved requirements, phases, deliverables, risks, change requests, phase gates, traceability, `.kabeeri/structured.json`, `.kabeeri/dashboard/structured_state.json`, and `/__kvdf/api/structured`.
@@ -42,6 +42,11 @@
 - Added UI/UX Advisor under `kvdf design recommend` with `.kabeeri/design_sources/ui_advisor.json` so Kabeeri/Codex can choose frontend experience patterns, stacks, component groups, page templates, SEO/GEO rules, dashboard rules, and mobile UX rules from the selected product blueprint.
 - Added Repository Foldering System with `standard_systems/REPOSITORY_FOLDERING_MAP.json`, `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, `kvdf structure`, and `kvdf validate foldering` to organize Kabeeri's growing root folders into stable core, knowledge, packs, integrations, contracts, docs, quality, and runtime-state groups.
 - Added adaptive questionnaire intake planning with `kvdf questionnaire plan`, combining Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor into focused developer questions stored in `.kabeeri/questionnaires/adaptive_intake_plan.json`.
+- Added user-language runtime behavior for adaptive intake so generated plans record input/output language and follow the user's language unless explicitly overridden.
+- Added automatic generator governance tasks inside initialized workspaces so Next.js/Laravel or other skeleton generation cannot silently bypass the task tracker.
+- Added non-task AI usage buckets through `kvdf usage inquiry`, `kvdf usage admin`, `kvdf usage question`, `kvdf usage planning`, and `kvdf usage docs`.
+- Improved live dashboard refresh artifacts for task tracker, usage summaries, generated scaffold tasks, and dashboard section explanations.
+- Strengthened readiness reporting for ungoverned post-work captures and clarified that warning-only readiness with open tasks is not a hard blocker.
 - Added Dashboard UX Governance with `kvdf dashboard ux`, action center rendering, responsive/empty-state dashboard checks, UX audit reports, and dashboard validation support.
 - Added `docs/SYSTEM_CAPABILITIES_REFERENCE.md` as the central capability map for CLI, Vibe-first, governance, dashboards, AI cost control, design governance, and release workflows.
 - Extracted completed `codex_commands/` knowledge into `docs/internal/AI_DEVELOPMENT_WORKFLOW.md`, added a completion report, and removed the temporary command-pack folder from the product capability surface.

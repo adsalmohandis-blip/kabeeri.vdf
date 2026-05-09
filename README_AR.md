@@ -1,342 +1,345 @@
 # Kabeeri Vibe Developer Framework
 
-> Current CLI status note: `kvdf` is no longer only a planned command. This repository includes a working CLI MVP. From the repository root, use `npm run kvdf -- --help`; after local linking or package installation, use `kvdf --help`. The CLI is still not the full production platform, but it can already support local validation, project creation, dashboard export/serve, and governance workflows. See `README.md`, `cli/README.md`, and `docs/production/V1_CURRENT_STATE.md` for the current status.
+Kabeeri VDF أو `kabeeri.vdf` هو فريمورك مفتوح المصدر يساعد المطورين وأصحاب المشاريع على بناء البرمجيات باستخدام أدوات الذكاء الاصطناعي بطريقة منظمة وقابلة للمتابعة.
 
-**Kabeeri Vibe Developer Framework** — ويُختصر عمليًا إلى **Kabeeri VDF** أو **kabeeri.vdf** — هو فريمورك مفتوح المصدر مخصص لمطوري البرمجيات بالذكاء الاصطناعي، أو ما يُعرف باسم **Vibe Developers**.
+كبيري لا يستبدل Laravel أو Next.js أو React أو Vue أو Angular أو WordPress أو Django أو .NET أو Flutter أو React Native. هو طبقة تنظيم وحوكمة فوق هذه الأدوات، تجعل المطور والذكاء الاصطناعي يعملان داخل نظام واضح بدل التنفيذ العشوائي.
 
-هو ليس بديلًا عن Laravel أو .NET أو Next.js أو Django أو WordPress، بل يعمل كطبقة أعلى منهم.
+كبيري يساعدك على تحويل الفكرة إلى:
 
-هدفه أن يساعد صاحب المشروع أو مطور الذكاء الاصطناعي على تحويل فكرة خام إلى مشروع برمجي منظم، قابل للفهم، قابل للتوثيق، قابل للتنفيذ بواسطة أدوات الذكاء الاصطناعي، وقابل للمراجعة والتطوير.
+- أسئلة واضحة للمطور أو العميل
+- حدود واضحة للتطبيقات داخل المشروع
+- اختيار Agile أو Structured حسب طبيعة المشروع
+- خريطة نوع النظام المطلوب بناؤه
+- توجيه لتصميم قاعدة البيانات
+- توجيه لتصميم الواجهات
+- تاسكات محكومة
+- سياق جاهز للذكاء الاصطناعي
+- تسجيل استهلاك التوكنات والتكلفة
+- لوحة مراقبة مباشرة
+- تقارير readiness وgovernance
+- بوابات نشر وتسليم
+- تقارير handoff للمالك أو العميل
 
----
+الفكرة الأساسية: المطور يتكلم طبيعي، والذكاء الاصطناعي يستخدم كبيري في الخلفية عند الحاجة، وكبيري يسجل ما حدث حتى لا تضيع الجلسات أو تختلط الملفات أو يتم التنفيذ خارج المسار.
 
-## ما هو Kabeeri VDF؟
+## الحالة الحالية
 
-الفريموركات التقليدية مثل Laravel و .NET تبدأ عادة من مستوى الكود:
+المستودع يحتوي الآن على CLI حقيقي باسم `kvdf`.
+
+الأمر لم يعد مجرد فكرة مستقبلية. يستطيع `kvdf` إنشاء حالة `.kabeeri/`، إنشاء هياكل مشاريع، توليد تاسكات حوكمة، تشغيل التحقق، تتبع استهلاك الذكاء الاصطناعي، إدارة task access tokens، تشغيل لوحة المراقبة، تطبيق policy gates، وإخراج تقارير readiness وgovernance.
+
+مصدر الحقيقة داخل أي مشروع هو:
 
 ```text
-Routes
-Controllers
-Models
-Migrations
-Views
-Tests
+.kabeeri/
+```
 
-أما Kabeeri VDF فيبدأ قبل الكود:
+الـ CLI يكتب الحالة داخل `.kabeeri/`، والداشبورد تقرأ منها، وأدوات الذكاء الاصطناعي يجب أن تعمل عبر التاسكات والحدود والتقارير بدل التعديل العشوائي.
 
-فكرة خام
-→ أسئلة سهلة لصاحب المشروع
-→ هيكل فولدرات منظم
-→ مستندات متخصصة لكل فولدر
-→ برومبتات جاهزة للذكاء الاصطناعي
-→ مهام تنفيذية
-→ كود يتم إنشاؤه بالذكاء الاصطناعي
-→ مراجعة وقبول
-→ إضافات وتطوير مستقبلي
+مراجع مهمة:
 
-الفكرة الأساسية أن مطور الذكاء الاصطناعي لا يبدأ بسؤال عشوائي مثل:
+- [System Capabilities Reference](docs/SYSTEM_CAPABILITIES_REFERENCE.md)
+- [CLI Command Reference](cli/CLI_COMMAND_REFERENCE.md)
+- [Documentation Site](docs/site/index.html)
 
-ابنِ لي تطبيقًا
+## لمن يستخدم كبيري؟
 
-بل يبدأ بمنهجية منظمة تجعله يعرف ماذا يطلب من AI، وبأي ترتيب، وكيف يراجع الناتج.
+كبيري مناسب لـ:
 
-لماذا يوجد هذا الفريمورك؟
+- مطوري الفايب كودنج
+- أصحاب المشاريع الذين يبنون بالذكاء الاصطناعي
+- المطورين الذين يريدون تتبع عمل الذكاء الاصطناعي
+- الفرق الصغيرة التي تستخدم أدوات AI
+- الوكالات التي تريد طريقة تسليم متكررة ومنظمة
+- أصحاب المنتجات الذين يحتاجون تخطيط أوضح قبل الكود
+- المطورين الذين يعملون على أكثر من تطبيق داخل نفس المنتج
 
-أدوات الذكاء الاصطناعي أصبحت قادرة على كتابة الكود بسرعة، لكن المشكلة الحقيقية ليست دائمًا في كتابة الكود.
+يمكن استخدام كبيري مع أي أداة ذكاء اصطناعي. هو غير مرتبط بأداة واحدة.
 
-المشاكل الأكبر غالبًا تكون:
+## لماذا تحتاج كبيري؟
 
-صاحب المشروع لا يعرف كيف يشرح فكرته للذكاء الاصطناعي.
-الـ Vibe Developer لا يعرف من أين يبدأ.
-يتم خلط النسخة الأولى مع أفكار مستقبلية.
-يتم إنشاء ملفات كثيرة بلا تنظيم.
-يتم قبول مخرجات AI بدون مراجعة واضحة.
-لا يوجد تتبع لما تم تنفيذه وما لم يتم.
-لا يوجد معيار واضح لمعرفة هل المهمة انتهت فعلًا أم لا.
-كل مشروع يبدأ من الصفر بدون طريقة عمل ثابتة.
+أدوات الذكاء الاصطناعي قوية، لكن المشاريع تتعطل عندما:
 
-Kabeeri VDF يحل هذه المشاكل عن طريق نظام واضح ومتكرر يمكن استخدامه في مشاريع مختلفة.
+- تكون الفكرة غير واضحة
+- يبدأ الذكاء الاصطناعي في الكود قبل وجود تاسكات
+- تختلط ملفات الباك إند والفرونت إند والموبايل
+- يعدل أكثر من مطور نفس الملفات
+- لا يتم تسجيل التوكنات والتكلفة
+- تتوقف الداشبورد أو تصبح قديمة
+- يتم العمل خارج نظام التاسكات
+- لا يعرف المالك ما الذي انتهى وما الذي يحتاج مراجعة
 
-لمن هذا الفريمورك؟
+كبيري هو طبقة الحوكمة حول تجربة التطوير بالذكاء الاصطناعي.
 
-هذا الفريمورك موجه إلى:
+## التثبيت والتشغيل
 
-مطوري البرمجيات بالذكاء الاصطناعي.
-Vibe Developers.
-أصحاب المشاريع التقنية غير المتخصصين برمجيًا.
-رواد الأعمال الذين يريدون تحويل فكرة إلى تطبيق أو موقع أو نظام.
-الفرق الصغيرة التي تستخدم ChatGPT أو Codex أو Cursor أو Claude Code أو Windsurf أو GitHub Copilot.
-الوكالات التي تريد طريقة منظمة ومتكررة لتسليم مشاريع AI-assisted.
-المطورين التقليديين الذين يريدون طبقة تخطيط وتنظيم قبل مرحلة الكود.
+من داخل هذا المستودع:
 
-لا يشترط أن يكون المستخدم مبرمجًا محترفًا للبدء، لكن وجود خبرة تقنية بسيطة يساعد في المراجعة والتنفيذ.
+```bash
+npm install
+npm run kvdf -- --help
+npm run kvdf -- doctor
+npm run kvdf -- validate
+```
 
-ما الذي لا يفعله Kabeeri VDF؟
+بعد الربط المحلي أو التثبيت يمكن استخدام الأمر مباشرة:
 
-هذا الفريمورك ليس:
-
-بديلًا عن Laravel أو .NET أو Next.js أو Django أو WordPress.
-منصة No-code.
-منصة Low-code.
-مجرد مجموعة برومبتات.
-مجرد قالب فولدرات.
-مولد كود فقط.
-ضمانًا لجودة الكود بدون مراجعة.
-
-هو Meta-Framework لتنظيم عملية تطوير البرمجيات بالذكاء الاصطناعي قبل الكود وأثناء الكود وبعد الكود.
-
-الجملة التعريفية المختصرة
-Laravel يساعد المبرمج يكتب الكود أسرع.
-Kabeeri VDF يساعد الـ Vibe Developer يعرف ماذا يطلب من AI، وبأي ترتيب، وكيف يراجع الناتج.
-دورة العمل الأساسية
-1. اختيار نوع المشروع
-2. إنشاء هيكل المشروع
-3. قراءة دليل المعمارية
-4. الإجابة على ملفات الأسئلة داخل الفولدرات
-5. إرسال ملفات الأسئلة المجاب عنها إلى AI
-6. توليد مستندات كل فولدر
-7. توليد برومبتات التكويد
-8. تنفيذ المهام واحدة تلو الأخرى باستخدام AI
-9. تتبع التنفيذ
-10. مراجعة الناتج باستخدام قوائم القبول
-11. حفظ الأفكار المستقبلية داخل طبقة الإضافات
-أنواع المشاريع داخل الفريمورك
-
-يعتمد Kabeeri VDF على 3 مستويات رئيسية.
-
-Lite
-
-للمشاريع الصغيرة والسريعة مثل:
-
-Landing pages.
-أدوات داخلية بسيطة.
-MVP سريع.
-لوحة تحكم صغيرة.
-موقع تعريفي مع خصائص محدودة.
-Standard
-
-للمشاريع المتوسطة مثل:
-
-SaaS.
-تطبيق ويب.
-نظام حجوزات.
-CMS.
-متجر إلكتروني متوسط.
-نظام إدارة أعمال بسيط.
-Enterprise
-
-للمشاريع الكبيرة والمعقدة مثل:
-
-منصات متعددة العملاء.
-ERP.
-Marketplace.
-أنظمة كبيرة طويلة المدى.
-منصات AI.
-أنظمة شركات متكاملة.
-هيكل المستودع
-kabeeri.vdf/
-│
-├── generators/
-│   ├── lite.json
-│   ├── standard.json
-│   └── enterprise.json
-│
-├── templates/
-│   ├── arabic/
-│   └── english/
-│
-├── questionnaires/
-│   ├── core/
-│   ├── production/
-│   └── extension/
-│
-├── prompt_packs/
-│   ├── laravel/
-│   ├── dotnet/
-│   ├── nextjs/
-│   └── wordpress/
-│
-├── task_tracking/
-├── acceptance_checklists/
-├── schemas/
-├── examples/
-└── docs/
-    ├── ar/
-    └── en/
-شرح أجزاء الفريمورك
-generators
-
-ملفات JSON تحدد الهيكل الذي سيتم إنشاؤه لكل نوع مشروع: Lite أو Standard أو Enterprise.
-
-وظيفتها إنشاء Skeleton منظم يحتوي على الفولدرات الأساسية، ودليل المعمارية، وملفات الأسئلة.
-
-templates
-
-قوالب مستندات قابلة لإعادة الاستخدام باللغتين العربية والإنجليزية.
-
-questionnaires
-
-ملفات أسئلة سهلة موجهة لصاحب المشروع أو مطور الذكاء الاصطناعي.
-
-كل فولدر يمكن أن يحتوي على ملف أسئلة خاص به. بعد الإجابة عليه، يتم إرساله إلى AI ليقوم بإنشاء مستندات هذا الفولدر بناءً على إجابات حقيقية، وليس ملفات عامة أو فارغة.
-
-prompt_packs
-
-حزم برومبتات جاهزة للتكويد باستخدام Laravel أو .NET أو Next.js أو WordPress وغيرها.
-
-كل Prompt يجب أن يكون صغيرًا وواضحًا ومخصصًا لمهمة واحدة.
-
-task_tracking
-
-نظام بسيط لتتبع المهام أثناء تنفيذ المشروع بواسطة الذكاء الاصطناعي.
-
-يساعد على معرفة:
-
-ما الذي لم يبدأ.
-ما الذي يتم تنفيذه.
-ما الذي أنجزه AI.
-ما الذي يحتاج مراجعة.
-ما الذي تم قبوله.
-ما الذي تم تعطيله أو تأجيله.
-acceptance_checklists
-
-قوائم مراجعة تساعد المستخدم على تقييم مخرجات AI قبل قبولها.
-
-الغرض منها منع الاعتماد الأعمى على مخرجات الذكاء الاصطناعي.
-
-docs
-
-توثيق الفريمورك بالعربية والإنجليزية.
-
-كيف تستخدمه حاليًا؟
-
-الفريمورك حاليًا في مرحلة تأسيسية مبكرة.
-
-طريقة الاستخدام الحالية:
-
-1. حمّل أو انسخ هذا المستودع.
-2. اختر نوع المشروع: Lite أو Standard أو Enterprise.
-3. استخدم ملف Generator المناسب لإنشاء هيكل المشروع.
-4. افتح دليل المعمارية داخل المشروع الناتج.
-5. افتح ملف الأسئلة داخل كل فولدر.
-6. أجب على الأسئلة بلغة سهلة وواضحة.
-7. أرسل ملف الأسئلة بعد الإجابة إلى AI.
-8. اطلب من AI إنشاء مستندات هذا الفولدر فقط.
-9. استخدم Prompt Packs للانتقال إلى مرحلة الكود.
-10. استخدم Task Tracking لمتابعة التنفيذ.
-11. استخدم Acceptance Checklists لمراجعة الناتج.
-
-في الإصدارات القادمة سيتم توفير أداة CLI لتسهيل هذه الخطوات.
-
-أداة CLI المخطط لها
-
-الاسم المقترح لأداة سطر الأوامر هو:
-
-kvdf
-
-أمثلة أوامر مستقبلية:
-
-kvdf new my-project --profile lite --lang ar
-kvdf new my-project --profile standard --lang en
-kvdf new my-project --profile enterprise --lang ar
+```bash
+kvdf --help
+kvdf doctor
 kvdf validate
-kvdf export-ai-handoff
-kvdf tasks list
-kvdf tasks next
+```
 
-الـ CLI ليست الهدف الأول الآن. الهدف الأول هو تثبيت الوثائق، والهيكل، والـ generators، وملفات الأسئلة، والـ prompt packs.
+## بدء Workspace جديد
 
-خارطة الطريق
-v0.1.x — مرحلة التأسيس
-تحسين README العربي والإنجليزي.
-تحسين التوثيق.
-مراجعة الـ generators.
-تحسين ملفات الأسئلة للمبتدئين.
-تعريف أول صيغة لتتبع المهام.
-إنشاء أول قوالب Acceptance Checklists.
-v0.2.0 — تثبيت نظام Generators
-تثبيت Lite / Standard / Enterprise.
-إضافة Schemas.
-إضافة قواعد تحقق.
-تحسين أمثلة المشاريع الناتجة.
-v0.3.0 — أول نسخة CLI
-إنشاء أول نسخة من أمر kvdf.
-دعم إنشاء مشروع جديد.
-دعم التحقق من الهيكل.
-دعم تصدير AI handoff.
-v0.4.0 — Prompt Packs
-إنشاء أول Laravel Prompt Pack حقيقي.
-تجهيز Next.js Prompt Pack.
-تجهيز هياكل .NET و WordPress.
-v0.5.0 — VS Code Extension Prototype
-إنشاء مشروع من داخل VS Code.
-فتح ملفات الأسئلة.
-التحقق من الهيكل.
-إدارة المهام.
-v1.0.0 — نسخة مستقرة
-Generators مستقرة.
-CLI مستقر.
-توثيق كامل.
-أمثلة حقيقية.
-Workflow واضح للمساهمين.
-دورة حياة كاملة للفريمورك.
-الحالة الحالية
+داخل فولدر المشروع:
 
-أول إصدار تأسيسي عام:
+```bash
+kvdf init --profile standard --mode structured
+```
 
-v0.1.0
+اللغة الافتراضية الآن هي:
 
-المرحلة التالية:
+```text
+language: user
+```
 
-v0.1.1
+يعني كبيري يحاول اتباع لغة المستخدم في الأسئلة والتوجيهات. ويمكن تحديد اللغة صراحة:
 
-تركيز v0.1.1:
+```bash
+kvdf init --profile standard --lang ar
+kvdf init --profile standard --lang en
+```
 
-تنظيف المستودع.
-تحسين README.
-تحسين التوثيق.
-مراجعة الـ generators.
-تحسين ملفات الأسئلة.
-المساهمة
+## إنشاء هيكل مشروع
 
-المساهمات مرحب بها، خصوصًا في:
+كبيري يدعم ثلاث بروفايلات:
 
-تحسين التوثيق.
-تبسيط الأسئلة للمبتدئين.
-مراجعة الـ generators.
-بناء Prompt Packs.
-إضافة أمثلة.
-تصميم Task Tracking.
-إنشاء Acceptance Checklists.
-تصميم CLI.
+| البروفايل | مناسب لـ |
+| --- | --- |
+| `lite` | صفحات بسيطة، MVP صغير، أدوات داخلية |
+| `standard` | SaaS، متجر إلكتروني، CMS، حجوزات، أنظمة أعمال |
+| `enterprise` | ERP، Marketplace، Multi-tenant، أنظمة كبيرة طويلة المدى |
 
-قبل المساهمة، راجع:
+إنشاء هيكل:
 
-CONTRIBUTING.md
-CODE_OF_CONDUCT.md
-GOVERNANCE.md
-SECURITY.md
+```bash
+kvdf create --profile standard --output my-project
+```
 
-مناطق مناسبة للمساهمين الجدد:
+أو:
 
-تحسين الصياغة.
-إصلاح التوثيق.
-تبسيط الأسئلة.
-إضافة أمثلة.
-مراجعة قوالب البرومبتات.
-الترخيص
+```bash
+kvdf generate --profile standard --output my-project
+```
+
+لو الأمر يعمل داخل workspace يحتوي `.kabeeri/`، سيقوم كبيري تلقائيا بإنشاء تاسكات حوكمة مقترحة للمراجعة والتنفيذ والتحقق. هذا يمنع توليد Laravel أو Next.js أو WordPress أو غيرها بدون تاسكات.
+
+لو أردت هيكل خام فقط بدون تاسكات:
+
+```bash
+kvdf create --profile standard --output my-project --no-tasks
+```
+
+## طريقة العمل المقترحة مع الذكاء الاصطناعي
+
+1. فعّل كبيري داخل المشروع.
+2. اشرح المنتج بلغة طبيعية.
+3. دع كبيري يقترح blueprint وdelivery mode وdata design وUI direction وprompt packs.
+4. اسأل فقط الأسئلة الناقصة.
+5. حول المقترحات المعتمدة إلى تاسكات.
+6. نفذ تاسك واحدة في كل مرة.
+7. استخدم task tokens وlocks لتحديد نطاق التنفيذ.
+8. سجل استهلاك التوكنات.
+9. استخدم post-work capture لأي عمل تم خارج المسار.
+10. راجع، تحقق، ثم سلم.
+
+أوامر مفيدة:
+
+```bash
+kvdf questionnaire plan "Build an ecommerce store with Laravel backend, Next.js frontend, payments, shipping, and a mobile app" --json
+kvdf blueprint recommend "Build ecommerce store with catalog cart checkout payments shipping"
+kvdf data-design context ecommerce --json
+kvdf design recommend ecommerce --json
+kvdf delivery recommend "Build a regulated ERP with accounting and approvals" --json
+```
+
+## Vibe-first
+
+المطور ليس مطالبا بحفظ كل أوامر CLI.
+
+التجربة المقصودة:
+
+```text
+المطور يتكلم طبيعي مع أداة الذكاء الاصطناعي.
+أداة الذكاء الاصطناعي تستخدم أوامر كبيري في الخلفية عند الحاجة.
+كبيري يسجل النوايا والمقترحات والتاسكات والاستهلاك والداشبورد.
+```
+
+أمثلة:
+
+```bash
+kvdf vibe suggest "Add a checkout page for customers"
+kvdf vibe plan "Build ecommerce store with products cart checkout admin and tests"
+kvdf vibe convert suggestion-001
+kvdf capture --summary "Implemented checkout validation" --files src/checkout.ts --checks "npm test" --evidence "checkout tests passed"
+```
+
+لو تم تغيير ملفات بدون تاسك مرتبط، يمكن أن تصبح readiness في حالة blocked حتى يتم ربط capture بتاسك أو تحويله أو رفضه أو حله.
+
+## حوكمة التاسكات
+
+كبيري يتوقع أن التنفيذ يتم من خلال تاسكات.
+
+```bash
+kvdf task create --title "Build product catalog API" --workstream backend
+kvdf task approve task-001
+kvdf task assign task-001 --assignee agent-001
+kvdf token issue --task task-001 --assignee agent-001 --max-usage-tokens 50000
+kvdf lock acquire --task task-001 --type folder --scope src/api/products --owner agent-001
+kvdf task start task-001 --actor agent-001
+```
+
+عرض التراكر:
+
+```bash
+kvdf task tracker
+kvdf task tracker --json
+```
+
+## تسجيل التوكنات والتكلفة
+
+تسجيل استهلاك مرتبط بتاسك:
+
+```bash
+kvdf usage record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500 --cost 0.25
+```
+
+تسجيل استفسارات أو عمليات إدارية غير مرتبطة بتاسك:
+
+```bash
+kvdf usage inquiry --input-tokens 300 --output-tokens 120 --cost 0.04 --operation owner-question
+kvdf usage admin --input-tokens 500 --output-tokens 200 --cost 0.08 --operation dashboard-review
+```
+
+الملخص:
+
+```bash
+kvdf usage summary
+kvdf usage efficiency
+```
+
+## لوحة المراقبة المباشرة
+
+تشغيل الداشبورد:
+
+```bash
+kvdf dashboard serve --port 4177
+```
+
+المسارات:
+
+- صفحة العميل: `http://127.0.0.1:4177/`
+- الداشبورد الخاصة: `http://127.0.0.1:4177/__kvdf/dashboard`
+- حالة live كاملة: `http://127.0.0.1:4177/__kvdf/api/state`
+- حالة التاسكات: `http://127.0.0.1:4177/__kvdf/api/tasks`
+- التقارير الحية: `http://127.0.0.1:4177/__kvdf/api/reports`
+
+الداشبورد تعرض التطبيقات، التاسكات، execution scopes، workstreams، Vibe suggestions، post-work captures، Agile، Structured، AI usage، السياسات، readiness، الأمن، المايجريشن، وكفاءة المطورين.
+
+كل قسم داخل الداشبورد يحتوي وصفا مختصرا يوضح معناه وسبب وجوده.
+
+## Readiness وGovernance وRelease Gates
+
+إنشاء تقارير مستقلة:
+
+```bash
+kvdf readiness report --output readiness.md
+kvdf governance report --output governance.md
+kvdf reports live
+```
+
+النشر وGitHub محميان بسياسات:
+
+```bash
+kvdf policy evaluate --release v0.2.0
+kvdf release publish --version v0.2.0 --dry-run
+```
+
+وجود تاسكات مفتوحة قد يجعل readiness في حالة warning، وهذا ليس دائما blocker. الـ blockers الحقيقية تشمل فشل validation، سياسات blocked، مشاكل security أو migration، أو work capture غير مربوط بتاسك.
+
+## Agile وStructured
+
+كبيري يدعم طريقتين للتسليم:
+
+- Agile: backlog وepics وstories وsprints وreviews وimpediments وvelocity.
+- Structured: requirements وphases وdeliverables وrisks وapprovals وgates وtraceability.
+
+كبيري يمكن أن يقترح الطريقة المناسبة، لكن القرار النهائي للمطور أو المالك:
+
+```bash
+kvdf delivery recommend "Build CRM with pipeline, reporting, and integrations" --json
+kvdf delivery choose agile --reason "Client wants iterative delivery"
+```
+
+## هيكل المستودع
+
+```text
+src/                 كود CLI
+bin/                 ملف تشغيل kvdf
+knowledge/           معرفة الحوكمة والتاسكات والتصميم وAgile والبيانات
+packs/               generators وtemplates وprompt packs وexamples
+integrations/        dashboard وGitHub وVS Code وmulti-AI
+schemas/             runtime schemas وcontract schemas
+docs/                الوثائق والتقارير وموقع الدوكس
+cli/                 مرجع الأوامر
+tests/               اختبارات CLI
+```
+
+حالة المشروع التشغيلية تكون داخل:
+
+```text
+.kabeeri/
+```
+
+## الوثائق
+
+ابدأ من:
+
+- [System Capabilities Reference](docs/SYSTEM_CAPABILITIES_REFERENCE.md)
+- [CLI Command Reference](cli/CLI_COMMAND_REFERENCE.md)
+- [Production State](docs/production/V1_CURRENT_STATE.md)
+- [Docs Site](docs/site/index.html)
+
+فتح موقع الوثائق:
+
+```bash
+kvdf docs open
+kvdf docs serve --port 4180
+```
+
+## التطوير
+
+تشغيل الاختبارات:
+
+```bash
+npm test
+```
+
+تشغيل smoke checks:
+
+```bash
+npm run test:smoke
+```
+
+تشغيل التحقق الكامل:
+
+```bash
+npm run check
+```
+
+## الترخيص
 
 Kabeeri Vibe Developer Framework برنامج مفتوح المصدر تحت رخصة MIT.
 
-راجع:
-
-LICENSE
-تعريف مختصر
-
-Kabeeri Vibe Developer Framework هو إطار عمل فوقي لتطوير البرمجيات بالذكاء الاصطناعي. يساعد الـ Vibe Developers على تحويل أفكار المنتجات إلى هيكل منظم، أسئلة سهلة، مستندات جاهزة للذكاء الاصطناعي، برومبتات كود، مهام تنفيذية، وقوائم قبول قبل كتابة الكود باستخدام Laravel أو .NET أو Next.js أو WordPress أو أي تقنية أخرى.
-
-
-استخدم Commit message:
-
-```text
-Improve Arabic README for v0.1.1
+راجع [LICENSE](LICENSE).

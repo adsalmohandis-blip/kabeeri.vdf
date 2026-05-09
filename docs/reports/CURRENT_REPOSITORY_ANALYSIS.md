@@ -39,7 +39,7 @@ Core rule:
 | Solo developer mode | `governance/SOLO_DEVELOPER_MODE.md` and runtime state exist. | implemented |
 | AI cost control | Pricing, usage, budgets, context packs, preflights, model routing, and reports exist. | implemented |
 | Vibe-first layer | `kvdf vibe`, `kvdf ask`, `kvdf capture`, suggested tasks, context briefs, sessions, and post-work captures exist. | implemented |
-| Post-work capture | Changed-work capture, suggested task creation, and interaction records exist. | implemented |
+| Post-work capture | Changed-work scan previews, capture records, evidence updates, task link/convert, reject/resolve review flow, and dashboard visibility exist. | implemented |
 | ADR / AI run history | `kvdf adr`, `kvdf ai-run`, ADR state, AI run logs, accepted/rejected review records exist. | implemented |
 | Policy gates | `kvdf policy` evaluates task, release, handoff, security, migration, and GitHub write gates. | implemented |
 | Security governance | Security scan/report/gate state and policy integration exist. | implemented, lightweight |

@@ -23,10 +23,10 @@ state are involved.
 | Data Design Blueprint | Guides AI database modeling from business workflow to modules, entities, constraints, snapshots, indexes, audit, transactions, idempotency, and migration safety. | `knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json`, `.kabeeri/data_design.json`, `kvdf data-design` |
 | Agile Templates Runtime | Turns backlog, epic, story, sprint planning, impediments, retrospectives, velocity, forecast, and sprint reviews into executable workspace records. | `knowledge/agile_delivery/`, `.kabeeri/agile.json`, `.kabeeri/dashboard/agile_state.json` |
 | Structured Delivery Runtime | Turns Waterfall-style requirements, phases, deliverables, risks, change requests, phase gates, and traceability into executable workspace records. | `knowledge/delivery_modes/`, `.kabeeri/structured.json`, `.kabeeri/dashboard/structured_state.json` |
-| Project Intake | Starts new or existing projects with profile, language, and delivery structure. | `knowledge/project_intake/`, `packs/generators/`, `packs/templates/` |
-| Generators | Creates Lite, Standard, and Enterprise project skeletons. | `packs/generators/*.json`, `kvdf create`, `kvdf generate` |
+| Project Intake | Starts new or existing projects with profile, user-language behavior, and delivery structure. | `knowledge/project_intake/`, `packs/generators/`, `packs/templates/` |
+| Generators | Creates Lite, Standard, and Enterprise project skeletons and proposed governance tasks when a `.kabeeri` workspace is active. | `packs/generators/*.json`, `kvdf create`, `kvdf generate` |
 | Examples Library | Shows Lite, Standard, and Enterprise reference examples. | `packs/examples/`, `kvdf example` |
-| Questionnaires | Collects structured product and technical answers; adaptive intake planning now uses blueprints, framework prompt packs, data design, UI/UX, and delivery mode context before asking. | `knowledge/questionnaires/`, `knowledge/questionnaire_engine/`, `.kabeeri/questionnaires/adaptive_intake_plan.json`, `kvdf questionnaire plan` |
+| Questionnaires | Collects structured product and technical answers; adaptive intake planning now uses blueprints, framework prompt packs, data design, UI/UX, delivery mode context, and detected user language before asking. | `knowledge/questionnaires/`, `knowledge/questionnaire_engine/`, `.kabeeri/questionnaires/adaptive_intake_plan.json`, `kvdf questionnaire plan` |
 | Capability Map | Maps project type to required, optional, deferred, or unknown system areas. | `knowledge/standard_systems/`, `kvdf capability`, `kvdf questionnaire coverage` |
 | Prompt Packs And Common Prompt Layer | Provides stack-specific AI coding prompts plus shared scope, review, and AI-run rules. | `packs/prompt_packs/`, `packs/prompt_packs/common/`, `.kabeeri/prompt_layer/`, `kvdf prompt-pack` |
 | Task Tracking | Manages approved work from intake to verification and exposes a focused live task tracker JSON for dashboards and VS Code-style surfaces. | `knowledge/task_tracking/`, `knowledge/governance/TASK_GOVERNANCE.md`, `.kabeeri/dashboard/task_tracker_state.json`, `kvdf task` |
@@ -736,6 +736,8 @@ Main commands:
 kvdf pricing set --provider openai --model gpt --unit 1M --input 5 --output 15 --cached 1
 kvdf usage record --task task-001 --developer agent-001 --input-tokens 1000 --output-tokens 500
 kvdf usage record --untracked --input-tokens 1000 --output-tokens 500 --source ad-hoc-prompt
+kvdf usage inquiry --input-tokens 300 --output-tokens 120 --operation owner-question
+kvdf usage admin --input-tokens 500 --output-tokens 200 --operation dashboard-review
 kvdf usage summary
 kvdf usage efficiency
 kvdf usage report --output usage-report.md
@@ -744,6 +746,8 @@ kvdf preflight estimate --task task-001 --context ctx-001 --provider openai --mo
 kvdf model-route recommend --kind implementation --risk medium
 kvdf budget approve --task task-001 --tokens 5000 --reason "Owner approved extra work"
 ```
+
+Non-task AI operations are recorded under `admin:<operation>` buckets so owner questions, planning, documentation, dashboard reviews, and other administrative usage remain visible without pretending they belong to a feature task.
 
 Main references:
 
