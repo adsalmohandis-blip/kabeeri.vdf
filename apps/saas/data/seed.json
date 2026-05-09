@@ -1,0 +1,31 @@
+{
+  "product": {
+    "name": "Kabeeri Cloud",
+    "tagline": "Hosted governance for AI-assisted software development",
+    "mode": "saas_branch_preview"
+  },
+  "workspaces": [
+    {
+      "id": "ws-demo-ecommerce",
+      "name": "Demo Ecommerce Workspace",
+      "owner": "owner@example.com",
+      "plan": "standard",
+      "status": "active",
+      "apps": ["backend-api", "web-storefront", "mobile-app"],
+      "open_tasks": 7,
+      "readiness": "warning",
+      "monthly_ai_cost": 12.42
+    },
+    {
+      "id": "ws-demo-crm",
+      "name": "Demo CRM Workspace",
+      "owner": "team@example.com",
+      "plan": "enterprise",
+      "status": "planning",
+      "apps": ["api", "admin-dashboard"],
+      "open_tasks": 12,
+      "readiness": "blocked",
+      "monthly_ai_cost": 31.8
+    }
+  ]
+}

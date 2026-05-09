@@ -37,6 +37,7 @@ state are involved.
 | Policy Gates | Blocks unsafe verification, release, handoff, security, migration, and GitHub write operations. | `kvdf policy`, `schemas/policy*.json` |
 | Runtime Schema Registry | Maps `.kabeeri/` JSON and JSONL runtime files to schemas for drift checks. | `schemas/runtime/`, `kvdf validate runtime-schemas` |
 | Evolution Steward | Governs Kabeeri's own updates by recording requested framework changes, inferring impacted areas, creating follow-up tasks, and exposing unfinished dependent work to dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution` |
+| SaaS Product Branch | Adds a hosted Kabeeri Cloud product layer while keeping the local-first CLI and governance engine available. | `apps/saas/`, `docs/saas/`, `README_SAAS_BRANCH.md`, `npm run saas:start` |
 | Design Governance | Converts design sources into approved text specs before frontend implementation. | `knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`, `kvdf design` |
 | UI/UX Advisor | Recommends frontend experience pattern, component groups, page templates, stacks, SEO/GEO rules, and dashboard/mobile UX rules from the product blueprint. | `knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`, `.kabeeri/design_sources/ui_advisor.json`, `kvdf design recommend` |
 | ADR And AI Run History | Records formal architecture decisions and accepted/rejected AI prompt runs. | `knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`, `kvdf adr`, `kvdf ai-run` |
@@ -63,6 +64,7 @@ maintainers, AI agents, packaging, and documentation.
 
 | Root Folder | Owns |
 | --- | --- |
+| `apps/` | Product-branch applications, including the SaaS hosted web app on `product/kvdf-saas`. |
 | `bin/` | CLI binary entrypoints. |
 | `src/` | Executable runtime and CLI implementation. |
 | `cli/` | CLI reference documentation and command guidance. |

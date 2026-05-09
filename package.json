@@ -24,7 +24,9 @@
   },
   "scripts": {
     "kvdf": "node bin/kvdf.js",
-    "test": "node tests/cli.integration.test.js",
+    "saas:start": "node apps/saas/src/server.js",
+    "saas:check": "node apps/saas/src/server.js --check",
+    "test": "node tests/cli.integration.test.js && node tests/saas.smoke.test.js",
     "test:smoke": "node bin/kvdf.js --version && node bin/kvdf.js doctor && node bin/kvdf.js validate && node bin/kvdf.js prompt-pack list && node bin/kvdf.js plan list",
     "pack:check": "node bin/kvdf.js package check",
     "check": "npm test && npm run test:smoke"

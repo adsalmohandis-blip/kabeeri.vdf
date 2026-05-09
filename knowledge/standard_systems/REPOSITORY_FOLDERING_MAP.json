@@ -15,7 +15,7 @@
       "group": "core",
       "target_path": "src/",
       "description": "Executable KVDF runtime, CLI command handlers, shared runtime utilities, and command entrypoints.",
-      "current_paths": ["src/", "bin/", "cli/"],
+      "current_paths": ["src/", "bin/", "cli/", "apps/"],
       "laravel_analogy": "app/, artisan, routes/console.php"
     },
     {
@@ -95,6 +95,7 @@
     { "path": "bin/", "target_group": "core", "role": "CLI binary entrypoint", "migration_status": "physical_root" },
     { "path": "src/", "target_group": "core", "role": "runtime source", "migration_status": "physical_root" },
     { "path": "cli/", "target_group": "core", "role": "CLI documentation", "migration_status": "physical_root" },
+    { "path": "apps/", "target_group": "core", "role": "branch-specific product applications such as the SaaS web app", "migration_status": "product_branch_root" },
     { "path": "knowledge/", "target_group": "knowledge", "role": "knowledge super-folder", "migration_status": "physical_root" },
     { "path": "packs/", "target_group": "packs", "role": "exportable packs super-folder", "migration_status": "physical_root" },
     { "path": "integrations/", "target_group": "integrations", "role": "integration super-folder", "migration_status": "physical_root" },
@@ -144,6 +145,8 @@
     "CHANGELOG.md",
     "package.json",
     "package-lock.json",
+    "README_SAAS_BRANCH.md",
+    "apps",
     "bin",
     "src",
     "cli",

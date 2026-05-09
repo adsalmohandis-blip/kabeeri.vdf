@@ -1,0 +1,14 @@
+{
+  "name": "@kabeeri/saas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hosted SaaS product layer for Kabeeri VDF.",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node src/server.js --check"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

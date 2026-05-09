@@ -12,7 +12,7 @@ knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json
 
 | Group | Target meaning | Current paths |
 | --- | --- | --- |
-| `core` | Runtime code, CLI handlers, command entrypoints | `src/`, `bin/`, `cli/` |
+| `core` | Runtime code, CLI handlers, command entrypoints, product-branch apps | `src/`, `bin/`, `cli/`, `apps/` |
 | `knowledge` | Product intelligence, governance, delivery systems, design guidance | `knowledge/standard_systems/`, `knowledge/project_intelligence/`, `knowledge/questionnaires/`, `knowledge/delivery_modes/`, `knowledge/agile_delivery/`, `knowledge/governance/`, `knowledge/task_tracking/`, `knowledge/vibe_ux/`, `knowledge/design_system/` |
 | `packs` | Exportable templates, generators, examples, prompt packs | `packs/generators/`, `packs/templates/`, `packs/examples/`, `packs/prompt_packs/` |
 | `integrations` | GitHub, VS Code, dashboard, platform and multi-AI integrations | `integrations/github_sync/`, `integrations/github/`, `integrations/vscode_extension/`, `integrations/platform_integration/`, `integrations/multi_ai_governance/`, `integrations/dashboard/` |
@@ -31,6 +31,7 @@ Current root should stay small:
 bin/
 src/
 cli/
+apps/
 knowledge/
 packs/
 integrations/
