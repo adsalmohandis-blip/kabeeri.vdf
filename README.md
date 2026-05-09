@@ -19,19 +19,34 @@ Kabeeri helps turn a product idea into:
 - readiness and release gates
 - handoff reports
 
-The goal is simple: let the developer speak naturally, let the AI assistant work inside rules, and keep the project understandable when sessions stop and resume.
+The goal is simple: the developer speaks naturally, the AI assistant uses Kabeeri as the project operating layer, and the project remains understandable when sessions stop and resume.
 
-## Current Status
+## Vibe-First By Design
 
-The repository now includes a working Node.js CLI named `kvdf`.
+Kabeeri is built for vibe coding first.
 
-The CLI is not only a future idea. It can initialize `.kabeeri/` workspace state, create project skeletons, generate governed tasks, run validation, track AI usage, manage task access tokens, serve the live dashboard, enforce policy gates, and export readiness/governance reports.
+The normal developer experience is not memorizing terminal commands. The normal experience is:
 
-Current package version:
-
-```bash
-kvdf --version
+```text
+Developer talks to an AI assistant in normal language.
+The AI assistant uses Kabeeri rules and runtime records in the background.
+Kabeeri keeps tasks, decisions, scopes, usage, captures, and dashboard state organized.
 ```
+
+Example:
+
+```text
+I want to build an ecommerce store with a Laravel backend, a Next.js storefront,
+an admin dashboard, payments, shipping, and a mobile app later.
+```
+
+The AI assistant should then use Kabeeri to identify the product blueprint, ask missing questions, recommend Agile or Structured delivery, split the work into tasks, track token usage, and keep the live dashboard updated.
+
+## What The CLI Is For
+
+Kabeeri includes a working Node.js CLI named `kvdf`, but the CLI is the engine, not the main user experience.
+
+The CLI exists so AI assistants, automation, and advanced developers can reliably update the project state. It can initialize `.kabeeri/`, create project skeletons, generate governed tasks, run validation, track AI usage, manage task access tokens, serve the live dashboard, enforce policy gates, and export readiness/governance reports.
 
 Source of truth:
 
@@ -39,6 +54,8 @@ Source of truth:
 - The CLI updates `.kabeeri/` records.
 - The dashboard reads `.kabeeri/` state.
 - AI assistants should work through tasks, scopes, captures, and reports instead of editing randomly.
+
+For most vibe coders, the important idea is: talk to your AI assistant normally, and let it use `kvdf` when the project needs traceability or governance.
 
 For the complete capability map, read:
 
@@ -75,24 +92,35 @@ AI assistants are powerful, but software projects still fail when:
 
 Kabeeri provides the governance layer around the AI workflow.
 
-## Install And Run
+## Quick Setup
 
-From this repository:
+Install dependencies from this repository:
 
 ```bash
 npm install
+```
+
+Check the runtime engine:
+
+```bash
 npm run kvdf -- --help
 npm run kvdf -- doctor
 npm run kvdf -- validate
 ```
 
-After local linking or package installation, use `kvdf` directly:
+After local linking or package installation, `kvdf` can be used directly. In daily vibe coding, your AI assistant may run these commands for you.
 
-```bash
-kvdf --help
-kvdf doctor
-kvdf validate
+## Start With An AI Assistant
+
+Open the repository or your product workspace in your editor, then tell your AI assistant something like:
+
+```text
+Use Kabeeri to help me start a new ecommerce project. Ask me only the missing
+questions, recommend the delivery mode, create governed tasks, and keep the
+dashboard updated. Do not implement outside approved tasks.
 ```
+
+The assistant can then use Kabeeri's runtime records and CLI engine behind the scenes.
 
 ## Start A New Kabeeri Workspace
 
@@ -119,7 +147,7 @@ Kabeeri has three project profiles:
 | `standard` | SaaS apps, ecommerce, CMS, booking, business systems |
 | `enterprise` | ERP, marketplaces, multi-tenant systems, large long-term platforms |
 
-Create a skeleton:
+The AI assistant can create a skeleton, or an advanced developer can run:
 
 ```bash
 kvdf create --profile standard --output my-project
@@ -139,7 +167,7 @@ Use this only when you want a raw skeleton without tasks:
 kvdf create --profile standard --output my-project --no-tasks
 ```
 
-## Recommended AI Workflow
+## Recommended Vibe Workflow
 
 A practical flow with any AI assistant:
 
@@ -154,7 +182,7 @@ A practical flow with any AI assistant:
 9. Capture any work done outside the normal flow.
 10. Review, verify, and hand off.
 
-Useful commands:
+The AI assistant may use commands like these behind the scenes:
 
 ```bash
 kvdf questionnaire plan "Build an ecommerce store with Laravel backend, Next.js frontend, payments, shipping, and a mobile app" --json
@@ -164,17 +192,9 @@ kvdf design recommend ecommerce --json
 kvdf delivery recommend "Build a regulated ERP with accounting and approvals" --json
 ```
 
-## Vibe-First Usage
+## CLI Examples For Automation
 
-The developer does not need to memorize every CLI command. The intended experience is:
-
-```text
-Developer speaks naturally to an AI assistant.
-The AI assistant uses Kabeeri commands behind the scenes when useful.
-Kabeeri records decisions, suggestions, tasks, usage, captures, and dashboard state.
-```
-
-Runtime commands still exist for automation and traceability:
+These examples are mainly for AI assistants, scripts, and advanced users. They are not the primary way a vibe coder has to think about Kabeeri:
 
 ```bash
 kvdf vibe suggest "Add a checkout page for customers"
