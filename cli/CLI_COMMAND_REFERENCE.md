@@ -57,7 +57,6 @@ kvdf generate --profile lite
 kvdf generate --profile standard
 kvdf generate --profile enterprise
 kvdf create --profile lite
-kvdf create --profule lite
 kvdf generate --profile standard --output my-project
 kvdf generator create standard --output my-project
 ```

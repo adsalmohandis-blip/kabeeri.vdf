@@ -32,10 +32,7 @@ After local linking, the command is available directly:
 ```bash
 kvdf --help
 kvdf create --profile lite --output my-project
-kvdf create --profule lite --output my-project
 ```
-
-`--profule` is accepted as a compatibility alias for the common `--profile` typo.
 
 It can also export a local HTML dashboard from `.kabeeri` state:
 
@@ -259,7 +256,6 @@ Common current commands include:
 ```text
 kvdf --help
 kvdf create --profile lite --output my-project
-kvdf create --profule lite --output my-project
 kvdf doctor
 kvdf validate
 kvdf dashboard export

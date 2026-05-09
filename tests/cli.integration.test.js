@@ -1128,8 +1128,8 @@ test("generator scaffolds project and exports prompt pack", () => withTempDir((d
   assert.ok(fs.existsSync(path.join(dir, "my-project/07_AI_CODE_PROMPTS/vue/prompt_pack_manifest.json")));
 }));
 
-test("create shortcut accepts profile typo and command aliases", () => withTempDir((dir) => {
-  runKvdf(["create", "--profule", "lite", "--output", "lite-project"], { cwd: dir });
+test("create shortcut accepts profile and command aliases", () => withTempDir((dir) => {
+  runKvdf(["create", "--profile", "lite", "--output", "lite-project"], { cwd: dir });
   assert.ok(fs.existsSync(path.join(dir, "lite-project/kabeeri.generated.json")));
   runKvdf(["init"], { cwd: dir });
   runKvdf(["task", "create", "--title", "Alias task"], { cwd: dir });

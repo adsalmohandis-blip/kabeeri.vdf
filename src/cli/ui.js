@@ -27,7 +27,6 @@ function parseArgs(argv) {
 
 function normalizeFlagName(key) {
   const aliases = {
-    profule: "profile",
     profil: "profile"
   };
   return aliases[key] || key;

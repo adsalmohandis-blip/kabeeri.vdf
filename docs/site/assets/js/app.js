@@ -146,7 +146,7 @@ const docs = {
       },
       "install-profiles": {
         lead: "This page explains how to get Kabeeri from GitHub, run it locally, expose the `kvdf` command, and choose the right project profile: `lite`, `standard`, or `enterprise`.",
-        beginner: "`lite` is the small starter, `standard` is the normal recommended setup, and `enterprise` is the full governance setup. The word is `lite` in commands, not `light`.",
+        beginner: "`lite` is the small starter, `standard` is the normal recommended setup, and `enterprise` is the full governance setup.",
         sections: [
           ["Install from GitHub", "Clone the repository, install dependencies, run validation, then use `npm run kvdf -- ...` until the `kvdf` binary is linked or installed."],
           ["When `kvdf` becomes available", "After local linking or package installation, use `kvdf` directly in daily work. `node bin/kvdf.js` remains a source-code fallback for framework development."],
@@ -157,8 +157,7 @@ const docs = {
         steps: ["Clone from GitHub", "Install dependencies", "Validate", "Choose profile", "Create project", "Open project", "Run dashboard", "Start with AI"],
         details: [
           ["GitHub setup", ["Use `git clone <repo-url>` to download Kabeeri, then run `npm install` inside the repository.", "Run `npm run kvdf -- --help` and `npm run kvdf -- validate` to confirm the checkout is healthy before creating projects."]],
-          ["Recommended first project", ["For most developers, start with `standard`: `kvdf create --profile standard --output my-project`.", "`lite` is useful when you want minimal files. `enterprise` is useful when governance, team roles, release gates, and auditability matter from day one."]],
-          ["Profile spelling", ["The CLI profile is named `lite`, not `light`.", "`kvdf create --profule lite` is accepted only as a typo compatibility alias for `--profile`, but docs should use `--profile`."]]
+          ["Recommended first project", ["For most developers, start with `standard`: `kvdf create --profile standard --output my-project`.", "`lite` is useful when you want minimal files. `enterprise` is useful when governance, team roles, release gates, and auditability matter from day one."]]
         ],
         checklist: ["Repository cloned from GitHub.", "Dependencies installed.", "`npm run kvdf -- validate` is green.", "Profile selected intentionally.", "New project generated or current folder initialized.", "`kvdf` direct command is used after linking/installing."],
         commands: ["git clone <repo-url> kabeeri-vdf", "cd kabeeri-vdf", "npm install", "npm run kvdf -- --help", "npm run kvdf -- validate", "npm run kvdf -- create --profile standard --output my-project", "kvdf create --profile lite --output my-project", "kvdf create --profile standard --output my-project", "kvdf create --profile enterprise --output my-project"]
@@ -867,7 +866,7 @@ const docs = {
 
 const arOverrides = {
   "start-here": ["ابدأ من هنا", "هذه خريطة الدخول لأي مطور يفتح فولدر كبيري ويريد أن يعرف ماذا يفعل بدون تخمين.", "ابدأ بتحديد السيناريو: تطبيق جديد، مشروع كبيري قائم، أو كود موجود لم يبنَ بكبيري. كل سيناريو له طريق آمن مختلف."],
-  "install-profiles": ["التثبيت والبروفايلات", "هذه الصفحة تشرح تحميل كبيري من GitHub وتشغيله محليًا واختيار البروفايل المناسب.", "الأوامر تستخدم `lite` وليس `light`: صغير للتجارب، و`standard` هو الاختيار الافتراضي، و`enterprise` للحوكمة الكاملة."],
+  "install-profiles": ["التثبيت والبروفايلات", "هذه الصفحة تشرح تحميل كبيري من GitHub وتشغيله محليًا واختيار البروفايل المناسب.", "`lite` صغير للتجارب، و`standard` هو الاختيار الافتراضي، و`enterprise` للحوكمة الكاملة."],
   "ai-with-kabeeri": ["كيف يعمل AI داخل كبيري", "كبيري مصمم للمطور الذي يريد أن يتكلم مع الذكاء الاصطناعي طبيعيًا بينما يعمل AI داخل بيئة مشروع محكومة.", "المطور لا يحتاج أن يعيش داخل أوامر CLI. الأوامر هي المحرك المحلي الذي يستطيع المساعد أو الداشبورد أو VS Code تشغيله خلف الكواليس."],
   "capabilities": ["قدرات النظام", "هذه الصفحة هي نسخة الويب من مرجع قدرات كبيري. تشرح ماذا تملك كل قدرة ولماذا موجودة وأين يبحث المطور.", "عندما تكون تائهًا، هذه هي الخريطة. اختر القدرة المناسبة للمشكلة ثم افتح مصادرها وأوامرها."],
   "repository-layout": ["تنظيم المستودع", "يستخدم كبيري الآن تنظيمًا فعليًا قريبًا من لارافيل بجذور قليلة وواضحة.", "لا تبحث في كل الريبو أولًا. ابدأ من `src/` للكود، `knowledge/` للمعرفة، `packs/` للحزم، `integrations/` للتكاملات، `docs/` للتوثيق، `schemas/` للعقود، و`.kabeeri/` للحالة الحية."],
@@ -961,7 +960,7 @@ docs.ar.pages["install-profiles"] = {
   ...docs.en.pages["install-profiles"],
   arTitle: "التثبيت والبروفايلات",
   lead: "هذه الصفحة تشرح تحميل كبيري من GitHub وتشغيله محليًا، ومتى تستخدم `kvdf` مباشرة، وكيف تختار البروفايل المناسب: `lite` أو `standard` أو `enterprise`.",
-  beginner: "`lite` هو البداية الصغيرة، و`standard` هو الاختيار الموصى به لمعظم المشاريع، و`enterprise` هو الحوكمة الكاملة. في الأوامر الاسم الصحيح هو `lite` وليس `light`.",
+  beginner: "`lite` هو البداية الصغيرة، و`standard` هو الاختيار الموصى به لمعظم المشاريع، و`enterprise` هو الحوكمة الكاملة.",
   sections: [
     ["التثبيت من GitHub", "اعمل clone للريبو، ثبت الاعتمادات، شغل validation، ثم استخدم `npm run kvdf -- ...` إلى أن تربط أو تثبت أمر `kvdf`."],
     ["متى يعمل `kvdf` مباشرة", "بعد local linking أو تثبيت الحزمة، استخدم `kvdf` مباشرة في العمل اليومي. أما `node bin/kvdf.js` فهو fallback أثناء تطوير كبيري نفسه من السورس."],
@@ -972,8 +971,7 @@ docs.ar.pages["install-profiles"] = {
   steps: ["Clone من GitHub", "تثبيت الاعتمادات", "تشغيل validation", "اختيار profile", "إنشاء مشروع", "فتح المشروع", "تشغيل الداشبورد", "بدء العمل مع AI"],
   details: [
     ["إعداد GitHub", ["استخدم `git clone <repo-url>` لتحميل كبيري، ثم شغل `npm install` داخل الريبو.", "شغل `npm run kvdf -- --help` و`npm run kvdf -- validate` للتأكد أن النسخة سليمة قبل إنشاء المشاريع."]],
-    ["أول مشروع موصى به", ["لمعظم المطورين ابدأ بـ `standard`: `kvdf create --profile standard --output my-project`.", "`lite` مناسب للحد الأدنى. `enterprise` مناسب عندما تكون الحوكمة والفريق والإصدار والتدقيق مهمة من اليوم الأول."]],
-    ["تصحيح الاسم", ["الاسم في CLI هو `lite` وليس `light`.", "`--profule` مقبول فقط كتصحيح لخطأ كتابة `--profile`، لكن الوثائق يجب أن تستخدم `--profile`."]]
+    ["أول مشروع موصى به", ["لمعظم المطورين ابدأ بـ `standard`: `kvdf create --profile standard --output my-project`.", "`lite` مناسب للحد الأدنى. `enterprise` مناسب عندما تكون الحوكمة والفريق والإصدار والتدقيق مهمة من اليوم الأول."]]
   ],
   checklist: ["تم تحميل الريبو من GitHub.", "تم تثبيت الاعتمادات.", "`npm run kvdf -- validate` ناجح.", "تم اختيار البروفايل بوعي.", "تم إنشاء مشروع جديد أو تهيئة الفولدر الحالي.", "يتم استخدام `kvdf` مباشرة بعد الربط أو التثبيت."]
 };

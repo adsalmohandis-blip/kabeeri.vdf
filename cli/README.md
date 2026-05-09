@@ -13,7 +13,7 @@ It is still an early MVP, but it can already:
 - validate repository JSON, prompt pack manifests, generator files, and planning files
 - list/show generator profiles
 - generate local project skeleton folders from generator profiles
-- run `kvdf create --profile <name>` as a shortcut, including the common `--profule` typo
+- run `kvdf create --profile <name>` as a shortcut
 - list/show prompt packs
 - export prompt packs into a project folder
 - install a prompt pack into a standard project prompt folder with `prompt-pack use`
@@ -115,7 +115,6 @@ After publishing or linking the package, the intended command is:
 ```bash
 kvdf --help
 kvdf create --profile lite --output my-project
-kvdf create --profule lite --output my-project
 ```
 
 ## Tests

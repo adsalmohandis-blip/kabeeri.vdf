@@ -55,7 +55,7 @@
 - Added AI Developer session tracking with session handoff report generation and validation.
 - Added role-based permission enforcement for governed workspaces, including reviewer independence and actor checks.
 - Added task access token expiry checks and allowed/forbidden file scope enforcement for AI session handoffs.
-- Added `kvdf create --profile <name>` as a shortcut for project skeleton generation and accepted common `--profule` typo as `--profile`.
+- Added `kvdf create --profile <name>` as a shortcut for project skeleton generation.
 - Added command-specific help for common CLI groups, terminal-friendly command aliases, and typo suggestions for unknown commands.
 - Implemented `questionnaire create`, `prompt-pack use`, `acceptance review`, and real `validate task` / `validate acceptance` checks.
 - Implemented Owner transfer lifecycle commands with one-use transfer tokens and single Owner role migration.
