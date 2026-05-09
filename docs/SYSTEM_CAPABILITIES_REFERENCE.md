@@ -36,6 +36,7 @@ state are involved.
 | Multi-AI Governance | Controls identities, roles, sessions, locks, tokens, audit, and Owner verification. | `knowledge/governance/`, `integrations/multi_ai_governance/` |
 | Policy Gates | Blocks unsafe verification, release, handoff, security, migration, and GitHub write operations. | `kvdf policy`, `schemas/policy*.json` |
 | Runtime Schema Registry | Maps `.kabeeri/` JSON and JSONL runtime files to schemas for drift checks. | `schemas/runtime/`, `kvdf validate runtime-schemas` |
+| Evolution Steward | Governs Kabeeri's own updates by recording requested framework changes, inferring impacted areas, creating follow-up tasks, and exposing unfinished dependent work to dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution` |
 | Design Governance | Converts design sources into approved text specs before frontend implementation. | `knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`, `kvdf design` |
 | UI/UX Advisor | Recommends frontend experience pattern, component groups, page templates, stacks, SEO/GEO rules, and dashboard/mobile UX rules from the product blueprint. | `knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`, `.kabeeri/design_sources/ui_advisor.json`, `kvdf design recommend` |
 | ADR And AI Run History | Records formal architecture decisions and accepted/rejected AI prompt runs. | `knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`, `kvdf adr`, `kvdf ai-run` |
@@ -131,7 +132,38 @@ kvdf validate
 kvdf dashboard state
 ```
 
-## 3. Agile Templates Runtime
+## 3. Evolution Steward
+
+Evolution Steward controls changes to Kabeeri itself. When the Owner requests a
+new framework feature or improvement, this capability creates an impact plan so
+the implementation, CLI help, task tracking, schemas, dashboard, reports,
+documentation, capability map, tests, changelog, and release guidance are not
+forgotten.
+
+Main commands:
+
+```bash
+kvdf evolution plan "Add a new Kabeeri capability"
+kvdf evolution list
+kvdf evolution status
+kvdf evolution show evo-001
+kvdf evolution impact evo-001
+kvdf evolution tasks evo-001
+kvdf evolution verify evo-001
+```
+
+Runtime state:
+
+- `.kabeeri/evolution.json`
+- `.kabeeri/tasks.json`
+- `.kabeeri/dashboard/*.json`
+- `.kabeeri/reports/live_reports_state.json`
+
+Main reference:
+
+- `knowledge/governance/EVOLUTION_STEWARD.md`
+
+## 4. Agile Templates Runtime
 
 Agile templates turn product backlog, epics, user stories, sprint planning, and
 sprint review into executable records.

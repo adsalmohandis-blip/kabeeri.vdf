@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Evolution Steward State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["changes", "impact_plans"],
+  "properties": {
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["change_id", "title", "status", "impacted_areas"],
+        "properties": {
+          "change_id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "type": "string" },
+          "impacted_areas": { "type": "array", "items": { "type": "string" } },
+          "task_ids": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "impact_plans": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["plan_id", "change_id", "impacted_areas", "tasks"],
+        "properties": {
+          "plan_id": { "type": "string" },
+          "change_id": { "type": "string" },
+          "status": { "type": "string" },
+          "impacted_areas": { "type": "array", "items": { "type": "string" } },
+          "tasks": { "type": "array" }
+        }
+      }
+    },
+    "current_change_id": { "type": ["string", "null"] }
+  }
+}

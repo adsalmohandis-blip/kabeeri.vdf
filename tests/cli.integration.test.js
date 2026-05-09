@@ -40,7 +40,7 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["--version"]).stdout, /kvdf 0\.2\.0/);
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
-  for (const command of ["sprint", "session", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "wordpress", "docs"]) {
+  for (const command of ["sprint", "session", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "wordpress", "docs"]) {
     const help = runKvdf([command, "--help"]).stdout;
     assert.match(help, /Usage:/, `${command} help should include usage`);
     assert.doesNotMatch(help, /No detailed help/, `${command} should have detailed help`);
@@ -75,6 +75,7 @@ test("init creates workspace state files", () => withTempDir((dir) => {
     ".kabeeri/product_blueprints.json",
     ".kabeeri/data_design.json",
     ".kabeeri/wordpress.json",
+    ".kabeeri/evolution.json",
     ".kabeeri/memory/decisions.jsonl",
     ".kabeeri/adr/records.json",
     ".kabeeri/ai_runs/prompt_runs.jsonl",
@@ -215,6 +216,29 @@ test("data design blueprints create database modeling context from product bluep
   assert.strictEqual(state.contexts.length, 1);
   assert.strictEqual(state.reviews.length, 1);
   assert.match(runKvdf(["validate", "data-design"], { cwd: dir }).stdout, /data design catalog checked/);
+}));
+
+test("evolution steward creates impact plans and dependent follow-up tasks", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const result = JSON.parse(runKvdf(["evolution", "plan", "Add dashboard live JSON docs update", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(result.change.change_id, "evo-001");
+  assert.ok(result.change.impacted_areas.includes("dashboard"));
+  assert.ok(result.change.impacted_areas.includes("docs"));
+  assert.ok(result.change.impacted_areas.includes("capabilities"));
+  assert.ok(result.tasks.length >= 6);
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
+  assert.strictEqual(state.changes.length, 1);
+  assert.strictEqual(state.impact_plans.length, 1);
+  const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
+  assert.ok(tasks.some((task) => task.source === "evolution:evo-001" && task.evolution_area === "dashboard"));
+  const summary = JSON.parse(runKvdf(["evolution", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(summary.changes_total, 1);
+  assert.ok(summary.open_follow_up_tasks > 0);
+  const dashboard = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
+  assert.strictEqual(dashboard.records.evolution_summary.changes_total, 1);
+  const reports = JSON.parse(runKvdf(["reports", "live", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(reports.reports.evolution.changes_total, 1);
+  assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /evolution\.json matches/);
 }));
 
 test("adaptive questionnaire planning uses blueprints frameworks data design and UI", () => withTempDir((dir) => {

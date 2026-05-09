@@ -57,6 +57,7 @@ function createWorkspace({ profile, mode, lang }) {
     ["product_blueprints.json", { selected_blueprints: [], recommendations: [], current_blueprint: null }],
     ["data_design.json", { contexts: [], reviews: [], current_context: null }],
     ["wordpress.json", { analyses: [], plans: [], plugin_plans: [], scaffolds: [], current_analysis_id: null, current_plan_id: null, current_plugin_plan_id: null }],
+    ["evolution.json", { changes: [], impact_plans: [], current_change_id: null }],
     ["agile.json", { backlog: [], epics: [], stories: [], sprint_reviews: [], impediments: [], retrospectives: [], releases: [] }],
     ["structured.json", { requirements: [], phases: [], milestones: [], deliverables: [], approvals: [], change_requests: [], risks: [], gates: [] }],
     ["sessions.json", { sessions: [] }],

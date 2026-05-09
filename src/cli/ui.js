@@ -83,6 +83,9 @@ function normalizeCommandName(command) {
     database: "data-design",
     "data-design": "data-design",
     "database-design": "data-design",
+    evolve: "evolution",
+    evolution: "evolution",
+    "evolution-steward": "evolution",
     dash: "dashboard",
     board: "dashboard",
     report: "reports",
@@ -256,6 +259,19 @@ Notes:
 
 Notes:
   Structured commands support waterfall-style delivery with approved requirements, phase gates, deliverables, change control, risks, traceability, and live dashboard state under .kabeeri/structured.json.
+`,
+    evolution: `Usage:
+  kvdf evolution plan "Add docs-first init gate"
+  kvdf evolution plan "Improve dashboard descriptions" --areas cli,docs,dashboard,tests
+  kvdf evolution list
+  kvdf evolution status
+  kvdf evolution show evo-001
+  kvdf evolution tasks evo-001
+  kvdf evolution impact evo-001
+  kvdf evolution verify evo-001
+
+Notes:
+  Evolution Steward governs Kabeeri's own development. It records requested framework changes, infers impacted areas, creates follow-up tasks for runtime, CLI, docs, schemas, tests, dashboards, reports, and capabilities, and exposes the update state to dashboard/live reports.
 `,
     delivery: `Usage:
   kvdf delivery recommend "Build hospital management system with billing compliance roles and audit"
@@ -732,6 +748,7 @@ Commands:
   structure map|validate       Inspect and validate repository foldering
   blueprint list|recommend     Map product type to modules, pages, data, and risks
   data-design context|checklist Guide database modeling and review
+  evolution plan|status        Govern Kabeeri framework updates and dependent tasks
   plan list|show <version>     Inspect v3/v4 milestone plans
   project analyze              Analyze an existing app for KVDF adoption
   release check|notes|checklist Generate release review artifacts
@@ -815,6 +832,7 @@ Examples:
   kvdf structure validate
   kvdf blueprint recommend "Build ecommerce store with payments shipping and mobile app"
   kvdf data-design context ecommerce --json
+  kvdf evolution plan "Add a new Kabeeri capability"
   kvdf project analyze --path existing-app
   kvdf task start task-001 --actor agent-001
   kvdf owner init --id owner-001 --name "Project Owner"

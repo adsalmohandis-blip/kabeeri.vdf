@@ -63,6 +63,7 @@ const capabilityRows = {
     ["Live Dashboard", "Shows live technical, business, governance, task, app, cost, policy, workspace, and UX state.", "`integrations/dashboard/`, `.kabeeri/dashboard/`"],
     ["GitHub Sync", "Plans labels, milestones, issues, and release writes with dry-run defaults and confirmed write gates.", "`integrations/github_sync/`, `integrations/github/`"],
     ["Policy Gates", "Blocks unsafe verification, release, handoff, security, migration, and GitHub write operations.", "`schemas/policy*.json`, `.kabeeri/policies/`"],
+    ["Evolution Steward", "Governs Kabeeri's own updates by recording requested framework changes, inferring impacted areas, creating follow-up tasks, and exposing unfinished dependent work to dashboard/live reports.", "`knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution`"],
     ["Packaging and Upgrade", "Checks npm package readiness and workspace upgrade compatibility.", "`docs/production/PACKAGING_GUIDE.md`, `docs/production/UPGRADE_GUIDE.md`"]
   ],
   ar: [

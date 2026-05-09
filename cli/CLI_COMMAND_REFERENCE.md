@@ -21,6 +21,7 @@ kvdf pricing --help
 kvdf usage --help
 kvdf design --help
 kvdf structure --help
+kvdf evolution --help
 kvdf adr --help
 kvdf ai-run --help
 kvdf dashboard --help
@@ -115,6 +116,29 @@ documentation, quality, and local runtime state.
 
 The source of truth is `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`, with
 the human guide in `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`.
+
+## Evolution Steward
+
+```bash
+kvdf evolution plan "Add docs-first init gate"
+kvdf evolution plan "Improve dashboard descriptions" --areas cli,docs,dashboard,tests
+kvdf evolution list
+kvdf evolution status
+kvdf evolution show evo-001
+kvdf evolution impact evo-001
+kvdf evolution tasks evo-001
+kvdf evolution verify evo-001
+```
+
+Evolution Steward governs Kabeeri's own updates. It records the Owner's change
+request, infers impacted areas, creates proposed follow-up tasks, and exposes
+unfinished dependent work in dashboard/live reports. Use it when a requested
+Kabeeri change may affect runtime code, CLI help, task tracking, schemas,
+dashboard state, reports, prompt/AI guidance, docs, the capability map, tests,
+changelog, or release guidance.
+
+The source of truth is `.kabeeri/evolution.json`, with human rules in
+`knowledge/governance/EVOLUTION_STEWARD.md`.
 
 ## Prompt packs
 

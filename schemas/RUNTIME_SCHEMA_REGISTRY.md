@@ -47,6 +47,8 @@ When a new CLI feature writes `.kabeeri/something.json` or
 
 1. Add a schema under `schemas/runtime/`.
 2. Add the file path and schema path to `schemas/runtime/schema_registry.json`.
+   Evolution Steward uses this same rule for Kabeeri framework updates through
+   `.kabeeri/evolution.json`.
 3. Add or update the feature-specific validator in `src/cli/validate.js` when
    business rules are needed beyond structure.
 4. Add an integration test that runs `kvdf validate runtime-schemas` or the

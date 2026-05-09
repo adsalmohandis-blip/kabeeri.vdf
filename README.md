@@ -17,6 +17,7 @@ Kabeeri helps turn a product idea into:
 - token and cost records
 - live dashboard visibility
 - readiness and release gates
+- Evolution Steward records for Kabeeri framework updates
 - handoff reports
 
 The goal is simple: the developer speaks naturally, the AI assistant uses Kabeeri as the project operating layer, and the project remains understandable when sessions stop and resume.

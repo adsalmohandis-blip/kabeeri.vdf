@@ -45,6 +45,7 @@
 - Added user-language runtime behavior for adaptive intake so generated plans record input/output language and follow the user's language unless explicitly overridden.
 - Added init-time guided intake: interactive `kvdf init` can ask for the application goal, while `kvdf init --goal "..."` creates adaptive questions and docs-first tasks in non-interactive flows.
 - Added a docs-first gate so implementation tasks cannot start while init-generated project documentation tasks are still open.
+- Added Evolution Steward with `.kabeeri/evolution.json`, `kvdf evolution`, impact plans, follow-up task generation, dashboard/live reports visibility, schema coverage, and capability documentation for governing Kabeeri's own updates.
 - Added automatic generator governance tasks inside initialized workspaces so Next.js/Laravel or other skeleton generation cannot silently bypass the task tracker.
 - Added non-task AI usage buckets through `kvdf usage inquiry`, `kvdf usage admin`, `kvdf usage question`, `kvdf usage planning`, and `kvdf usage docs`.
 - Improved live dashboard refresh artifacts for task tracker, usage summaries, generated scaffold tasks, and dashboard section explanations.
