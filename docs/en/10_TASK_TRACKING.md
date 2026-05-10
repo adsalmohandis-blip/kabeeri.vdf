@@ -29,4 +29,4 @@ kvdf task verify task-001
 ## References
 
 - `task_tracking/`
-- `governance/TASK_GOVERNANCE.md`
+- `knowledge/task_tracking/TASK_GOVERNANCE.md`

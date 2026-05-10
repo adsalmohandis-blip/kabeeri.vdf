@@ -2,7 +2,7 @@
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical implementation report for the original v3 phase. The
 current runtime has advanced beyond specs/examples:
@@ -15,6 +15,8 @@ current runtime has advanced beyond specs/examples:
   policy gates before mutation.
 - VS Code support currently scaffolds workspace helper tasks; the full extension
   UI remains an active gap.
+- Dashboard UX Governance now includes role visibility, widget registry,
+  app/workspace strategy, live-state UX rules, and dashboard reports.
 
 ## Summary
 

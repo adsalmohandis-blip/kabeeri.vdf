@@ -1,0 +1,39 @@
+[
+  {
+    "templateId": "ai-product-prompt-console-v1",
+    "name": "AI Product Prompt Console",
+    "businessType": "ai-product",
+    "viewType": "prompt-input",
+    "description": "Primary prompt input with template, upload, and generate actions.",
+    "useWhen": ["AI generation", "Document analysis", "Chat-style tools"],
+    "requiredComponents": ["card", "textarea", "button", "button-group"],
+    "requiredIcons": ["template", "upload", "generate"],
+    "requiredStates": ["empty", "processing", "error", "disabled"],
+    "layoutRules": ["Prompt input is dominant", "Generate action is clear"],
+    "uxRules": ["Provide examples or templates", "Do not fake long thinking"],
+    "accessibilityRules": ["Textarea has visible label"],
+    "antiPatterns": ["No first-run guidance", "Distracting processing motion"],
+    "acceptanceCriteria": ["User knows what to enter", "Actions use icons"],
+    "sampleData": { "promptId": "prompt" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/ai-product/templates/prompt-console.html" }
+  },
+  {
+    "templateId": "ai-product-generated-result-v1",
+    "name": "AI Product Generated Result",
+    "businessType": "ai-product",
+    "viewType": "generated-result",
+    "description": "Result card with copy and regenerate actions.",
+    "useWhen": ["Generated content ready", "Analysis output", "AI answer state"],
+    "requiredComponents": ["card", "button-group", "output"],
+    "requiredIcons": ["copy", "refresh"],
+    "requiredStates": ["streaming", "ready", "error", "empty-result"],
+    "layoutRules": ["Actions stay near result title", "Generated content remains readable"],
+    "uxRules": ["Copy and regenerate are always available when output exists"],
+    "accessibilityRules": ["Action group has aria-label"],
+    "antiPatterns": ["Animated text that reduces readability"],
+    "acceptanceCriteria": ["Output actions are clear"],
+    "sampleData": { "result": "Generated response text." },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/ai-product/templates/generated-result.html" }
+  }
+]
+

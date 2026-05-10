@@ -1,0 +1,39 @@
+[
+  {
+    "templateId": "ecommerce-product-card-v1",
+    "name": "E-commerce Product Card",
+    "businessType": "ecommerce",
+    "viewType": "product-card",
+    "description": "Product card for category, search, and recommendation grids.",
+    "useWhen": ["Showing product grids", "Showing recommendations", "Showing search results"],
+    "requiredComponents": ["card", "badge", "button", "price", "image"],
+    "requiredIcons": ["cart", "favorite"],
+    "requiredStates": ["default", "sale", "out-of-stock", "loading"],
+    "layoutRules": ["Image first", "Name and price must be visible", "Primary action is Add to cart"],
+    "uxRules": ["Show discount badge when applicable", "Disable purchase action when unavailable"],
+    "accessibilityRules": ["Image alt text required", "Icon-only wishlist button needs aria-label"],
+    "antiPatterns": ["Hidden price", "Unclear stock state"],
+    "acceptanceCriteria": ["Card works in responsive grids", "Purchase action uses icon"],
+    "sampleData": { "productName": "Wireless Headphones", "price": "$129", "badge": "Sale" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/ecommerce/templates/product-card.html" }
+  },
+  {
+    "templateId": "ecommerce-checkout-summary-v1",
+    "name": "Checkout Summary",
+    "businessType": "ecommerce",
+    "viewType": "checkout-summary",
+    "description": "Order summary block for checkout and cart review.",
+    "useWhen": ["Checkout review", "Cart confirmation", "Payment step"],
+    "requiredComponents": ["card", "button", "price-breakdown"],
+    "requiredIcons": ["payment"],
+    "requiredStates": ["default", "processing", "payment-error", "success"],
+    "layoutRules": ["Total must be prominent", "Primary action below cost breakdown"],
+    "uxRules": ["Fees must be visible before payment", "Processing state disables duplicate submit"],
+    "accessibilityRules": ["Use semantic button for payment action"],
+    "antiPatterns": ["Hidden fees", "Animated amounts"],
+    "acceptanceCriteria": ["Total is visible", "Payment action uses icon"],
+    "sampleData": { "itemCount": 3, "total": "$184.00" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/ecommerce/templates/checkout-summary.html" }
+  }
+]
+

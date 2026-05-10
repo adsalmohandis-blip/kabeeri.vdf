@@ -1,0 +1,39 @@
+[
+  {
+    "templateId": "saas-onboarding-checklist-v1",
+    "name": "SaaS Onboarding Checklist",
+    "businessType": "saas",
+    "viewType": "onboarding",
+    "description": "Activation checklist for first-run SaaS workspaces.",
+    "useWhen": ["First-run dashboard", "Workspace setup", "Trial activation"],
+    "requiredComponents": ["card", "list-group", "badge", "button"],
+    "requiredIcons": ["check", "next"],
+    "requiredStates": ["not-started", "in-progress", "completed", "error"],
+    "layoutRules": ["Progress visible at top", "Steps remain actionable"],
+    "uxRules": ["Ask only for activation-critical setup", "Allow safe skipping when possible"],
+    "accessibilityRules": ["Checklist items use buttons when they trigger actions"],
+    "antiPatterns": ["Decorative onboarding with no product value"],
+    "acceptanceCriteria": ["Shows progress", "Guides next action"],
+    "sampleData": { "completed": 2, "total": 5 },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/saas/templates/onboarding-checklist.html" }
+  },
+  {
+    "templateId": "saas-usage-card-v1",
+    "name": "SaaS Usage Card",
+    "businessType": "saas",
+    "viewType": "usage-card",
+    "description": "Usage, quota, or billing metric card.",
+    "useWhen": ["Usage dashboards", "Billing settings", "Plan limits"],
+    "requiredComponents": ["card", "progress", "badge"],
+    "requiredIcons": [],
+    "requiredStates": ["default", "near-limit", "over-limit", "loading"],
+    "layoutRules": ["Metric value is dominant", "Progress bar has accessible label"],
+    "uxRules": ["Show period and helper text", "Do not hide limit warnings"],
+    "accessibilityRules": ["Progress has aria values"],
+    "antiPatterns": ["Color-only quota warning"],
+    "acceptanceCriteria": ["Quota state readable without color"],
+    "sampleData": { "metricName": "AI credits", "value": "6,200", "percent": 62 },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/saas/templates/usage-card.html" }
+  }
+]
+

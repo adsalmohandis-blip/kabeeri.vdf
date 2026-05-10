@@ -7,12 +7,15 @@ Phase 05 canonical Agile templates:
 - [USER_STORY_TEMPLATE.md](USER_STORY_TEMPLATE.md)
 - [SPRINT_PLANNING_TEMPLATE.md](SPRINT_PLANNING_TEMPLATE.md)
 - [SPRINT_REVIEW_TEMPLATE.md](SPRINT_REVIEW_TEMPLATE.md)
+- [DEFINITION_OF_DONE_TEMPLATE.md](DEFINITION_OF_DONE_TEMPLATE.md)
+- [STORY_SPLITTING_TEMPLATE.md](STORY_SPLITTING_TEMPLATE.md)
+- [RELEASE_PLAN_TEMPLATE.md](RELEASE_PLAN_TEMPLATE.md)
 - [SPRINT_COST_METADATA_SCHEMA.json](SPRINT_COST_METADATA_SCHEMA.json)
 - [AGILE_RUNTIME.md](AGILE_RUNTIME.md)
 
 ## Runtime Commands
 
-The executable Agile layer stores backlog, epic, story, sprint planning, impediment, retrospective, forecast, and sprint review records under `.kabeeri/agile.json`:
+The executable Agile layer stores backlog, epic, story, sprint planning, impediment, retrospective, release planning, forecast, and sprint review records under `.kabeeri/agile.json`:
 
 ```bash
 kvdf agile summary
@@ -25,6 +28,8 @@ kvdf agile sprint review sprint-001 --accepted story-checkout-001 --goal-met yes
 kvdf agile impediment add --id imp-001 --story story-checkout-001 --severity high --title "Payment credentials missing"
 kvdf agile impediment resolve imp-001 --resolution "Credentials configured"
 kvdf agile retrospective add sprint-001 --good "Goal was clear" --improve "Slice stories smaller" --actions "Add QA earlier"
+kvdf agile release plan release-001 --title "Checkout demo" --stories story-checkout-001 --criteria "Checkout accepted" --checks "Policy gates reviewed"
+kvdf agile release readiness release-001
 kvdf agile health
 kvdf agile forecast
 kvdf validate agile
@@ -567,7 +572,7 @@ Consider Structured Delivery instead of Agile. Agile gets hard at scale without 
 - [SELECTION_GUIDE.md](../delivery_modes/SELECTION_GUIDE.md) — How to choose Agile vs Structured
 - [Delivery Modes Overview](../delivery_modes/README.md)
 - [Structured Delivery](../delivery_modes/STRUCTURED_DELIVERY.md) — Alternative approach
-- [Task Governance](../task_governance/README.md) — Governance rules apply to both modes
+- [Task Tracking And Governance](../task_tracking/TASK_GOVERNANCE.md) — Governance rules apply to both modes
 
 ---
 

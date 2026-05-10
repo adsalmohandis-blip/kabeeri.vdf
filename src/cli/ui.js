@@ -148,6 +148,7 @@ Notes:
   kvdf vibe ask "Improve the dashboard"
   kvdf vibe list
   kvdf vibe show suggestion-001
+  kvdf vibe approve suggestion-001 --actor owner-001
   kvdf vibe convert suggestion-001
   kvdf vibe reject suggestion-001 --reason "Too broad"
   kvdf vibe plan "Build an ecommerce store with catalog cart checkout and admin"
@@ -157,7 +158,7 @@ Notes:
   kvdf capture --summary "Updated dashboard filters" --files src/cli/index.js --checks "npm test"
 
 Notes:
-  Vibe-first commands are optional. They classify natural language, create suggested task cards, and capture post-work notes without replacing the regular CLI.
+  Vibe-first commands are optional. They classify natural language, create suggested task cards, approve or reject them, convert approved suggestions into governed tasks, and capture post-work notes without replacing the regular CLI.
 `,
     ask: `Usage:
   kvdf ask "How should I improve the dashboard?"
@@ -200,18 +201,22 @@ Notes:
     readiness: `Usage:
   kvdf readiness report
   kvdf readiness report --json
+  kvdf readiness report --target demo
+  kvdf readiness report --target release --strict
   kvdf readiness report --output .kabeeri/reports/readiness_report.md
 
 Notes:
-  Readiness reports summarize whether the workspace is ready for demo, handoff, release review, or publish review. They combine validation, tasks, features, journeys, policies, security, migrations, AI runs, and post-work captures.
+  Readiness reports are standalone snapshots from .kabeeri. Targets: workspace, demo, handoff, release, publish. Use --strict when warnings should block final review.
 `,
     governance: `Usage:
   kvdf governance report
   kvdf governance report --json
+  kvdf governance report --target workspace
+  kvdf governance report --target publish --strict
   kvdf governance report --output .kabeeri/reports/governance_report.md
 
 Notes:
-  Governance reports summarize Owner identity, workstreams, assignment health, lock conflicts, active task tokens, policy blockers, and workspace governance validation.
+  Governance reports are standalone snapshots from .kabeeri. They summarize Owner identity, workstreams, assignment health, lock conflicts, active task tokens, policy blockers, and workspace governance validation.
 `,
     reports: `Usage:
   kvdf reports live
@@ -423,6 +428,7 @@ Notes:
   kvdf adr reject adr-001 --reason "Not needed for MVP"
   kvdf adr supersede adr-001 --by adr-002 --reason "Architecture changed"
   kvdf adr report --output adr-report.md
+  kvdf adr trace --json
 
 Notes:
   ADRs are for durable architecture, security, migration, release, or integration decisions. Lightweight notes belong in kvdf memory.
@@ -433,11 +439,12 @@ Notes:
   kvdf ai-run show ai-run-001
   kvdf ai-run accept ai-run-001 --reviewer reviewer-001 --evidence tests-pass
   kvdf ai-run reject ai-run-001 --reason "Wrong scope"
+  kvdf ai-run link ai-run-001 --adr adr-001
   kvdf ai-run report
   kvdf ai-run report --json
 
 Notes:
-  AI run history records prompt quality and accepted/rejected outputs. Usage remains the cost ledger, and sessions remain execution boundary records.
+  AI run history records prompt quality and accepted/rejected outputs. Usage remains the cost ledger, and sessions remain execution boundary records. Link important runs to ADRs so durable decisions keep their AI evidence.
 `,
     "prompt-pack": `Usage:
   kvdf prompt-pack list
@@ -600,7 +607,7 @@ Notes:
 Notes:
   The live dashboard shows multiple customer apps from the current .kabeeri workspace.
   Task tracker JSON is written to .kabeeri/dashboard/task_tracker_state.json and served live at /__kvdf/api/tasks.
-  Dashboard UX audit checks action center, source-of-truth notice, live state, empty states, responsive tables, governance visibility, and common secret leakage.
+  Dashboard UX audit checks action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, empty states, responsive tables, governance visibility, and common secret leakage.
   Use dashboard workspace add or --workspaces to add summary rows for other KVDF folders that also contain .kabeeri state.
 `,
     docs: `Usage:
@@ -668,6 +675,11 @@ Notes:
   kvdf design spec-create --source design-source-001 --title "Checkout page" --output frontend_specs/checkout.page.md
   kvdf design spec-list
   kvdf design spec-approve text-spec-001 --tokens design_system/tokens.json --actor owner-001
+  kvdf design reference-list
+  kvdf design reference-show ADMIT-ADB01
+  kvdf design reference-recommend "admin ecommerce dashboard with orders and revenue"
+  kvdf design reference-questions ADMIT-ADB02
+  kvdf design reference-tasks ADMIT-ADB02 --scope "ecommerce admin dashboard"
   kvdf design page-create --spec text-spec-001 --name "Checkout page" --output frontend_specs/checkout.page.md
   kvdf design page-list
   kvdf design page-approve page-spec-001 --actor owner-001
@@ -677,6 +689,8 @@ Notes:
   kvdf design visual-review --page page-spec-001 --task task-001 --screenshots desktop.png,mobile.png --decision pass
   kvdf design visual-review-list
   kvdf design gate --task task-001 --page page-spec-001 --json
+  kvdf design governance
+  kvdf design governance --json
   kvdf design missing-report --source design-source-001 --items responsive,empty-state --risk high
   kvdf design approve design-source-001 --spec frontend_specs/checkout.page.md --tokens design_system/tokens.json --actor owner-001
   kvdf design reject design-source-001 --reason "Source is outdated" --actor owner-001
@@ -684,7 +698,7 @@ Notes:
   kvdf design audit design-source-001
 
 Notes:
-  Raw design links, images, PDFs, and reference websites are inputs only. Frontend implementation is blocked until a source has a snapshot and an approved text spec. Frontend verification should also have a passing visual review.
+  Raw design links, images, PDFs, and reference websites are inputs only. Frontend implementation is blocked until a source has a snapshot and an approved text spec. UI/UX references are approved learning/spec patterns used to ask better questions and generate governed design tasks, not to copy third-party assets. Frontend verification should also have a passing visual review. Design governance reports summarize sources, specs, tokens, page specs, components, visual evidence, UI advisor context, and next actions.
 `,
     github: `Usage:
   kvdf github issue sync --version v4.0.0 --dry-run
@@ -847,6 +861,14 @@ Examples:
   kvdf ai-run record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500
   kvdf design add --type figma --location "https://figma.com/file/..." --use "Checkout"
   kvdf design recommend ecommerce --json
+  kvdf design framework-adapters
+  kvdf design framework-plan bootstrap --blueprint erp --composition crud_table_workspace --json
+  kvdf design ui-questions ecommerce --json
+  kvdf design ui-decisions ecommerce --page checkout --json
+  kvdf design playbooks
+  kvdf design playbook erp --json
+  kvdf design variant-archetypes
+  kvdf design variants ecommerce --page checkout --count 3 --json
   kvdf design ui-checklist
   kvdf design ui-review "news article page with semantic HTML structured data responsive accessibility loading empty error"
   kvdf design audit

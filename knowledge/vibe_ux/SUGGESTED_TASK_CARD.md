@@ -40,4 +40,26 @@ Suggested task cards are the bridge between natural language and governed execut
 - Cards are editable before approval.
 - High-risk cards must explain why approval is required.
 - Cards can create one task or a split set of tasks.
+- High-risk or integration cards should be approved before conversion.
 
+## Approval Flow
+
+```text
+natural language
+-> suggested task card
+-> approve or reject
+-> convert to governed task
+-> assign/token/lock/session
+-> execute
+-> review
+-> Owner verification
+```
+
+```bash
+kvdf vibe approve suggestion-001 --actor owner-001
+kvdf vibe reject suggestion-001 --reason "Too broad"
+kvdf vibe convert suggestion-001
+```
+
+Approval records intent that the suggestion is valid work. Conversion creates
+the governed task. Execution still happens through normal task governance.

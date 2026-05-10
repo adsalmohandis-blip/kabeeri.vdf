@@ -1,0 +1,80 @@
+{
+  "catalog_version": "1.0.0",
+  "purpose": "Compact UI/UX decision questions that drive creative variants and implementation choices.",
+  "questions": [
+    {
+      "question_id": "ui.brand_personality",
+      "priority": "high",
+      "text": "What should the product feel like: premium, friendly, technical, formal, playful, clinical, editorial, or operational?",
+      "answer_type": "multi_choice_text",
+      "drives": ["creative_variant", "palette_preset", "surface_style", "microcopy_tone"]
+    },
+    {
+      "question_id": "ui.primary_user",
+      "priority": "high",
+      "text": "Who is the primary user: customer, admin, operator, manager, executive, editor, clinician, field worker, or developer?",
+      "answer_type": "choice_or_text",
+      "drives": ["density", "navigation_pattern", "page_hierarchy", "component_emphasis"]
+    },
+    {
+      "question_id": "ui.primary_workflow",
+      "priority": "high",
+      "text": "What is the main workflow on this screen: discover, compare, buy, approve, monitor, edit, search, report, onboard, or resolve?",
+      "answer_type": "choice_or_text",
+      "drives": ["composition", "page_hierarchy", "component_emphasis"]
+    },
+    {
+      "question_id": "ui.data_density",
+      "priority": "high",
+      "text": "Should the UI be compact, balanced, or comfortable?",
+      "answer_type": "choice",
+      "choices": ["compact", "balanced", "comfortable"],
+      "drives": ["density", "spacing", "table_layout"]
+    },
+    {
+      "question_id": "ui.trust_risk",
+      "priority": "medium",
+      "text": "How much trust/risk/compliance should the UI communicate: low, medium, high, finance, healthcare, security, or government?",
+      "answer_type": "choice_or_text",
+      "drives": ["palette_preset", "microcopy_tone", "surface_style", "visual_quality_level"]
+    },
+    {
+      "question_id": "ui.language_direction",
+      "priority": "medium",
+      "text": "Will the UI be English-only, Arabic-only, bilingual, or RTL-first?",
+      "answer_type": "choice",
+      "choices": ["english_only", "arabic_only", "bilingual", "rtl_first"],
+      "drives": ["rtl_arabic_ui", "typography", "layout_direction"]
+    },
+    {
+      "question_id": "ui.visual_reference",
+      "priority": "medium",
+      "text": "Is there a preferred visual reference or should Kabeeri select a variant from the design system?",
+      "answer_type": "text",
+      "drives": ["design_reference", "creative_variant"]
+    },
+    {
+      "question_id": "ui.motion_preference",
+      "priority": "low",
+      "text": "Should motion be minimal, balanced, or expressive?",
+      "answer_type": "choice",
+      "choices": ["minimal", "balanced", "expressive"],
+      "drives": ["motion_bias"]
+    },
+    {
+      "question_id": "ui.navigation_preference",
+      "priority": "low",
+      "text": "Should navigation feel like sidebar, top navigation, tabs, split navigation, bottom mobile nav, or command center?",
+      "answer_type": "choice_or_text",
+      "drives": ["navigation_pattern"]
+    },
+    {
+      "question_id": "ui.content_tone",
+      "priority": "low",
+      "text": "Should UI copy be concise, warm, formal, technical, reassuring, conversion-focused, or editorial?",
+      "answer_type": "choice_or_text",
+      "drives": ["microcopy_tone", "empty_state_tone"]
+    }
+  ]
+}
+

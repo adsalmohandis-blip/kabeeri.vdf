@@ -402,4 +402,4 @@ If initialization is unclear:
 - [README.md](README.md) — Project intake overview
 - [Kabeeri VDF README](../../README.md) — Main project documentation
 - [Delivery Modes](../delivery_modes/SELECTION_GUIDE.md) — Help choosing mode/profile
-- [Task Governance](../task_governance/README.md) — Rules for creating tasks after initialization
+- [Task Tracking And Governance](../task_tracking/TASK_GOVERNANCE.md) — Rules for creating tasks after initialization

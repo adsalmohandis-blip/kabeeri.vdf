@@ -2,13 +2,16 @@
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical implementation report. The current runtime now includes
 `kvdf design` support for design source intake, snapshots, text specs, page
 specs, component contracts, visual reviews, missing reports, approvals, and
-audits. Design QA automation can still deepen through contrast checks,
-screenshot evidence, theme audits, and visual issue tracking.
+audits. Later work added `kvdf design governance`,
+`.kabeeri/design_sources/governance_reports.json`, and
+`.kabeeri/reports/design_governance_report.md`. Design QA automation can still
+deepen through automated contrast checks, browser screenshot helpers, theme
+audits, and visual issue tracking.
 
 ## Summary
 
@@ -45,13 +48,15 @@ Phase 11 added the v7 Design Source Governance and Frontend Control layer. The w
 - This phase adds governance specs and templates, not a visual design system implementation or UI builder.
 - Automated source extraction remains future-facing; assisted extraction output is draft-only until human approval.
 - Reference websites are explicitly inspiration-only and must not be copied.
+- Current runtime now includes unified governance reporting, but not automated visual regression.
 
 ## Checks Performed
 
 - Confirmed required Phase 11 paths exist.
 - Validated `design_system/DESIGN_TOKENS_TEMPLATE.json`.
 - Ran `node bin/kvdf.js validate`.
-- Ran `npm test`.
+- Historical run recorded `npm test`. Current sandbox verification uses direct
+  CLI validation because Node child process spawning returns `EPERM`.
 
 ## Stop Point
 

@@ -2,13 +2,14 @@
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical implementation report. The current runtime now includes
 policy evaluation/gates, ADR commands, AI run history, handoff packages,
 security commands, migration governance commands, context packs, preflights,
-and model routing. Older wording that says this phase did not add live policy
-or migration commands is retained only as phase history.
+model routing, two-way ADR/AI run links, and `kvdf adr trace`. Older wording
+that says this phase did not add live policy or migration commands is retained
+only as phase history.
 
 ## Summary
 

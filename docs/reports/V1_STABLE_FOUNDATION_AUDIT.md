@@ -4,19 +4,22 @@ Generated for Phase 03 only. This audit does not implement fixes.
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This report is a historical Phase 03 audit. Several findings below were true
 at the time of the audit but are no longer current:
 
 - `docs_site/` now exists.
 - `prompt_packs/common/` now exists.
-- `prompt_packs/react-native-expo/` now exists.
-- task governance is consolidated into `governance/TASK_GOVERNANCE.md` and
-  `task_tracking/`; `task_governance/` was removed.
+- `prompt_packs/react-native-expo/` now exists and is expanded to v0.2.0.
+- task governance is consolidated into `knowledge/task_tracking/TASK_GOVERNANCE.md`;
+  historical `task_governance/` was removed.
 - runtime schemas now cover the active `.kabeeri` state.
-- validation, runtime schema validation, tests, and packaging checks pass in
-  the current working tree.
+- direct validation and runtime schema validation pass in the current working
+  tree; `npm test` is currently blocked in this sandbox by Node child-process
+  `EPERM`, so direct CLI checks are the current verification source.
+- Dashboard UX Governance, Design Governance reports, and ADR/AI decision
+  trace were implemented after this historical audit.
 
 Use `CURRENT_REPOSITORY_ANALYSIS.md` and `GAP_REPORT.md` for current status.
 
@@ -46,9 +49,9 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | generators | ok | `generators/lite.json`, `standard.json`, `enterprise.json`. | Generator profiles exist and are used by CLI. | Add/confirm validation examples and update any stale docs. |
 | schemas | partial | `schemas/generator.schema.json`, `schemas/questionnaire.schema.json`. | Core schemas exist. Further alignment with current runtime task/governance schema may be needed. | Validate schema coverage against current generators/questionnaires and task provenance requirements. |
 | questionnaires | ok | 63 files across core/production/extension. | Bilingual DOCX questionnaire packs exist across core, production, and extension. | Add answered examples and audit report before v1 stabilization fixes. |
-| prompt_packs | historical partial; current implemented | Historical evidence: 386 files across 24 prompt-pack folders. Current evidence: common layer and React Native Expo pack exist. | Strong prompt-pack coverage exists. The original audit predated the current common layer and Expo pack. | Keep manifests and composition tests current as packs evolve. |
-| task_tracking | partial | 10 files including schema, templates, states, review checklist. | Practical task tracking exists. Some docs describe the folder as improved from an original placeholder. | Reconcile with `task_governance/`; clarify source of truth for task schema and workflow. |
-| task_governance | partial | 5 governance files. | Governance rules, intake template, Definition of Ready, and source rules exist. | Cross-link with `task_tracking/` and remove ambiguity without deleting either folder. |
+| prompt_packs | historical partial; current implemented | Historical evidence: 386 files across 24 prompt-pack folders. Current evidence: common layer and React Native Expo Pack v0.2.0 exist. | Strong prompt-pack coverage exists. The original audit predated the current common layer and Expo pack. | Keep manifests and composition tests current as packs evolve. |
+| task_tracking | current implemented | Unified schema, templates, states, review checklist, and governance policy. | `knowledge/task_tracking/` is the canonical task tracking and governance area. | Keep task docs aligned with runtime validation and dashboard tracker. |
+| task_governance | historical only | Historical evidence from audit time. | This folder was consolidated away after the audit. | Do not recreate it; use `knowledge/task_tracking/TASK_GOVERNANCE.md`. |
 | acceptance_checklists | ok | 13 files including schemas and multiple checklists. | Acceptance checklist layer is present and useful for v1. | Confirm examples and release checklist are current. |
 | examples | partial | Lite/standard/enterprise examples exist. | Examples were improved from placeholder state. Need audit for sample generated document set and sample acceptance review completeness. | Add v1 example audit and fill gaps in Phase 04 if approved. |
 | CLI design/runtime | partial | `cli/` docs plus `bin/kvdf.js`, `src/cli/*`, `package.json`. | Working CLI exists with tests. Some CLI docs still use "future CLI" wording. | Update CLI docs to distinguish implemented runtime from future UI/extension work. |
@@ -61,14 +64,14 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | V1 Area | Audit Result |
 | --- | --- |
 | Repository cleanup | partial; no destructive cleanup should happen until a fix plan is approved. |
-| Common prompt layer | partial; many prompt packs exist but common-layer consistency needs audit. |
+| Common prompt layer | current implemented; keep manifest and composition tests current. |
 | Generator system | ok/partial; generator files exist and runtime can scaffold them. |
 | Questionnaires | ok/partial; DOCX packs exist, answered examples still need confirmation. |
 | Example workflows | partial; examples exist but need acceptance/sample generated doc completeness review. |
 | CLI prototype | exists; runtime has moved beyond prototype, docs need wording update. |
 | CLI generation features | exists; `create/generate/questionnaire` runtime support exists. |
 | VS Code planning | partial; scaffold exists but planned views need docs. |
-| Documentation readiness | partial; docs exist but parity and docs-site gaps remain. |
+| Documentation readiness | partial; docs site exists, parity and ongoing freshness still need maintenance. |
 | Stable public release | partial/deferred; publishing requires Owner approval and final QA. |
 
 ## Phase 03 Audit Classification
@@ -79,7 +82,7 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | partial | 10 |
 | missing | 1 |
 | outdated | included under partial |
-| duplicate | 1 risk area: `task_tracking/` plus `task_governance/` |
+| duplicate | historical risk area: `task_tracking/` plus removed `task_governance/`; current policy is unified under `knowledge/task_tracking/` |
 
 ## Do Not Fix Yet
 

@@ -29,6 +29,7 @@ kvdf design visual-review \
 
 kvdf design visual-review-list
 kvdf design gate --task task-001 --page page-spec-001 --json
+kvdf design governance --json
 kvdf validate design
 ```
 
@@ -83,3 +84,17 @@ This feature does not replace:
 - Owner verification
 
 It adds the missing visual evidence step between frontend implementation and final verification.
+
+## Unified Design Governance Report
+
+Use this after design intake and after visual review:
+
+```bash
+kvdf design governance
+kvdf design governance --json
+```
+
+The report checks source snapshots, approved text specs, design tokens, page
+specs, component contracts, screenshot evidence, mobile/desktop evidence,
+accessibility or contrast checks, UI/UX Advisor context, and unresolved missing
+design reports.

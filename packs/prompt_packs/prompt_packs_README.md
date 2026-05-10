@@ -487,6 +487,11 @@ Do not edit native folders or EAS release settings without explicit approval.
 Use kvdf prompt-pack compose react-native-expo --task <task-id> for governed AI runs.
 ```
 
+Current Expo coverage includes mobile context, routing, public config, theme
+foundation, auth/onboarding, API/data/state, core screens, forms/keyboard,
+offline storage, permissions/notifications, testing/review, EAS handoff,
+backend API contract alignment, and accessibility/performance review.
+
 ## Flutter
 
 ```text

@@ -6,14 +6,113 @@
     "design_tokens",
     "typography_system",
     "color_system",
+    "theme_token_intelligence",
     "spacing_system",
     "layout_grid",
     "component_library",
+    "component_composition_intelligence",
+    "framework_adapter_intelligence",
+    "project_ui_playbooks",
     "interaction_patterns",
     "accessibility_rules",
+    "accessibility_inclusive_ui",
     "responsive_rules",
+    "performance_web_vitals_ui",
     "seo_geo_rules",
-    "content_guidelines"
+    "content_guidelines",
+    "content_microcopy_ux",
+    "ui_execution_kit",
+    "business_ui_patterns",
+    "ui_flows",
+    "rtl_arabic_ui",
+    "visual_quality_governance",
+    "motion_system",
+    "ui_decision_intake",
+    "creative_variant_intelligence",
+    "creative_variation_profile",
+    "color_palette_preset"
+  ],
+  "approved_ui_libraries": [
+    {
+      "key": "bootstrap",
+      "name": "Bootstrap",
+      "version": "5.3.8",
+      "package": "bootstrap",
+      "install": "npm install bootstrap@5.3.8 --save-exact",
+      "best_for": ["responsive websites", "WordPress themes and plugins", "admin UI", "MVP prototypes", "forms", "tables", "conventional component systems"],
+      "use_when": ["The project asks for Bootstrap.", "The team wants a widely known responsive grid and component library.", "The frontend stack can import Bootstrap CSS and bootstrap.bundle JavaScript safely."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Map Bootstrap variables and CSS custom properties to project design tokens.", "Document the import method before implementation.", "Create component contracts for only the Bootstrap components used by the product.", "Test responsive, accessibility, and RTL behavior for Arabic surfaces."]
+    },
+    {
+      "key": "tailwindcss",
+      "name": "Tailwind CSS",
+      "version": "4.3.0",
+      "package": "tailwindcss",
+      "install": "npm install --save-dev tailwindcss@4.3.0 @tailwindcss/cli@4.3.0 --save-exact",
+      "best_for": ["custom responsive interfaces", "Next.js and Astro sites", "Nuxt and SvelteKit apps", "SaaS dashboards", "storefronts", "shadcn/ui or headless component systems", "token-driven product UI"],
+      "use_when": ["The project asks for Tailwind.", "The team wants utility-first styling with a custom visual identity.", "The frontend stack can document its Tailwind adapter and production CSS build path."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Map Tailwind theme variables to project design tokens.", "Document the build adapter: CLI, Vite, PostCSS, framework plugin, or prototype-only browser setup.", "Create component contracts to avoid repeated ad hoc utility strings.", "Document content scanning/build inputs.", "Test responsive, accessibility, dark mode, and RTL behavior for Arabic surfaces."]
+    },
+    {
+      "key": "bulma",
+      "name": "Bulma",
+      "version": "1.0.4",
+      "package": "bulma",
+      "install": "npm install bulma@1.0.4 --save-exact",
+      "best_for": ["simple responsive websites", "CSS-only prototypes", "Bootstrap alternatives", "Flexbox layouts", "lightweight public pages"],
+      "use_when": ["The project needs a CSS-only framework with readable class names.", "The team wants responsive layout and common elements without JavaScript plugins.", "The interface does not require a large React component system."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Map Bulma Sass variables and CSS custom properties to project tokens.", "Document which Bulma components and helpers are allowed.", "Add custom JavaScript behavior only through project component contracts.", "Test responsive and RTL behavior for Arabic surfaces."]
+    },
+    {
+      "key": "foundation-sites",
+      "name": "Foundation Sites",
+      "version": "6.9.0",
+      "package": "foundation-sites",
+      "install": "npm install foundation-sites@6.9.0 --save-exact",
+      "best_for": ["professional responsive websites", "customizable public sites", "enterprise marketing sites", "apps that need a mature grid", "responsive email planning when paired with Foundation for Emails"],
+      "use_when": ["The project needs a mature responsive framework with deep customization.", "The team is comfortable with Sass and framework configuration.", "The design needs more structure than a minimal CSS utility layer."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Map Foundation Sass settings to project tokens.", "Document JavaScript plugin usage and initialization policy.", "Do not mix with another full CSS framework without a migration decision.", "Test responsive, accessibility, and RTL behavior for Arabic surfaces."]
+    },
+    {
+      "key": "mui",
+      "name": "Material UI / MUI",
+      "version": "9.0.1",
+      "package": "@mui/material",
+      "install": "npm install @mui/material@9.0.1 @emotion/react @emotion/styled --save-exact",
+      "best_for": ["React applications", "Material Design products", "admin panels", "forms", "dashboards", "component-heavy SaaS"],
+      "use_when": ["The project is React-based.", "The product should follow or adapt Material Design.", "The team needs accessible, maintained, themeable React components."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Map the MUI theme to project design tokens.", "Document emotion/styling setup and SSR requirements.", "Define component variants before page implementation.", "Test responsive, accessibility, dark mode, and RTL behavior."]
+    },
+    {
+      "key": "antd",
+      "name": "Ant Design",
+      "version": "6.3.7",
+      "package": "antd",
+      "install": "npm install antd@6.3.7 --save-exact",
+      "best_for": ["React enterprise applications", "admin dashboards", "ERP", "CRM", "data-heavy backoffices", "forms and tables"],
+      "use_when": ["The project is React-based and operationally dense.", "The product needs polished tables, forms, date pickers, filters, modals, and enterprise navigation.", "The team prefers a complete component system over custom composition."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Map Ant Design theme tokens to project tokens.", "Document ConfigProvider, locale, direction, and app shell policy.", "Define data-table and form contracts before implementation.", "Test accessibility, density, responsive tables, and RTL behavior."]
+    },
+    {
+      "key": "daisyui",
+      "name": "daisyUI",
+      "version": "5.5.19",
+      "package": "daisyui",
+      "install": "npm install --save-dev daisyui@5.5.19 --save-exact",
+      "best_for": ["Tailwind projects needing faster components", "MVPs", "SaaS dashboards", "forms", "themeable component classes"],
+      "use_when": ["Tailwind is already selected.", "The team wants component classes such as buttons, cards, alerts, menus, and modals on top of Tailwind.", "The product can accept daisyUI theming conventions."],
+      "governance_rules": ["Pin the version or record an upgrade decision.", "Use only with an approved Tailwind setup.", "Map daisyUI themes to project tokens.", "Document allowed component classes and theme names.", "Test dark mode, responsive behavior, accessibility, and RTL behavior."]
+    },
+    {
+      "key": "shadcn-ui",
+      "name": "shadcn/ui",
+      "version": "4.7.0",
+      "package": "shadcn",
+      "install": "npx shadcn@4.7.0 init",
+      "best_for": ["React and Next.js applications", "Tailwind products", "modern SaaS dashboards", "editable component source", "Radix-based component contracts"],
+      "use_when": ["The project is React/Next.js and Tailwind is selected.", "The team wants owned component source instead of a black-box component package.", "The product needs modern accessible primitives that can be customized heavily."],
+      "governance_rules": ["Record that shadcn/ui copies component source into the app instead of behaving like a traditional npm component package.", "Pin the CLI version or record an upgrade decision.", "Map Tailwind tokens and CSS variables to project tokens.", "Document which components are copied and owned by the project.", "Test accessibility, keyboard behavior, dark mode, and RTL behavior."]
+    }
   ],
   "component_sets": {
     "core": ["button", "icon_button", "input", "textarea", "select", "checkbox", "radio", "switch", "date_picker", "file_upload", "avatar", "badge", "tag", "tooltip", "popover", "dropdown_menu", "accordion", "tabs", "modal", "drawer", "card", "alert", "toast", "breadcrumb", "pagination", "skeleton", "empty_state", "error_state", "search_box"],
@@ -26,6 +125,7 @@
     "seo_content_site": {
       "best_for": ["blog", "news_website", "corporate_website", "knowledge_base", "documentation_website", "newsletter_paid_content"],
       "recommended_stacks": ["Astro + Tailwind", "Next.js + Tailwind + shadcn/ui", "Nuxt + Tailwind", "WordPress custom theme"],
+      "approved_ui_libraries": ["tailwindcss", "shadcn-ui", "daisyui", "bulma", "foundation-sites", "bootstrap"],
       "layout_priorities": ["semantic_html", "fast_loading", "readable_typography", "clear_headings", "internal_links", "breadcrumbs", "author_date", "faq", "structured_data"],
       "seo_geo": ["Article/NewsArticle/Product/FAQ/Breadcrumb schema as appropriate", "direct answer near top", "H1/H2/H3 hierarchy", "short paragraphs", "comparison tables", "source list", "last updated", "topic clusters"],
       "avoid": ["JS-only navigation", "critical content hidden behind client-only widgets", "heavy sliders above the fold", "image-only text"]
@@ -33,6 +133,7 @@
     "commerce_storefront": {
       "best_for": ["ecommerce", "marketplace", "loyalty_system"],
       "recommended_stacks": ["Next.js + Tailwind + shadcn/ui", "Shopify theme/app UI", "Nuxt + Tailwind"],
+      "approved_ui_libraries": ["tailwindcss", "shadcn-ui", "daisyui", "mui", "bulma", "foundation-sites", "bootstrap"],
       "layout_priorities": ["product_discovery", "fast_product_pages", "filter_sidebar", "cart_drawer", "checkout_steps", "trust_signals", "reviews", "breadcrumb_schema"],
       "seo_geo": ["Product schema", "Review schema", "BreadcrumbList schema", "canonical URLs", "SEO-friendly category pages", "optimized image dimensions"],
       "avoid": ["hidden add-to-cart", "unclear price/tax/shipping", "infinite scroll without crawlable pagination"]
@@ -40,6 +141,7 @@
     "data_heavy_web_app": {
       "best_for": ["erp", "crm", "inventory_wms", "accounting_billing", "helpdesk", "hr_payroll", "bi_dashboard"],
       "recommended_stacks": ["Ant Design", "MUI", "Mantine", "PrimeReact", "Fluent UI", "TanStack Table + custom UI"],
+      "approved_ui_libraries": ["antd", "mui", "tailwindcss", "shadcn-ui", "daisyui", "bootstrap", "foundation-sites"],
       "layout_priorities": ["data_density", "keyboard_navigation", "role_based_menus", "tables_filters", "bulk_actions", "empty_states", "clear_errors", "audit_visibility"],
       "seo_geo": ["Usually behind login; prioritize accessibility, performance, and operator clarity over public SEO."],
       "avoid": ["marketing hero layouts", "oversized cards for dense operations", "too many columns without visibility controls"]
@@ -47,6 +149,7 @@
     "pos_operations": {
       "best_for": ["pos", "restaurant"],
       "recommended_stacks": ["React + lightweight component system", "Flutter for tablet POS", "Ionic for hybrid POS"],
+      "approved_ui_libraries": ["tailwindcss", "daisyui", "bootstrap", "bulma"],
       "layout_priorities": ["touch_targets", "fast_actions", "offline_status", "receipt_flow", "cash_drawer_visibility", "kitchen_or_shift_status"],
       "seo_geo": ["Not SEO-driven; prioritize speed, resilience, touch ergonomics, and error recovery."],
       "avoid": ["small touch controls", "network-only critical actions", "slow modal-heavy sales flow"]
@@ -96,6 +199,28 @@
     "SEO/GEO pages use semantic HTML, structured data, breadcrumbs, clear headings, readable content, author/date where relevant, and optimized images.",
     "Dashboards prioritize scanability, data density, filters, table ergonomics, role visibility, and clear error states.",
     "Mobile screens use large touch targets, offline/error states, push permission UX, and deep-link-aware flows.",
+    "A color palette preset or approved brand token set is selected before UI generation.",
+    "Creative variation axes are documented so similar product types do not receive identical layouts, palettes, or tone.",
+    "UI Decision Intake questions are answered or listed as missing before final visual implementation.",
+    "Project UI Playbook is selected for the product blueprint before page-level implementation.",
+    "Creative Variant Intelligence provides at least one bounded variant direction before UI implementation when a generated UI could look generic.",
+    "The relevant UI Execution Kit recipe is selected for repeated screens such as CRUD, dashboards, forms, settings, empty states, and confirm modals.",
+    "The closest business UI pattern is selected from knowledge/design_system/business_ui_patterns/ before screen generation.",
+    "The selected framework adapter is chosen from knowledge/design_system/framework_adapter_intelligence/ before frontend code generation.",
+    "Full business design reference files are selected from BUSINESS_REFERENCE_INDEX.json when available.",
+    "A template pack and recommended template IDs are selected from TEMPLATE_LIBRARY_INDEX.json when the business type has a priority pack.",
+    "The relevant user flow is selected from knowledge/design_system/ui_flows/ for stateful or multi-step screens.",
+    "Motion level is selected from MINIMAL_MOTION, BALANCED_MOTION, or EXPRESSIVE_MOTION, with reduced-motion support when animation is used.",
+    "Accessibility level is selected from ACCESSIBILITY_STRICT, ACCESSIBILITY_BALANCED, or ACCESSIBILITY_CONTENT before UI generation.",
+    "Accessibility references are selected from knowledge/design_system/accessibility_inclusive_ui/ for semantic HTML, keyboard, focus, forms, tables, dialogs, readable content, contrast, and inclusive states.",
+    "Performance level is selected from PERFORMANCE_PUBLIC_STRICT, PERFORMANCE_APP_BALANCED, or PERFORMANCE_DATA_HEAVY before UI generation.",
+    "Performance references are selected from knowledge/design_system/performance_web_vitals_ui/ for LCP, INP, CLS, images, media, fonts, CSS, JavaScript, data rendering, skeletons, and loading states.",
+    "Content microcopy level is selected from CONTENT_OPERATIONAL, CONTENT_CONVERSION, CONTENT_EDITORIAL, or CONTENT_CONVERSATIONAL before UI generation.",
+    "Content references are selected from knowledge/design_system/content_microcopy_ux/ for action labels, empty/error states, validation, onboarding, confirmations, status labels, and product-aware tone.",
+    "RTL/Arabic UI references are selected from knowledge/design_system/rtl_arabic_ui/ when Arabic, bilingual, MENA, or RTL surfaces are involved.",
+    "Arabic UI covers typography, direction, forms, tables, numbers, dates, icon direction, focus order, and accessibility.",
+    "Reusable UI template metadata follows schemas/ui-template.schema.json.",
+    "Prompts reference stable UI files instead of repeating long instructions.",
     "Core Web Vitals risks are reviewed: LCP, INP, CLS, image dimensions, JS weight, and lazy loading.",
     "Visual review evidence exists before Owner/client visual verification."
   ]

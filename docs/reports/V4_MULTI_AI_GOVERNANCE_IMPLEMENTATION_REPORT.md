@@ -2,13 +2,15 @@
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical implementation report. The current runtime now includes
 live enforcement commands and validation for Owner, developer, agent, token,
 lock, session, budget, audit, workstream, app boundary, task access token, and
 Owner verification flows. The older risk line saying this phase did not include
 live enforcement commands is preserved only as phase history.
+Dashboard live state and policy/report surfaces now expose much of this
+governance through `.kabeeri`-derived views.
 
 ## Summary
 

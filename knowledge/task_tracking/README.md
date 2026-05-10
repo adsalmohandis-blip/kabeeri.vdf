@@ -1,53 +1,90 @@
-# Task Tracking
+# Task Tracking And Governance
 
-This directory defines the task tracking layer for **Kabeeri Vibe Developer Framework**.
+This directory is the unified task layer for **Kabeeri Vibe Developer Framework**.
 
-The current folder started as a simple framework asset placeholder. This improved version turns it into a practical workflow for tracking AI-assisted development tasks from idea to review and completion.
+It combines what used to be discussed separately as task tracking and task
+governance:
+
+- task tracking: the practical task records, schemas, states, templates, review
+  checklists, and AI execution logs
+- task governance: the rules that decide whether a task is valid, ready,
+  traceable, scoped, assigned, reviewable, and safe to execute
 
 ## Purpose
 
-The purpose of `task_tracking/` is to help vibe developers and AI coding assistants work in small, reviewable tasks instead of asking AI to build a whole product at once.
+The purpose of `knowledge/task_tracking/` is to help developers and AI coding
+assistants work in small, reviewable, source-backed tasks instead of asking AI
+to build or change a whole product in one broad prompt.
 
 It connects:
 
 ```text
-Project documents
-→ prompt packs
-→ implementation tasks
-→ AI execution
-→ human review
-→ acceptance
-→ commit
-→ GitHub Issue closure
+Owner request / questionnaire / Vibe intent / issue / design source / scan
+-> governed task
+-> scoped token or assignment
+-> AI or developer execution
+-> review evidence
+-> Owner verification
+-> dashboard visibility
+-> commit / issue / release handoff
 ```
 
-## What this folder is
+## Canonical Location
 
-This folder provides:
+This folder is now the single canonical home for task tracking and task
+governance.
 
-- a simple task format
+Use this folder for:
+
+- task schemas
+- task templates
 - task states
-- a JSON task example
-- a reusable task schema
-- a review checklist
-- an AI execution log template
-- an example task for GitHub Issue usage
+- task intake
+- task provenance
+- task governance policy
+- Owner verification rules
+- review checklists
+- AI execution logs
+- examples
+- runtime task-tracker guidance
 
-## Relationship to governance
+The old `task_governance/` folder has been removed. Do not recreate it.
 
-Use `task_tracking/` for task schemas, task templates, examples, task states,
-review checklists, provenance schema, intake template, and AI execution log
-formats.
+`knowledge/governance/TASK_GOVERNANCE.md` remains only as a compatibility
+pointer to:
 
-Use [../governance/TASK_GOVERNANCE.md](../governance/TASK_GOVERNANCE.md) for
-the canonical rules about whether a task is valid, ready, traceable, scoped,
-assigned, reviewable, and safe to execute.
+```text
+knowledge/task_tracking/TASK_GOVERNANCE.md
+```
 
-## Live task tracker state
+## What A Governed Task Is
 
-Runtime task state lives in `.kabeeri/tasks.json`.
+A governed task is a small unit of executable work with enough context and
+controls for a human developer, Codex, Claude, Copilot, or another AI agent to
+execute it without guessing.
 
-The dashboard also generates a smaller live task tracker file for UI surfaces:
+A governed task must explain:
+
+- what will be done
+- why it exists
+- where it came from
+- which app, workstream, files, or feature it affects
+- what is included
+- what is excluded
+- what acceptance criteria prove completion
+- who or which agent is assigned
+- what evidence must be produced
+- which gates apply before completion
+
+## Runtime State
+
+Runtime task state lives in:
+
+```text
+.kabeeri/tasks.json
+```
+
+The focused live task tracker state lives in:
 
 ```text
 .kabeeri/dashboard/task_tracker_state.json
@@ -71,69 +108,24 @@ When served locally, the focused live JSON is available at:
 /__kvdf/api/tasks
 ```
 
-The old `task_governance/` folder has been removed. Do not recreate it; add new
-task policy only to `governance/TASK_GOVERNANCE.md`.
-
-## What this folder is not
-
-This folder is not a replacement for:
-
-- GitHub Issues
-- GitHub Projects
-- Jira
-- Linear
-- Trello
-- project management software
-
-It is a framework-level task format that can be copied into those tools.
-
-## Recommended GitHub workflow
+## Recommended Flow
 
 ```text
-1. Create or open a GitHub Issue.
-2. Add the correct label.
-3. Add the issue to the milestone.
-4. Add the issue to the GitHub Project board.
-5. Move the card to Todo.
-6. When work starts, move it to In Progress.
-7. Use TASK_TEMPLATE.md to define the work.
-8. Use the matching prompt pack if implementation is needed.
-9. Use AI_EXECUTION_LOG_TEMPLATE.md after AI generates or edits files.
-10. Use TASK_REVIEW_CHECKLIST.md before closing the issue.
-11. Commit and push.
-12. Move the card to Done.
-13. Close the issue.
+1. Capture the source.
+2. Create or approve a governed task.
+3. Confirm scope, exclusions, workstream, app boundary, and acceptance criteria.
+4. Assign the developer or AI agent.
+5. Issue a scoped token or start a tracked session when needed.
+6. Execute only the task scope.
+7. Record changed files, checks, screenshots, logs, and risks.
+8. Review independently where possible.
+9. Owner verifies or rejects.
+10. Dashboard and reports show the final state.
 ```
 
-## Minimum task object
+## Status Values
 
-A task should include at least:
-
-```json
-{
-  "id": "T001",
-  "title": "Example task",
-  "status": "todo",
-  "prompt_id": "P001",
-  "folder": "05_EXECUTION_PLAN",
-  "depends_on": [],
-  "tests": [],
-  "review_notes": ""
-}
-```
-
-## Recommended task object
-
-For real framework work, use the fuller structure in:
-
-```text
-task.schema.json
-task.schema.example.json
-```
-
-## Task status values
-
-Use these status values:
+Use consistent task status values:
 
 ```text
 todo
@@ -153,44 +145,30 @@ complete
 finished
 ```
 
-Use one consistent vocabulary so tasks are easy to track.
+## Minimum Task Object
 
-## Folder contents
+A task should include at least:
+
+```json
+{
+  "id": "T001",
+  "title": "Example task",
+  "status": "todo",
+  "source": "owner_request",
+  "workstream": "backend",
+  "acceptance": ["Validation passes"],
+  "review_notes": ""
+}
+```
+
+For real framework work, use the fuller structure in:
 
 ```text
-README.md
-README_AR.md
-TASK_TEMPLATE.md
-TASK_STATES.md
-TASK_INTAKE_TEMPLATE.md
-TASK_PROVENANCE_SCHEMA.json
-TASK_REVIEW_CHECKLIST.md
-AI_EXECUTION_LOG_TEMPLATE.md
-EXAMPLE_TASK.md
 task.schema.json
 task.schema.example.json
-task_tracking_manifest.json
 ```
 
-## Standard task flow
-
-```text
-todo
-→ in_progress
-→ review
-→ done
-→ closed
-```
-
-For a very simple GitHub Project board, use:
-
-```text
-todo
-→ in_progress
-→ done
-```
-
-## AI usage rule
+## AI Usage Rule
 
 When using an AI coding assistant for a task, always include:
 
@@ -206,16 +184,38 @@ List checks/tests to run.
 Stop after completing this task.
 ```
 
-## Commit example
+## Folder Contents
+
+```text
+README.md
+README_AR.md
+TASK_GOVERNANCE.md
+TASK_TEMPLATE.md
+TASK_STATES.md
+TASK_INTAKE_TEMPLATE.md
+TASK_PROVENANCE_SCHEMA.json
+TASK_REVIEW_CHECKLIST.md
+AI_EXECUTION_LOG_TEMPLATE.md
+EXAMPLE_TASK.md
+OWNER_VERIFY_RULES.md
+task.schema.json
+task.schema.example.json
+task_tracking_manifest.json
+```
+
+## Main Commands
 
 ```bash
-git add task_tracking
-git commit -m "Define first task tracking format for v0.1.1
-
-Closes #6"
-git push
+kvdf task create
+kvdf task assign
+kvdf task start
+kvdf task review
+kvdf task verify
+kvdf task tracker
+kvdf dashboard task-tracker
+kvdf validate task
 ```
 
 ## Status
 
-Foundation task tracking format for `v0.1.1`.
+Unified task tracking and governance layer for Kabeeri VDF.

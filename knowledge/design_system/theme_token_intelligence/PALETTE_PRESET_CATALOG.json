@@ -1,0 +1,238 @@
+{
+  "catalog_version": "1.0.0",
+  "presets": [
+    {
+      "preset": "saas_calm",
+      "best_for": ["saas", "portal", "dashboard", "general_app"],
+      "personality": "clear_modern_trustworthy",
+      "creative_profile": {
+        "personality": "calm_modern",
+        "density": "balanced",
+        "surface_style": "subtle_bordered_cards",
+        "navigation_pattern": "clean_product_shell",
+        "microcopy_tone": "concise_helpful"
+      },
+      "colors": {
+        "background": "#f8fafc",
+        "surface": "#ffffff",
+        "surface_alt": "#f1f5f9",
+        "foreground": "#0f172a",
+        "text": "#0f172a",
+        "muted": "#64748b",
+        "primary": "#2563eb",
+        "secondary": "#64748b",
+        "accent": "#14b8a6",
+        "success": "#16a34a",
+        "warning": "#d97706",
+        "danger": "#dc2626",
+        "info": "#0284c7",
+        "border": "#e2e8f0",
+        "focus": "#2563eb"
+      }
+    },
+    {
+      "preset": "enterprise_neutral",
+      "best_for": ["erp", "crm", "admin", "backoffice", "wms", "operations"],
+      "personality": "restrained_operational_dense",
+      "creative_profile": {
+        "personality": "precise_operational",
+        "density": "compact",
+        "surface_style": "flat_sectioned_panels",
+        "navigation_pattern": "sidebar_with_dense_tables",
+        "microcopy_tone": "direct_unambiguous"
+      },
+      "colors": {
+        "background": "#f6f7f9",
+        "surface": "#ffffff",
+        "surface_alt": "#eef1f5",
+        "foreground": "#111827",
+        "text": "#111827",
+        "muted": "#5b6472",
+        "primary": "#1d4ed8",
+        "secondary": "#4b5563",
+        "accent": "#0f766e",
+        "success": "#15803d",
+        "warning": "#b45309",
+        "danger": "#b91c1c",
+        "info": "#0369a1",
+        "border": "#d7dde5",
+        "focus": "#1d4ed8"
+      }
+    },
+    {
+      "preset": "commerce_energy",
+      "best_for": ["ecommerce", "marketplace", "storefront", "checkout", "loyalty"],
+      "personality": "active_conversion_focused",
+      "creative_profile": {
+        "personality": "confident_shoppable",
+        "density": "balanced",
+        "surface_style": "crisp_product_cards",
+        "navigation_pattern": "category_discovery",
+        "microcopy_tone": "clear_reassuring"
+      },
+      "colors": {
+        "background": "#fbfbf8",
+        "surface": "#ffffff",
+        "surface_alt": "#f3f4ee",
+        "foreground": "#18181b",
+        "text": "#18181b",
+        "muted": "#71717a",
+        "primary": "#e11d48",
+        "secondary": "#52525b",
+        "accent": "#f59e0b",
+        "success": "#16a34a",
+        "warning": "#d97706",
+        "danger": "#dc2626",
+        "info": "#0284c7",
+        "border": "#e4e4e7",
+        "focus": "#e11d48"
+      }
+    },
+    {
+      "preset": "clinical_trust",
+      "best_for": ["health", "medical", "clinic", "dental", "wellness"],
+      "personality": "clean_calm_credible",
+      "creative_profile": {
+        "personality": "calm_care",
+        "density": "comfortable",
+        "surface_style": "soft_clear_sections",
+        "navigation_pattern": "guided_service_flow",
+        "microcopy_tone": "plain_supportive"
+      },
+      "colors": {
+        "background": "#f7fbfb",
+        "surface": "#ffffff",
+        "surface_alt": "#eaf6f5",
+        "foreground": "#102a2a",
+        "text": "#102a2a",
+        "muted": "#5b7171",
+        "primary": "#0f766e",
+        "secondary": "#64748b",
+        "accent": "#38bdf8",
+        "success": "#15803d",
+        "warning": "#b45309",
+        "danger": "#b91c1c",
+        "info": "#0369a1",
+        "border": "#cfe5e2",
+        "focus": "#0f766e"
+      }
+    },
+    {
+      "preset": "finance_precision",
+      "best_for": ["fintech", "finance", "accounting", "billing", "invoice", "payment"],
+      "personality": "stable_precise_high_contrast",
+      "creative_profile": {
+        "personality": "serious_precise",
+        "density": "compact",
+        "surface_style": "high_contrast_panels",
+        "navigation_pattern": "audit_ready_shell",
+        "microcopy_tone": "specific_low_ambiguity"
+      },
+      "colors": {
+        "background": "#f7f8fa",
+        "surface": "#ffffff",
+        "surface_alt": "#eef2f7",
+        "foreground": "#0b1220",
+        "text": "#0b1220",
+        "muted": "#526071",
+        "primary": "#0f3b82",
+        "secondary": "#475569",
+        "accent": "#0f766e",
+        "success": "#166534",
+        "warning": "#a16207",
+        "danger": "#991b1b",
+        "info": "#075985",
+        "border": "#d6dce5",
+        "focus": "#0f3b82"
+      }
+    },
+    {
+      "preset": "content_editorial",
+      "best_for": ["blog", "news", "content", "documentation", "knowledge"],
+      "personality": "readable_editorial_structured",
+      "creative_profile": {
+        "personality": "editorial_clear",
+        "density": "comfortable",
+        "surface_style": "open_reading_canvas",
+        "navigation_pattern": "topic_led",
+        "microcopy_tone": "credible_descriptive"
+      },
+      "colors": {
+        "background": "#fafafa",
+        "surface": "#ffffff",
+        "surface_alt": "#f1f5f9",
+        "foreground": "#171717",
+        "text": "#171717",
+        "muted": "#5f6b7a",
+        "primary": "#1d4ed8",
+        "secondary": "#52525b",
+        "accent": "#7c3aed",
+        "success": "#15803d",
+        "warning": "#b45309",
+        "danger": "#b91c1c",
+        "info": "#0369a1",
+        "border": "#e5e7eb",
+        "focus": "#1d4ed8"
+      }
+    },
+    {
+      "preset": "dark_governance",
+      "best_for": ["governance", "ai", "cost", "security", "operations_dashboard"],
+      "personality": "dark_status_rich_controlled",
+      "creative_profile": {
+        "personality": "command_center",
+        "density": "balanced",
+        "surface_style": "dark_shell_light_work_surfaces",
+        "navigation_pattern": "governance_sidebar",
+        "microcopy_tone": "decisive_status_driven"
+      },
+      "colors": {
+        "background": "#0b1020",
+        "surface": "#111827",
+        "surface_alt": "#172033",
+        "foreground": "#f8fafc",
+        "text": "#f8fafc",
+        "muted": "#a7b0c0",
+        "primary": "#60a5fa",
+        "secondary": "#94a3b8",
+        "accent": "#22d3ee",
+        "success": "#22c55e",
+        "warning": "#f59e0b",
+        "danger": "#f43f5e",
+        "info": "#38bdf8",
+        "border": "#263244",
+        "focus": "#60a5fa"
+      }
+    },
+    {
+      "preset": "arabic_corporate",
+      "best_for": ["arabic", "rtl", "corporate", "government", "mena"],
+      "personality": "formal_readable_rtl_aware",
+      "creative_profile": {
+        "personality": "formal_confident",
+        "density": "balanced",
+        "surface_style": "structured_clear_blocks",
+        "navigation_pattern": "rtl_first_information_architecture",
+        "microcopy_tone": "clear_respectful"
+      },
+      "colors": {
+        "background": "#f8faf9",
+        "surface": "#ffffff",
+        "surface_alt": "#eef4f1",
+        "foreground": "#10231f",
+        "text": "#10231f",
+        "muted": "#60716b",
+        "primary": "#047857",
+        "secondary": "#475569",
+        "accent": "#c0882d",
+        "success": "#15803d",
+        "warning": "#b7791f",
+        "danger": "#b91c1c",
+        "info": "#0369a1",
+        "border": "#d8e2de",
+        "focus": "#047857"
+      }
+    }
+  ]
+}
+

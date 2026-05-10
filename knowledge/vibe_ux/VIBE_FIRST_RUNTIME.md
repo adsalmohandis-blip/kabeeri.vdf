@@ -35,6 +35,7 @@ Task card workflow:
 ```bash
 kvdf vibe list
 kvdf vibe show suggestion-001
+kvdf vibe approve suggestion-001 --actor owner-001
 kvdf vibe convert suggestion-001
 kvdf vibe reject suggestion-001 --reason "Too broad"
 kvdf vibe plan "Build an ecommerce store with catalog cart checkout and admin"
@@ -93,7 +94,11 @@ kvdf vibe next
 
 ## Conversion
 
-`kvdf vibe convert suggestion-001` turns a suggested card into a normal governed task. From that point, the existing runtime applies:
+`kvdf vibe approve suggestion-001` records that the Owner, Maintainer, or Business Analyst accepts the suggested card as valid work. Approval does not execute code and does not create a task by itself.
+
+`kvdf vibe convert suggestion-001` turns an approved suggested card into a normal governed task. If a suggested card has `approval_required: true`, conversion is blocked until approval unless an authorized Owner deliberately uses `--force true`.
+
+From that point, the existing runtime applies:
 
 - task approval
 - assignment

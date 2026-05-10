@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kabeeri.dev/schemas/runtime/ui-ux-reference-state.schema.json",
+  "title": "Kabeeri UI/UX Reference State",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "selections": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "generated_questions": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "generated_tasks": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "current_selection": {
+      "type": ["string", "null"]
+    }
+  }
+}

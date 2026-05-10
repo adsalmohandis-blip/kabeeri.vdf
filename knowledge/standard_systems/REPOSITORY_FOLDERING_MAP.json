@@ -35,6 +35,7 @@
         "knowledge/ai_cost_control/",
         "knowledge/vibe_ux/",
         "knowledge/design_system/",
+        "knowledge/design_system/ui_ux_reference/",
         "knowledge/design_sources/",
         "knowledge/frontend_specs/",
         "knowledge/acceptance_checklists/"
@@ -73,7 +74,7 @@
       "group": "documentation",
       "target_path": "docs/",
       "description": "Human documentation, architecture notes, reports, bilingual guides, static docs site, and roadmap source context.",
-      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
+      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "uiux specifications/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
       "laravel_analogy": "docs/, README, changelog"
     },
     {
@@ -100,6 +101,7 @@
     { "path": "integrations/", "target_group": "integrations", "role": "integration super-folder", "migration_status": "physical_root" },
     { "path": "schemas/", "target_group": "contracts", "role": "schemas and runtime contracts", "migration_status": "physical_root" },
     { "path": "docs/", "target_group": "documentation", "role": "human documentation and docs site", "migration_status": "physical_root" },
+    { "path": "uiux specifications/", "target_group": "documentation", "role": "temporary imported UI/UX specification source files", "migration_status": "temporary_local_input" },
     { "path": "tests/", "target_group": "quality", "role": "integration tests", "migration_status": "physical_root" },
     { "path": ".kabeeri/", "target_group": "runtime_state", "role": "local workspace state", "migration_status": "local_only" }
   ],
@@ -151,6 +153,7 @@
     "packs",
     "integrations",
     "docs",
+    "uiux specifications",
     "schemas",
     "tests"
   ],

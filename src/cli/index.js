@@ -1365,6 +1365,8 @@ function composePromptPack(packName, flags = {}) {
     selected_prompt: selectedPrompt,
     common_layer_version: commonManifest.version || "",
     common_files: commonSections.map((item) => item.file),
+    common_policy_gates: commonManifest.policy_gates || [],
+    traceability_outputs: commonManifest.traceability_outputs || [],
     output_path: outputPath,
     allowed_files: context ? context.allowed_files || [] : parseCsv(flags["allowed-files"]),
     forbidden_files: context ? context.forbidden_files || [] : parseCsv(flags["forbidden-files"] || ".env,secrets/,.git/"),
@@ -1381,26 +1383,54 @@ function composePromptPack(packName, flags = {}) {
 
 function selectPromptFileForTask(manifest, taskItem) {
   const files = manifest.files || [];
-  const title = `${taskItem ? taskItem.title || "" : ""} ${taskItem ? taskItem.type || "" : ""} ${taskItem ? taskItem.workstream || "" : ""}`.toLowerCase();
+  const title = buildPromptSelectionText(taskItem);
+  let bestRule = null;
+  for (const rule of manifest.prompt_selection_keywords || []) {
+    const keywords = Array.isArray(rule.keywords) ? rule.keywords : [];
+    if (!rule.file || !files.includes(rule.file)) continue;
+    const score = keywords.reduce((sum, keyword) => sum + (promptKeywordMatches(title, keyword) ? 1 : 0), 0);
+    if (score > 0 && (!bestRule || score > bestRule.score)) bestRule = { file: rule.file, score };
+  }
+  if (bestRule) return bestRule.file;
   const candidates = [
-    [/test|qa|review|verify/, /test|review/i],
-    [/permission|notification|camera|location|media|device|push/, /permission|notification|device/i],
-    [/offline|cache|storage|local/, /offline|storage|cache/i],
-    [/auth|user|login|permission|role/, /auth|user|role|permission/i],
-    [/form|validation/, /form|validation/i],
-    [/env|config|secret|api url|base url/, /env|config|api/i],
-    [/route|routing|layout|page/, /routing|layout|page/i],
-    [/component|design|ui|frontend/, /component|design|ui/i],
-    [/api|data|fetch|http|controller/, /api|data|http|controller|route/i],
-    [/release|handoff/, /release|handoff/i]
+    [["test", "qa", "review", "verify"], /test|review/i],
+    [["permission", "notification", "camera", "location", "media", "device", "push"], /permission|notification|device/i],
+    [["offline", "cache", "storage", "local"], /offline|storage|cache/i],
+    [["auth", "user", "login", "permission", "role"], /auth|user|role|permission/i],
+    [["form", "validation"], /form|validation/i],
+    [["env", "config", "secret", "api url", "base url"], /env|config|api/i],
+    [["route", "routing", "layout", "page"], /routing|layout|page/i],
+    [["component", "design", "ui", "frontend"], /component|design|ui/i],
+    [["api", "data", "fetch", "http", "controller"], /api|data|http|controller|route/i],
+    [["release", "handoff"], /release|handoff/i]
   ];
-  for (const [need, filePattern] of candidates) {
-    if (need.test(title)) {
+  for (const [keywords, filePattern] of candidates) {
+    if (keywords.some((keyword) => promptKeywordMatches(title, keyword))) {
       const found = files.find((file) => filePattern.test(file) && file.endsWith(".md"));
       if (found) return found;
     }
   }
   return files.find((file) => /^01_.*\.md$/.test(file)) || files.find((file) => file.endsWith(".md") && !file.includes("README")) || "README.md";
+}
+
+function buildPromptSelectionText(taskItem) {
+  if (!taskItem) return "";
+  return [
+    taskItem.title,
+    taskItem.type,
+    taskItem.workstream,
+    ...(Array.isArray(taskItem.workstreams) ? taskItem.workstreams : []),
+    taskItem.description,
+    taskItem.notes,
+    ...(Array.isArray(taskItem.acceptance_criteria) ? taskItem.acceptance_criteria : [])
+  ].filter(Boolean).join(" ").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function promptKeywordMatches(text, keyword) {
+  const value = String(keyword || "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (!value) return false;
+  const escaped = value.split(" ").map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s+");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(text);
 }
 
 function estimatePromptCompositionTokens(commonSections, stackPrompt, context, taskItem) {
@@ -1424,6 +1454,8 @@ Selected stack prompt: ${composition.selected_prompt}
 - Work only on the task described below.
 - Use the allowed files and forbidden files as hard scope boundaries.
 - Follow the common prompt layer before the stack-specific prompt.
+- Treat common policy gates as blockers when the task touches those areas.
+- Preserve traceability through task evidence, AI run history, ADRs, captures, and handoff notes when relevant.
 - Record AI run history after execution with \`kvdf ai-run record\`.
 - If the output is useful, review it with \`kvdf ai-run accept\`; otherwise use \`kvdf ai-run reject\`.
 
@@ -1443,6 +1475,14 @@ ${composition.allowed_files.length ? composition.allowed_files.map((item) => `- 
 
 Forbidden files:
 ${composition.forbidden_files.length ? composition.forbidden_files.map((item) => `- ${item}`).join("\n") : "- None listed."}
+
+## Common Governance Checklist
+
+Policy gates:
+${composition.common_policy_gates.length ? composition.common_policy_gates.map((item) => `- ${item}`).join("\n") : "- None declared by common layer."}
+
+Traceability outputs:
+${composition.traceability_outputs.length ? composition.traceability_outputs.map((item) => `- ${item}`).join("\n") : "- None declared by common layer."}
 
 ## Context Pack
 
@@ -1684,7 +1724,11 @@ function vibe(action, value, flags = {}, rest = []) {
     return;
   }
 
-  if (effectiveAction === "convert" || effectiveAction === "approve") {
+  if (effectiveAction === "approve") {
+    return approveVibeSuggestion(value || flags.id, flags);
+  }
+
+  if (effectiveAction === "convert") {
     return convertVibeSuggestion(value || flags.id, flags);
   }
 
@@ -1969,6 +2013,10 @@ function convertVibeSuggestion(id, flags = {}) {
   const item = (suggestions.suggested_tasks || []).find((entry) => entry.suggestion_id === id);
   if (!item) throw new Error(`Suggested task not found: ${id}`);
   if (item.status === "converted_to_task") throw new Error(`Suggested task already converted: ${id}`);
+  if (item.status === "rejected") throw new Error(`Suggested task is rejected and cannot be converted: ${id}`);
+  if (item.approval_required && item.status !== "approved" && flags.force !== true && flags.force !== "true") {
+    throw new Error(`Suggested task requires approval before conversion: ${id}. Run \`kvdf vibe approve ${id}\` or pass --force true with Owner authority.`);
+  }
   const tasksFile = ".kabeeri/tasks.json";
   const data = readJsonFile(tasksFile);
   data.tasks = data.tasks || [];
@@ -1995,6 +2043,27 @@ function convertVibeSuggestion(id, flags = {}) {
   refreshDashboardArtifacts();
   appendAudit("vibe.suggestion_converted", "task", taskId, `Vibe suggestion converted: ${id}`);
   console.log(`Converted ${id} to ${taskId}`);
+}
+
+function approveVibeSuggestion(id, flags = {}) {
+  requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "approve vibe suggestion");
+  if (!id) throw new Error("Missing suggestion id.");
+  const file = ".kabeeri/interactions/suggested_tasks.json";
+  const data = readJsonFile(file);
+  const item = (data.suggested_tasks || []).find((entry) => entry.suggestion_id === id);
+  if (!item) throw new Error(`Suggested task not found: ${id}`);
+  if (item.status === "converted_to_task") throw new Error(`Suggested task already converted: ${id}`);
+  if (item.status === "rejected") throw new Error(`Suggested task is rejected and cannot be approved: ${id}`);
+  item.status = "approved";
+  item.approved_at = new Date().toISOString();
+  item.approved_by = flags.actor || flags.approved_by || flags["approved-by"] || "local-owner";
+  item.approval_note = flags.note || flags.reason || "";
+  item.updated_at = item.approved_at;
+  writeJsonFile(file, data);
+  refreshDashboardArtifacts();
+  appendAudit("vibe.suggestion_approved", "suggestion", id, `Vibe suggestion approved`);
+  if (flags.json) console.log(JSON.stringify(item, null, 2));
+  else console.log(`Suggestion ${id} approved. Next: kvdf vibe convert ${id}`);
 }
 
 function updateVibeSuggestionStatus(id, status, reason) {
@@ -2917,6 +2986,16 @@ function renderBlueprintRecommendation(recommendation) {
 
 function uniqueList(items) {
   return [...new Set((items || []).filter(Boolean))];
+}
+
+function uniqueBy(items, key) {
+  const seen = new Set();
+  return (items || []).filter((item) => {
+    const value = item && item[key];
+    if (!value || seen.has(value)) return false;
+    seen.add(value);
+    return true;
+  });
 }
 
 function dataDesign(action, value, flags = {}, rest = []) {
@@ -4233,7 +4312,7 @@ function evolutionAreaDefinition(area, required = true) {
     tasks: {
       label: "task tracking integration",
       workstream: "docs",
-      files: [".kabeeri/tasks.json", "knowledge/task_tracking/", "knowledge/governance/TASK_GOVERNANCE.md"],
+      files: [".kabeeri/tasks.json", "knowledge/task_tracking/", "knowledge/task_tracking/TASK_GOVERNANCE.md"],
       acceptance: ["The update creates or links follow-up tasks.", "Task source and acceptance criteria identify the framework change."]
     },
     schemas: {
@@ -5210,6 +5289,279 @@ function design(action, value, flags) {
     return;
   }
 
+  if (action === "theme-presets" || action === "token-presets" || action === "palette-presets") {
+    const catalog = getThemeTokenPresetCatalog();
+    if (flags.json) console.log(JSON.stringify(catalog, null, 2));
+    else console.log(table(["Preset", "Personality", "Best for"], (catalog.presets || []).map((item) => [
+      item.preset,
+      item.personality,
+      (item.best_for || []).join(", ")
+    ])));
+    return;
+  }
+
+  if (action === "theme-recommend" || action === "tokens-recommend" || action === "token-recommend") {
+    const blueprintKey = value || flags.blueprint || getCurrentBlueprintKey();
+    if (!blueprintKey) throw new Error("Missing blueprint key. Use `kvdf design theme-recommend ecommerce`.");
+    const recommendation = buildThemeTokenRecommendation(blueprintKey, flags);
+    if (flags.output) {
+      assertDesignTokenOutputPath(flags.output);
+      writeJsonFile(flags.output, recommendation.token_set);
+    }
+    appendAudit("design_theme_tokens.recommended", "theme_tokens", recommendation.token_set.token_set_id, `Theme tokens recommended for ${blueprintKey}`);
+    if (flags.json) console.log(JSON.stringify(recommendation, null, 2));
+    else {
+      console.log(`Theme token recommendation: ${recommendation.token_set.token_set_id}`);
+      console.log(table(["Field", "Value"], [
+        ["Blueprint", `${recommendation.blueprint_name} (${recommendation.blueprint_key})`],
+        ["Preset", recommendation.palette_preset],
+        ["Density", recommendation.token_set.creative_profile.density],
+        ["Output", flags.output || ""],
+        ["Token reference", recommendation.reference]
+      ]));
+    }
+    return;
+  }
+
+  if (action === "composition-list" || action === "compositions" || action === "component-compositions") {
+    const catalog = getComponentCompositionCatalog();
+    if (flags.json) console.log(JSON.stringify(catalog, null, 2));
+    else console.log(table(["Composition", "Name", "Best for"], (catalog.compositions || []).map((item) => [
+      item.composition_id,
+      item.name,
+      (item.best_for || []).join(", ")
+    ])));
+    return;
+  }
+
+  if (action === "composition-recommend" || action === "component-recommend" || action === "screen-compose") {
+    const blueprintKey = value || flags.blueprint || getCurrentBlueprintKey();
+    if (!blueprintKey) throw new Error("Missing blueprint key. Use `kvdf design composition-recommend erp --page \"invoice table\"`.");
+    const recommendation = buildComponentCompositionRecommendation(blueprintKey, flags);
+    appendAudit("design_component_composition.recommended", "component_composition", recommendation.composition.composition_id, `Component composition recommended for ${blueprintKey}`);
+    if (flags.json) console.log(JSON.stringify(recommendation, null, 2));
+    else {
+      console.log(`Component composition recommendation: ${recommendation.composition.composition_id}`);
+      console.log(table(["Field", "Value"], [
+        ["Blueprint", `${recommendation.blueprint_name} (${recommendation.blueprint_key})`],
+        ["Pattern", recommendation.experience_pattern],
+        ["Composition", recommendation.composition.name],
+        ["Score", recommendation.score],
+        ["Prompt hint", recommendation.prompt_hint]
+      ]));
+    }
+    return;
+  }
+
+  if (action === "framework-adapters" || action === "adapter-list" || action === "frameworks") {
+    const catalog = getFrameworkAdapterCatalog();
+    if (flags.json) console.log(JSON.stringify(catalog, null, 2));
+    else console.log(table(["Adapter", "Framework", "Version", "Best for"], (catalog.adapters || []).map((item) => [
+      item.adapter_key,
+      item.framework,
+      item.version,
+      (item.best_for || []).slice(0, 3).join(", ")
+    ])));
+    return;
+  }
+
+  if (action === "framework-plan" || action === "adapter-plan" || action === "framework-adapter") {
+    const blueprintKey = flags.blueprint || getCurrentBlueprintKey() || "erp";
+    const recommendation = buildFrameworkAdapterRecommendation(blueprintKey, {
+      ...flags,
+      framework: value || flags.framework || flags.adapter || flags.library
+    });
+    appendAudit("design_framework_adapter.recommended", "framework_adapter", recommendation.adapter.adapter_key, `Framework adapter recommended for ${blueprintKey}`);
+    if (flags.json) console.log(JSON.stringify(recommendation, null, 2));
+    else {
+      console.log(`Framework adapter recommendation: ${recommendation.adapter.adapter_key}`);
+      console.log(table(["Field", "Value"], [
+        ["Blueprint", `${recommendation.blueprint_name} (${recommendation.blueprint_key})`],
+        ["Framework", `${recommendation.adapter.framework} ${recommendation.adapter.version}`],
+        ["Install", recommendation.adapter.install],
+        ["Composition", recommendation.composition_id],
+        ["Token set", recommendation.token_set_id],
+        ["Prompt hint", recommendation.prompt_hint]
+      ]));
+    }
+    return;
+  }
+
+  if (action === "variant-archetypes" || action === "creative-archetypes" || action === "variant-list") {
+    const catalog = getCreativeVariantCatalog();
+    if (flags.json) console.log(JSON.stringify(catalog, null, 2));
+    else console.log(table(["Variant", "Name", "Best for"], (catalog.archetypes || []).map((item) => [
+      item.variant_id,
+      item.name,
+      (item.best_for || []).slice(0, 4).join(", ")
+    ])));
+    return;
+  }
+
+  if (action === "variants" || action === "variant-recommend" || action === "creative-variants") {
+    const blueprintKey = value || flags.blueprint || getCurrentBlueprintKey();
+    if (!blueprintKey) throw new Error("Missing blueprint key. Use `kvdf design variants ecommerce --page checkout`.");
+    const recommendation = buildCreativeVariantRecommendation(blueprintKey, flags);
+    appendAudit("design_creative_variants.recommended", "creative_variants", recommendation.recommendation_id, `Creative variants recommended for ${blueprintKey}`);
+    if (flags.json) console.log(JSON.stringify(recommendation, null, 2));
+    else {
+      console.log(`Creative variant recommendation: ${recommendation.recommendation_id}`);
+      console.log(table(["Variant", "Density", "Hierarchy", "Prompt"], recommendation.variants.map((item) => [
+        item.variant_id,
+        item.density,
+        item.page_hierarchy,
+        item.prompt_hint
+      ])));
+    }
+    return;
+  }
+
+  if (action === "ui-questions" || action === "decision-questions" || action === "design-questions") {
+    const blueprintKey = value || flags.blueprint || getCurrentBlueprintKey() || "ecommerce";
+    const questions = buildUiDecisionQuestions(blueprintKey, flags);
+    if (flags.json) console.log(JSON.stringify(questions, null, 2));
+    else {
+      console.log(`UI decision questions: ${questions.blueprint_name} (${questions.blueprint_key})`);
+      console.log(table(["Priority", "Question ID", "Question"], questions.questions.map((item) => [
+        item.priority,
+        item.question_id,
+        item.text
+      ])));
+    }
+    return;
+  }
+
+  if (action === "ui-decisions" || action === "decision-profile" || action === "design-decisions") {
+    const blueprintKey = value || flags.blueprint || getCurrentBlueprintKey();
+    if (!blueprintKey) throw new Error("Missing blueprint key. Use `kvdf design ui-decisions ecommerce --page checkout`.");
+    const profile = buildUiDecisionProfile(blueprintKey, flags);
+    appendAudit("design_ui_decision_profile.created", "ui_decision_profile", profile.profile_id, `UI decision profile created for ${blueprintKey}`);
+    if (flags.json) console.log(JSON.stringify(profile, null, 2));
+    else {
+      console.log(`UI decision profile: ${profile.profile_id}`);
+      console.log(table(["Field", "Value"], [
+        ["Blueprint", `${profile.blueprint_name} (${profile.blueprint_key})`],
+        ["Variant", profile.selected_variant.variant_id],
+        ["Palette", profile.palette_preset],
+        ["Density", profile.density],
+        ["Adapter", profile.adapter_key],
+        ["Composition", profile.composition_id],
+        ["Missing answers", String(profile.missing_answers.length)]
+      ]));
+    }
+    return;
+  }
+
+  if (action === "playbooks" || action === "ui-playbooks" || action === "project-playbooks") {
+    const catalog = getProjectUiPlaybookCatalog();
+    if (flags.json) console.log(JSON.stringify(catalog, null, 2));
+    else console.log(table(["Blueprint", "Variant", "Composition", "Density"], (catalog.playbooks || []).map((item) => [
+      item.blueprint_key,
+      item.variant_archetype,
+      item.composition_id,
+      item.density
+    ])));
+    return;
+  }
+
+  if (action === "playbook" || action === "ui-playbook" || action === "project-playbook") {
+    const blueprintKey = value || flags.blueprint || getCurrentBlueprintKey();
+    if (!blueprintKey) throw new Error("Missing blueprint key. Use `kvdf design playbook erp`.");
+    const playbook = buildProjectUiPlaybookRecommendation(blueprintKey, flags);
+    appendAudit("design_project_ui_playbook.recommended", "project_ui_playbook", playbook.blueprint_key, `Project UI playbook recommended for ${blueprintKey}`);
+    if (flags.json) console.log(JSON.stringify(playbook, null, 2));
+    else {
+      console.log(`Project UI playbook: ${playbook.blueprint_name} (${playbook.blueprint_key})`);
+      console.log(table(["Field", "Value"], [
+        ["Variant", playbook.variant_archetype],
+        ["Composition", playbook.composition_id],
+        ["Adapter", playbook.adapter_key],
+        ["Density", playbook.density],
+        ["Missing answers", String(playbook.missing_answers.length)]
+      ]));
+    }
+    return;
+  }
+
+  if (action === "reference-list" || action === "references" || action === "ref-list") {
+    const catalog = getUiUxReferenceCatalog();
+    const patterns = catalog.patterns || [];
+    if (flags.json) console.log(JSON.stringify({ patterns }, null, 2));
+    else console.log(table(["Code", "Name", "Category", "Style", "Best for"], patterns.map((item) => [
+      item.code,
+      item.name,
+      item.category,
+      item.style,
+      (item.best_for || []).slice(0, 3).join(", ")
+    ])));
+    return;
+  }
+
+  if (action === "reference-show" || action === "ref-show") {
+    const code = value || flags.code || flags.id;
+    const item = getUiUxReferencePattern(code);
+    if (flags.json) console.log(JSON.stringify(item, null, 2));
+    else renderUiUxReferencePattern(item);
+    return;
+  }
+
+  if (action === "reference-recommend" || action === "ref-recommend") {
+    const brief = [value, flags.brief, flags.goal, flags.description].filter(Boolean).join(" ");
+    if (!brief.trim()) throw new Error("Missing brief. Example: kvdf design reference-recommend \"admin ecommerce dashboard\"");
+    const recommendation = recommendUiUxReferences(brief);
+    const stateFile = ".kabeeri/design_sources/ui_ux_reference.json";
+    const state = readJsonFile(stateFile);
+    state.selections = state.selections || [];
+    state.selections.push(recommendation);
+    state.current_selection = recommendation.selection_id;
+    writeJsonFile(stateFile, state);
+    appendAudit("design_ui_ux_reference.recommended", "ui_ux_reference", recommendation.selection_id, `UI/UX reference recommendation for: ${brief}`);
+    if (flags.json) console.log(JSON.stringify(recommendation, null, 2));
+    else {
+      console.log(`UI/UX reference recommendation: ${recommendation.selection_id}`);
+      console.log(table(["Code", "Score", "Why"], recommendation.matches.map((match) => [
+        match.code,
+        match.score,
+        match.reasons.join(", ")
+      ])));
+    }
+    return;
+  }
+
+  if (action === "reference-questions" || action === "ref-questions") {
+    const code = value || flags.code || flags.id;
+    const item = getUiUxReferencePattern(code);
+    const questionSet = buildUiUxReferenceQuestions(item, flags);
+    const stateFile = ".kabeeri/design_sources/ui_ux_reference.json";
+    const state = readJsonFile(stateFile);
+    state.generated_questions = state.generated_questions || [];
+    state.generated_questions.push(questionSet);
+    writeJsonFile(stateFile, state);
+    appendAudit("design_ui_ux_reference.questions", "ui_ux_reference", questionSet.question_set_id, `UI/UX questions generated from ${item.code}`);
+    if (flags.json) console.log(JSON.stringify(questionSet, null, 2));
+    else console.log(table(["#", "Question"], questionSet.questions.map((question, index) => [index + 1, question])));
+    return;
+  }
+
+  if (action === "reference-tasks" || action === "ref-tasks") {
+    requireAnyRole(flags, ["Owner", "Maintainer", "Designer", "Business Analyst"], "generate UI/UX reference tasks");
+    const code = value || flags.code || flags.id;
+    const item = getUiUxReferencePattern(code);
+    const created = createTasksFromUiUxReference(item, flags);
+    const stateFile = ".kabeeri/design_sources/ui_ux_reference.json";
+    const state = readJsonFile(stateFile);
+    state.generated_tasks = state.generated_tasks || [];
+    state.generated_tasks.push({
+      generation_id: `uiux-task-generation-${Date.now()}`,
+      pattern_code: item.code,
+      task_ids: created.map((taskItem) => taskItem.id),
+      created_at: new Date().toISOString()
+    });
+    writeJsonFile(stateFile, state);
+    console.log(`Generated ${created.length} UI/UX reference tasks from ${item.code}.`);
+    return;
+  }
+
   if (action === "page-list") {
     const pagesData = readJsonFile(".kabeeri/design_sources/page_specs.json");
     pagesData.pages = pagesData.pages || [];
@@ -5343,13 +5695,25 @@ function design(action, value, flags) {
   if (action === "visual-review-list" || action === "visual-list") {
     const reviewsData = readJsonFile(".kabeeri/design_sources/visual_reviews.json");
     reviewsData.reviews = reviewsData.reviews || [];
-    console.log(table(["Review", "Task", "Page", "Decision", "Screenshots", "Reviewer"], reviewsData.reviews.map((item) => [
+    console.log(table(["Review", "Task", "Page", "Decision", "Quality", "Screenshots", "Reviewer"], reviewsData.reviews.map((item) => [
       item.review_id,
       item.task_id || "",
       item.page_spec_id || "",
       item.decision,
+      item.quality_score ? `${item.quality_score.score}/${item.quality_score.max_score}` : "",
       (item.screenshots || []).length,
       item.reviewer || ""
+    ])));
+    return;
+  }
+
+  if (action === "visual-rubric" || action === "qa-rubric") {
+    const rubric = getVisualQualityRubric();
+    if (flags.json) console.log(JSON.stringify(rubric, null, 2));
+    else console.log(table(["Category", "Max", "Evidence"], rubric.categories.map((item) => [
+      item.id,
+      item.max_score,
+      item.evidence.join(", ")
     ])));
     return;
   }
@@ -5382,6 +5746,7 @@ function design(action, value, flags) {
     };
     if (!["pass", "needs_rework", "blocked"].includes(review.decision)) throw new Error("Invalid --decision. Use pass, needs_rework, or blocked.");
     if (!review.screenshots.length) throw new Error("Missing --screenshots.");
+    review.quality_score = buildVisualQualityScore(review, page, flags);
     reviewsData.reviews.push(review);
     writeJsonFile(reviewsFile, reviewsData);
     appendAudit("design_visual_review.recorded", "visual_review", review.review_id, `Visual review ${review.decision} for ${pageId}`);
@@ -5395,6 +5760,21 @@ function design(action, value, flags) {
     if (flags.json) console.log(JSON.stringify(result, null, 2));
     else console.log(`Design gate ${result.status}: ${(result.blockers || []).join("; ") || "ready"}`);
     if (result.status === "blocked" && (flags.strict === true || flags.strict === "true")) throw new Error(`Design gate blocked: ${result.blockers.join("; ")}`);
+    return;
+  }
+
+  if (action === "governance" || action === "governance-report" || action === "qa") {
+    const report = buildDesignGovernanceReport(flags);
+    const reportsFile = ".kabeeri/design_sources/governance_reports.json";
+    const reportsData = readJsonFile(reportsFile);
+    reportsData.reports = reportsData.reports || [];
+    reportsData.reports.push(report);
+    writeJsonFile(reportsFile, reportsData);
+    const output = flags.output || ".kabeeri/reports/design_governance_report.md";
+    writeTextFile(output, buildDesignGovernanceMarkdown(report));
+    appendAudit("design_governance.reported", "design_governance", report.report_id, `Design governance report: ${report.status}`);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(`Design governance report ${report.report_id}: ${report.status} (${report.score}/${report.max_score})`);
     return;
   }
 
@@ -5461,11 +5841,832 @@ function ensureDesignState() {
   if (!fileExists(".kabeeri/design_sources/missing_reports.json")) writeJsonFile(".kabeeri/design_sources/missing_reports.json", { reports: [] });
   if (!fileExists(".kabeeri/design_sources/visual_reviews.json")) writeJsonFile(".kabeeri/design_sources/visual_reviews.json", { reviews: [] });
   if (!fileExists(".kabeeri/design_sources/audit_reports.json")) writeJsonFile(".kabeeri/design_sources/audit_reports.json", { reports: [] });
+  if (!fileExists(".kabeeri/design_sources/governance_reports.json")) writeJsonFile(".kabeeri/design_sources/governance_reports.json", { reports: [] });
   if (!fileExists(".kabeeri/design_sources/ui_advisor.json")) writeJsonFile(".kabeeri/design_sources/ui_advisor.json", { recommendations: [], reviews: [], current_recommendation: null });
+  if (!fileExists(".kabeeri/design_sources/ui_ux_reference.json")) writeJsonFile(".kabeeri/design_sources/ui_ux_reference.json", { selections: [], generated_questions: [], generated_tasks: [], current_selection: null });
 }
 
 function getUiDesignCatalog() {
   return readJsonFile("standard_systems/UI_UX_DESIGN_BLUEPRINT.json");
+}
+
+function getUiUxReferenceCatalog() {
+  return readJsonFile("knowledge/design_system/ui_ux_reference/UI_UX_REFERENCE_INDEX.json");
+}
+
+function getThemeTokenPresetCatalog() {
+  return readJsonFile("knowledge/design_system/theme_token_intelligence/PALETTE_PRESET_CATALOG.json");
+}
+
+function getComponentCompositionCatalog() {
+  return readJsonFile("knowledge/design_system/component_composition_intelligence/SCREEN_COMPOSITION_CATALOG.json");
+}
+
+function getFrameworkAdapterCatalog() {
+  return readJsonFile("knowledge/design_system/framework_adapter_intelligence/UI_FRAMEWORK_ADAPTER_CATALOG.json");
+}
+
+function getCreativeVariantCatalog() {
+  return readJsonFile("knowledge/design_system/creative_variant_intelligence/CREATIVE_VARIANT_CATALOG.json");
+}
+
+function getUiDecisionQuestionCatalog() {
+  return readJsonFile("knowledge/design_system/ui_decision_intake/UI_DECISION_QUESTIONS.json");
+}
+
+function getProjectUiPlaybookCatalog() {
+  return readJsonFile("knowledge/design_system/project_ui_playbooks/PROJECT_UI_PLAYBOOKS.json");
+}
+
+function findProjectUiPlaybook(blueprintKey) {
+  const normalized = String(blueprintKey || "").trim().toLowerCase();
+  const catalog = getProjectUiPlaybookCatalog();
+  return (catalog.playbooks || []).find((item) => String(item.blueprint_key).toLowerCase() === normalized) || null;
+}
+
+function buildProjectUiPlaybookRecommendation(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const playbook = findProjectUiPlaybook(product.key);
+  if (!playbook) throw new Error(`Project UI playbook not found: ${product.key}`);
+  const uiDecisionProfile = buildUiDecisionProfile(product.key, {
+    ...flags,
+    page: flags.page || flags.screen || flags.intent,
+    density: flags.density || playbook.density,
+    navigation: flags.navigation || flags.nav || playbook.navigation_pattern,
+    framework: flags.framework || flags.adapter || playbook.adapter_preference[0]
+  });
+  const answerMap = getQuestionnaireAnswerMap();
+  const missingAnswers = (playbook.critical_questions || [])
+    .filter((questionId) => !answerMap[questionId] && !hasUiDecisionFlagForQuestion(questionId, flags))
+    .map((questionId) => {
+      const question = (getUiDecisionQuestionCatalog().questions || []).find((item) => item.question_id === questionId);
+      return {
+        question_id: questionId,
+        text: question ? question.text : `Answer ${questionId}`,
+        answer_command: `kvdf questionnaire answer ${questionId} --value "<answer>" --areas ui_ux_design,design_governance`
+      };
+    });
+  return {
+    recommendation_id: `project-ui-playbook-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    category: product.category,
+    variant_archetype: uiDecisionProfile.selected_variant.archetype_id || playbook.variant_archetype,
+    selected_variant_id: uiDecisionProfile.selected_variant.variant_id,
+    composition_id: flags.composition || playbook.composition_id,
+    adapter_key: uiDecisionProfile.adapter_key,
+    adapter_preference: playbook.adapter_preference,
+    palette_preset: uiDecisionProfile.palette_preset,
+    density: uiDecisionProfile.density,
+    navigation_pattern: uiDecisionProfile.navigation_pattern,
+    surface_style: uiDecisionProfile.surface_style,
+    microcopy_tone: uiDecisionProfile.microcopy_tone,
+    primary_focus: playbook.primary_focus || [],
+    critical_questions: playbook.critical_questions || [],
+    missing_answers: uniqueBy([...missingAnswers, ...(uiDecisionProfile.missing_answers || [])], "question_id"),
+    avoid: playbook.avoid || [],
+    references: {
+      readme: "knowledge/design_system/project_ui_playbooks/README.md",
+      catalog: "knowledge/design_system/project_ui_playbooks/PROJECT_UI_PLAYBOOKS.json",
+      review: "knowledge/design_system/project_ui_playbooks/PLAYBOOK_REVIEW_CHECKLIST.md",
+      ui_decision_intake: "knowledge/design_system/ui_decision_intake/README.md",
+      creative_variant_catalog: "knowledge/design_system/creative_variant_intelligence/CREATIVE_VARIANT_CATALOG.json"
+    },
+    prompt_hint: `Use project UI playbook for ${product.key}: variant ${uiDecisionProfile.selected_variant.variant_id}, adapter ${uiDecisionProfile.adapter_key}, composition ${flags.composition || playbook.composition_id}, density ${uiDecisionProfile.density}.`
+  };
+}
+
+function buildUiDecisionQuestions(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const questionCatalog = getUiDecisionQuestionCatalog();
+  const patternKey = (getUiDesignCatalog().blueprint_experience_map || {})[product.key] || inferUiPatternFromBlueprint(product);
+  const questions = (questionCatalog.questions || []).map((question) => ({
+    ...question,
+    answer_command: `kvdf questionnaire answer ${question.question_id} --value "<answer>" --areas ui_ux_design,design_governance`
+  }));
+  return {
+    question_set_id: `ui-decision-questions-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    experience_pattern: patternKey,
+    page_intent: flags.page || flags.screen || flags.intent || null,
+    questions,
+    references: {
+      readme: "knowledge/design_system/ui_decision_intake/README.md",
+      question_catalog: "knowledge/design_system/ui_decision_intake/UI_DECISION_QUESTIONS.json",
+      mapping_rules: "knowledge/design_system/ui_decision_intake/ANSWER_MAPPING_RULES.md",
+      review: "knowledge/design_system/ui_decision_intake/UI_DECISION_REVIEW_CHECKLIST.md"
+    }
+  };
+}
+
+function getQuestionnaireAnswerMap() {
+  if (!fileExists(".kabeeri/questionnaires/answers.json")) return {};
+  const data = readJsonFile(".kabeeri/questionnaires/answers.json");
+  return Object.fromEntries((data.answers || []).map((answer) => [answer.question_id, answer]));
+}
+
+function collectUiDecisionText(answerMap, flags = {}) {
+  const ids = [
+    "ui.brand_personality",
+    "ui.primary_user",
+    "ui.primary_workflow",
+    "ui.data_density",
+    "ui.trust_risk",
+    "ui.language_direction",
+    "ui.visual_reference",
+    "ui.motion_preference",
+    "ui.navigation_preference",
+    "ui.content_tone",
+    "adaptive.ui.experience_pattern",
+    "adaptive.ui.design_source",
+    "adaptive.framework.frontend"
+  ];
+  const values = ids.map((id) => answerMap[id] && answerMap[id].value).filter((value) => value !== undefined && value !== null);
+  values.push(flags.brand, flags.tone, flags.audience, flags.user, flags.workflow, flags.density, flags.risk, flags.language, flags.nav, flags.navigation, flags.motion, flags.page, flags.intent, flags.screen);
+  return values.filter(Boolean).map((value) => String(value)).join(" ").toLowerCase();
+}
+
+function inferUiDecisionSignals(text, product, patternKey) {
+  const signals = [];
+  const add = (signal, reason) => signals.push({ signal, reason });
+  if (/premium|trust|secure|privacy|finance|fintech|bank|health|clinic|medical|compliance|government/.test(text)) add("trust_first", "Answers emphasize trust, risk, privacy, finance, healthcare, or compliance.");
+  if (/friendly|guided|onboarding|saas|workspace|assistant|help|warm/.test(text)) add("guided_workspace", "Answers emphasize guidance, SaaS, onboarding, or warm assistance.");
+  if (/operator|admin|operations|erp|crm|approve|approval|monitor|search|filter|table|report/.test(text) || patternKey === "data_heavy_web_app") add("operator_density", "Answers or blueprint emphasize operational data work.");
+  if (/commerce|checkout|buy|cart|marketplace|booking|compare|price|conversion/.test(text) || patternKey === "commerce_storefront") add("conversion_flow", "Answers or blueprint emphasize purchase, booking, or conversion.");
+  if (/editorial|news|blog|docs|documentation|reader|content|article/.test(text) || patternKey === "seo_content_site") add("editorial_authority", "Answers or blueprint emphasize content authority.");
+  if (/mobile|driver|field|employee|offline|touch|bottom nav/.test(text) || patternKey === "mobile_app") add("mobile_action", "Answers or blueprint emphasize mobile or field workflows.");
+  if (/arabic|rtl|bilingual|mena|عربي|العربية/.test(text)) add("rtl_arabic", "Answers indicate Arabic, bilingual, MENA, or RTL UI.");
+  return signals;
+}
+
+function scoreVariantFromDecisionSignals(variant, signals, text) {
+  let score = 0;
+  const id = variant.variant_id;
+  const signalKeys = signals.map((item) => item.signal);
+  if (signalKeys.includes("trust_first") && id === "premium_trust_portal") score += 8;
+  if (signalKeys.includes("guided_workspace") && id === "guided_saas_workspace") score += 8;
+  if (signalKeys.includes("operator_density") && id === "operator_command_center") score += 8;
+  if (signalKeys.includes("conversion_flow") && id === "commerce_conversion_flow") score += 8;
+  if (signalKeys.includes("editorial_authority") && id === "editorial_authority") score += 8;
+  if (signalKeys.includes("mobile_action") && id === "mobile_action_hub") score += 8;
+  for (const best of variant.best_for || []) if (text.includes(String(best).toLowerCase())) score += 2;
+  return score;
+}
+
+function buildUiDecisionProfile(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const catalog = getUiDesignCatalog();
+  const patternKey = flags.pattern || catalog.blueprint_experience_map[product.key] || inferUiPatternFromBlueprint(product);
+  const answerMap = getQuestionnaireAnswerMap();
+  const text = collectUiDecisionText(answerMap, flags);
+  const signals = inferUiDecisionSignals(text, product, patternKey);
+  const variants = buildCreativeVariantRecommendation(product.key, { ...flags, pattern: patternKey, count: 5 }).variants || [];
+  const ranked = variants
+    .map((variant) => ({ variant, score: variant.score + scoreVariantFromDecisionSignals({ ...variant, variant_id: variant.archetype_id }, signals, text) }))
+    .sort((a, b) => b.score - a.score || a.variant.variant_id.localeCompare(b.variant.variant_id));
+  const selectedVariant = ranked[0] ? ranked[0].variant : variants[0];
+  const themeTokenRecommendation = buildThemeTokenRecommendation(product.key, { ...flags, pattern: patternKey, preset: selectedVariant.palette_preset });
+  const componentCompositionRecommendation = buildComponentCompositionRecommendation(product.key, { ...flags, pattern: patternKey });
+  const frameworkAdapterRecommendation = buildFrameworkAdapterRecommendation(product.key, { ...flags, pattern: patternKey });
+  const questions = buildUiDecisionQuestions(product.key, flags).questions;
+  const missingAnswers = questions
+    .filter((question) => question.priority === "high" && !answerMap[question.question_id] && !hasUiDecisionFlagForQuestion(question.question_id, flags))
+    .map((question) => ({
+      question_id: question.question_id,
+      text: question.text,
+      answer_command: question.answer_command
+    }));
+  const rtlEnabled = signals.some((item) => item.signal === "rtl_arabic") || shouldUseRtlArabicReferences(product, flags);
+  return {
+    profile_id: `ui-decision-profile-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    experience_pattern: patternKey,
+    answer_source: ".kabeeri/questionnaires/answers.json",
+    signals,
+    selected_variant: selectedVariant,
+    palette_preset: themeTokenRecommendation.palette_preset,
+    density: flags.density || selectedVariant.density,
+    navigation_pattern: flags.navigation || flags.nav || selectedVariant.navigation_pattern,
+    surface_style: selectedVariant.surface_style,
+    microcopy_tone: flags.tone || selectedVariant.microcopy_tone,
+    motion_bias: flags.motion || selectedVariant.motion_bias,
+    rtl_arabic_enabled: rtlEnabled,
+    adapter_key: frameworkAdapterRecommendation.adapter.adapter_key,
+    composition_id: componentCompositionRecommendation.composition.composition_id,
+    token_set_id: themeTokenRecommendation.token_set.token_set_id,
+    missing_answers: missingAnswers,
+    references: {
+      readme: "knowledge/design_system/ui_decision_intake/README.md",
+      mapping_rules: "knowledge/design_system/ui_decision_intake/ANSWER_MAPPING_RULES.md",
+      review: "knowledge/design_system/ui_decision_intake/UI_DECISION_REVIEW_CHECKLIST.md",
+      variant_catalog: "knowledge/design_system/creative_variant_intelligence/CREATIVE_VARIANT_CATALOG.json"
+    },
+    prompt_hint: `Use UI decision profile ${selectedVariant.variant_id}, adapter ${frameworkAdapterRecommendation.adapter.adapter_key}, token_set ${themeTokenRecommendation.token_set.token_set_id}, and composition_id ${componentCompositionRecommendation.composition.composition_id}. Ask missing high-priority UI questions before final visual implementation.`
+  };
+}
+
+function hasUiDecisionFlagForQuestion(questionId, flags = {}) {
+  const byQuestion = {
+    "ui.brand_personality": ["brand", "tone"],
+    "ui.primary_user": ["audience", "user"],
+    "ui.primary_workflow": ["workflow", "page", "intent", "screen"],
+    "ui.data_density": ["density"]
+  };
+  return (byQuestion[questionId] || []).some((key) => flags[key]);
+}
+
+function buildCreativeVariantRecommendation(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const catalog = getUiDesignCatalog();
+  const patternKey = flags.pattern || catalog.blueprint_experience_map[product.key] || inferUiPatternFromBlueprint(product);
+  const pattern = catalog.experience_patterns[patternKey];
+  if (!pattern) throw new Error(`UI experience pattern not found: ${patternKey}`);
+  const pageIntent = [flags.page, flags.intent, flags.screen, flags.description, flags.feature].filter(Boolean).join(" ");
+  const themeTokenRecommendation = buildThemeTokenRecommendation(product.key, { ...flags, pattern: patternKey });
+  const componentCompositionRecommendation = buildComponentCompositionRecommendation(product.key, { ...flags, pattern: patternKey });
+  const frameworkAdapterRecommendation = buildFrameworkAdapterRecommendation(product.key, { ...flags, pattern: patternKey });
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""} ${(product.channels || []).join(" ")} ${(product.frontend_pages || []).join(" ")} ${pageIntent}`.toLowerCase();
+  const variants = getCreativeVariantCatalog().archetypes || [];
+  const count = Math.max(1, Math.min(Number(flags.count || 3), 5));
+  const ranked = variants
+    .map((variant) => {
+      let score = 0;
+      if ((variant.experience_patterns || []).includes(patternKey)) score += 6;
+      for (const best of variant.best_for || []) {
+        const value = String(best).toLowerCase();
+        if (text.includes(value)) score += 3;
+      }
+      for (const palette of variant.palette_bias || []) {
+        if (palette === themeTokenRecommendation.palette_preset) score += 2;
+      }
+      if (pageIntent && String(variant.prompt_summary || "").toLowerCase().includes(pageIntent.toLowerCase())) score += 1;
+      return { variant, score };
+    })
+    .sort((a, b) => b.score - a.score || a.variant.variant_id.localeCompare(b.variant.variant_id));
+  const selected = ranked.slice(0, count).map((item, index) => buildCreativeVariantPlan({
+    archetype: item.variant,
+    index,
+    score: item.score,
+    product,
+    patternKey,
+    pageIntent,
+    themeTokenRecommendation,
+    componentCompositionRecommendation,
+    frameworkAdapterRecommendation,
+    flags
+  }));
+  return {
+    recommendation_id: `creative-variants-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    experience_pattern: patternKey,
+    page_intent: pageIntent || null,
+    token_set_id: themeTokenRecommendation.token_set.token_set_id,
+    palette_preset: themeTokenRecommendation.palette_preset,
+    composition_id: componentCompositionRecommendation.composition.composition_id,
+    adapter_key: frameworkAdapterRecommendation.adapter.adapter_key,
+    variants: selected,
+    references: {
+      readme: "knowledge/design_system/creative_variant_intelligence/README.md",
+      contract: "knowledge/design_system/creative_variant_intelligence/VARIANT_GENERATION_CONTRACT.md",
+      catalog: "knowledge/design_system/creative_variant_intelligence/CREATIVE_VARIANT_CATALOG.json",
+      review: "knowledge/design_system/creative_variant_intelligence/VARIANT_REVIEW_CHECKLIST.md",
+      execution_rules: "knowledge/design_system/ui_execution_kit/CREATIVE_VARIATION_RULES.md"
+    },
+    prompt_hint: `Choose one variant_id, then implement with adapter ${frameworkAdapterRecommendation.adapter.adapter_key}, token_set ${themeTokenRecommendation.token_set.token_set_id}, and composition_id ${componentCompositionRecommendation.composition.composition_id}.`
+  };
+}
+
+function buildCreativeVariantPlan({ archetype, index, score, product, patternKey, pageIntent, themeTokenRecommendation, componentCompositionRecommendation, frameworkAdapterRecommendation, flags }) {
+  const axes = inferCreativeVariationAxes(product, patternKey);
+  const selectedPalette = (archetype.palette_bias || []).includes(themeTokenRecommendation.palette_preset)
+    ? themeTokenRecommendation.palette_preset
+    : ((archetype.palette_bias || [])[0] || themeTokenRecommendation.palette_preset);
+  const variantId = `${product.key}-${archetype.variant_id}-${index + 1}`;
+  return {
+    variant_id: variantId,
+    archetype_id: archetype.variant_id,
+    name: archetype.name,
+    score,
+    page_intent: pageIntent || null,
+    adapter_key: frameworkAdapterRecommendation.adapter.adapter_key,
+    token_set_id: themeTokenRecommendation.token_set.token_set_id,
+    composition_id: componentCompositionRecommendation.composition.composition_id,
+    palette_preset: selectedPalette,
+    density: flags.density || archetype.density,
+    navigation_pattern: flags.navigation || flags.nav || archetype.navigation_pattern,
+    page_hierarchy: archetype.page_hierarchy,
+    component_emphasis: archetype.component_emphasis || [],
+    surface_style: archetype.surface_style,
+    motion_bias: archetype.motion_bias,
+    microcopy_tone: flags.tone || archetype.microcopy_tone,
+    empty_state_tone: archetype.empty_state_tone,
+    changed_axes: uniqueList([
+      "palette_preset",
+      "density",
+      "navigation_pattern",
+      "page_hierarchy",
+      "component_emphasis",
+      "surface_style",
+      "microcopy_tone",
+      ...axes.slice(0, 4)
+    ]).slice(0, 10),
+    fixed_rules: [
+      "Keep the selected framework adapter.",
+      "Keep semantic tokens and avoid raw component colors.",
+      "Keep loading, empty, error, success, disabled, and validation states.",
+      "Keep accessibility, performance, content, motion, and RTL rules."
+    ],
+    prompt_hint: `${archetype.prompt_summary} Use variant_id ${variantId}; adapter ${frameworkAdapterRecommendation.adapter.adapter_key}; token_set ${themeTokenRecommendation.token_set.token_set_id}; composition_id ${componentCompositionRecommendation.composition.composition_id}.`
+  };
+}
+
+function normalizeFrameworkAdapterKey(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/_/g, "-");
+  const aliases = {
+    bootstrap5: "bootstrap",
+    "bootstrap-5": "bootstrap",
+    tailwind: "tailwindcss",
+    "tailwind-css": "tailwindcss",
+    "foundation": "foundation-sites",
+    "foundation-sites": "foundation-sites",
+    material: "mui",
+    "material-ui": "mui",
+    "materialui": "mui",
+    "ant": "antd",
+    "ant-design": "antd",
+    shadcn: "shadcn-ui",
+    "shadcn/ui": "shadcn-ui",
+    daisy: "daisyui",
+    "daisy-ui": "daisyui"
+  };
+  return aliases[normalized] || normalized;
+}
+
+function findFrameworkAdapter(adapterKey) {
+  const key = normalizeFrameworkAdapterKey(adapterKey);
+  const catalog = getFrameworkAdapterCatalog();
+  return (catalog.adapters || []).find((item) => item.adapter_key === key) || null;
+}
+
+function selectFrameworkAdapterKey(product, pattern, flags = {}) {
+  const explicit = flags.framework || flags.adapter || flags.library || flags.stack || flags.ui_library || flags["ui-library"];
+  if (explicit) return normalizeFrameworkAdapterKey(explicit);
+  const approved = pattern && pattern.approved_ui_libraries ? pattern.approved_ui_libraries : [];
+  if ((product.channels || []).includes("admin_web") && approved.includes("antd")) return "antd";
+  if ((product.channels || []).includes("public_web") && approved.includes("tailwindcss")) return "tailwindcss";
+  return normalizeFrameworkAdapterKey(approved[0] || "bootstrap");
+}
+
+function buildFrameworkCompositionMap(adapter, composition) {
+  const componentMap = adapter.component_map || {};
+  const aliases = {
+    page_header: "layout_shell",
+    header: "layout_shell",
+    search_box: "form",
+    filter_bar: "form",
+    filters: "form",
+    data_table: "table",
+    data_grid: "table",
+    status_badge: "badge",
+    row_actions: "button",
+    bulk_actions: "button",
+    pagination: "table",
+    confirm_modal: "modal",
+    toast: "alert",
+    error_state: "alert",
+    success_state: "alert",
+    validation: "form",
+    skeleton: "loading",
+    chart_card: "card",
+    metric_card: "card",
+    order_summary: "card",
+    product_card: "card",
+    sidebar: "layout_shell",
+    topbar: "layout_shell",
+    app_shell: "layout_shell"
+  };
+  const sourceComponents = uniqueList([
+    ...(composition.primary_components || []),
+    ...(composition.supporting_components || []),
+    ...(composition.required_states || [])
+  ]);
+  return sourceComponents.map((component) => {
+    const normalized = String(component || "").toLowerCase().replace(/-/g, "_");
+    const direct = componentMap[normalized] || componentMap[aliases[normalized]];
+    const fallbackKey = Object.keys(componentMap).find((key) => normalized.includes(key) || key.includes(normalized));
+    return {
+      source_component: component,
+      adapter_component: direct || componentMap[fallbackKey] || "Use approved project component contract mapped through this adapter."
+    };
+  });
+}
+
+function buildFrameworkCompatibilityWarnings(adapter, product, flags = {}) {
+  const warnings = [...(adapter.warnings || [])];
+  const stackText = `${flags.stack || ""} ${flags.framework || ""} ${flags.runtime || ""} ${product.channels || ""} ${product.frontend_stack || ""}`.toLowerCase();
+  const requires = adapter.requires || [];
+  if (requires.includes("react") && !/react|next/.test(stackText)) {
+    warnings.push("Adapter requires a React-compatible frontend. Confirm stack before implementation.");
+  }
+  if (requires.includes("tailwindcss") && !/tailwind|next|react/.test(stackText)) {
+    warnings.push("Adapter requires an approved Tailwind CSS setup. Document build adapter before implementation.");
+  }
+  if (/bootstrap|bulma|foundation/.test(stackText) && ["mui", "antd", "foundation-sites", "bulma"].includes(adapter.adapter_key)) {
+    warnings.push("Do not mix full UI frameworks on one surface without a migration decision.");
+  }
+  return uniqueList(warnings);
+}
+
+function buildFrameworkAdapterRecommendation(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const catalog = getUiDesignCatalog();
+  const patternKey = flags.pattern || catalog.blueprint_experience_map[product.key] || inferUiPatternFromBlueprint(product);
+  const pattern = catalog.experience_patterns[patternKey];
+  if (!pattern) throw new Error(`UI experience pattern not found: ${patternKey}`);
+  const adapterKey = selectFrameworkAdapterKey(product, pattern, flags);
+  const adapter = findFrameworkAdapter(adapterKey);
+  if (!adapter) throw new Error(`Framework adapter not found: ${adapterKey}. Use \`kvdf design framework-adapters\`.`);
+  const themeTokenRecommendation = buildThemeTokenRecommendation(product.key, { ...flags, pattern: patternKey });
+  const componentCompositionRecommendation = buildComponentCompositionRecommendation(product.key, { ...flags, pattern: patternKey });
+  const requestedCompositionId = flags.composition || flags["composition-id"] || flags.screen_composition;
+  const composition = requestedCompositionId
+    ? (getComponentCompositionCatalog().compositions || []).find((item) => item.composition_id === requestedCompositionId) || componentCompositionRecommendation.composition || {}
+    : componentCompositionRecommendation.composition || {};
+  const approvedKeys = pattern.approved_ui_libraries || [];
+  const approvalStatus = approvedKeys.includes(adapter.adapter_key) ? "approved_for_pattern" : "requires_design_decision";
+  return {
+    recommendation_id: `framework-adapter-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    experience_pattern: patternKey,
+    approval_status: approvalStatus,
+    adapter,
+    token_set_id: themeTokenRecommendation.token_set.token_set_id,
+    palette_preset: themeTokenRecommendation.palette_preset,
+    composition_id: composition.composition_id,
+    composition_name: composition.name,
+    composition_mapping: buildFrameworkCompositionMap(adapter, composition),
+    compatibility_warnings: buildFrameworkCompatibilityWarnings(adapter, product, flags),
+    references: {
+      readme: "knowledge/design_system/framework_adapter_intelligence/README.md",
+      contract: "knowledge/design_system/framework_adapter_intelligence/FRAMEWORK_ADAPTER_CONTRACT.md",
+      catalog: "knowledge/design_system/framework_adapter_intelligence/UI_FRAMEWORK_ADAPTER_CATALOG.json",
+      compatibility: "knowledge/design_system/framework_adapter_intelligence/STACK_COMPATIBILITY_RULES.md",
+      review: "knowledge/design_system/framework_adapter_intelligence/ADAPTER_REVIEW_CHECKLIST.md",
+      token_mapping: "knowledge/design_system/theme_token_intelligence/FRAMEWORK_TOKEN_MAPPING.md",
+      composition_rules: "knowledge/design_system/component_composition_intelligence/FRAMEWORK_COMPOSITION_RULES.md"
+    },
+    prompt_hint: `Use adapter ${adapter.adapter_key}, token_set ${themeTokenRecommendation.token_set.token_set_id}, and composition_id ${composition.composition_id}. Do not add another UI framework unless explicitly approved.`
+  };
+}
+
+function buildComponentCompositionRecommendation(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const catalog = getUiDesignCatalog();
+  const patternKey = flags.pattern || catalog.blueprint_experience_map[product.key] || inferUiPatternFromBlueprint(product);
+  const pageIntent = [flags.page, flags.intent, flags.screen, flags.description, flags.feature].filter(Boolean).join(" ");
+  const pageText = pageIntent.toLowerCase();
+  const productText = `${product.key || ""} ${product.name || ""} ${product.category || ""} ${(product.frontend_pages || []).join(" ")}`.toLowerCase();
+  const compositions = getComponentCompositionCatalog().compositions || [];
+  const ranked = compositions
+    .map((composition) => {
+      let score = 0;
+      if ((composition.experience_patterns || []).includes(patternKey)) score += 4;
+      for (const best of composition.best_for || []) {
+        const value = String(best).toLowerCase();
+        if (pageText && pageText.includes(value)) score += 4;
+        else if (productText.includes(value)) score += 2;
+      }
+      for (const keyword of composition.keywords || []) {
+        const value = String(keyword).toLowerCase();
+        if (pageText && pageText.includes(value)) score += 5;
+        else if (productText.includes(value)) score += 1;
+      }
+      return { composition, score };
+    })
+    .sort((a, b) => b.score - a.score || a.composition.composition_id.localeCompare(b.composition.composition_id));
+  const winner = ranked[0] || { composition: compositions[0] || {}, score: 0 };
+  return {
+    recommendation_id: `component-composition-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    experience_pattern: patternKey,
+    page_intent: pageIntent || null,
+    score: winner.score,
+    composition: winner.composition,
+    alternatives: ranked.slice(1, 4).map((item) => ({
+      composition_id: item.composition.composition_id,
+      name: item.composition.name,
+      score: item.score
+    })),
+    references: {
+      readme: "knowledge/design_system/component_composition_intelligence/README.md",
+      contract: "knowledge/design_system/component_composition_intelligence/COMPONENT_COMPOSITION_CONTRACT.md",
+      catalog: "knowledge/design_system/component_composition_intelligence/SCREEN_COMPOSITION_CATALOG.json",
+      framework_rules: "knowledge/design_system/component_composition_intelligence/FRAMEWORK_COMPOSITION_RULES.md"
+    },
+    prompt_hint: `Use composition_id ${winner.composition.composition_id} and adapt tokens, density, copy, and variants from product answers.`
+  };
+}
+
+function buildThemeTokenRecommendation(blueprintKey, flags = {}) {
+  const product = findProductBlueprint(blueprintKey);
+  if (!product) throw new Error(`Product blueprint not found: ${blueprintKey}`);
+  const catalog = getUiDesignCatalog();
+  const patternKey = flags.pattern || catalog.blueprint_experience_map[product.key] || inferUiPatternFromBlueprint(product);
+  const presetCatalog = getThemeTokenPresetCatalog();
+  const presetName = flags.preset || inferColorPalettePresets(product, patternKey)[0] || "saas_calm";
+  const preset = findThemeTokenPreset(presetName) || findThemeTokenPreset("saas_calm");
+  const motionSystem = inferMotionSystem(product, patternKey);
+  const tokenSet = buildDesignTokenSetFromPreset(product, patternKey, preset, motionSystem, flags);
+  return {
+    recommendation_id: `theme-token-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: product.key,
+    blueprint_name: product.name,
+    experience_pattern: patternKey,
+    palette_preset: preset.preset,
+    reference: "knowledge/design_system/theme_token_intelligence/PALETTE_PRESET_CATALOG.json",
+    available_presets: (presetCatalog.presets || []).map((item) => item.preset),
+    token_set: tokenSet,
+    framework_mapping: {
+      reference: "knowledge/design_system/theme_token_intelligence/FRAMEWORK_TOKEN_MAPPING.md",
+      bootstrap: "Map semantic colors to Bootstrap theme colors and component variables.",
+      tailwind: "Map semantic colors to CSS variables and theme utilities.",
+      mui: "Map semantic colors to palette, spacing to spacing, radius to shape.",
+      ant_design: "Map tokens through ConfigProvider theme tokens.",
+      shadcn_ui: "Map CSS variables to project semantic tokens."
+    },
+    prompt_hint: `Use token file ${flags.output || "<exported-token-file>"} and do not paste raw palette values into prompts.`
+  };
+}
+
+function assertDesignTokenOutputPath(outputPath) {
+  const normalized = String(outputPath || "").replace(/\\/g, "/");
+  if (normalized === ".kabeeri" || normalized.startsWith(".kabeeri/")) {
+    throw new Error("Do not export theme token files under .kabeeri/. Use a project path such as knowledge/frontend_specs/tokens.json.");
+  }
+}
+
+function findThemeTokenPreset(presetName) {
+  const catalog = getThemeTokenPresetCatalog();
+  const normalized = String(presetName || "").trim().toLowerCase();
+  return (catalog.presets || []).find((item) => String(item.preset).toLowerCase() === normalized) || null;
+}
+
+function buildDesignTokenSetFromPreset(product, patternKey, preset, motionSystem, flags = {}) {
+  const density = flags.density || (preset.creative_profile && preset.creative_profile.density) || inferDefaultDensity(product, patternKey);
+  return {
+    token_set_id: flags.id || `design-tokens-${product.key}-${preset.preset}`,
+    status: "recommended",
+    source_ids: parseCsv(flags.sources || flags.source),
+    blueprint_key: product.key,
+    experience_pattern: patternKey,
+    palette_preset: preset.preset,
+    creative_profile: {
+      ...(preset.creative_profile || {}),
+      density,
+      accent_strategy: flags["accent-strategy"] || "single_primary_with_reserved_state_colors"
+    },
+    colors: preset.colors || {},
+    typography: inferThemeTypography(product, flags),
+    spacing: {
+      xs: "4px",
+      sm: "8px",
+      md: "16px",
+      lg: density === "compact" ? "20px" : "24px",
+      xl: density === "comfortable" ? "40px" : "32px"
+    },
+    radius: inferThemeRadius(preset.preset, density),
+    shadow: inferThemeShadow(preset.preset),
+    density: {
+      comfortable: {
+        section_gap: "32px",
+        card_padding: "24px",
+        control_gap: "12px"
+      },
+      balanced: {
+        section_gap: "24px",
+        card_padding: "16px",
+        control_gap: "8px"
+      },
+      compact: {
+        section_gap: "16px",
+        card_padding: "12px",
+        control_gap: "6px"
+      },
+      selected: density
+    },
+    motion: {
+      level: motionSystem.level,
+      duration: {
+        instant: "80ms",
+        fast: "120ms",
+        normal: "200ms",
+        medium: "300ms",
+        slow: "500ms",
+        showcase: "700ms"
+      },
+      easing: {
+        standard: "ease-out",
+        emphasized: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        exit: "ease-in",
+        linear: "linear"
+      },
+      distance: {
+        micro: "2px",
+        small: "6px",
+        medium: "12px",
+        large: "24px"
+      },
+      scale: {
+        press: "0.98",
+        hover: "1.02",
+        pop: "1.04"
+      },
+      reduced_motion_required: true
+    },
+    breakpoints: {
+      mobile: "480px",
+      tablet: "768px",
+      desktop: "1024px"
+    },
+    approval: {
+      approved_by: null,
+      approved_at: null
+    }
+  };
+}
+
+function inferDefaultDensity(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  if (/admin|erp|crm|finance|fintech|accounting|wms|dashboard|helpdesk/.test(text) || patternKey === "data_heavy_web_app") return "compact";
+  if (/landing|content|blog|news|medical|health|corporate/.test(text) || patternKey === "seo_content_site") return "comfortable";
+  return "balanced";
+}
+
+function inferThemeTypography(product, flags = {}) {
+  const wantsArabic = shouldUseRtlArabicReferences(product, flags);
+  return {
+    font_family: wantsArabic ? "system-ui, 'Segoe UI', Tahoma, sans-serif" : "system-ui, sans-serif",
+    base_size: "16px",
+    scale: {
+      body: "1rem",
+      small: "0.875rem",
+      heading: "1.5rem"
+    },
+    notes: wantsArabic ? "Arabic/RTL surfaces should verify readable line-height, numerals, dates, and mixed LTR tokens." : "Adjust only from approved brand typography."
+  };
+}
+
+function inferThemeRadius(presetName, density) {
+  if (presetName === "enterprise_neutral" || density === "compact") return { sm: "3px", md: "6px", lg: "8px" };
+  if (presetName === "clinical_trust" || density === "comfortable") return { sm: "6px", md: "10px", lg: "14px" };
+  return { sm: "4px", md: "8px", lg: "12px" };
+}
+
+function inferThemeShadow(presetName) {
+  if (presetName === "dark_governance") {
+    return {
+      sm: "0 1px 2px rgba(0, 0, 0, 0.24)",
+      md: "0 12px 28px rgba(0, 0, 0, 0.28)"
+    };
+  }
+  if (presetName === "enterprise_neutral" || presetName === "finance_precision") {
+    return {
+      sm: "0 1px 2px rgba(15, 23, 42, 0.05)",
+      md: "0 8px 18px rgba(15, 23, 42, 0.07)"
+    };
+  }
+  return {
+    sm: "0 1px 2px rgba(15, 23, 42, 0.06)",
+    md: "0 8px 24px rgba(15, 23, 42, 0.08)"
+  };
+}
+
+function getUiUxReferencePattern(code) {
+  if (!code) throw new Error("Missing UI/UX reference code.");
+  const normalized = String(code).trim().toUpperCase();
+  const catalog = getUiUxReferenceCatalog();
+  const item = (catalog.patterns || []).find((pattern) => String(pattern.code).toUpperCase() === normalized);
+  if (!item) throw new Error(`UI/UX reference pattern not found: ${code}`);
+  return item;
+}
+
+function renderUiUxReferencePattern(item) {
+  console.log(`${item.code}: ${item.name}`);
+  console.log(table(["Field", "Value"], [
+    ["Category", item.category],
+    ["Style", item.style],
+    ["Best for", (item.best_for || []).join(", ")],
+    ["Core layout", (item.core_layout || []).join(", ")],
+    ["Components", (item.components || []).join(", ")],
+    ["States", (item.required_states || []).join(", ")],
+    ["Rules", (item.non_negotiable_rules || []).slice(0, 8).join("; ")],
+    ["Knowledge file", item.knowledge_file || ""]
+  ]));
+}
+
+function recommendUiUxReferences(brief) {
+  const catalog = getUiUxReferenceCatalog();
+  const text = String(brief || "").toLowerCase();
+  const matches = (catalog.patterns || []).map((item) => {
+    const keywords = uniqueList([
+      item.code,
+      item.name,
+      item.category,
+      item.style,
+      ...(item.best_for || []),
+      ...(item.keywords || []),
+      ...(item.components || [])
+    ].map((entry) => String(entry || "").toLowerCase()));
+    const reasons = keywords.filter((keyword) => keyword && text.includes(keyword)).slice(0, 6);
+    const score = reasons.length + ((item.best_for || []).some((entry) => text.includes(String(entry).toLowerCase())) ? 2 : 0);
+    return { code: item.code, name: item.name, score, reasons: reasons.length ? reasons : ["fallback candidate"] };
+  }).sort((a, b) => b.score - a.score || a.code.localeCompare(b.code)).slice(0, 3);
+  return {
+    selection_id: `uiux-reference-${Date.now()}`,
+    brief,
+    matches,
+    guidance: [
+      "Use the winning reference as inspiration only; implementation must come from approved text specs and design tokens.",
+      "Generate questions before tasks when client/developer intent is incomplete.",
+      "Create page specs and component contracts before frontend implementation tasks."
+    ],
+    created_at: new Date().toISOString()
+  };
+}
+
+function buildUiUxReferenceQuestions(pattern, flags = {}) {
+  const catalog = getUiUxReferenceCatalog();
+  const generic = catalog.question_bank || [];
+  const patternQuestions = pattern.question_prompts || [];
+  const count = Number(flags.count || 16);
+  const questions = uniqueList([...patternQuestions, ...generic]).slice(0, count);
+  return {
+    question_set_id: `uiux-questions-${pattern.code.toLowerCase()}-${Date.now()}`,
+    pattern_code: pattern.code,
+    pattern_name: pattern.name,
+    language_policy: "Ask in the user's language. Keep technical labels only when they help the developer.",
+    questions,
+    created_at: new Date().toISOString()
+  };
+}
+
+function createTasksFromUiUxReference(pattern, flags = {}) {
+  const tasksFile = ".kabeeri/tasks.json";
+  const data = readJsonFile(tasksFile);
+  data.tasks = data.tasks || [];
+  const existing = new Set(data.tasks.map((item) => item.id));
+  const nextTaskId = () => {
+    let index = data.tasks.length + 1;
+    let id = `task-${String(index).padStart(3, "0")}`;
+    while (existing.has(id)) {
+      index += 1;
+      id = `task-${String(index).padStart(3, "0")}`;
+    }
+    existing.add(id);
+    return id;
+  };
+  const scope = flags.scope || flags.page || pattern.category || "ui";
+  const templates = pattern.task_templates || [];
+  const created = templates.map((template) => ({
+    id: nextTaskId(),
+    title: `${pattern.code}: ${template.title}`,
+    status: "proposed",
+    type: template.type || "frontend_design",
+    workstream: template.workstream || "public_frontend",
+    workstreams: [template.workstream || "public_frontend"],
+    source: "ui_ux_reference",
+    source_reference: `uiux-reference:${pattern.code}`,
+    source_mode: "approved_reference",
+    ui_ux_reference_code: pattern.code,
+    scope,
+    allowed_files: template.allowed_files || ["knowledge/design_system/**", "knowledge/frontend_specs/**", "src/**"],
+    acceptance_criteria: template.acceptance_criteria || pattern.visual_acceptance.slice(0, 4),
+    created_at: new Date().toISOString()
+  }));
+  data.tasks.push(...created);
+  writeJsonFile(tasksFile, data);
+  for (const taskItem of created) {
+    appendAudit("task.generated_from_ui_ux_reference", "task", taskItem.id, `Generated from ${pattern.code}`);
+  }
+  return created;
 }
 
 function buildUiDesignRecommendation(blueprintKey, flags = {}) {
@@ -5477,6 +6678,25 @@ function buildUiDesignRecommendation(blueprintKey, flags = {}) {
   if (!pattern) throw new Error(`UI experience pattern not found: ${patternKey}`);
   const componentGroups = inferUiComponentGroups(patternKey, product);
   const components = uniqueList(componentGroups.flatMap((group) => catalog.component_sets[group] || []));
+  const approvedLibraryKeys = new Set(pattern.approved_ui_libraries || []);
+  const approvedUiLibraries = (catalog.approved_ui_libraries || []).filter((library) => approvedLibraryKeys.has(library.key));
+  const businessUiPattern = inferBusinessUiPattern(product, patternKey);
+  const templatePack = inferBusinessTemplatePack(businessUiPattern.key);
+  const templateRecommendations = inferBusinessTemplateRecommendations(businessUiPattern.key, product, patternKey);
+  const designReferences = inferBusinessDesignReferences(businessUiPattern.key, product, patternKey);
+  const projectUiPlaybook = findProjectUiPlaybook(product.key);
+  const motionSystem = inferMotionSystem(product, patternKey);
+  const uiFlows = inferUiFlows(product, patternKey);
+  const rtlArabicUi = inferRtlArabicUiReferences(product, flags);
+  const accessibilityInclusiveUi = inferAccessibilityInclusiveUi(product, patternKey);
+  const performanceWebVitalsUi = inferPerformanceWebVitalsUi(product, patternKey);
+  const contentMicrocopyUx = inferContentMicrocopyUx(product, patternKey);
+  const visualQualityGovernance = inferVisualQualityGovernance(product, patternKey);
+  const uiDecisionProfile = buildUiDecisionProfile(product.key, { ...flags, pattern: patternKey });
+  const themeTokenRecommendation = buildThemeTokenRecommendation(product.key, { ...flags, pattern: patternKey });
+  const componentCompositionRecommendation = buildComponentCompositionRecommendation(product.key, { ...flags, pattern: patternKey });
+  const frameworkAdapterRecommendation = buildFrameworkAdapterRecommendation(product.key, { ...flags, pattern: patternKey });
+  const creativeVariantRecommendation = buildCreativeVariantRecommendation(product.key, { ...flags, pattern: patternKey, count: flags["variant-count"] || flags.count || 3 });
   return {
     recommendation_id: `ui-design-${Date.now()}`,
     created_at: new Date().toISOString(),
@@ -5484,6 +6704,7 @@ function buildUiDesignRecommendation(blueprintKey, flags = {}) {
     blueprint_name: product.name,
     experience_pattern: patternKey,
     recommended_stacks: pattern.recommended_stacks || [],
+    approved_ui_libraries: approvedUiLibraries,
     foundations: catalog.foundations || [],
     components,
     component_groups: componentGroups,
@@ -5491,9 +6712,140 @@ function buildUiDesignRecommendation(blueprintKey, flags = {}) {
     layout_priorities: pattern.layout_priorities || [],
     seo_geo: pattern.seo_geo || [],
     avoid: pattern.avoid || [],
+    ui_execution_kit: {
+      contract: "knowledge/design_system/ui_execution_kit/UI_CONTRACT.md",
+      colors: "knowledge/design_system/ui_execution_kit/COLOR_SYSTEM.md",
+      creative_variation: "knowledge/design_system/ui_execution_kit/CREATIVE_VARIATION_RULES.md",
+      icon_map: "knowledge/design_system/ui_execution_kit/ICON_MAP.md",
+      button_presets: "knowledge/design_system/ui_execution_kit/BUTTON_PRESETS.md",
+      component_map: "knowledge/design_system/ui_execution_kit/COMPONENT_MAP.md",
+      motion: "knowledge/design_system/ui_execution_kit/MOTION_MICROINTERACTIONS.md",
+      assessment_template: "knowledge/design_system/ui_execution_kit/KVDF_DESIGN_SYSTEM_ASSESSMENT_TEMPLATE.md",
+      ui_review: "knowledge/design_system/ui_execution_kit/UI_REVIEW.md",
+      recipes: inferUiExecutionRecipes(patternKey)
+    },
+    business_ui_pattern: businessUiPattern,
+    project_ui_playbook: projectUiPlaybook ? {
+      enabled: true,
+      variant_archetype: projectUiPlaybook.variant_archetype,
+      composition_id: projectUiPlaybook.composition_id,
+      adapter_preference: projectUiPlaybook.adapter_preference,
+      density: projectUiPlaybook.density,
+      navigation_pattern: projectUiPlaybook.navigation_pattern,
+      primary_focus: projectUiPlaybook.primary_focus,
+      critical_questions: projectUiPlaybook.critical_questions,
+      avoid: projectUiPlaybook.avoid,
+      references: {
+        readme: "knowledge/design_system/project_ui_playbooks/README.md",
+        catalog: "knowledge/design_system/project_ui_playbooks/PROJECT_UI_PLAYBOOKS.json",
+        review: "knowledge/design_system/project_ui_playbooks/PLAYBOOK_REVIEW_CHECKLIST.md"
+      }
+    } : null,
+    template_pack: templatePack,
+    design_references: designReferences,
+    recommended_templates: templateRecommendations,
+    recommended_dashboard_style: templatePack ? templatePack.recommended_dashboard_style : inferBusinessDashboardStyle(businessUiPattern.key),
+    theme_token_intelligence: {
+      enabled: true,
+      level: themeTokenRecommendation.palette_preset,
+      references: {
+        readme: "knowledge/design_system/theme_token_intelligence/README.md",
+        contract: "knowledge/design_system/theme_token_intelligence/THEME_TOKEN_CONTRACT.md",
+        preset_catalog: "knowledge/design_system/theme_token_intelligence/PALETTE_PRESET_CATALOG.json",
+        framework_mapping: "knowledge/design_system/theme_token_intelligence/FRAMEWORK_TOKEN_MAPPING.md",
+        variation_rules: "knowledge/design_system/theme_token_intelligence/THEME_VARIATION_RULES.md"
+      },
+      token_set: themeTokenRecommendation.token_set
+    },
+    component_composition_intelligence: {
+      enabled: true,
+      composition_id: componentCompositionRecommendation.composition.composition_id,
+      name: componentCompositionRecommendation.composition.name,
+      score: componentCompositionRecommendation.score,
+      references: componentCompositionRecommendation.references,
+      composition: componentCompositionRecommendation.composition,
+      alternatives: componentCompositionRecommendation.alternatives
+    },
+    framework_adapter_intelligence: {
+      enabled: true,
+      adapter_key: frameworkAdapterRecommendation.adapter.adapter_key,
+      framework: frameworkAdapterRecommendation.adapter.framework,
+      approval_status: frameworkAdapterRecommendation.approval_status,
+      install: frameworkAdapterRecommendation.adapter.install,
+      imports: frameworkAdapterRecommendation.adapter.imports,
+      icon_strategy: frameworkAdapterRecommendation.adapter.icon_strategy,
+      token_set_id: frameworkAdapterRecommendation.token_set_id,
+      composition_id: frameworkAdapterRecommendation.composition_id,
+      composition_mapping: frameworkAdapterRecommendation.composition_mapping,
+      compatibility_warnings: frameworkAdapterRecommendation.compatibility_warnings,
+      references: frameworkAdapterRecommendation.references
+    },
+    creative_variant_intelligence: {
+      enabled: true,
+      selected_count: creativeVariantRecommendation.variants.length,
+      variants: creativeVariantRecommendation.variants,
+      references: creativeVariantRecommendation.references,
+      prompt_hint: creativeVariantRecommendation.prompt_hint
+    },
+    ui_decision_intake: {
+      enabled: true,
+      selected_variant_id: uiDecisionProfile.selected_variant.variant_id,
+      palette_preset: uiDecisionProfile.palette_preset,
+      density: uiDecisionProfile.density,
+      navigation_pattern: uiDecisionProfile.navigation_pattern,
+      missing_answers: uiDecisionProfile.missing_answers,
+      references: uiDecisionProfile.references,
+      prompt_hint: uiDecisionProfile.prompt_hint
+    },
+    ui_flows: uiFlows,
+    motion_system: motionSystem,
+    accessibility_inclusive_ui: accessibilityInclusiveUi,
+    performance_web_vitals_ui: performanceWebVitalsUi,
+    content_microcopy_ux: contentMicrocopyUx,
+    visual_quality_governance: visualQualityGovernance,
+    rtl_arabic_ui: rtlArabicUi,
+    color_palette_presets: inferColorPalettePresets(product, patternKey),
+    creative_variation_axes: inferCreativeVariationAxes(product, patternKey),
+    implementation_prompt: buildUiImplementationPrompt({
+      product,
+      businessUiPattern,
+      designReferences,
+      templateRecommendations,
+      uiFlows,
+      motionSystem,
+      accessibilityInclusiveUi,
+      performanceWebVitalsUi,
+      contentMicrocopyUx,
+      visualQualityGovernance,
+      themeTokenRecommendation,
+      componentCompositionRecommendation,
+      frameworkAdapterRecommendation,
+      creativeVariantRecommendation,
+      uiDecisionProfile,
+      rtlArabicUi,
+      patternKey
+    }),
     checklist: catalog.approval_checklist || [],
     ai_instructions: [
       "Start with approved design tokens and page specs before frontend implementation.",
+      "When Bootstrap is selected, use the pinned bootstrap package and map Bootstrap variables/components into the project design system before building pages.",
+      "When Tailwind CSS is selected, use the pinned tailwindcss package, document the build adapter, and map Tailwind theme variables/utilities into project tokens and component contracts before building pages.",
+      "When selecting Bulma, Foundation, MUI, Ant Design, daisyUI, or shadcn/ui, confirm framework compatibility first and document the install command, token map, ownership model, and component contracts.",
+      "Use Theme Token Intelligence to select/export a semantic token file before page implementation.",
+      "Use Component Composition Intelligence to select a screen composition ID before code generation.",
+      "Use Framework Adapter Intelligence to translate tokens and composition into the selected UI framework before writing frontend code.",
+      "Use Project UI Playbooks to start from the product-type default UI direction before applying answer-driven overrides.",
+      "Use Creative Variant Intelligence to choose a bounded design direction so similar apps do not receive identical UI.",
+      "Use UI Decision Intake to map developer answers into variant, palette, density, navigation, and tone decisions.",
+      "Use the UI Execution Kit files instead of repeating long UI instructions in prompts.",
+      "Use the recommended business UI pattern and flow files before generating screen layouts.",
+      "Apply the Accessibility and Inclusive UI Reference Pack for semantic HTML, keyboard, focus, forms, tables, dialogs, contrast, and readable content.",
+      "Apply the Performance and Core Web Vitals UI Pack for LCP, INP, CLS, images, fonts, JavaScript, data rendering, skeletons, and loading states.",
+      "Apply the Content and Microcopy UX Pack for action labels, empty/error states, validation, onboarding, confirmations, statuses, and product-aware tone.",
+      "Apply the Visual Quality Governance Pack before Owner/client visual approval and use rubric scores for targeted rework.",
+      "Use the motion system only for feedback, guidance, continuity, or perceived performance, and support reduced motion.",
+      "When Arabic, bilingual, or RTL surfaces are present, apply the RTL Arabic UI Reference Pack before layout and component decisions.",
+      "Apply creative variation from product answers so similar app types do not receive identical layout, palette, density, or tone.",
       "Choose components from the recommended component groups instead of inventing one-off UI.",
       "For SEO/GEO surfaces, use semantic HTML, structured data, breadcrumbs, clear headings, and fast pages.",
       "For dashboards, prioritize data density, filters, tables, keyboard navigation, permissions, and empty/error states.",
@@ -5533,6 +6885,445 @@ function inferUiPageTemplates(product, patternKey) {
   return uniqueList([...base, ...(extras[patternKey] || [])]);
 }
 
+function inferBusinessUiPattern(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  const direct = [
+    ["ai", "ai-product"],
+    ["ecommerce", "ecommerce"],
+    ["marketplace", "marketplace"],
+    ["booking", "booking"],
+    ["delivery", "delivery"],
+    ["crm", "crm"],
+    ["erp", "erp"],
+    ["dashboard", "dashboard"],
+    ["admin", "admin-panel"],
+    ["fintech", "fintech"],
+    ["finance", "fintech"],
+    ["accounting", "fintech"],
+    ["billing", "fintech"],
+    ["invoice", "fintech"],
+    ["payment", "fintech"],
+    ["health", "healthtech"],
+    ["medical", "healthtech"],
+    ["lms", "lms"],
+    ["education", "lms"],
+    ["real estate", "real-estate"],
+    ["property", "real-estate"],
+    ["corporate", "corporate"],
+    ["landing", "landing-page"],
+    ["saas", "saas"]
+  ];
+  const match = direct.find(([needle]) => text.includes(needle));
+  let key = match ? match[1] : null;
+  if (!key) {
+    if (patternKey === "commerce_storefront") key = "ecommerce";
+    else if (patternKey === "data_heavy_web_app") key = "admin-panel";
+    else if (patternKey === "seo_content_site") key = "corporate";
+    else if (patternKey === "mobile_app") key = "delivery";
+    else key = "saas";
+  }
+  return {
+    key,
+    catalog: "knowledge/design_system/business_ui_patterns/BUSINESS_UI_PATTERN_CATALOG.json",
+    template_index: "knowledge/design_system/business_ui_patterns/TEMPLATE_LIBRARY_INDEX.json",
+    reference_index: "knowledge/design_system/business_ui_patterns/BUSINESS_REFERENCE_INDEX.json",
+    pattern: `knowledge/design_system/business_ui_patterns/${key}/PATTERN.md`,
+    template: "knowledge/design_system/business_ui_patterns/BUSINESS_PATTERN_TEMPLATE.md"
+  };
+}
+
+function getBusinessReferenceIndex() {
+  return readJsonFile("knowledge/design_system/business_ui_patterns/BUSINESS_REFERENCE_INDEX.json");
+}
+
+function inferBusinessDashboardStyle(businessType) {
+  const index = getBusinessReferenceIndex();
+  const entry = (index.references || []).find((item) => item.businessType === businessType);
+  return entry ? entry.dashboardStyle || null : null;
+}
+
+function getBusinessTemplateIndex() {
+  return readJsonFile("knowledge/design_system/business_ui_patterns/TEMPLATE_LIBRARY_INDEX.json");
+}
+
+function inferBusinessDesignReferences(businessType, product, patternKey) {
+  const index = getBusinessReferenceIndex();
+  const entry = (index.references || []).find((item) => item.businessType === businessType);
+  if (!entry) return [];
+  const text = `${product.key || ""} ${product.name || ""} ${(product.frontend_pages || []).join(" ")}`.toLowerCase();
+  const keywordScore = (file) => {
+    const name = file.toLowerCase();
+    let score = 1;
+    if (/dashboard|overview|analytics|report|kpi/.test(text) && /dashboard|overview|analytics|report/.test(name)) score += 3;
+    if (/checkout|payment|invoice|billing|finance/.test(text) && /checkout|payment|billing|finance|invoice/.test(name)) score += 3;
+    if (/product|catalog|storefront|commerce/.test(text) && /product|storefront|merchant/.test(name)) score += 3;
+    if (/approval|workflow/.test(text) && /approval|workflow/.test(name)) score += 3;
+    if (/table|records|crud|admin/.test(text) && /table|crud|record|admin/.test(name)) score += 3;
+    if (/calendar|slot|booking|appointment/.test(text) && /calendar|slot|booking|service/.test(name)) score += 3;
+    if (/prompt|chat|ai|file|usage/.test(text) && /prompt|streaming|file|usage|history/.test(name)) score += 3;
+    if (patternKey === "data_heavy_web_app" && /table|workflow|audit|admin|dashboard/.test(name)) score += 1;
+    return score;
+  };
+  return [...(entry.files || [])]
+    .sort((a, b) => keywordScore(b) - keywordScore(a) || a.localeCompare(b))
+    .slice(0, 5);
+}
+
+function inferBusinessTemplatePack(businessType) {
+  const index = getBusinessTemplateIndex();
+  const pack = (index.packs || []).find((item) => item.businessType === businessType);
+  if (!pack) return null;
+  return {
+    business_type: pack.businessType,
+    pattern: pack.pattern,
+    templates: pack.templates,
+    recommended_dashboard_style: pack.recommendedDashboardStyle || null
+  };
+}
+
+function readTemplatePackTemplates(pack) {
+  if (!pack || !pack.templates) return [];
+  try {
+    return readJsonFile(pack.templates);
+  } catch (error) {
+    return [];
+  }
+}
+
+function inferBusinessTemplateRecommendations(businessType, product, patternKey) {
+  const pack = inferBusinessTemplatePack(businessType);
+  const templates = readTemplatePackTemplates(pack);
+  const text = `${product.key || ""} ${product.name || ""} ${(product.frontend_pages || []).join(" ")}`.toLowerCase();
+  const preferredViewTypes = [];
+  if (/checkout|cart|order|payment|ecommerce|commerce/.test(text) || patternKey === "commerce_storefront") preferredViewTypes.push("checkout-summary", "product-card");
+  if (/erp|invoice|approval|inventory|accounting/.test(text)) preferredViewTypes.push("data-table", "approval-stepper");
+  if (/crm|lead|deal|pipeline/.test(text)) preferredViewTypes.push("pipeline-column");
+  if (/booking|appointment|reservation/.test(text)) preferredViewTypes.push("time-slot-picker");
+  if (/ai|prompt|chat|generation|automation/.test(text)) preferredViewTypes.push("prompt-input", "generated-result");
+  if (/saas|subscription|workspace|usage/.test(text)) preferredViewTypes.push("onboarding", "usage-card");
+  if (/dashboard|analytics|report|kpi/.test(text)) preferredViewTypes.push("kpi-band");
+  if (/admin|backoffice|cms|moderation/.test(text)) preferredViewTypes.push("crud-table");
+
+  const ranked = templates
+    .map((template) => {
+      const score = preferredViewTypes.includes(template.viewType) ? 2 : 1;
+      return { ...template, score };
+    })
+    .sort((a, b) => b.score - a.score || a.templateId.localeCompare(b.templateId));
+
+  return ranked.slice(0, 4).map((template) => ({
+    template_id: template.templateId,
+    name: template.name,
+    business_type: template.businessType,
+    view_type: template.viewType,
+    file: template.files && template.files.template ? template.files.template : null,
+    required_states: template.requiredStates || [],
+    required_components: template.requiredComponents || [],
+    acceptance_criteria: template.acceptanceCriteria || []
+  }));
+}
+
+function inferUiExecutionRecipes(patternKey) {
+  const common = [
+    "knowledge/design_system/ui_execution_kit/recipes/EMPTY_STATE.md",
+    "knowledge/design_system/ui_execution_kit/recipes/CONFIRM_MODAL.md"
+  ];
+  const byPattern = {
+    seo_content_site: ["knowledge/design_system/ui_execution_kit/recipes/FORM_PAGE.md"],
+    commerce_storefront: ["knowledge/design_system/ui_execution_kit/recipes/CRUD_PAGE.md", "knowledge/design_system/ui_execution_kit/recipes/FORM_PAGE.md"],
+    data_heavy_web_app: ["knowledge/design_system/ui_execution_kit/recipes/DASHBOARD_PAGE.md", "knowledge/design_system/ui_execution_kit/recipes/CRUD_PAGE.md", "knowledge/design_system/ui_execution_kit/recipes/FORM_PAGE.md", "knowledge/design_system/ui_execution_kit/recipes/SETTINGS_PAGE.md"],
+    pos_operations: ["knowledge/design_system/ui_execution_kit/recipes/DASHBOARD_PAGE.md", "knowledge/design_system/ui_execution_kit/recipes/CRUD_PAGE.md"],
+    mobile_app: ["knowledge/design_system/ui_execution_kit/recipes/FORM_PAGE.md", "knowledge/design_system/ui_execution_kit/recipes/EMPTY_STATE.md"]
+  };
+  return uniqueList([...(byPattern[patternKey] || []), ...common]);
+}
+
+function inferUiFlows(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  const flows = [
+    "knowledge/design_system/ui_flows/CRUD_FLOW.md",
+    "knowledge/design_system/ui_flows/DELETE_CONFIRMATION_FLOW.md"
+  ];
+  if (/login|auth|account|user|admin|crm|erp|saas|dashboard/.test(text) || patternKey === "data_heavy_web_app") {
+    flows.push("knowledge/design_system/ui_flows/AUTH_FLOW.md", "knowledge/design_system/ui_flows/USER_MANAGEMENT_FLOW.md");
+  }
+  if (/ecommerce|commerce|marketplace|delivery|checkout|cart/.test(text) || patternKey === "commerce_storefront") {
+    flows.push("knowledge/design_system/ui_flows/CHECKOUT_FLOW.md", "knowledge/design_system/ui_flows/PAYMENT_CONFIRMATION_FLOW.md");
+  }
+  if (/booking|reservation|appointment|health|medical/.test(text)) {
+    flows.push("knowledge/design_system/ui_flows/BOOKING_FLOW.md");
+  }
+  if (/saas|onboarding|lms|education|ai|corporate|landing/.test(text) || patternKey === "seo_content_site") {
+    flows.push("knowledge/design_system/ui_flows/ONBOARDING_FLOW.md");
+  }
+  if (/ai|prompt|chatbot|generation|automation/.test(text)) {
+    flows.push("knowledge/design_system/ui_flows/AI_PRODUCT_FLOW.md");
+  }
+  return uniqueList(flows);
+}
+
+function inferMotionSystem(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  let level = "BALANCED_MOTION";
+  if (/admin|erp|fintech|finance|health|medical|security|wms|accounting/.test(text) || patternKey === "data_heavy_web_app") {
+    level = "MINIMAL_MOTION";
+  }
+  if (/landing|corporate|portfolio|marketing|showcase/.test(text) || patternKey === "seo_content_site") {
+    level = "EXPRESSIVE_MOTION";
+  }
+  return {
+    level,
+    reference: "knowledge/design_system/ui_execution_kit/MOTION_MICROINTERACTIONS.md",
+    default_approach: level === "EXPRESSIVE_MOTION" ? "CSS transitions first; add AOS, GSAP, or Lottie only when justified." : "CSS transitions and existing UI framework motion first.",
+    reduced_motion_required: true
+  };
+}
+
+function inferAccessibilityInclusiveUi(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  let level = "ACCESSIBILITY_BALANCED";
+  if (/admin|erp|crm|fintech|finance|health|medical|government|security|wms|accounting|billing|dashboard|helpdesk|hr|payroll/.test(text) || patternKey === "data_heavy_web_app") {
+    level = "ACCESSIBILITY_STRICT";
+  }
+  if (/blog|news|content|documentation|knowledge|corporate|landing|newsletter/.test(text) || patternKey === "seo_content_site") {
+    level = "ACCESSIBILITY_CONTENT";
+  }
+  const emphasisByLevel = {
+    ACCESSIBILITY_STRICT: ["keyboard_first_workflows", "data_table_accessibility", "visible_focus", "precise_errors", "permission_and_audit_clarity"],
+    ACCESSIBILITY_BALANCED: ["clear_flows", "form_recovery", "accessible_navigation", "reduced_motion", "touch_target_comfort"],
+    ACCESSIBILITY_CONTENT: ["semantic_headings", "skip_links", "readable_line_length", "link_purpose", "image_alt_policy", "content_landmarks"]
+  };
+  return {
+    enabled: true,
+    level,
+    references: {
+      readme: "knowledge/design_system/accessibility_inclusive_ui/README.md",
+      contract: "knowledge/design_system/accessibility_inclusive_ui/ACCESSIBILITY_CONTRACT.md",
+      focus_keyboard: "knowledge/design_system/accessibility_inclusive_ui/FOCUS_KEYBOARD_RULES.md",
+      semantic_html: "knowledge/design_system/accessibility_inclusive_ui/SEMANTIC_HTML_RULES.md",
+      forms_errors: "knowledge/design_system/accessibility_inclusive_ui/FORMS_ERRORS_RULES.md",
+      tables_data: "knowledge/design_system/accessibility_inclusive_ui/TABLES_DATA_ACCESSIBILITY.md",
+      dialogs_overlays: "knowledge/design_system/accessibility_inclusive_ui/DIALOGS_OVERLAYS_RULES.md",
+      content_readability: "knowledge/design_system/accessibility_inclusive_ui/CONTENT_READABILITY_RULES.md",
+      review_checklist: "knowledge/design_system/accessibility_inclusive_ui/ACCESSIBILITY_REVIEW_CHECKLIST.md"
+    },
+    emphasis: emphasisByLevel[level] || emphasisByLevel.ACCESSIBILITY_BALANCED
+  };
+}
+
+function inferPerformanceWebVitalsUi(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  let level = "PERFORMANCE_APP_BALANCED";
+  if (/blog|news|content|documentation|knowledge|corporate|landing|newsletter|ecommerce|commerce|marketplace|loyalty|booking/.test(text) || patternKey === "seo_content_site" || patternKey === "commerce_storefront") {
+    level = "PERFORMANCE_PUBLIC_STRICT";
+  }
+  if (/admin|erp|crm|fintech|finance|health|medical|dashboard|bi|wms|inventory|accounting|billing|helpdesk|hr|payroll/.test(text) || patternKey === "data_heavy_web_app") {
+    level = "PERFORMANCE_DATA_HEAVY";
+  }
+  const emphasisByLevel = {
+    PERFORMANCE_PUBLIC_STRICT: ["lcp_planning", "optimized_images", "font_loading", "low_javascript_weight", "stable_first_viewport", "core_web_vitals_evidence"],
+    PERFORMANCE_APP_BALANCED: ["fast_first_usable_screen", "responsive_forms_filters", "progressive_data_loading", "route_level_splitting", "clear_loading_error_states"],
+    PERFORMANCE_DATA_HEAVY: ["table_pagination_virtualization", "chart_lazy_loading", "filter_debounce", "stable_widget_dimensions", "independent_widget_failure"]
+  };
+  return {
+    enabled: true,
+    level,
+    references: {
+      readme: "knowledge/design_system/performance_web_vitals_ui/README.md",
+      contract: "knowledge/design_system/performance_web_vitals_ui/PERFORMANCE_CONTRACT.md",
+      core_web_vitals: "knowledge/design_system/performance_web_vitals_ui/CORE_WEB_VITALS_RULES.md",
+      image_media: "knowledge/design_system/performance_web_vitals_ui/IMAGE_MEDIA_RULES.md",
+      font_css: "knowledge/design_system/performance_web_vitals_ui/FONT_CSS_RULES.md",
+      javascript_interaction: "knowledge/design_system/performance_web_vitals_ui/JAVASCRIPT_INTERACTION_RULES.md",
+      data_rendering: "knowledge/design_system/performance_web_vitals_ui/DATA_RENDERING_RULES.md",
+      loading_skeleton: "knowledge/design_system/performance_web_vitals_ui/LOADING_SKELETON_RULES.md",
+      review_checklist: "knowledge/design_system/performance_web_vitals_ui/PERFORMANCE_REVIEW_CHECKLIST.md"
+    },
+    emphasis: emphasisByLevel[level] || emphasisByLevel.PERFORMANCE_APP_BALANCED
+  };
+}
+
+function inferContentMicrocopyUx(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  let level = "CONTENT_OPERATIONAL";
+  if (/ecommerce|commerce|marketplace|booking|landing|loyalty|checkout|store/.test(text) || patternKey === "commerce_storefront") {
+    level = "CONTENT_CONVERSION";
+  }
+  if (/blog|news|content|documentation|knowledge|corporate|newsletter/.test(text) || patternKey === "seo_content_site") {
+    level = "CONTENT_EDITORIAL";
+  }
+  if (/ai|prompt|chatbot|generation|automation|assistant/.test(text)) {
+    level = "CONTENT_CONVERSATIONAL";
+  }
+  const emphasisByLevel = {
+    CONTENT_OPERATIONAL: ["task_clarity", "permission_wording", "exact_status_labels", "recoverable_errors", "low_drama_confirmations"],
+    CONTENT_CONVERSION: ["value_clarity", "friction_reduction", "price_fee_date_stock_clarity", "trust_signals", "next_step_confidence"],
+    CONTENT_EDITORIAL: ["scannable_headings", "source_date_update_labels", "descriptive_links", "useful_summaries", "credible_tone"],
+    CONTENT_CONVERSATIONAL: ["expectation_setting", "progress_messaging", "confidence_boundaries", "retry_edit_paths", "generated_output_state"]
+  };
+  return {
+    enabled: true,
+    level,
+    references: {
+      readme: "knowledge/design_system/content_microcopy_ux/README.md",
+      contract: "knowledge/design_system/content_microcopy_ux/CONTENT_MICROCOPY_CONTRACT.md",
+      action_labels: "knowledge/design_system/content_microcopy_ux/ACTION_LABEL_RULES.md",
+      empty_error_states: "knowledge/design_system/content_microcopy_ux/EMPTY_ERROR_STATE_COPY.md",
+      form_validation: "knowledge/design_system/content_microcopy_ux/FORM_VALIDATION_COPY.md",
+      onboarding_help: "knowledge/design_system/content_microcopy_ux/ONBOARDING_HELP_COPY.md",
+      confirmation_status: "knowledge/design_system/content_microcopy_ux/CONFIRMATION_STATUS_COPY.md",
+      business_tone_matrix: "knowledge/design_system/content_microcopy_ux/BUSINESS_TONE_MATRIX.md",
+      review_checklist: "knowledge/design_system/content_microcopy_ux/CONTENT_REVIEW_CHECKLIST.md"
+    },
+    emphasis: emphasisByLevel[level] || emphasisByLevel.CONTENT_OPERATIONAL
+  };
+}
+
+function inferVisualQualityGovernance(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  let level = "VISUAL_QA_BALANCED";
+  if (/admin|erp|crm|fintech|finance|health|medical|dashboard|wms|accounting|billing|security|governance/.test(text) || patternKey === "data_heavy_web_app") {
+    level = "VISUAL_QA_STRICT";
+  }
+  if (/landing|corporate|ecommerce|commerce|marketplace|news|blog|content|documentation|showcase|portfolio/.test(text) || patternKey === "seo_content_site" || patternKey === "commerce_storefront") {
+    level = "VISUAL_QA_PUBLIC_STRICT";
+  }
+  const emphasisByLevel = {
+    VISUAL_QA_STRICT: ["data_density", "table_readability", "role_visibility", "safe_actions", "state_evidence", "keyboard_access"],
+    VISUAL_QA_BALANCED: ["responsive_fit", "state_coverage", "accessibility_evidence", "microcopy_quality", "motion_control"],
+    VISUAL_QA_PUBLIC_STRICT: ["first_viewport_quality", "brand_fit", "conversion_or_content_clarity", "core_web_vitals_evidence", "mobile_polish"]
+  };
+  return {
+    enabled: true,
+    level,
+    references: {
+      readme: "knowledge/design_system/visual_quality_governance/README.md",
+      rubric: "knowledge/design_system/visual_quality_governance/VISUAL_QUALITY_RUBRIC.md",
+      evidence: "knowledge/design_system/visual_quality_governance/VISUAL_REVIEW_EVIDENCE.md",
+      checklist: "knowledge/design_system/visual_quality_governance/DESIGN_QA_CHECKLIST.md",
+      rework_rules: "knowledge/design_system/visual_quality_governance/REWORK_DECISION_RULES.md"
+    },
+    required_runtime_commands: [
+      "kvdf design visual-review --page <page-spec-id> --screenshots desktop.png,mobile.png --checks responsive,states,accessibility,performance,content,motion,creative",
+      "kvdf design gate --task <task-id> --page <page-spec-id>",
+      "kvdf design governance --json"
+    ],
+    emphasis: emphasisByLevel[level] || emphasisByLevel.VISUAL_QA_BALANCED
+  };
+}
+
+function isTruthyFlag(value) {
+  if (value === true) return true;
+  if (value === false || value === undefined || value === null) return false;
+  return ["1", "true", "yes", "y", "on"].includes(String(value).trim().toLowerCase());
+}
+
+function includesArabicText(value) {
+  return /[\u0600-\u06ff]/.test(String(value || ""));
+}
+
+function shouldUseRtlArabicReferences(product, flags = {}) {
+  const language = String(flags.lang || flags.language || flags["output-language"] || flags.locale || "").trim().toLowerCase();
+  const direction = String(flags.dir || flags.direction || "").trim().toLowerCase();
+  const text = [
+    product.key,
+    product.name,
+    product.category,
+    ...(product.channels || []),
+    ...(product.frontend_pages || []),
+    flags.description,
+    flags.notes,
+    flags.audience,
+    flags.market
+  ].filter(Boolean).join(" ");
+  return (
+    isTruthyFlag(flags.rtl) ||
+    isTruthyFlag(flags["rtl-arabic"]) ||
+    isTruthyFlag(flags.arabic) ||
+    direction === "rtl" ||
+    language === "ar" ||
+    language === "arabic" ||
+    language.startsWith("ar-") ||
+    includesArabicText(text)
+  );
+}
+
+function inferRtlArabicUiReferences(product, flags = {}) {
+  const enabled = shouldUseRtlArabicReferences(product, flags);
+  return {
+    enabled,
+    trigger: enabled ? "arabic_language_or_rtl_context" : "not_required",
+    references: enabled ? {
+      readme: "knowledge/design_system/rtl_arabic_ui/README.md",
+      contract: "knowledge/design_system/rtl_arabic_ui/RTL_ARABIC_UI_CONTRACT.md",
+      typography: "knowledge/design_system/rtl_arabic_ui/ARABIC_TYPOGRAPHY.md",
+      layout_patterns: "knowledge/design_system/rtl_arabic_ui/RTL_LAYOUT_PATTERNS.md",
+      component_rules: "knowledge/design_system/rtl_arabic_ui/RTL_COMPONENT_RULES.md",
+      forms_tables: "knowledge/design_system/rtl_arabic_ui/ARABIC_FORMS_TABLES.md",
+      accessibility: "knowledge/design_system/rtl_arabic_ui/RTL_ACCESSIBILITY.md",
+      review_checklist: "knowledge/design_system/rtl_arabic_ui/RTL_REVIEW_CHECKLIST.md"
+    } : {}
+  };
+}
+
+function buildUiImplementationPrompt({ product, businessUiPattern, designReferences, templateRecommendations, uiFlows, motionSystem, accessibilityInclusiveUi, performanceWebVitalsUi, contentMicrocopyUx, visualQualityGovernance, themeTokenRecommendation, componentCompositionRecommendation, frameworkAdapterRecommendation, creativeVariantRecommendation, uiDecisionProfile, rtlArabicUi, patternKey }) {
+  const templateNames = (templateRecommendations || []).map((item) => item.template_id).join(", ") || "selected template metadata";
+  const referenceNames = (designReferences || []).map((item) => item.split("/").pop()).join(", ") || "selected design references";
+  const flowNames = (uiFlows || []).map((item) => item.split("/").pop()).join(", ") || "selected user flow";
+  const primaryVariant = creativeVariantRecommendation && creativeVariantRecommendation.variants ? creativeVariantRecommendation.variants[0] : null;
+  const lines = [
+    `Build or refactor the UI for ${product.name} using Kabeeri Design Intelligence Layer.`,
+    `Business pattern: ${businessUiPattern.key}.`,
+    `Experience pattern: ${patternKey}.`,
+    `Use full design references: ${referenceNames}.`,
+    `Use templates: ${templateNames}.`,
+    `Use flows: ${flowNames}.`,
+    `Use theme token preset: ${themeTokenRecommendation.palette_preset}; export or reference the token set instead of repeating palette values.`,
+    `Use screen composition: ${componentCompositionRecommendation.composition.composition_id}; adapt components from the composition catalog instead of inventing a new arrangement.`,
+    `Use framework adapter: ${frameworkAdapterRecommendation.adapter.adapter_key}; translate tokens and composition through this adapter before writing framework code.`,
+    `Use UI decision intake: ${uiDecisionProfile.selected_variant.variant_id}; apply selected density ${uiDecisionProfile.density}, navigation ${uiDecisionProfile.navigation_pattern}, and tone ${uiDecisionProfile.microcopy_tone}.`,
+    primaryVariant ? `Use creative variant: ${primaryVariant.variant_id}; apply its density, hierarchy, surface style, component emphasis, and tone while preserving fixed rules.` : "Use Creative Variation Rules so similar apps do not receive identical UI.",
+    `Use motion level: ${motionSystem.level}; respect prefers-reduced-motion.`,
+    `Use accessibility level: ${accessibilityInclusiveUi.level}; apply Accessibility Inclusive UI references for semantic HTML, keyboard, focus, forms, tables, dialogs, contrast, and readable content.`,
+    `Use performance level: ${performanceWebVitalsUi.level}; apply Performance Web Vitals UI references for LCP, INP, CLS, images, fonts, JavaScript, data rendering, skeletons, and loading states.`,
+    `Use content level: ${contentMicrocopyUx.level}; apply Content Microcopy UX references for action labels, empty/error states, validation, onboarding, confirmations, status labels, and business tone.`,
+    `Use visual QA level: ${visualQualityGovernance.level}; apply Visual Quality Governance rubric before visual approval.`,
+    "Use the UI Execution Kit: UI_CONTRACT, COLOR_SYSTEM, ICON_MAP, BUTTON_PRESETS, COMPONENT_MAP, MOTION_MICROINTERACTIONS, and UI_REVIEW.",
+    "Include loading, empty, error, success, disabled, and validation states where data or forms exist.",
+    "Apply creative variation from product answers so similar apps do not produce identical UI.",
+    "Do not add unapproved UI libraries or raw colors."
+  ];
+  if (rtlArabicUi && rtlArabicUi.enabled) {
+    lines.splice(11, 0, "Apply RTL Arabic UI references: RTL_ARABIC_UI_CONTRACT, ARABIC_TYPOGRAPHY, RTL_LAYOUT_PATTERNS, RTL_COMPONENT_RULES, ARABIC_FORMS_TABLES, RTL_ACCESSIBILITY, and RTL_REVIEW_CHECKLIST.");
+  }
+  return lines.join("\n");
+}
+
+function inferColorPalettePresets(product, patternKey) {
+  const text = `${product.key || ""} ${product.name || ""} ${product.category || ""}`.toLowerCase();
+  const presets = [];
+  if (/erp|crm|inventory|wms|helpdesk|hr|bi|admin/.test(text) || patternKey === "data_heavy_web_app") presets.push("enterprise_neutral");
+  if (/ecommerce|commerce|marketplace|loyalty|booking/.test(text) || patternKey === "commerce_storefront") presets.push("commerce_energy");
+  if (/medical|clinic|dental|health|wellness/.test(text)) presets.push("clinical_trust");
+  if (/billing|accounting|finance|fintech/.test(text)) presets.push("finance_precision");
+  if (/blog|news|content|knowledge|documentation/.test(text) || patternKey === "seo_content_site") presets.push("content_editorial");
+  if (/restaurant|pos|food/.test(text) || patternKey === "pos_operations") presets.push("restaurant_warmth");
+  if (/governance|ai|cost|security/.test(text)) presets.push("dark_governance");
+  presets.push("saas_calm", "arabic_corporate");
+  return uniqueList(presets).slice(0, 4);
+}
+
+function inferCreativeVariationAxes(product, patternKey) {
+  const axes = ["palette_preset", "density", "navigation_pattern", "surface_style", "microcopy_tone", "motion_level"];
+  if (patternKey === "data_heavy_web_app") axes.push("dashboard_hierarchy", "table_density", "role_visibility");
+  if (patternKey === "commerce_storefront") axes.push("product_card_style", "checkout_rhythm", "trust_signal_style");
+  if (patternKey === "seo_content_site") axes.push("editorial_rhythm", "content_block_style", "heading_tone");
+  if (patternKey === "pos_operations") axes.push("touch_target_scale", "operator_flow_priority", "offline_status_treatment");
+  if (patternKey === "mobile_app") axes.push("navigation_depth", "gesture_pattern", "offline_empty_state_tone");
+  if ((product.channels || []).some((item) => String(item).includes("admin"))) axes.push("admin_shell_style");
+  return uniqueList(axes);
+}
+
 function buildUiDesignReview(target, flags = {}) {
   const text = [target, flags.notes || ""].join(" ").toLowerCase();
   const findings = [];
@@ -5540,9 +7331,25 @@ function buildUiDesignReview(target, flags = {}) {
     ["tokens", "Design tokens not mentioned."],
     ["responsive", "Responsive behavior not mentioned."],
     ["accessibility", "Accessibility not mentioned."],
+    ["keyboard", "Keyboard behavior not mentioned."],
+    ["focus", "Focus behavior not mentioned."],
     ["loading", "Loading state not mentioned."],
     ["empty", "Empty state not mentioned."],
-    ["error", "Error state not mentioned."]
+    ["error", "Error state not mentioned."],
+    ["color", "Color palette or token usage not mentioned."],
+    ["icon", "Icon rules or action icon usage not mentioned."],
+    ["business", "Business UI pattern not mentioned."],
+    ["flow", "User flow not mentioned."],
+    ["composition", "Screen composition ID not mentioned."],
+    ["adapter", "Framework adapter not mentioned."],
+    ["variant", "Creative variant ID not mentioned."],
+    ["motion", "Motion level or reduced-motion policy not mentioned."],
+    ["performance", "Performance or Core Web Vitals not mentioned."],
+    ["lcp", "LCP risk or primary content loading not mentioned."],
+    ["cls", "CLS/layout stability not mentioned."],
+    ["inp", "INP/interaction responsiveness not mentioned."],
+    ["copy", "Content or microcopy rules not mentioned."],
+    ["creative", "Creative variation profile not mentioned."]
   ];
   for (const [needle, finding] of required) {
     if (!text.includes(needle)) findings.push(finding);
@@ -5551,10 +7358,41 @@ function buildUiDesignReview(target, flags = {}) {
     if (!text.includes("schema") && !text.includes("structured data")) findings.push("SEO/GEO surface does not mention structured data.");
     if (!text.includes("semantic")) findings.push("SEO/GEO surface does not mention semantic HTML.");
     if (!text.includes("breadcrumb")) findings.push("SEO/GEO surface does not mention breadcrumbs.");
+    if (!text.includes("image") && !text.includes("media")) findings.push("Public/SEO UI does not mention image or media optimization.");
+    if (!text.includes("font")) findings.push("Public/SEO UI does not mention font loading or font performance.");
   }
   if (/dashboard|erp|crm|table|admin/.test(text)) {
     if (!text.includes("filter")) findings.push("Dashboard/data-heavy UI does not mention filters.");
     if (!text.includes("pagination") && !text.includes("virtual")) findings.push("Dashboard/data-heavy UI does not mention pagination or virtualization.");
+    if (!text.includes("table header") && !text.includes("aria-sort") && !text.includes("row context")) findings.push("Data-heavy UI does not mention accessible table headers, sorting, or row context.");
+    if (!text.includes("virtual") && !text.includes("pagination")) findings.push("Data-heavy UI does not mention pagination or virtualization for performance.");
+    if (!text.includes("debounce")) findings.push("Data-heavy UI does not mention debounced search or filters.");
+  }
+  if (/form|checkout|login|signup|settings|profile|input/.test(text)) {
+    if (!text.includes("label")) findings.push("Form UI does not mention visible labels.");
+    if (!text.includes("validation") && !text.includes("error")) findings.push("Form UI does not mention validation or recoverable errors.");
+    if (!text.includes("helper") && !text.includes("hint")) findings.push("Form UI does not mention helper text or format guidance.");
+  }
+  if (/modal|dialog|drawer|popover|dropdown/.test(text)) {
+    if (!text.includes("restore focus") && !text.includes("focus trap") && !text.includes("escape")) findings.push("Overlay UI does not mention focus management or Escape behavior.");
+  }
+  if (/image|media|hero|gallery|product|property|article/.test(text)) {
+    if (!text.includes("width") && !text.includes("height") && !text.includes("aspect")) findings.push("Media-heavy UI does not mention stable image dimensions or aspect ratios.");
+  }
+  if (/empty|no data|no results/.test(text) && !/next action|create|reset|clear filters|retry/.test(text)) {
+    findings.push("Empty/no-results state does not mention a next action.");
+  }
+  if (/something went wrong|error/.test(text) && !/retry|recover|fix|check|try again|support/.test(text)) {
+    findings.push("Error state does not mention recovery.");
+  }
+  if (/delete|remove|archive|reject/.test(text) && !/consequence|cannot be undone|undo|confirm|object|record/.test(text)) {
+    findings.push("Destructive action copy does not mention consequence or affected object.");
+  }
+  const hasArabicOrRtlContext = includesArabicText(text) || /\brtl\b|arabic|bilingual|mena|العربية|عربي/.test(text) || isTruthyFlag(flags.rtl) || isTruthyFlag(flags.arabic);
+  if (hasArabicOrRtlContext) {
+    if (!/\brtl\b|dir=|direction|arabic|العربية|عربي/.test(text)) findings.push("Arabic/RTL UI does not mention direction handling.");
+    if (!/typography|font|خط|الخط/.test(text)) findings.push("Arabic/RTL UI does not mention Arabic typography.");
+    if (!/number|date|table|form|رقم|تاريخ|جدول|نموذج/.test(text)) findings.push("Arabic/RTL UI does not mention forms, tables, numbers, or dates.");
   }
   return {
     review_id: `ui-review-${Date.now()}`,
@@ -5562,7 +7400,7 @@ function buildUiDesignReview(target, flags = {}) {
     target,
     status: findings.length ? "needs_attention" : "pass",
     findings,
-    checked_rules: ["tokens", "responsive", "accessibility", "states", "seo_geo", "dashboard_ergonomics"]
+    checked_rules: ["tokens", "colors", "icons", "responsive", "accessibility", "keyboard", "focus", "semantic_html", "forms_errors", "tables_data", "dialogs_overlays", "performance", "core_web_vitals", "lcp", "inp", "cls", "asset_weight", "data_rendering", "content_microcopy", "action_labels", "empty_error_copy", "validation_copy", "business_tone", "states", "business_pattern", "user_flow", "component_composition", "framework_adapter", "creative_variant", "motion", "creative_variation", "visual_quality_governance", "rtl_arabic_ui", "seo_geo", "dashboard_ergonomics"]
   };
 }
 
@@ -5572,7 +7410,28 @@ function renderUiDesignRecommendation(recommendation) {
   console.log(table(["Surface", "Items"], [
     ["Pattern", recommendation.experience_pattern],
     ["Stacks", recommendation.recommended_stacks.join(", ")],
+    ["Approved UI libraries", (recommendation.approved_ui_libraries || []).map((library) => `${library.name} ${library.version}`).join(", ")],
     ["Component groups", (recommendation.component_groups || []).join(", ")],
+    ["Business pattern", recommendation.business_ui_pattern ? recommendation.business_ui_pattern.key : ""],
+    ["Project playbook", recommendation.project_ui_playbook ? `${recommendation.project_ui_playbook.variant_archetype} / ${recommendation.project_ui_playbook.composition_id}` : ""],
+    ["Template pack", recommendation.template_pack ? recommendation.template_pack.pattern : ""],
+    ["Design references", (recommendation.design_references || []).map((item) => item.split("/").pop()).slice(0, 5).join(", ")],
+    ["Recommended templates", (recommendation.recommended_templates || []).map((item) => item.template_id).join(", ")],
+    ["Dashboard style", recommendation.recommended_dashboard_style || ""],
+    ["Theme tokens", recommendation.theme_token_intelligence ? recommendation.theme_token_intelligence.level : ""],
+    ["Composition", recommendation.component_composition_intelligence ? recommendation.component_composition_intelligence.composition_id : ""],
+    ["Framework adapter", recommendation.framework_adapter_intelligence ? recommendation.framework_adapter_intelligence.adapter_key : ""],
+    ["UI decision", recommendation.ui_decision_intake ? recommendation.ui_decision_intake.selected_variant_id : ""],
+    ["Creative variants", recommendation.creative_variant_intelligence ? (recommendation.creative_variant_intelligence.variants || []).map((item) => item.variant_id).join(", ") : ""],
+    ["UI flows", (recommendation.ui_flows || []).map((item) => item.split("/").pop()).join(", ")],
+    ["Motion", recommendation.motion_system ? recommendation.motion_system.level : ""],
+    ["Accessibility", recommendation.accessibility_inclusive_ui ? recommendation.accessibility_inclusive_ui.level : ""],
+    ["Performance", recommendation.performance_web_vitals_ui ? recommendation.performance_web_vitals_ui.level : ""],
+    ["Content", recommendation.content_microcopy_ux ? recommendation.content_microcopy_ux.level : ""],
+    ["Visual QA", recommendation.visual_quality_governance ? recommendation.visual_quality_governance.level : ""],
+    ["RTL/Arabic UI", recommendation.rtl_arabic_ui && recommendation.rtl_arabic_ui.enabled ? "enabled" : "not required"],
+    ["Palette presets", (recommendation.color_palette_presets || []).join(", ")],
+    ["Creative axes", (recommendation.creative_variation_axes || []).slice(0, 8).join(", ")],
     ["Components", recommendation.components.slice(0, 24).join(", ")],
     ["Page templates", recommendation.page_templates.slice(0, 18).join(", ")],
     ["SEO/GEO", recommendation.seo_geo.join(", ")]
@@ -5850,6 +7709,8 @@ function buildDesignGate(taskId, flags = {}) {
     return review.decision === "pass";
   });
   if (!matchingReviews.length) blockers.push("passing visual review is missing.");
+  const weakReview = matchingReviews.find((review) => review.quality_score && review.quality_score.percent < 75);
+  if (weakReview) warnings.push(`${weakReview.review_id}: visual quality score is below 75%.`);
   return {
     gate_id: `design-gate-${Date.now()}`,
     evaluated_at: new Date().toISOString(),
@@ -5860,6 +7721,277 @@ function buildDesignGate(taskId, flags = {}) {
     warnings,
     visual_review_ids: matchingReviews.map((review) => review.review_id)
   };
+}
+
+function getVisualQualityRubric() {
+  return {
+    version: "visual-quality-governance-v1",
+    reference: "knowledge/design_system/visual_quality_governance/VISUAL_QUALITY_RUBRIC.md",
+    thresholds: {
+      high_confidence: 90,
+      pass_with_notes: 75,
+      needs_rework: 60,
+      blocked: 0
+    },
+    categories: [
+      { id: "visual_match", max_score: 2, evidence: ["visual-match", "design", "tokens", "component-contracts"] },
+      { id: "layout_responsive", max_score: 2, evidence: ["responsive", "mobile", "desktop"] },
+      { id: "states_feedback", max_score: 2, evidence: ["states", "loading", "empty", "error", "success", "validation", "disabled"] },
+      { id: "accessibility", max_score: 2, evidence: ["accessibility", "contrast", "keyboard", "focus", "aria", "touch-targets"] },
+      { id: "performance", max_score: 2, evidence: ["performance", "web-vitals", "lcp", "inp", "cls", "lazy-loading"] },
+      { id: "content_microcopy", max_score: 2, evidence: ["content", "copy", "microcopy", "validation-copy", "empty-copy", "error-copy"] },
+      { id: "motion_behavior", max_score: 2, evidence: ["motion", "animation", "reduced-motion", "transition"] },
+      { id: "creative_fit", max_score: 2, evidence: ["creative", "variation", "palette", "density", "personality"] },
+      { id: "rtl_arabic", max_score: 2, evidence: ["rtl", "arabic", "bilingual", "direction"] }
+    ]
+  };
+}
+
+function buildVisualQualityScore(review, page, flags = {}) {
+  const rubric = getVisualQualityRubric();
+  const checks = new Set((review.checks || []).map((item) => String(item).toLowerCase()));
+  const viewports = new Set((review.viewport_checks || []).map((item) => String(item).toLowerCase()));
+  const screenshots = (review.screenshots || []).map((item) => String(item).toLowerCase());
+  const deviations = review.deviations || [];
+  const notes = String(review.notes || flags.notes || "").toLowerCase();
+  const allEvidenceText = [
+    ...checks,
+    ...viewports,
+    ...screenshots,
+    ...deviations.map((item) => String(item).toLowerCase()),
+    notes,
+    String(page && page.page_name || "").toLowerCase(),
+    String(page && page.purpose || "").toLowerCase()
+  ].join(" ");
+  const rtlRequired = Boolean(flags.rtl || flags.arabic || flags.bilingual || /rtl|arabic|bilingual|mena/.test(allEvidenceText));
+  const categoryScores = rubric.categories.map((category) => {
+    if (category.id === "rtl_arabic" && !rtlRequired) {
+      return {
+        id: category.id,
+        score: 0,
+        max_score: 0,
+        status: "not_applicable",
+        message: "RTL/Arabic review is not required for this visual review."
+      };
+    }
+    let score = 0;
+    if (category.evidence.some((item) => checks.has(item) || allEvidenceText.includes(item))) score = 2;
+    if (category.id === "layout_responsive") {
+      const hasMobile = viewports.has("mobile") || screenshots.some((item) => item.includes("mobile"));
+      const hasDesktop = viewports.has("desktop") || screenshots.some((item) => item.includes("desktop"));
+      score = hasMobile && hasDesktop && checks.has("responsive") ? 2 : hasMobile || hasDesktop || checks.has("responsive") ? 1 : 0;
+    }
+    if (category.id === "states_feedback") {
+      const requiredStates = Array.isArray(page && page.required_states) ? page.required_states.map((item) => String(item).toLowerCase()) : [];
+      const matchedStates = requiredStates.filter((state) => checks.has(state) || allEvidenceText.includes(state));
+      if (requiredStates.length && matchedStates.length === requiredStates.length) score = 2;
+      else if (requiredStates.length && matchedStates.length > 0) score = Math.max(score, 1);
+    }
+    if (category.id === "visual_match" && deviations.length && score === 2) score = 1;
+    return {
+      id: category.id,
+      score,
+      max_score: category.max_score,
+      status: score === category.max_score ? "pass" : score > 0 ? "partial" : "missing",
+      message: score === category.max_score ? "Evidence recorded." : "Add targeted evidence or fix this category."
+    };
+  });
+  const maxScore = categoryScores.reduce((sum, item) => sum + item.max_score, 0);
+  const score = categoryScores.reduce((sum, item) => sum + item.score, 0);
+  const percent = maxScore ? Math.round((score / maxScore) * 100) : 100;
+  const status = review.decision === "blocked" || percent < 60 ? "blocked" : percent < 75 ? "needs_rework" : "pass";
+  return {
+    rubric_version: rubric.version,
+    reference: rubric.reference,
+    score,
+    max_score: maxScore,
+    percent,
+    status,
+    category_scores: categoryScores,
+    missing_categories: categoryScores.filter((item) => item.max_score > 0 && item.score === 0).map((item) => item.id),
+    rule: "Use the missing categories for targeted fixes instead of broad redesign prompts."
+  };
+}
+
+function buildDesignGovernanceReport(flags = {}) {
+  const sources = readStateArray(".kabeeri/design_sources/sources.json", "sources");
+  const specs = readStateArray(".kabeeri/design_sources/text_specs.json", "specs");
+  const pages = readStateArray(".kabeeri/design_sources/page_specs.json", "pages");
+  const components = readStateArray(".kabeeri/design_sources/component_contracts.json", "components");
+  const missingReports = readStateArray(".kabeeri/design_sources/missing_reports.json", "reports");
+  const visualReviews = readStateArray(".kabeeri/design_sources/visual_reviews.json", "reviews");
+  const advisor = fileExists(".kabeeri/design_sources/ui_advisor.json") ? readJsonFile(".kabeeri/design_sources/ui_advisor.json") : { recommendations: [], reviews: [] };
+  const references = fileExists(".kabeeri/design_sources/ui_ux_reference.json") ? readJsonFile(".kabeeri/design_sources/ui_ux_reference.json") : { selections: [], generated_tasks: [] };
+  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
+  const blockers = [];
+  const warnings = [];
+  const checks = [];
+  const push = (id, status, message, weight = 1) => checks.push({ id, status, message, weight });
+  const approvedSources = sources.filter((item) => item.approval_status === "approved");
+  const approvedSpecs = specs.filter((item) => item.status === "approved");
+  const approvedPages = pages.filter((item) => item.status === "approved");
+  const approvedComponents = components.filter((item) => item.status === "approved");
+  const passingReviews = visualReviews.filter((item) => item.decision === "pass");
+  const scoredVisualReviews = visualReviews.filter((item) => item.quality_score && typeof item.quality_score.percent === "number");
+  const averageVisualQuality = scoredVisualReviews.length
+    ? Math.round(scoredVisualReviews.reduce((sum, item) => sum + item.quality_score.percent, 0) / scoredVisualReviews.length)
+    : null;
+  const openMissingReports = missingReports.filter((item) => item.status !== "closed");
+  const frontendTasks = tasks.filter((taskItem) => taskWorkstreams(taskItem).some((stream) => ["public_frontend", "admin_frontend", "user_frontend", "internal_operations_frontend"].includes(stream)));
+
+  for (const source of sources) {
+    if (!source.snapshot_reference) blockers.push(`${source.id}: snapshot is missing.`);
+    if (source.approval_status !== "approved") blockers.push(`${source.id}: source is not approved.`);
+    if (source.approval_status === "approved" && !source.approved_text_spec) blockers.push(`${source.id}: approved text spec is missing.`);
+    if (source.approval_status === "approved" && !source.design_tokens) warnings.push(`${source.id}: design tokens are not linked.`);
+    if (source.source_type === "reference_website") warnings.push(`${source.id}: reference website must remain inspiration only; do not copy layout, text, or assets.`);
+  }
+
+  for (const spec of approvedSpecs) {
+    if (!pages.some((page) => page.text_spec_id === spec.id)) warnings.push(`${spec.id}: no page spec has been created from this approved text spec.`);
+  }
+
+  for (const page of approvedPages) {
+    const pageComponents = approvedComponents.filter((component) => component.page_spec_id === page.id);
+    if (!pageComponents.length) warnings.push(`${page.id}: approved page has no approved component contract.`);
+    const pageReviews = passingReviews.filter((review) => review.page_spec_id === page.id);
+    if (!pageReviews.length) warnings.push(`${page.id}: approved page has no passing visual review.`);
+    const requiredStates = page.required_states || [];
+    for (const required of ["loading", "empty", "error"]) {
+      if (!requiredStates.includes(required)) warnings.push(`${page.id}: required state missing from page spec: ${required}.`);
+    }
+  }
+
+  for (const review of visualReviews) {
+    if (!(review.screenshots || []).length) blockers.push(`${review.review_id}: screenshot evidence is missing.`);
+    const checksList = review.checks || [];
+    if (!checksList.includes("accessibility") && !checksList.includes("contrast")) warnings.push(`${review.review_id}: accessibility or contrast check is missing.`);
+    if (!checksList.includes("responsive")) warnings.push(`${review.review_id}: responsive check is missing.`);
+    for (const qualityCheck of ["performance", "content", "motion", "creative"]) {
+      if (!checksList.includes(qualityCheck)) warnings.push(`${review.review_id}: ${qualityCheck} visual QA check is missing.`);
+    }
+    if (!review.quality_score) warnings.push(`${review.review_id}: visual quality rubric score is missing.`);
+    if (review.quality_score && review.quality_score.percent < 75) warnings.push(`${review.review_id}: visual quality score is ${review.quality_score.percent}%, below 75%.`);
+    const viewports = review.viewport_checks || [];
+    if (!viewports.includes("mobile") || !viewports.includes("desktop")) warnings.push(`${review.review_id}: mobile and desktop viewport evidence should both be present.`);
+  }
+
+  if (sources.length && !approvedSources.length) blockers.push("No approved design source exists.");
+  if (sources.length && !approvedSpecs.length) blockers.push("No approved design text spec exists.");
+  if (approvedSpecs.length && !approvedPages.length) warnings.push("Approved text specs exist, but no approved page specs exist.");
+  if (approvedPages.length && !approvedComponents.length) warnings.push("Approved pages exist, but no approved component contracts exist.");
+  if (frontendTasks.length && !approvedPages.length) warnings.push("Frontend tasks exist without approved page specs.");
+  if (frontendTasks.length && !passingReviews.length) warnings.push("Frontend tasks exist without passing visual review evidence.");
+  if (!(advisor.recommendations || []).length) warnings.push("No UI/UX Advisor recommendation has been recorded.");
+  if (!(references.selections || []).length) warnings.push("No UI/UX reference pattern selection has been recorded.");
+  if (openMissingReports.length) warnings.push(`${openMissingReports.length} missing design report(s) remain open.`);
+
+  push("source_snapshot", sources.length === 0 || sources.every((item) => item.snapshot_reference), "Every design source has a frozen snapshot before extraction.", 2);
+  push("approved_text_specs", sources.length === 0 || approvedSpecs.length > 0, "Approved text specs exist before frontend implementation.", 2);
+  push("design_tokens", approvedSources.length === 0 || approvedSources.every((item) => item.design_tokens), "Approved sources link design tokens.");
+  push("page_specs", approvedSpecs.length === 0 || approvedPages.length > 0, "Approved text specs have approved page specs.", 2);
+  push("component_contracts", approvedPages.length === 0 || approvedComponents.length > 0, "Approved pages have approved component contracts.");
+  push("visual_reviews", approvedPages.length === 0 || passingReviews.length > 0, "Approved pages have passing visual review evidence.", 2);
+  push("visual_evidence_quality", visualReviews.every((item) => (item.screenshots || []).length && (item.viewport_checks || []).includes("mobile") && (item.viewport_checks || []).includes("desktop")), "Visual reviews include screenshot and mobile/desktop evidence.");
+  push("visual_quality_rubric", visualReviews.length === 0 || visualReviews.every((item) => item.quality_score && item.quality_score.percent >= 75), "Visual reviews include rubric scores at or above the pass-with-notes threshold.", 2);
+  push("visual_qa_coverage", visualReviews.every((item) => ["responsive", "states", "accessibility", "performance", "content", "motion", "creative"].every((check) => (item.checks || []).includes(check))), "Visual reviews cover responsive, states, accessibility, performance, content, motion, and creative quality.");
+  push("accessibility_checks", visualReviews.every((item) => (item.checks || []).includes("accessibility") || (item.checks || []).includes("contrast")), "Visual reviews include accessibility or contrast checks.");
+  push("missing_design_closed", openMissingReports.length === 0, "Missing design reports are closed or intentionally resolved.");
+  push("advisor_context", (advisor.recommendations || []).length > 0 || !sources.length, "UI/UX Advisor context is recorded when design work exists.");
+
+  const maxScore = checks.reduce((sum, check) => sum + check.weight, 0);
+  const score = checks.filter((check) => check.status).reduce((sum, check) => sum + check.weight, 0);
+  return {
+    report_id: `design-governance-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
+    generated_at: new Date().toISOString(),
+    status: blockers.length ? "blocked" : warnings.length ? "needs_attention" : "pass",
+    score,
+    max_score: maxScore,
+    summary: {
+      sources_total: sources.length,
+      approved_sources: approvedSources.length,
+      approved_text_specs: approvedSpecs.length,
+      approved_page_specs: approvedPages.length,
+      approved_component_contracts: approvedComponents.length,
+      visual_reviews: visualReviews.length,
+      passing_visual_reviews: passingReviews.length,
+      scored_visual_reviews: scoredVisualReviews.length,
+      average_visual_quality_percent: averageVisualQuality,
+      open_missing_reports: openMissingReports.length,
+      frontend_tasks: frontendTasks.length,
+      ui_advisor_recommendations: (advisor.recommendations || []).length,
+      ui_ux_reference_selections: (references.selections || []).length
+    },
+    blockers,
+    warnings,
+    checks,
+    next_actions: buildDesignGovernanceNextActions(blockers, warnings),
+    governance_rules: [
+      "Raw visual sources are evidence, not implementation specs.",
+      "Frontend implementation should start from approved text specs, page specs, component contracts, and design tokens.",
+      "Reference websites are inspiration only and must not be copied.",
+      "Visual acceptance requires screenshot evidence, responsive checks, accessibility/contrast checks, and recorded deviations.",
+      "Visual QA should use the scored rubric to create targeted fixes instead of broad redesign prompts.",
+      "Owner/client verification should happen after design gate and task acceptance evidence."
+    ]
+  };
+}
+
+function buildDesignGovernanceNextActions(blockers, warnings) {
+  const actions = [];
+  const text = `${blockers.join(" ")} ${warnings.join(" ")}`.toLowerCase();
+  if (text.includes("snapshot")) actions.push("Run `kvdf design snapshot <source-id>` for each raw design source.");
+  if (text.includes("text spec")) actions.push("Create and approve text specs with `kvdf design spec-create` then `kvdf design spec-approve`.");
+  if (text.includes("design tokens")) actions.push("Attach design tokens during `kvdf design spec-approve --tokens <path>` or source approval.");
+  if (text.includes("page spec")) actions.push("Create and approve page specs with `kvdf design page-create` and `kvdf design page-approve`.");
+  if (text.includes("component")) actions.push("Create and approve component contracts for repeated UI with `kvdf design component-create`.");
+  if (text.includes("visual review") || text.includes("screenshot")) actions.push("Record visual evidence with `kvdf design visual-review --screenshots desktop.png,mobile.png`.");
+  if (text.includes("visual quality") || text.includes("visual qa")) actions.push("Apply `knowledge/design_system/visual_quality_governance/VISUAL_QUALITY_RUBRIC.md` and rerun `kvdf design visual-review` with targeted checks.");
+  if (text.includes("performance") || text.includes("content") || text.includes("motion") || text.includes("creative")) actions.push("Add missing visual QA checks: responsive, states, accessibility, performance, content, motion, and creative.");
+  if (text.includes("accessibility") || text.includes("contrast")) actions.push("Include accessibility and contrast checks in visual reviews.");
+  if (text.includes("advisor")) actions.push("Run `kvdf design recommend <blueprint>` before major UI work.");
+  if (text.includes("reference")) actions.push("Run `kvdf design reference-recommend \"<brief>\"` and treat matches as inspiration only.");
+  if (!actions.length) actions.push("Continue with governed frontend implementation and run `kvdf design gate` before Owner verification.");
+  return uniqueList(actions);
+}
+
+function buildDesignGovernanceMarkdown(report) {
+  const lines = [
+    `# Design Governance Report - ${report.report_id}`,
+    "",
+    `- Status: ${report.status}`,
+    `- Score: ${report.score}/${report.max_score}`,
+    `- Generated at: ${report.generated_at}`,
+    "",
+    "## Summary",
+    "",
+    "| Metric | Value |",
+    "| --- | ---: |",
+    ...Object.entries(report.summary).map(([key, value]) => `| ${key} | ${value} |`),
+    "",
+    "## Blockers",
+    "",
+    ...(report.blockers.length ? report.blockers.map((item) => `- ${item}`) : ["- None."]),
+    "",
+    "## Warnings",
+    "",
+    ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["- None."]),
+    "",
+    "## Checks",
+    "",
+    "| Check | Status | Message |",
+    "| --- | --- | --- |",
+    ...report.checks.map((check) => `| ${check.id} | ${check.status ? "pass" : "fail"} | ${check.message} |`),
+    "",
+    "## Next Actions",
+    "",
+    ...report.next_actions.map((item) => `- ${item}`),
+    "",
+    "## Governance Rules",
+    "",
+    ...report.governance_rules.map((item) => `- ${item}`)
+  ];
+  return `${lines.join("\n")}\n`;
 }
 
 function policy(action, value, flags = {}) {
@@ -6921,6 +9053,7 @@ function agile(action, value, flags = {}, rest = []) {
   if (section === "sprint") return agileSprint(command || "plan", rest[0], flags);
   if (section === "impediment" || section === "impediments") return agileImpediment(command || "list", rest[0], flags);
   if (section === "retro" || section === "retrospective" || section === "retrospectives") return agileRetrospective(command || "list", rest[0], flags);
+  if (section === "release" || section === "releases") return agileRelease(command || "list", rest[0], flags);
 
   throw new Error(`Unknown agile section: ${section}`);
 }
@@ -7290,6 +9423,73 @@ function agileRetrospective(action, id, flags = {}) {
   throw new Error(`Unknown agile retrospective action: ${action}`);
 }
 
+function agileRelease(action, id, flags = {}) {
+  const data = readAgileState();
+  if (action === "list") {
+    console.log(table(["Release", "Status", "Target", "Stories", "Points", "Readiness", "Title"], data.releases.map((item) => [
+      item.release_id,
+      item.status,
+      item.target_date || "",
+      (item.story_ids || []).length,
+      item.total_points || 0,
+      item.readiness_status || "unknown",
+      item.title
+    ])));
+    return;
+  }
+  if (action === "show") {
+    const release = findAgileRelease(data, id || flags.id);
+    console.log(JSON.stringify(release, null, 2));
+    return;
+  }
+  if (action === "plan" || action === "create" || action === "add") {
+    requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "plan agile release");
+    const storyIds = parseCsv(flags.stories);
+    const epicIds = parseCsv(flags.epics);
+    const stories = storyIds.map((storyId) => findAgileStory(data, storyId));
+    for (const epicId of epicIds) {
+      if (!data.epics.some((item) => item.epic_id === epicId)) throw new Error(`Epic not found: ${epicId}`);
+    }
+    const release = {
+      release_id: flags.id || id || `release-${String(data.releases.length + 1).padStart(3, "0")}`,
+      title: flags.title || "Untitled release",
+      goal: flags.goal || "",
+      target_date: flags.target || flags["target-date"] || null,
+      status: flags.status || "planned",
+      epic_ids: epicIds,
+      story_ids: storyIds,
+      total_points: stories.reduce((sum, story) => sum + Number(story.estimate_points || 0), 0),
+      accepted_story_ids: stories.filter((story) => story.status === "accepted").map((story) => story.story_id),
+      risk_level: normalizeAgileReleaseRisk(flags.risk || inferReleaseRisk(stories, flags)),
+      release_criteria: parseCsv(flags.criteria || flags["release-criteria"]),
+      required_checks: parseCsv(flags.checks || flags["required-checks"]),
+      known_risks: parseCsv(flags.risks),
+      open_questions: parseCsv(flags.questions || flags["open-questions"]),
+      readiness_status: "unknown",
+      created_at: new Date().toISOString()
+    };
+    release.readiness_status = computeReleaseReadiness(release, stories);
+    if (data.releases.some((item) => item.release_id === release.release_id)) throw new Error(`Release already exists: ${release.release_id}`);
+    data.releases.push(release);
+    writeAgileState(data);
+    appendAudit("agile.release_planned", "release", release.release_id, `Agile release planned: ${release.title}`);
+    console.log(JSON.stringify(release, null, 2));
+    return;
+  }
+  if (action === "readiness" || action === "check") {
+    const release = findAgileRelease(data, id || flags.id);
+    const stories = (release.story_ids || []).map((storyId) => findAgileStory(data, storyId));
+    release.accepted_story_ids = stories.filter((story) => story.status === "accepted").map((story) => story.story_id);
+    release.total_points = stories.reduce((sum, story) => sum + Number(story.estimate_points || 0), 0);
+    release.readiness_status = computeReleaseReadiness(release, stories);
+    release.updated_at = new Date().toISOString();
+    writeAgileState(data);
+    console.log(JSON.stringify(release, null, 2));
+    return;
+  }
+  throw new Error(`Unknown agile release action: ${action}`);
+}
+
 function ensureBacklogItem(data, item) {
   if (data.backlog.some((entry) => entry.id === item.id)) return;
   data.backlog.push({
@@ -7402,6 +9602,8 @@ function refreshAgileDashboardState(existingData = null) {
   const reviews = data.sprint_reviews || [];
   const activeSprints = sprints.filter((item) => ["planned", "active", "in_progress"].includes(item.status || "planned"));
   const openImpediments = (data.impediments || []).filter((item) => item.status !== "resolved");
+  const releases = data.releases || [];
+  const nextRelease = releases.find((item) => !["released", "cancelled"].includes(item.status || "planned")) || releases[releases.length - 1] || null;
   const acceptedReviews = reviews.filter((item) => Number(item.accepted_points || 0) > 0 || Number(item.rework_points || 0) > 0);
   const lastFive = acceptedReviews.slice(-5);
   const averageVelocity = lastFive.length
@@ -7426,6 +9628,8 @@ function refreshAgileDashboardState(existingData = null) {
       sprint_reviews: reviews.length,
       open_impediments: openImpediments.length,
       retrospectives: (data.retrospectives || []).length,
+      releases: releases.length,
+      next_release: nextRelease ? nextRelease.release_id : "none",
       health: actionItems.some((item) => item.severity === "blocker") ? "blocked" : actionItems.length ? "needs_attention" : "healthy"
     },
     active_sprints: activeSprints.map((sprintItem) => ({
@@ -7447,6 +9651,16 @@ function refreshAgileDashboardState(existingData = null) {
       estimated_sprints_remaining: averageVelocity > 0 ? Math.ceil(remainingPoints / averageVelocity) : null
     },
     impediments: openImpediments,
+    releases: releases.slice(-5),
+    release_readiness: nextRelease ? {
+      release_id: nextRelease.release_id,
+      status: nextRelease.status,
+      readiness_status: nextRelease.readiness_status || "unknown",
+      target_date: nextRelease.target_date || null,
+      story_count: (nextRelease.story_ids || []).length,
+      accepted_story_count: (nextRelease.accepted_story_ids || []).length,
+      risk_level: nextRelease.risk_level || "medium"
+    } : null,
     retrospectives: (data.retrospectives || []).slice(-5),
     action_items: actionItems
   };
@@ -7463,6 +9677,10 @@ function buildAgileActionItems(data, activeSprints, openImpediments, averageVelo
   if (readyUnconverted.length) add("info", "task_conversion", `${readyUnconverted.length} ready stor(ies) are not governed tasks yet.`, "Run `kvdf agile story task <story-id>` before execution.");
   const severeImpediments = openImpediments.filter((item) => ["high", "critical"].includes(item.severity));
   if (severeImpediments.length) add("blocker", "impediments", `${severeImpediments.length} high/critical impediment(s) are open.`, "Resolve or explicitly re-plan the affected sprint/story.");
+  for (const release of data.releases || []) {
+    if (release.readiness_status === "blocked") add("blocker", "release", `Release ${release.release_id} is blocked.`, "Run `kvdf agile release readiness <release-id>` and resolve missing release criteria or open questions.");
+    else if (release.readiness_status === "needs_attention") add("warning", "release", `Release ${release.release_id} needs attention.`, "Review release criteria, checks, risks, and unaccepted stories.");
+  }
   for (const sprintItem of activeSprints) {
     if (!sprintItem.goal) add("warning", "sprint_goal", `Sprint ${sprintItem.id} has no sprint goal.`, "Add `--goal` during sprint planning.");
     if (Number(sprintItem.capacity_points || 0) && Number(sprintItem.committed_points || 0) > Number(sprintItem.capacity_points || 0) * 0.9) {
@@ -8132,6 +10350,7 @@ function adr(action, value, flags = {}) {
     data.adrs.push(record);
     if (record.supersedes) markAdrSuperseded(data.adrs, record.supersedes, record.adr_id);
     writeJsonFile(file, data);
+    if (aiRunIds.length) linkAdrsToAiRuns(record.adr_id, aiRunIds);
     appendJsonLine(".kabeeri/memory/decisions.jsonl", {
       memory_id: `decision-${String(readJsonLines(".kabeeri/memory/decisions.jsonl").length + 1).padStart(3, "0")}`,
       type: "decisions",
@@ -8183,7 +10402,44 @@ function adr(action, value, flags = {}) {
     return outputLines(buildAdrReport(data.adrs), flags.output);
   }
 
+  if (action === "trace" || action === "history" || action === "decision-trace") {
+    const trace = buildAdrAiRunTraceReport(data.adrs, readAiRuns());
+    if (flags.json) console.log(JSON.stringify(trace, null, 2));
+    else return outputLines(buildAdrAiRunTraceMarkdown(trace), flags.output || ".kabeeri/reports/adr_ai_run_trace.md");
+    return;
+  }
+
   throw new Error(`Unknown ADR action: ${action}`);
+}
+
+function findAgileRelease(data, releaseId) {
+  if (!releaseId) throw new Error("Missing release id.");
+  const release = (data.releases || []).find((item) => item.release_id === releaseId);
+  if (!release) throw new Error(`Release not found: ${releaseId}`);
+  return release;
+}
+
+function normalizeAgileReleaseRisk(value) {
+  const normalized = String(value || "medium").toLowerCase();
+  const allowed = new Set(["low", "medium", "high", "critical"]);
+  if (!allowed.has(normalized)) throw new Error("Invalid agile release risk. Use low, medium, high, or critical.");
+  return normalized;
+}
+
+function inferReleaseRisk(stories, flags = {}) {
+  if (flags.questions || flags["open-questions"]) return "high";
+  if (stories.some((story) => story.ready_status !== "ready" || story.status === "blocked")) return "high";
+  if (stories.some((story) => story.status !== "accepted")) return "medium";
+  return "low";
+}
+
+function computeReleaseReadiness(release, stories) {
+  if ((release.open_questions || []).length) return "blocked";
+  if ((release.release_criteria || []).length === 0 || (release.required_checks || []).length === 0) return "needs_attention";
+  if (stories.some((story) => story.status === "blocked")) return "blocked";
+  if (stories.some((story) => story.status !== "accepted")) return "needs_attention";
+  if (["high", "critical"].includes(release.risk_level || "medium")) return "needs_attention";
+  return "ready";
 }
 
 function aiRun(action, value, flags = {}) {
@@ -8216,6 +10472,8 @@ function aiRun(action, value, flags = {}) {
     const taskId = flags.task || value || null;
     if (taskId && !getTaskById(taskId)) throw new Error(`Task not found: ${taskId}`);
     const developerId = flags.developer || flags.agent || flags.actor || "local-ai";
+    const relatedAdrs = parseCsv(flags.adrs || flags.adr);
+    assertKnownAdrs(relatedAdrs);
     const inputTokens = Number(flags["input-tokens"] || 0);
     const outputTokens = Number(flags["output-tokens"] || 0);
     const cachedTokens = Number(flags["cached-tokens"] || 0);
@@ -8237,6 +10495,7 @@ function aiRun(action, value, flags = {}) {
       source_reference: flags.source || "manual",
       workstream: flags.workstream || (taskId ? getTaskWorkstreamsById(taskId)[0] || "untracked" : "untracked"),
       files_changed: parseCsv(flags.files),
+      related_adrs: relatedAdrs,
       summary: flags.summary || flags.result || "",
       result: flags.result || "recorded",
       input_tokens: inputTokens,
@@ -8253,6 +10512,7 @@ function aiRun(action, value, flags = {}) {
     };
     if (readAiRuns().some((item) => item.run_id === run.run_id)) throw new Error(`AI run already exists: ${run.run_id}`);
     appendJsonLine(".kabeeri/ai_runs/prompt_runs.jsonl", run);
+    if (relatedAdrs.length) linkAiRunToAdrs(run.run_id, relatedAdrs);
     if (run.total_tokens > 0 && flags["record-usage"] !== "false" && flags.usage !== "false") {
       appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", {
         event_id: `usage-${Date.now()}`,
@@ -8278,6 +10538,24 @@ function aiRun(action, value, flags = {}) {
     }
     appendAudit("ai_run.recorded", "ai_run", run.run_id, `AI run recorded for ${run.task_id || "untracked"}`);
     console.log(JSON.stringify(run, null, 2));
+    return;
+  }
+
+  if (action === "link") {
+    const id = flags.id || value;
+    if (!id) throw new Error("Missing AI run id.");
+    const adrIds = parseCsv(flags.adrs || flags.adr);
+    if (!adrIds.length) throw new Error("Missing --adr.");
+    assertKnownAdrs(adrIds);
+    const runs = readAiRuns();
+    const item = runs.find((run) => run.run_id === id);
+    if (!item) throw new Error(`AI run not found: ${id}`);
+    item.related_adrs = uniqueList([...(item.related_adrs || []), ...adrIds]);
+    item.updated_at = new Date().toISOString();
+    writeAiRuns(runs);
+    linkAiRunToAdrs(id, adrIds);
+    appendAudit("ai_run.linked_to_adr", "ai_run", id, `AI run linked to ADR(s): ${adrIds.join(", ")}`);
+    console.log(JSON.stringify(item, null, 2));
     return;
   }
 
@@ -8380,6 +10658,44 @@ function assertKnownAiRuns(runIds) {
   }
 }
 
+function assertKnownAdrs(adrIds) {
+  if (!adrIds || adrIds.length === 0) return;
+  const records = readStateArray(".kabeeri/adr/records.json", "adrs");
+  const known = new Set(records.map((item) => item.adr_id));
+  for (const adrId of adrIds) {
+    if (!known.has(adrId)) throw new Error(`ADR not found: ${adrId}`);
+  }
+}
+
+function linkAiRunToAdrs(runId, adrIds) {
+  const file = ".kabeeri/adr/records.json";
+  const data = readJsonFile(file);
+  data.adrs = data.adrs || [];
+  let changed = false;
+  for (const adrId of adrIds) {
+    const item = findAdr(data.adrs, adrId);
+    if (!item) throw new Error(`ADR not found: ${adrId}`);
+    item.related_ai_runs = uniqueList([...(item.related_ai_runs || []), runId]);
+    item.updated_at = new Date().toISOString();
+    changed = true;
+  }
+  if (changed) writeJsonFile(file, data);
+}
+
+function linkAdrsToAiRuns(adrId, runIds) {
+  if (!runIds || !runIds.length) return;
+  const runs = readAiRuns();
+  let changed = false;
+  for (const runId of runIds) {
+    const item = runs.find((run) => run.run_id === runId);
+    if (!item) throw new Error(`AI run not found: ${runId}`);
+    item.related_adrs = uniqueList([...(item.related_adrs || []), adrId]);
+    item.updated_at = new Date().toISOString();
+    changed = true;
+  }
+  if (changed) writeAiRuns(runs);
+}
+
 function buildAdrReport(records) {
   const byStatus = summarizeBy(records, "status");
   const highImpactOpen = records.filter((item) => ["critical", "high"].includes(item.impact) && item.status === "proposed");
@@ -8446,6 +10762,7 @@ function buildAiRunHistoryReport() {
       accepted: accepted.length,
       rejected: rejected.length,
       unreviewed: unreviewed.length,
+      acceptance_rate: runs.length ? Number((accepted.length / runs.length).toFixed(3)) : 0,
       total_tokens: runs.reduce((sum, item) => sum + Number(item.total_tokens || 0), 0),
       total_cost: runs.reduce((sum, item) => sum + Number(item.cost || 0), 0),
       accepted_cost: accepted.reduce((sum, item) => sum + Number(item.cost || 0), 0),
@@ -8454,6 +10771,7 @@ function buildAiRunHistoryReport() {
     },
     by_task: summarizeAiRunsBy(runs, "task_id"),
     by_developer: summarizeAiRunsBy(runs, "developer_id"),
+    by_adr: summarizeAiRunsByMultiValue(runs, "related_adrs", "unlinked"),
     waste_signals: wasteSignals,
     unreviewed_run_ids: unreviewed.map((item) => item.run_id)
   };
@@ -8474,6 +10792,23 @@ function summarizeAiRunsBy(runs, key) {
   return output;
 }
 
+function summarizeAiRunsByMultiValue(runs, key, fallback) {
+  const output = {};
+  for (const item of runs) {
+    const values = (item[key] || []).length ? item[key] : [fallback];
+    for (const value of values) {
+      output[value] = output[value] || { runs: 0, accepted: 0, rejected: 0, unreviewed: 0, tokens: 0, cost: 0 };
+      output[value].runs += 1;
+      output[value].tokens += Number(item.total_tokens || 0);
+      output[value].cost += Number(item.cost || 0);
+      if (item.status === "accepted") output[value].accepted += 1;
+      else if (item.status === "rejected") output[value].rejected += 1;
+      else output[value].unreviewed += 1;
+    }
+  }
+  return output;
+}
+
 function buildAiRunReportMarkdown(report) {
   return [
     "# Kabeeri AI Run History Report",
@@ -8483,6 +10818,7 @@ function buildAiRunReportMarkdown(report) {
     `Accepted: ${report.totals.accepted}`,
     `Rejected: ${report.totals.rejected}`,
     `Unreviewed: ${report.totals.unreviewed}`,
+    `Acceptance rate: ${report.totals.acceptance_rate}`,
     `Total tokens: ${report.totals.total_tokens}`,
     `Total cost: ${report.totals.total_cost}`,
     "",
@@ -8496,7 +10832,10 @@ function buildAiRunReportMarkdown(report) {
     ...aiRunSummaryRows(report.by_task, "Task"),
     "",
     "## By Developer",
-    ...aiRunSummaryRows(report.by_developer, "Developer")
+    ...aiRunSummaryRows(report.by_developer, "Developer"),
+    "",
+    "## By ADR",
+    ...aiRunSummaryRows(report.by_adr, "ADR")
   ];
 }
 
@@ -8911,6 +11250,7 @@ function buildPackageCheck() {
   ];
   const requiredPackageFields = ["name", "version", "description", "license", "bin", "files"];
   const checks = [];
+  const warnings = [];
   const add = (id, ok, detail) => checks.push({ check_id: id, status: ok ? "pass" : "fail", detail });
   for (const field of requiredPackageFields) add(`package_field_${field}`, packageData[field] !== undefined, `${field} ${packageData[field] === undefined ? "missing" : "present"}`);
   add("bin_kvdf_configured", packageData.bin && packageData.bin.kvdf === "bin/kvdf.js", "bin.kvdf should point to bin/kvdf.js");
@@ -8921,19 +11261,27 @@ function buildPackageCheck() {
   for (const folder of ["bin/", "src/", "knowledge/", "packs/", "integrations/", "schemas/", "docs/", "cli/"]) {
     add(`package_files_${folder.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`, fileList.includes(folder), `${folder} ${fileList.includes(folder) ? "included" : "missing from package files"}`);
   }
+  for (const forbidden of [".kabeeri/", "node_modules/", ".env"]) {
+    if (fileList.includes(forbidden)) warnings.push(`${forbidden} should not be listed in package files.`);
+  }
   const blockers = checks.filter((item) => item.status === "fail");
   return {
+    report_id: `package-check-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
     report_type: "package_check",
     generated_at: new Date().toISOString(),
+    standalone: true,
+    source_of_truth: "package.json and repository files",
     package: {
       name: packageData.name,
       version: packageData.version,
       bin: packageData.bin || {},
       files_count: fileList.length
     },
-    status: blockers.length ? "blocked" : "ready",
+    status: blockers.length ? "blocked" : warnings.length ? "warning" : "ready",
     blockers,
-    checks
+    warnings,
+    checks,
+    next_actions: buildPackageNextActions(blockers, warnings)
   };
 }
 
@@ -8948,8 +11296,11 @@ function buildUpgradeCheck() {
   if (migrationRequired) warnings.push(`Workspace engine version ${workspaceVersion} is older than CLI ${VERSION}.`);
   if (migrationState && migrationState.pending_migration) blockers.push(`Pending migration: ${migrationState.pending_migration}`);
   return {
+    report_id: `upgrade-check-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
     report_type: "upgrade_check",
     generated_at: new Date().toISOString(),
+    standalone: true,
+    source_of_truth: ".kabeeri/version_compatibility.json and .kabeeri/migration_state.json",
     status: blockers.length ? "blocked" : warnings.length ? "warning" : "current",
     current_cli_version: VERSION,
     workspace_version: workspaceVersion || null,
@@ -8957,7 +11308,8 @@ function buildUpgradeCheck() {
     blockers,
     warnings,
     compatibility,
-    migration_state: migrationState
+    migration_state: migrationState,
+    next_actions: buildUpgradeNextActions(blockers, warnings, migrationRequired)
   };
 }
 
@@ -8965,18 +11317,29 @@ function renderPackageCheck(report) {
   return [
     "# Kabeeri Product Packaging Check",
     "",
+    `Report ID: ${report.report_id}`,
     `Generated at: ${report.generated_at}`,
     `Package: ${report.package.name}@${report.package.version}`,
     `Status: ${report.status}`,
-    `Interpretation: ${report.status === "warning" && report.blockers.length === 0 ? "Warning means open work or missing checks, not a hard blocker." : report.status === "blocked" ? "Blocked means release or handoff should stop until blockers are resolved." : "Ready means no blockers or warnings were detected."}`,
+    `Standalone: ${report.standalone ? "yes" : "no"}`,
+    `Source of truth: ${report.source_of_truth}`,
+    `Interpretation: ${report.status === "warning" && report.blockers.length === 0 ? "Warning means packaging can continue only after human review." : report.status === "blocked" ? "Blocked means package distribution should stop until blockers are resolved." : "Ready means package contract blockers or warnings were not detected."}`,
     "",
     "## Blockers",
     "",
     ...(report.blockers.length ? report.blockers.map((item) => `- ${item.check_id}: ${item.detail}`) : ["No packaging blockers detected."]),
     "",
+    "## Warnings",
+    "",
+    ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["No packaging warnings detected."]),
+    "",
     "## Checks",
     "",
-    ...report.checks.map((item) => `- ${item.status}: ${item.check_id} - ${item.detail}`)
+    ...report.checks.map((item) => `- ${item.status}: ${item.check_id} - ${item.detail}`),
+    "",
+    "## Next Actions",
+    "",
+    ...recordLines(report.next_actions || [], (item) => item)
   ];
 }
 
@@ -8984,11 +11347,14 @@ function renderUpgradeCheck(report) {
   return [
     "# Kabeeri Upgrade Check",
     "",
+    `Report ID: ${report.report_id}`,
     `Generated at: ${report.generated_at}`,
     `CLI version: ${report.current_cli_version}`,
     `Workspace version: ${report.workspace_version || "none"}`,
     `Migration required: ${report.migration_required ? "yes" : "no"}`,
     `Status: ${report.status}`,
+    `Standalone: ${report.standalone ? "yes" : "no"}`,
+    `Source of truth: ${report.source_of_truth}`,
     "",
     "## Blockers",
     "",
@@ -8996,7 +11362,47 @@ function renderUpgradeCheck(report) {
     "",
     "## Warnings",
     "",
-    ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["No upgrade warnings detected."])
+    ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["No upgrade warnings detected."]),
+    "",
+    "## Next Actions",
+    "",
+    ...recordLines(report.next_actions || [], (item) => item)
+  ];
+}
+
+function buildPackageNextActions(blockers, warnings) {
+  if (blockers.length) return [
+    "Fix failed package contract checks before npm dry-run or distribution.",
+    "Run `kvdf package check` again after updating package.json or required files.",
+    "Run `kvdf readiness report --target release --strict` before release review."
+  ];
+  if (warnings.length) return [
+    "Review packaging warnings before distributing the package.",
+    "Run `npm pack --dry-run` and inspect the file list manually.",
+    "Keep local .kabeeri state, secrets, node_modules, and generated local outputs out of package files."
+  ];
+  return [
+    "Run `npm pack --dry-run` and inspect the final file list.",
+    "Attach package check, readiness, and governance evidence to release notes.",
+    "Do not publish until Owner and policy gates approve."
+  ];
+}
+
+function buildUpgradeNextActions(blockers, warnings, migrationRequired) {
+  if (blockers.length) return [
+    "Stop upgrade work until pending migration blockers are resolved.",
+    "Review .kabeeri/migration_state.json and create a migration plan if needed.",
+    "Run `kvdf upgrade check` and `kvdf validate` after migration work."
+  ];
+  if (warnings.length || migrationRequired) return [
+    "Review workspace compatibility before continuing.",
+    "Run `kvdf readiness report --target workspace` and `kvdf governance report --target workspace`.",
+    "Record behavior-changing upgrade decisions in ADR or project memory."
+  ];
+  return [
+    "Workspace appears compatible with the current CLI.",
+    "Run validation and refresh live reports after any upgrade-related changes.",
+    "Keep version compatibility state current for future upgrades."
   ];
 }
 
@@ -9019,7 +11425,7 @@ function runtimeReport(type, action, value, flags) {
   ensureWorkspace();
   const selected = value || action || "report";
   if (!["report", "show", "status"].includes(selected)) throw new Error(`Unknown ${type} action: ${selected}`);
-  const report = type === "readiness" ? buildReadinessReport() : buildGovernanceReport();
+  const report = type === "readiness" ? buildReadinessReport(flags) : buildGovernanceReport(flags);
   refreshLiveReportsState({ [type]: report });
   if (flags.json) {
     const content = `${JSON.stringify(report, null, 2)}\n`;
@@ -9186,7 +11592,47 @@ function renderLiveReportsState(state) {
   ];
 }
 
-function buildReadinessReport() {
+function normalizeIndependentReportTarget(value) {
+  const target = String(value || "workspace").trim().toLowerCase().replace(/_/g, "-");
+  const aliases = {
+    demo: "demo",
+    show: "demo",
+    handoff: "handoff",
+    delivery: "handoff",
+    release: "release",
+    publish: "publish",
+    production: "publish",
+    workspace: "workspace",
+    all: "workspace"
+  };
+  return aliases[target] || "workspace";
+}
+
+function isStrictReport(flags = {}) {
+  return flags.strict === true || flags.strict === "true" || flags.mode === "strict";
+}
+
+function buildIndependentReportMeta(type, target, flags = {}) {
+  return {
+    report_id: `${type}-${target}-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
+    report_type: type,
+    target,
+    strict: isStrictReport(flags),
+    standalone: true,
+    source_of_truth: ".kabeeri",
+    dashboard_required: false,
+    live_server_required: false,
+    output_contract: {
+      markdown: type === "readiness" ? ".kabeeri/reports/readiness_report.md" : ".kabeeri/reports/governance_report.md",
+      json: "Use --json or --output <file>.json",
+      live_json_refresh: ".kabeeri/reports/live_reports_state.json"
+    }
+  };
+}
+
+function buildReadinessReport(flags = {}) {
+  const target = normalizeIndependentReportTarget(flags.target || flags.for || flags.scope);
+  const strict = isStrictReport(flags);
   const state = collectDashboardState();
   const validation = validateRepository("all");
   const tasks = state.records.tasks;
@@ -9221,11 +11667,14 @@ function buildReadinessReport() {
   if (unresolvedCaptures.length) warnings.push(`${unresolvedCaptures.length} post-work capture(s) still need resolution.`);
   if (activeUngovernedCaptures.length) blockers.push(`${activeUngovernedCaptures.length} post-work capture(s) changed files without a linked task.`);
   else if (ungovernedCaptures.length) warnings.push(`${ungovernedCaptures.length} post-work capture(s) are not linked to tasks.`);
+  if (strict && warnings.length) blockers.push(`Strict ${target} readiness treats warnings as release blockers.`);
 
+  const meta = buildIndependentReportMeta("readiness", target, flags);
   return {
-    report_type: "readiness",
+    ...meta,
     generated_at: new Date().toISOString(),
     status: blockers.length ? "blocked" : warnings.length ? "warning" : "ready",
+    interpretation: blockers.length ? `${target} readiness is blocked.` : warnings.length ? `${target} readiness has warnings but no hard blockers.` : `${target} readiness is clear.`,
     blockers,
     warnings,
     summary: {
@@ -9257,11 +11706,102 @@ function buildReadinessReport() {
       migration_blockers: migrationBlockers.map((item) => ({ check_id: item.check_id, plan_id: item.plan_id, status: item.status })),
       latest_security_scan: securityScan ? { scan_id: securityScan.scan_id, status: securityScan.status, findings_total: securityScan.findings_total || 0 } : null,
       ungoverned_captures: ungovernedCaptures.map((item) => ({ capture_id: item.capture_id, classification: item.classification, files_changed: item.files_changed || [], status: item.status }))
-    }
+    },
+    next_actions: buildReadinessNextActions(target, blockers, warnings)
   };
 }
 
-function buildGovernanceReport() {
+function buildAdrAiRunTraceReport(adrs, runs) {
+  const runsById = Object.fromEntries((runs || []).map((item) => [item.run_id, item]));
+  const adrTrace = (adrs || []).map((adrItem) => {
+    const linkedRuns = (adrItem.related_ai_runs || []).map((runId) => runsById[runId]).filter(Boolean);
+    return {
+      adr_id: adrItem.adr_id,
+      title: adrItem.title,
+      status: adrItem.status,
+      impact: adrItem.impact || "",
+      tasks: adrItem.related_tasks || [],
+      run_ids: linkedRuns.map((item) => item.run_id),
+      runs_total: linkedRuns.length,
+      accepted_runs: linkedRuns.filter((item) => item.status === "accepted").length,
+      rejected_runs: linkedRuns.filter((item) => item.status === "rejected").length,
+      unreviewed_runs: linkedRuns.filter((item) => !["accepted", "rejected"].includes(item.status)).length,
+      tokens: linkedRuns.reduce((sum, item) => sum + Number(item.total_tokens || 0), 0),
+      cost: linkedRuns.reduce((sum, item) => sum + Number(item.cost || 0), 0),
+      decision: adrItem.decision
+    };
+  });
+  const linkedRunIds = new Set(adrTrace.flatMap((item) => item.run_ids));
+  const runsWithAdrField = new Set((runs || []).flatMap((item) => item.related_adrs || []).filter(Boolean));
+  const unlinkedRuns = (runs || []).filter((item) => !linkedRunIds.has(item.run_id) && !(item.related_adrs || []).length);
+  const openHighImpact = (adrs || []).filter((item) => item.status === "proposed" && ["critical", "high"].includes(item.impact || ""));
+  const warnings = [];
+  if (openHighImpact.length) warnings.push(`${openHighImpact.length} high-impact ADR(s) still need approval.`);
+  if (unlinkedRuns.length) warnings.push(`${unlinkedRuns.length} AI run(s) are not linked to any ADR. This is fine for task-only work but weak for durable decisions.`);
+  if (runsWithAdrField.size && !linkedRunIds.size) warnings.push("Some AI runs declare ADR links; run `kvdf ai-run link` if ADR records do not show them.");
+  return {
+    trace_id: `adr-ai-run-trace-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
+    generated_at: new Date().toISOString(),
+    status: openHighImpact.length ? "needs_attention" : "pass",
+    summary: {
+      adrs_total: (adrs || []).length,
+      approved_adrs: (adrs || []).filter((item) => item.status === "approved").length,
+      ai_runs_total: (runs || []).length,
+      linked_ai_runs: linkedRunIds.size,
+      unlinked_ai_runs: unlinkedRuns.length,
+      open_high_impact_adrs: openHighImpact.length
+    },
+    warnings,
+    adr_trace: adrTrace,
+    unlinked_run_ids: unlinkedRuns.map((item) => item.run_id),
+    next_actions: buildAdrAiRunTraceNextActions(openHighImpact, unlinkedRuns)
+  };
+}
+
+function buildAdrAiRunTraceNextActions(openHighImpact, unlinkedRuns) {
+  const actions = [];
+  if (openHighImpact.length) actions.push("Approve, reject, or supersede high-impact ADRs before treating architecture as stable.");
+  if (unlinkedRuns.length) actions.push("For AI runs that shaped architecture, run `kvdf ai-run link <run-id> --adr <adr-id>`.");
+  if (!actions.length) actions.push("Continue using ADRs for durable decisions and AI run reviews for accepted/rejected output history.");
+  return actions;
+}
+
+function buildAdrAiRunTraceMarkdown(trace) {
+  return [
+    "# ADR / AI Run Decision Trace",
+    "",
+    `Generated at: ${trace.generated_at}`,
+    `Status: ${trace.status}`,
+    "",
+    "## Summary",
+    "",
+    "| Metric | Value |",
+    "| --- | ---: |",
+    ...Object.entries(trace.summary).map(([key, value]) => `| ${key} | ${value} |`),
+    "",
+    "## Warnings",
+    "",
+    ...(trace.warnings.length ? trace.warnings.map((item) => `- ${item}`) : ["- None."]),
+    "",
+    "## ADR Trace",
+    "",
+    "| ADR | Status | Impact | Runs | Accepted | Rejected | Unreviewed | Tokens | Cost | Title |",
+    "| --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
+    ...(trace.adr_trace.length ? trace.adr_trace.map((item) => `| ${item.adr_id} | ${item.status} | ${item.impact} | ${item.runs_total} | ${item.accepted_runs} | ${item.rejected_runs} | ${item.unreviewed_runs} | ${item.tokens} | ${item.cost} | ${item.title} |`) : ["| none |  |  | 0 | 0 | 0 | 0 | 0 | 0 |  |"]),
+    "",
+    "## Unlinked AI Runs",
+    "",
+    ...(trace.unlinked_run_ids.length ? trace.unlinked_run_ids.map((item) => `- ${item}`) : ["- None."]),
+    "",
+    "## Next Actions",
+    "",
+    ...trace.next_actions.map((item) => `- ${item}`)
+  ];
+}
+
+function buildGovernanceReport(flags = {}) {
+  const target = normalizeIndependentReportTarget(flags.target || flags.for || flags.scope);
+  const strict = isStrictReport(flags);
   const state = collectDashboardState();
   const validation = validateRepository("workspace");
   const tasks = state.records.tasks;
@@ -9291,11 +11831,14 @@ function buildGovernanceReport() {
   if (activeOwners.length === 0) warnings.push("No active Owner identity is configured.");
   if (missingAssigneeTasks.length) warnings.push(`${missingAssigneeTasks.length} active task(s) have no assignee.`);
   if (!state.records.workstreams.length) warnings.push("No workstream registry is configured.");
+  if (strict && warnings.length) blockers.push(`Strict ${target} governance treats warnings as blockers.`);
 
+  const meta = buildIndependentReportMeta("governance", target, flags);
   return {
-    report_type: "governance",
+    ...meta,
     generated_at: new Date().toISOString(),
     status: blockers.length ? "blocked" : warnings.length ? "warning" : "pass",
+    interpretation: blockers.length ? `${target} governance is blocked.` : warnings.length ? `${target} governance has warnings but no hard blockers.` : `${target} governance is healthy.`,
     blockers,
     warnings,
     summary: {
@@ -9323,7 +11866,8 @@ function buildGovernanceReport() {
       unknown_workstream_tasks: unknownWorkstreamTasks.map(taskReportItem),
       missing_assignee_tasks: missingAssigneeTasks.map(taskReportItem),
       policy_blockers: policyBlockers.map(policyReportItem)
-    }
+    },
+    next_actions: buildGovernanceNextActions(target, blockers, warnings)
   };
 }
 
@@ -9331,9 +11875,15 @@ function renderReadinessReport(report) {
   return [
     "# Kabeeri Readiness Report",
     "",
+    `Report ID: ${report.report_id}`,
     `Generated at: ${report.generated_at}`,
+    `Target: ${report.target}`,
     `Status: ${report.status}`,
-    `Interpretation: ${report.status === "warning" && report.blockers.length === 0 ? "Warning means open work or missing checks, not a hard blocker." : report.status === "blocked" ? "Blocked means release or handoff should stop until blockers are resolved." : "Ready means no blockers or warnings were detected."}`,
+    `Standalone: ${report.standalone ? "yes" : "no"}`,
+    `Dashboard required: ${report.dashboard_required ? "yes" : "no"}`,
+    `Source of truth: ${report.source_of_truth}`,
+    `Strict: ${report.strict ? "yes" : "no"}`,
+    `Interpretation: ${report.interpretation || (report.status === "warning" && report.blockers.length === 0 ? "Warning means open work or missing checks, not a hard blocker." : report.status === "blocked" ? "Blocked means release or handoff should stop until blockers are resolved." : "Ready means no blockers or warnings were detected.")}`,
     "",
     "## Summary",
     "",
@@ -9353,7 +11903,11 @@ function renderReadinessReport(report) {
     "",
     "## Policy Blockers",
     "",
-    ...recordLines(report.records.policy_blockers, (item) => `${item.policy_id}: ${item.subject_id} (${item.status})`)
+    ...recordLines(report.records.policy_blockers, (item) => `${item.policy_id}: ${item.subject_id} (${item.status})`),
+    "",
+    "## Next Actions",
+    "",
+    ...recordLines(report.next_actions || [], (item) => item)
   ];
 }
 
@@ -9361,8 +11915,15 @@ function renderGovernanceReport(report) {
   return [
     "# Kabeeri Governance Report",
     "",
+    `Report ID: ${report.report_id}`,
     `Generated at: ${report.generated_at}`,
+    `Target: ${report.target}`,
     `Status: ${report.status}`,
+    `Standalone: ${report.standalone ? "yes" : "no"}`,
+    `Dashboard required: ${report.dashboard_required ? "yes" : "no"}`,
+    `Source of truth: ${report.source_of_truth}`,
+    `Strict: ${report.strict ? "yes" : "no"}`,
+    `Interpretation: ${report.interpretation || ""}`,
     "",
     "## Summary",
     "",
@@ -9382,7 +11943,45 @@ function renderGovernanceReport(report) {
     "",
     "## Policy Blockers",
     "",
-    ...recordLines(report.records.policy_blockers, (item) => `${item.policy_id}: ${item.subject_id} (${item.status})`)
+    ...recordLines(report.records.policy_blockers, (item) => `${item.policy_id}: ${item.subject_id} (${item.status})`),
+    "",
+    "## Next Actions",
+    "",
+    ...recordLines(report.next_actions || [], (item) => item)
+  ];
+}
+
+function buildReadinessNextActions(target, blockers, warnings) {
+  if (blockers.length) return [
+    "Resolve blockers before demo, handoff, release, or publish review.",
+    "Run `kvdf validate` and rerun `kvdf readiness report --target " + target + "`.",
+    "Use `kvdf reports live --json` when a compact automation-readable state is needed."
+  ];
+  if (warnings.length) return [
+    "Review warnings with the Owner and decide whether they are acceptable for this target.",
+    "For release or publish targets, rerun with `--strict` if warnings should block.",
+    "Regenerate the report after open tasks, security scans, migrations, or captures change."
+  ];
+  return [
+    "Attach this readiness snapshot to handoff, release review, or publish notes.",
+    "Regenerate it after any task, policy, security, migration, or post-work capture changes."
+  ];
+}
+
+function buildGovernanceNextActions(target, blockers, warnings) {
+  if (blockers.length) return [
+    "Fix governance blockers before assigning new sensitive work.",
+    "Run `kvdf governance report --target " + target + "` after Owner, token, lock, workstream, or policy fixes.",
+    "Use task scopes, locks, and tokens to keep AI/developer execution bounded."
+  ];
+  if (warnings.length) return [
+    "Review warnings before scaling work to more developers or AI agents.",
+    "For release or publish targets, rerun with `--strict` if governance warnings should block.",
+    "Keep Owner, workstream, token, and lock state current."
+  ];
+  return [
+    "Governance is healthy for the selected target.",
+    "Regenerate after assignment, lock, token, Owner, workstream, or policy changes."
   ];
 }
 
@@ -10476,6 +13075,11 @@ function evaluateDashboardUx(state, html) {
   push("responsive_tables", html.includes("table-wrap") && html.includes("overflow-x: auto"), "Tables are wrapped for small screens.");
   push("empty_states", html.includes("empty-state"), "Empty tables render a readable empty state.");
   push("workspace_boundary", html.includes("App Boundary Governance") && html.includes("KVDF Workspaces"), "Dashboard separates app boundaries from linked workspaces.");
+  push("dashboard_ux_governance", html.includes("Dashboard UX Governance") && html.includes("Widget Registry"), "Dashboard renders its own UX governance model.", 2);
+  push("role_visibility", html.includes("Role Visibility") && html.includes("Owner") && html.includes("AI Agent"), "Dashboard documents role-based widget visibility.", 2);
+  push("dashboard_controls", html.includes("app-filter") && html.includes("role-filter") && html.includes("Dashboard Controls"), "Dashboard exposes app and role controls.");
+  push("multi_app_multi_workspace_strategy", html.includes("same-product apps") && html.includes("Linked KVDF workspaces"), "Dashboard explains same-workspace apps versus separate KVDF workspaces.", 2);
+  push("live_state_ux_rules", html.includes("Stale data policy") && html.includes("poll the live API"), "Dashboard explains live refresh and stale/static export behavior.");
   push("governance_visibility", html.includes("Policy Results") && html.includes("Security Scans") && html.includes("Migration Safety"), "Dashboard shows key governance blockers.", 2);
   push("cost_visibility", html.includes("AI Usage by Task") && html.includes("Tracked vs Untracked AI Usage"), "Dashboard shows tracked and untracked AI usage.");
   push("vibe_visibility", html.includes("Vibe-first Suggestions") && html.includes("Post-work Captures"), "Dashboard shows Vibe suggestions and post-work captures.");
@@ -10650,6 +13254,14 @@ function collectDashboardState(options = {}) {
   const appSummaries = buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary);
   const workstreamSummaries = buildWorkstreamSummaries(workstreams, tasks, sessions, usageSummary);
   const workspaceSummaries = collectWorkspaceDashboardSummaries(options);
+  const dashboardUxGovernance = buildDashboardUxGovernanceState({
+    apps,
+    appSummaries,
+    workspaceSummaries,
+    project,
+    deliveryMode: project.delivery_mode || "",
+    developerMode
+  });
   const taskTracker = buildTaskTrackerState({
     generatedAt,
     tasks,
@@ -10727,7 +13339,8 @@ function collectDashboardState(options = {}) {
       live_reports_status: liveReports && liveReports.summary ? liveReports.summary.status : "missing",
       developer_efficiency: developerEfficiency,
       app_summaries: appSummaries,
-      workspace_count: workspaceSummaries.length
+      workspace_count: workspaceSummaries.length,
+      dashboard_ux_governance: dashboardUxGovernance
     },
     business: {
       generated_at: generatedAt,
@@ -10777,6 +13390,7 @@ function collectDashboardState(options = {}) {
       live_reports_status: liveReports && liveReports.summary ? liveReports.summary.status : "missing",
       developer_efficiency: developerEfficiency,
       developer_mode: developerMode,
+      dashboard_ux_governance: dashboardUxGovernance,
       workstreams: workstreamSummaries,
       sprints: sprints.map((item) => ({
         id: item.id,
@@ -10818,6 +13432,7 @@ function collectDashboardState(options = {}) {
       live_reports: liveReports,
       app_summaries: appSummaries,
       workspaces: workspaceSummaries,
+      dashboard_ux_governance: dashboardUxGovernance,
       developer_mode: developerMode,
       workstreams: workstreamSummaries,
       usage: usageSummary
@@ -11178,6 +13793,102 @@ function summarizeWorkspaceRoot(root, current) {
   };
 }
 
+function buildDashboardUxGovernanceState(input = {}) {
+  const apps = input.apps || [];
+  const appSummaries = input.appSummaries || [];
+  const workspaceSummaries = input.workspaceSummaries || [];
+  const project = input.project || {};
+  const currentWorkspace = workspaceSummaries.find((item) => item.current) || workspaceSummaries[0] || {};
+  const roleViews = [
+    {
+      role: "Owner",
+      visibility: "all_governance",
+      widgets: ["Action Center", "Policy Results", "Security Scans", "Migration Safety", "Handoff Packages", "AI Usage by Task"],
+      actions: ["verify", "approve", "reject", "override only through policy"]
+    },
+    {
+      role: "Maintainer",
+      visibility: "delivery_and_blockers",
+      widgets: ["Task Tracker Live Board", "Execution Scopes", "Workstream Governance", "Live Reports"],
+      actions: ["triage", "assign", "review", "prepare handoff"]
+    },
+    {
+      role: "Developer",
+      visibility: "assigned_work",
+      widgets: ["Task Tracker Live Board", "Active Locks", "Execution Scopes", "Post-work Captures"],
+      actions: ["continue task", "attach evidence", "avoid locked scopes"]
+    },
+    {
+      role: "AI Agent",
+      visibility: "scoped_context",
+      widgets: ["Task Tracker Live Board", "Execution Scopes", "Common Prompt Layer", "Tracked vs Untracked AI Usage"],
+      actions: ["read allowed files", "respect token scope", "report usage"]
+    },
+    {
+      role: "QA Reviewer",
+      visibility: "acceptance_and_risk",
+      widgets: ["Feature Readiness", "User Journeys", "Security Scans", "Migration Safety"],
+      actions: ["check acceptance", "record risks", "request evidence"]
+    },
+    {
+      role: "Client Viewer",
+      visibility: "business_summary",
+      widgets: ["Applications", "Feature Readiness", "User Journeys", "Handoff Packages"],
+      actions: ["review demo readiness", "avoid internal controls"]
+    }
+  ];
+  const widgetRegistry = [
+    ["action_center", "Action Center", "all_roles", "resume_decision", "top"],
+    ["task_tracker", "Task Tracker Live Board", "owner,maintainer,developer,ai_agent", "task_status", "primary"],
+    ["applications", "Applications", "all_roles", "same_workspace_apps", "summary"],
+    ["app_boundary", "App Boundary Governance", "owner,maintainer,developer,ai_agent", "multi_app_safety", "governance"],
+    ["workspace_summary", "KVDF Workspaces", "owner,maintainer", "separate_workspace_summaries", "governance"],
+    ["policy_results", "Policy Results", "owner,maintainer", "release_blockers", "governance"],
+    ["security_scans", "Security Scans", "owner,maintainer,qa", "security_risk", "governance"],
+    ["migration_safety", "Migration Safety", "owner,maintainer,qa", "migration_risk", "governance"],
+    ["ai_cost", "AI Usage by Task", "owner,maintainer,ai_agent", "cost_control", "finance"],
+    ["vibe_capture", "Post-work Captures", "owner,maintainer,developer", "traceability_restore", "workflow"]
+  ].map(([id, name, roles, purpose, placement]) => ({ id, name, roles, purpose, placement }));
+  const controls = [
+    { id: "app-filter", label: "App filter", purpose: "Focus on one app inside the current same-product workspace.", status: appSummaries.length ? "active" : "empty" },
+    { id: "role-filter", label: "Role view", purpose: "Explain which widgets each role should use first.", status: "documented" },
+    { id: "workspace-links", label: "Linked workspace summaries", purpose: "Summarize separate KVDF folders without merging their source state.", status: workspaceSummaries.length > 1 ? "active" : "available" },
+    { id: "live-refresh", label: "Live refresh", purpose: "Poll local API and reload when derived state changes.", status: "active" },
+    { id: "responsive-tables", label: "Responsive tables", purpose: "Keep wide governance tables readable on smaller screens.", status: "active" }
+  ];
+  return {
+    version: "dashboard-ux-governance-v1",
+    generated_at: new Date().toISOString(),
+    dashboard_types: ["private_governance_dashboard", "client_home", "customer_app_page", "linked_workspace_summary"],
+    workspace_strategy: {
+      current_workspace_mode: currentWorkspace.boundary_mode || (apps.length > 1 ? "same_product_multi_app" : apps.length === 1 ? "single_app" : "workspace"),
+      current_workspace_apps: apps.length,
+      linked_workspaces: Math.max(0, workspaceSummaries.length - 1),
+      rule: "Use one KVDF workspace for related apps in the same product. Use linked KVDF workspaces for separate products, clients, or release lifecycles.",
+      product_name: project.product_name || project.name || ""
+    },
+    role_views: roleViews,
+    widget_registry: widgetRegistry,
+    controls,
+    live_state_rules: [
+      "The dashboard is derived from .kabeeri and never becomes source of truth.",
+      "Local serve mode polls /__kvdf/api/state and reloads when the stable state fingerprint changes.",
+      "Static exports must still show the latest generated_at timestamp and readable empty states.",
+      "Linked workspaces are summarized only; their tasks, approvals, and policies are not merged."
+    ],
+    empty_error_rules: [
+      "Empty tables must render an explicit empty-state row or message.",
+      "Missing linked workspaces must not break the current workspace dashboard.",
+      "Blocked policy/security/migration states must appear in the Action Center."
+    ],
+    responsive_rules: [
+      "Wide tables must be wrapped in horizontal scrolling containers.",
+      "Metrics must use responsive grid columns.",
+      "Controls must wrap instead of overlapping on narrow screens."
+    ]
+  };
+}
+
 function readStateArray(file, key) {
   if (!fileExists(file)) return [];
   return readJsonFile(file)[key] || [];
@@ -11358,6 +14069,7 @@ function buildDashboardHtml() {
   const appSummaries = business.app_summaries || buildCustomerAppSummaries(apps, features, journeys, tasks, usage);
   const workspaceSummaries = business.workspaces || [];
   const workstreamSummaries = business.workstreams || [];
+  const dashboardUxGovernance = business.dashboard_ux_governance || {};
   const dashboardActionItems = buildDashboardActionItems({
     technical,
     business,
@@ -11415,6 +14127,11 @@ function buildDashboardHtml() {
         <option value="">All apps in this KVDF workspace</option>
         ${appSummaries.map((appItem) => `<option value="${escapeHtml(appItem.username)}">${escapeHtml(appItem.name || appItem.username)} (${escapeHtml(appItem.username)})</option>`).join("")}
       </select>
+      <label for="role-filter">Role</label>
+      <select id="role-filter">
+        <option value="">All role guidance</option>
+        ${(dashboardUxGovernance.role_views || []).map((roleItem) => `<option value="${escapeHtml(roleItem.role)}">${escapeHtml(roleItem.role)}</option>`).join("")}
+      </select>
       <span class="muted">Same-product apps share this workspace. Separate products should be linked as KVDF workspaces or served on their own port.</span>
     </div>
   </header>
@@ -11452,6 +14169,22 @@ function buildDashboardHtml() {
     <section>
       <h2>Action Center</h2>
       ${htmlTable(["Severity", "Area", "Message", "Next Action"], dashboardActionItems.map((item) => [`<span class="severity-${item.severity}">${item.severity}</span>`, item.area, item.message, item.next_action]), { trustedHtmlColumns: [0] })}
+    </section>
+    <section>
+      <h2>Dashboard UX Governance</h2>
+      ${htmlTable(["Rule", "Value"], [
+        ["Workspace strategy", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.rule : ""],
+        ["Current workspace mode", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.current_workspace_mode : ""],
+        ["Current workspace apps", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.current_workspace_apps : 0],
+        ["Linked KVDF workspaces", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.linked_workspaces : 0],
+        ["Stale data policy", "Served dashboards poll the live API; static exports show generated_at and remain readable without the server."]
+      ])}
+      <h3>Role Visibility</h3>
+      ${htmlTable(["Role", "Visibility", "Primary Widgets", "Allowed Actions"], (dashboardUxGovernance.role_views || []).map((item) => [item.role, item.visibility, (item.widgets || []).join(", "), (item.actions || []).join(", ")]))}
+      <h3>Widget Registry</h3>
+      ${htmlTable(["Widget", "Roles", "Purpose", "Placement"], (dashboardUxGovernance.widget_registry || []).map((item) => [item.name, item.roles, item.purpose, item.placement]))}
+      <h3>Dashboard Controls</h3>
+      ${htmlTable(["Control", "Status", "Purpose"], (dashboardUxGovernance.controls || []).map((item) => [item.label, item.status, item.purpose]))}
     </section>
     <section>
       <h2>Task Tracker Live Board</h2>
@@ -11597,6 +14330,7 @@ function buildDashboardHtml() {
 
     const dashboardDescriptions = {
       "Action Center": "The first place to look. It explains blockers, warnings, and next actions derived from readiness, governance, reports, and task state.",
+      "Dashboard UX Governance": "Defines role visibility, widget purpose, live state behavior, and how same-product apps differ from separate KVDF workspaces.",
       "Task Tracker Live Board": "Shows every governed task, its current status, assignee, active tokens, locks, usage, blockers, and the next recommended move.",
       "Live Reports": "Summarizes readiness, governance, package, security, migration, Agile, Structured, and dashboard UX state from live JSON files.",
       "Applications": "Lists registered apps inside this KVDF workspace so same-product apps stay connected while unrelated products remain separate.",

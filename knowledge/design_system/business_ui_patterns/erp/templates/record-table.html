@@ -1,0 +1,27 @@
+<section class="card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <div>
+      <h2 class="h5 mb-1">{{moduleName}}</h2>
+      <p class="text-muted mb-0">{{recordCount}} records require review.</p>
+    </div>
+    <button class="btn btn-outline-secondary" type="button">
+      <i class="bi bi-download me-2"></i>
+      Export
+    </button>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Record</th>
+          <th>Status</th>
+          <th>Owner</th>
+          <th>Updated</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>{{rows}}</tbody>
+    </table>
+  </div>
+</section>
+

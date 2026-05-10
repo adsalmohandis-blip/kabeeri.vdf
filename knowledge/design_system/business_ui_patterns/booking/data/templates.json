@@ -1,0 +1,21 @@
+[
+  {
+    "templateId": "booking-time-slot-picker-v1",
+    "name": "Booking Time Slot Picker",
+    "businessType": "booking",
+    "viewType": "time-slot-picker",
+    "description": "Accessible time slot picker for scheduling flows.",
+    "useWhen": ["Appointment booking", "Reservation flow", "Service scheduling"],
+    "requiredComponents": ["card", "button", "slot-list"],
+    "requiredIcons": ["time", "unavailable"],
+    "requiredStates": ["available", "selected", "unavailable", "refreshing"],
+    "layoutRules": ["Selected date shown before slots", "Slots wrap responsively"],
+    "uxRules": ["Availability must be unambiguous", "Do not delay between steps"],
+    "accessibilityRules": ["Slot group has aria-label"],
+    "antiPatterns": ["Ambiguous availability"],
+    "acceptanceCriteria": ["Available and unavailable slots are clear"],
+    "sampleData": { "selectedDate": "Monday, May 18", "time": "10:30 AM" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/booking/templates/time-slot-picker.html" }
+  }
+]
+

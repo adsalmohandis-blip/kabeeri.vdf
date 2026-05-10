@@ -159,7 +159,7 @@
           },
           "source_type": {
             "type": "string",
-            "description": "Task source type. See governance/TASK_GOVERNANCE.md and TASK_PROVENANCE_SCHEMA.json."
+            "description": "Task source type. See TASK_GOVERNANCE.md and TASK_PROVENANCE_SCHEMA.json."
           },
           "source_mode": {
             "type": "string",

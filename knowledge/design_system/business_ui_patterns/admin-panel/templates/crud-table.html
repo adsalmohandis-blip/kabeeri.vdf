@@ -1,0 +1,39 @@
+<section class="card">
+  <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+    <h2 class="h5 mb-0">{{title}}</h2>
+    <button class="btn btn-primary" type="button">
+      <i class="bi bi-plus-lg me-2"></i>
+      Create
+    </button>
+  </div>
+  <div class="card-body border-bottom">
+    <div class="row g-2">
+      <div class="col-md">
+        <label class="form-label" for="{{searchId}}">Search</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input id="{{searchId}}" class="form-control" type="search" placeholder="Search records">
+        </div>
+      </div>
+      <div class="col-md-auto align-self-end">
+        <button class="btn btn-outline-secondary" type="button">
+          <i class="bi bi-funnel me-2"></i>
+          Filter
+        </button>
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>{{rows}}</tbody>
+    </table>
+  </div>
+</section>
+

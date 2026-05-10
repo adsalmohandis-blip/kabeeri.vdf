@@ -1,0 +1,184 @@
+{
+  "catalog_version": "1.0.0",
+  "source": "Adapted from uiux specifications/Kvdf UIUX System For Codex for Kabeeri's existing knowledge/design_system structure.",
+  "principle": "Business Type -> Views -> Data -> Flows -> UI Contract -> Review Checklist, with creative variation driven by product answers.",
+  "patterns": [
+    {
+      "key": "landing-page",
+      "name": "Landing Page",
+      "motion_level": "EXPRESSIVE_MOTION",
+      "primary_goal": "Convert visitors around one clear offer.",
+      "required_views": ["hero", "benefits", "proof", "pricing_or_offer", "faq", "contact_or_signup"],
+      "required_components": ["hero_media", "primary_cta", "feature_grid", "testimonial", "faq", "lead_form"],
+      "required_flows": ["onboarding-flow"],
+      "ux_rules": ["Keep one dominant CTA per viewport.", "Show proof before asking for commitment.", "Use expressive motion only when it improves storytelling."],
+      "anti_patterns": ["Generic hero without product signal.", "Multiple competing CTAs.", "Delayed primary content."]
+    },
+    {
+      "key": "corporate",
+      "name": "Corporate Website",
+      "motion_level": "EXPRESSIVE_MOTION",
+      "primary_goal": "Build trust, explain capabilities, and route visitors to contact or service pages.",
+      "required_views": ["home", "services", "case_studies", "about", "contact"],
+      "required_components": ["navigation", "service_cards", "case_study_teaser", "lead_form", "trust_signals"],
+      "required_flows": ["onboarding-flow"],
+      "ux_rules": ["Make credibility visible early.", "Use structured service navigation.", "Keep forms short and clear."],
+      "anti_patterns": ["Abstract visuals with no business signal.", "Hidden contact path.", "Long decorative intros."]
+    },
+    {
+      "key": "ecommerce",
+      "name": "E-commerce",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help users discover, compare, trust, and buy products.",
+      "required_views": ["category", "product_details", "cart", "checkout", "order_confirmation"],
+      "required_components": ["product_card", "gallery", "price", "variant_selector", "cart_drawer", "checkout_stepper", "order_summary"],
+      "required_flows": ["checkout-flow", "payment-confirmation-flow"],
+      "ux_rules": ["Price, availability, shipping, and primary purchase action must be clear.", "Disable impossible actions such as out-of-stock add to cart.", "Use trust signals near purchase decisions."],
+      "anti_patterns": ["Hidden price or shipping cost.", "Add-to-cart below unclear content.", "Checkout without error recovery."]
+    },
+    {
+      "key": "marketplace",
+      "name": "Marketplace",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Support discovery, comparison, trust, and multi-party transactions.",
+      "required_views": ["listing", "detail", "seller_profile", "checkout_or_request", "reviews"],
+      "required_components": ["filter_bar", "listing_card", "seller_badge", "review_summary", "comparison_controls"],
+      "required_flows": ["checkout-flow", "user-management-flow"],
+      "ux_rules": ["Expose seller trust clearly.", "Keep filters fast and visible.", "Separate platform, seller, and buyer responsibilities."],
+      "anti_patterns": ["Unclear seller identity.", "Weak dispute or support states.", "No saved or compare affordance."]
+    },
+    {
+      "key": "saas",
+      "name": "SaaS Product",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help users understand value, start quickly, and succeed inside the product.",
+      "required_views": ["dashboard", "onboarding", "settings", "billing", "usage_or_activity"],
+      "required_components": ["app_shell", "kpi_cards", "empty_state", "settings_sections", "plan_badge", "toast"],
+      "required_flows": ["onboarding-flow", "crud-flow", "user-management-flow"],
+      "ux_rules": ["First-run empty states must guide setup.", "Settings must be grouped by mental model.", "Use success feedback after configuration changes."],
+      "anti_patterns": ["Dashboard full of empty charts.", "Unclear account or billing status.", "No path from empty state to setup."]
+    },
+    {
+      "key": "admin-panel",
+      "name": "Admin Panel",
+      "motion_level": "MINIMAL_MOTION",
+      "primary_goal": "Let operators manage data quickly and safely.",
+      "required_views": ["dashboard", "crud_list", "detail", "form", "audit_or_activity"],
+      "required_components": ["sidebar", "topbar", "table", "filters", "bulk_actions", "confirm_modal", "status_badge"],
+      "required_flows": ["crud-flow", "delete-confirmation-flow", "user-management-flow"],
+      "ux_rules": ["Tables need search, filter, pagination, empty, loading, and error states.", "Destructive actions require confirmation.", "Use density appropriate for repeat work."],
+      "anti_patterns": ["Marketing layout in operational screens.", "Too many primary buttons.", "Delete without confirmation."]
+    },
+    {
+      "key": "dashboard",
+      "name": "Dashboard",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Turn data into fast operational understanding.",
+      "required_views": ["overview", "detail_drilldown", "reports", "alerts", "recent_activity"],
+      "required_components": ["metric_card", "chart_card", "filter_bar", "date_range", "data_table", "insight_callout"],
+      "required_flows": ["crud-flow"],
+      "ux_rules": ["Every chart needs context or a decision it supports.", "Filters must be visible and persistent.", "Show loading and no-data states for each data region."],
+      "anti_patterns": ["Charts without labels or insight.", "All cards with the same visual weight.", "Animated charts on every refresh."]
+    },
+    {
+      "key": "crm",
+      "name": "CRM",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help teams track relationships, pipeline, tasks, and activity.",
+      "required_views": ["leads", "pipeline", "customer_profile", "tasks", "activity_timeline"],
+      "required_components": ["kanban", "stage_badge", "contact_card", "timeline", "task_list", "quick_add"],
+      "required_flows": ["crud-flow", "user-management-flow"],
+      "ux_rules": ["Next action should be visible on customer and deal pages.", "Pipeline movement needs clear feedback.", "Activity history must be scanable."],
+      "anti_patterns": ["Dense profiles without prioritization.", "Hidden next task.", "Distracting motion during data entry."]
+    },
+    {
+      "key": "erp",
+      "name": "ERP",
+      "motion_level": "MINIMAL_MOTION",
+      "primary_goal": "Support complex operations with clarity, control, and traceability.",
+      "required_views": ["module_dashboard", "records_table", "record_detail", "workflow_approval", "reports"],
+      "required_components": ["module_nav", "dense_table", "filters", "approval_status", "audit_log", "permission_indicator"],
+      "required_flows": ["crud-flow", "delete-confirmation-flow", "user-management-flow"],
+      "ux_rules": ["Use compact but readable density.", "Keep role permissions and record status visible.", "Prioritize accuracy over decorative styling."],
+      "anti_patterns": ["Large decorative cards for dense work.", "Scroll reveal.", "Unclear workflow state."]
+    },
+    {
+      "key": "booking",
+      "name": "Booking",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help users choose service, time, details, and confirmation without anxiety.",
+      "required_views": ["service_selection", "calendar", "time_slots", "summary", "confirmation", "reschedule"],
+      "required_components": ["calendar", "time_slot_picker", "stepper", "summary_card", "policy_notice", "confirmation_state"],
+      "required_flows": ["booking-flow", "payment-confirmation-flow"],
+      "ux_rules": ["Available and unavailable slots must be unmistakable.", "Show booking summary before confirmation.", "Cancellation policy must be visible."],
+      "anti_patterns": ["Ambiguous availability.", "Delayed step transitions.", "Hidden fees or policy."]
+    },
+    {
+      "key": "delivery",
+      "name": "Delivery",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Track order status across customer, store, driver, and admin views.",
+      "required_views": ["order_flow", "tracking", "driver_dashboard", "store_orders", "admin_monitoring"],
+      "required_components": ["map", "status_timeline", "eta", "order_card", "address_selector", "rating_screen"],
+      "required_flows": ["checkout-flow", "payment-confirmation-flow"],
+      "ux_rules": ["Current order status must always be clear.", "Reduce uncertainty during waiting.", "Live updates need stable fallback states."],
+      "anti_patterns": ["Excessive map motion.", "Unclear ETA.", "No support path for failed delivery."]
+    },
+    {
+      "key": "lms",
+      "name": "LMS / EdTech",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help learners find courses, study, complete tasks, and track progress.",
+      "required_views": ["course_catalog", "course_details", "lesson", "quiz", "assignments", "progress", "certificate"],
+      "required_components": ["lesson_sidebar", "progress_bar", "course_card", "video_controls", "quiz_feedback", "certificate_preview"],
+      "required_flows": ["onboarding-flow"],
+      "ux_rules": ["Progress must be visible.", "Next lesson must be easy to reach.", "Lesson screens should minimize distraction."],
+      "anti_patterns": ["Looping motion near lesson content.", "Hidden completion status.", "Overloaded lesson pages."]
+    },
+    {
+      "key": "fintech",
+      "name": "FinTech",
+      "motion_level": "MINIMAL_MOTION",
+      "primary_goal": "Enable financial actions with trust, precision, and explicit confirmation.",
+      "required_views": ["balance_overview", "transactions", "send_money", "payment_confirmation", "cards", "invoices", "security_settings"],
+      "required_components": ["balance_card", "transaction_table", "review_step", "confirm_modal", "receipt", "security_alert"],
+      "required_flows": ["payment-confirmation-flow", "delete-confirmation-flow"],
+      "ux_rules": ["Amounts and fees must be clear.", "Every financial action needs review then confirm.", "Success and failure states must be explicit."],
+      "anti_patterns": ["Playful motion around transfers.", "Confetti.", "Animating amounts in a distracting way."]
+    },
+    {
+      "key": "healthtech",
+      "name": "HealthTech",
+      "motion_level": "MINIMAL_MOTION",
+      "primary_goal": "Present health information, appointments, records, and care actions clearly.",
+      "required_views": ["patient_profile", "appointments", "medical_records", "prescriptions", "lab_results", "doctor_dashboard"],
+      "required_components": ["patient_summary", "appointment_card", "record_section", "alert", "timeline", "accessible_form"],
+      "required_flows": ["booking-flow", "user-management-flow"],
+      "ux_rules": ["Readability and calm language matter more than decoration.", "Critical information must be prominent.", "Support older users with generous spacing and clear labels."],
+      "anti_patterns": ["Playful motion.", "Small text for critical data.", "Looping animation near warnings."]
+    },
+    {
+      "key": "real-estate",
+      "name": "Real Estate",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help users search, compare, inspect, save, and contact about properties.",
+      "required_views": ["property_listing", "property_details", "map_search", "filters", "agent_profile", "saved_properties", "comparison"],
+      "required_components": ["gallery", "price_block", "map", "feature_badges", "contact_cta", "floor_plan", "similar_properties"],
+      "required_flows": ["crud-flow"],
+      "ux_rules": ["Photos, price, and location must be first-class.", "Filters should support serious comparison.", "Contact CTA must stay easy to find."],
+      "anti_patterns": ["Decorative overlays hiding photos.", "Weak filters.", "Delayed image loading caused by motion."]
+    },
+    {
+      "key": "ai-product",
+      "name": "AI Product",
+      "motion_level": "BALANCED_MOTION",
+      "primary_goal": "Help users provide input, understand processing, review output, and iterate.",
+      "required_views": ["prompt_input", "chat", "generated_result", "history", "templates", "file_upload", "usage_limits", "feedback"],
+      "required_components": ["prompt_box", "suggested_prompts", "streaming_response", "copy_button", "regenerate_button", "version_history", "feedback_actions"],
+      "required_flows": ["ai-product-flow", "onboarding-flow"],
+      "ux_rules": ["Show what the user can ask or upload.", "Processing must be visible but not theatrical.", "Copy, regenerate, and feedback actions must be accessible."],
+      "anti_patterns": ["Fake thinking animations that run too long.", "Generated content made harder to read.", "No examples for first-time users."]
+    }
+  ]
+}
+

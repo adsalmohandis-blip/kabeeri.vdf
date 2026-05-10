@@ -45,6 +45,7 @@ kvdf adr approve adr-001
 kvdf adr reject adr-001 --reason "Not needed for MVP"
 kvdf adr supersede adr-001 --by adr-002 --reason "Architecture changed"
 kvdf adr report --output adr-report.md
+kvdf adr trace --json
 kvdf validate adr
 ```
 
@@ -79,6 +80,7 @@ kvdf ai-run list
 kvdf ai-run show ai-run-001
 kvdf ai-run accept ai-run-001 --reviewer reviewer-001 --evidence tests-pass
 kvdf ai-run reject ai-run-001 --reason "Wrong scope"
+kvdf ai-run link ai-run-001 --adr adr-001
 kvdf ai-run report
 kvdf ai-run report --json
 kvdf validate ai-run
@@ -110,6 +112,25 @@ Before a new AI coding pass, Kabeeri can inspect:
 
 This reduces repeated context reading, repeated architectural debate, random
 prompting, and unreviewed AI output.
+
+## Decision Trace
+
+When an AI run influences a durable decision, link it:
+
+```bash
+kvdf ai-run link ai-run-001 --adr adr-001
+```
+
+Then inspect the combined trace:
+
+```bash
+kvdf adr trace --json
+kvdf adr trace --output .kabeeri/reports/adr_ai_run_trace.md
+```
+
+The trace shows ADR status, impact, linked AI runs, accepted/rejected/unreviewed
+run counts, tokens, cost, unlinked AI runs, and high-impact proposed ADRs that
+still need approval.
 
 ## Dashboard
 

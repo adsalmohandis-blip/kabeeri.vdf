@@ -575,5 +575,5 @@ Track per sprint:
 
 - [../agile_delivery/README.md](../agile_delivery/README.md) — Agile mode documentation
 - [../delivery_modes/](../delivery_modes/) — Mode selection and comparison
-- [../task_governance/](../task_governance/) — Task governance (applies to stories/tasks)
+- [../task_tracking/TASK_GOVERNANCE.md](../task_tracking/TASK_GOVERNANCE.md) — Task governance (applies to stories/tasks)
 - [SPRINT_COST_METADATA.md](#sprint-cost-metadata) — Token cost tracking

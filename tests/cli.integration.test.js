@@ -123,7 +123,9 @@ test("init creates workspace state files", () => withTempDir((dir) => {
     ".kabeeri/design_sources/missing_reports.json",
     ".kabeeri/design_sources/visual_reviews.json",
     ".kabeeri/design_sources/audit_reports.json",
-    ".kabeeri/design_sources/ui_advisor.json"
+    ".kabeeri/design_sources/governance_reports.json",
+    ".kabeeri/design_sources/ui_advisor.json",
+    ".kabeeri/design_sources/ui_ux_reference.json"
   ]) {
     assert.ok(fs.existsSync(path.join(dir, file)), `${file} should exist`);
   }
@@ -286,6 +288,22 @@ test("UI design advisor recommends frontend patterns from product blueprints", (
   assert.match(runKvdf(["validate", "ui-design"], { cwd: dir }).stdout, /UI design catalog checked/);
 }));
 
+test("UI UX reference library recommends patterns and generates tasks", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  assert.match(runKvdf(["design", "reference-list"], { cwd: dir }).stdout, /ADMIT-ADB01/);
+  assert.match(runKvdf(["design", "reference-show", "ADMIT-ADB04"], { cwd: dir }).stdout, /Soft UI Billing/);
+  const recommendation = JSON.parse(runKvdf(["design", "reference-recommend", "billing dashboard with invoices payments and transactions", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(recommendation.matches[0].code, "ADMIT-ADB04");
+  const questions = JSON.parse(runKvdf(["design", "reference-questions", "ADMIT-ADB04", "--json"], { cwd: dir }).stdout);
+  assert.ok(questions.questions.some((question) => question.includes("payment providers")));
+  runKvdf(["design", "reference-tasks", "ADMIT-ADB04", "--scope", "billing page"], { cwd: dir });
+  const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
+  assert.ok(tasks.some((task) => task.source === "ui_ux_reference" && task.ui_ux_reference_code === "ADMIT-ADB04"));
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/design_sources/ui_ux_reference.json"), "utf8"));
+  assert.strictEqual(state.generated_questions.length, 1);
+  assert.strictEqual(state.generated_tasks.length, 1);
+}));
+
 test("ADR and AI run history track decisions accepted output and waste", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   runKvdf(["task", "create", "--id", "task-001", "--title", "Build products API", "--workstream", "backend", "--acceptance", "Tests pass"], { cwd: dir });
@@ -303,6 +321,12 @@ test("ADR and AI run history track decisions accepted output and waste", () => w
   const adr = JSON.parse(runKvdf(["adr", "create", "--title", "Use PostgreSQL", "--context", "Products need relational consistency", "--decision", "Use PostgreSQL for catalog data", "--task", "task-001", "--ai-run", "ai-run-001", "--status", "approved"], { cwd: dir }).stdout);
   assert.strictEqual(adr.adr_id, "adr-001");
   assert.strictEqual(adr.status, "approved");
+  assert.deepStrictEqual(JSON.parse(runKvdf(["ai-run", "show", "ai-run-001"], { cwd: dir }).stdout).related_adrs, ["adr-001"]);
+  const trace = JSON.parse(runKvdf(["adr", "trace", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(trace.summary.linked_ai_runs, 1);
+  assert.strictEqual(trace.adr_trace[0].accepted_runs, 1);
+  const reportAfterAdr = JSON.parse(runKvdf(["ai-run", "report", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(reportAfterAdr.by_adr["adr-001"].accepted, 1);
   assert.match(runKvdf(["adr", "list"], { cwd: dir }).stdout, /adr-001/);
   assert.match(runKvdf(["adr", "report"], { cwd: dir }).stdout, /Kabeeri ADR Report/);
   assert.match(runKvdf(["validate", "adr"], { cwd: dir }).stdout, /ADR records checked/);
@@ -318,9 +342,15 @@ test("common prompt layer composes stack prompts with task context", () => withT
   assert.strictEqual(composition.composition_id, "prompt-composition-001");
   assert.strictEqual(composition.pack, "react");
   assert.ok(composition.common_files.includes("01_GENERAL_AI_CODING_RULES.md"));
+  assert.ok(composition.common_files.includes("07_COST_CONTEXT_POLICY_RULES.md"));
+  assert.ok(composition.common_files.includes("08_DESIGN_SECURITY_MIGRATION_RULES.md"));
+  assert.ok(composition.common_policy_gates.includes("security"));
+  assert.ok(composition.traceability_outputs.includes("AI run history"));
   assert.ok(fs.existsSync(path.join(dir, composition.output_path)));
   const prompt = fs.readFileSync(path.join(dir, composition.output_path), "utf8");
   assert.match(prompt, /Common Prompt Layer/);
+  assert.match(prompt, /Common Governance Checklist/);
+  assert.match(prompt, /Design, Security, And Migration Rules/);
   assert.match(prompt, /Stack-specific Prompt/);
   assert.match(runKvdf(["prompt-pack", "compositions"], { cwd: dir }).stdout, /prompt-composition-001/);
   assert.match(runKvdf(["validate", "prompt-layer"], { cwd: dir }).stdout, /common prompt layer checked/);
@@ -337,6 +367,12 @@ test("react native expo prompt pack exports and selects mobile prompts", () => w
   const prompt = fs.readFileSync(path.join(dir, composition.output_path), "utf8");
   assert.match(prompt, /React Native Expo/);
   assert.match(prompt, /Device Permissions and Notifications/);
+  runKvdf(["task", "create", "--id", "task-mobile-002", "--title", "Confirm backend API contract for mobile checkout", "--workstream", "mobile", "--acceptance", "Checkout contract gaps are listed"], { cwd: dir });
+  const contractComposition = JSON.parse(runKvdf(["prompt-pack", "compose", "react-native-expo", "--task", "task-mobile-002"], { cwd: dir }).stdout);
+  assert.strictEqual(contractComposition.selected_prompt, "13_BACKEND_API_CONTRACT_PROMPT.md");
+  runKvdf(["task", "create", "--id", "task-mobile-003", "--title", "Improve accessibility and performance for product list", "--workstream", "mobile", "--acceptance", "Large text and slow list risks are reviewed"], { cwd: dir });
+  const qualityComposition = JSON.parse(runKvdf(["prompt-pack", "compose", "react-native-expo", "--task", "task-mobile-003"], { cwd: dir }).stdout);
+  assert.strictEqual(qualityComposition.selected_prompt, "14_ACCESSIBILITY_PERFORMANCE_PROMPT.md");
 }));
 
 test("wordpress capability plans analyzes scaffolds and creates tasks", () => withTempDir((dir) => {
@@ -388,6 +424,7 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   assert.ok(plan.suggestions.length >= 4);
   assert.ok(plan.suggestions.some((item) => item.workstream === "backend"));
   assert.ok(plan.suggestions.some((item) => item.workstream === "public_frontend"));
+  runKvdf(["vibe", "approve", "suggestion-001"], { cwd: dir });
   runKvdf(["vibe", "convert", "suggestion-001"], { cwd: dir });
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
   assert.strictEqual(tasks[0].source, "vibe:intent-001");
@@ -687,13 +724,19 @@ test("agile templates create backlog stories sprint plans and governed tasks", (
   assert.strictEqual(review.accepted_points, 5);
   const retro = JSON.parse(runKvdf(["agile", "retrospective", "add", "sprint-001", "--good", "Goal was clear", "--improve", "Slice stories smaller", "--actions", "Add QA earlier"], { cwd: dir }).stdout);
   assert.strictEqual(retro.sprint_id, "sprint-001");
+  const release = JSON.parse(runKvdf(["agile", "release", "plan", "release-001", "--title", "Checkout demo", "--stories", "story-checkout-001", "--criteria", "Checkout accepted", "--checks", "Policy gates reviewed"], { cwd: dir }).stdout);
+  assert.strictEqual(release.readiness_status, "ready");
+  const releaseReadiness = JSON.parse(runKvdf(["agile", "release", "readiness", "release-001"], { cwd: dir }).stdout);
+  assert.strictEqual(releaseReadiness.accepted_story_ids[0], "story-checkout-001");
   const health = JSON.parse(runKvdf(["agile", "health", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(health.summary.open_impediments, 0);
   assert.strictEqual(health.velocity.latest_accepted_points, 5);
+  assert.strictEqual(health.release_readiness.release_id, "release-001");
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/dashboard/agile_state.json")));
   const agile = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/agile.json"), "utf8"));
   assert.strictEqual(agile.stories[0].task_id, "task-001");
   assert.strictEqual(agile.stories[0].status, "accepted");
+  assert.strictEqual(agile.releases[0].release_id, "release-001");
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
   assert.strictEqual(tasks[0].source_reference, "story:story-checkout-001");
   assert.match(runKvdf(["agile", "summary"], { cwd: dir }).stdout, /ready_stories/);
@@ -900,6 +943,8 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.strictEqual(trackerFile.live_api_path, "/__kvdf/api/tasks");
   assert.strictEqual(state.business.app_summaries.length, 2);
   assert.strictEqual(state.business.app_summaries.find((item) => item.username === "acme").ready_features, 1);
+  assert.strictEqual(state.business.dashboard_ux_governance.workspace_strategy.current_workspace_apps, 2);
+  assert.ok(state.business.dashboard_ux_governance.role_views.some((item) => item.role === "AI Agent"));
   assert.strictEqual(state.workspaces[0].current, true);
   assert.strictEqual(state.workspaces[0].apps_total, 2);
   assert.strictEqual(state.business.customer_apps[0].public_url, "/customer/apps/acme");
@@ -915,6 +960,10 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.match(html, /\.kabeeri is the source of truth/);
   assert.match(html, /table-wrap/);
   assert.match(html, /KVDF Workspaces/);
+  assert.match(html, /Dashboard UX Governance/);
+  assert.match(html, /Role Visibility/);
+  assert.match(html, /Widget Registry/);
+  assert.match(html, /role-filter/);
   assert.match(html, /App Boundary Governance/);
   assert.match(html, /same_product_multi_app/);
   assert.match(html, /app-filter/);
@@ -928,6 +977,8 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   const uxAudit = JSON.parse(runKvdf(["dashboard", "ux", "--json"], { cwd: dir }).stdout);
   assert.ok(["pass", "needs_attention"].includes(uxAudit.status));
   assert.ok(uxAudit.checks.some((check) => check.id === "action_center" && check.status));
+  assert.ok(uxAudit.checks.some((check) => check.id === "role_visibility" && check.status));
+  assert.ok(uxAudit.checks.some((check) => check.id === "dashboard_ux_governance" && check.status));
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/reports/dashboard_ux_report.md")));
   assert.match(runKvdf(["validate", "dashboard"], { cwd: dir }).stdout, /dashboard UX audits checked/);
   const otherDir = fs.mkdtempSync(path.join(os.tmpdir(), "kvdf-linked-"));
@@ -1256,6 +1307,10 @@ test("design source governance blocks raw sources until approved text spec exist
   assert.match(runKvdf(["design", "visual-review-list"], { cwd: dir }).stdout, /visual-review-001/);
   gate = JSON.parse(runKvdf(["design", "gate", "--task", "task-001", "--page", "page-spec-001", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(gate.status, "pass");
+  const governance = JSON.parse(runKvdf(["design", "governance", "--json"], { cwd: dir }).stdout);
+  assert.ok(["pass", "needs_attention"].includes(governance.status));
+  assert.ok(governance.checks.some((check) => check.id === "visual_reviews" && check.status));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri/reports/design_governance_report.md")));
   audit = JSON.parse(runKvdf(["design", "audit", "design-source-001"], { cwd: dir }).stdout);
   assert.strictEqual(audit.status, "pass");
   assert.match(runKvdf(["design", "list"], { cwd: dir }).stdout, /design-source-001/);
@@ -1269,6 +1324,8 @@ test("design source governance blocks raw sources until approved text spec exist
   assert.strictEqual(components.components[0].status, "approved");
   const visualReviews = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/design_sources/visual_reviews.json"), "utf8"));
   assert.strictEqual(visualReviews.reviews[0].review_id, "visual-review-001");
+  const governanceReports = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/design_sources/governance_reports.json"), "utf8"));
+  assert.strictEqual(governanceReports.reports[0].report_id, governance.report_id);
   assert.match(runKvdf(["validate", "design"], { cwd: dir }).stdout, /design visual reviews checked/);
 }));
 

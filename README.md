@@ -229,6 +229,8 @@ kvdf questionnaire plan "Build an ecommerce store with Laravel backend, Next.js 
 kvdf blueprint recommend "Build ecommerce store with catalog cart checkout payments shipping"
 kvdf data-design context ecommerce --json
 kvdf design recommend ecommerce --json
+kvdf design reference-recommend "admin ecommerce dashboard with orders revenue products and notifications"
+kvdf design reference-questions ADMIT-ADB02
 kvdf delivery recommend "Build a regulated ERP with accounting and approvals" --json
 ```
 
@@ -245,9 +247,10 @@ kvdf capture --summary "Implemented checkout validation" --files src/checkout.ts
 
 Post-work captures are important. If files changed without a linked task, readiness can become blocked until the capture is linked, converted, rejected, or resolved.
 
-## Task Governance
+## Task Tracking And Governance
 
-Kabeeri expects implementation to happen through tasks.
+Kabeeri expects implementation to happen through governed tasks. The unified
+task tracking and governance source lives in `knowledge/task_tracking/`.
 
 ```bash
 kvdf task create --title "Build product catalog API" --workstream backend
@@ -312,6 +315,8 @@ Generate independent reports:
 ```bash
 kvdf readiness report --output readiness.md
 kvdf governance report --output governance.md
+kvdf readiness report --target release --strict
+kvdf governance report --target publish --strict
 kvdf reports live
 ```
 

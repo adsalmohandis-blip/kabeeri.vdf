@@ -175,11 +175,19 @@ kvdf prompt-pack compose react-native-expo --task task-mobile-001
 stack-specific prompt. It creates a reviewable composed prompt under
 `.kabeeri/prompt_layer/` by default and records metadata in
 `.kabeeri/prompt_layer/compositions.json`.
+The common layer also adds shared policy-gate and traceability metadata so a
+composed prompt reminds the AI about scope, security, migration, handoff,
+release, GitHub writes, AI-run history, ADR links, post-work capture, and task
+evidence.
 
 React Native Expo is available as a mobile pack for Expo apps. Use it when the
 same Kabeeri product includes an iOS/Android app connected to the product API
 or backend. It includes Expo-specific scope rules for public config, native
 permissions, device checks, local/offline storage, and EAS release handoff.
+The pack also includes backend API contract and mobile accessibility/performance
+prompts. `prompt-pack compose` can use the pack manifest keyword map to select
+more specific Expo prompts for tasks such as `api contract`, `deep link`,
+`large text`, `push notification`, `offline cache`, and `EAS release`.
 
 ## WordPress Development And Adoption
 
@@ -272,6 +280,7 @@ kvdf vibe suggest "Add checkout API for the storefront"
 kvdf ask "Improve the dashboard"
 kvdf vibe list
 kvdf vibe show suggestion-001
+kvdf vibe approve suggestion-001 --actor owner-001
 kvdf vibe convert suggestion-001
 kvdf vibe reject suggestion-001 --reason "Too broad"
 kvdf vibe plan "Build an ecommerce store with catalog cart checkout and admin"
@@ -290,7 +299,7 @@ kvdf capture resolve capture-001 --reason "Evidence reviewed"
 kvdf validate capture
 ```
 
-Vibe-first commands are optional. They classify natural-language intent, create reviewable suggested task cards, split larger product requests into safer cards, capture post-work notes, preview captures with `capture scan`, add missing evidence with `capture evidence`, link or convert captured work into governed tasks, reject captures that should not continue, generate compact briefs for the next session, and then hand off to normal governed tasks. They store interaction records under `.kabeeri/interactions/`; the regular CLI remains fully usable without them. See `vibe_ux/VIBE_FIRST_RUNTIME.md`.
+Vibe-first commands are optional. They classify natural-language intent, create reviewable suggested task cards, split larger product requests into safer cards, approve/reject suggestions before execution, convert approved suggestions into governed tasks, capture post-work notes, preview captures with `capture scan`, add missing evidence with `capture evidence`, link or convert captured work into governed tasks, reject captures that should not continue, generate compact briefs for the next session, and then hand off to normal governed tasks. They store interaction records under `.kabeeri/interactions/`; the regular CLI remains fully usable without them. See `vibe_ux/VIBE_FIRST_RUNTIME.md`.
 
 ## Delivery Mode Advisor
 
@@ -355,6 +364,11 @@ kvdf design recommend erp --json
 kvdf design ui-checklist
 kvdf design ui-review "news article page with semantic HTML structured data responsive accessibility loading empty error"
 kvdf design ui-history
+kvdf design reference-list
+kvdf design reference-show ADMIT-ADB01
+kvdf design reference-recommend "admin ecommerce dashboard with orders and revenue"
+kvdf design reference-questions ADMIT-ADB02
+kvdf design reference-tasks ADMIT-ADB02 --scope "ecommerce admin dashboard"
 kvdf validate ui-design
 ```
 
@@ -362,6 +376,12 @@ The UI/UX Advisor extends Design Governance. It maps a Product Blueprint to an
 experience pattern, stack suggestions, component groups, page templates,
 SEO/GEO rules, dashboard/mobile rules, and an approval checklist. Its runtime
 state lives in `.kabeeri/design_sources/ui_advisor.json`.
+
+The UI/UX Reference Library adds reusable, approved UI patterns under
+`knowledge/design_system/ui_ux_reference/`. `reference-recommend` selects a
+pattern from a short brief, `reference-questions` turns that pattern into
+developer/client discovery questions, and `reference-tasks` creates governed
+design-system, page-spec, component-contract, and QA tasks before code starts.
 
 ## Agile Templates
 
@@ -374,10 +394,16 @@ kvdf agile story ready story-checkout-001
 kvdf agile story task story-checkout-001 --task task-001
 kvdf agile sprint plan sprint-001 --stories story-checkout-001 --capacity-points 10 --goal "Checkout foundation"
 kvdf agile sprint review sprint-001 --accepted story-checkout-001 --goal-met yes --decision accepted
+kvdf agile impediment add --id imp-001 --story story-checkout-001 --severity high --title "Payment credentials missing"
+kvdf agile retrospective add sprint-001 --good "Goal was clear" --improve "Slice stories smaller" --actions "Add QA earlier"
+kvdf agile release plan release-001 --title "Checkout demo" --stories story-checkout-001 --criteria "Checkout accepted" --checks "Policy gates reviewed"
+kvdf agile release readiness release-001
+kvdf agile health
+kvdf agile forecast
 kvdf validate agile
 ```
 
-Agile template commands turn backlog, epic, user story, sprint planning, and sprint review templates into runtime records under `.kabeeri/agile.json`. A ready story can be converted into a normal governed task, keeping source provenance as `story:<story_id>`. See `agile_delivery/AGILE_RUNTIME.md`.
+Agile template commands turn backlog, epic, user story, sprint planning, sprint review, impediment, retrospective, and release-plan templates into runtime records under `.kabeeri/agile.json`. A ready story can be converted into a normal governed task, keeping source provenance as `story:<story_id>`. See `agile_delivery/AGILE_RUNTIME.md`.
 
 ## Structured Delivery
 
@@ -550,6 +576,11 @@ kvdf design snapshot design-source-001 --reference "figma-export-v1" --captured-
 kvdf design spec-create --source design-source-001 --title "Checkout page" --output frontend_specs/checkout.page.md
 kvdf design spec-list
 kvdf design spec-approve text-spec-001 --tokens design_system/tokens.json --actor owner-001
+kvdf design reference-list
+kvdf design reference-show ADMIT-ADB04
+kvdf design reference-recommend "billing dashboard with invoices transactions and payment methods"
+kvdf design reference-questions ADMIT-ADB04
+kvdf design reference-tasks ADMIT-ADB04 --scope "billing page"
 kvdf design page-create --spec text-spec-001 --name "Checkout page" --output frontend_specs/checkout.page.md
 kvdf design page-list
 kvdf design page-approve page-spec-001 --actor owner-001
@@ -559,6 +590,8 @@ kvdf design component-approve component-contract-001 --actor owner-001
 kvdf design visual-review --page page-spec-001 --task task-001 --screenshots desktop.png,mobile.png --decision pass
 kvdf design visual-review-list
 kvdf design gate --task task-001 --page page-spec-001 --json
+kvdf design governance
+kvdf design governance --json
 kvdf validate design
 kvdf design missing-report --source design-source-001 --items responsive,empty-state --risk high
 kvdf design approve design-source-001 --spec frontend_specs/checkout.page.md --tokens design_system/tokens.json --actor owner-001
@@ -568,6 +601,8 @@ kvdf design audit design-source-001
 ```
 
 Design sources are inputs, not implementation specs. Raw links, images, PDFs, screenshots, Figma files, and reference websites must become approved text specs before frontend implementation begins. After frontend implementation, visual reviews record screenshot evidence and `design gate` checks whether a frontend task has approved page evidence and a passing visual review.
+
+`design governance` writes a unified Design Governance report into `.kabeeri/design_sources/governance_reports.json` and `.kabeeri/reports/design_governance_report.md`. It checks source snapshots, approved text specs, design tokens, page specs, component contracts, visual review evidence, accessibility/contrast coverage, UI/UX Advisor context, missing design reports, and next actions.
 
 ## Customer Apps
 
@@ -634,11 +669,13 @@ kvdf adr approve adr-001
 kvdf adr reject adr-001 --reason "Not needed for MVP"
 kvdf adr supersede adr-001 --by adr-002 --reason "Architecture changed"
 kvdf adr report --output adr-report.md
+kvdf adr trace --json
 kvdf ai-run record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500 --summary "Implemented endpoint"
 kvdf ai-run list
 kvdf ai-run show ai-run-001
 kvdf ai-run accept ai-run-001 --reviewer reviewer-001 --evidence tests-pass
 kvdf ai-run reject ai-run-001 --reason "Wrong scope"
+kvdf ai-run link ai-run-001 --adr adr-001
 kvdf ai-run report
 kvdf ai-run report --json
 kvdf validate adr
@@ -653,6 +690,8 @@ AI run history records prompt output quality and review decisions. `kvdf usage`
 remains the cost ledger, while `kvdf ai-run` explains whether the output was
 accepted, rejected, unreviewed, or wasteful. See
 `project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`.
+
+Use `kvdf ai-run link <run-id> --adr <adr-id>` when a prompt run shaped a durable architecture decision. Use `kvdf adr trace` to see decisions with linked AI runs, accepted/rejected counts, cost, tokens, unlinked runs, and high-impact decisions that still need approval.
 
 ## Policy Engine
 
@@ -764,7 +803,7 @@ kvdf dashboard workspace remove --path ../store-a
 
 `dashboard state` prints the same live JSON state used by the local dashboard API. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the private dashboard at `/__kvdf/dashboard`, full live JSON at `/__kvdf/api/state`, and task tracker JSON at `/__kvdf/api/tasks`.
 
-`dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
+`dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
 
 When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, generated scaffold tasks, usage records, locks, delivery status, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace and can show separate KVDF folders as linked workspace summaries. Each dashboard section adds an inline explanation describing what the table means and why it exists.
 
@@ -797,9 +836,13 @@ opens `docs/site` in VS Code for editing.
 ```bash
 kvdf readiness report
 kvdf readiness report --json
+kvdf readiness report --target demo
+kvdf readiness report --target release --strict
 kvdf readiness report --output .kabeeri/reports/readiness_report.md
 kvdf governance report
 kvdf governance report --json
+kvdf governance report --target workspace
+kvdf governance report --target publish --strict
 kvdf governance report --output .kabeeri/reports/governance_report.md
 kvdf reports live
 kvdf reports live --json
@@ -821,6 +864,10 @@ derived JSON state for Codex, dashboard widgets, VS Code views, and automation.
 Markdown reports remain human-readable snapshots; live JSON is the fast-changing
 operational surface.
 
+Supported report targets are `workspace`, `demo`, `handoff`, `release`, and
+`publish`. Use `--strict` when warnings should block release, publish, or final
+handoff review.
+
 ## Product Packaging And Upgrade
 
 ```bash
@@ -836,6 +883,12 @@ kvdf upgrade check --json
 fields, `bin.kvdf`, Node engine metadata, package file coverage, and required
 runtime/docs files. `upgrade check` compares the current CLI version with
 `.kabeeri/version_compatibility.json` and `.kabeeri/migration_state.json`.
+
+Both checks now return standalone report metadata, status, blockers, warnings,
+and next actions. `package guide` explains the distribution contract and manual
+`npm pack --dry-run` review. `upgrade guide` explains the safe upgrade sequence,
+compatibility state, migration blockers, and when upgrade decisions need ADR or
+project memory.
 
 Main references:
 

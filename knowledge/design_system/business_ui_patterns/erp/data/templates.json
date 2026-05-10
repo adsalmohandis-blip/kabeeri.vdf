@@ -1,0 +1,39 @@
+[
+  {
+    "templateId": "erp-record-table-v1",
+    "name": "ERP Record Table",
+    "businessType": "erp",
+    "viewType": "data-table",
+    "description": "Compact enterprise record table for modules such as inventory, invoices, and approvals.",
+    "useWhen": ["ERP module lists", "Approval queues", "Audit-heavy records"],
+    "requiredComponents": ["card", "table", "badge", "export-button"],
+    "requiredIcons": ["download", "view", "edit"],
+    "requiredStates": ["loading", "empty", "error", "permission-denied"],
+    "layoutRules": ["Use compact table density", "Status and owner columns visible"],
+    "uxRules": ["Expose audit and permission-sensitive state", "Support pagination or virtualization"],
+    "accessibilityRules": ["Table headers are present", "Actions are named"],
+    "antiPatterns": ["Decorative cards replacing dense records", "Scroll reveal"],
+    "acceptanceCriteria": ["Record table supports operational scanning"],
+    "sampleData": { "moduleName": "Invoices", "recordCount": 24 },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/erp/templates/record-table.html" }
+  },
+  {
+    "templateId": "erp-approval-stepper-v1",
+    "name": "ERP Approval Stepper",
+    "businessType": "erp",
+    "viewType": "approval-stepper",
+    "description": "Approval status block for enterprise workflows.",
+    "useWhen": ["Purchase approvals", "Invoice approvals", "Policy workflows"],
+    "requiredComponents": ["card", "list-group", "badge"],
+    "requiredIcons": ["warning", "check"],
+    "requiredStates": ["pending", "approved", "rejected", "blocked"],
+    "layoutRules": ["Show step name, owner, and status"],
+    "uxRules": ["Current step and consequence are explicit"],
+    "accessibilityRules": ["Do not rely on color alone for status"],
+    "antiPatterns": ["Hidden approval owner"],
+    "acceptanceCriteria": ["Approval path is understandable"],
+    "sampleData": { "stepName": "Finance review", "status": "Pending" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/erp/templates/approval-stepper.html" }
+  }
+]
+

@@ -71,9 +71,22 @@ Composition adds the shared Kabeeri common prompt layer, task scope, acceptance 
 10_DEVICE_PERMISSIONS_NOTIFICATIONS_PROMPT.md
 11_TESTING_REVIEW_PROMPT.md
 12_EAS_RELEASE_HANDOFF_PROMPT.md
+13_BACKEND_API_CONTRACT_PROMPT.md
+14_ACCESSIBILITY_PERFORMANCE_PROMPT.md
 prompt_pack_manifest.json
 ```
 
 ## Status
 
-Foundation mobile prompt pack for `v0.1.1`.
+Mobile prompt pack for `v0.2.0`.
+
+## Recommended beginner path
+
+1. Confirm the mobile app boundary in Kabeeri.
+2. Confirm whether the app is a standalone product or a channel connected to a backend.
+3. Compose one prompt for the current task.
+4. Let the AI work only inside the allowed files.
+5. Run available checks and test on a real device, simulator, emulator, or Expo Go.
+6. Record the AI run and connect useful work to ADRs when decisions were made.
+
+For backend-connected apps, use the backend API contract prompt before screens that depend on server behavior. For apps close to demo or release, use the accessibility/performance prompt before EAS handoff.

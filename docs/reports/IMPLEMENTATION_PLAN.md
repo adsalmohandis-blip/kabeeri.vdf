@@ -1,6 +1,6 @@
 # Implementation Plan
 
-Updated: 2026-05-09
+Updated: 2026-05-10
 
 This is the current forward implementation plan. Older phase plans are now
 historical context; they should not be used as the active roadmap when they
@@ -20,9 +20,9 @@ Kabeeri VDF currently has:
 - AI usage, budgets, context packs, preflights, and model routing.
 - policy gates for task, release, handoff, security, migration, and GitHub writes.
 - security and migration governance.
-- ADR and AI run history.
-- common prompt layer and React Native Expo pack.
-- design source governance and dashboard UX governance.
+- ADR and AI run history, including decision trace and two-way ADR/run links.
+- common prompt layer and React Native Expo Pack v0.2.0 with mobile API contract and accessibility/performance prompts.
+- design source governance, unified Design Governance reports, and dashboard UX governance.
 - package and upgrade checks.
 
 ## Guardrails
@@ -63,8 +63,8 @@ reading many files.
 Tasks:
 
 - Deepen `Task Tracker Live Board` with filters, views, and drilldowns.
-- Add role-aware dashboard sections for Owner, developer, AI agent, QA, and solo mode.
-- Improve empty/error/loading states.
+- Extend the existing role-aware dashboard guidance into saved interactive views for Owner, developer, AI agent, QA, and solo mode.
+- Improve advanced empty/error/loading states and drilldown navigation.
 - Add dashboard saved views for tasks, apps, workstreams, policy gates, cost, and handoff.
 - Build VS Code extension views on top of existing `kvdf vscode scaffold`.
 
@@ -97,9 +97,9 @@ Goal: make design governance more practical for frontend execution.
 
 Tasks:
 
-- Add visual issue records and dashboard visibility.
-- Add contrast/theme checks.
-- Add screenshot review workflow and evidence fields.
+- Add visual issue records and dashboard visibility on top of existing visual reviews.
+- Add automated contrast/theme checks.
+- Add browser screenshot review helpers beyond the current evidence fields.
 - Add safe custom CSS/theme audit rules.
 
 Outputs:

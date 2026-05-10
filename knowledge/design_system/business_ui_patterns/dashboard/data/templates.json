@@ -1,0 +1,21 @@
+[
+  {
+    "templateId": "dashboard-kpi-band-v1",
+    "name": "Dashboard KPI Band",
+    "businessType": "dashboard",
+    "viewType": "kpi-band",
+    "description": "Responsive KPI cards for top-level dashboard metrics.",
+    "useWhen": ["Dashboard overview", "Executive summary", "Operational monitor"],
+    "requiredComponents": ["card", "badge", "metric", "trend"],
+    "requiredIcons": ["trend"],
+    "requiredStates": ["loading", "empty", "error"],
+    "layoutRules": ["Use consistent card heights", "Do not overpopulate metrics"],
+    "uxRules": ["Metric label, value, period, and trend are visible"],
+    "accessibilityRules": ["Do not use color alone for trend"],
+    "antiPatterns": ["Charts without insight", "All metrics same importance"],
+    "acceptanceCriteria": ["KPI cards scan in one pass"],
+    "sampleData": { "label": "Revenue", "value": "$42k", "period": "30d" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/dashboard/templates/kpi-band.html" }
+  }
+]
+

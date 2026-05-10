@@ -1,0 +1,63 @@
+{
+  "index_version": "1.0.0",
+  "purpose": "Machine-readable index for Kabeeri business UI template packs.",
+  "default_selection_order": [
+    "businessType",
+    "viewType",
+    "motionLevel",
+    "compatibleLibraries",
+    "requiredStates",
+    "creativeAxes"
+  ],
+  "packs": [
+    {
+      "businessType": "ecommerce",
+      "pattern": "knowledge/design_system/business_ui_patterns/ecommerce/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/ecommerce/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB02"
+    },
+    {
+      "businessType": "saas",
+      "pattern": "knowledge/design_system/business_ui_patterns/saas/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/saas/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB05"
+    },
+    {
+      "businessType": "admin-panel",
+      "pattern": "knowledge/design_system/business_ui_patterns/admin-panel/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/admin-panel/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB03"
+    },
+    {
+      "businessType": "dashboard",
+      "pattern": "knowledge/design_system/business_ui_patterns/dashboard/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/dashboard/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB01"
+    },
+    {
+      "businessType": "crm",
+      "pattern": "knowledge/design_system/business_ui_patterns/crm/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/crm/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB03"
+    },
+    {
+      "businessType": "erp",
+      "pattern": "knowledge/design_system/business_ui_patterns/erp/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/erp/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB04"
+    },
+    {
+      "businessType": "booking",
+      "pattern": "knowledge/design_system/business_ui_patterns/booking/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/booking/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB05"
+    },
+    {
+      "businessType": "ai-product",
+      "pattern": "knowledge/design_system/business_ui_patterns/ai-product/PATTERN.md",
+      "templates": "knowledge/design_system/business_ui_patterns/ai-product/data/templates.json",
+      "recommendedDashboardStyle": "ADMIT-ADB01"
+    }
+  ]
+}
+

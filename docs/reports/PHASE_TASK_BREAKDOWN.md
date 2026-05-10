@@ -1,6 +1,6 @@
 # Phase Task Breakdown
 
-Current overlay updated: 2026-05-09.
+Current overlay updated: 2026-05-10.
 
 The original phase task rows below are historical planning output from the
 requirements matrix. Many rows still say `partial` or `missing` because they
@@ -12,10 +12,25 @@ rows as active work.
 | Phase | Focus | Current Status | Next Work |
 | --- | --- | --- | --- |
 | Phase A | Stabilize current worktree | active | Review dirty tree, group commits, keep Owner state updated. |
-| Phase B | Dashboard and VS Code product surface | active gap | Deepen live dashboard and build VS Code webviews over `.kabeeri`. |
+| Phase B | Dashboard and VS Code product surface | active gap | Dashboard UX governance exists; add saved views/drilldowns and build VS Code webviews over `.kabeeri`. |
 | Phase C | Security and privacy depth | active gap | Add PII/privacy and stack-specific scanner rules. |
-| Phase D | Design QA automation | active gap | Add visual issue tracking, contrast checks, screenshot evidence, and theme audit. |
+| Phase D | Design QA automation | active gap | Design Governance reports exist; add automated visual issue tracking, contrast checks, browser screenshot helpers, and theme audit. |
 | Phase E | Framework adapters | future | Add gated migration/execution adapters after governance dry-runs are stable. |
+
+## Current Reconciliation Notes
+
+These historical phase rows are not the active source of truth when they
+contradict the current overlay. Since the original matrix was generated,
+Kabeeri has implemented or substantially advanced:
+
+- Common Prompt Layer and React Native Expo Pack v0.2.0.
+- Dashboard live state, task tracker live JSON, role/widget Dashboard UX Governance, and multi-workspace dashboard strategy.
+- Design Source Governance, visual reviews, design gates, and unified Design Governance reports.
+- ADR/AI Run History with two-way links and decision trace reports.
+- Policy gates, security governance, migration safety governance, handoff packages, package checks, and GitHub write gates.
+
+Use `GAP_REPORT.md`, `MISSING_REQUIREMENTS_BACKLOG.md`, and
+`CURRENT_REPOSITORY_ANALYSIS.md` for active work.
 
 ## Historical Phase Rows
 

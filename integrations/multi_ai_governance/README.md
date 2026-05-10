@@ -6,7 +6,7 @@ multi-developer and multi-AI governance.
 The active runtime and product documentation has moved to:
 
 - `governance/`
-- `governance/TASK_GOVERNANCE.md`
+- `task_tracking/TASK_GOVERNANCE.md`
 - `governance/EXECUTION_SCOPE_GOVERNANCE.md`
 - `governance/WORKSTREAM_GOVERNANCE.md`
 - `governance/SOLO_DEVELOPER_MODE.md`
@@ -33,7 +33,7 @@ governance documentation and CLI runtime:
 | `v3_2_owner_transfer/` | `governance/SINGLE_OWNER_RULE.md`, `governance/OWNER_TRANSFER_TOKEN.md`, `kvdf owner transfer` |
 | `v3_3_task_access_tokens/` | `governance/EXECUTION_SCOPE_GOVERNANCE.md`, `kvdf token` |
 | `v3_4_locks/` | `governance/LOCKING_RULES.md`, `kvdf lock` |
-| `v3_5_assignment_governance/` | `governance/ASSIGNMENT_EXECUTION_GOVERNANCE.md`, `governance/TASK_GOVERNANCE.md` |
+| `v3_5_assignment_governance/` | `governance/ASSIGNMENT_EXECUTION_GOVERNANCE.md`, `task_tracking/TASK_GOVERNANCE.md` |
 | `v3_6_ai_sessions/` | `governance/AI_DEVELOPER_OUTPUT_CONTRACT.md`, `kvdf session` |
 | `v3_7_budgets/` | `governance/TOKEN_BUDGET_RULES.md`, `ai_cost_control/` |
 | `v3_8_verify_audit/` | `governance/OWNER_VERIFY_TOKEN_REVOCATION_AUDIT.md`, `kvdf audit` |

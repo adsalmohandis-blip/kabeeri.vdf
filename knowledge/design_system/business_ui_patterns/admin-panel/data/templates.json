@@ -1,0 +1,21 @@
+[
+  {
+    "templateId": "admin-crud-table-v1",
+    "name": "Admin CRUD Table",
+    "businessType": "admin-panel",
+    "viewType": "crud-table",
+    "description": "Admin list screen with search, filters, create action, and responsive table.",
+    "useWhen": ["Backoffice lists", "CMS management", "Moderation queues"],
+    "requiredComponents": ["card", "table", "search", "filter", "button", "badge"],
+    "requiredIcons": ["create", "search", "filter", "edit", "delete"],
+    "requiredStates": ["loading", "empty", "error", "success", "disabled"],
+    "layoutRules": ["Header action on the right", "Filters above table", "Responsive wrapper required"],
+    "uxRules": ["Row actions are explicit", "Bulk actions require selection state"],
+    "accessibilityRules": ["Search input has label", "Actions are buttons"],
+    "antiPatterns": ["Delete without confirmation", "Table without empty state"],
+    "acceptanceCriteria": ["Table is responsive", "Create action is clear"],
+    "sampleData": { "title": "Records" },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/admin-panel/templates/crud-table.html" }
+  }
+]
+

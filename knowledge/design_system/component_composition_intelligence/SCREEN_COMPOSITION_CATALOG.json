@@ -1,0 +1,96 @@
+{
+  "catalog_version": "1.0.0",
+  "compositions": [
+    {
+      "composition_id": "crud_table_workspace",
+      "name": "CRUD Table Workspace",
+      "best_for": ["admin", "erp", "crm", "wms", "backoffice", "settings"],
+      "keywords": ["crud", "table", "records", "admin", "users", "products", "orders", "invoices", "list"],
+      "experience_patterns": ["data_heavy_web_app", "pos_operations"],
+      "primary_components": ["page_header", "search_box", "filter_bar", "data_table", "status_badge", "row_actions", "pagination"],
+      "supporting_components": ["bulk_actions", "confirm_modal", "toast", "empty_state", "error_state", "skeleton"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation"],
+      "responsive_behavior": ["desktop_table", "tablet_condensed_columns", "mobile_card_rows_or_horizontal_scroll"],
+      "accessibility_focus": ["table_headers", "aria_sort", "row_context", "keyboard_actions", "focus_visible"],
+      "performance_focus": ["pagination", "filter_debounce", "virtualization_when_large", "stable_table_width"],
+      "microcopy_focus": ["clear_action_labels", "filter_empty_copy", "delete_consequence"],
+      "visual_qa_focus": ["density", "table_readability", "action_hierarchy", "mobile_fallback"]
+    },
+    {
+      "composition_id": "dashboard_overview",
+      "name": "Dashboard Overview",
+      "best_for": ["dashboard", "analytics", "erp", "crm", "saas", "ai", "governance"],
+      "keywords": ["dashboard", "overview", "analytics", "kpi", "report", "metrics", "insights"],
+      "experience_patterns": ["data_heavy_web_app"],
+      "primary_components": ["app_shell", "page_header", "filter_bar", "metric_card", "chart_card", "data_table"],
+      "supporting_components": ["date_range_picker", "insight_callout", "activity_timeline", "empty_state", "error_state", "skeleton"],
+      "required_states": ["loading", "empty", "error", "partial_data", "permission"],
+      "responsive_behavior": ["desktop_multi_column_grid", "tablet_two_column_grid", "mobile_stacked_cards"],
+      "accessibility_focus": ["landmarks", "chart_fallbacks", "keyboard_filtering", "status_text"],
+      "performance_focus": ["independent_widget_loading", "chart_lazy_loading", "reserved_card_height", "data_refresh_boundaries"],
+      "microcopy_focus": ["metric_labels", "time_range_clarity", "data_freshness", "empty_widget_copy"],
+      "visual_qa_focus": ["scanability", "chart_legibility", "status_visibility", "stable_layout"]
+    },
+    {
+      "composition_id": "checkout_decision_flow",
+      "name": "Checkout Decision Flow",
+      "best_for": ["ecommerce", "marketplace", "booking", "payment"],
+      "keywords": ["checkout", "cart", "payment", "order", "booking", "summary", "shipping"],
+      "experience_patterns": ["commerce_storefront"],
+      "primary_components": ["checkout_stepper", "form_field", "order_summary", "payment_method", "shipping_method", "primary_action"],
+      "supporting_components": ["coupon_input", "trust_signals", "policy_notice", "error_state", "success_state", "loading_button"],
+      "required_states": ["loading", "error", "success", "disabled", "validation", "payment_processing"],
+      "responsive_behavior": ["desktop_two_column_summary", "mobile_summary_collapse", "sticky_primary_action_when_safe"],
+      "accessibility_focus": ["form_labels", "error_recovery", "step_context", "payment_method_labels"],
+      "performance_focus": ["stable_summary", "low_javascript_weight", "payment_error_recovery", "no_layout_shift"],
+      "microcopy_focus": ["fee_clarity", "delivery_dates", "payment_confidence", "retry_copy"],
+      "visual_qa_focus": ["primary_action_visibility", "trust_clarity", "mobile_completion_flow"]
+    },
+    {
+      "composition_id": "content_detail_page",
+      "name": "Content Detail Page",
+      "best_for": ["blog", "news", "documentation", "knowledge", "corporate"],
+      "keywords": ["article", "post", "content", "documentation", "guide", "news", "case study"],
+      "experience_patterns": ["seo_content_site"],
+      "primary_components": ["article_header", "breadcrumb", "table_of_contents", "content_body", "author_box", "related_posts"],
+      "supporting_components": ["source_list", "share_buttons", "newsletter_signup", "faq_block", "callout_box"],
+      "required_states": ["loading", "error", "empty"],
+      "responsive_behavior": ["desktop_reading_width_with_sidebar", "tablet_single_column", "mobile_linear_reading"],
+      "accessibility_focus": ["heading_order", "link_purpose", "landmarks", "readable_line_length"],
+      "performance_focus": ["lcp_media", "font_loading", "lazy_related_content", "structured_data"],
+      "microcopy_focus": ["descriptive_headings", "last_updated", "source_credibility", "related_next_steps"],
+      "visual_qa_focus": ["reading_rhythm", "first_viewport_signal", "content_scanability"]
+    },
+    {
+      "composition_id": "settings_form_sections",
+      "name": "Settings Form Sections",
+      "best_for": ["settings", "profile", "billing", "workspace", "admin", "saas"],
+      "keywords": ["settings", "profile", "preferences", "billing", "configuration", "account"],
+      "experience_patterns": ["data_heavy_web_app", "mobile_app"],
+      "primary_components": ["settings_nav", "section_card", "form_field", "switch", "save_bar", "toast"],
+      "supporting_components": ["helper_text", "validation_message", "confirm_modal", "alert", "skeleton"],
+      "required_states": ["loading", "error", "success", "disabled", "validation", "dirty"],
+      "responsive_behavior": ["desktop_two_column_settings", "mobile_stacked_sections"],
+      "accessibility_focus": ["visible_labels", "fieldsets", "error_summary", "focus_restore"],
+      "performance_focus": ["section_level_loading", "avoid_full_page_rerender", "debounced_validation"],
+      "microcopy_focus": ["helper_text", "save_confirmation", "danger_zone_consequence"],
+      "visual_qa_focus": ["form_scanability", "danger_zone_clarity", "sticky_save_behavior"]
+    },
+    {
+      "composition_id": "ai_prompt_workspace",
+      "name": "AI Prompt Workspace",
+      "best_for": ["ai", "assistant", "automation", "prompt", "generation"],
+      "keywords": ["ai", "prompt", "assistant", "chat", "generation", "automation", "history"],
+      "experience_patterns": ["data_heavy_web_app", "mobile_app"],
+      "primary_components": ["prompt_box", "suggested_prompts", "streaming_response", "version_history", "feedback_actions"],
+      "supporting_components": ["usage_badge", "copy_button", "regenerate_button", "error_state", "loading_state", "empty_state"],
+      "required_states": ["empty", "streaming", "error", "success", "disabled", "rate_limited"],
+      "responsive_behavior": ["desktop_split_workspace", "mobile_single_column_with_sticky_prompt"],
+      "accessibility_focus": ["live_regions", "copy_feedback", "keyboard_submission", "focus_after_generation"],
+      "performance_focus": ["streaming_render_budget", "history_pagination", "large_output_virtualization"],
+      "microcopy_focus": ["expectation_setting", "retry_copy", "confidence_boundaries", "usage_clarity"],
+      "visual_qa_focus": ["prompt_focus", "output_readability", "state_transitions", "cost_visibility"]
+    }
+  ]
+}
+

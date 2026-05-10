@@ -1,5 +1,16 @@
 # 02 — Framework Architecture
 
+# Legacy English File - Framework Architecture
+
+This file is retained for old links only. The canonical English file is
+`docs/en/03_FRAMEWORK_ARCHITECTURE.md`, and the Arabic counterpart is
+`docs/ar/03_FRAMEWORK_ARCHITECTURE.md`.
+
+New documentation links should use the canonical numbered files listed in
+`docs/en/README.md`.
+
+---
+
 ## Overview
 
 Kabeeri VDF is a meta-framework made of layers. Each layer solves a different part of AI-driven software development.
@@ -192,4 +203,3 @@ Idea
 Kabeeri VDF should protect the core project from uncontrolled growth.
 
 New features should start as extension proposals unless they are clearly required for the first product version.
-

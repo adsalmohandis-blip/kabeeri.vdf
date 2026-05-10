@@ -32,12 +32,34 @@
 - Added Execution Scope Governance tying task access tokens to app and workstream boundaries, with automatic token scopes, broad-scope blocking, dashboard visibility, and consolidated documentation.
 - Added optional Vibe-first runtime commands (`kvdf vibe`, `kvdf ask`, `kvdf capture`) with intent records, suggested task cards, post-work captures, task conversion, dashboard visibility, and documentation.
 - Expanded Vibe-first runtime with planning splits, Vibe sessions, compact context briefs, next-action recommendations, and dashboard visibility for lower-token team handoffs.
+- Strengthened the Vibe-first command flow so `kvdf vibe approve` records approval separately from `kvdf vibe convert`, and high-risk suggestions must be approved before conversion unless explicitly forced.
 - Expanded post-work capture into a full lifecycle with git/manual changed-file details, scan previews, task matching, evidence updates, link/convert/reject/resolve commands, capture validation, missing-evidence tracking, and dashboard next actions.
+- Deepened Dashboard UX Governance with runtime role visibility, widget registry, app/workspace strategy, live/stale state rules, and stronger `kvdf dashboard ux` checks for same-product multi-app and linked-workspace workflows.
 - Added Agile Templates Runtime with `.kabeeri/agile.json`, backlog/epic/story/sprint planning/sprint review commands, story-to-task conversion, Agile validation, dashboard visibility, and documentation.
+- Deepened Agile templates with release planning/readiness, Definition of Done, story splitting, release plan templates, release validation, and Agile dashboard release readiness.
 - Expanded Agile into a Scrum-grade operational runtime with stricter Definition of Ready checks, impediments, retrospectives, velocity/forecast health, `.kabeeri/dashboard/agile_state.json`, and `/__kvdf/api/agile`.
 - Added Structured Delivery Runtime for Waterfall-style enterprise delivery with approved requirements, phases, deliverables, risks, change requests, phase gates, traceability, `.kabeeri/structured.json`, `.kabeeri/dashboard/structured_state.json`, and `/__kvdf/api/structured`.
 - Added Delivery Mode Advisor with `kvdf delivery recommend`, `kvdf delivery choose`, and `.kabeeri/delivery_decisions.json` so Kabeeri/Codex can suggest Agile or Structured from the requested application context while leaving the final decision to the developer.
 - Added Product Blueprint Catalog with `kvdf blueprint` commands and `.kabeeri/product_blueprints.json` so Kabeeri/Codex can map market systems to channels, backend modules, frontend pages, database entities, workstreams, and risks before task creation.
+- Added UI/UX Reference Library with governed design rules, admin dashboard reference patterns, `.kabeeri/design_sources/ui_ux_reference.json`, and `kvdf design reference-*` commands for pattern recommendation, design questions, and frontend task generation.
+- Added unified Design Governance reports through `kvdf design governance`, covering source snapshots, approved specs, tokens, page/component contracts, visual evidence, accessibility/contrast checks, UI advisor context, missing design reports, and next actions.
+- Added Bootstrap 5.3.8 as an installed dependency and approved UI/UX design-system foundation, including `BOOT-UI01` reference guidance, design questions, task templates, and UI advisor recommendation output.
+- Added Tailwind CSS 4.3.0 and `@tailwindcss/cli` 4.3.0 as installed dev dependencies and approved UI/UX design-system foundations, including `TAIL-UI01` reference guidance, design questions, task templates, and UI advisor recommendation output.
+- Added approved UI/UX library foundations for Bulma 1.0.4, Foundation Sites 6.9.0, MUI 9.0.1, Ant Design 6.3.7, daisyUI 5.5.19, and shadcn/ui CLI 4.7.0, including reference guidance, compatibility rules, questions, and task templates.
+- Added Kabeeri UI Execution Kit with low-token UI contracts, semantic color system, controlled creative variation rules, icon map, button presets, component decision map, page recipes, templates, UI review checklist, and static UI checker.
+- Added KVDF-inspired business UI patterns, user flow references, reusable UI template metadata schema, and motion/microinteraction guidance so Kabeeri can combine governed UI execution with product-specific creative variation.
+- Added priority business UI template packs for eCommerce, SaaS, admin panels, dashboards, CRM, ERP, booking, and AI products, including reusable HTML snippets, template metadata, dashboard-style recommendations, and compact implementation prompts in UI advisor output.
+- Added full business UI reference libraries, five files per priority business pack, modeled after the existing admin dashboard references and returned by UI advisor recommendations.
+- Expanded detailed business UI references to include landing pages, corporate websites, marketplaces, delivery, LMS/EdTech, FinTech, HealthTech, and real estate, bringing the governed business reference library to 80 full reference files.
+- Strengthened `MOTION_MICROINTERACTIONS.md` into a full motion design system with decision workflow, business motion map, library decision matrix, tokens, CSS presets, component recipes, reduced-motion rules, performance guidance, accessibility rules, assessment template, and review checklist.
+- Added an RTL Arabic UI Reference Pack and wired it into UI recommendations, implementation prompts, component rules, acceptance checks, and the design blueprint so Arabic, bilingual, MENA, and RTL surfaces receive typography, direction, layout, forms, tables, numbers, dates, icons, accessibility, and review guidance automatically.
+- Added an Accessibility and Inclusive UI Reference Pack and wired it into UI recommendations, implementation prompts, UI review, component rules, acceptance checks, and the design blueprint so every generated interface gets an accessibility level plus semantic HTML, keyboard, focus, forms, tables, dialogs, contrast, readable content, and inclusive state guidance.
+- Added a Performance and Core Web Vitals UI Pack and wired it into UI recommendations, implementation prompts, UI review, component rules, acceptance checks, and the design blueprint so every generated interface gets a performance level plus LCP, INP, CLS, image/media, font, CSS, JavaScript, data rendering, skeleton, and loading-state guidance.
+- Added a Content and Microcopy UX Pack and wired it into UI recommendations, implementation prompts, UI review, component rules, acceptance checks, and the design blueprint so generated interfaces get product-aware action labels, empty/error state copy, validation messages, onboarding help, confirmations, status labels, and tone guidance.
+- Added Framework Adapter Intelligence with adapter catalog, compatibility rules, review checklist, `kvdf design framework-adapters`, `kvdf design framework-plan`, and UI advisor wiring so Kabeeri can translate tokens and screen compositions into Bootstrap, Tailwind CSS, Bulma, Foundation, MUI, Ant Design, daisyUI, or shadcn/ui implementation plans without repeating long framework instructions.
+- Added Creative Variant Intelligence with bounded variant archetypes, generation contract, review checklist, `kvdf design variant-archetypes`, `kvdf design variants`, and UI advisor wiring so similar product requests can produce distinct professional directions while preserving tokens, composition, adapter, accessibility, performance, motion, content, and RTL rules.
+- Added UI Decision Intake with compact UI questions, answer mapping rules, review checklist, `kvdf design ui-questions`, `kvdf design ui-decisions`, and UI advisor wiring so developer/client answers choose variant, palette, density, navigation, surface style, tone, adapter, and composition instead of leaving visual direction to generic AI invention.
+- Added Project UI Playbooks for all 25 product blueprints with default variant archetype, composition, adapter preferences, density, navigation pattern, focus areas, critical UI questions, and avoid rules, plus `kvdf design playbooks`, `kvdf design playbook`, and UI advisor wiring.
 - Added Data Design Blueprint with `kvdf data-design` commands and `.kabeeri/data_design.json` so Kabeeri/Codex can design database models from business workflow, modules, entities, constraints, snapshots, audit, indexes, transactions, idempotency, and migration safety.
 - Added UI/UX Advisor under `kvdf design recommend` with `.kabeeri/design_sources/ui_advisor.json` so Kabeeri/Codex can choose frontend experience patterns, stacks, component groups, page templates, SEO/GEO rules, dashboard rules, and mobile UX rules from the selected product blueprint.
 - Added Repository Foldering System with `standard_systems/REPOSITORY_FOLDERING_MAP.json`, `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, `kvdf structure`, and `kvdf validate foldering` to organize Kabeeri's growing root folders into stable core, knowledge, packs, integrations, contracts, docs, quality, and runtime-state groups.
@@ -81,13 +103,17 @@
 - Added runtime page spec and component contract records for approved design text specs.
 - Added Design Governance visual acceptance runtime with visual review records, design gates, validation, and screenshot evidence before frontend visual verification.
 - Added ADR and AI Run History runtime with `kvdf adr`, `kvdf ai-run`, accepted/rejected AI output records, waste signals, validation, dashboard visibility, and project intelligence documentation.
+- Expanded ADR / AI Run History with two-way ADR/run linking, `kvdf ai-run link`, `kvdf adr trace`, acceptance-rate reporting, by-ADR AI run summaries, and decision trace reports with cost/token evidence.
 - Added Common Prompt Layer with `prompt_packs/common/`, `kvdf prompt-pack compose`, prompt composition records, validation, dashboard visibility, and shared scope/review/AI-run rules for all stack prompt packs.
+- Expanded Common Prompt Layer to v0.3.0 with shared cost/context, policy gate, design, security, migration, and traceability rules embedded in composed prompt metadata.
 - Added Runtime Schema Registry with `schemas/runtime/`, `.kabeeri` JSON/JSONL mappings, `kvdf validate runtime-schemas`, and full validation coverage for runtime state drift.
-- Consolidated task governance by removing the old `task_governance/` pointer and keeping policy in `governance/TASK_GOVERNANCE.md` while `task_tracking/` remains the schema/template home.
+- Unified task tracking and task governance under `knowledge/task_tracking/`, with `TASK_GOVERNANCE.md` as the canonical policy and `knowledge/governance/TASK_GOVERNANCE.md` kept only as a compatibility pointer.
 - Added independent `kvdf readiness report` and `kvdf governance report` commands with Markdown/JSON output for standalone readiness and governance reviews.
+- Strengthened independent readiness/governance reports with target-aware snapshots, strict mode, standalone metadata, source-of-truth notes, and a dedicated internal operating guide.
 - Strengthened release and GitHub publish gates so confirmed GitHub release publishing must pass both `release_policy` and `github_write_policy` before any `gh` write runs.
 - Added product packaging and upgrade support with `package.json` package file coverage, `npm run pack:check`, `kvdf package check`, `kvdf upgrade check`, and production packaging/upgrade guides.
 - Added the React Native Expo prompt pack with Expo-specific mobile prompts, manifest, export/compose support, safety rules for secrets/native permissions/EAS handoff, and CLI integration tests.
+- Expanded the React Native Expo prompt pack with backend API contract and accessibility/performance prompts plus manifest-driven prompt selection keywords for more accurate `prompt-pack compose` output.
 - Added bilingual documentation parity for the Arabic and English docs: matching 01-20 canonical topic files, Arabic/English indexes, and a bilingual maintenance guide.
 - Added focused Task Tracker live JSON for dashboards and editor surfaces through `.kabeeri/dashboard/task_tracker_state.json`, `kvdf task tracker`, `kvdf dashboard task-tracker`, and `/__kvdf/api/tasks`.
 - Added Live Reports JSON for fast-changing readiness, governance, package, upgrade, task tracker, dashboard UX, security, and migration summaries through `.kabeeri/reports/live_reports_state.json`, `kvdf reports live`, and `/__kvdf/api/reports`.
@@ -250,12 +276,12 @@
 
 ### Files Added
 
-- [governance/TASK_GOVERNANCE.md](governance/TASK_GOVERNANCE.md)
-- [task_tracking/README.md](task_tracking/README.md)
-- [task_tracking/TASK_CREATION_RULES.md](task_tracking/TASK_CREATION_RULES.md)
-- [task_tracking/TASK_INTAKE_TEMPLATE.md](task_tracking/TASK_INTAKE_TEMPLATE.md)
-- [task_tracking/TASK_DEFINITION_OF_READY.md](task_tracking/TASK_DEFINITION_OF_READY.md)
-- [task_tracking/TASK_SOURCE_RULES.md](task_tracking/TASK_SOURCE_RULES.md)
+- [knowledge/task_tracking/TASK_GOVERNANCE.md](knowledge/task_tracking/TASK_GOVERNANCE.md)
+- [knowledge/task_tracking/README.md](knowledge/task_tracking/README.md)
+- [knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md](knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md)
+- [knowledge/task_tracking/TASK_PROVENANCE_SCHEMA.json](knowledge/task_tracking/TASK_PROVENANCE_SCHEMA.json)
+- [knowledge/task_tracking/task.schema.json](knowledge/task_tracking/task.schema.json)
+- [knowledge/task_tracking/TASK_REVIEW_CHECKLIST.md](knowledge/task_tracking/TASK_REVIEW_CHECKLIST.md)
 
 ---
 
@@ -382,3 +408,10 @@
 - SECURITY.md
 - CODE_OF_CONDUCT.md
 - CHANGELOG.md (this file)
+
+## [Unreleased] - UI Design Intelligence
+
+- Added Visual Quality Governance reference pack with scored design QA rubric, evidence rules, rework decisions, and integration notes.
+- Enhanced design visual reviews with runtime quality scoring and governance warnings for weak review evidence.
+- Added Theme Token Intelligence reference pack for product-aware token presets and shorter UI implementation prompts.
+- Added Component Composition Intelligence reference pack for screen-level component composition IDs and low-token implementation prompts.

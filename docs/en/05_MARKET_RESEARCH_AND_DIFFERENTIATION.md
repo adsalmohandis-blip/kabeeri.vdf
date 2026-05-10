@@ -1,5 +1,16 @@
 # 05 — Market Research and Differentiation
 
+# Legacy English File - Market Research and Differentiation
+
+This file is retained for old links only. The canonical English file is
+`docs/en/15_MARKET_RESEARCH_AND_DIFFERENTIATION.md`, and the Arabic counterpart
+is `docs/ar/15_MARKET_RESEARCH_AND_DIFFERENTIATION.md`.
+
+New documentation links should use the canonical numbered files listed in
+`docs/en/README.md`.
+
+---
+
 ## Purpose
 
 This document explains the market position of Kabeeri VDF and how it differs from nearby categories such as AI coding assistants, agentic IDEs, spec-driven development tools, prompt libraries, and autonomous coding agents.
@@ -103,4 +114,3 @@ Kabeeri VDF is a meta-framework for AI-driven software development. It helps vib
 Many AI tools help write code.
 Kabeeri VDF helps users decide what should be built, how to describe it, how to generate the right documents and prompts, and how to review the result.
 ```
-

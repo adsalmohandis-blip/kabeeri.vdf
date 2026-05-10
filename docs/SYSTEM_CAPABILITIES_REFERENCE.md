@@ -29,7 +29,7 @@ state are involved.
 | Questionnaires | Collects structured product and technical answers; adaptive intake planning now uses blueprints, framework prompt packs, data design, UI/UX, delivery mode context, and detected user language before asking. | `knowledge/questionnaires/`, `knowledge/questionnaire_engine/`, `.kabeeri/questionnaires/adaptive_intake_plan.json`, `kvdf questionnaire plan` |
 | Capability Map | Maps project type to required, optional, deferred, or unknown system areas. | `knowledge/standard_systems/`, `kvdf capability`, `kvdf questionnaire coverage` |
 | Prompt Packs And Common Prompt Layer | Provides stack-specific AI coding prompts plus shared scope, review, and AI-run rules. | `packs/prompt_packs/`, `packs/prompt_packs/common/`, `.kabeeri/prompt_layer/`, `kvdf prompt-pack` |
-| Task Tracking | Manages approved work from intake to verification and exposes a focused live task tracker JSON for dashboards and VS Code-style surfaces. | `knowledge/task_tracking/`, `knowledge/governance/TASK_GOVERNANCE.md`, `.kabeeri/dashboard/task_tracker_state.json`, `kvdf task` |
+| Task Tracking And Governance | Manages approved work from intake to verification, keeps task governance policy, and exposes a focused live task tracker JSON for dashboards and VS Code-style surfaces. | `knowledge/task_tracking/`, `knowledge/task_tracking/TASK_GOVERNANCE.md`, `.kabeeri/dashboard/task_tracker_state.json`, `kvdf task` |
 | Workstream Governance | Separates backend, frontend, mobile, admin, QA, security, docs, and integration work. | `knowledge/governance/WORKSTREAM_GOVERNANCE.md`, `kvdf workstream` |
 | App Boundary Governance | Allows same-product multi-app workspaces while blocking unrelated products in one folder. | `knowledge/governance/APP_BOUNDARY_GOVERNANCE.md`, `kvdf app` |
 | Execution Scope Governance | Derives allowed files, apps, and workstreams for task access tokens. | `knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md`, `kvdf token` |
@@ -39,6 +39,7 @@ state are involved.
 | Evolution Steward | Governs Kabeeri's own updates by recording requested framework changes, inferring impacted areas, creating follow-up tasks, and exposing unfinished dependent work to dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution` |
 | Design Governance | Converts design sources into approved text specs before frontend implementation. | `knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`, `kvdf design` |
 | UI/UX Advisor | Recommends frontend experience pattern, component groups, page templates, stacks, SEO/GEO rules, and dashboard/mobile UX rules from the product blueprint. | `knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`, `.kabeeri/design_sources/ui_advisor.json`, `kvdf design recommend` |
+| UI/UX Reference Library | Stores approved UI/UX rules and reference patterns, then generates design questions and governed frontend/design tasks from them. | `knowledge/design_system/ui_ux_reference/`, `.kabeeri/design_sources/ui_ux_reference.json`, `kvdf design reference-*` |
 | ADR And AI Run History | Records formal architecture decisions and accepted/rejected AI prompt runs. | `knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`, `kvdf adr`, `kvdf ai-run` |
 | AI Cost Control | Tracks usage, budgets, context packs, preflight estimates, and model routing. | `knowledge/ai_cost_control/`, `kvdf usage`, `kvdf preflight` |
 | Live Dashboard | Shows live state for tasks, governance, apps, costs, policies, linked workspaces, and dashboard UX audits. | `integrations/dashboard/`, `kvdf dashboard` |
@@ -179,6 +180,7 @@ It supports:
 - sprint review with accepted and rework points
 - impediment tracking
 - retrospectives and improvement actions
+- release planning and readiness checks
 - velocity and remaining-work forecast
 - live dashboard visibility
 - `kvdf validate agile`
@@ -280,6 +282,7 @@ kvdf vibe "Add admin settings page"
 kvdf vibe suggest "Add checkout API"
 kvdf ask "Improve the dashboard"
 kvdf vibe plan "Build ecommerce store with products cart checkout admin and tests"
+kvdf vibe approve suggestion-001 --actor owner-001
 kvdf vibe session start --title "Store planning"
 kvdf vibe brief
 kvdf vibe next
@@ -404,7 +407,10 @@ They reduce random prompting and keep implementation aligned with Kabeeri task
 governance.
 
 The common prompt layer adds shared rules once and composes them with any stack
-pack, instead of duplicating the same safety text in every framework folder.
+pack, instead of duplicating the same safety text in every framework folder. It
+includes task scope, testing/review, AI run history, cost/context discipline,
+policy gates, design safety, security, migration safety, release/handoff, and
+traceability expectations.
 
 Implemented pack families include:
 
@@ -449,6 +455,12 @@ kvdf prompt-pack compositions
 kvdf prompt-pack validate fastapi
 ```
 
+The React Native Expo pack includes a manifest keyword map so composed prompts
+can select mobile-specific guidance for routing/deep links, public environment
+config, backend API contracts, auth, data/state, forms/keyboard behavior,
+offline cache, permissions/notifications, accessibility/performance, testing,
+and EAS release handoff.
+
 Main references:
 
 - `packs/prompt_packs/`
@@ -491,7 +503,7 @@ kvdf audit report --task task-001
 Main references:
 
 - `knowledge/task_tracking/`
-- `knowledge/governance/TASK_GOVERNANCE.md`
+- `knowledge/task_tracking/TASK_GOVERNANCE.md`
 - `.kabeeri/tasks.json`
 - `.kabeeri/dashboard/task_tracker_state.json`
 - `knowledge/acceptance_checklists/`
@@ -697,17 +709,37 @@ kvdf design page-create --spec text-spec-001 --name "Checkout page"
 kvdf design component-create --page page-spec-001 --name CheckoutSummary
 kvdf design visual-review --page page-spec-001 --task task-001 --screenshots desktop.png,mobile.png --decision pass
 kvdf design gate --task task-001 --page page-spec-001 --json
+kvdf design governance --json
 kvdf design missing-report --source design-source-001 --items responsive,empty-state --risk high
+kvdf design reference-list
+kvdf design reference-show ADMIT-ADB01
+kvdf design reference-recommend "admin ecommerce dashboard with orders and revenue"
+kvdf design reference-questions ADMIT-ADB02
+kvdf design reference-tasks ADMIT-ADB02 --scope "ecommerce admin dashboard"
 kvdf design audit
 ```
+
+`kvdf design governance` produces a unified design governance report for
+sources, text specs, design tokens, page specs, component contracts, visual
+reviews, UI advisor context, UI/UX reference selections, missing design reports,
+and frontend-task readiness.
 
 Main references:
 
 - `knowledge/design_sources/`
 - `knowledge/design_system/`
+- `knowledge/design_system/ui_ux_reference/`
 - `knowledge/frontend_specs/`
 - `knowledge/design_sources/VISUAL_ACCEPTANCE_RUNTIME.md`
 - `docs/reports/V7_DESIGN_SOURCE_GOVERNANCE_IMPLEMENTATION_REPORT.md`
+
+UI/UX Reference Library adds a stronger practical layer on top of design
+governance. It contains general UI/UX system rules plus approved admin
+dashboard patterns such as dark governance dashboards, multi-module e-commerce
+dashboards, enterprise app shells, billing pages, and minimal shadcn-style
+dashboards. Kabeeri can recommend a pattern from a short brief, generate
+developer/client discovery questions, and create governed design tasks before
+frontend code starts.
 
 ## 16. ADR And AI Run History
 
@@ -730,9 +762,11 @@ kvdf adr create --title "Use PostgreSQL" --context "Need relational consistency"
 kvdf adr list
 kvdf adr approve adr-001
 kvdf adr report
+kvdf adr trace --json
 kvdf ai-run record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500
 kvdf ai-run accept ai-run-001 --reviewer reviewer-001 --evidence tests-pass
 kvdf ai-run reject ai-run-001 --reason "Wrong scope"
+kvdf ai-run link ai-run-001 --adr adr-001
 kvdf ai-run report --json
 kvdf validate adr
 kvdf validate ai-run
@@ -821,6 +855,12 @@ kvdf dashboard workspace add --path ../store-a --name "Store A"
 kvdf dashboard workspace list
 kvdf dashboard workspace remove --path ../store-a
 ```
+
+Dashboard UX Governance records role visibility, widget registry rules,
+app/workspace strategy, live refresh behavior, and empty/error/responsive rules
+inside dashboard state. Same-product apps stay inside the current workspace;
+separate products, clients, or release lifecycles are linked as KVDF workspace
+summaries instead of being merged.
 
 Main reference:
 
@@ -976,15 +1016,28 @@ Main commands:
 ```bash
 kvdf readiness report
 kvdf readiness report --json
+kvdf readiness report --target demo
+kvdf readiness report --target release --strict
 kvdf readiness report --output .kabeeri/reports/readiness_report.md
 kvdf governance report
 kvdf governance report --json
+kvdf governance report --target workspace
+kvdf governance report --target publish --strict
 kvdf governance report --output .kabeeri/reports/governance_report.md
 ```
 
 Readiness reports answer: "Can this workspace be shown, handed off, or reviewed
 for release?" Governance reports answer: "Is the control model healthy enough
 for safe development?"
+
+Both reports are standalone snapshots derived from `.kabeeri`, with no
+dashboard server requirement. Supported targets are `workspace`, `demo`,
+`handoff`, `release`, and `publish`. `--strict` escalates warnings into blockers
+for final review scenarios.
+
+Main reference:
+
+- `docs/internal/INDEPENDENT_READINESS_GOVERNANCE_REPORTS.md`
 
 ## 26. Product Packaging And Upgrade
 
@@ -1001,6 +1054,13 @@ kvdf upgrade guide
 kvdf upgrade check
 kvdf upgrade check --json
 ```
+
+`package check` validates the npm package contract and reports required files,
+package metadata, forbidden package-file risks, blockers, warnings, and next
+actions. `upgrade check` compares the current CLI against workspace compatibility
+and migration state, then reports whether migration is required or blocked.
+
+Packaging does not publish. Upgrade does not silently mutate `.kabeeri` state.
 
 Main references:
 

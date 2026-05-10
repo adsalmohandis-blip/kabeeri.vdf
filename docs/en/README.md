@@ -1,8 +1,13 @@
 # English Documentation Index
 
-This index is the English counterpart to `docs/ar/README.md`. The goal is
-documentation parity: both languages should expose the same primary topics even
-when one side later gains more detail.
+This index is the official English entry point for Kabeeri VDF documentation. It must stay structurally aligned with `docs/ar/README.md`: same file numbers, same topics, and the same reading order.
+
+## Parity Rule
+
+- Files numbered `01` through `20` are the canonical documentation files.
+- Every English canonical file has an Arabic counterpart with the same number and filename in `docs/ar/`.
+- When one language gains more detail, the same idea should be added to the other language in the next parity update.
+- Current runtime capability details live in `docs/SYSTEM_CAPABILITIES_REFERENCE.md`; these files explain the foundation and method.
 
 ## Canonical Files
 
@@ -31,17 +36,20 @@ when one side later gains more detail.
 
 ## Legacy English Files
 
-These files existed before the parity pass and are kept to avoid breaking links:
+The following English files existed before the parity pass and are retained only to avoid breaking old links:
 
 - `02_ARCHITECTURE.md`
 - `03_REPOSITORY_STRUCTURE.md`
 - `04_ROADMAP.md`
 - `05_MARKET_RESEARCH_AND_DIFFERENTIATION.md`
 
-Prefer the canonical numbered files above for new links.
+Use the canonical numbered files above for all new links.
 
 ## Maintenance Rule
 
-- Add Arabic and English counterparts together.
-- Keep file numbers and topic names aligned.
-- Put current runtime capability details in `docs/SYSTEM_CAPABILITIES_REFERENCE.md`.
+When adding or changing a canonical document:
+
+1. Update the Arabic and English versions together.
+2. Update `docs/ar/README.md` and `docs/en/README.md`.
+3. Update `docs/BILINGUAL_DOCUMENTATION_PARITY.md` if the parity rule changes.
+4. Update `docs/reports/BILINGUAL_DOCS_PARITY_REPORT.md` after a new parity review.

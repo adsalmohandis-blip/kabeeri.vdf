@@ -66,12 +66,12 @@
 
 | Document | Purpose |
 |----------|---------|
-| [task_governance/README.md](task_governance/README.md) | Overview of task governance |
-| [governance/TASK_GOVERNANCE.md](governance/TASK_GOVERNANCE.md) | Governance policy for tasks |
-| [task_tracking/TASK_CREATION_RULES.md](task_tracking/TASK_CREATION_RULES.md) | Task creation rules |
-| [task_tracking/TASK_INTAKE_TEMPLATE.md](task_tracking/TASK_INTAKE_TEMPLATE.md) | Template for creating tasks |
-| [task_tracking/TASK_DEFINITION_OF_READY.md](task_tracking/TASK_DEFINITION_OF_READY.md) | When task is ready to start |
-| [task_tracking/TASK_SOURCE_RULES.md](task_tracking/TASK_SOURCE_RULES.md) | Source tracing rules |
+| [knowledge/task_tracking/README.md](knowledge/task_tracking/README.md) | Unified task tracking and governance overview |
+| [knowledge/task_tracking/TASK_GOVERNANCE.md](knowledge/task_tracking/TASK_GOVERNANCE.md) | Governance policy for tasks |
+| [knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md](knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md) | Template for creating tasks |
+| [knowledge/task_tracking/TASK_PROVENANCE_SCHEMA.json](knowledge/task_tracking/TASK_PROVENANCE_SCHEMA.json) | Source tracing schema |
+| [knowledge/task_tracking/task.schema.json](knowledge/task_tracking/task.schema.json) | Task schema |
+| [knowledge/task_tracking/TASK_REVIEW_CHECKLIST.md](knowledge/task_tracking/TASK_REVIEW_CHECKLIST.md) | Review checklist |
 
 **Governance Framework:**
 
@@ -184,7 +184,7 @@ kabeeri-vdf/
 │   ├── EXISTING_PROJECT_ADOPTION.md . Non-Kabeeri adoption
 │   └── [intake templates TBD]
 │
-├── task_governance/
+├── knowledge/task_tracking/
 │   ├── README.md ..................... Task governance overview
 │   ├── TASK_CREATION_RULES.md ....... Governance rules
 │   ├── TASK_INTAKE_TEMPLATE.md ...... Task template
@@ -402,7 +402,7 @@ This comprehensive development represents a significant expansion of Kabeeri VDF
 - [delivery_modes/](delivery_modes/) — All mode documentation
 - [agile_delivery/](agile_delivery/) — Agile mode details
 - [project_intake/](project_intake/) — Project setup documentation
-- [task_governance/](task_governance/) — Task rules and templates
+- [knowledge/task_tracking/](knowledge/task_tracking/) — Unified task tracking, governance, rules, and templates
 - [ai_usage/](ai_usage/) — Cost accounting foundation
 
 ---

@@ -2,12 +2,14 @@
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical Phase 04 report. It says some items were deferred at that
 time; several have since been implemented, including `docs_site/`,
 `prompt_packs/common/`, `prompt_packs/react-native-expo/`, runtime schemas,
 task governance consolidation, and broader CLI/runtime features.
+React Native Expo is now v0.2.0, and later phases added Dashboard UX
+Governance, Design Governance reports, and ADR/AI decision tracing.
 
 ## Summary
 
@@ -24,8 +26,8 @@ Phase 04 was completed as a safe v1 stabilization pass. The changes are document
 | `cli/CLI_SAFETY_RULES.md` | Update future-only wording to current-and-future. | Low. |
 | `cli/CLI_ROADMAP.md` | Add current-state note while preserving staged roadmap history. | Low. |
 | `cli/CLI_COMMAND_REFERENCE.md` | Clarify current command reference and help command usage. | Low. |
-| `task_tracking/README.md` | Add boundary with `task_governance/`. | Low. |
-| `task_governance/README.md` | Add boundary with `task_tracking/`. | Low. |
+| `knowledge/task_tracking/README.md` | Current status: unified task tracking and governance overview. | Low. |
+| historical task governance README | Current status: removed; do not recreate. | Low. |
 | `examples/README.md` | Add v1 example coverage table. | Low. |
 | `acceptance_checklists/README.md` | Add v1 checklist coverage note. | Low. |
 | `prompt_packs/prompt_packs_README.md` | Add prompt-pack current/deferred status note. | Low. |
@@ -42,13 +44,14 @@ Phase 04 was completed as a safe v1 stabilization pass. The changes are document
 
 ## What Remains Deferred
 
-- Build `docs_site/` in Phase 12.
+- Build `docs_site/` in Phase 12. Current status: completed after this report.
 - Full English/Arabic documentation parity.
 - DOCX questionnaire edits.
 - Runtime CLI feature changes.
 - GitHub publishing, tags, releases, or issue mutation.
-- Folder renames/merges such as merging `task_tracking/` and `task_governance/`.
-- Creating `prompt_packs/common/` or missing prompt-pack folders.
+- Folder rename/merge status: task tracking and task governance are now unified under `knowledge/task_tracking/`.
+- Creating `prompt_packs/common/` or missing prompt-pack folders. Current status:
+  common layer exists and React Native Expo is expanded to v0.2.0.
 
 ## Checks Performed
 
@@ -57,7 +60,7 @@ Phase 04 was completed as a safe v1 stabilization pass. The changes are document
 - Kept changes scoped to documentation and status clarification.
 - Ran `rg` against root and CLI docs for stale future-only CLI wording; no matches remained for the targeted phrases.
 - Ran `node bin/kvdf.js --help`; command completed successfully.
-- Ran `node bin/kvdf.js validate`; command completed successfully with the expected warning that `.kabeeri` is missing until `kvdf init` is run in a real workspace.
+- Ran `node bin/kvdf.js validate`; command completed successfully with the expected warning that `.kabeeri` is missing until `kvdf init` is run in a real workspace. Current 2026-05-10 validation runs against the active `.kabeeri` workspace and passes.
 
 ## Stop Point
 

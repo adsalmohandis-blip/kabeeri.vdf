@@ -53,12 +53,12 @@ This roadmap contains historical/staged planning plus later roadmap tracks. The 
 - ✅ Support both Structured and Agile modes
 
 **Completed features:**
-- [task_governance/README.md](task_governance/README.md) — Task governance overview
-- [governance/TASK_GOVERNANCE.md](governance/TASK_GOVERNANCE.md) — Task governance policy
-- [task_tracking/TASK_CREATION_RULES.md](task_tracking/TASK_CREATION_RULES.md) — Task creation rules
-- [task_tracking/TASK_INTAKE_TEMPLATE.md](task_tracking/TASK_INTAKE_TEMPLATE.md) — Task template
-- [task_tracking/TASK_DEFINITION_OF_READY.md](task_tracking/TASK_DEFINITION_OF_READY.md) — DoR criteria
-- [task_tracking/TASK_SOURCE_RULES.md](task_tracking/TASK_SOURCE_RULES.md) — Source tracing
+- [knowledge/task_tracking/README.md](knowledge/task_tracking/README.md) — Unified task tracking and governance overview
+- [knowledge/task_tracking/TASK_GOVERNANCE.md](knowledge/task_tracking/TASK_GOVERNANCE.md) — Task governance policy
+- [knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md](knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md) — Task intake template
+- [knowledge/task_tracking/TASK_PROVENANCE_SCHEMA.json](knowledge/task_tracking/TASK_PROVENANCE_SCHEMA.json) — Source tracing schema
+- [knowledge/task_tracking/task.schema.json](knowledge/task_tracking/task.schema.json) — Runtime task schema
+- [knowledge/task_tracking/TASK_REVIEW_CHECKLIST.md](knowledge/task_tracking/TASK_REVIEW_CHECKLIST.md) — Review checklist
 
 ### v1.4.0 — Agile Delivery Core ✅
 - ✅ Create product backlog management

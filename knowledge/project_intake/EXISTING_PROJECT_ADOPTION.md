@@ -751,5 +751,5 @@ After adoption is complete, measure:
 ## Related Documents
 
 - [Project Intake README](README.md)
-- [Task Governance](../task_governance/README.md)
+- [Task Tracking And Governance](../task_tracking/TASK_GOVERNANCE.md)
 - [Main Kabeeri Documentation](../../README.md)

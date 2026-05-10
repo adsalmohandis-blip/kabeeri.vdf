@@ -327,8 +327,10 @@ Export standalone review reports.
 ```bash
 kvdf readiness report
 kvdf readiness report --json
+kvdf readiness report --target release --strict
 kvdf governance report
 kvdf governance report --json
+kvdf governance report --target publish --strict
 ```
 
 ## Purpose

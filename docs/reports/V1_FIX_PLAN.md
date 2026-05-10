@@ -4,17 +4,19 @@ Generated for Phase 03 only. This is a proposed plan; no fixes were applied.
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical fix plan. Several proposed fixes have since been completed
 or superseded:
 
 - `prompt_packs/common/` exists.
-- `prompt_packs/react-native-expo/` exists.
-- `task_governance/` was consolidated away; task policy now lives in
-  `governance/TASK_GOVERNANCE.md` and task formats live in `task_tracking/`.
+- `prompt_packs/react-native-expo/` exists and is expanded to v0.2.0.
+- Historical `task_governance/` was consolidated away; task policy and task
+  formats now live in `knowledge/task_tracking/`.
 - `docs_site/` exists.
 - CLI docs and current reports now describe the implemented runtime.
+- Dashboard UX Governance, Design Governance reports, and ADR/AI decision trace
+  were implemented after this fix plan.
 
 Use `IMPLEMENTATION_PLAN.md` for the current forward plan.
 
@@ -39,11 +41,11 @@ Stabilize the v1 public foundation without mixing v2-v7 features into v1 pages e
 | V1-FIX-002 | README_AR | high | Review Arabic README for parity with current root README status. | Arabic README includes current CLI/runtime note or links to current command reference. | Arabic wording may need Owner review. |
 | V1-FIX-003 | docs/en parity | high | Add an English docs index or parity map showing which Arabic docs have no English equivalent. | Reader can see what is available and what remains untranslated. | Full translation is larger than a stabilization patch. |
 | V1-FIX-004 | docs/ar links | medium | Check Arabic docs links back to root, roadmap, generators, questionnaires, prompt packs, tasks, and acceptance. | No obvious broken navigation in foundation docs. | Link-only changes can become noisy if not scoped. |
-| V1-FIX-005 | prompt packs | high | Historical: audit prompt-pack root/common layer and confirm whether React Native Expo pack is missing or intentionally deferred. Current status: common layer and React Native Expo pack exist. | Prompt-pack status table documents present/deferred packs. | Keep manifests validated as packs evolve. |
+| V1-FIX-005 | prompt packs | high | Historical: audit prompt-pack root/common layer and confirm whether React Native Expo pack is missing or intentionally deferred. Current status: common layer and React Native Expo Pack v0.2.0 exist. | Prompt-pack status table documents present/deferred packs. | Keep manifests validated as packs evolve. |
 | V1-FIX-006 | generators | medium | Add/refresh generator validation examples without changing generator behavior. | Lite/standard/enterprise examples are easy to validate. | Must avoid modifying generator schema unnecessarily. |
 | V1-FIX-007 | questionnaires | medium | Add questionnaire audit note and answered-example backlog. | Core/production/extension questionnaire status is documented. | DOCX content edits should be avoided unless specifically approved. |
 | V1-FIX-008 | examples | medium | Confirm Lite/standard/enterprise examples include workflow, tasks, product brief, and acceptance review link. | Example index states exactly what each profile includes. | Avoid creating large sample generated docs in Phase 04 unless approved. |
-| V1-FIX-009 | task docs overlap | high | Historical: add a cross-reference explaining the relationship between task folders. Current status: `task_governance/` was removed; `governance/TASK_GOVERNANCE.md` is policy and `task_tracking/` is format/runtime docs. | Users know which files are canonical. | Do not recreate deleted duplicate folder. |
+| V1-FIX-009 | task docs overlap | high | Historical: add a cross-reference explaining the relationship between task folders. Current status: historical `task_governance/` was removed; `knowledge/task_tracking/` is the unified policy, format, and runtime docs area. | Users know which files are canonical. | Do not recreate deleted duplicate folder. |
 | V1-FIX-010 | acceptance checklists | medium | Confirm release/task/folder/prompt/AI output checklist index is current. | Acceptance checklist README links all checklist types. | Low. |
 | V1-FIX-011 | CLI docs | high | Update `cli/README.md`, `CLI_COMMANDS.md`, `CLI_USER_FLOWS.md`, `CLI_SAFETY_RULES.md`, and `CLI_ROADMAP.md` wording where it says "future CLI" but runtime exists. | CLI docs distinguish implemented CLI from future UX. | Must not imply every future feature is implemented. |
 | V1-FIX-012 | VS Code planning | medium | Add/refresh a v1 VS Code planning note for sidebar, questionnaire UI, prompt browser, task tracking, and acceptance checklist views. | v1 planning requirement is explicitly covered. | Could duplicate later v3/v6 plans if not cross-linked carefully. |
@@ -62,9 +64,9 @@ Stabilize the v1 public foundation without mixing v2-v7 features into v1 pages e
 
 ## Out of Scope for Phase 04
 
-- Building `docs_site/`.
-- Creating v6/v7 folders.
-- Changing runtime CLI behavior.
+- Building `docs_site/`; now completed after this historical plan.
+- Creating v6/v7 folders; now completed/advanced after this historical plan.
+- Changing runtime CLI behavior; later phases did change runtime behavior under separate approvals.
 - Running GitHub release/publish actions.
 - Editing DOCX questionnaire contents.
 - Renaming or deleting existing folders.

@@ -10,8 +10,7 @@ This file records the current v1 foundation state after Phase 04 stabilization. 
 | Generators | `generators/lite.json`, `generators/standard.json`, and `generators/enterprise.json` exist. |
 | Questionnaires | Core, production, and extension questionnaire folders exist with Arabic and English DOCX files. |
 | Prompt packs | Many stack prompt packs exist directly under `prompt_packs/<pack-name>/`. Some logical categories and common-layer notes remain roadmap items. |
-| Task tracking | `task_tracking/` provides the practical task format, task states, task schema, intake template, provenance schema, review checklist, and execution log template. |
-| Task governance | `governance/TASK_GOVERNANCE.md` is the canonical task policy for readiness, source tracing, scope, assignment, execution, review, and Owner verification. |
+| Task tracking and governance | `knowledge/task_tracking/` provides the practical task format, task states, task schema, intake template, provenance schema, review checklist, execution log template, and canonical task governance policy. |
 | Acceptance checklists | Task, folder, prompt pack, AI output, release, and decision checklists exist. |
 | Examples | Lite, standard, and enterprise example folders exist with workflow, product brief, and task examples. |
 | CLI MVP | `kvdf` exists through `bin/kvdf.js` and package scripts. It supports local validation, project creation, dashboard export/serve, governance workflows, and additional local state operations. |

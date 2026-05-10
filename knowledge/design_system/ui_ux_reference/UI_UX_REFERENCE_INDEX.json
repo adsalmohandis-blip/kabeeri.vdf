@@ -1,0 +1,361 @@
+{
+  "$schema": "https://kabeeri.dev/schemas/ui-ux-reference-index.schema.json",
+  "version": "0.1.0",
+  "purpose": "Machine-readable UI/UX reference catalog used by kvdf design reference commands.",
+  "question_bank": [
+    "What product type is this interface for?",
+    "Who are the primary roles using this interface?",
+    "What is the main workflow the user must complete?",
+    "Which pages are required for MVP and which are later?",
+    "Does the interface need public SEO/GEO behavior?",
+    "Does the interface need an admin dashboard or only public pages?",
+    "Which data tables need search, filters, sorting, pagination, and bulk actions?",
+    "Which actions are permission-protected or owner-only?",
+    "Which loading, empty, error, permission, offline, and no-results states are required?",
+    "Does the product need Arabic/English, RTL/LTR, timezone, currency, or number formatting?",
+    "What design tokens are approved for colors, spacing, radius, shadow, typography, and layout?",
+    "Which components must be reusable before page implementation starts?",
+    "Should Bootstrap 5.3.8, Tailwind CSS 4.3.0, or another UI foundation be selected?",
+    "If Bootstrap is selected, which Bootstrap components, utilities, grid rules, Sass variables, and JavaScript plugins are allowed?",
+    "If Tailwind is selected, which theme variables, utility policies, framework adapters, plugins, dark mode rules, and content scanning paths are required?",
+    "Is the selected UI library compatible with the selected frontend stack, such as React-only libraries for React projects or Tailwind plugins for Tailwind projects?",
+    "What visual references are approved and what must not be copied?",
+    "What accessibility checks are mandatory?",
+    "What responsive behavior is expected on desktop, tablet, and mobile?",
+    "What visual acceptance checklist must pass before delivery?"
+  ],
+  "patterns": [
+    {
+      "code": "TAIL-UI01",
+      "name": "Tailwind CSS 4 UI Foundation",
+      "category": "component_library_foundation",
+      "style": "tailwind_4_utility_first_token_driven_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/TAIL-UI01_TAILWIND_4_FOUNDATION.md",
+      "best_for": ["tailwind", "custom ui", "nextjs", "astro", "nuxt", "sveltekit", "react", "vue", "saas", "storefront", "responsive website"],
+      "keywords": ["tailwind", "tailwindcss", "tailwind css", "utility first", "responsive", "theme", "tokens", "dark mode", "rtl", "shadcn", "headless ui", "radix", "nextjs", "astro", "vite"],
+      "core_layout": ["Tailwind theme variables", "utility-first layout", "responsive breakpoints", "component class policy", "framework adapter"],
+      "components": ["TailwindTheme", "ResponsiveGrid", "AppShell", "Button", "IconButton", "FormField", "Input", "Select", "Switch", "Card", "Badge", "Alert", "Toast", "Dialog", "Drawer", "Dropdown", "Tabs", "Accordion", "Breadcrumb", "Pagination", "DataTable", "EmptyState", "ErrorState"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "permission_denied", "no_results", "dark_mode", "rtl"],
+      "non_negotiable_rules": ["Tailwind version is pinned to 4.3.0.", "Theme variables map to project design tokens.", "Build adapter and content scanning paths are documented.", "Shared components avoid repeated ad hoc utility strings.", "RTL ready.", "Do not ship copied demo branding or template content."],
+      "question_prompts": [
+        "Is Tailwind CSS 4.3.0 the approved UI foundation for this project?",
+        "Will Tailwind use CLI, Vite, PostCSS, framework plugin, or browser-only prototype setup?",
+        "Which semantic theme variables must map to project tokens?",
+        "Which shared components must wrap Tailwind utilities before page implementation?",
+        "Does the product need dark mode and RTL behavior for Arabic screens?"
+      ],
+      "task_templates": [
+        { "title": "Create Tailwind CSS 4 design foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Tailwind CSS 4.3.0 is approved or rejected with rationale.", "Build adapter is documented.", "Allowed plugins and utility policies are listed."] },
+        { "title": "Map Tailwind theme variables to project design tokens", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Color, typography, spacing, radius, shadow, breakpoint, motion, dark mode, and RTL tokens are documented.", "Content scanning/build inputs are documented."] },
+        { "title": "Create Tailwind component contracts", "type": "component_contract", "workstream": "public_frontend", "acceptance_criteria": ["Buttons, forms, navs, cards, dialogs, dropdowns, alerts, toasts, tables, and pagination have variants and states.", "Class composition, accessibility, and keyboard behavior are covered."] }
+      ],
+      "visual_acceptance": ["Tailwind utilities are used through approved tokens and component contracts.", "Responsive breakpoints behave on mobile, tablet, and desktop.", "Shared components avoid inconsistent one-off class strings.", "Interactive components are keyboard accessible.", "Dark mode and RTL layouts do not break."]
+    },
+    {
+      "code": "BOOT-UI01",
+      "name": "Bootstrap 5.3 UI Foundation",
+      "category": "component_library_foundation",
+      "style": "bootstrap_5_3_responsive_component_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/BOOT-UI01_BOOTSTRAP_5_FOUNDATION.md",
+      "best_for": ["bootstrap", "responsive website", "wordpress", "public site", "admin ui", "mvp", "forms", "tables"],
+      "keywords": ["bootstrap", "bootstrap 5", "bootstrap 5.3", "responsive", "grid", "forms", "navbar", "modal", "dropdown", "cards", "tables", "wordpress"],
+      "core_layout": ["Bootstrap responsive grid", "container and container-fluid", "row and column layout", "utility classes", "component contracts"],
+      "components": ["BootstrapGrid", "Container", "Navbar", "Button", "ButtonGroup", "FormControl", "InputGroup", "Select", "CheckRadioSwitch", "Card", "Badge", "Alert", "Toast", "Modal", "Dropdown", "Offcanvas", "Tabs", "Accordion", "Breadcrumb", "Pagination", "Table"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "permission_denied", "no_results", "action_in_progress"],
+      "non_negotiable_rules": ["Bootstrap version is pinned to 5.3.8.", "Design tokens define Bootstrap variable overrides.", "Interactive plugins use bootstrap.bundle or documented bundler imports.", "RTL ready.", "Do not ship copied demo branding or template content."],
+      "question_prompts": [
+        "Is Bootstrap 5.3.8 the approved UI foundation for this project?",
+        "Will Bootstrap be imported by npm bundler, Sass source, or CDN?",
+        "Which Bootstrap components are allowed in MVP?",
+        "Which Bootstrap Sass variables or CSS custom properties must map to project tokens?",
+        "Does the product need Bootstrap RTL behavior for Arabic screens?"
+      ],
+      "task_templates": [
+        { "title": "Create Bootstrap 5.3 design foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Bootstrap 5.3.8 is approved or rejected with rationale.", "Import method is documented.", "Allowed Bootstrap components and utilities are listed."] },
+        { "title": "Map Bootstrap variables to project design tokens", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Color, typography, spacing, radius, shadow, breakpoint, and mode tokens map to Bootstrap variables or CSS custom properties.", "RTL notes are documented."] },
+        { "title": "Create Bootstrap component contracts", "type": "component_contract", "workstream": "public_frontend", "acceptance_criteria": ["Buttons, forms, navs, cards, modals, dropdowns, alerts, toasts, tables, and pagination have variants and states.", "Accessibility and keyboard behavior are covered."] }
+      ],
+      "visual_acceptance": ["Bootstrap classes are used through approved component contracts.", "Responsive grid behaves on mobile, tablet, and desktop.", "Forms and tables remain readable.", "Interactive components are keyboard accessible.", "RTL layout does not break."]
+    },
+    {
+      "code": "BULM-UI01",
+      "name": "Bulma CSS Foundation",
+      "category": "component_library_foundation",
+      "style": "bulma_css_only_flexbox_responsive_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/BULM-UI01_BULMA_FOUNDATION.md",
+      "best_for": ["bulma", "css only", "responsive website", "simple public site", "bootstrap alternative", "flexbox"],
+      "keywords": ["bulma", "css only", "flexbox", "responsive", "columns", "navbar", "forms", "cards", "buttons"],
+      "core_layout": ["Bulma columns", "CSS-only components", "helpers", "responsive modifiers", "Sass variables"],
+      "components": ["BulmaColumns", "Navbar", "Button", "FormControl", "Card", "Message", "ModalShell", "Tabs", "Breadcrumb", "Pagination", "Table"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "no_results", "rtl"],
+      "non_negotiable_rules": ["Bulma version is pinned to 1.0.4.", "Sass variables or CSS custom properties map to project tokens.", "JavaScript behavior is project-owned.", "RTL ready.", "Do not ship copied demo branding."],
+      "question_prompts": [
+        "Is Bulma 1.0.4 the approved CSS-only foundation for this project?",
+        "Which Bulma components and helpers are allowed?",
+        "Does the product need custom JavaScript behavior not provided by Bulma?",
+        "Which Sass variables or CSS custom properties must map to project tokens?",
+        "Does the product need RTL behavior for Arabic screens?"
+      ],
+      "task_templates": [
+        { "title": "Create Bulma design foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Bulma 1.0.4 is approved or rejected with rationale.", "Allowed components and helpers are listed.", "JavaScript ownership is documented."] },
+        { "title": "Map Bulma variables to project design tokens", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Color, typography, spacing, columns, radius, and responsive tokens are documented.", "RTL notes are documented."] }
+      ],
+      "visual_acceptance": ["Bulma layout responds cleanly.", "CSS-only components remain accessible.", "Forms and tables remain readable.", "RTL layout does not break."]
+    },
+    {
+      "code": "FOUND-UI01",
+      "name": "Foundation Sites UI Foundation",
+      "category": "component_library_foundation",
+      "style": "foundation_sites_professional_responsive_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/FOUND-UI01_FOUNDATION_SITES_FOUNDATION.md",
+      "best_for": ["foundation", "professional website", "responsive website", "enterprise site", "custom grid"],
+      "keywords": ["foundation", "foundation sites", "responsive", "grid", "sass", "orbit", "reveal", "dropdown", "accordion", "off canvas"],
+      "core_layout": ["Foundation grid", "Sass settings", "responsive utilities", "JavaScript plugin policy", "component contracts"],
+      "components": ["FoundationGrid", "TopBar", "Button", "FormField", "Callout", "Card", "RevealModal", "Dropdown", "Accordion", "Tabs", "OffCanvas", "Pagination", "Table"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "no_results", "rtl"],
+      "non_negotiable_rules": ["Foundation Sites version is pinned to 6.9.0.", "Sass settings map to project tokens.", "JavaScript plugin usage is documented.", "Do not mix with another full CSS framework without a migration decision.", "RTL ready."],
+      "question_prompts": [
+        "Is Foundation Sites 6.9.0 the approved foundation for this project?",
+        "Which Foundation components and JavaScript plugins are allowed?",
+        "Which Sass settings must map to project tokens?",
+        "Is the project a public site, app shell, or mixed surface?",
+        "Does the product need RTL behavior for Arabic screens?"
+      ],
+      "task_templates": [
+        { "title": "Create Foundation Sites design foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Foundation Sites 6.9.0 is approved or rejected with rationale.", "Allowed components and plugins are listed.", "Framework mixing policy is documented."] },
+        { "title": "Map Foundation settings to project design tokens", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Grid, color, typography, spacing, radius, and breakpoint settings are documented.", "RTL notes are documented."] }
+      ],
+      "visual_acceptance": ["Foundation grid behaves across breakpoints.", "Plugins do not break accessibility.", "Public pages remain semantic and fast.", "RTL layout does not break."]
+    },
+    {
+      "code": "MUI-UI01",
+      "name": "Material UI React Foundation",
+      "category": "react_component_library_foundation",
+      "style": "mui_material_design_themeable_react_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/MUI-UI01_MATERIAL_UI_FOUNDATION.md",
+      "best_for": ["mui", "material ui", "react", "material design", "dashboard", "forms", "saas"],
+      "keywords": ["mui", "material ui", "react", "material design", "theme", "emotion", "forms", "data grid", "dashboard"],
+      "core_layout": ["MUI theme", "React components", "Emotion styling", "responsive layout", "component variants"],
+      "components": ["MuiTheme", "CssBaseline", "AppBar", "Drawer", "Button", "TextField", "Select", "Checkbox", "Switch", "Card", "Alert", "Snackbar", "Dialog", "Menu", "Tabs", "Accordion", "Breadcrumbs", "Pagination", "Table"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "permission_denied", "no_results", "dark_mode", "rtl"],
+      "non_negotiable_rules": ["MUI version is pinned to 9.0.1.", "Project must be React-based.", "MUI theme maps to project tokens.", "Styling and SSR setup are documented.", "RTL ready."],
+      "question_prompts": [
+        "Is the frontend React-based and suitable for MUI 9.0.1?",
+        "Should the product follow Material Design closely or only use MUI as a component base?",
+        "Which MUI components and variants are required for MVP?",
+        "How will the MUI theme map to project tokens?",
+        "Does the product need dark mode and RTL behavior?"
+      ],
+      "task_templates": [
+        { "title": "Create MUI React design foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["MUI 9.0.1 is approved or rejected with rationale.", "React requirement and styling setup are documented.", "Allowed components and variants are listed."] },
+        { "title": "Map MUI theme to project design tokens", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Palette, typography, spacing, shape, breakpoints, shadows, dark mode, and RTL tokens are documented."] }
+      ],
+      "visual_acceptance": ["MUI components follow approved theme tokens.", "Forms and dialogs are accessible.", "Responsive layout behaves across breakpoints.", "Dark mode and RTL do not break."]
+    },
+    {
+      "code": "ANTD-UI01",
+      "name": "Ant Design Enterprise React Foundation",
+      "category": "react_enterprise_component_library_foundation",
+      "style": "antd_enterprise_dashboard_data_heavy_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/ANTD-UI01_ANT_DESIGN_FOUNDATION.md",
+      "best_for": ["ant design", "antd", "react", "enterprise", "admin dashboard", "erp", "crm", "tables", "forms"],
+      "keywords": ["antd", "ant design", "react", "enterprise", "dashboard", "table", "form", "date picker", "config provider", "rtl"],
+      "core_layout": ["Ant Design ConfigProvider", "enterprise app shell", "data tables", "forms", "theme tokens"],
+      "components": ["ConfigProvider", "Layout", "Menu", "Button", "Form", "Input", "Select", "DatePicker", "Table", "Card", "Tag", "Alert", "Modal", "Drawer", "Dropdown", "Tabs", "Breadcrumb", "Pagination"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "permission_denied", "no_results", "action_in_progress", "rtl"],
+      "non_negotiable_rules": ["Ant Design version is pinned to 6.3.7.", "Project must be React-based.", "Theme tokens map to project tokens.", "ConfigProvider locale and direction are documented.", "Tables and forms have contracts."],
+      "question_prompts": [
+        "Is the frontend React-based and suitable for Ant Design 6.3.7?",
+        "Which enterprise modules, tables, forms, and filters are required?",
+        "Which locale, date, direction, density, and theme settings are required?",
+        "Which table behaviors need search, filters, sorting, pagination, and bulk actions?",
+        "Does the product need RTL behavior for Arabic screens?"
+      ],
+      "task_templates": [
+        { "title": "Create Ant Design enterprise foundation decision", "type": "design_system", "workstream": "admin_frontend", "acceptance_criteria": ["Ant Design 6.3.7 is approved or rejected with rationale.", "React requirement, ConfigProvider, locale, and direction setup are documented.", "Allowed enterprise components are listed."] },
+        { "title": "Create Ant Design data table and form contracts", "type": "component_contract", "workstream": "admin_frontend", "acceptance_criteria": ["Table search, filters, sorting, pagination, bulk actions, density, empty/loading/error states, and form validation are documented."] }
+      ],
+      "visual_acceptance": ["Tables remain readable and dense.", "Forms handle validation clearly.", "Navigation supports enterprise modules.", "RTL layout does not break."]
+    },
+    {
+      "code": "DAISY-UI01",
+      "name": "daisyUI Tailwind Component Foundation",
+      "category": "tailwind_component_library_foundation",
+      "style": "daisyui_tailwind_component_classes_themeable_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/DAISY-UI01_DAISYUI_FOUNDATION.md",
+      "best_for": ["daisyui", "tailwind", "mvp", "component classes", "themes", "saas", "forms"],
+      "keywords": ["daisyui", "tailwind", "components", "theme", "button", "card", "modal", "alert", "menu", "drawer"],
+      "core_layout": ["Tailwind foundation", "daisyUI themes", "component classes", "theme policy", "utility overrides"],
+      "components": ["DaisyTheme", "Button", "Navbar", "Menu", "Drawer", "Card", "Badge", "Alert", "Toast", "Modal", "Dropdown", "Tabs", "Accordion", "FormControl", "Table", "Pagination"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "no_results", "dark_mode", "rtl"],
+      "non_negotiable_rules": ["daisyUI version is pinned to 5.5.19.", "Tailwind must be approved first.", "daisyUI themes map to project tokens.", "Allowed component classes are documented.", "RTL ready."],
+      "question_prompts": [
+        "Is Tailwind already approved for this project?",
+        "Should daisyUI 5.5.19 be used to speed up component delivery?",
+        "Which daisyUI themes and component classes are allowed?",
+        "How will daisyUI themes map to project tokens?",
+        "Does the product need dark mode and RTL behavior?"
+      ],
+      "task_templates": [
+        { "title": "Create daisyUI over Tailwind foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Tailwind dependency is confirmed.", "daisyUI 5.5.19 is approved or rejected with rationale.", "Allowed themes and component classes are listed."] },
+        { "title": "Map daisyUI themes to project design tokens", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["Theme names, color roles, component variants, dark mode, and RTL notes are documented."] }
+      ],
+      "visual_acceptance": ["daisyUI classes follow approved themes.", "Tailwind utilities do not fight component classes.", "Dark mode and RTL do not break.", "Components remain accessible."]
+    },
+    {
+      "code": "SHAD-UI01",
+      "name": "shadcn/ui React Tailwind Foundation",
+      "category": "react_tailwind_component_source_foundation",
+      "style": "shadcn_ui_copied_editable_component_source_system",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/component_library_foundations/SHAD-UI01_SHADCN_UI_FOUNDATION.md",
+      "best_for": ["shadcn", "shadcn ui", "react", "nextjs", "tailwind", "radix", "saas dashboard", "custom components"],
+      "keywords": ["shadcn", "shadcn/ui", "react", "nextjs", "tailwind", "radix", "components", "copy", "editable", "dark mode"],
+      "core_layout": ["Tailwind foundation", "copied component source", "CSS variables", "Radix primitives", "local component ownership"],
+      "components": ["Button", "Input", "Select", "Checkbox", "Switch", "Card", "Badge", "Alert", "Toast", "Dialog", "Sheet", "DropdownMenu", "Tabs", "Accordion", "Breadcrumb", "Pagination", "DataTable", "Command"],
+      "required_states": ["loading", "empty", "error", "success", "disabled", "validation_error", "permission_denied", "no_results", "dark_mode", "rtl"],
+      "non_negotiable_rules": ["shadcn CLI version is pinned to 4.7.0.", "Project must be React/Next.js-style and Tailwind-based.", "Copied component source ownership is documented.", "CSS variables map to project tokens.", "RTL ready."],
+      "question_prompts": [
+        "Is the frontend React/Next.js and Tailwind-based?",
+        "Should shadcn/ui components be copied into and owned by the project?",
+        "Which shadcn/ui components are required for MVP?",
+        "How will CSS variables and Tailwind tokens map to project tokens?",
+        "Does the product need dark mode and RTL behavior?"
+      ],
+      "task_templates": [
+        { "title": "Create shadcn/ui component source foundation decision", "type": "design_system", "workstream": "public_frontend", "acceptance_criteria": ["React/Next.js and Tailwind requirements are confirmed.", "shadcn CLI 4.7.0 is approved or rejected with rationale.", "Copied component ownership rules are documented."] },
+        { "title": "Create shadcn/ui component ownership and token map", "type": "component_contract", "workstream": "public_frontend", "acceptance_criteria": ["Selected components, local paths, CSS variables, Tailwind tokens, dark mode, RTL, and accessibility expectations are documented."] }
+      ],
+      "visual_acceptance": ["Copied components follow approved tokens.", "Keyboard behavior and accessibility are preserved.", "Dark mode and RTL do not break.", "Local edits remain documented."]
+    },
+    {
+      "code": "ADMIT-ADB01",
+      "name": "Dark Governance Dashboard",
+      "category": "admin_dashboard",
+      "style": "dark_navy_governance_dashboard",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/admin_dashboard_patterns/ADMIT-ADB01_DARK_GOVERNANCE_DASHBOARD.md",
+      "best_for": ["kabeeri", "governance", "task tracking", "ai cost", "owner verification"],
+      "keywords": ["dark", "governance", "tasks", "token", "cost", "verification", "dashboard"],
+      "core_layout": ["dark vertical sidebar", "dark top navbar", "main content", "cards", "charts", "tables"],
+      "components": ["AppShell", "SidebarNav", "TopNavbar", "StatCard", "ChartCard", "DataTable", "TaskProgressPanel", "CostSummaryCard", "OwnerVerifyQueue", "DeveloperStatusItem"],
+      "required_states": ["loading", "empty", "error", "permission_denied", "offline_or_sync_error", "over_budget_warning", "needs_owner_review"],
+      "non_negotiable_rules": ["Owner-only final verify", "Token cost is visible", "No random colors outside tokens", "RTL ready", "Do not copy third-party assets"],
+      "question_prompts": [
+        "Which dashboard widgets should Owner, Developer, Reviewer, and Business User see?",
+        "What task statuses must be visible and clickable?",
+        "What AI cost thresholds should trigger warnings?",
+        "Which actions require final Owner verification?",
+        "What evidence must appear before Verify or Reject?"
+      ],
+      "task_templates": [
+        { "title": "Create dark governance dashboard design tokens", "type": "design_system", "workstream": "admin_frontend", "acceptance_criteria": ["Dark sidebar/topbar tokens exist.", "Status, cost, and warning colors are tokenized.", "RTL token notes are documented."] },
+        { "title": "Create governance dashboard page and widgets spec", "type": "frontend_spec", "workstream": "admin_frontend", "acceptance_criteria": ["KPI, task progress, cost, agent status, owner queue, and activity sections are specified.", "All required states are documented."] },
+        { "title": "Create visual acceptance checklist for governance dashboard", "type": "qa", "workstream": "admin_frontend", "acceptance_criteria": ["Desktop/tablet/mobile rules exist.", "Owner-only actions, cost warnings, and table readability are checked."] }
+      ],
+      "visual_acceptance": ["Dark sidebar is readable.", "Topbar global actions are visible.", "Cost and owner verification widgets are understandable.", "Tables have filters and states.", "RTL layout does not break."]
+    },
+    {
+      "code": "ADMIT-ADB02",
+      "name": "Dasher E-commerce Dashboard",
+      "category": "admin_dashboard",
+      "style": "clean_light_multi_module_dashboard",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/admin_dashboard_patterns/ADMIT-ADB02_DASHER_ECOMMERCE_DASHBOARD.md",
+      "best_for": ["ecommerce", "crm", "finance", "analytics", "blog", "multi module admin"],
+      "keywords": ["ecommerce", "orders", "revenue", "products", "crm", "finance", "nested sidebar", "notifications"],
+      "core_layout": ["data-driven nested sidebar", "top navbar", "cards", "charts", "orders table"],
+      "components": ["AppShell", "Sidebar", "TopNavbar", "NotificationDropdown", "UserProfileMenu", "ThemeToggle", "CommandPalette", "KpiCard", "OrdersTable", "TopProductsTable"],
+      "required_states": ["loading", "empty", "error", "permission_denied", "no_results", "action_in_progress", "action_failed"],
+      "non_negotiable_rules": ["Navigation is data-driven.", "Tables are searchable and filterable.", "Theme modes use tokens.", "RTL ready.", "Do not hardcode business segments."],
+      "question_prompts": [
+        "Which commerce KPIs matter for this business?",
+        "Which sidebar groups are needed in MVP?",
+        "Should orders, products, customers, and revenue have separate detail pages?",
+        "What filters are required on the orders table?",
+        "Which notifications need action buttons?"
+      ],
+      "task_templates": [
+        { "title": "Create Dasher-style multi-module navigation spec", "type": "frontend_spec", "workstream": "admin_frontend", "acceptance_criteria": ["Sidebar groups are data-driven.", "Nested routes, badges, disabled items, and external links are covered."] },
+        { "title": "Create e-commerce dashboard overview spec", "type": "frontend_spec", "workstream": "admin_frontend", "acceptance_criteria": ["Welcome, suggestions, KPIs, charts, orders, products, locations, and segments are specified.", "All page states are specified."] },
+        { "title": "Create notification, profile, theme, and command palette contracts", "type": "component_contract", "workstream": "admin_frontend", "acceptance_criteria": ["Keyboard behavior and empty/loading/error states are documented.", "Theme and RTL behavior are documented."] }
+      ],
+      "visual_acceptance": ["Sidebar supports nested groups.", "Topbar has theme, notifications, profile, and search.", "Orders table is filterable.", "Mobile layout is usable.", "No copied demo branding."]
+    },
+    {
+      "code": "ADMIT-ADB03",
+      "name": "Falcon Enterprise App Shell",
+      "category": "enterprise_admin_app",
+      "style": "configurable_modular_admin_shell",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/admin_dashboard_patterns/ADMIT-ADB03_FALCON_ENTERPRISE_APP_SHELL.md",
+      "best_for": ["saas", "enterprise", "crm", "erp", "support desk", "project management"],
+      "keywords": ["enterprise", "saas", "app shell", "settings panel", "navigation modes", "rtl", "tables", "forms"],
+      "core_layout": ["configurable sidebar", "top navbar", "settings panel", "main content", "optional horizontal nav"],
+      "components": ["AppShell", "VerticalSidebar", "TopNavbar", "SettingsPanel", "ThemeToggle", "LanguageSwitcher", "CommandPalette", "DataTable", "FormField", "ChartCard"],
+      "required_states": ["loading", "empty", "error", "permission_denied", "no_results", "offline", "sync_error"],
+      "non_negotiable_rules": ["One route map powers all nav modes.", "Settings cannot break accessibility.", "Tables/forms have states.", "Light/dark/auto and RTL are token-driven."],
+      "question_prompts": [
+        "Does the product need one nav mode or configurable navigation modes?",
+        "Which modules belong in the first release?",
+        "Should users control theme, direction, density, and layout width?",
+        "Which tables need bulk actions?",
+        "Which forms require wizard steps or file uploads?"
+      ],
+      "task_templates": [
+        { "title": "Create enterprise app-shell architecture spec", "type": "frontend_spec", "workstream": "admin_frontend", "acceptance_criteria": ["Navigation modes, route map, topbar, settings panel, and responsive drawer are specified."] },
+        { "title": "Create reusable DataTable and form pattern contracts", "type": "component_contract", "workstream": "admin_frontend", "acceptance_criteria": ["Search, filters, sorting, pagination, bulk actions, validation, and states are covered."] },
+        { "title": "Create dashboard widget mapping for Kabeeri or product modules", "type": "frontend_spec", "workstream": "admin_frontend", "acceptance_criteria": ["Widgets map product data to KPIs, charts, lists, files, active users, and status surfaces."] }
+      ],
+      "visual_acceptance": ["Navigation is grouped and nested.", "Settings panel works safely.", "Theme and RTL do not break layout.", "Tables/forms are accessible.", "Mobile layout is usable."]
+    },
+    {
+      "code": "ADMIT-ADB04",
+      "name": "Soft UI Billing",
+      "category": "billing_dashboard_page",
+      "style": "soft_ui_neumorphic_light_billing",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/admin_dashboard_patterns/ADMIT-ADB04_SOFT_UI_BILLING.md",
+      "best_for": ["billing", "payments", "invoices", "finance", "transactions", "account settings"],
+      "keywords": ["billing", "payment", "invoice", "credit card", "transaction", "soft ui", "finance"],
+      "core_layout": ["sidebar", "topbar", "12 column billing grid", "soft cards", "transaction timeline"],
+      "components": ["CreditCardPreview", "MiniFinanceCard", "PaymentMethodList", "InvoiceList", "BillingInformationList", "TransactionTimeline", "SoftUiConfigurator", "DeleteConfirmationDialog"],
+      "required_states": ["loading", "empty", "error", "permission_denied", "action_in_progress", "action_success", "action_failed"],
+      "non_negotiable_rules": ["Never display full card number in production.", "Delete requires confirmation.", "Shadows are tokenized.", "Amounts use sign and icon/status.", "RTL ready."],
+      "question_prompts": [
+        "Is this billing page for a SaaS owner, admin, customer account, or finance team?",
+        "Which payment providers and invoice actions are required?",
+        "Can users add, edit, delete, or only view payment methods?",
+        "What transaction filters are required?",
+        "What compliance or PCI restrictions apply?"
+      ],
+      "task_templates": [
+        { "title": "Create Soft UI billing tokens and shadow tokens", "type": "design_system", "workstream": "admin_frontend", "acceptance_criteria": ["Colors, typography, spacing, radius, and shadows are tokenized.", "Credit card and soft card shadows are defined."] },
+        { "title": "Create billing page component contracts", "type": "component_contract", "workstream": "admin_frontend", "acceptance_criteria": ["Credit card, payment methods, invoices, billing info, transactions, and delete confirmation are specified."] },
+        { "title": "Create billing security and visual QA checklist", "type": "qa", "workstream": "security", "acceptance_criteria": ["Masked card rule is explicit.", "PDF, delete, amount, RTL, mobile, and accessibility checks exist."] }
+      ],
+      "visual_acceptance": ["Soft light background.", "Cards have diffused shadows.", "Credit card is masked.", "Invoices have PDF actions.", "Transactions are grouped by date.", "Mobile stacks cleanly."]
+    },
+    {
+      "code": "ADMIT-ADB05",
+      "name": "Material Shadcn Minimal Dashboard",
+      "category": "minimal_saas_dashboard",
+      "style": "light_gray_shell_white_cards_dark_active_sidebar",
+      "knowledge_file": "knowledge/design_system/ui_ux_reference/admin_dashboard_patterns/ADMIT-ADB05_MATERIAL_SHADCN_DASHBOARD.md",
+      "best_for": ["saas dashboard", "project dashboard", "simple admin", "analytics overview"],
+      "keywords": ["material", "shadcn", "minimal", "projects", "stats", "hero", "light gray", "lucide"],
+      "core_layout": ["left sidebar", "main content", "hero card", "stat cards", "projects table"],
+      "components": ["AppLayout", "Sidebar", "NavItem", "HeroCard", "StatCard", "MiniBarChart", "ProjectsTable", "AvatarGroup", "ProgressBar", "IconButton"],
+      "required_states": ["loading", "empty", "error", "no_results", "action_in_progress"],
+      "non_negotiable_rules": ["Neutral palette.", "Subtle borders and shadows.", "Dark active sidebar only.", "Tables remain readable.", "No decorative clutter."],
+      "question_prompts": [
+        "Is this dashboard only an overview or does it need deep modules?",
+        "Which hero action should be primary?",
+        "Which four stats should appear first?",
+        "What table columns are required?",
+        "Should the sidebar collapse or become a mobile sheet?"
+      ],
+      "task_templates": [
+        { "title": "Create minimal shadcn-style design tokens", "type": "design_system", "workstream": "admin_frontend", "acceptance_criteria": ["Neutral colors, soft shadows, radius, typography, and spacing are tokenized."] },
+        { "title": "Create minimal dashboard page spec", "type": "frontend_spec", "workstream": "admin_frontend", "acceptance_criteria": ["Sidebar, hero, stat cards, mini charts, and projects table are specified."] },
+        { "title": "Create responsive and visual QA checklist for minimal dashboard", "type": "qa", "workstream": "admin_frontend", "acceptance_criteria": ["Desktop, tablet, mobile, table scroll, typography, and shadows are checked."] }
+      ],
+      "visual_acceptance": ["Light gray shell.", "White rounded cards.", "Dark active sidebar.", "Stats grid is responsive.", "Projects table is readable.", "Minimal accents only."]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+<section class="card">
+  <div class="card-body">
+    <h2 class="h5 mb-1">Choose a time</h2>
+    <p class="text-muted mb-4">{{selectedDate}}</p>
+    <div class="d-flex flex-wrap gap-2" role="list" aria-label="Available time slots">
+      <button class="btn btn-outline-primary" type="button">
+        <i class="bi bi-clock me-2"></i>
+        {{time}}
+      </button>
+      <button class="btn btn-outline-secondary" type="button" disabled>
+        <i class="bi bi-x-circle me-2"></i>
+        Unavailable
+      </button>
+    </div>
+  </div>
+</section>
+

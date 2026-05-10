@@ -1,5 +1,16 @@
 # 03 — Repository Structure
 
+# Legacy English File - Repository Structure
+
+This file is retained for old links only. The canonical English file is
+`docs/en/04_REPOSITORY_STRUCTURE.md`, and the Arabic counterpart is
+`docs/ar/04_REPOSITORY_STRUCTURE.md`.
+
+New documentation links should use the canonical numbered files listed in
+`docs/en/README.md`.
+
+---
+
 ## Purpose
 
 This document explains the repository structure of Kabeeri VDF and what each folder is responsible for.
@@ -177,4 +188,3 @@ docs/
 The repository should remain easy to understand for beginners.
 
 Do not add complex tooling before the documentation, generators, questionnaires, and examples are clear.
-

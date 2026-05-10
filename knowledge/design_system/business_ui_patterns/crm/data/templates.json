@@ -1,0 +1,21 @@
+[
+  {
+    "templateId": "crm-pipeline-column-v1",
+    "name": "CRM Pipeline Column",
+    "businessType": "crm",
+    "viewType": "pipeline-column",
+    "description": "Kanban-style pipeline stage with deal cards and update action.",
+    "useWhen": ["Sales pipeline", "Lead qualification", "Opportunity board"],
+    "requiredComponents": ["card", "badge", "button", "kanban-card"],
+    "requiredIcons": ["edit"],
+    "requiredStates": ["loading", "empty", "dragging", "error"],
+    "layoutRules": ["Stage count visible", "Deal value visible", "Update action clear"],
+    "uxRules": ["Do not hide next action", "Drag feedback must not distract from data entry"],
+    "accessibilityRules": ["Keyboard alternative required when drag is supported"],
+    "antiPatterns": ["Dense profile data inside every card"],
+    "acceptanceCriteria": ["Stage is scanable", "Deal action uses icon"],
+    "sampleData": { "stageName": "Qualified", "count": 8 },
+    "files": { "template": "knowledge/design_system/business_ui_patterns/crm/templates/pipeline-column.html" }
+  }
+]
+

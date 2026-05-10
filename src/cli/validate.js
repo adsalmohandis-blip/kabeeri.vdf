@@ -507,12 +507,14 @@ function validateAgileState(state, pass, fail) {
   const reviews = Array.isArray(data.sprint_reviews) ? data.sprint_reviews : [];
   const impediments = Array.isArray(data.impediments) ? data.impediments : [];
   const retrospectives = Array.isArray(data.retrospectives) ? data.retrospectives : [];
+  const releases = Array.isArray(data.releases) ? data.releases : [];
   if (!Array.isArray(data.backlog)) fail("agile backlog must be an array");
   if (!Array.isArray(data.epics)) fail("agile epics must be an array");
   if (!Array.isArray(data.stories)) fail("agile stories must be an array");
   if (!Array.isArray(data.sprint_reviews)) fail("agile sprint_reviews must be an array");
   if (data.impediments !== undefined && !Array.isArray(data.impediments)) fail("agile impediments must be an array");
   if (data.retrospectives !== undefined && !Array.isArray(data.retrospectives)) fail("agile retrospectives must be an array");
+  if (data.releases !== undefined && !Array.isArray(data.releases)) fail("agile releases must be an array");
 
   const backlogIds = new Set();
   const epicIds = new Set();
@@ -520,11 +522,14 @@ function validateAgileState(state, pass, fail) {
   const reviewIds = new Set();
   const impedimentIds = new Set();
   const retroIds = new Set();
+  const releaseIds = new Set();
   const taskIds = new Set(safeRead(".kabeeri/tasks.json", "tasks").map((task) => task.id));
   const sprintIds = new Set(safeRead(".kabeeri/sprints.json", "sprints").map((sprint) => sprint.id));
   const allowedBacklogTypes = new Set(["epic", "story", "task"]);
   const allowedPriorities = new Set(["critical", "high", "medium", "low", "deferred"]);
   const allowedStoryStatuses = new Set(["backlog", "selected_for_sprint", "in_progress", "review_needed", "accepted", "needs_rework", "blocked", "deferred"]);
+  const allowedReleaseStatuses = new Set(["planned", "in_progress", "ready", "released", "cancelled"]);
+  const allowedReleaseReadiness = new Set(["ready", "needs_attention", "blocked", "unknown"]);
 
   for (const item of backlog) {
     if (!item.id) fail("agile backlog item missing id");
@@ -594,7 +599,23 @@ function validateAgileState(state, pass, fail) {
     else if (!sprintIds.has(retro.sprint_id)) fail(`agile retrospective references missing sprint: ${retro.retro_id || "unknown"} -> ${retro.sprint_id}`);
     if (!Array.isArray(retro.action_items)) fail(`agile retrospective action_items must be an array: ${retro.retro_id || "unknown"}`);
   }
-  pass(`agile state checked (${backlog.length} backlog, ${epics.length} epics, ${stories.length} stories, ${reviews.length} reviews, ${impediments.length} impediments, ${retrospectives.length} retrospectives)`);
+  for (const release of releases) {
+    if (!release.release_id) fail("agile release missing release_id");
+    else if (releaseIds.has(release.release_id)) fail(`duplicate agile release id: ${release.release_id}`);
+    else releaseIds.add(release.release_id);
+    if (!release.title) fail(`agile release missing title: ${release.release_id || "unknown"}`);
+    if (!allowedReleaseStatuses.has(release.status || "planned")) fail(`agile release has invalid status: ${release.release_id || "unknown"} (${release.status})`);
+    if (!allowedReleaseReadiness.has(release.readiness_status || "unknown")) fail(`agile release has invalid readiness_status: ${release.release_id || "unknown"} (${release.readiness_status})`);
+    if (!Array.isArray(release.story_ids)) fail(`agile release story_ids must be an array: ${release.release_id || "unknown"}`);
+    if (!Array.isArray(release.epic_ids)) fail(`agile release epic_ids must be an array: ${release.release_id || "unknown"}`);
+    for (const storyId of release.story_ids || []) {
+      if (!storyIds.has(storyId)) fail(`agile release references missing story: ${release.release_id || "unknown"} -> ${storyId}`);
+    }
+    for (const epicId of release.epic_ids || []) {
+      if (!epicIds.has(epicId)) fail(`agile release references missing epic: ${release.release_id || "unknown"} -> ${epicId}`);
+    }
+  }
+  pass(`agile state checked (${backlog.length} backlog, ${epics.length} epics, ${stories.length} stories, ${reviews.length} reviews, ${impediments.length} impediments, ${retrospectives.length} retrospectives, ${releases.length} releases)`);
 }
 
 function validateStructuredState(state, pass, fail) {
@@ -822,6 +843,8 @@ function validatePromptCompositions(records, pass, fail) {
     if (record.task_id && !taskIds.has(record.task_id)) fail(`prompt composition references missing task: ${record.composition_id || "unknown"} -> ${record.task_id}`);
     if (record.context_pack_id && !contextIds.has(record.context_pack_id)) fail(`prompt composition references missing context pack: ${record.composition_id || "unknown"} -> ${record.context_pack_id}`);
     if (!Array.isArray(record.common_files)) fail(`prompt composition common_files must be an array: ${record.composition_id || "unknown"}`);
+    if (record.common_policy_gates && !Array.isArray(record.common_policy_gates)) fail(`prompt composition common_policy_gates must be an array: ${record.composition_id || "unknown"}`);
+    if (record.traceability_outputs && !Array.isArray(record.traceability_outputs)) fail(`prompt composition traceability_outputs must be an array: ${record.composition_id || "unknown"}`);
     if (!record.output_path) fail(`prompt composition missing output_path: ${record.composition_id || "unknown"}`);
   }
   pass(`prompt compositions checked (${records.length})`);

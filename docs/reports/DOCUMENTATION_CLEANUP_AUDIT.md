@@ -74,16 +74,16 @@ carefully because some are planning sources and others are runtime docs.
 
 | Active Runtime / Format | Overlapping Policy Docs | Decision |
 | --- | --- | --- |
-| `task_tracking/TASK_CREATION_RULES.md` | `task_governance/TASK_CREATION_RULES.md` | Completed: strict policy moved to `governance/TASK_GOVERNANCE.md`; old file deleted. |
-| `task_tracking/TASK_DEFINITION_OF_READY.md` | `task_governance/TASK_DEFINITION_OF_READY.md` | Completed: canonical readiness policy moved to `governance/TASK_GOVERNANCE.md`; old file deleted. |
-| `task_tracking/TASK_INTAKE_TEMPLATE.md` | `task_governance/TASK_INTAKE_TEMPLATE.md` | Completed: practical template remains in `task_tracking/`; old duplicate deleted. |
-| `task_tracking/TASK_SOURCE_RULES.md` | `task_governance/TASK_SOURCE_RULES.md` | Completed: source/provenance policy moved to `governance/TASK_GOVERNANCE.md`; old file deleted. |
+| historical `task_tracking/TASK_CREATION_RULES.md` | historical `task_governance/TASK_CREATION_RULES.md` | Completed: strict policy moved to `knowledge/task_tracking/TASK_GOVERNANCE.md`; old duplicate file deleted. |
+| historical `task_tracking/TASK_DEFINITION_OF_READY.md` | historical `task_governance/TASK_DEFINITION_OF_READY.md` | Completed: canonical readiness policy moved to `knowledge/task_tracking/TASK_GOVERNANCE.md`; old duplicate file deleted. |
+| `knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md` | historical `task_governance/TASK_INTAKE_TEMPLATE.md` | Completed: practical template remains in `knowledge/task_tracking/`; old duplicate deleted. |
+| historical `task_tracking/TASK_SOURCE_RULES.md` | historical `task_governance/TASK_SOURCE_RULES.md` | Completed: source/provenance policy moved to `knowledge/task_tracking/TASK_GOVERNANCE.md`; old duplicate file deleted. |
 
 Result:
 
-- `task_tracking/` remains the format, schema, provenance schema, and template home.
-- `governance/TASK_GOVERNANCE.md` is now the task policy home.
-- `task_governance/` has been removed after references were migrated.
+- `knowledge/task_tracking/` is now the unified format, schema, provenance, template, and task policy home.
+- `knowledge/task_tracking/TASK_GOVERNANCE.md` is the canonical task policy.
+- Historical `task_governance/` has been removed after references were migrated.
 
 ### AI Cost Duplication
 
@@ -159,7 +159,7 @@ Recommendation:
 
 Completed:
 
-- `task_governance/` was removed and strict policy moved to `governance/TASK_GOVERNANCE.md`.
+- Historical `task_governance/` was removed and strict policy moved to `knowledge/task_tracking/TASK_GOVERNANCE.md`.
 - `ai_usage/README.md` was merged into `ai_cost_control/README.md` and deleted.
 - `ai_cost_control/TOKEN_BUDGET_RULES.md` was reduced to a pointer to `governance/TOKEN_BUDGET_RULES.md`.
 - `platform_integration/README.md` now maps historical `v2_*` folders to current runtime docs.

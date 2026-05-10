@@ -1,0 +1,46 @@
+<section class="space-y-6">
+  <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+    <div>
+      <h1 class="text-2xl font-semibold text-slate-950">Items</h1>
+      <p class="mt-1 text-sm text-slate-600">Manage records and review their current status.</p>
+    </div>
+    <button class="inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+      <span aria-hidden="true">+</span>
+      Create item
+    </button>
+  </header>
+
+  <div class="overflow-hidden rounded-lg border border-slate-200 bg-white">
+    <div class="flex flex-col gap-2 border-b border-slate-200 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <label class="relative block sm:w-80">
+        <span class="sr-only">Search items</span>
+        <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">⌕</span>
+        <input class="w-full rounded-md border border-slate-300 py-2 pl-9 pr-3 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20" type="search" placeholder="Search items">
+      </label>
+      <button class="inline-flex items-center gap-2 rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+        Filter
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-slate-200 text-sm">
+        <thead class="bg-slate-50 text-left text-slate-600">
+          <tr>
+            <th class="px-4 py-3 font-medium">Name</th>
+            <th class="px-4 py-3 font-medium">Status</th>
+            <th class="px-4 py-3 text-right font-medium">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <tr>
+            <td class="px-4 py-3 text-slate-900">Example item</td>
+            <td class="px-4 py-3"><span class="rounded-full bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700">Active</span></td>
+            <td class="px-4 py-3 text-right">
+              <button class="rounded-md px-2 py-1 text-sm font-medium text-blue-700 hover:bg-blue-50">Edit</button>
+              <button class="rounded-md px-2 py-1 text-sm font-medium text-red-700 hover:bg-red-50">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

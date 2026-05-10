@@ -1,69 +1,137 @@
-# تتبع المهام
+# تتبع وحوكمة المهام
 
-هذا الفولدر يحدد طبقة تتبع المهام داخل **Kabeeri Vibe Developer Framework**.
+هذا المجلد هو الطبقة الموحّدة للمهام داخل **Kabeeri Vibe Developer Framework**.
 
-الفولدر الحالي بدأ كملف بسيط جدًا، وهذه النسخة تحوله إلى نظام عملي لتتبع مهام التطوير بالذكاء الاصطناعي من الفكرة إلى المراجعة والإغلاق.
+كان النظام يفرق سابقًا بين:
+
+- تتبع المهام: القوالب، الحالات، السكيما، الأمثلة، وسجل تنفيذ الذكاء الاصطناعي.
+- حوكمة المهام: القواعد التي تحدد هل المهمة صالحة، جاهزة، محددة المصدر، محددة النطاق، قابلة للمراجعة، وآمنة للتنفيذ.
+
+الآن أصبح المكان الموحّد لكل ذلك هو:
+
+```text
+knowledge/task_tracking/
+```
 
 ## الهدف
 
-الهدف من `task_tracking/` هو مساعدة مطور الذكاء الاصطناعي على تنفيذ المشروع في مهام صغيرة قابلة للمراجعة بدل طلب بناء المنتج بالكامل من AI مرة واحدة.
+هدف هذا المجلد هو منع تنفيذ العمل البرمجي بطريقة عشوائية أو واسعة جدًا.
 
-يربط بين:
+بدل أن يطلب المطور من الذكاء الاصطناعي "ابني التطبيق كله" أو "حسّن المشروع"،
+يقوم Kabeeri بتحويل العمل إلى مهام صغيرة واضحة يمكن تنفيذها ومراجعتها والتحقق
+منها.
+
+المسار العام:
 
 ```text
-مستندات المشروع
-→ Prompt Packs
-→ مهام تنفيذ
-→ تنفيذ AI
-→ مراجعة بشرية
-→ قبول
-→ Commit
-→ إغلاق GitHub Issue
+طلب المالك / إجابة questionnaire / Vibe intent / GitHub issue / Design source / Security scan
+-> مهمة محكومة
+-> تكليف أو token محدود النطاق
+-> تنفيذ بواسطة مطور أو AI
+-> أدلة مراجعة
+-> تحقق Owner
+-> ظهور في الداشبورد
+-> commit أو release أو handoff
 ```
 
-## ما وظيفة هذا الفولدر؟
+## ما هي المهمة المحكومة؟
 
-يوفر هذا الفولدر:
+المهمة المحكومة هي وحدة عمل صغيرة وواضحة تكفي لكي ينفذها مطور أو Codex أو
+Claude أو Copilot أو أي AI agent بدون تخمين.
 
-- صيغة موحدة للمهمة.
-- حالات واضحة للمهمة.
-- مثال JSON للمهمة.
-- Schema قابل للتطوير.
-- Checklist للمراجعة.
-- قالب لتسجيل تنفيذ AI.
-- مثال مهمة يمكن نسخه داخل GitHub Issue.
+المهمة المحكومة يجب أن توضح:
 
-## ما الذي لا يفعله؟
+- ما المطلوب تنفيذه.
+- لماذا توجد المهمة.
+- ما مصدرها.
+- ما التطبيق أو الـ workstream أو الملفات المتأثرة.
+- ما هو داخل النطاق.
+- ما هو خارج النطاق.
+- ما معايير القبول.
+- من المسؤول عن التنفيذ.
+- ما أدلة المراجعة المطلوبة.
+- ما بوابات الحوكمة المطلوبة قبل اعتبارها منتهية.
 
-هذا الفولدر لا يستبدل:
+## المكان الرسمي
 
-- GitHub Issues
-- GitHub Projects
-- Jira
-- Linear
-- Trello
+استخدم هذا المجلد لكل ما يخص:
 
-هو فقط صيغة داخل الفريمورك يمكن استخدامها داخل هذه الأدوات.
+- task schemas
+- task templates
+- task states
+- task intake
+- task provenance
+- task governance policy
+- Owner verification rules
+- review checklists
+- AI execution logs
+- examples
+- runtime task-tracker guidance
 
-## طريقة العمل المقترحة على GitHub
+المجلد القديم `task_governance/` تم حذفه ولا يجب إعادة إنشائه.
+
+الملف:
 
 ```text
-1. افتح GitHub Issue.
-2. أضف Label مناسب.
-3. اربطها بالـ Milestone.
-4. أضفها إلى GitHub Project.
-5. ضعها في Todo.
-6. عند بداية العمل انقلها إلى In Progress.
-7. استخدم TASK_TEMPLATE.md لتعريف المهمة.
-8. استخدم Prompt Pack المناسب إذا كان هناك تنفيذ برمجي.
-9. استخدم AI_EXECUTION_LOG_TEMPLATE.md بعد تنفيذ AI.
-10. استخدم TASK_REVIEW_CHECKLIST.md قبل الإغلاق.
-11. اعمل Commit و Push.
-12. انقل الكارد إلى Done.
-13. اقفل الـ Issue.
+knowledge/governance/TASK_GOVERNANCE.md
+```
+
+موجود فقط كتوافق مع الروابط القديمة، أما السياسة الفعلية فهي هنا:
+
+```text
+knowledge/task_tracking/TASK_GOVERNANCE.md
+```
+
+## حالة المهام أثناء التشغيل
+
+حالة المهام الأساسية تعيش في:
+
+```text
+.kabeeri/tasks.json
+```
+
+وحالة الداشبورد المختصرة تعيش في:
+
+```text
+.kabeeri/dashboard/task_tracker_state.json
+```
+
+هذه الحالة تتغذى من المهام، التوكنات، الأقفال، الجلسات، سجلات القبول، التطبيقات،
+السبرنتات، تكلفة الذكاء الاصطناعي، اقتراحات Vibe، و post-work captures.
+
+الأوامر المهمة:
+
+```bash
+kvdf task tracker
+kvdf task tracker --json
+kvdf dashboard task-tracker
+kvdf dashboard serve
+```
+
+وعند تشغيل الداشبورد المحلي، تظهر بيانات المهام هنا:
+
+```text
+/__kvdf/api/tasks
+```
+
+## مسار العمل المقترح
+
+```text
+1. تحديد مصدر المهمة.
+2. إنشاء أو اعتماد مهمة محكومة.
+3. تأكيد النطاق، الاستثناءات، workstream، app boundary، ومعايير القبول.
+4. تكليف المطور أو AI agent.
+5. إصدار token محدود النطاق أو بدء session عند الحاجة.
+6. تنفيذ النطاق فقط.
+7. تسجيل الملفات المتغيرة، الاختبارات، الصور، اللوجات، والمخاطر.
+8. مراجعة مستقلة قدر الإمكان.
+9. تحقق Owner أو رفضه.
+10. ظهور الحالة النهائية في الداشبورد والتقارير.
 ```
 
 ## حالات المهمة
+
+استخدم هذه الحالات الموحدة:
 
 ```text
 todo
@@ -74,9 +142,18 @@ done
 closed
 ```
 
-## قاعدة استخدام AI
+وتجنب خلط حالات متشابهة مثل:
 
-انسخ هذه التعليمات دائمًا مع أي مهمة:
+```text
+pending
+started
+complete
+finished
+```
+
+## قاعدة استخدام الذكاء الاصطناعي
+
+عند استخدام AI coding assistant داخل مهمة، يجب تزويده بتعليمات واضحة مثل:
 
 ```text
 You are working inside Kabeeri Vibe Developer Framework.
@@ -90,16 +167,38 @@ List checks/tests to run.
 Stop after completing this task.
 ```
 
-## أمر Git المقترح
+## محتويات المجلد
+
+```text
+README.md
+README_AR.md
+TASK_GOVERNANCE.md
+TASK_TEMPLATE.md
+TASK_STATES.md
+TASK_INTAKE_TEMPLATE.md
+TASK_PROVENANCE_SCHEMA.json
+TASK_REVIEW_CHECKLIST.md
+AI_EXECUTION_LOG_TEMPLATE.md
+EXAMPLE_TASK.md
+OWNER_VERIFY_RULES.md
+task.schema.json
+task.schema.example.json
+task_tracking_manifest.json
+```
+
+## الأوامر الأساسية
 
 ```bash
-git add task_tracking
-git commit -m "Define first task tracking format for v0.1.1
-
-Closes #6"
-git push
+kvdf task create
+kvdf task assign
+kvdf task start
+kvdf task review
+kvdf task verify
+kvdf task tracker
+kvdf dashboard task-tracker
+kvdf validate task
 ```
 
 ## الحالة
 
-صيغة تأسيسية لتتبع المهام للنسخة `v0.1.1`.
+طبقة موحّدة لتتبع وحوكمة المهام داخل Kabeeri VDF.

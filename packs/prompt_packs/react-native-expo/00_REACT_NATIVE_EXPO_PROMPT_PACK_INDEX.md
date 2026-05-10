@@ -10,7 +10,7 @@ React Native Expo
 
 ## Version
 
-v0.1.1
+v0.2.0
 
 ## Goal
 
@@ -63,6 +63,8 @@ Use the prompts in this order:
 10_DEVICE_PERMISSIONS_NOTIFICATIONS_PROMPT.md
 11_TESTING_REVIEW_PROMPT.md
 12_EAS_RELEASE_HANDOFF_PROMPT.md
+13_BACKEND_API_CONTRACT_PROMPT.md
+14_ACCESSIBILITY_PERFORMANCE_PROMPT.md
 ```
 
 ## What each prompt does
@@ -81,6 +83,30 @@ Use the prompts in this order:
 | 10 | Add permissions, media, location, notifications, or device features if needed. |
 | 11 | Review tests, accessibility, device behavior, and quality. |
 | 12 | Prepare EAS/release handoff without publishing automatically. |
+| 13 | Align the mobile app with backend API contracts before dependent screens are built. |
+| 14 | Improve accessibility, performance, and real-device ergonomics without adding scope. |
+
+## Mobile project path
+
+For a beginner, treat the Expo app as one channel inside the product, not as a random separate app:
+
+```text
+Kabeeri project scope
+-> app boundary for mobile
+-> backend/API contract
+-> Expo routing foundation
+-> public config only
+-> theme and mobile UI foundation
+-> auth/onboarding if needed
+-> data/state integration
+-> first release screens
+-> forms, keyboard, offline, permissions
+-> accessibility/performance review
+-> EAS/release handoff
+```
+
+If the API contract is unclear, use prompt 13 before implementing data screens.
+If the screen exists but feels rough on device, use prompt 14 before release handoff.
 
 ## Important
 

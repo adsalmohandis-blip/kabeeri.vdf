@@ -18,6 +18,7 @@ const pages = [
   ["product-blueprints", "Product Blueprints", "خرائط المنتجات"],
   ["data-design", "Data Design", "تصميم البيانات"],
   ["ui-ux-advisor", "UI/UX Advisor", "مساعد تصميم الواجهات"],
+  ["ui-ux-reference-library", "UI/UX Reference Library", "مكتبة مراجع UI/UX"],
   ["vibe-first", "Vibe-first Workflow", "مسار Vibe-first"],
   ["task-governance", "Task Governance", "حوكمة التاسكات"],
   ["app-boundary", "App Boundary Governance", "حوكمة حدود التطبيقات"],

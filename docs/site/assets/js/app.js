@@ -15,6 +15,7 @@ const pages = [
   ["product-blueprints", "Product Blueprints", "خرائط المنتجات"],
   ["data-design", "Data Design", "تصميم البيانات"],
   ["ui-ux-advisor", "UI/UX Advisor", "مساعد تصميم الواجهات"],
+  ["ui-ux-reference-library", "UI/UX Reference Library", "مكتبة مراجع UI/UX"],
   ["vibe-first", "Vibe-first Workflow", "مسار Vibe-first"],
   ["task-governance", "Task Governance", "حوكمة التاسكات"],
   ["app-boundary", "App Boundary Governance", "حوكمة حدود التطبيقات"],
@@ -58,6 +59,7 @@ const capabilityRows = {
     ["Execution Scope Governance", "Connects tasks, apps, workstreams, allowed files, locks, and task access tokens.", "`knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md`"],
     ["Design Governance", "Converts design sources into approved text specs, page specs, component contracts, and visual checks.", "`knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`"],
     ["UI/UX Advisor", "Recommends interface patterns, component groups, page templates, SEO/GEO rules, and dashboard/mobile UX guidance.", "`knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`"],
+    ["UI/UX Reference Library", "Stores approved UI/UX rules and reference patterns, then generates design questions and governed frontend/design tasks from them.", "`knowledge/design_system/ui_ux_reference/`, `.kabeeri/design_sources/ui_ux_reference.json`"],
     ["ADR and AI Run History", "Preserves architecture decisions and accepted or rejected AI runs beyond chat history.", "`knowledge/project_intelligence/`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`"],
     ["AI Cost Control", "Tracks usage, budgets, context packs, preflight estimates, model routing, accepted output, rework, and waste.", "`knowledge/ai_cost_control/`, `.kabeeri/ai_usage/`"],
     ["Live Dashboard", "Shows live technical, business, governance, task, app, cost, policy, workspace, and UX state.", "`integrations/dashboard/`, `.kabeeri/dashboard/`"],
@@ -397,6 +399,31 @@ const docs = {
         ],
         checklist: ["UI type is known.", "Page templates are listed.", "Components are selected.", "Responsive states are defined.", "Accessibility rules are included.", "SEO/GEO rules are included when public."],
         commands: ["node bin/kvdf.js design recommend", "node bin/kvdf.js design gate --task task-001"]
+      },
+      "ui-ux-reference-library": {
+        lead: "The UI/UX Reference Library is Kabeeri's governed design memory. It stores practical UI rules and approved reference patterns so AI tools can ask smarter questions and generate frontend tasks before writing code.",
+        beginner: "Instead of asking AI to design from taste, Kabeeri can point it to an approved pattern: dark governance dashboard, e-commerce admin dashboard, enterprise app shell, billing page, or minimal shadcn-style dashboard. The AI still must implement from text specs and tokens, not copy a template.",
+        sections: [
+          ["What it contains", "General UI/UX system rules, admin dashboard reference patterns, machine-readable catalog data, task seeds, question prompts, component inventories, state rules, responsive rules, accessibility rules, and visual checklists."],
+          ["How it helps questions", "When the project needs a dashboard or frontend surface, Kabeeri uses the reference to ask about roles, workflows, navigation depth, tables, filters, billing, notifications, RTL, SEO/GEO, states, and visual acceptance."],
+          ["How it helps tasks", "The reference can create governed design-system, page-spec, component-contract, and QA tasks. This protects the project from an AI tool jumping straight into random frontend implementation."],
+          ["Bootstrap foundation", "Bootstrap 5.3.8 is now an approved UI foundation for responsive websites, WordPress UI, MVP prototypes, forms, tables, and conventional admin/public interfaces when the project selects it."],
+          ["Tailwind foundation", "Tailwind CSS 4.3.0 is now an approved utility-first foundation for custom responsive interfaces, modern framework apps, shadcn/headless component systems, storefronts, and SaaS dashboards."],
+          ["Additional library foundations", "Bulma, Foundation Sites, MUI, Ant Design, daisyUI, and shadcn/ui are approved options when the selected frontend stack and product workflow match their strengths."],
+          ["Copy policy", "References are inspiration only. Do not copy third-party source code, assets, branding, images, demo data, or pixel-perfect layouts."],
+          ["Current patterns", "TAIL-UI01 Tailwind CSS 4, BOOT-UI01 Bootstrap 5.3, BULM-UI01 Bulma, FOUND-UI01 Foundation Sites, MUI-UI01 Material UI, ANTD-UI01 Ant Design, DAISY-UI01 daisyUI, SHAD-UI01 shadcn/ui, plus the admin dashboard reference patterns."]
+        ],
+        steps: ["Recommend reference", "Generate questions", "Answer UI needs", "Create design tasks", "Approve tokens/specs", "Implement UI", "Run visual QA"],
+        details: [
+          ["For admin dashboards", ["Choose based on product shape: governance monitoring, e-commerce operations, enterprise multi-module shell, billing/finance page, or simple SaaS analytics.", "Every dashboard page needs navigation, tables, filters, states, permissions, responsive behavior, RTL readiness, and accessibility."]],
+          ["For Bootstrap projects", ["Pin Bootstrap to `5.3.8`, document whether CSS/JS comes from npm bundler, Sass source, or CDN, and map Bootstrap variables to project design tokens.", "Create component contracts for buttons, forms, navs, cards, modals, dropdowns, alerts, toasts, tables, pagination, and the grid before page implementation."]],
+          ["For Tailwind projects", ["Pin Tailwind CSS to `4.3.0`, document whether the build uses CLI, Vite, PostCSS, framework plugin, or browser-only prototype setup, and map theme variables to project tokens.", "Create component contracts so shared buttons, forms, app shells, cards, dialogs, tables, and states do not become repeated ad hoc utility strings."]],
+          ["For React component libraries", ["Use MUI, Ant Design, or shadcn/ui only when the project is React/Next.js-compatible.", "Document theme tokens, provider setup, component ownership, RTL, dark mode, and table/form contracts before implementation."]],
+          ["For CSS framework choices", ["Use Bulma for lightweight CSS-only responsive interfaces and Foundation Sites for mature customizable responsive websites.", "Avoid mixing full CSS frameworks on one surface unless there is a documented migration plan."]],
+          ["For future public interfaces", ["Add storefront, blog/news, company site, mobile app, POS, booking, and portal references in the same structure.", "Each public reference should include SEO/GEO structure, content blocks, schema rules, and page-specific task seeds."]]
+        ],
+        checklist: ["Reference pattern is selected.", "Questions are generated before implementation.", "Design tokens are approved.", "Approved UI library decision is documented.", "Library/framework compatibility is confirmed.", "Page specs and component contracts exist.", "No copied assets or branding.", "Loading/empty/error/permission states are included.", "Responsive and RTL rules are documented."],
+        commands: ["kvdf design reference-list", "kvdf design reference-show TAIL-UI01", "kvdf design reference-show BOOT-UI01", "kvdf design reference-show MUI-UI01", "kvdf design reference-show ANTD-UI01", "kvdf design reference-show SHAD-UI01", "kvdf design reference-recommend \"tailwind nextjs custom saas dashboard\"", "kvdf design reference-recommend \"ant design enterprise crm tables forms\"", "kvdf design reference-recommend \"bulma css only responsive public website\"", "kvdf design reference-questions SHAD-UI01", "kvdf design reference-tasks ANTD-UI01 --scope \"enterprise admin dashboard\""]
       },
       "vibe-first": {
         lead: "Vibe-first lets the developer talk naturally while Kabeeri converts intent into structured, reviewable, and safe work.",
@@ -1737,6 +1764,13 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js design ui-review \"Describe the page\"", "Review a UI proposal for semantic HTML, responsiveness, states, accessibility, and SEO/GEO.", "يراجع اقتراح واجهة من ناحية الدلالة والتجاوب والحالات والوصول وSEO/GEO."),
     c("node bin/kvdf.js design ui-history", "Show prior UI advisor recommendations and reviews.", "يعرض تاريخ توصيات ومراجعات مساعد UI."),
     c("node bin/kvdf.js validate ui-design", "Validate UI design advisor runtime state.", "يفحص حالة مساعد تصميم الواجهات.")
+  ],
+  "ui-ux-reference-library": [
+    c("kvdf design reference-list", "List approved UI/UX reference patterns.", "يعرض نماذج UI/UX المرجعية المعتمدة."),
+    c("kvdf design reference-show ADMIT-ADB01", "Show one reference pattern, components, rules, states, and source file.", "يعرض نموذجًا مرجعيًا بكل مكوناته وقواعده وحالاته."),
+    c("kvdf design reference-recommend \"admin ecommerce dashboard with orders and revenue\"", "Recommend the best reference pattern from a short project brief.", "يقترح أفضل نموذج مرجعي من وصف مختصر للمشروع."),
+    c("kvdf design reference-questions ADMIT-ADB02", "Generate UI/UX discovery questions from a chosen reference.", "ينشئ أسئلة تصميم واجهات من نموذج مختار."),
+    c("kvdf design reference-tasks ADMIT-ADB02 --scope \"ecommerce admin dashboard\"", "Create governed design-system, page-spec, component-contract, and QA tasks from the reference.", "ينشئ تاسكات حوكمة للتصميم والمواصفات والمكونات والجودة من المرجع.")
   ],
   "vibe-first": [
     c("node bin/kvdf.js vibe \"Add checkout\"", "Classify a natural-language request and create a suggested task card.", "يصنف طلبًا طبيعيًا وينشئ كارت تاسك مقترح."),

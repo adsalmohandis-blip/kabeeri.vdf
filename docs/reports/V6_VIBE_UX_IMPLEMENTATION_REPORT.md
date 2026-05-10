@@ -2,12 +2,15 @@
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This is a historical implementation report. The current runtime now includes
 `kvdf vibe`, `kvdf ask`, and `kvdf capture`, plus interaction state for
 suggested tasks, post-work captures, Vibe sessions, context briefs, and intent
 JSONL records. The full VS Code/webview product remains a future UI layer.
+Post-work capture now includes richer file details, task matching, evidence
+updates, link/convert/reject/resolve actions, validation, and dashboard
+visibility.
 
 ## Summary
 

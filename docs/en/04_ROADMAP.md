@@ -1,5 +1,17 @@
 # 04 — Product Roadmap
 
+
+# Legacy English File - Product Roadmap
+
+This file is retained for old links only. The canonical English file for product
+roadmap and distribution is `docs/en/13_PRODUCT_ROADMAP_AND_DISTRIBUTION.md`,
+and the Arabic counterpart is `docs/ar/13_PRODUCT_ROADMAP_AND_DISTRIBUTION.md`.
+
+New documentation links should use the canonical numbered files listed in
+`docs/en/README.md`.
+
+---
+
 ## Purpose
 
 This roadmap explains the planned development path for Kabeeri VDF.
@@ -178,4 +190,3 @@ Docs
 → VS Code extension
 → Desktop/SaaS
 ```
-

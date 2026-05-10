@@ -12,6 +12,7 @@ Kabeeri still supports the older direct sprint commands. The `kvdf agile` layer 
 - impediment tracking and blocking
 - retrospective action records
 - velocity and release forecasting
+- release planning and readiness checks
 - Agile health live JSON for dashboard and editor surfaces
 - sprint review records
 - conversion from story to governed task
@@ -57,6 +58,8 @@ kvdf agile sprint review sprint-001 --accepted story-checkout-001 --goal-met yes
 kvdf agile impediment add --id imp-001 --story story-checkout-001 --severity high --title "Payment credentials missing" --owner owner-001
 kvdf agile impediment resolve imp-001 --resolution "Credentials configured"
 kvdf agile retrospective add sprint-001 --good "Goal was clear" --improve "Slice stories smaller" --actions "Add QA earlier"
+kvdf agile release plan release-001 --title "Checkout demo" --stories story-checkout-001 --criteria "Checkout accepted" --checks "Policy gates reviewed"
+kvdf agile release readiness release-001
 kvdf agile health
 kvdf agile forecast
 kvdf validate agile
@@ -149,6 +152,23 @@ kvdf validate agile
 - `decision`
 - `facilitator`
 
+`releases` capture Agile release planning:
+
+- `release_id`
+- `title`
+- `goal`
+- `target_date`
+- `epic_ids`
+- `story_ids`
+- `total_points`
+- `accepted_story_ids`
+- `release_criteria`
+- `required_checks`
+- `known_risks`
+- `open_questions`
+- `risk_level`
+- `readiness_status`
+
 ## Governance Rules
 
 - Epics are not implementation units. They must be broken into stories before sprint commitment.
@@ -157,6 +177,8 @@ kvdf validate agile
 - Sprint planning blocks stories with open impediments unless `--force` is explicitly used.
 - Sprint planning blocks over-commitment when committed story points exceed `--capacity-points`.
 - High and critical open impediments appear as Agile health blockers.
+- Release readiness is blocked when open questions or blocked stories exist.
+- Release readiness needs attention when criteria/checks are missing or included stories are not accepted yet.
 - `kvdf agile story task` creates a normal governed task with `source: user_story` and `source_reference: story:<story_id>`.
 - Converted story tasks still use workstream governance, app boundary governance, assignment checks, tokens, locks, acceptance review, and Owner verification.
 
@@ -187,6 +209,7 @@ The live state includes:
 - remaining point forecast
 - open impediments
 - latest retrospectives
+- latest release plans and next release readiness
 - action items
 
 The live dashboard serves the same data from:
@@ -208,6 +231,7 @@ The live dashboard shows Agile stories and sprint reviews.
 - sprint review references to existing stories and sprints
 - impediment references to existing stories and sprints
 - retrospective references to existing sprints
+- release references to existing epics and stories
 
 ## Relationship To Existing Templates
 
@@ -216,4 +240,7 @@ The live dashboard shows Agile stories and sprint reviews.
 - `USER_STORY_TEMPLATE.md` defines story shape and DoR/DoD.
 - `SPRINT_PLANNING_TEMPLATE.md` maps to `kvdf agile sprint plan`.
 - `SPRINT_REVIEW_TEMPLATE.md` maps to `kvdf agile sprint review`.
+- `RELEASE_PLAN_TEMPLATE.md` maps to `kvdf agile release plan`.
+- `DEFINITION_OF_DONE_TEMPLATE.md` supports acceptance and review discipline.
+- `STORY_SPLITTING_TEMPLATE.md` helps split oversized stories before commitment.
 - `SPRINT_COST_METADATA_SCHEMA.json` is still used by sprint cost analytics and AI usage rollups.

@@ -2,7 +2,7 @@
   "framework": "Kabeeri Vibe Developer Framework",
   "pack": "react-native-expo",
   "display_name": "React Native Expo",
-  "version": "v0.1.1",
+  "version": "v0.2.0",
   "category": "mobile-framework",
   "files": [
     "README.md",
@@ -20,14 +20,88 @@
     "10_DEVICE_PERMISSIONS_NOTIFICATIONS_PROMPT.md",
     "11_TESTING_REVIEW_PROMPT.md",
     "12_EAS_RELEASE_HANDOFF_PROMPT.md",
+    "13_BACKEND_API_CONTRACT_PROMPT.md",
+    "14_ACCESSIBILITY_PERFORMANCE_PROMPT.md",
     "prompt_pack_manifest.json"
   ],
   "compatible_with_common_layer": true,
+  "platform_focus": [
+    "ios",
+    "android",
+    "expo-router",
+    "expo-managed-workflow",
+    "development-builds"
+  ],
   "recommended_workstreams": [
     "mobile",
+    "backend",
     "public_frontend",
     "qa",
     "security"
+  ],
+  "risk_gates": [
+    "public_config_only",
+    "no_mobile_private_secrets",
+    "permission_changes_need_acceptance",
+    "backend_contract_before_data_screens",
+    "device_review_before_release",
+    "eas_publish_requires_owner_action"
+  ],
+  "recommended_checks": [
+    "npm run lint",
+    "npm test",
+    "npx expo-doctor",
+    "manual ios/android device review"
+  ],
+  "prompt_selection_keywords": [
+    {
+      "file": "02_EXPO_PROJECT_STRUCTURE_ROUTING_PROMPT.md",
+      "keywords": ["expo router", "navigation", "routing", "tabs", "stack", "layout", "deep link", "deep linking"]
+    },
+    {
+      "file": "03_ENV_CONFIG_API_PROMPT.md",
+      "keywords": ["env", "environment", "config", "api url", "base url", "public config"]
+    },
+    {
+      "file": "04_THEME_DESIGN_SYSTEM_PROMPT.md",
+      "keywords": ["theme", "design", "tokens", "rtl", "arabic", "dark mode", "ui foundation"]
+    },
+    {
+      "file": "05_AUTH_ONBOARDING_PROMPT.md",
+      "keywords": ["auth", "login", "signup", "onboarding", "session", "profile"]
+    },
+    {
+      "file": "06_API_DATA_STATE_PROMPT.md",
+      "keywords": ["fetch", "state", "react query", "zustand", "redux", "loading", "empty state"]
+    },
+    {
+      "file": "08_FORMS_VALIDATION_KEYBOARD_PROMPT.md",
+      "keywords": ["form", "validation", "keyboard", "input", "submit"]
+    },
+    {
+      "file": "09_LOCAL_STORAGE_OFFLINE_PROMPT.md",
+      "keywords": ["offline", "cache", "local storage", "asyncstorage", "securestore"]
+    },
+    {
+      "file": "10_DEVICE_PERMISSIONS_NOTIFICATIONS_PROMPT.md",
+      "keywords": ["permission", "notification", "push", "camera", "location", "media", "device"]
+    },
+    {
+      "file": "11_TESTING_REVIEW_PROMPT.md",
+      "keywords": ["test", "qa", "review", "verify", "regression"]
+    },
+    {
+      "file": "12_EAS_RELEASE_HANDOFF_PROMPT.md",
+      "keywords": ["eas", "release", "build", "handoff", "testflight", "play store"]
+    },
+    {
+      "file": "13_BACKEND_API_CONTRACT_PROMPT.md",
+      "keywords": ["api contract", "backend contract", "openapi", "endpoint contract", "laravel api", "mobile backend"]
+    },
+    {
+      "file": "14_ACCESSIBILITY_PERFORMANCE_PROMPT.md",
+      "keywords": ["accessibility", "performance", "large text", "touch target", "slow", "list performance"]
+    }
   ],
   "rule": "Use one prompt at a time. This pack does not install Expo, create native credentials, or publish builds by itself."
 }

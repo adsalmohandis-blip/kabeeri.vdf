@@ -730,5 +730,5 @@ Determine if project is ready for Kabeeri:
 ## Related Documents
 
 - [Delivery Modes](../delivery_modes/README.md)
-- [Task Governance](../task_governance/README.md)
+- [Task Tracking And Governance](../task_tracking/TASK_GOVERNANCE.md)
 - [Project Intake Issues](https://github.com/kabeeri/kabeeri-vdf/milestone/v1.2.0) (GitHub Issues)

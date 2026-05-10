@@ -2,7 +2,7 @@
   "framework": "Kabeeri Vibe Developer Framework",
   "pack": "common",
   "display_name": "Common Prompt Layer",
-  "version": "v0.2.0",
+  "version": "v0.3.0",
   "layer_type": "shared_prompt_layer",
   "files": [
     "README.md",
@@ -13,7 +13,24 @@
     "04_TESTING_REVIEW_RULES.md",
     "05_AI_RUN_HISTORY_RULES.md",
     "06_RELEASE_HANDOFF_RULES.md",
+    "07_COST_CONTEXT_POLICY_RULES.md",
+    "08_DESIGN_SECURITY_MIGRATION_RULES.md",
     "prompt_pack_manifest.json"
+  ],
+  "policy_gates": [
+    "task_scope",
+    "security",
+    "migration",
+    "handoff",
+    "release",
+    "github_write"
+  ],
+  "traceability_outputs": [
+    "task evidence",
+    "AI run history",
+    "ADR link when decisions change",
+    "post-work capture when files changed",
+    "handoff note when delivery changes"
   ],
   "rule": "Apply the common layer before any stack-specific prompt pack. Do not use it as a standalone installer."
 }

@@ -4,13 +4,15 @@ Updated during Phase 1 from `00_DEEP_MASTER_COMMANDS.md` using the roadmap inges
 
 ## Current Status Addendum
 
-Updated: 2026-05-09.
+Updated: 2026-05-10.
 
 This index is a historical ingestion index for v1-v7 roadmap sources. The
 status counts below are not the current implementation status. Many items that
 were counted as `missing` or `partial` have since been implemented in runtime.
 Use `CURRENT_REPOSITORY_ANALYSIS.md`, `GAP_REPORT.md`, and
 `MISSING_REQUIREMENTS_BACKLOG.md` for active status.
+Recent implemented overlays include Dashboard UX Governance, Design Governance
+reports, ADR/AI decision tracing, and React Native Expo Pack v0.2.0.
 
 ## Indexed Sources
 

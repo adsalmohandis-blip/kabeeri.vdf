@@ -28,7 +28,7 @@ The `.kabeeri/` workspace remains source of truth. Governance examples live besi
 - `ROLE_PERMISSION_MATRIX.md`
 - `SINGLE_OWNER_RULE.md`
 - `OWNER_TRANSFER_TOKEN.md`
-- `TASK_GOVERNANCE.md`
+- `TASK_GOVERNANCE.md` (compatibility pointer; canonical task policy is in `../task_tracking/TASK_GOVERNANCE.md`)
 - `EXECUTION_SCOPE_GOVERNANCE.md`
 - `WORKSTREAM_GOVERNANCE.md`
 - `LOCKING_RULES.md`

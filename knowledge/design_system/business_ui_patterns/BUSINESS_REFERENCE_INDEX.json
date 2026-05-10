@@ -1,0 +1,183 @@
+{
+  "index_version": "1.0.0",
+  "purpose": "Full business UI reference files modeled after the existing admin dashboard references.",
+  "selection_rule": "Use references from the selected business type first, then add dashboard references when the screen is analytics-heavy or operational.",
+  "references": [
+    {
+      "businessType": "landing-page",
+      "dashboardStyle": null,
+      "files": [
+        "knowledge/design_system/business_ui_patterns/landing-page/references/LAND-UI01_HERO_OFFER.md",
+        "knowledge/design_system/business_ui_patterns/landing-page/references/LAND-UI02_FEATURE_PROOF.md",
+        "knowledge/design_system/business_ui_patterns/landing-page/references/LAND-UI03_PRICING_SIGNUP.md",
+        "knowledge/design_system/business_ui_patterns/landing-page/references/LAND-UI04_SOCIAL_PROOF.md",
+        "knowledge/design_system/business_ui_patterns/landing-page/references/LAND-UI05_FAQ_FINAL_CTA.md"
+      ]
+    },
+    {
+      "businessType": "corporate",
+      "dashboardStyle": null,
+      "files": [
+        "knowledge/design_system/business_ui_patterns/corporate/references/CORP-UI01_CORPORATE_HOME.md",
+        "knowledge/design_system/business_ui_patterns/corporate/references/CORP-UI02_SERVICES_PAGE.md",
+        "knowledge/design_system/business_ui_patterns/corporate/references/CORP-UI03_CASE_STUDIES.md",
+        "knowledge/design_system/business_ui_patterns/corporate/references/CORP-UI04_ABOUT_TRUST.md",
+        "knowledge/design_system/business_ui_patterns/corporate/references/CORP-UI05_CONTACT_LEAD.md"
+      ]
+    },
+    {
+      "businessType": "ecommerce",
+      "dashboardStyle": "ADMIT-ADB02",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/ecommerce/references/ECOM-UI01_STOREFRONT_PRODUCT_DISCOVERY.md",
+        "knowledge/design_system/business_ui_patterns/ecommerce/references/ECOM-UI02_PRODUCT_DETAILS_CONVERSION.md",
+        "knowledge/design_system/business_ui_patterns/ecommerce/references/ECOM-UI03_CHECKOUT_FLOW.md",
+        "knowledge/design_system/business_ui_patterns/ecommerce/references/ECOM-UI04_ORDER_TRACKING.md",
+        "knowledge/design_system/business_ui_patterns/ecommerce/references/ECOM-UI05_MERCHANT_ADMIN.md"
+      ]
+    },
+    {
+      "businessType": "marketplace",
+      "dashboardStyle": "ADMIT-ADB02",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/marketplace/references/MRKT-UI01_LISTING_DISCOVERY.md",
+        "knowledge/design_system/business_ui_patterns/marketplace/references/MRKT-UI02_LISTING_DETAILS.md",
+        "knowledge/design_system/business_ui_patterns/marketplace/references/MRKT-UI03_SELLER_PROFILE.md",
+        "knowledge/design_system/business_ui_patterns/marketplace/references/MRKT-UI04_TRANSACTION_REQUEST.md",
+        "knowledge/design_system/business_ui_patterns/marketplace/references/MRKT-UI05_REVIEWS_DISPUTES.md"
+      ]
+    },
+    {
+      "businessType": "saas",
+      "dashboardStyle": "ADMIT-ADB05",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/saas/references/SAAS-UI01_PRODUCT_DASHBOARD.md",
+        "knowledge/design_system/business_ui_patterns/saas/references/SAAS-UI02_ONBOARDING_ACTIVATION.md",
+        "knowledge/design_system/business_ui_patterns/saas/references/SAAS-UI03_BILLING_SETTINGS.md",
+        "knowledge/design_system/business_ui_patterns/saas/references/SAAS-UI04_TEAM_WORKSPACE.md",
+        "knowledge/design_system/business_ui_patterns/saas/references/SAAS-UI05_USAGE_LIMITS.md"
+      ]
+    },
+    {
+      "businessType": "admin-panel",
+      "dashboardStyle": "ADMIT-ADB03",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/admin-panel/references/ADMP-UI01_ADMIN_APP_SHELL.md",
+        "knowledge/design_system/business_ui_patterns/admin-panel/references/ADMP-UI02_CRUD_LIST.md",
+        "knowledge/design_system/business_ui_patterns/admin-panel/references/ADMP-UI03_RECORD_FORM.md",
+        "knowledge/design_system/business_ui_patterns/admin-panel/references/ADMP-UI04_PERMISSION_MANAGEMENT.md",
+        "knowledge/design_system/business_ui_patterns/admin-panel/references/ADMP-UI05_AUDIT_ACTIVITY.md"
+      ]
+    },
+    {
+      "businessType": "dashboard",
+      "dashboardStyle": "ADMIT-ADB01",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/dashboard/references/DASH-UI01_EXECUTIVE_OVERVIEW.md",
+        "knowledge/design_system/business_ui_patterns/dashboard/references/DASH-UI02_OPERATIONAL_MONITOR.md",
+        "knowledge/design_system/business_ui_patterns/dashboard/references/DASH-UI03_ANALYTICS_REPORTING.md",
+        "knowledge/design_system/business_ui_patterns/dashboard/references/DASH-UI04_ALERTS_INCIDENTS.md",
+        "knowledge/design_system/business_ui_patterns/dashboard/references/DASH-UI05_SELF_SERVICE_INSIGHTS.md"
+      ]
+    },
+    {
+      "businessType": "crm",
+      "dashboardStyle": "ADMIT-ADB03",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/crm/references/CRM-UI01_PIPELINE_BOARD.md",
+        "knowledge/design_system/business_ui_patterns/crm/references/CRM-UI02_CUSTOMER_PROFILE.md",
+        "knowledge/design_system/business_ui_patterns/crm/references/CRM-UI03_LEADS_INBOX.md",
+        "knowledge/design_system/business_ui_patterns/crm/references/CRM-UI04_TASKS_FOLLOWUPS.md",
+        "knowledge/design_system/business_ui_patterns/crm/references/CRM-UI05_ACTIVITY_TIMELINE.md"
+      ]
+    },
+    {
+      "businessType": "erp",
+      "dashboardStyle": "ADMIT-ADB04",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/erp/references/ERP-UI01_MODULE_DASHBOARD.md",
+        "knowledge/design_system/business_ui_patterns/erp/references/ERP-UI02_DENSE_RECORD_TABLE.md",
+        "knowledge/design_system/business_ui_patterns/erp/references/ERP-UI03_APPROVAL_WORKFLOW.md",
+        "knowledge/design_system/business_ui_patterns/erp/references/ERP-UI04_FINANCE_BILLING.md",
+        "knowledge/design_system/business_ui_patterns/erp/references/ERP-UI05_AUDIT_REPORTS.md"
+      ]
+    },
+    {
+      "businessType": "booking",
+      "dashboardStyle": "ADMIT-ADB05",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/booking/references/BOOK-UI01_SERVICE_SELECTION.md",
+        "knowledge/design_system/business_ui_patterns/booking/references/BOOK-UI02_CALENDAR_TIME_SLOTS.md",
+        "knowledge/design_system/business_ui_patterns/booking/references/BOOK-UI03_BOOKING_SUMMARY.md",
+        "knowledge/design_system/business_ui_patterns/booking/references/BOOK-UI04_PAYMENT_CONFIRMATION.md",
+        "knowledge/design_system/business_ui_patterns/booking/references/BOOK-UI05_RESCHEDULE_CANCEL.md"
+      ]
+    },
+    {
+      "businessType": "delivery",
+      "dashboardStyle": "ADMIT-ADB02",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/delivery/references/DELV-UI01_CUSTOMER_ORDER_STATUS.md",
+        "knowledge/design_system/business_ui_patterns/delivery/references/DELV-UI02_TRACKING_MAP.md",
+        "knowledge/design_system/business_ui_patterns/delivery/references/DELV-UI03_DRIVER_DASHBOARD.md",
+        "knowledge/design_system/business_ui_patterns/delivery/references/DELV-UI04_STORE_ORDER_QUEUE.md",
+        "knowledge/design_system/business_ui_patterns/delivery/references/DELV-UI05_ADMIN_MONITORING.md"
+      ]
+    },
+    {
+      "businessType": "lms",
+      "dashboardStyle": null,
+      "files": [
+        "knowledge/design_system/business_ui_patterns/lms/references/LMS-UI01_COURSE_CATALOG.md",
+        "knowledge/design_system/business_ui_patterns/lms/references/LMS-UI02_COURSE_DETAILS.md",
+        "knowledge/design_system/business_ui_patterns/lms/references/LMS-UI03_LESSON_PLAYER.md",
+        "knowledge/design_system/business_ui_patterns/lms/references/LMS-UI04_QUIZ_ASSIGNMENT.md",
+        "knowledge/design_system/business_ui_patterns/lms/references/LMS-UI05_PROGRESS_CERTIFICATE.md"
+      ]
+    },
+    {
+      "businessType": "fintech",
+      "dashboardStyle": "ADMIT-ADB04",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/fintech/references/FIN-UI01_BALANCE_OVERVIEW.md",
+        "knowledge/design_system/business_ui_patterns/fintech/references/FIN-UI02_TRANSACTIONS_LEDGER.md",
+        "knowledge/design_system/business_ui_patterns/fintech/references/FIN-UI03_SEND_MONEY_CONFIRM.md",
+        "knowledge/design_system/business_ui_patterns/fintech/references/FIN-UI04_CARDS_INVOICES.md",
+        "knowledge/design_system/business_ui_patterns/fintech/references/FIN-UI05_SECURITY_SETTINGS.md"
+      ]
+    },
+    {
+      "businessType": "healthtech",
+      "dashboardStyle": null,
+      "files": [
+        "knowledge/design_system/business_ui_patterns/healthtech/references/HLTH-UI01_PATIENT_PROFILE.md",
+        "knowledge/design_system/business_ui_patterns/healthtech/references/HLTH-UI02_APPOINTMENTS.md",
+        "knowledge/design_system/business_ui_patterns/healthtech/references/HLTH-UI03_MEDICAL_RECORDS.md",
+        "knowledge/design_system/business_ui_patterns/healthtech/references/HLTH-UI04_PRESCRIPTIONS.md",
+        "knowledge/design_system/business_ui_patterns/healthtech/references/HLTH-UI05_LAB_RESULTS.md"
+      ]
+    },
+    {
+      "businessType": "real-estate",
+      "dashboardStyle": null,
+      "files": [
+        "knowledge/design_system/business_ui_patterns/real-estate/references/REST-UI01_PROPERTY_LISTING.md",
+        "knowledge/design_system/business_ui_patterns/real-estate/references/REST-UI02_PROPERTY_DETAILS.md",
+        "knowledge/design_system/business_ui_patterns/real-estate/references/REST-UI03_MAP_SEARCH.md",
+        "knowledge/design_system/business_ui_patterns/real-estate/references/REST-UI04_AGENT_PROFILE.md",
+        "knowledge/design_system/business_ui_patterns/real-estate/references/REST-UI05_SAVED_COMPARE.md"
+      ]
+    },
+    {
+      "businessType": "ai-product",
+      "dashboardStyle": "ADMIT-ADB01",
+      "files": [
+        "knowledge/design_system/business_ui_patterns/ai-product/references/AIP-UI01_PROMPT_WORKSPACE.md",
+        "knowledge/design_system/business_ui_patterns/ai-product/references/AIP-UI02_STREAMING_RESPONSE.md",
+        "knowledge/design_system/business_ui_patterns/ai-product/references/AIP-UI03_FILE_ANALYSIS.md",
+        "knowledge/design_system/business_ui_patterns/ai-product/references/AIP-UI04_HISTORY_VERSIONS.md",
+        "knowledge/design_system/business_ui_patterns/ai-product/references/AIP-UI05_USAGE_GOVERNANCE.md"
+      ]
+    }
+  ]
+}
