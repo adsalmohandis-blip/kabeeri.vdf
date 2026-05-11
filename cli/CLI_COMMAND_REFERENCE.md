@@ -27,6 +27,9 @@ kvdf ai-run --help
 kvdf dashboard --help
 kvdf release --help
 kvdf github --help
+kvdf resume --help
+kvdf multi-ai --help
+kvdf conflict --help
 ```
 
 Common command aliases are supported for terminal convenience:
@@ -37,6 +40,8 @@ kvdf t list
 kvdf tokens list
 kvdf dash generate
 kvdf prompts list
+kvdf start
+kvdf conflict scan
 ```
 
 ## Workspace
@@ -59,6 +64,61 @@ Without `--lang`, Kabeeri stores `language: user`, so adaptive intake and genera
 When `kvdf init` is run interactively, Kabeeri asks one short question: what software application the developer wants to build. The answer immediately creates an adaptive intake plan and docs-first tasks. In non-interactive automation, use `--goal "<one sentence>"` to trigger the same flow, or `--no-intake` to initialize state only.
 
 The docs-first tasks are intentional. They make Kabeeri ask and document the project before implementation tasks start, reducing the chance that an AI assistant skips project documentation and jumps directly into code.
+
+## Resume / Start
+
+```bash
+kvdf resume
+kvdf resume --json
+kvdf resume --scan
+kvdf start
+```
+
+Use `resume` as the first command in a new AI/developer session. It detects whether the current folder is Kabeeri framework source, a user application workspace with `.kabeeri`, or an application folder that has not been initialized with Kabeeri yet.
+
+The command separates the current application npm root from the Kabeeri engine root. This prevents confusion when a user project is a Next.js or React app but Kabeeri itself is also a Node.js CLI. In a user app workspace, application `npm` commands belong to the app root while Kabeeri should be used as the `kvdf` engine. In the framework source, `npm test` and package commands belong to Kabeeri itself.
+
+For framework owner development, `resume` also shows the Evolution Steward next priority, the top ordered development priorities, a parsed `OWNER_DEVELOPMENT_STATE.md` checkpoint, a compact git diff summary, and one exact next action for the current session. This is the required first-session view before continuing framework work.
+
+`--scan` also runs a small resume scan, including git status and workspace validation when `.kabeeri` exists. For framework owner development it also checks Evolution priorities, runs `kvdf conflict scan`, and runs the test suite.
+
+## Framework Boundary Guard
+
+```bash
+kvdf guard
+kvdf guard status --json
+kvdf guard status --allow-framework-edits
+```
+
+`guard` prevents accidental Kabeeri framework edits from user application workspaces. In framework source it passes only as framework-owner development. In a user workspace, framework-like paths such as `src/cli/`, `knowledge/`, `packs/`, and `schemas/` are treated as protected Kabeeri internals and blocked unless `--allow-framework-edits` is provided for an intentional Kabeeri fork. The same boundary is enforced when recording post-work captures or ending AI sessions with changed-file lists.
+
+## Conflict Scan
+
+```bash
+kvdf conflict scan
+kvdf conflict scan --json
+kvdf conflict status
+```
+
+`conflict scan` is the pre-development drift check for Kabeeri framework work. It verifies that CLI router/help surfaces are aligned, framework guard enforcement is wired into capture/session flows, core and runtime-schema validation still pass, and local `.kabeeri` task/capture/session/lock state has no obvious conflicts. Run it after `kvdf resume` and before adding broad new behavior.
+
+## GitHub Team Sync
+
+```bash
+kvdf sync status
+kvdf sync status --json
+kvdf sync status --fetch
+kvdf sync pull
+kvdf sync pull --confirm
+kvdf sync push
+kvdf sync push --confirm
+```
+
+`sync` is the local-to-GitHub team coordination preflight. It checks branch, remote, upstream, ahead/behind counts, local changed files, and whether `.kabeeri` exists. `pull` and `push` are dry-run commands unless `--confirm` is provided.
+
+Use `sync status` before starting a task in a multi-developer workspace. Use `sync pull` to preview a safe `git pull --ff-only`. Use `sync push` to preview remote publication after tests, validation, and Owner review.
+
+For solo or single-developer local workspaces, `sync` is optional and acts as a manual safety check. For team workspaces with multiple active developers or agents, Kabeeri treats sync as recommended before starting team-scoped work and after task/session/capture changes.
 
 ## Generators
 
@@ -124,21 +184,105 @@ kvdf evolution plan "Add docs-first init gate"
 kvdf evolution plan "Improve dashboard descriptions" --areas cli,docs,dashboard,tests
 kvdf evolution list
 kvdf evolution status
+kvdf evolution priorities
+kvdf evolution next
+kvdf evolution temp
+kvdf evolution temp advance
+kvdf evolution temp complete
+kvdf evolution defer "Future idea"
+kvdf evolution deferred
+kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
+kvdf evolution priority evo-auto-001 --status in_progress --note "Working now"
 kvdf evolution show evo-001
 kvdf evolution impact evo-001
 kvdf evolution tasks evo-001
 kvdf evolution verify evo-001
+kvdf multi-ai status
 ```
 
-Evolution Steward governs Kabeeri's own updates. It records the Owner's change
-request, infers impacted areas, creates proposed follow-up tasks, and exposes
-unfinished dependent work in dashboard/live reports. Use it when a requested
-Kabeeri change may affect runtime code, CLI help, task tracking, schemas,
-dashboard state, reports, prompt/AI guidance, docs, the capability map, tests,
-changelog, or release guidance.
+Evolution Steward is the single framework-development backlog. It records the
+Owner's change request, keeps ordered development priorities, checks possible
+duplicate capability matches against the central capability reference, infers
+impacted areas, creates proposed follow-up tasks, and exposes unfinished
+dependent work in dashboard/live reports. Use it when a requested Kabeeri change
+may affect runtime code, CLI help, task tracking, schemas, dashboard state,
+reports, prompt/AI guidance, docs, the capability map, tests, changelog, or
+release guidance. When a priority is already `in_progress`, every AI tool must
+start with `kvdf evolution temp` and work only on the current temporary slice.
+
+Use `kvdf evolution priority <id> --status ...` to keep the development phase
+list current. Allowed statuses are `planned`, `in_progress`, `blocked`, `done`,
+`deferred`, and `rejected`.
+
+If a framework development priority is already `in_progress`, a new
+`kvdf evolution plan "<request>"` does not create the change immediately. It
+returns a placement report that shows the unfinished priority, the full ordered
+priority list, and a recommended insertion point. The Owner must confirm the
+placement before Kabeeri records the new change:
+
+```bash
+kvdf evolution plan "New feature" --confirm-placement --priority-position 4
+```
+
+Use deferred ideas for feature concepts that should be remembered but not
+implemented yet. Deferred ideas are stored in `.kabeeri/evolution.json`, shown
+as one final bucket in `kvdf evolution priorities`, and only become active work
+when the Owner restores a selected idea explicitly.
+
+Use temporary execution priorities for the current active `in_progress`
+priority only. `kvdf evolution temp` shows or generates the queue, `kvdf
+evolution temp advance` moves to the next slice, and `kvdf evolution temp
+complete` closes the queue when that priority is finished. The queue expires
+automatically when the source priority leaves `in_progress`. It must cover the
+full current task from the first required step to the last required step, with
+no leftover execution remainder outside the queue. It is the required first
+step for any AI tool that begins work on an active priority.
+
+## Temporary Execution Queues
+
+```bash
+kvdf temp
+kvdf temp advance
+kvdf temp complete
+kvdf temp clear
+```
+
+`kvdf temp` is the general temporary execution queue for developers working on
+application tasks. It uses the current `in_progress` task in `.kabeeri/tasks.json`
+and covers the full task path from start to finish with no leftover execution
+remainder. Use `kvdf temp` for app work and task execution. Use
+`kvdf evolution temp` for the Evolution priority backlog.
 
 The source of truth is `.kabeeri/evolution.json`, with human rules in
 `knowledge/governance/EVOLUTION_STEWARD.md`.
+
+## Multi-AI Governance
+
+```bash
+kvdf multi-ai status
+kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
+kvdf multi-ai leader transfer --ai agent-002
+kvdf multi-ai leader end
+kvdf multi-ai sync
+kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
+kvdf multi-ai queue add --ai agent-001 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
+kvdf multi-ai queue list
+kvdf multi-ai queue start multi-ai-queue-001
+kvdf multi-ai queue advance multi-ai-queue-001
+kvdf multi-ai queue complete multi-ai-queue-001
+kvdf multi-ai merge add --sources multi-ai-queue-001,multi-ai-queue-002 --title "Leader merge"
+kvdf multi-ai merge preview multi-ai-merge-001
+kvdf multi-ai merge validate multi-ai-merge-001
+kvdf multi-ai merge commit multi-ai-merge-001
+```
+
+Multi-AI Governance keeps Evolution as the global priority governor, gives the
+first AI in a session Leader orchestration status, stores temporary queues per
+AI, can sync and distribute the active Evolution temporary queue across worker
+AIs, advances queue slices through a durable lifecycle, and records semantic
+merge bundles with semantic surface plans so several AI tools can work from the
+same repo without trampling one another. The Leader does not execute by
+default; execution requires explicit Owner delegation for a scoped slice.
 
 ## Prompt packs
 
@@ -220,6 +364,10 @@ WordPress support is a governed capability for three scenarios:
 
 The runtime state is stored in `.kabeeri/wordpress.json` and validated by
 `schemas/runtime/wordpress-state.schema.json`.
+
+Command dispatch now uses `src/cli/services/wordpress.js` for state
+persistence and `src/cli/services/wordpress_plans.js` for planning and
+checklist generation.
 
 Safety rules:
 
@@ -364,6 +512,18 @@ kvdf design recommend erp --json
 kvdf design ui-checklist
 kvdf design ui-review "news article page with semantic HTML structured data responsive accessibility loading empty error"
 kvdf design ui-history
+kvdf design theme-presets
+kvdf design theme-recommend ecommerce --json
+kvdf design composition-list
+kvdf design composition-recommend erp --page "invoice approval table" --json
+kvdf design framework-adapters
+kvdf design framework-plan bootstrap --blueprint erp --composition crud_table_workspace --json
+kvdf design ui-questions ecommerce --json
+kvdf design ui-decisions ecommerce --page checkout --json
+kvdf design playbooks
+kvdf design playbook erp --json
+kvdf design variant-archetypes
+kvdf design variants ecommerce --page checkout --count 3 --json
 kvdf design reference-list
 kvdf design reference-show ADMIT-ADB01
 kvdf design reference-recommend "admin ecommerce dashboard with orders and revenue"
@@ -376,6 +536,23 @@ The UI/UX Advisor extends Design Governance. It maps a Product Blueprint to an
 experience pattern, stack suggestions, component groups, page templates,
 SEO/GEO rules, dashboard/mobile rules, and an approval checklist. Its runtime
 state lives in `.kabeeri/design_sources/ui_advisor.json`.
+
+The modern UI design runtime is split into compact catalogs that keep prompts
+short and make frontend work repeatable without making every product look the
+same:
+
+- `theme-*` chooses product-aware palette/token presets.
+- `composition-*` chooses a screen composition such as dashboard, CRUD table,
+  checkout, content detail, settings, or AI prompt workspace.
+- `framework-*` translates tokens and compositions into Bootstrap, Tailwind,
+  Bulma, Foundation, MUI, Ant Design, daisyUI, or shadcn/ui implementation
+  guidance.
+- `ui-questions` and `ui-decisions` turn developer/client answers into density,
+  navigation, surface style, tone, variant, adapter, and composition decisions.
+- `playbook*` selects the default UI direction for a Kabeeri product blueprint.
+- `variant*` generates bounded creative directions so similar products can vary
+  while preserving accessibility, performance, RTL, motion, content, and design
+  governance rules.
 
 The UI/UX Reference Library adds reusable, approved UI patterns under
 `knowledge/design_system/ui_ux_reference/`. `reference-recommend` selects a
@@ -576,6 +753,12 @@ kvdf design snapshot design-source-001 --reference "figma-export-v1" --captured-
 kvdf design spec-create --source design-source-001 --title "Checkout page" --output frontend_specs/checkout.page.md
 kvdf design spec-list
 kvdf design spec-approve text-spec-001 --tokens design_system/tokens.json --actor owner-001
+kvdf design theme-recommend ecommerce --output knowledge/frontend_specs/tokens.json
+kvdf design composition-recommend ecommerce --page checkout --json
+kvdf design framework-plan shadcn-ui --blueprint ecommerce --page checkout --json
+kvdf design ui-decisions ecommerce --page checkout --json
+kvdf design playbook ecommerce --page checkout --json
+kvdf design variants ecommerce --page checkout --count 3 --json
 kvdf design reference-list
 kvdf design reference-show ADMIT-ADB04
 kvdf design reference-recommend "billing dashboard with invoices transactions and payment methods"

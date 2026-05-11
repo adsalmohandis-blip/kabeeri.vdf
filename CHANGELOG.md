@@ -4,6 +4,14 @@
 
 ### Added
 
+- Strengthened Multi-AI Governance integration with Evolution Steward. The active Leader now always knows the current Evolution temporary slice from `kvdf multi-ai status`, Worker queues are scoped to the active priority with automatic expiry, merge bundles include Evolution priority tracking, and the scope/dependency map documents how Multi-AI respects Evolution as the global priority governor without circular dependencies.
+- Verified Multi-AI Governance completeness: runtime state, CLI commands, help text, schemas, validation, docs, capabilities reference, and integration tests are all wired together, so multiple AI tools can work safely across devices with provenance tracking.
+- Added semantic merge preview and surface planning for Multi-AI bundles, so merge bundles now record file sections, surface risk, and owner-review-required overlaps before commit.
+- Added integration coverage for Multi-AI sync distribution, queue advancement, and merge commit provenance.
+- Added queue lifecycle and merge commit operations for Multi-AI Governance so distributed slices can be claimed, advanced, completed, and merged with provenance.
+- Added Evolution-to-Multi-AI sync so the active Leader can mirror the current Evolution temporary queue and distribute slices to worker AIs with provenance tracking.
+- Added Multi-AI Governance with `kvdf multi-ai` status/leader/queue/merge commands, a repo-backed `.kabeeri/multi_ai_governance.json` runtime state, semantic merge bundle validation, and Evolution-led leader orchestration.
+- Added temporary execution priorities for the active `in_progress` Evolution priority, with `kvdf evolution temp`, `kvdf evolution temp advance`, and `kvdf evolution temp complete` managing a short-lived slice queue that expires with the source priority.
 - Added the first executable `kvdf` CLI implementation with Node.js and no external runtime dependencies.
 - Added local workspace initialization for `.kabeeri/` state files.
 - Added validation for core repository files, generator JSON, prompt pack manifests, v3/v4 planning files, and local workspace state.
@@ -48,6 +56,7 @@
 - Added approved UI/UX library foundations for Bulma 1.0.4, Foundation Sites 6.9.0, MUI 9.0.1, Ant Design 6.3.7, daisyUI 5.5.19, and shadcn/ui CLI 4.7.0, including reference guidance, compatibility rules, questions, and task templates.
 - Added Kabeeri UI Execution Kit with low-token UI contracts, semantic color system, controlled creative variation rules, icon map, button presets, component decision map, page recipes, templates, UI review checklist, and static UI checker.
 - Added KVDF-inspired business UI patterns, user flow references, reusable UI template metadata schema, and motion/microinteraction guidance so Kabeeri can combine governed UI execution with product-specific creative variation.
+- Added framework boundary enforcement to post-work captures and AI session file scopes so user application workspaces cannot accidentally record Kabeeri framework internals as app work.
 - Added priority business UI template packs for eCommerce, SaaS, admin panels, dashboards, CRM, ERP, booking, and AI products, including reusable HTML snippets, template metadata, dashboard-style recommendations, and compact implementation prompts in UI advisor output.
 - Added full business UI reference libraries, five files per priority business pack, modeled after the existing admin dashboard references and returned by UI advisor recommendations.
 - Expanded detailed business UI references to include landing pages, corporate websites, marketplaces, delivery, LMS/EdTech, FinTech, HealthTech, and real estate, bringing the governed business reference library to 80 full reference files.
@@ -112,6 +121,41 @@
 - Strengthened independent readiness/governance reports with target-aware snapshots, strict mode, standalone metadata, source-of-truth notes, and a dedicated internal operating guide.
 - Strengthened release and GitHub publish gates so confirmed GitHub release publishing must pass both `release_policy` and `github_write_policy` before any `gh` write runs.
 - Added product packaging and upgrade support with `package.json` package file coverage, `npm run pack:check`, `kvdf package check`, `kvdf upgrade check`, and production packaging/upgrade guides.
+- Added `kvdf resume` / `kvdf start` as a session resume guard that separates Kabeeri framework-owner development from user app workspaces and clarifies app npm roots versus the Kabeeri engine root.
+- Added `kvdf guard` as a framework boundary guard that blocks accidental Kabeeri-internal edits from user application workspaces unless framework edits are explicitly allowed.
+- Added `kvdf sync` as a GitHub/team sync preflight with read-only status and dry-run pull/push guidance unless `--confirm` is provided.
+- Added `kvdf conflict scan` as a pre-development drift check for command/help alignment, guard wiring, validation health, and workspace task/capture/session/lock conflicts.
+- Strengthened Evolution Steward as the single framework-development backlog with ordered priorities, `kvdf evolution priorities`, `kvdf evolution next`, duplicate-capability signals, and resume-scan visibility.
+- Added Evolution priority status updates through `kvdf evolution priority <id> --status ...` and made resume output include the top development priorities for every framework-owner session.
+- Enhanced `kvdf resume` for framework-owner sessions with a parsed owner checkpoint, compact git summary, and one exact next development action before new work starts.
+- Continued CLI modularization by moving `doctor` and `validate` command handling into `src/cli/commands/health.js`.
+- Continued CLI modularization by moving `delivery` command handling and the shared delivery recommendation helper into `src/cli/commands/delivery.js`.
+- Continued CLI modularization by moving `memory` command handling and memory summary generation into `src/cli/commands/memory.js`.
+- Continued CLI modularization by moving `prompt-pack` command handling and prompt-pack catalog helpers into `src/cli/commands/prompt_pack.js`.
+- Continued CLI modularization by moving `audit` command handling and audit report reading into `src/cli/commands/audit.js`.
+- Continued CLI modularization by moving `generator` / `create` command handling and skeleton governance task creation into `src/cli/commands/generator.js`.
+- Continued CLI modularization by moving `vscode` command handling and VS Code scaffold builders into `src/cli/commands/vscode.js`.
+- Continued CLI modularization by moving `docs` / `doc` site command handling into `src/cli/commands/docs_site.js`.
+- Continued CLI modularization by moving `budget` command handling into `src/cli/commands/budget.js`.
+- Continued CLI modularization by moving `context-pack`, `preflight`, and `model-route` cost-control command handling into `src/cli/commands/cost_control.js`.
+- Continued CLI modularization by moving `handoff` command handling and handoff report builders into `src/cli/commands/handoff.js`.
+- Continued CLI modularization by moving `security` command handling and the latest security scan helper into `src/cli/commands/security.js`.
+- Continued CLI modularization by moving `migration` command handling and migration policy helpers into `src/cli/commands/migration.js`.
+- Continued CLI modularization by moving `token` command handling and execution-scope helpers into `src/cli/commands/token.js`.
+- Continued CLI modularization by moving `lock` command handling and lock-scope helpers into `src/cli/commands/lock.js`.
+- Continued CLI modularization by moving `developer` / `agent` identity command handling into `src/cli/commands/identity.js`.
+- Continued CLI modularization by moving `owner` auth and transfer command handling into `src/cli/commands/owner.js`.
+- Continued CLI modularization by moving `acceptance` command handling into `src/cli/commands/acceptance.js`.
+- Continued CLI modularization by moving `usage` / `pricing` command handling and AI cost helpers into `src/cli/commands/usage_pricing.js`.
+- Continued CLI modularization by moving `sprint` command handling into `src/cli/commands/sprint.js`.
+- Continued CLI modularization by moving `readiness` / `governance` runtime report routing into `src/cli/commands/runtime_report.js`.
+- Continued CLI modularization by moving `reports` command handling into `src/cli/commands/reports.js`.
+- Continued CLI modularization by moving `release` command handling into `src/cli/commands/release.js`.
+- Continued CLI modularization by moving `session` command handling into `src/cli/commands/session.js`.
+- Continued CLI modularization by moving `github` command handling into `src/cli/commands/github.js`.
+- Continued CLI modularization by moving `adr` command handling into `src/cli/commands/adr.js`.
+- Added an Evolution Steward placement gate: new feature requests during an `in_progress` priority now show a recommended order and require explicit Owner confirmation before creating changes or tasks.
+- Added an Evolution deferred ideas store with `kvdf evolution defer`, `kvdf evolution deferred`, restore gating, schema coverage, and a single final deferred-ideas bucket in development priorities.
 - Added the React Native Expo prompt pack with Expo-specific mobile prompts, manifest, export/compose support, safety rules for secrets/native permissions/EAS handoff, and CLI integration tests.
 - Expanded the React Native Expo prompt pack with backend API contract and accessibility/performance prompts plus manifest-driven prompt selection keywords for more accurate `prompt-pack compose` output.
 - Added bilingual documentation parity for the Arabic and English docs: matching 01-20 canonical topic files, Arabic/English indexes, and a bilingual maintenance guide.
@@ -415,3 +459,7 @@
 - Enhanced design visual reviews with runtime quality scoring and governance warnings for weak review evidence.
 - Added Theme Token Intelligence reference pack for product-aware token presets and shorter UI implementation prompts.
 - Added Component Composition Intelligence reference pack for screen-level component composition IDs and low-token implementation prompts.
+- Expanded `kvdf validate ui-design` to verify the modern design-system runtime catalogs, including UI/UX references, theme presets, screen compositions, framework adapters, creative variants, UI decision questions, project playbooks, business UI patterns, business references, and template packs.
+- Updated the CLI command reference so the UI/UX Advisor section now documents theme presets, composition recommendations, framework adapter plans, UI decision intake, project playbooks, and creative variants alongside UI/UX references.
+- Expanded the UI design advisor integration test so it asserts the deeper `validate ui-design` checks for theme presets, screen compositions, framework adapters, creative variants, project playbooks, and business UI references.
+- Updated the main system capabilities reference so UI/UX Advisor now lists theme token intelligence, component composition intelligence, framework adapters, UI decision intake, project playbooks, creative variants, and business UI pattern references as first-class design-system capabilities.

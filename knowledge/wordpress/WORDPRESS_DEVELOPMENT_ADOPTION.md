@@ -41,6 +41,10 @@ WordPress state lives in:
 .kabeeri/wordpress.json
 ```
 
+Command planning and state updates use `src/cli/services/wordpress.js` and
+`src/cli/services/wordpress_plans.js` so the command layer stays thin while
+runtime behavior remains governed.
+
 The state tracks:
 
 - `analyses`: existing-site analysis records.

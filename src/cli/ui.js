@@ -35,6 +35,12 @@ function normalizeFlagName(key) {
 function normalizeCommandName(command) {
   const aliases = {
     tasks: "task",
+    start: "resume",
+    "start-here": "resume",
+    resume: "resume",
+    boundary: "guard",
+    conflicts: "conflict",
+    scan: "conflict",
     t: "task",
     features: "feature",
     workstreams: "workstream",
@@ -86,6 +92,8 @@ function normalizeCommandName(command) {
     evolve: "evolution",
     evolution: "evolution",
     "evolution-steward": "evolution",
+    multiai: "multi-ai",
+    multi_ai: "multi-ai",
     dash: "dashboard",
     board: "dashboard",
     report: "reports",
@@ -104,11 +112,12 @@ function normalizeCommandName(command) {
     context: "context-pack",
     contexts: "context-pack",
     "context-packs": "context-pack",
+    "team-sync": "sync",
     routes: "model-route",
     routing: "model-route",
     handoffs: "handoff",
-    secret: "security",
-    secrets: "security",
+    secure: "security",
+    securefiles: "security",
     migrate: "migration",
     migrations: "migration"
   };
@@ -117,6 +126,32 @@ function normalizeCommandName(command) {
 
 function printCommandHelp(command) {
   const help = {
+    resume: `Usage:
+  kvdf resume
+  kvdf resume --json
+  kvdf resume --scan
+  kvdf start
+
+Notes:
+  Resume is the safe first command for a new AI/developer session. It detects whether the current folder is Kabeeri framework source, a user application workspace, or an application folder without .kabeeri state. It also separates the app npm root from the Kabeeri engine root to avoid Next.js/npm confusion.
+`,
+    guard: `Usage:
+  kvdf guard
+  kvdf guard status
+  kvdf guard status --json
+  kvdf guard status --allow-framework-edits
+
+Notes:
+  Guard checks whether the current folder is Kabeeri framework source or a user workspace. In user workspaces it blocks accidental framework-internal edits unless an explicit override is provided.
+`,
+    conflict: `Usage:
+  kvdf conflict scan
+  kvdf conflict scan --json
+  kvdf conflict status
+
+Notes:
+  Conflict scan is the pre-development drift check. It verifies CLI router/help alignment, framework guard wiring, core/runtime schema validation, and local workspace task/capture/session/lock conflicts before new framework work starts.
+`,
     create: `Usage:
   kvdf create --profile lite --output my-project
   kvdf create --profile standard --output my-project
@@ -270,13 +305,39 @@ Notes:
   kvdf evolution plan "Improve dashboard descriptions" --areas cli,docs,dashboard,tests
   kvdf evolution list
   kvdf evolution status
+  kvdf evolution priorities
+  kvdf evolution next
+  kvdf evolution defer "Future idea"
+  kvdf evolution deferred
+  kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
+  kvdf evolution priority evo-auto-001 --status in_progress --note "Working now"
   kvdf evolution show evo-001
   kvdf evolution tasks evo-001
   kvdf evolution impact evo-001
   kvdf evolution verify evo-001
 
 Notes:
-  Evolution Steward governs Kabeeri's own development. It records requested framework changes, infers impacted areas, creates follow-up tasks for runtime, CLI, docs, schemas, tests, dashboards, reports, and capabilities, and exposes the update state to dashboard/live reports.
+  Evolution Steward is the single framework-development backlog. It records requested framework changes, keeps ordered development priorities, stores deferred development ideas as one final bucket, checks for possible duplicate capabilities, creates follow-up tasks for runtime, CLI, docs, schemas, tests, dashboards, reports, and capabilities, and exposes the update state to dashboard/live reports.
+`,
+    "multi-ai": `Usage:
+  kvdf multi-ai status
+  kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
+  kvdf multi-ai leader transfer --ai agent-002
+  kvdf multi-ai leader end
+  kvdf multi-ai sync
+  kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
+  kvdf multi-ai queue add --ai agent-001 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
+  kvdf multi-ai queue list
+  kvdf multi-ai queue start multi-ai-queue-001
+  kvdf multi-ai queue advance multi-ai-queue-001
+  kvdf multi-ai queue complete multi-ai-queue-001
+  kvdf multi-ai merge add --sources multi-ai-queue-001,multi-ai-queue-002 --title "Leader merge"
+  kvdf multi-ai merge preview multi-ai-merge-001
+  kvdf multi-ai merge validate multi-ai-merge-001
+  kvdf multi-ai merge commit multi-ai-merge-001
+
+Notes:
+  Multi-AI Governance keeps Evolution as the global priority governor, gives the first AI in a session Leader orchestration status, stores temporary queues per AI, can sync and distribute the active Evolution temporary queue across workers, advances queue slices through a durable lifecycle, and records semantic merge bundles with semantic surface plans so several AI tools can work from the same repo without trampling each other. The Leader does not execute by default; execution requires explicit Owner delegation for a scoped slice.
 `,
     delivery: `Usage:
   kvdf delivery recommend "Build hospital management system with billing compliance roles and audit"
@@ -706,6 +767,18 @@ Notes:
   kvdf github label sync --version v4.0.0 --confirm
   kvdf github milestone sync --version v4.0.0 --confirm
 `,
+    sync: `Usage:
+  kvdf sync status
+  kvdf sync status --json
+  kvdf sync status --fetch
+  kvdf sync pull
+  kvdf sync pull --confirm
+  kvdf sync push
+  kvdf sync push --confirm
+
+Notes:
+  Sync is the GitHub/team coordination preflight. Status is read-only by default. Pull and push are dry-runs unless --confirm is provided, so Kabeeri can warn about stale remote work, local changes, and app/team drift before touching git remotes.
+`,
     wordpress: `Usage:
   kvdf wordpress analyze --path . --staging --backup
   kvdf wordpress plan "Build a WordPress corporate website" --type corporate --mode new
@@ -749,6 +822,9 @@ Usage:
 Commands:
   init                         Create local .kabeeri workspace state
   doctor                       Show environment and repository status
+  resume                       Detect session mode and safe next actions
+  guard                        Check framework boundary before edits
+  conflict scan                Scan for command, schema, and workspace logic drift
   validate [scope]             Validate repo JSON, plans, and workspace state
   generator list|show|create   List, show, or scaffold generator profiles
   create --profile <name>      Shortcut for generator create
@@ -763,6 +839,8 @@ Commands:
   blueprint list|recommend     Map product type to modules, pages, data, and risks
   data-design context|checklist Guide database modeling and review
   evolution plan|status        Govern Kabeeri framework updates and dependent tasks
+  multi-ai status|leader|queue|merge|sync
+                              Orchestrate multi-AI governance, leader sessions, queues, and merges
   plan list|show <version>     Inspect v3/v4 milestone plans
   project analyze              Analyze an existing app for KVDF adoption
   release check|notes|checklist Generate release review artifacts
@@ -811,11 +889,15 @@ Commands:
   migration plan|check|report   Govern migration safety and rollback readiness
   github plan|label|milestone|issue
                                Dry-run by default; use --confirm to write through gh
+  sync status|pull|push         Coordinate local Kabeeri state with git/GitHub
   design list|add|snapshot|approve|audit
                                Govern design sources before frontend implementation
 
 Examples:
   kvdf init --profile standard --mode structured
+  kvdf resume
+  kvdf guard
+  kvdf conflict scan
   kvdf init --profile standard --goal "Build ecommerce store with Laravel backend and Next.js frontend"
   kvdf validate
   kvdf validate runtime-schemas
@@ -847,6 +929,7 @@ Examples:
   kvdf blueprint recommend "Build ecommerce store with payments shipping and mobile app"
   kvdf data-design context ecommerce --json
   kvdf evolution plan "Add a new Kabeeri capability"
+  kvdf multi-ai status
   kvdf project analyze --path existing-app
   kvdf task start task-001 --actor agent-001
   kvdf owner init --id owner-001 --name "Project Owner"
@@ -873,6 +956,7 @@ Examples:
   kvdf design ui-review "news article page with semantic HTML structured data responsive accessibility loading empty error"
   kvdf design audit
   kvdf github issue sync --version v4.0.0 --dry-run
+  kvdf sync status
   kvdf vscode scaffold
   kvdf github issue sync --version v4.0.0 --confirm
   kvdf release notes --version v4.0.0 --output RELEASE_NOTES.md

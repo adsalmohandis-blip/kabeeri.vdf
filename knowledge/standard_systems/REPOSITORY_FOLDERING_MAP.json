@@ -74,7 +74,7 @@
       "group": "documentation",
       "target_path": "docs/",
       "description": "Human documentation, architecture notes, reports, bilingual guides, static docs site, and roadmap source context.",
-      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "uiux specifications/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
+      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
       "laravel_analogy": "docs/, README, changelog"
     },
     {
@@ -87,8 +87,8 @@
     {
       "group": "runtime_state",
       "target_path": ".kabeeri/",
-      "description": "Per-workspace live state, generated reports, task tracking, dashboard JSON, and local governance records.",
-      "current_paths": [".kabeeri/"],
+      "description": "Per-workspace live state, generated reports, task tracking, dashboard JSON, local governance records, and local tooling state.",
+      "current_paths": [".kabeeri/", ".kilo/"],
       "laravel_analogy": "storage/"
     }
   ],
@@ -101,9 +101,10 @@
     { "path": "integrations/", "target_group": "integrations", "role": "integration super-folder", "migration_status": "physical_root" },
     { "path": "schemas/", "target_group": "contracts", "role": "schemas and runtime contracts", "migration_status": "physical_root" },
     { "path": "docs/", "target_group": "documentation", "role": "human documentation and docs site", "migration_status": "physical_root" },
-    { "path": "uiux specifications/", "target_group": "documentation", "role": "temporary imported UI/UX specification source files", "migration_status": "temporary_local_input" },
     { "path": "tests/", "target_group": "quality", "role": "integration tests", "migration_status": "physical_root" },
-    { "path": ".kabeeri/", "target_group": "runtime_state", "role": "local workspace state", "migration_status": "local_only" }
+    { "path": ".clinerules/", "target_group": "documentation", "role": "coding assistant rules and workflows", "migration_status": "physical_root" },
+    { "path": ".kabeeri/", "target_group": "runtime_state", "role": "local workspace state", "migration_status": "local_only" },
+    { "path": ".kilo/", "target_group": "runtime_state", "role": "local tooling and worktree state", "migration_status": "local_only" }
   ],
   "legacy_aliases": {
     "standard_systems/": "knowledge/standard_systems/",
@@ -138,12 +139,14 @@
     ".git",
     ".github",
     ".kabeeri",
+    ".kilo",
     ".gitignore",
     "LICENSE",
     "README.md",
     "README_AR.md",
     "ROADMAP.md",
     "CHANGELOG.md",
+    ".clinerules",
     "package.json",
     "package-lock.json",
     "bin",
@@ -153,7 +156,6 @@
     "packs",
     "integrations",
     "docs",
-    "uiux specifications",
     "schemas",
     "tests"
   ],

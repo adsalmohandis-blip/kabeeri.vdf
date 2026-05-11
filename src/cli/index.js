@@ -1,11 +1,136 @@
-const { createWorkspace, defaultWorkstreams, ensureWorkspace, getStateDir, readJsonFile, writeJsonFile } = require("./workspace");
-const { listDirectories, listFiles, readTextFile, writeTextFile, fileExists, repoRoot, resolveAsset, assertSafeName } = require("./fs_utils");
+﻿const { createWorkspace, defaultWorkstreams, ensureWorkspace, readJsonFile, writeJsonFile } = require("./workspace");
+const { listFiles, readTextFile, writeTextFile, fileExists, repoRoot, resolveAsset, assertSafeName } = require("./fs_utils");
 const { validateRepository } = require("./validate");
 const { parseArgs, printHelp, printCommandHelp, table, normalizeCommandName } = require("./ui");
+const { productPackage, upgrade, buildPackageCheck, buildUpgradeCheck } = require("./commands/package_upgrade");
+const { repositoryStructure } = require("./commands/repository_structure");
+const { plan, findPlan } = require("./commands/plan");
+const { example } = require("./commands/example");
+const { capability, getSystemAreas, getSuggestedQuestionsForArea, mapAreaToWorkstream } = require("./commands/capability");
+const { resume } = require("./commands/resume");
+const { sync } = require("./commands/sync");
+const { guard, assertNoProtectedFrameworkFiles } = require("./commands/guard");
+const { conflict } = require("./commands/conflict");
+const { doctor, validateCommand } = require("./commands/health");
+const { deliveryMode, buildDeliveryModeRecommendation } = require("./commands/delivery");
+const { memory, buildMemorySummary } = require("./commands/memory");
+const { promptPack, getPromptPackCatalog, detectFrameworkPacks, recommendFrameworkPacksForBlueprint } = require("./commands/prompt_pack");
+const { audit } = require("./commands/audit");
+const { generator } = require("./commands/generator");
+const { vscode } = require("./commands/vscode");
+const { docsSite } = require("./commands/docs_site");
+const { init: initCommand } = require("./commands/init");
+const { temp: tempCommand } = require("./commands/temp");
+const { wordpress: wordpressCommand } = require("./commands/wordpress");
+const { questionnaire: questionnaireCommand } = require("./commands/questionnaire");
+const { blueprint: blueprintCommand, dataDesign: dataDesignCommand } = require("./commands/blueprint");
+const { dashboard, buildDashboardActionItems } = require("./commands/dashboard");
+const {
+  collectDashboardState: collectDashboardStateBase,
+  writeDashboardStateFiles: writeDashboardStateFilesBase,
+  refreshDashboardArtifacts: refreshDashboardArtifactsBase,
+  refreshTaskTrackerState,
+  buildTaskTrackerStateFromFiles,
+  buildTaskTrackerState,
+  buildTaskTrackerActionItems,
+  buildWorkstreamSummaries,
+  buildCustomerAppSummaries,
+  collectWorkspaceDashboardSummaries,
+  getDashboardWorkspaceRoots,
+  parseWorkspaceRoots,
+  summarizeWorkspaceRoot,
+  buildDashboardUxGovernanceState
+} = require("./commands/dashboard_state");
+const {
+  buildClientHomeHtml: buildClientHomeHtmlModule,
+  buildDashboardHtml: buildDashboardHtmlModule,
+  exportCustomerAppPages: exportCustomerAppPagesModule
+} = require("./commands/dashboard_site");
+const { serveSite } = require("./commands/site");
+const { budget } = require("./commands/budget");
+const { contextPack, preflight, modelRoute, findLatestContextPackForTask, getContextPack } = require("./commands/cost_control");
+const { handoff } = require("./commands/handoff");
+const { security, getLatestSecurityScan } = require("./commands/security");
+const { migration, getMigrationPlan, latestMigrationChecks } = require("./commands/migration");
+const { token, defaultForbiddenFiles } = require("./commands/token");
+const { lock, locksOverlap, normalizeLockType, normalizeLockScope, pathScopeContains } = require("./commands/lock");
+const { identity, ensureNoOtherOwner } = require("./commands/identity");
+const { owner, isOwnerSessionActive } = require("./commands/owner");
+const { acceptance } = require("./commands/acceptance");
+const { sprint } = require("./commands/sprint");
+const { runtimeReport } = require("./commands/runtime_report");
+const { reports } = require("./commands/reports");
+const {
+  release,
+  buildReleaseChecklist,
+  buildReleaseNotes,
+  buildScenarioReview,
+  countIssues
+} = require("./commands/release");
+const { session } = require("./commands/session");
+const { multiAiGovernance } = require("./commands/multi_ai_governance");
+const { github } = require("./commands/github");
+const { adr } = require("./commands/adr");
+const {
+  aiRun,
+  ensureDecisionHistoryState,
+  readAiRuns,
+  buildAiRunHistoryReport,
+  findAdr,
+  normalizeAdrStatus,
+  inferAdrImpact,
+  markAdrSuperseded,
+  assertKnownTasks,
+  assertKnownAiRuns,
+  linkAdrsToAiRuns,
+  buildAdrReport
+} = require("./commands/ai_run");
+const {
+  usage,
+  pricing,
+  recordUsageEvent,
+  calculateUsageCost,
+  getPricingCurrency,
+  readUsageEvents,
+  summarizeUsage,
+  getTaskSprint,
+  buildSprintSummary,
+  buildDeveloperEfficiency,
+  enforceBudgetApproval
+} = require("./commands/usage_pricing");
 
 const VERSION = require("../../package.json").version;
 
-async function run(argv) {
+function getDashboardRuntimeDeps() {
+  return {
+    getWorkstreamRegistry,
+    buildEvolutionSummary,
+    readAgileState,
+    refreshAgileDashboardState,
+    readStructuredState,
+    refreshStructuredDashboardState,
+    readAiRuns,
+    buildAiRunHistoryReport,
+    summarizeUsage,
+    buildSprintSummary,
+    buildDeveloperEfficiency,
+    buildTaskTrackerStateFromFiles
+  };
+}
+
+function collectDashboardState(options = {}) {
+  return collectDashboardStateBase(options, getDashboardRuntimeDeps());
+}
+
+function writeDashboardStateFiles(state) {
+  return writeDashboardStateFilesBase(state, getDashboardRuntimeDeps());
+}
+
+function refreshDashboardArtifacts(options = {}) {
+  return refreshDashboardArtifactsBase(options, getDashboardRuntimeDeps());
+}
+
+function run(argv) {
   const args = parseArgs(argv);
 
   if (args.flags.version && args.positionals.length === 0) {
@@ -27,21 +152,78 @@ async function run(argv) {
   const group = normalizeCommandName(rawGroup);
 
   if (group === "doctor") return doctor();
-  if (group === "validate") return validate(action);
-  if (group === "init") return init(args.flags);
-  if (group === "generator" || group === "generate") return generator(action, value, args.flags);
-  if (group === "create") return generator("create", action, args.flags);
-  if (group === "prompt-pack") return promptPack(action, value, args.flags);
+  if (group === "resume" || group === "start" || group === "start-here") return resume(action, value, args.flags);
+  if (group === "guard" || group === "boundary") return guard(action, value, args.flags);
+  if (group === "conflict" || group === "conflicts" || group === "scan") return conflict(action, value, args.flags);
+  if (group === "validate") return validateCommand(action);
+  if (group === "init") return initCommand(args.flags, {
+    createWorkspace,
+    questionnaireIntakePlan,
+    refreshDashboardArtifacts,
+    appendAudit,
+    readJsonFile,
+    writeJsonFile,
+    table
+  });
+  if (group === "generator" || group === "generate") return generator(action, value, args.flags, { appendAudit, refreshDashboardArtifacts, localFileExists });
+  if (group === "create") return generator("create", action, args.flags, { appendAudit, refreshDashboardArtifacts, localFileExists });
+  if (group === "prompt-pack") return promptPack(action, value, args.flags, { composePromptPack });
+  if (group === "temp") return tempCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, fileExists, table, appendAudit });
   if (group === "wordpress" || group === "wp") return wordpress(action, value, args.flags, rest);
   if (group === "example") return example(action, value);
-  if (group === "questionnaire") return questionnaire(action, value, args.flags);
+  if (group === "questionnaire") return questionnaireCommand(action, value, args.flags, {
+    ensureWorkspace,
+    readJsonFile,
+    writeJsonFile,
+    appendAudit,
+    listFiles,
+    table,
+    buildCoverageMatrix,
+    writeQuestionnaireReports,
+    buildMissingAnswersReport,
+    buildQuestionnaireFlow,
+    questionnaireIntakePlan,
+    generateTasksFromCoverage,
+    resolveQuestionnaireGroups,
+    copyQuestionnaireFiles,
+    questionnaireAnswer
+  });
   if (group === "vibe") return vibe(action, value, args.flags, rest);
   if (group === "ask") return vibe("ask", [action, value, ...rest].filter(Boolean).join(" "), args.flags);
   if (group === "capture") return vibe("capture", [action, value, ...rest].filter(Boolean).join(" "), args.flags);
   if (group === "capability") return capability(action, value, args.flags);
   if (group === "structure" || group === "foldering") return repositoryStructure(action, value, args.flags);
-  if (group === "blueprint") return blueprint(action, value, args.flags, rest);
-  if (group === "data-design") return dataDesign(action, value, args.flags, rest);
+  if (group === "blueprint") return blueprintCommand(action, value, args.flags, rest, {
+    table,
+    fileExists,
+    ensureWorkspace,
+    readJsonFile,
+    writeJsonFile,
+    buildBlueprintRecommendation,
+    buildBlueprintContext,
+    buildAiBlueprintContext,
+    buildBlueprintSelection,
+    getProductBlueprintCatalog,
+    findProductBlueprint,
+    readProductBlueprintState,
+    getCurrentBlueprintKey,
+    buildDataDesignContext,
+    renderBlueprintRecommendation,
+    appendAudit
+  });
+  if (group === "data-design") return dataDesignCommand(action, value, args.flags, rest, {
+    table,
+    fileExists,
+    ensureWorkspace,
+    readJsonFile,
+    writeJsonFile,
+    getDataDesignCatalog,
+    readDataDesignState,
+    getCurrentBlueprintKey,
+    buildDataDesignContext,
+    buildDataDesignReview,
+    findProductBlueprint
+  });
   if (group === "evolution") return evolution(action, value, args.flags, rest);
   if (group === "plan") return plan(action, value);
   if (group === "project" || group === "adopt") return projectAnalysis(action, value, args.flags, rest);
@@ -50,48 +232,176 @@ async function run(argv) {
   if (group === "app") return customerApp(action, value, args.flags);
   if (group === "feature") return feature(action, value, args.flags);
   if (group === "journey") return journey(action, value, args.flags);
-  if (group === "delivery") return deliveryMode(action, value, args.flags, rest);
+  if (group === "delivery") return deliveryMode(action, value, args.flags, rest, { appendAudit, getEffectiveActor });
   if (group === "structured" || group === "waterfall") return structured(action, value, args.flags, rest);
   if (group === "agile") return agile(action, value, args.flags, rest);
-  if (group === "sprint") return sprint(action, value, args.flags);
-  if (group === "session") return session(action, value, args.flags);
-  if (group === "acceptance") return acceptance(action, value, args.flags);
-  if (group === "audit") return audit(action, value, args.flags);
-  if (group === "memory") return memory(action, value, args.flags);
-  if (group === "adr") return adr(action, value, args.flags);
-  if (group === "ai-run" || group === "airun") return aiRun(action, value, args.flags);
-  if (group === "developer") return identity("developers", action, value, args.flags);
-  if (group === "owner") return owner(action, value, args.flags);
-  if (group === "agent") return identity("agents", action, value, args.flags);
-  if (group === "lock") return lock(action, value, args.flags);
+  if (group === "sprint") return sprint(action, value, args.flags, { requireAnyRole, appendAudit, buildSprintSummary });
+  if (group === "session") return session(action, value, args.flags, {
+    requireTaskExecutor,
+    hasConfiguredIdentities,
+    assertTaskCanStart,
+    getTaskById,
+    findActiveTaskToken,
+    isExpired,
+    getTaskSprint,
+    appendAudit,
+    calculateUsageCost,
+    parseCsv,
+    assertNoProtectedFrameworkFiles,
+    enforceSessionAppBoundary,
+    enforceTokenFileScope,
+    enforceSessionLockCoverage,
+    enforceSessionWorkstreamBoundary,
+    appendJsonLine,
+    summarizeUsage,
+    buildSessionHandoff
+  });
+  if (group === "multi-ai" || group === "multi_ai") return multiAiGovernance(action, value, args.flags, { appendAudit, rest });
+  if (group === "acceptance") return acceptance(action, value, args.flags, { requireAnyRole, appendAudit });
+  if (group === "audit") return audit(action, value, args.flags, { outputLines });
+  if (group === "memory") return memory(action, value, args.flags, { appendAudit, getEffectiveActor });
+  if (group === "adr") return adr(action, value, args.flags, {
+    ensureDecisionHistoryState,
+    findAdr,
+    requireAnyRole,
+    normalizeAdrStatus,
+    parseCsv,
+    assertKnownTasks: (taskIds) => assertKnownTasks(taskIds, { getTaskById }),
+    assertKnownAiRuns,
+    getEffectiveActor,
+    inferAdrImpact,
+    markAdrSuperseded,
+    linkAdrsToAiRuns,
+    appendJsonLine,
+    readJsonLines,
+    buildMemorySummary,
+    appendAudit,
+    outputLines,
+    buildAdrReport,
+    buildAdrAiRunTraceReport,
+    readAiRuns,
+    buildAdrAiRunTraceMarkdown
+  });
+  if (group === "ai-run" || group === "airun") return aiRun(action, value, args.flags, {
+    appendAudit,
+    getTaskById,
+    getTaskWorkstreamsById,
+    getEffectiveActor,
+    requireAnyRole,
+    parseCsv,
+    appendJsonLine,
+    outputLines
+  });
+  if (group === "developer") return identity("developers", action, value, args.flags, { requireAnyRole, parseCsv, validateKnownWorkstreams, appendAudit });
+  if (group === "owner") return owner(action, value, args.flags, { appendAudit, ensureNoOtherOwner, requireOwnerAuthority, isExpired });
+  if (group === "agent") return identity("agents", action, value, args.flags, { requireAnyRole, parseCsv, validateKnownWorkstreams, appendAudit });
+  if (group === "lock") return lock(action, value, args.flags, { requireAnyRole, appendAudit });
   if (group === "vscode") return vscode(action, value, args.flags);
   if (group === "docs" || group === "doc") return docsSite(action, value, args.flags);
-  if (group === "dashboard") return dashboard(action, value, args.flags);
-  if (group === "report" || group === "reports") return reports(action, value, args.flags);
-  if (group === "readiness") return runtimeReport("readiness", action, value, args.flags);
-  if (group === "governance") return runtimeReport("governance", action, value, args.flags);
-  if (group === "release") return release(action, value, args.flags);
-  if (group === "github") return github(action, value, args.flags);
+  if (group === "dashboard") return dashboard(action, value, args.flags, {
+    ensureWorkspace,
+    collectDashboardState,
+    writeDashboardStateFiles,
+    appendAudit,
+    writeTextFile,
+    buildClientHomeHtml: buildClientHomeHtmlModule,
+    buildDashboardHtml: buildDashboardHtmlModule,
+    exportCustomerAppPages: exportCustomerAppPagesModule,
+    serveSite,
+    summarizeWorkspaceRoot,
+    repoRoot,
+    refreshLiveReportsState,
+    refreshAgileDashboardState,
+    refreshStructuredDashboardState,
+    normalizePublicUsername
+  });
+  if (group === "report" || group === "reports") return reports(action, value, args.flags, { refreshLiveReportsState, renderLiveReportsState, outputLines });
+  if (group === "readiness") return runtimeReport("readiness", action, value, args.flags, {
+    buildReadinessReport,
+    buildGovernanceReport,
+    refreshLiveReportsState,
+    renderReadinessReport,
+    renderGovernanceReport,
+    outputLines,
+    writeTextFile
+  });
+  if (group === "governance") return runtimeReport("governance", action, value, args.flags, {
+    buildReadinessReport,
+    buildGovernanceReport,
+    refreshLiveReportsState,
+    renderReadinessReport,
+    renderGovernanceReport,
+    outputLines,
+    writeTextFile
+  });
+  if (group === "release") return release(action, value, args.flags, getReleaseCommandDeps());
+  if (group === "github") return github(action, value, args.flags, {
+    githubConfig,
+    findPlan,
+    printGithubDryRun,
+    printGithubLabels,
+    printGithubMilestones,
+    printGithubIssues,
+    releaseCommand: release,
+    getReleaseCommandDeps,
+    runGithubWriteGate,
+    syncGithubLabels,
+    syncGithubMilestones,
+    syncGithubIssues,
+    runReleasePublishGates,
+    publishGithubRelease
+  });
+  if (group === "sync" || group === "team-sync") return sync(action, value, args.flags);
   if (group === "package" || group === "packaging") return productPackage(action, value, args.flags);
   if (group === "upgrade") return upgrade(action, value, args.flags);
-  if (group === "token") return token(action, value, args.flags);
-  if (group === "budget") return budget(action, value, args.flags);
-  if (group === "pricing") return pricing(action, value, args.flags);
-  if (group === "usage") return usage(action, value, args.flags);
+  if (group === "token") return token(action, value, args.flags, {
+    requireAnyRole,
+    appendAudit,
+    getTaskById,
+    taskWorkstreams,
+    validateKnownWorkstreams,
+    getTaskAppPaths,
+    getWorkstreamPathRules,
+    normalizeLockScope,
+    normalizePathRule,
+    pathScopeContains,
+    parseCsv,
+    assertAssigneeCanTakeTask,
+    hasConfiguredIdentities,
+    getIdentity
+  });
+  if (group === "budget") return budget(action, value, args.flags, { requireAnyRole, appendAudit, getEffectiveActor, getOwnerActor });
+  if (group === "pricing") return pricing(action, value, args.flags, { requireAnyRole, appendAudit });
+  if (group === "usage") return usage(action, value, args.flags, { refreshDashboardArtifacts, appendAudit });
   if (group === "design") return design(action, value, args.flags);
   if (group === "policy") return policy(action, value, args.flags);
-  if (group === "context-pack" || group === "context") return contextPack(action, value, args.flags);
-  if (group === "preflight") return preflight(action, value, args.flags);
+  if (group === "context-pack" || group === "context") return contextPack(action, value, args.flags, { appendAudit, getTaskById, calculateUsageCost, getPricingCurrency });
+  if (group === "preflight") return preflight(action, value, args.flags, { appendAudit, getTaskById, calculateUsageCost, getPricingCurrency });
   if (group === "model-route" || group === "routing") return modelRoute(action, value, args.flags);
-  if (group === "handoff") return handoff(action, value, args.flags);
-  if (group === "security" || group === "secret" || group === "secrets") return security(action, value, args.flags);
-  if (group === "migration" || group === "migrate") return migration(action, value, args.flags);
+  if (group === "handoff") return handoff(action, value, args.flags, { runPolicyGate, collectDashboardState, summarizeUsage, appendAudit, getEffectiveActor });
+  if (group === "security") return security(action, value, args.flags, { appendAudit });
+  if (group === "migration" || group === "migrate") return migration(action, value, args.flags, { requireAnyRole, getEffectiveActor, appendAudit });
 
   throw new Error(`Unknown command: ${rawGroup}${suggestCommand(rawGroup)}`);
 }
 
+function getReleaseCommandDeps() {
+  return {
+    findPlan,
+    validateRepository,
+    countIssues,
+    outputLines,
+    buildReleaseChecklist,
+    buildReleaseNotes,
+    buildScenarioReview,
+    runPolicyGate,
+    runReleasePublishGates,
+    publishGithubRelease
+  };
+}
+
 function suggestCommand(command) {
-  const known = ["init", "doctor", "validate", "generator", "generate", "create", "prompt-pack", "wordpress", "wp", "example", "questionnaire", "vibe", "ask", "capture", "capability", "structure", "foldering", "blueprint", "data-design", "evolution", "plan", "project", "adopt", "task", "workstream", "app", "feature", "journey", "structured", "waterfall", "delivery", "agile", "sprint", "session", "acceptance", "audit", "memory", "adr", "ai-run", "developer", "owner", "agent", "lock", "vscode", "docs", "doc", "dashboard", "report", "reports", "readiness", "governance", "release", "github", "package", "packaging", "upgrade", "token", "budget", "pricing", "usage", "design", "policy", "context-pack", "context", "preflight", "model-route", "routing", "handoff", "security", "secret", "secrets", "migration", "migrate"];
+  const known = ["init", "doctor", "resume", "start", "start-here", "guard", "boundary", "conflict", "conflicts", "scan", "validate", "generator", "generate", "create", "prompt-pack", "temp", "wordpress", "wp", "example", "questionnaire", "vibe", "ask", "capture", "capability", "structure", "foldering", "blueprint", "data-design", "evolution", "plan", "project", "adopt", "task", "workstream", "app", "feature", "journey", "structured", "waterfall", "delivery", "agile", "sprint", "session", "multi-ai", "acceptance", "audit", "memory", "adr", "ai-run", "developer", "owner", "agent", "lock", "vscode", "docs", "doc", "dashboard", "report", "reports", "readiness", "governance", "release", "github", "sync", "team-sync", "package", "packaging", "upgrade", "token", "budget", "pricing", "usage", "design", "policy", "context-pack", "context", "preflight", "model-route", "routing", "handoff", "security", "migration", "migrate"];
   const best = known
     .map((item) => ({ item, distance: levenshtein(command, item) }))
     .sort((a, b) => a.distance - b.distance)[0];
@@ -114,403 +424,18 @@ function levenshtein(a, b) {
   return matrix[a.length][b.length];
 }
 
-function doctor() {
-  const checks = [
-    ["Repo root", repoRoot()],
-    ["Node", process.version],
-    [".kabeeri", fileExists(getStateDir()) ? "present" : "missing"],
-    ["Generators", listFiles("generators", ".json").length.toString()],
-    ["Prompt packs", listDirectories("prompt_packs").length.toString()],
-    ["Examples", listDirectories("examples").filter((name) => name !== "README.md").length.toString()]
-  ];
-
-  console.log("Kabeeri VDF doctor");
-  console.log(table(["Check", "Value"], checks));
-}
-
-function validate(scope) {
-  const result = validateRepository(scope || "all");
-  for (const line of result.lines) console.log(line);
-  if (!result.ok) process.exitCode = 1;
-}
-
-async function init(flags) {
-  const profile = flags.profile || "standard";
-  const mode = flags.mode || "structured";
-  const lang = flags.lang || flags.language || "user";
-  const created = createWorkspace({ profile, mode, lang });
-
-  console.log("Initialized Kabeeri workspace state.");
-  console.log(table(["File", "Status"], created.map((item) => [item.path, item.status])));
-  const intake = await runInitIntake(flags);
-  refreshDashboardArtifacts();
-  if (!intake) {
-    console.log("");
-    console.log("Next: tell your AI assistant what you want to build, or run:");
-    console.log('kvdf init --goal "Build ecommerce store with Laravel backend and Next.js frontend"');
-  }
-}
-
-async function runInitIntake(flags = {}) {
-  if (flags["no-intake"] || flags.skipIntake) return null;
-  const goal = flags.goal || flags.app || flags.description || flags.project || flags.text || await promptForInitialProjectGoal(flags);
-  if (!goal) return null;
-  const plan = questionnaireIntakePlan(goal, {
-    ...flags,
-    description: goal,
-    source: "init_intake",
-    silent: true,
-    json: false
-  });
-  const docsTasks = createDocsFirstTasksFromIntakePlan(plan, flags);
-  console.log("");
-  console.log("Initial project intake created.");
-  console.log(table(["Item", "Value"], [
-    ["Goal", goal],
-    ["Blueprint", `${plan.blueprint.name} (${plan.blueprint.key})`],
-    ["Questions", plan.generated_questions.length],
-    ["Docs-first tasks", docsTasks.length]
-  ]));
-  console.log("");
-  console.log("Ask the developer only these generated questions first. Do not start implementation until docs-first tasks are reviewed.");
-  return { plan, docsTasks };
-}
-
-async function promptForInitialProjectGoal(flags = {}) {
-  if (flags.yes || flags.nonInteractive || flags["non-interactive"]) return "";
-  if (!process.stdin.isTTY || !process.stdout.isTTY) return "";
-  const readline = require("readline/promises");
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await rl.question("What software application do you want to build? Write one short sentence: ");
-    return String(answer || "").trim();
-  } finally {
-    rl.close();
-  }
-}
-
-function createDocsFirstTasksFromIntakePlan(plan, flags = {}) {
-  if (!plan || flags["no-doc-tasks"]) return [];
-  const file = ".kabeeri/tasks.json";
-  const data = readJsonFile(file);
-  data.tasks = data.tasks || [];
-  const alreadyCreated = data.tasks.some((taskItem) => taskItem.source === `init_intake:${plan.plan_id}`);
-  if (alreadyCreated) return [];
-  const existing = new Set(data.tasks.map((item) => item.id));
-  const nextId = () => {
-    let index = data.tasks.length + 1;
-    let id = `task-${String(index).padStart(3, "0")}`;
-    while (existing.has(id)) {
-      index += 1;
-      id = `task-${String(index).padStart(3, "0")}`;
-    }
-    existing.add(id);
-    return id;
-  };
-  const createdAt = new Date().toISOString();
-  const seeds = [
-    ["Project intake answers", "Record the developer/client answers for the generated intake questions."],
-    ["Product scope document", "Document product goal, app boundaries, users, modules, and out-of-scope items."],
-    ["Architecture and stack decision", "Document backend, frontend, mobile, database, integrations, and delivery mode decisions."],
-    ["Data design document", "Document core entities, relationships, snapshots, indexes, constraints, audit, and migration safety."],
-    ["UI/UX direction document", "Document user journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations."],
-    ["Implementation task backlog", "Convert approved documentation into implementation tasks only after the docs-first gate is reviewed."]
-  ];
-  const tasks = seeds.map(([title, acceptance]) => ({
-    id: nextId(),
-    title,
-    status: "proposed",
-    type: "documentation",
-    workstream: "docs",
-    workstreams: ["docs"],
-    source: `init_intake:${plan.plan_id}`,
-    intake_plan_id: plan.plan_id,
-    phase: "docs_first",
-    docs_first_gate: true,
-    implementation_blocker: title !== "Implementation task backlog",
-    acceptance_criteria: [acceptance],
-    created_at: createdAt
-  }));
-  data.tasks.push(...tasks);
-  writeJsonFile(file, data);
-  for (const taskItem of tasks) {
-    appendAudit("task.created", "task", taskItem.id, `Docs-first task created: ${taskItem.title}`);
-  }
-  return tasks;
-}
-
-function generator(action, value, flags) {
-  if (!action && flags.profile) {
-    assertSafeName(flags.profile);
-    const file = `generators/${flags.profile}.json`;
-    if (!fileExists(file)) throw new Error(`Generator not found: ${flags.profile}`);
-    return createProjectSkeleton(readJsonFile(file), flags);
-  }
-
-  if (!action || action === "list") {
-    const rows = listFiles("generators", ".json").map((file) => {
-      const data = readJsonFile(file);
-      return [data.profile || file.replace(/\.json$/, ""), data.folder_count || "", data.description || ""];
-    });
-    console.log(table(["Profile", "Folders", "Description"], rows));
-    return;
-  }
-
-  const profile = value || flags.profile || action;
-  assertSafeName(profile);
-  const file = `generators/${profile}.json`;
-  if (!fileExists(file)) throw new Error(`Generator not found: ${profile}`);
-  const data = readJsonFile(file);
-
-  if (action === "show") {
-    console.log(JSON.stringify(data, null, 2));
-    return;
-  }
-
-  if (action === "create" || action === "scaffold" || flags.output) {
-    return createProjectSkeleton(data, flags);
-  }
-
-  if (value || flags.profile) {
-    console.log(JSON.stringify(data, null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown generator action: ${action}`);
-}
-
-function createProjectSkeleton(generatorData, flags) {
-  const fs = require("fs");
-  const path = require("path");
-  const output = flags.output || `${generatorData.profile || "kabeeri"}-project`;
-  const outputPath = path.resolve(repoRoot(), output);
-  const force = Boolean(flags.force);
-
-  if (fs.existsSync(outputPath) && !force) {
-    const existing = fs.readdirSync(outputPath);
-    if (existing.length > 0) {
-      throw new Error(`Output directory is not empty: ${output}. Use --force to write into it.`);
-    }
-  }
-
-  fs.mkdirSync(outputPath, { recursive: true });
-  const created = [];
-  const folders = generatorData.folders || [];
-
-  for (const folder of folders) {
-    const folderPath = path.join(outputPath, folder.path);
-    fs.mkdirSync(folderPath, { recursive: true });
-    created.push(path.relative(outputPath, folderPath).replace(/\\/g, "/"));
-    const readmePath = path.join(folderPath, "README.md");
-    writeIfAllowed(readmePath, buildFolderReadme(generatorData, folder), force);
-    created.push(path.relative(outputPath, readmePath).replace(/\\/g, "/"));
-  }
-
-  const manifest = {
-    framework: "Kabeeri VDF",
-    generated_at: new Date().toISOString(),
-    profile: generatorData.profile,
-    generator_version: generatorData.generator_version,
-    folder_count: folders.length,
-    generation_mode: generatorData.generation_mode,
-    output,
-    files: created
-  };
-
-  writeIfAllowed(path.join(outputPath, "kabeeri.generated.json"), `${JSON.stringify(manifest, null, 2)}\n`, force);
-  writeIfAllowed(path.join(outputPath, "README.md"), buildProjectReadme(generatorData), force);
-  const createdTasks = createGeneratorGovernanceTasks(generatorData, output, flags);
-  refreshDashboardArtifacts();
-  console.log(`Generated ${folders.length} folders in ${output}`);
-  if (createdTasks.length) console.log(`Created ${createdTasks.length} governance task(s) for ${output}.`);
-}
-
-function createGeneratorGovernanceTasks(generatorData, output, flags = {}) {
-  if (flags["no-tasks"] || flags.noTasks || !localFileExists(".kabeeri/tasks.json")) return [];
-  const file = ".kabeeri/tasks.json";
-  const data = readJsonFile(file);
-  data.tasks = data.tasks || [];
-  const profile = generatorData.profile || "generated";
-  const existing = new Set(data.tasks.map((item) => item.id));
-  const nextId = () => {
-    let index = data.tasks.length + 1;
-    let id = `task-${String(index).padStart(3, "0")}`;
-    while (existing.has(id)) {
-      index += 1;
-      id = `task-${String(index).padStart(3, "0")}`;
-    }
-    existing.add(id);
-    return id;
-  };
-  const createdAt = new Date().toISOString();
-  const taskSeeds = [
-    {
-      title: `Review generated ${profile} project skeleton`,
-      workstream: "docs",
-      acceptance: `Generated folder map for ${output} is reviewed and matches the intended application boundary.`
-    },
-    {
-      title: `Implement ${profile} foundation from approved tasks`,
-      workstream: inferGeneratorWorkstream(profile),
-      acceptance: "No implementation work starts until the owner approves the scoped task list."
-    },
-    {
-      title: `Validate ${profile} generated project and dashboard state`,
-      workstream: "qa",
-      acceptance: "Dashboard, task tracker, readiness, and usage summaries refresh after generation."
-    }
-  ];
-  const created = taskSeeds.map((seed) => ({
-    id: nextId(),
-    title: seed.title,
-    status: "proposed",
-    type: "project_setup",
-    workstream: seed.workstream,
-    workstreams: [seed.workstream],
-    app_username: null,
-    app_usernames: [],
-    app_paths: [output],
-    sprint_id: flags.sprint || null,
-    source: "generator",
-    generator_profile: profile,
-    generated_output: output,
-    acceptance_criteria: [seed.acceptance],
-    created_at: createdAt
-  }));
-  data.tasks.push(...created);
-  writeJsonFile(file, data);
-  for (const taskItem of created) {
-    appendAudit("task.created", "task", taskItem.id, `Generator task created: ${taskItem.title}`);
-  }
-  return created;
-}
-
-function inferGeneratorWorkstream(profile) {
-  const value = String(profile || "").toLowerCase();
-  if (/laravel|api|backend|server/.test(value)) return "backend";
-  if (/next|react|vue|angular|frontend|website|web/.test(value)) return "public_frontend";
-  if (/mobile|expo|native|flutter/.test(value)) return "mobile";
-  if (/database|sql|data/.test(value)) return "database";
-  return "unassigned";
-}
-
-function writeIfAllowed(filePath, content, force) {
-  const fs = require("fs");
-  const path = require("path");
-  if (fs.existsSync(filePath) && !force) return;
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, content, "utf8");
-}
-
-function buildProjectReadme(generatorData) {
-  return `# Kabeeri Project Skeleton
-
-Profile: ${generatorData.profile}
-
-${generatorData.description || ""}
-
-## Generation Rule
-
-${generatorData.core_rule || "Use this skeleton as a planning workspace before implementation."}
-
-## Next Steps
-
-1. Answer folder questionnaires or notes for each folder.
-2. Create tasks in \`.kabeeri/tasks.json\` with \`kvdf task create\`.
-3. Track AI usage with \`kvdf usage record\`.
-4. Verify completed work with Owner approval.
-`;
-}
-
-function buildFolderReadme(generatorData, folder) {
-  return `# ${folder.path}
-
-Layer: ${folder.layer || "unspecified"}
-
-## Purpose
-
-${folder.purpose || "No purpose documented."}
-
-## Policy
-
-${folder.detailed_documents_policy || generatorData.core_rule || "Do not generate detailed documents until inputs are reviewed."}
-`;
-}
-
-function promptPack(action, name, flags = {}) {
-  if (!action || action === "list") {
-    const rows = listDirectories("prompt_packs")
-      .map((pack) => {
-        const manifest = `prompt_packs/${pack}/prompt_pack_manifest.json`;
-        if (!fileExists(manifest)) return [pack, "", "missing manifest"];
-        const data = readJsonFile(manifest);
-        return [pack, data.display_name || data.pack || pack, data.version || ""];
-      });
-    console.log(table(["Pack", "Display", "Version"], rows));
-    return;
-  }
-
-  if (action === "common") {
-    const manifest = readJsonFile("prompt_packs/common/prompt_pack_manifest.json");
-    if (flags.json) console.log(JSON.stringify(manifest, null, 2));
-    else console.log(table(["Layer", "Version", "Files"], [[manifest.display_name || manifest.pack, manifest.version || "", (manifest.files || []).length]]));
-    return;
-  }
-
-  if (action === "compose" || action === "build") {
-    if (!name) throw new Error("Missing prompt pack name.");
-    return composePromptPack(name, flags);
-  }
-
-  if (["composition-list", "compositions", "compiled", "history"].includes(action)) {
-    const data = readJsonFile(".kabeeri/prompt_layer/compositions.json");
-    const rows = (data.compositions || []).map((item) => [
-      item.composition_id,
-      item.pack,
-      item.task_id || "",
-      item.context_pack_id || "",
-      item.output_path || "",
-      item.estimated_tokens || 0
-    ]);
-    console.log(table(["Composition", "Pack", "Task", "Context", "Output", "Tokens"], rows));
-    return;
-  }
-
-  if (action === "composition-show") {
-    const id = flags.id || name;
-    const data = readJsonFile(".kabeeri/prompt_layer/compositions.json");
-    const item = (data.compositions || []).find((entry) => entry.composition_id === id);
-    if (!item) throw new Error(`Prompt composition not found: ${id}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "show" || action === "validate") {
-    if (!name) throw new Error(`Missing prompt pack name.`);
-    assertSafeName(name);
-    const manifest = `prompt_packs/${name}/prompt_pack_manifest.json`;
-    if (!fileExists(manifest)) throw new Error(`Prompt pack not found: ${name}`);
-    const data = readJsonFile(manifest);
-    if (action === "show") console.log(JSON.stringify(data, null, 2));
-    else console.log(`Prompt pack "${name}" is valid.`);
-    return;
-  }
-
-  if (action === "export" || action === "use") {
-    if (!name) throw new Error("Missing prompt pack name.");
-    assertSafeName(name);
-    const source = `prompt_packs/${name}`;
-    if (!fileExists(`${source}/prompt_pack_manifest.json`)) throw new Error(`Prompt pack not found: ${name}`);
-    const output = flags.output || (action === "use" ? `07_AI_CODE_PROMPTS/${name}` : `exported-${name}-prompt-pack`);
-    exportDirectory(source, output, Boolean(flags.force));
-    console.log(`${action === "use" ? "Installed" : "Exported"} prompt pack ${name} to ${output}`);
-    return;
-  }
-
-  throw new Error(`Unknown prompt-pack action: ${action}`);
-}
-
 function wordpress(action, value, flags = {}, rest = []) {
+  return wordpressCommand(action, value, flags, rest, {
+    ensureWorkspace,
+    readJsonFile,
+    writeJsonFile,
+    repoRoot,
+    fileExists,
+    assertSafeName,
+    table,
+    appendAudit
+  });
+
   ensureWorkspace();
   ensureWordPressState();
 
@@ -1062,7 +987,7 @@ function inferWordPressPluginName(text) {
 function inferWordPressPluginType(text) {
   const value = String(text || "").toLowerCase();
   if (/woo|woocommerce|checkout|cart|order|payment|shipping|stock|refund/.test(value)) return "woocommerce";
-  if (/booking|appointment|clinic|reservation|حجز|عيادة/.test(value)) return "booking";
+  if (/booking|appointment|clinic|reservation|Ø­Ø¬Ø²|Ø¹ÙŠØ§Ø¯Ø©/.test(value)) return "booking";
   if (/api|webhook|integration|sync|crm|erp|gateway/.test(value)) return "integration";
   if (/cpt|post type|taxonomy|directory|listing|portfolio|content/.test(value)) return "cpt";
   return "business";
@@ -1252,10 +1177,10 @@ Generated by Kabeeri VDF.
 
 function inferWordPressSiteType(text) {
   const value = String(text || "").toLowerCase();
-  if (/woo|woocommerce|store|shop|ecommerce|checkout|cart|product|متجر/.test(value)) return "woocommerce";
-  if (/blog|article|personal|مدونة|مقالات/.test(value)) return "blog";
-  if (/news|magazine|أخبار/.test(value)) return "news";
-  if (/booking|appointment|clinic|حجز|عيادة/.test(value)) return "booking";
+  if (/woo|woocommerce|store|shop|ecommerce|checkout|cart|product|Ù…ØªØ¬Ø±/.test(value)) return "woocommerce";
+  if (/blog|article|personal|Ù…Ø¯ÙˆÙ†Ø©|Ù…Ù‚Ø§Ù„Ø§Øª/.test(value)) return "blog";
+  if (/news|magazine|Ø£Ø®Ø¨Ø§Ø±/.test(value)) return "news";
+  if (/booking|appointment|clinic|Ø­Ø¬Ø²|Ø¹ÙŠØ§Ø¯Ø©/.test(value)) return "booking";
   return "corporate";
 }
 
@@ -1504,52 +1429,6 @@ ${commonSections.map((section) => `### ${section.file}\n\n${section.content}`).j
 
 ${stackPrompt}
 `;
-}
-
-function exportDirectory(sourceRelative, outputRelative, force) {
-  const fs = require("fs");
-  const path = require("path");
-  const actualSource = resolveAsset(sourceRelative);
-  const outputRoot = path.resolve(repoRoot(), outputRelative);
-  if (!fs.existsSync(actualSource)) throw new Error(`Source directory not found: ${sourceRelative}`);
-
-  if (fs.existsSync(outputRoot) && fs.readdirSync(outputRoot).length > 0 && !force) {
-    throw new Error(`Output directory is not empty: ${outputRelative}. Use --force to overwrite files.`);
-  }
-
-  function copy(currentSource, currentOutput) {
-    fs.mkdirSync(currentOutput, { recursive: true });
-    for (const entry of fs.readdirSync(currentSource, { withFileTypes: true })) {
-      const sourcePath = path.join(currentSource, entry.name);
-      const outputPath = path.join(currentOutput, entry.name);
-      if (entry.isDirectory()) {
-        copy(sourcePath, outputPath);
-      } else if (!fs.existsSync(outputPath) || force) {
-        fs.copyFileSync(sourcePath, outputPath);
-      }
-    }
-  }
-
-  copy(actualSource, outputRoot);
-}
-
-function example(action, name) {
-  if (!action || action === "list") {
-    const manifest = readJsonFile("examples/examples_manifest.json");
-    console.log(table(["Profile"], (manifest.profiles || []).map((profile) => [profile])));
-    return;
-  }
-
-  if (action === "show") {
-    if (!name) throw new Error("Missing example profile.");
-    assertSafeName(name);
-    const file = `examples/${name}/README.md`;
-    if (!fileExists(file)) throw new Error(`Example not found: ${name}`);
-    console.log(readTextFile(file));
-    return;
-  }
-
-  throw new Error(`Unknown example action: ${action}`);
 }
 
 function questionnaire(action, value, flags = {}) {
@@ -1810,30 +1689,30 @@ function classifyVibeIntent(text, flags = {}) {
 }
 
 function detectVibeIntentType(text) {
-  if (matchesWords(text, ["?", "ازاي", "كيف", "what", "how", "هل"])) return "ask_question";
-  if (matchesWords(text, ["capture", "سجل", "لخص اللي اتعمل", "post-work"])) return "capture_work";
-  if (matchesWords(text, ["review", "راجع", "مراجعة"])) return "review_work";
-  if (matchesWords(text, ["verify", "تحقق", "اعتماد"])) return "verify_task";
-  if (matchesWords(text, ["cost", "تكلفة", "tokens", "budget"])) return "estimate_cost";
+  if (matchesWords(text, ["?", "Ø§Ø²Ø§ÙŠ", "ÙƒÙŠÙ", "what", "how", "Ù‡Ù„"])) return "ask_question";
+  if (matchesWords(text, ["capture", "Ø³Ø¬Ù„", "Ù„Ø®Øµ Ø§Ù„Ù„ÙŠ Ø§ØªØ¹Ù…Ù„", "post-work"])) return "capture_work";
+  if (matchesWords(text, ["review", "Ø±Ø§Ø¬Ø¹", "Ù…Ø±Ø§Ø¬Ø¹Ø©"])) return "review_work";
+  if (matchesWords(text, ["verify", "ØªØ­Ù‚Ù‚", "Ø§Ø¹ØªÙ…Ø§Ø¯"])) return "verify_task";
+  if (matchesWords(text, ["cost", "ØªÙƒÙ„ÙØ©", "tokens", "budget"])) return "estimate_cost";
   if (matchesWords(text, ["github", "issue", "sync"])) return "sync_github";
-  if (matchesWords(text, ["release", "publish", "نشر", "إصدار"])) return "publish_or_release";
-  if (matchesWords(text, ["docs", "وثائق", "documentation"])) return "generate_docs";
-  if (matchesWords(text, ["test", "validate", "check", "اختبار", "تشيك"])) return "run_check";
+  if (matchesWords(text, ["release", "publish", "Ù†Ø´Ø±", "Ø¥ØµØ¯Ø§Ø±"])) return "publish_or_release";
+  if (matchesWords(text, ["docs", "ÙˆØ«Ø§Ø¦Ù‚", "documentation"])) return "generate_docs";
+  if (matchesWords(text, ["test", "validate", "check", "Ø§Ø®ØªØ¨Ø§Ø±", "ØªØ´ÙŠÙƒ"])) return "run_check";
   return "create_task";
 }
 
 function detectVibeWorkstreams(text) {
   const matches = [];
   const rules = [
-    ["backend", ["api", "backend", "server", "controller", "service", "laravel", "باك", "سيرفر"]],
-    ["public_frontend", ["public", "frontend", "react", "vue", "angular", "page", "landing", "visitor", "فرونت", "واجهة", "صفحة"]],
-    ["admin_frontend", ["admin", "dashboard", "settings", "backoffice", "أدمن", "داشبورد", "إعدادات"]],
-    ["mobile", ["mobile", "ios", "android", "expo", "react native", "flutter", "device", "notification", "camera", "موبايل", "تطبيق موبايل"]],
-    ["database", ["database", "migration", "schema", "table", "db", "داتابيز", "قاعدة", "جدول"]],
-    ["qa", ["test", "tests", "qa", "acceptance", "اختبار", "تست"]],
-    ["devops", ["deploy", "hosting", "ci", "docker", "github actions", "نشر", "استضافة"]],
-    ["security", ["auth", "login", "permission", "secret", "secrets", "privacy", "صلاحيات", "أمان", "تسجيل دخول"]],
-    ["docs", ["docs", "readme", "guide", "handoff", "وثائق", "دليل"]]
+    ["backend", ["api", "backend", "server", "controller", "service", "laravel", "Ø¨Ø§Ùƒ", "Ø³ÙŠØ±ÙØ±"]],
+    ["public_frontend", ["public", "frontend", "react", "vue", "angular", "page", "landing", "visitor", "ÙØ±ÙˆÙ†Øª", "ÙˆØ§Ø¬Ù‡Ø©", "ØµÙØ­Ø©"]],
+    ["admin_frontend", ["admin", "dashboard", "settings", "backoffice", "Ø£Ø¯Ù…Ù†", "Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯", "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª"]],
+    ["mobile", ["mobile", "ios", "android", "expo", "react native", "flutter", "device", "notification", "camera", "Ù…ÙˆØ¨Ø§ÙŠÙ„", "ØªØ·Ø¨ÙŠÙ‚ Ù…ÙˆØ¨Ø§ÙŠÙ„"]],
+    ["database", ["database", "migration", "schema", "table", "db", "Ø¯Ø§ØªØ§Ø¨ÙŠØ²", "Ù‚Ø§Ø¹Ø¯Ø©", "Ø¬Ø¯ÙˆÙ„"]],
+    ["qa", ["test", "tests", "qa", "acceptance", "Ø§Ø®ØªØ¨Ø§Ø±", "ØªØ³Øª"]],
+    ["devops", ["deploy", "hosting", "ci", "docker", "github actions", "Ù†Ø´Ø±", "Ø§Ø³ØªØ¶Ø§ÙØ©"]],
+    ["security", ["auth", "login", "permission", "secret", "secrets", "privacy", "ØµÙ„Ø§Ø­ÙŠØ§Øª", "Ø£Ù…Ø§Ù†", "ØªØ³Ø¬ÙŠÙ„ Ø¯Ø®ÙˆÙ„"]],
+    ["docs", ["docs", "readme", "guide", "handoff", "ÙˆØ«Ø§Ø¦Ù‚", "Ø¯Ù„ÙŠÙ„"]]
   ];
   for (const [stream, words] of rules) {
     if (matchesWords(text, words)) matches.push(stream);
@@ -1842,9 +1721,9 @@ function detectVibeWorkstreams(text) {
 }
 
 function detectVibeRisk(text, workstreams) {
-  if (matchesWords(text, ["production", "publish", "migration", "auth", "payments", "secrets", "owner transfer", "delete", "overwrite", "نشر", "حذف", "مدفوعات", "صلاحيات"])) return "high";
+  if (matchesWords(text, ["production", "publish", "migration", "auth", "payments", "secrets", "owner transfer", "delete", "overwrite", "Ù†Ø´Ø±", "Ø­Ø°Ù", "Ù…Ø¯ÙÙˆØ¹Ø§Øª", "ØµÙ„Ø§Ø­ÙŠØ§Øª"])) return "high";
   if ((workstreams || []).length > 1) return "medium";
-  if (matchesWords(text, ["dashboard", "api", "database", "admin", "داشبورد", "داتابيز"])) return "medium";
+  if (matchesWords(text, ["dashboard", "api", "database", "admin", "Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯", "Ø¯Ø§ØªØ§Ø¨ÙŠØ²"])) return "medium";
   return "low";
 }
 
@@ -1852,15 +1731,15 @@ function detectVibeMissingDetails(text, intentType, workstreams) {
   const missing = [];
   if (intentType === "create_task") {
     if (text.length < 18) missing.push("clear target surface");
-    if (!matchesWords(text, ["user", "admin", "owner", "developer", "client", "مستخدم", "أدمن", "عميل", "مالك"])) missing.push("target user or actor");
-    if (!matchesWords(text, ["when", "must", "should", "can", "save", "accept", "ready", "لازم", "يقدر", "يظهر", "يمنع"])) missing.push("acceptance criteria");
+    if (!matchesWords(text, ["user", "admin", "owner", "developer", "client", "Ù…Ø³ØªØ®Ø¯Ù…", "Ø£Ø¯Ù…Ù†", "Ø¹Ù…ÙŠÙ„", "Ù…Ø§Ù„Ùƒ"])) missing.push("target user or actor");
+    if (!matchesWords(text, ["when", "must", "should", "can", "save", "accept", "ready", "Ù„Ø§Ø²Ù…", "ÙŠÙ‚Ø¯Ø±", "ÙŠØ¸Ù‡Ø±", "ÙŠÙ…Ù†Ø¹"])) missing.push("acceptance criteria");
   }
-  if ((workstreams || []).length > 1 && !matchesWords(text, ["integration", "ربط", "connect", "wire"])) missing.push("split or integration decision");
+  if ((workstreams || []).length > 1 && !matchesWords(text, ["integration", "Ø±Ø¨Ø·", "connect", "wire"])) missing.push("split or integration decision");
   return missing;
 }
 
 function detectVagueIntent(text) {
-  return matchesWords(text, ["make it better", "fix everything", "improve ui", "clean the project", "production ready", "add dashboard", "connect payments", "حسن", "ظبط", "نضف", "طور الموضوع"]);
+  return matchesWords(text, ["make it better", "fix everything", "improve ui", "clean the project", "production ready", "add dashboard", "connect payments", "Ø­Ø³Ù†", "Ø¸Ø¨Ø·", "Ù†Ø¶Ù", "Ø·ÙˆØ± Ø§Ù„Ù…ÙˆØ¶ÙˆØ¹"]);
 }
 
 function buildSuggestedTaskCard(intent, flags = {}) {
@@ -1925,7 +1804,7 @@ function buildVibePlanSuggestions(intent, flags = {}) {
 }
 
 function detectVibePlanTemplates(text) {
-  if (!matchesWords(text, ["ecommerce", "e-commerce", "store", "shop", "checkout", "cart", "متجر", "سلة", "منتجات", "دفع"])) return [];
+  if (!matchesWords(text, ["ecommerce", "e-commerce", "store", "shop", "checkout", "cart", "Ù…ØªØ¬Ø±", "Ø³Ù„Ø©", "Ù…Ù†ØªØ¬Ø§Øª", "Ø¯ÙØ¹"])) return [];
   return [
     {
       title: "Design ecommerce data model for products carts and orders",
@@ -2088,6 +1967,7 @@ function capturePostWork(message, flags = {}) {
     return capturePostWorkAction(parts[0], parts[1] || flags.id, flags);
   }
   const analysis = analyzePostWorkCapture(message || flags.summary, flags);
+  assertNoProtectedFrameworkFiles(analysis.changedFiles, flags);
   if (flags.task && !analysis.matchedTask) throw new Error(`Task not found: ${flags.task}`);
   const file = ".kabeeri/interactions/post_work_captures.json";
   const data = readJsonFile(file);
@@ -2229,6 +2109,7 @@ function capturePostWorkAction(action, id, flags = {}) {
   }
 
   if (action === "convert") {
+    assertNoProtectedFrameworkFiles(capture.files_changed || [], flags);
     const taskId = convertCaptureToTask(capture, flags);
     capture.task_id = taskId;
     capture.classification = "converted_to_task";
@@ -2535,6 +2416,9 @@ function getGitChangedFiles() {
 }
 
 function getGitChangedFileDetails() {
+  if (shouldUseLocalGitSnapshot()) {
+    return listLocalGitChangedFileDetails();
+  }
   const { spawnSync } = require("child_process");
   const result = spawnSync("git", ["status", "--short"], { cwd: repoRoot(), encoding: "utf8" });
   if (result.status !== 0) return [];
@@ -2550,6 +2434,36 @@ function getGitChangedFileDetails() {
     })
     .filter(Boolean)
     .filter((item) => item.file && !item.file.startsWith(".kabeeri/interactions/"));
+}
+
+function shouldUseLocalGitSnapshot() {
+  const value = String(process.env.KVDF_DISABLE_GIT_SPAWN || "").toLowerCase();
+  return value === "1" || value === "true" || value === "yes";
+}
+
+function listLocalGitChangedFileDetails() {
+  const fs = require("fs");
+  const path = require("path");
+  const root = repoRoot();
+  const entries = [];
+
+  walk(root, root);
+  return entries;
+
+  function walk(base, current) {
+    if (!fs.existsSync(current)) return;
+    for (const item of fs.readdirSync(current, { withFileTypes: true })) {
+      if (item.name === ".git" || item.name === "node_modules") continue;
+      const full = path.join(current, item.name);
+      const relative = path.relative(base, full).replace(/\\/g, "/");
+      if (item.isDirectory()) {
+        walk(base, full);
+      } else if (item.isFile()) {
+        if (relative.startsWith(".kabeeri/interactions/")) continue;
+        entries.push({ file: relative, status: "changed", raw: `?? ${relative}` });
+      }
+    }
+  }
 }
 
 function matchesWords(text, words) {
@@ -2575,170 +2489,6 @@ function localFileExists(relativePath) {
   const fs = require("fs");
   const path = require("path");
   return fs.existsSync(path.join(repoRoot(), relativePath));
-}
-
-function capability(action, value) {
-  const areas = getSystemAreas();
-  if (!action || action === "list") {
-    console.log(table(["ID", "Area", "Group"], areas.map((area) => [area.id, area.name, area.group])));
-    return;
-  }
-
-  if (action === "show") {
-    const key = String(value || "").toLowerCase();
-    if (!key) throw new Error("Missing capability id or name.");
-    const area = areas.find((item) => String(item.id) === key || item.key === key || item.name.toLowerCase() === key);
-    if (!area) throw new Error(`Capability area not found: ${value}`);
-    console.log(JSON.stringify(area, null, 2));
-    return;
-  }
-
-  if (action === "map") {
-    console.log(JSON.stringify({ areas, groups: buildCapabilityGroups() }, null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown capability action: ${action}`);
-}
-
-function repositoryStructure(action, value, flags = {}) {
-  const map = getRepositoryFolderingMap();
-
-  if (!action || action === "map" || action === "list") {
-    const report = buildRepositoryStructureReport(map);
-    if (flags.json) console.log(JSON.stringify(report, null, 2));
-    else renderRepositoryStructureMap(report);
-    return;
-  }
-
-  if (action === "show") {
-    const key = normalizeFolderPath(value);
-    if (!key) throw new Error("Missing folder name. Example: kvdf structure show standard_systems");
-    const entry = (map.current_to_target || []).find((item) => normalizeFolderPath(item.path) === key);
-    const group = (map.target_root_groups || []).find((item) => item.group === key || normalizeFolderPath(item.target_path) === key);
-    const legacy = map.legacy_aliases && map.legacy_aliases[`${key}/`];
-    if (!entry && !group && !legacy) throw new Error(`Foldering entry not found: ${value}`);
-    console.log(JSON.stringify(entry ? { type: "current_path", ...entry } : group ? { type: "target_group", ...group } : { type: "legacy_alias", path: `${key}/`, target_path: legacy }, null, 2));
-    return;
-  }
-
-  if (action === "validate" || action === "check") {
-    const report = buildRepositoryStructureReport(map);
-    if (flags.json) console.log(JSON.stringify(report.validation, null, 2));
-    else renderRepositoryStructureValidation(report.validation);
-    if (report.validation.status === "fail") process.exitCode = 1;
-    return;
-  }
-
-  if (action === "guide" || action === "docs") {
-    const guide = {
-      source_of_truth: "knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json",
-      documentation: "docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md",
-      recommended_commands: [
-        "kvdf structure map",
-        "kvdf structure validate",
-        "kvdf structure show standard_systems",
-        "kvdf validate foldering"
-      ],
-      ai_usage: map.ai_usage || {}
-    };
-    if (flags.json) console.log(JSON.stringify(guide, null, 2));
-    else {
-      console.log("Kabeeri Repository Foldering Guide");
-      console.log(table(["Item", "Path"], [
-        ["Source of truth", guide.source_of_truth],
-        ["Documentation", guide.documentation],
-        ["AI rule", guide.ai_usage.context_summary || ""]
-      ]));
-    }
-    return;
-  }
-
-  throw new Error(`Unknown structure action: ${action}`);
-}
-
-function getRepositoryFolderingMap() {
-  return readJsonFile("standard_systems/REPOSITORY_FOLDERING_MAP.json");
-}
-
-function buildRepositoryStructureReport(map = getRepositoryFolderingMap()) {
-  const rootFolders = listDirectories(".").filter((name) => !["node_modules", ".next", "dist", "coverage"].includes(name));
-  const allowed = new Set((map.allowed_top_level || []).map(normalizeFolderPath));
-  const mapped = new Map((map.current_to_target || []).map((item) => [normalizeFolderPath(item.path), item]));
-  const targetGroups = new Map((map.target_root_groups || []).map((item) => [item.group, item]));
-  const unknown_folders = rootFolders.filter((name) => !allowed.has(normalizeFolderPath(name)));
-  const missing_mapped_paths = (map.current_to_target || [])
-    .map((item) => normalizeFolderPath(item.path))
-    .filter((pathName) => pathName && !pathName.includes(".") && !rootFolders.includes(pathName) && pathName !== ".kabeeri")
-    .filter((pathName) => pathName !== "github" || !rootFolders.includes("github"));
-  const rows = (map.current_to_target || []).map((entry) => {
-    const folder = normalizeFolderPath(entry.path);
-    const group = targetGroups.get(entry.target_group) || {};
-    return {
-      path: entry.path,
-      target_group: entry.target_group,
-      target_path: group.target_path || "",
-      role: entry.role,
-      migration_status: entry.migration_status,
-      exists: rootFolders.includes(folder) || folder === ".kabeeri" || fileExists(folder)
-    };
-  });
-
-  const validation = {
-    report_type: "repository_foldering_validation",
-    generated_at: new Date().toISOString(),
-    status: unknown_folders.length === 0 ? "pass" : "needs_attention",
-    unknown_folders,
-    missing_mapped_paths,
-    mapped_paths: rows.length,
-    target_groups: (map.target_root_groups || []).length,
-    next_actions: unknown_folders.length === 0
-      ? ["Continue routing new features through the foldering map before adding top-level folders."]
-      : unknown_folders.map((folder) => `Classify ${folder}/ into an existing target group or document a new-folder exception.`)
-  };
-
-  return {
-    report_type: "repository_foldering_map",
-    generated_at: new Date().toISOString(),
-    map_version: map.map_version,
-    status: map.status,
-    principles: map.principles || [],
-    target_root_groups: map.target_root_groups || [],
-    current_to_target: rows,
-    validation,
-    ai_usage: map.ai_usage || {}
-  };
-}
-
-function normalizeFolderPath(value) {
-  return String(value || "").replace(/\\/g, "/").replace(/\/$/, "");
-}
-
-function renderRepositoryStructureMap(report) {
-  console.log(`Kabeeri Repository Foldering Map v${report.map_version}`);
-  console.log(table(["Current path", "Target group", "Target path", "Status"], report.current_to_target.map((item) => [
-    item.path,
-    item.target_group,
-    item.target_path,
-    item.migration_status
-  ])));
-  console.log("");
-  renderRepositoryStructureValidation(report.validation);
-}
-
-function renderRepositoryStructureValidation(validation) {
-  console.log(`Foldering validation: ${validation.status}`);
-  console.log(table(["Check", "Value"], [
-    ["Target groups", validation.target_groups],
-    ["Mapped paths", validation.mapped_paths],
-    ["Unknown folders", validation.unknown_folders.length ? validation.unknown_folders.join(", ") : "none"],
-    ["Missing mapped paths", validation.missing_mapped_paths.length ? validation.missing_mapped_paths.join(", ") : "none"]
-  ]));
-  if (validation.next_actions && validation.next_actions.length) {
-    console.log("");
-    console.log("Next actions:");
-    validation.next_actions.forEach((item) => console.log(`- ${item}`));
-  }
 }
 
 function blueprint(action, value, flags = {}, rest = []) {
@@ -3233,6 +2983,8 @@ function copyQuestionnaireFiles(files, output, force) {
 function buildQuestionnaireFlow() {
   return {
     version: "v5.0.0",
+    start_here: "kvdf questionnaire flow",
+    next_command: "kvdf questionnaire plan \"Describe the project in one sentence\"",
     flow: [
       "entry_questions",
       "project_type_detection",
@@ -3251,6 +3003,11 @@ function buildQuestionnaireFlow() {
       "Unknown Follow-up",
       "No Silent Skip",
       "Traceability"
+    ],
+    operator_notes: [
+      "Start from the questionnaire flow before searching the repo tree.",
+      "Use capability list for the machine-readable system area map.",
+      "If an area is unknown, ask a short follow-up instead of scanning unrelated folders."
     ],
     entry_questions: getEntryQuestions()
   };
@@ -3372,51 +3129,6 @@ function buildQuestionnaireFrameworkContext(description, blueprint, flags = {}) 
       "Confirm whether stack choice is fixed by the developer/client or open to recommendation."
     ]
   };
-}
-
-function getPromptPackCatalog() {
-  return listFiles("prompt_packs", "prompt_pack_manifest.json", true)
-    .map((file) => {
-      const data = readJsonFile(file);
-      const pack = data.pack || file.split("/")[1];
-      return { pack, display_name: data.display_name || pack, files: data.files || [], rule: data.rule || "" };
-    })
-    .filter((item) => item.pack && item.pack !== "common")
-    .sort((a, b) => a.pack.localeCompare(b.pack));
-}
-
-function detectFrameworkPacks(description, packs) {
-  const text = String(description || "").toLowerCase();
-  return packs
-    .filter((pack) => {
-      const names = [pack.pack, pack.display_name].filter(Boolean).map((item) => String(item).toLowerCase());
-      return names.some((name) => text.includes(name));
-    })
-    .map((pack) => pack.pack);
-}
-
-function recommendFrameworkPacksForBlueprint(blueprint, packs) {
-  const available = new Set(packs.map((pack) => pack.pack));
-  const recommended = [];
-  const channels = blueprint.channels || [];
-  const category = blueprint.category || "";
-  if (channels.includes("website") || channels.includes("customer_portal") || category.includes("content") || category.includes("commerce")) {
-    if (available.has("nextjs")) recommended.push("nextjs");
-    if (available.has("laravel")) recommended.push("laravel");
-  }
-  if (channels.includes("admin_panel") || (blueprint.frontend_pages || []).some((page) => String(page).startsWith("admin"))) {
-    if (available.has("react")) recommended.push("react");
-  }
-  if (channels.some((item) => String(item).includes("mobile"))) {
-    if (available.has("react-native-expo")) recommended.push("react-native-expo");
-    if (available.has("flutter")) recommended.push("flutter");
-  }
-  if (category.includes("business_operations") || ["erp", "crm", "inventory_wms", "accounting_billing"].includes(blueprint.key)) {
-    if (available.has("laravel")) recommended.push("laravel");
-    if (available.has("nestjs")) recommended.push("nestjs");
-    if (available.has("dotnet")) recommended.push("dotnet");
-  }
-  return uniqueList(recommended).slice(0, 4);
 }
 
 function buildAdaptiveIntakeQuestions(context) {
@@ -3772,139 +3484,6 @@ function getCoverageAction(status, area) {
   return actions[status] || "Review manually.";
 }
 
-function getSuggestedQuestionsForArea(areaKey) {
-  const area = getSystemAreas().find((item) => item.key === areaKey);
-  if (!area) return [];
-  const examples = {
-    theme_branding: ["Do you need colors controlled from admin?", "Do you need dark mode?", "Should low-contrast colors be blocked?"],
-    dashboard_customization: ["Which dashboards are required?", "Do widgets differ by role?", "Do reports need export?"],
-    users_roles: ["What user types exist?", "Is there exactly one Owner?", "Who approves, publishes, and deletes?"],
-    multi_tenancy: ["Will multiple companies use the system?", "Is tenant data separated?", "Does each tenant need settings, colors, or billing?"],
-    payments_billing: ["Are payments required in V1?", "Are subscriptions or invoices needed?", "Who can refund or cancel?"]
-  };
-  return examples[areaKey] || [`What is required for ${area.name} in V1?`, `Should ${area.name} be deferred or not applicable?`];
-}
-
-function mapAreaToWorkstream(areaKey) {
-  if (areaKey.includes("frontend") || ["theme_branding", "accessibility", "seo", "navigation"].includes(areaKey)) return "public_frontend";
-  if (areaKey.includes("admin") || areaKey === "settings_system") return "admin_frontend";
-  if (["backend_apis", "business_logic", "database", "integrations", "payments_billing", "webhooks"].includes(areaKey)) return "backend";
-  if (["testing_qa", "security", "performance", "monitoring", "deployment"].includes(areaKey)) return "qa";
-  return "docs";
-}
-
-function buildCapabilityGroups() {
-  return {
-    "A. Product & Business": ["Product vision", "Target users", "Business goals", "Core value proposition", "Use cases", "Pricing/revenue model", "MVP scope", "Future scope", "Out of scope", "KPIs"],
-    "B. Users, Access, and Journeys": ["User roles", "Permissions", "Role hierarchy", "User journey", "Onboarding", "Offboarding", "Authentication", "Authorization"],
-    "C. Frontend Experience": ["Public frontend", "User portal", "Admin frontend", "Internal operations frontend", "Responsive UI", "Accessibility", "RTL/LTR", "Navigation", "Forms"],
-    "D. Backend, Data, and APIs": ["Backend APIs", "Business logic", "Services", "Jobs/queues", "Database", "Migrations", "Data model", "API access", "Webhooks"],
-    "E. Admin, Settings, and Customization": ["Admin panel", "Settings system", "Theme/colors/branding", "Dashboard customization", "Feature flags", "Custom fields", "Email templates"],
-    "F. Engagement, Content, and Growth": ["Notifications", "Search/filtering", "Files/media", "Content management", "SEO", "Localization", "Support/help center", "Feedback"],
-    "G. Commerce and Integrations": ["Payments", "Billing", "Subscriptions", "Invoices", "Coupons", "Integrations", "CRM/ERP", "Email/SMS providers", "Maps/calendar"],
-    "H. Quality, Security, and Compliance": ["Security", "Audit logs", "Data governance", "Privacy/legal", "Testing/QA", "Error handling", "Performance", "Secrets policy"],
-    "I. Operations and Release": ["Deployment", "Production vs publish", "Backup/recovery", "Monitoring", "Maintenance mode", "Import/export", "Scheduling/automation", "Versioning"],
-    "J. Kabeeri Control Layer": ["Delivery mode", "Intake mode", "Task creation rules", "Task provenance", "AI token usage", "Owner verify", "Locks", "Prompt runs", "Cost calculator", "Dashboard state"]
-  };
-}
-
-function getSystemAreas() {
-  const names = [
-    ["product_business", "Product & Business", "A. Product & Business"],
-    ["users_roles", "Users & Roles", "B. Users, Access, and Journeys"],
-    ["permissions", "Permissions", "B. Users, Access, and Journeys"],
-    ["user_journeys", "User Journeys", "B. Users, Access, and Journeys"],
-    ["onboarding", "Onboarding", "B. Users, Access, and Journeys"],
-    ["offboarding", "Offboarding", "B. Users, Access, and Journeys"],
-    ["public_frontend", "Public Frontend", "C. Frontend Experience"],
-    ["user_frontend", "User Frontend", "C. Frontend Experience"],
-    ["admin_frontend", "Admin Frontend", "C. Frontend Experience"],
-    ["internal_operations_frontend", "Internal Operations Frontend", "C. Frontend Experience"],
-    ["backend_apis", "Backend APIs", "D. Backend, Data, and APIs"],
-    ["business_logic", "Business Logic", "D. Backend, Data, and APIs"],
-    ["database", "Database", "D. Backend, Data, and APIs"],
-    ["authentication", "Authentication", "B. Users, Access, and Journeys"],
-    ["authorization", "Authorization", "B. Users, Access, and Journeys"],
-    ["admin_panel", "Admin Panel", "E. Admin, Settings, and Customization"],
-    ["settings_system", "Settings System", "E. Admin, Settings, and Customization"],
-    ["theme_branding", "Theme / Colors / Branding / Design Tokens", "E. Admin, Settings, and Customization"],
-    ["dashboard_customization", "Dashboard Customization", "E. Admin, Settings, and Customization"],
-    ["notifications", "Notifications", "F. Engagement, Content, and Growth"],
-    ["search_filtering", "Search & Filtering", "F. Engagement, Content, and Growth"],
-    ["files_media", "Files & Media", "F. Engagement, Content, and Growth"],
-    ["reports_analytics", "Reports & Analytics", "F. Engagement, Content, and Growth"],
-    ["audit_logs", "Audit Logs", "H. Quality, Security, and Compliance"],
-    ["security", "Security", "H. Quality, Security, and Compliance"],
-    ["integrations", "Integrations", "G. Commerce and Integrations"],
-    ["payments_billing", "Payments / Billing", "G. Commerce and Integrations"],
-    ["seo", "SEO", "F. Engagement, Content, and Growth"],
-    ["localization_languages", "Localization / Languages", "F. Engagement, Content, and Growth"],
-    ["accessibility", "Accessibility", "C. Frontend Experience"],
-    ["performance", "Performance", "H. Quality, Security, and Compliance"],
-    ["error_handling", "Error Handling", "H. Quality, Security, and Compliance"],
-    ["testing_qa", "Testing / QA", "H. Quality, Security, and Compliance"],
-    ["deployment", "Deployment", "I. Operations and Release"],
-    ["production_publish", "Production vs Publish", "I. Operations and Release"],
-    ["backup_recovery", "Backup / Recovery", "I. Operations and Release"],
-    ["monitoring", "Monitoring", "I. Operations and Release"],
-    ["documentation", "Documentation", "I. Operations and Release"],
-    ["support_help_center", "Support / Help Center", "F. Engagement, Content, and Growth"],
-    ["legal_compliance", "Legal / Compliance", "H. Quality, Security, and Compliance"],
-    ["content_management", "Content Management", "F. Engagement, Content, and Growth"],
-    ["workflows_approvals", "Workflows / Approvals", "I. Operations and Release"],
-    ["multi_tenancy", "Multi-Tenancy", "G. Commerce and Integrations"],
-    ["feature_flags", "Feature Flags", "E. Admin, Settings, and Customization"],
-    ["data_import_export", "Data Import / Export", "I. Operations and Release"],
-    ["scheduling_automation", "Scheduling / Automation", "I. Operations and Release"],
-    ["ai_product_features", "AI Product Features", "F. Engagement, Content, and Growth"],
-    ["data_governance", "Data Governance", "H. Quality, Security, and Compliance"],
-    ["tenant_admin_customization", "Tenant / Admin Customization", "E. Admin, Settings, and Customization"],
-    ["email_notification_templates", "Email / Notification Templates", "E. Admin, Settings, and Customization"],
-    ["dynamic_forms_custom_fields", "Dynamic Forms / Custom Fields", "E. Admin, Settings, and Customization"],
-    ["versioning_api_versioning", "Versioning / API Versioning", "I. Operations and Release"],
-    ["kabeeri_control_layer", "Kabeeri Development Control Layer", "J. Kabeeri Control Layer"]
-  ];
-  return names.map(([key, name, group], index) => ({
-    id: index + 1,
-    key,
-    name,
-    group,
-    activation_states: ["required", "optional", "deferred", "not_applicable", "unknown", "needs_follow_up"],
-    question_group: group.replace(/^[A-J]\. /, "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "")
-  }));
-}
-
-function plan(action, name) {
-  const plans = getPlanRegistry();
-
-  if (!action || action === "list") {
-    const rows = plans.map(([version, file]) => {
-      const data = readJsonFile(file);
-      return [version, data.totals.milestones, data.totals.issues, file];
-    });
-    console.log(table(["Version", "Milestones", "Issues", "File"], rows));
-    return;
-  }
-
-  if (action === "show") {
-    if (!name) throw new Error("Missing plan version.");
-    const found = plans.find(([version]) => version === name || version.replace(/\./g, "_") === name);
-    if (!found) throw new Error(`Plan not found: ${name}`);
-    console.log(JSON.stringify(readJsonFile(found[1]), null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown plan action: ${action}`);
-}
-
-function getPlanRegistry() {
-  return [
-    ["v3.0.0", "platform_integration/milestones_and_issues.v3.0.0.json"],
-    ["v4.0.0", "multi_ai_governance/milestones_and_issues.v4.0.0.json"],
-    ["v5.0.0", "project_intelligence/milestones_and_issues.v5.0.0.json"]
-  ].filter(([, file]) => fileExists(file));
-}
-
 function projectAnalysis(action, value, flags = {}, rest = []) {
   if (!action || ["help", "status"].includes(action)) {
     console.log("Project adoption commands");
@@ -4063,25 +3642,64 @@ function inferDeliveryModeFromStacks(stacks, apps, risks) {
   return "agile";
 }
 
-function findPlan(version) {
-  const requested = version || "v4.0.0";
-  const found = getPlanRegistry().find(([itemVersion]) => itemVersion === requested || itemVersion.replace(/^v/, "") === requested || itemVersion.replace(/\./g, "_") === requested);
-  if (!found) throw new Error(`Plan not found: ${requested}`);
-  return { version: found[0], file: found[1], data: readJsonFile(found[1]) };
-}
-
 function evolution(action, value, flags = {}, rest = []) {
   ensureWorkspace();
   const file = ".kabeeri/evolution.json";
-  if (!fileExists(file)) writeJsonFile(file, { changes: [], impact_plans: [], current_change_id: null });
+  if (!fileExists(file)) writeJsonFile(file, { changes: [], impact_plans: [], current_change_id: null, temporary_priorities: null });
   const state = readJsonFile(file);
   state.changes = state.changes || [];
   state.impact_plans = state.impact_plans || [];
+  state.deferred_ideas = state.deferred_ideas || [];
+  ensureEvolutionDevelopmentPriorities(state);
+  ensureEvolutionTemporaryPriorities(state);
 
   if (!action || action === "status" || action === "summary") {
     const summary = buildEvolutionSummary(state);
+    writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(summary, null, 2));
     else console.log(renderEvolutionSummary(summary));
+    return;
+  }
+
+  if (action === "priority" && value) {
+    const priority = updateEvolutionPriority(state, value, flags);
+    writeJsonFile(file, state);
+    if (flags.json) console.log(JSON.stringify(priority, null, 2));
+    else console.log(`${priority.id}: ${priority.status} - ${priority.title}`);
+    return;
+  }
+
+  if (["defer", "deferred", "deferred-ideas", "ideas"].includes(action)) {
+    const result = handleEvolutionDeferredIdeas(state, action, value, flags, rest);
+    writeJsonFile(file, state);
+    if (flags.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(renderEvolutionDeferredIdeasResult(result));
+    return;
+  }
+
+   if (["temp", "temporary", "temp-priorities", "temporary-priorities"].includes(action)) {
+     const result = handleEvolutionTemporaryPriorities(state, value, flags, rest);
+     writeJsonFile(file, state);
+     if (flags.json) console.log(JSON.stringify(result, null, 2));
+     else console.log(renderEvolutionTemporaryPrioritiesReport(result));
+     return;
+   }
+
+  if (["priorities", "priority", "roadmap", "phases"].includes(action)) {
+    const priorities = buildEvolutionPrioritiesReport(state);
+    writeJsonFile(file, state);
+    if (flags.json) console.log(JSON.stringify(priorities, null, 2));
+    else console.log(renderEvolutionPriorities(priorities));
+    return;
+  }
+
+  if (action === "next") {
+    const priorities = buildEvolutionPrioritiesReport(state);
+    const next = priorities.priorities.find((item) => !["done", "deferred", "rejected"].includes(item.status)) || null;
+    const nextAction = buildEvolutionNextAction(next);
+    const payload = { report_type: "evolution_next_priority", generated_at: new Date().toISOString(), next, next_action: nextAction };
+    if (flags.json) console.log(JSON.stringify(payload, null, 2));
+    else console.log(next ? `${next.id}: ${next.title}\n${next.summary}\nNext action: ${nextAction}` : "No open evolution priorities.");
     return;
   }
 
@@ -4119,7 +3737,22 @@ function evolution(action, value, flags = {}, rest = []) {
     requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "create evolution plan");
     const description = [value, ...rest].filter(Boolean).join(" ").trim() || flags.title || flags.description || flags.summary;
     if (!description) throw new Error("Missing evolution description.");
+    const placement = buildEvolutionFeatureRequestPlacement(state, description, flags);
+    if (placement.requires_confirmation && !isEvolutionPlacementConfirmed(flags)) {
+      if (flags.json) console.log(JSON.stringify(placement, null, 2));
+      else console.log(renderEvolutionFeatureRequestPlacement(placement));
+      return;
+    }
     const change = createEvolutionChange(state, description, flags);
+    if (placement.active_priority || placement.recommended_position || flags["priority-position"]) {
+      change.priority_confirmation = {
+        confirmed_at: new Date().toISOString(),
+        active_priority_id: placement.active_priority ? placement.active_priority.id : null,
+        recommended_position: placement.recommended_position || null,
+        requested_position: flags["priority-position"] || flags.priority || null,
+        confirmation_flag: flags["confirm-placement"] || flags["confirm-priority"] || flags.confirm
+      };
+    }
     writeJsonFile(file, state);
     const tasks = createEvolutionTasks(change, flags);
     change.task_ids = tasks.map((item) => item.id);
@@ -4171,6 +3804,8 @@ function createEvolutionChange(state, description, flags = {}) {
   const impactedAreas = inferEvolutionImpactedAreas(description, flags);
   const title = flags.title && flags.title !== true ? flags.title : compactTitle(description);
   const createdAt = new Date().toISOString();
+  const capabilityMatches = findExistingCapabilityMatches(description);
+  const existingChangeMatches = findExistingEvolutionMatches(state, description);
   const change = {
     change_id: changeId,
     title,
@@ -4180,11 +3815,76 @@ function createEvolutionChange(state, description, flags = {}) {
     source: flags.source || "owner_request",
     impacted_areas: impactedAreas,
     required_updates: impactedAreas.map((area) => evolutionAreaDefinition(area)),
+    duplicate_risk: capabilityMatches.length || existingChangeMatches.length ? "review_required" : "none",
+    existing_capability_matches: capabilityMatches,
+    existing_change_matches: existingChangeMatches,
     created_at: createdAt,
     task_ids: []
   };
   state.changes.push(change);
   return change;
+}
+
+function buildEvolutionFeatureRequestPlacement(state, description, flags = {}) {
+  const prioritiesReport = buildEvolutionPrioritiesReport(state);
+  const priorities = prioritiesReport.priorities || [];
+  const activePriority = priorities.find((item) => item.status === "in_progress") || null;
+  const requestedPosition = flags["priority-position"] || flags.priority || null;
+  const recommendedPosition = activePriority ? Number(activePriority.priority || 0) + 1 : (prioritiesReport.next_priority ? Number(prioritiesReport.next_priority.priority || 0) : 1);
+  const report = {
+    report_type: "evolution_feature_request_placement",
+    generated_at: new Date().toISOString(),
+    status: activePriority ? "confirmation_required" : "ready",
+    requires_confirmation: Boolean(activePriority),
+    request: {
+      title: flags.title && flags.title !== true ? flags.title : compactTitle(description),
+      description
+    },
+    active_priority: activePriority,
+    recommended_position: recommendedPosition || null,
+    requested_position: requestedPosition,
+    recommendation: activePriority
+      ? `Finish or explicitly keep ${activePriority.id} in progress, then place this request at priority ${recommendedPosition}.`
+      : "No active in-progress priority is blocking this request.",
+    confirmation_required_reason: activePriority
+      ? "A framework development priority is already in progress. New feature requests must not interrupt it or change ordering without Owner confirmation."
+      : null,
+    confirmation_commands: activePriority ? [
+      `kvdf evolution plan "${description}" --confirm-placement --priority-position ${recommendedPosition}`,
+      `kvdf evolution priority ${activePriority.id} --status done --note "Finished current priority"`,
+      "kvdf evolution priorities"
+    ] : [],
+    priorities
+  };
+  return report;
+}
+
+function isEvolutionPlacementConfirmed(flags = {}) {
+  return Boolean(flags["confirm-placement"] || flags["confirm-priority"] || flags.confirm || flags.force);
+}
+
+function renderEvolutionFeatureRequestPlacement(report) {
+  const lines = [
+    "Kabeeri Evolution Feature Request Placement",
+    "",
+    `Status: ${report.status}`,
+    `Request: ${report.request.title}`,
+    ""
+  ];
+  if (report.active_priority) {
+    lines.push(`Active unfinished priority: ${report.active_priority.id} - ${report.active_priority.title}`);
+    lines.push(`Recommended placement: priority ${report.recommended_position}`);
+    lines.push(`Reason: ${report.confirmation_required_reason}`);
+    lines.push("");
+    lines.push("Current priorities:");
+    lines.push(table(["#", "ID", "Status", "Title"], report.priorities.map((item) => [item.priority, item.id, item.status, item.title])));
+    lines.push("");
+    lines.push("Confirm with one of:");
+    for (const command of report.confirmation_commands) lines.push(`- ${command}`);
+  } else {
+    lines.push(report.recommendation);
+  }
+  return lines.join("\n");
 }
 
 function createEvolutionTasks(change, flags = {}) {
@@ -4207,6 +3907,7 @@ function createEvolutionTasks(change, flags = {}) {
   const selectedAreas = orderEvolutionAreas(change.impacted_areas);
   const tasks = selectedAreas.map((area) => {
     const definition = evolutionAreaDefinition(area);
+    const durable = buildEvolutionTaskExecutionDetails(change, area, definition);
     return {
       id: nextTaskId(),
       title: `Evolution Steward: update ${definition.label}`,
@@ -4219,6 +3920,12 @@ function createEvolutionTasks(change, flags = {}) {
       evolution_area: area,
       allowed_files: definition.files,
       acceptance_criteria: definition.acceptance,
+      execution_summary: durable.execution_summary,
+      resume_steps: durable.resume_steps,
+      required_inputs: durable.required_inputs,
+      expected_outputs: durable.expected_outputs,
+      do_not_change: durable.do_not_change,
+      verification_commands: durable.verification_commands,
       created_at: createdAt
     };
   });
@@ -4245,9 +3952,56 @@ function buildEvolutionImpactPlan(change, tasks) {
       area: taskItem.evolution_area,
       title: taskItem.title,
       workstream: taskItem.workstream,
-      allowed_files: taskItem.allowed_files
+      allowed_files: taskItem.allowed_files,
+      execution_summary: taskItem.execution_summary,
+      resume_steps: taskItem.resume_steps,
+      expected_outputs: taskItem.expected_outputs,
+      verification_commands: taskItem.verification_commands
     }))
   };
+}
+
+function buildEvolutionTaskExecutionDetails(change, area, definition) {
+  const files = Array.isArray(definition.files) ? definition.files : [];
+  const acceptance = Array.isArray(definition.acceptance) ? definition.acceptance : [];
+  const changeTitle = change.title || change.description || change.change_id;
+  const fileList = files.length ? files.join(", ") : "the files listed by the task scope";
+  return {
+    execution_summary: `Advance ${change.change_id} (${changeTitle}) by updating ${definition.label} only within ${fileList}.`,
+    resume_steps: [
+      `Read .kabeeri/evolution.json and confirm ${change.change_id} is still the source change.`,
+      `Read this task's allowed_files and inspect only the files needed for ${definition.label}.`,
+      `Apply the smallest coherent update for area '${area}' without starting a second Evolution priority.`,
+      "Update related runtime state, docs, or tests only when they are inside the declared task scope.",
+      "Run the listed verification commands or record why a command is not relevant."
+    ],
+    required_inputs: [
+      `Evolution change ${change.change_id}`,
+      `Impacted area: ${area}`,
+      `Allowed files: ${fileList}`,
+      `Acceptance criteria: ${acceptance.length ? acceptance.join(" | ") : "none listed"}`
+    ],
+    expected_outputs: [
+      `${definition.label} reflects the requested Evolution change.`,
+      "Changed files stay inside allowed_files unless the Owner explicitly expands scope.",
+      "Acceptance criteria are satisfied or a blocker is recorded before handoff."
+    ],
+    do_not_change: [
+      "Do not reorder unrelated Evolution priorities.",
+      "Do not edit files outside allowed_files without explicit Owner confirmation.",
+      "Do not mark the source change complete only because this one follow-up task is done."
+    ],
+    verification_commands: buildEvolutionTaskVerificationCommands(area)
+  };
+}
+
+function buildEvolutionTaskVerificationCommands(area) {
+  const commands = ["npm test"];
+  if (area === "schemas") commands.unshift("npm run kvdf -- validate runtime-schemas");
+  if (area === "tasks") commands.unshift("npm run kvdf -- validate tasks");
+  if (area === "dashboard") commands.unshift("npm run kvdf -- dashboard state");
+  if (area === "capabilities" || area === "docs" || area === "ai_context") commands.unshift("npm run kvdf -- validate");
+  return Array.from(new Set(commands));
 }
 
 function inferEvolutionImpactedAreas(description, flags = {}) {
@@ -4376,9 +4130,22 @@ function evolutionAreaDefinition(area, required = true) {
 }
 
 function buildEvolutionSummary(state) {
+  ensureEvolutionDevelopmentPriorities(state);
+  ensureEvolutionTemporaryPriorities(state);
   const changes = state.changes || [];
+  const deferredIdeas = getOpenDeferredIdeas(state);
   const tasks = readStateArray(".kabeeri/tasks.json", "tasks").filter((taskItem) => taskItem.evolution_change_id);
   const openTasks = tasks.filter((taskItem) => !["owner_verified", "done", "closed", "rejected"].includes(taskItem.status));
+  const openPriorities = state.development_priorities.filter((item) => !["done", "deferred", "rejected"].includes(item.status));
+  const temporaryReport = buildEvolutionTemporaryPrioritiesReport(state);
+  const temporary = temporaryReport.status === "empty" ? null : temporaryReport.queue;
+  const multiAiState = fileExists(".kabeeri/multi_ai_governance.json") ? readJsonFile(".kabeeri/multi_ai_governance.json") : null;
+  const multiAiActiveLeader = multiAiState && Array.isArray(multiAiState.leader_sessions)
+    ? multiAiState.leader_sessions.find((item) => item.session_id === multiAiState.active_leader_session_id) || multiAiState.leader_sessions.find((item) => item.status === "active") || null
+    : null;
+  const multiAiActiveQueues = multiAiState && Array.isArray(multiAiState.worker_queues)
+    ? multiAiState.worker_queues.filter((item) => item.status === "active")
+    : [];
   return {
     report_type: "evolution_steward_summary",
     generated_at: new Date().toISOString(),
@@ -4387,6 +4154,27 @@ function buildEvolutionSummary(state) {
     active_changes: changes.filter((item) => !["verified", "closed"].includes(item.status)).length,
     follow_up_tasks_total: tasks.length,
     open_follow_up_tasks: openTasks.length,
+    priorities_total: state.development_priorities.length,
+    open_priorities: openPriorities.length,
+    deferred_ideas_total: Array.isArray(state.deferred_ideas) ? state.deferred_ideas.length : 0,
+    open_deferred_ideas: deferredIdeas.length,
+    temporary_priority_queue: temporary ? {
+      queue_id: temporary.queue_id,
+      source_priority_id: temporary.source_priority_id,
+      source_priority_title: temporary.source_priority_title,
+      total_slices: temporary.slices.length,
+      open_slices: temporary.slices.filter((slice) => !["done", "cancelled"].includes(slice.state)).length,
+      current_slice: temporary.current_slice ? temporary.current_slice.title : null,
+      status: temporary.status
+    } : null,
+    multi_ai: multiAiState ? {
+      status: multiAiActiveLeader ? "active" : "idle",
+      active_leader_session_id: multiAiActiveLeader ? multiAiActiveLeader.session_id : null,
+      active_leader_ai_id: multiAiActiveLeader ? multiAiActiveLeader.leader_ai_id : null,
+      active_queues: multiAiActiveQueues.length,
+      merge_bundles: Array.isArray(multiAiState.merge_bundles) ? multiAiState.merge_bundles.length : 0
+    } : null,
+    next_priority: openPriorities[0] || null,
     current_change_id: state.current_change_id || null,
     by_status: summarizeBy(changes, "status"),
     latest_change: changes.length ? changes[changes.length - 1] : null
@@ -4402,8 +4190,798 @@ function renderEvolutionSummary(summary) {
     `Active changes: ${summary.active_changes}`,
     `Follow-up tasks: ${summary.follow_up_tasks_total}`,
     `Open follow-up tasks: ${summary.open_follow_up_tasks}`,
+    `Development priorities: ${summary.open_priorities}/${summary.priorities_total} open`,
+    `Deferred ideas: ${summary.open_deferred_ideas || 0}/${summary.deferred_ideas_total || 0} open`,
+    `Temporary priority queue: ${summary.temporary_priority_queue ? `${summary.temporary_priority_queue.source_priority_id} (${summary.temporary_priority_queue.open_slices}/${summary.temporary_priority_queue.total_slices} open)` : "none"}`,
+    `Multi-AI orchestration: ${summary.multi_ai ? `${summary.multi_ai.status} (${summary.multi_ai.active_queues} active queues)` : "none"}`,
+    `Next priority: ${summary.next_priority ? summary.next_priority.title : "none"}`,
     `Current change: ${summary.current_change_id || "none"}`
   ].join("\n");
+}
+
+function ensureEvolutionTemporaryPriorities(state) {
+  state.temporary_priorities = state.temporary_priorities && typeof state.temporary_priorities === "object" ? state.temporary_priorities : null;
+}
+
+function getCurrentTemporaryPriorities(state) {
+  ensureEvolutionTemporaryPriorities(state);
+  return state.temporary_priorities;
+}
+
+function getCurrentEvolutionPriority(state) {
+  ensureEvolutionDevelopmentPriorities(state);
+  return state.development_priorities.find((item) => item.status === "in_progress") || null;
+}
+
+function buildEvolutionTemporaryPrioritySlices(priority) {
+  const title = priority ? priority.title : "Temporary execution priorities";
+  const summary = priority ? priority.summary : "";
+  return [
+    {
+      slice_id: "scope",
+      order: 1,
+      title: `Lock full task coverage for ${title}`,
+      description: `Restate the active priority in execution terms, enumerate every required step from start to finish, and write down what must not change while the queue is in progress so nothing is left outside the queue. ${summary ? `Source summary: ${summary}` : ""}`.trim(),
+      done_definition: "The owner can read a complete execution statement with no leftover work hidden outside the queue.",
+      owner_confirmation_required: false
+    },
+    {
+      slice_id: "map",
+      order: 2,
+      title: "Map every dependent surface",
+      description: "Identify the files, runtime state, docs, schemas, tests, reports, and handoff surfaces that must move together so the priority stays completely covered.",
+      done_definition: "All dependent surfaces are named before implementation starts and no known part is left unaccounted for.",
+      owner_confirmation_required: false
+    },
+    {
+      slice_id: "implement",
+      order: 3,
+      title: "Implement the complete task path",
+      description: "Make the smallest code and state change that still covers the entire current task path from entry to finish with no leftover execution remainder.",
+      done_definition: "The main change is implemented with no leftover execution remainder outside the queue.",
+      owner_confirmation_required: false
+    },
+    {
+      slice_id: "sync",
+      order: 4,
+      title: "Sync docs, state, and reports",
+      description: "Update the source-of-truth docs, runtime state, and any dashboards or reports so the full task coverage is visible everywhere.",
+      done_definition: "Documentation, live state, and reports all reflect the complete task path with no stray remainder.",
+      owner_confirmation_required: false
+    },
+    {
+      slice_id: "validate",
+      order: 5,
+      title: "Validate and close the queue",
+      description: "Run the relevant checks, confirm there are no conflicts, and close the queue only when the entire current task has been covered from start to finish.",
+      done_definition: "Validation passes and no uncovered part of the active task remains.",
+      owner_confirmation_required: false
+    }
+  ];
+}
+
+function buildEvolutionTemporaryPrioritiesReport(state) {
+  const currentPriority = getCurrentEvolutionPriority(state);
+  if (!currentPriority) {
+    if (state.temporary_priorities && state.temporary_priorities.source_priority_id) state.temporary_priorities = null;
+    return {
+      report_type: "evolution_temporary_priorities",
+      generated_at: new Date().toISOString(),
+      status: "empty",
+      active_priority: null,
+      queue: null
+    };
+  }
+
+  const sourceSignature = [currentPriority.id, currentPriority.status, currentPriority.updated_at || currentPriority.created_at || ""].join("|");
+  const existing = state.temporary_priorities && state.temporary_priorities.source_priority_id === currentPriority.id && state.temporary_priorities.source_signature === sourceSignature
+    ? state.temporary_priorities
+    : null;
+  const generatedAt = new Date().toISOString();
+  const queue = existing || {
+    queue_id: `${currentPriority.id}-temp`,
+    source_priority_id: currentPriority.id,
+    source_priority_title: currentPriority.title,
+    source_priority_summary: currentPriority.summary,
+    source_signature: sourceSignature,
+    generated_at: generatedAt,
+    expires_when_priority_changes: true,
+    status: "active",
+    current_slice_index: 0,
+    coverage_policy: "full_task_coverage",
+    slices: buildEvolutionTemporaryPrioritySlices(currentPriority).map((slice, index) => ({
+      ...slice,
+      state: index === 0 ? "active" : "pending",
+      completed_at: null
+    }))
+  };
+
+  if (existing && Array.isArray(existing.slices)) {
+    queue.slices = existing.slices.map((slice, index) => ({
+      ...slice,
+      order: slice.order || index + 1,
+      state: slice.state || (index === existing.current_slice_index ? "active" : "pending")
+    }));
+    queue.current_slice_index = Math.min(Math.max(Number(existing.current_slice_index || 0), 0), Math.max(queue.slices.length - 1, 0));
+  }
+
+  queue.current_slice = queue.slices[queue.current_slice_index] || null;
+  queue.coverage_policy = queue.coverage_policy || "full_task_coverage";
+  queue.updated_at = generatedAt;
+  queue.expires_at = null;
+  queue.status = queue.slices.some((slice) => slice.state === "blocked")
+    ? "blocked"
+    : queue.slices.every((slice) => slice.state === "done")
+      ? "completed"
+      : "active";
+  if (queue.status === "completed") queue.current_slice = null;
+  state.temporary_priorities = queue;
+  return {
+    report_type: "evolution_temporary_priorities",
+    generated_at: generatedAt,
+    status: queue.status,
+    active_priority: {
+      id: currentPriority.id,
+      title: currentPriority.title,
+      summary: currentPriority.summary,
+      status: currentPriority.status
+    },
+    queue
+  };
+}
+
+function advanceEvolutionTemporaryPriorities(state, flags = {}) {
+  const report = buildEvolutionTemporaryPrioritiesReport(state);
+  const queue = state.temporary_priorities;
+  if (!queue) {
+    return {
+      ...report,
+      action: "advance",
+      message: "No active temporary priorities queue exists."
+    };
+  }
+  const currentSlice = queue.slices[queue.current_slice_index] || null;
+  if (!currentSlice) {
+    return {
+      ...report,
+      action: "advance",
+      message: "Temporary priorities queue has no current slice."
+    };
+  }
+  currentSlice.state = "done";
+  currentSlice.completed_at = new Date().toISOString();
+  const nextIndex = queue.slices.findIndex((slice, index) => index > queue.current_slice_index && slice.state !== "done");
+  if (nextIndex >= 0) {
+    queue.current_slice_index = nextIndex;
+    queue.slices[nextIndex].state = "active";
+    queue.current_slice = queue.slices[nextIndex];
+    queue.status = "active";
+  } else {
+    queue.current_slice = null;
+    queue.status = "completed";
+    queue.completed_at = new Date().toISOString();
+  }
+  queue.updated_at = new Date().toISOString();
+  return {
+    report_type: "evolution_temporary_priorities_advanced",
+    generated_at: new Date().toISOString(),
+    active_priority: report.active_priority,
+    queue,
+    completed_slice: currentSlice,
+    next_slice: queue.current_slice || null,
+    status: queue.status
+  };
+}
+
+function completeEvolutionTemporaryPriorities(state) {
+  const report = buildEvolutionTemporaryPrioritiesReport(state);
+  const queue = state.temporary_priorities;
+  if (!queue) {
+    return {
+      ...report,
+      action: "complete",
+      message: "No active temporary priorities queue exists."
+    };
+  }
+  const completedAt = new Date().toISOString();
+  for (const slice of queue.slices) {
+    if (slice.state !== "done") {
+      slice.state = "done";
+      slice.completed_at = slice.completed_at || completedAt;
+    }
+  }
+  queue.status = "completed";
+  queue.completed_at = completedAt;
+  queue.current_slice = null;
+  queue.updated_at = completedAt;
+  state.temporary_priorities = queue;
+  return {
+    report_type: "evolution_temporary_priorities_completed",
+    generated_at: completedAt,
+    active_priority: report.active_priority,
+    queue,
+    status: "completed"
+  };
+}
+
+function handleEvolutionTemporaryPriorities(state, action, value, flags = {}, rest = []) {
+  const valueDrivenActions = new Set(["temp", "temporary", "temp-priorities", "temporary-priorities"]);
+  const subaction = valueDrivenActions.has(String(action || "").toLowerCase())
+    ? String(value || "show").toLowerCase()
+    : String(action || "show").toLowerCase();
+  if (["show", "list", "status", "temp", "temporary", "temp-priorities", "temporary-priorities"].includes(subaction)) {
+    return buildEvolutionTemporaryPrioritiesReport(state);
+  }
+  if (["advance", "next"].includes(subaction)) return advanceEvolutionTemporaryPriorities(state, flags);
+  if (["complete", "close", "finish"].includes(subaction)) return completeEvolutionTemporaryPriorities(state);
+  if (subaction === "clear") {
+    const queue = state.temporary_priorities;
+    state.temporary_priorities = null;
+    return {
+      report_type: "evolution_temporary_priorities_cleared",
+      generated_at: new Date().toISOString(),
+      queue,
+      status: "cleared"
+    };
+  }
+  throw new Error(`Unknown temporary priorities action: ${subaction}`);
+}
+
+function renderEvolutionTemporaryPrioritiesReport(report) {
+  if (report.report_type === "evolution_temporary_priorities_advanced") {
+    return `Temporary priorities advanced: ${report.completed_slice.title} -> ${report.next_slice ? report.next_slice.title : "complete"}`;
+  }
+  if (report.report_type === "evolution_temporary_priorities_completed") {
+    return `Temporary priorities completed for ${report.active_priority ? report.active_priority.id : "none"}`;
+  }
+  if (report.report_type === "evolution_temporary_priorities_cleared") {
+    return "Temporary priorities queue cleared.";
+  }
+  if (report.status === "empty") return "No active temporary priorities queue.";
+  const queue = report.queue;
+  const lines = [
+    "Temporary Execution Priorities",
+    "",
+    `Active priority: ${report.active_priority.id} - ${report.active_priority.title}`,
+    `Queue status: ${report.status}`,
+    `Current slice: ${queue.current_slice ? `${queue.current_slice.order}. ${queue.current_slice.title}` : "none"}`,
+    `Expires with: ${queue.source_priority_id}`,
+    "",
+    "Slices:"
+  ];
+  for (const slice of queue.slices) {
+    lines.push(`- [${slice.state}] ${slice.order}. ${slice.title}: ${slice.description}`);
+  }
+  return lines.join("\n");
+}
+
+function ensureEvolutionDevelopmentPriorities(state) {
+  state.development_priorities = state.development_priorities || [];
+  const existing = new Map(state.development_priorities.map((item) => [item.id, item]));
+  for (const item of defaultEvolutionDevelopmentPriorities()) {
+    const executionDetails = buildEvolutionPriorityExecutionDetails(item);
+    if (!existing.has(item.id)) {
+      state.development_priorities.push({ ...item, status: item.status || "planned", execution_details: executionDetails });
+    } else {
+      const current = existing.get(item.id);
+      Object.assign(current, {
+        priority: current.priority || item.priority,
+        title: item.title,
+        summary: item.summary,
+        source: item.source,
+        execution_details: current.execution_details || executionDetails
+      });
+      current.status = current.status || item.status || "planned";
+    }
+  }
+  state.development_priorities.sort((a, b) => Number(a.priority || 999) - Number(b.priority || 999));
+}
+
+function buildEvolutionPriorityExecutionDetails(priority) {
+  return {
+    execution_summary: `Execute priority ${priority.id}: ${priority.summary}`,
+    resume_steps: [
+      "Run `kvdf resume` and confirm the workspace is framework_owner_development.",
+      `Run \`kvdf evolution priority ${priority.id} --status in_progress\` if the priority is not active yet.`,
+      "Run `kvdf evolution temp` first and follow the current temporary slice before any implementation, docs, or tests.",
+      "Create or update scoped tasks before handing execution to another tool.",
+      "Run `npm test` and `kvdf conflict scan` before closing the priority."
+    ],
+    required_inputs: [
+      `Priority id: ${priority.id}`,
+      `Priority title: ${priority.title}`,
+      `Source: ${priority.source || "unknown"}`
+    ],
+    expected_outputs: [
+      "The priority has concrete tasks or slices with allowed files and acceptance criteria.",
+      "Runtime state and documentation agree about the completed behavior.",
+      "The owner can resume from Evolution state without chat history."
+    ],
+    do_not_change: [
+      "Do not skip earlier open priorities without Owner confirmation.",
+      "Do not start a broad feature outside the active priority.",
+      "Do not close the priority while tests or conflict scan are failing."
+    ],
+    verification_commands: ["npm test", "npm run kvdf -- conflict scan"]
+  };
+}
+
+function buildDeferredIdeaExecutionDetails(ideaId, title) {
+  return {
+    execution_summary: `Deferred idea ${ideaId} (${title}) is preserved for later review and must not be implemented until restored into Evolution.`,
+    resume_steps: [
+      `Run \`kvdf evolution deferred restore ${ideaId} --confirm-placement\` only after Owner approval.`,
+      "Review duplicate capability risk before creating implementation tasks.",
+      "Use the restored Evolution change and generated tasks as the execution source.",
+      "Keep this deferred record as history after restore."
+    ],
+    required_inputs: [
+      `Deferred idea id: ${ideaId}`,
+      `Idea title: ${title}`,
+      "Owner restore decision"
+    ],
+    expected_outputs: [
+      "Either the idea remains deferred with analysis intact, or it is restored into a normal Evolution change.",
+      "No implementation happens directly from the deferred idea record."
+    ],
+    do_not_change: [
+      "Do not edit product/runtime code for a deferred idea before restore.",
+      "Do not delete the deferred idea to save context.",
+      "Do not treat analysis_summary as execution approval."
+    ],
+    verification_commands: ["npm run kvdf -- evolution deferred --json"]
+  };
+}
+
+function defaultEvolutionDevelopmentPriorities() {
+  return [
+    {
+      id: "evo-auto-001",
+      priority: 1,
+      title: "Autonomous Evolution Steward workflow",
+      summary: "Make Evolution Steward the single automatic backlog for framework development priorities, feature requests, and next-step visibility.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-002",
+      priority: 2,
+      title: "Owner resume scan",
+      summary: "Enhance kvdf resume --scan with owner checkpoint, diff summary, latest checks, and next exact development action.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-003",
+      priority: 3,
+      title: "Continue CLI index modularization",
+      summary: "Keep extracting src/cli/index.js into command modules before broad feature work.",
+      source: "technical_debt_review",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-004-temp-priorities",
+      priority: 4,
+      title: "Temporary execution priorities",
+      summary: "Create a temporary queue for the current active main priority only, split it into execution-grade slices with durable descriptions, auto-advance through slices without owner re-approval inside the same priority, and expire the queue automatically when that main priority finishes.",
+      source: "owner_conversation",
+      status: "planned",
+      change_id: "evo-003",
+      created_at: "2026-05-10T18:58:29.473Z"
+    },
+    {
+      id: "evo-auto-005-durable-task-details",
+      priority: 5,
+      title: "Durable execution-grade task descriptions",
+      summary: "Make every task in development priorities and deferred ideas carry precise execution details so work can resume safely after power loss or interrupted sessions.",
+      source: "owner_conversation",
+      status: "planned",
+      change_id: "evo-004",
+      created_at: "2026-05-10T20:28:40.468Z"
+    },
+    {
+      id: "evo-auto-017-multi-ai-governance",
+      priority: 6,
+      title: "Multi-AI governance with Leader orchestration and Merger layer",
+      summary: "Make Evolution govern a multi-AI workflow with a first-in-session Leader AI that orchestrates priorities, per-AI temporary queues, semantic merge bundles, and delegated execution only when the Owner explicitly grants it, so multiple tools can work across devices without trampling the system or each other.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-004",
+      priority: 7,
+      title: "Runtime services layer",
+      summary: "Move reusable runtime logic out of command handlers into services after command extraction pattern stabilizes.",
+      source: "technical_debt_review",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-005",
+      priority: 8,
+      title: "Manual feature-docs inbox",
+      summary: "Treat KVDF_New_Features_Docs as a manually requested intake inbox only, excluded from automatic scans and cleared after imported features are developed.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-006",
+      priority: 9,
+      title: "Feature-docs duplicate analysis",
+      summary: "Analyze the 38 core governance documents in KVDF_New_Features_Docs only when requested, compare them against the central capability map, and avoid recreating existing capabilities under new names.",
+      source: "manual_feature_docs_inbox",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-007",
+      priority: 10,
+      title: "Project reference packs import",
+      summary: "Review the 83 project reference packs and import only missing reusable knowledge, blueprints, prompt context, or catalog entries into the proper Kabeeri systems.",
+      source: "manual_feature_docs_inbox",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-008",
+      priority: 11,
+      title: "Feature-docs inbox cleanup workflow",
+      summary: "After selected features from KVDF_New_Features_Docs are implemented and represented in Evolution Steward, clear the inbox contents for the next manual batch.",
+      source: "manual_feature_docs_inbox",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-009",
+      priority: 12,
+      title: "UI/UX questionnaire linkage",
+      summary: "Make missing UI decisions explicit in questionnaire, resume output, and frontend task generation.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-010",
+      priority: 13,
+      title: "Low-cost project start mode",
+      summary: "Add compact context, focused packs, and model-routing defaults for cheaper Kabeeri app development.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-011",
+      priority: 14,
+      title: "Runtime schema registry enforcement",
+      summary: "Block or warn on new runtime state files without schema coverage or explicit exemption.",
+      source: "technical_debt_review",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-012",
+      priority: 15,
+      title: "Docs source-of-truth checks",
+      summary: "Detect commands/capabilities that exist in CLI but are missing from canonical docs.",
+      source: "technical_debt_review",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-013",
+      priority: 16,
+      title: "Team GitHub sync deepening",
+      summary: "Add issue/PR/status/comment integration and action-triggered feedback only for team mode.",
+      source: "owner_conversation",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-014",
+      priority: 17,
+      title: "Dashboard separation",
+      summary: "Separate dashboard generation/state builders from CLI core and strengthen JSON contract tests.",
+      source: "technical_debt_review",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-015",
+      priority: 18,
+      title: "Fast test layers",
+      summary: "Add faster unit/service tests beside integration tests as runtime services are extracted.",
+      source: "technical_debt_review",
+      status: "planned"
+    },
+    {
+      id: "evo-auto-016",
+      priority: 19,
+      title: "Historical folder/version clarity",
+      summary: "Mark historical folders and reports clearly so runtime never treats archived planning as current truth.",
+      source: "technical_debt_review",
+      status: "planned"
+    }
+  ];
+}
+
+function buildEvolutionPrioritiesReport(state) {
+  ensureEvolutionDevelopmentPriorities(state);
+  ensureEvolutionTemporaryPriorities(state);
+  const openDeferredIdeas = getOpenDeferredIdeas(state);
+  const priorities = [...(state.development_priorities || [])];
+  const deferredSummary = {
+    total: Array.isArray(state.deferred_ideas) ? state.deferred_ideas.length : 0,
+    open: openDeferredIdeas.length,
+    latest: openDeferredIdeas.length ? openDeferredIdeas[openDeferredIdeas.length - 1] : null
+  };
+  if (deferredSummary.open > 0) priorities.push(buildDeferredIdeasPriorityItem(priorities, deferredSummary));
+  const temporaryReport = buildEvolutionTemporaryPrioritiesReport(state);
+  const multiAiState = fileExists(".kabeeri/multi_ai_governance.json") ? readJsonFile(".kabeeri/multi_ai_governance.json") : null;
+  const activeLeader = multiAiState && Array.isArray(multiAiState.leader_sessions)
+    ? multiAiState.leader_sessions.find((item) => item.session_id === multiAiState.active_leader_session_id) || multiAiState.leader_sessions.find((item) => item.status === "active") || null
+    : null;
+  state.priorities_last_reviewed_at = new Date().toISOString();
+  return {
+    report_type: "evolution_development_priorities",
+    generated_at: new Date().toISOString(),
+    status: priorities.some((item) => !["done", "deferred", "rejected"].includes(item.status)) ? "active" : "complete",
+    priorities,
+    deferred_ideas: deferredSummary,
+    temporary_priorities: temporaryReport.status === "empty" ? null : temporaryReport.queue,
+    multi_ai: multiAiState ? {
+      status: activeLeader ? "active" : "idle",
+      active_leader_session_id: activeLeader ? activeLeader.session_id : null,
+      active_leader_ai_id: activeLeader ? activeLeader.leader_ai_id : null,
+      active_queues: Array.isArray(multiAiState.worker_queues) ? multiAiState.worker_queues.filter((item) => item.status === "active").length : 0
+    } : null,
+    next_priority: priorities.find((item) => !["done", "deferred", "rejected"].includes(item.status)) || null
+  };
+}
+
+function buildEvolutionNextAction(next) {
+  if (!next) return null;
+  if (next.status === "planned") {
+    if (next.id === "evo-auto-005-durable-task-details") {
+      return "Activate the priority with `kvdf evolution priority evo-auto-005-durable-task-details --status in_progress`, then run `kvdf evolution temp` and expand each task and deferred idea with durable execution details before handing work to tools.";
+    }
+    return `Activate ${next.id} with \`kvdf evolution priority ${next.id} --status in_progress\`, then run \`kvdf evolution temp\` to generate the execution queue and start from the current slice.`;
+  }
+  if (next.status === "in_progress") {
+    return `Run \`kvdf evolution temp\` for ${next.id} before any implementation, docs, or tests, then advance slices as each execution-grade task is completed.`;
+  }
+  if (next.status === "blocked") {
+    return `Clear blockers for ${next.id} before advancing it again.`;
+  }
+  return `Review ${next.id} and update its status as needed.`;
+}
+
+function buildDeferredIdeasPriorityItem(priorities, summary) {
+  const maxPriority = priorities.reduce((max, item) => Math.max(max, Number(item.priority || 0)), 0);
+  return {
+    id: "evo-deferred-ideas",
+    priority: maxPriority + 1,
+    title: "Deferred development ideas",
+    summary: `${summary.open} deferred idea(s). Review with kvdf evolution deferred --json; restore selected ideas explicitly before implementation.`,
+    source: "deferred_ideas_store",
+    status: "deferred",
+    count: summary.open,
+    latest_idea_id: summary.latest ? summary.latest.idea_id : null,
+    execution_details: {
+      execution_summary: "Review deferred ideas as candidates only; do not execute them until the Owner restores a selected idea into Evolution.",
+      resume_steps: [
+        "Run `kvdf evolution deferred --json` to list open ideas.",
+        "Compare the idea against the capability map and current priorities.",
+        "Restore only the selected idea with explicit Owner placement confirmation.",
+        "Let the restored idea create a normal Evolution change and scoped tasks before implementation."
+      ],
+      required_inputs: ["Deferred idea id", "Owner placement decision", "Capability duplicate review"],
+      expected_outputs: ["A restored Evolution change or a decision to keep the idea deferred."],
+      do_not_change: ["Do not implement directly from the deferred bucket.", "Do not reorder active priorities while reviewing deferred ideas."],
+      verification_commands: ["npm run kvdf -- evolution priorities"]
+    }
+  };
+}
+
+function updateEvolutionPriority(state, id, flags = {}) {
+  ensureEvolutionDevelopmentPriorities(state);
+  const priority = state.development_priorities.find((item) => item.id === id || String(item.priority) === String(id));
+  if (!priority) throw new Error(`Evolution priority not found: ${id}`);
+  if (!flags.status && !flags.note && !flags.notes && !flags.summary) return priority;
+  requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "update evolution priority");
+  if (flags.status) {
+    const status = String(flags.status).toLowerCase().replace(/-/g, "_");
+    const allowed = new Set(["planned", "in_progress", "blocked", "done", "deferred", "rejected"]);
+    if (!allowed.has(status)) throw new Error("Invalid priority status. Use planned, in_progress, blocked, done, deferred, or rejected.");
+    priority.status = status;
+  }
+  const note = flags.note || flags.notes || flags.summary;
+  if (note && note !== true) {
+    priority.notes = priority.notes || [];
+    priority.notes.push({ at: new Date().toISOString(), text: String(note) });
+  }
+  priority.updated_at = new Date().toISOString();
+  buildEvolutionTemporaryPrioritiesReport(state);
+  return priority;
+}
+
+function handleEvolutionDeferredIdeas(state, action, value, flags = {}, rest = []) {
+  state.deferred_ideas = state.deferred_ideas || [];
+  const subaction = action === "defer" ? "add" : String(value || "list").toLowerCase();
+  const text = action === "defer"
+    ? [value, ...rest].filter(Boolean).join(" ").trim()
+    : rest.filter(Boolean).join(" ").trim();
+
+  if (["list", "show", "status"].includes(subaction)) {
+    const ideas = state.deferred_ideas.filter((item) => !flags.all ? item.status === "deferred" : true);
+    return {
+      report_type: "evolution_deferred_ideas",
+      generated_at: new Date().toISOString(),
+      status: ideas.length ? "has_deferred_ideas" : "empty",
+      total: state.deferred_ideas.length,
+      open: getOpenDeferredIdeas(state).length,
+      ideas
+    };
+  }
+
+  if (subaction === "add" || subaction === "create") {
+    requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "defer evolution idea");
+    const description = text || flags.description || flags.summary || flags.title;
+    if (!description || description === true) throw new Error("Missing deferred idea description.");
+    const ideaId = nextDeferredIdeaId(state.deferred_ideas);
+    const title = flags.title && flags.title !== true ? flags.title : compactTitle(description);
+    const idea = {
+      idea_id: ideaId,
+      title,
+      description: String(description),
+      status: "deferred",
+      source: flags.source || "owner_deferred_idea",
+      reason: flags.reason || "Deferred by Owner for later review.",
+      recommended_after: flags["recommended-after"] || null,
+      recommended_before: flags["recommended-before"] || null,
+      analysis_summary: flags.analysis || null,
+      execution_details: buildDeferredIdeaExecutionDetails(ideaId, title),
+      created_at: new Date().toISOString(),
+      restored_at: null,
+      restored_change_id: null
+    };
+    state.deferred_ideas.push(idea);
+    return {
+      report_type: "evolution_deferred_idea_added",
+      generated_at: new Date().toISOString(),
+      idea,
+      priorities_hint: "This idea appears only inside the final deferred ideas bucket until the Owner restores it."
+    };
+  }
+
+  if (subaction === "restore" || subaction === "promote") {
+    requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "restore deferred idea");
+    const ideaId = flags.id || rest[0];
+    if (!ideaId) throw new Error("Missing deferred idea id.");
+    const idea = state.deferred_ideas.find((item) => item.idea_id === ideaId);
+    if (!idea) throw new Error(`Deferred idea not found: ${ideaId}`);
+    if (idea.status !== "deferred") throw new Error(`Deferred idea is not open: ${ideaId}`);
+    const description = flags.description || idea.description;
+    const placement = buildEvolutionFeatureRequestPlacement(state, description, flags);
+    if (placement.requires_confirmation && !isEvolutionPlacementConfirmed(flags)) {
+      return {
+        ...placement,
+        deferred_idea: idea,
+        restore_requires_confirmation: true
+      };
+    }
+    const change = createEvolutionChange(state, description, {
+      ...flags,
+      title: flags.title || idea.title,
+      source: "deferred_idea_restore"
+    });
+    change.restored_deferred_idea_id = idea.idea_id;
+    change.priority_confirmation = {
+      confirmed_at: new Date().toISOString(),
+      active_priority_id: placement.active_priority ? placement.active_priority.id : null,
+      recommended_position: placement.recommended_position || null,
+      requested_position: flags["priority-position"] || flags.priority || null,
+      confirmation_flag: flags["confirm-placement"] || flags["confirm-priority"] || flags.confirm
+    };
+    const tasks = createEvolutionTasks(change, flags);
+    change.task_ids = tasks.map((item) => item.id);
+    const plan = buildEvolutionImpactPlan(change, tasks);
+    change.impact_plan_id = plan.plan_id;
+    state.impact_plans.push(plan);
+    state.current_change_id = change.change_id;
+    idea.status = "restored";
+    idea.restored_at = new Date().toISOString();
+    idea.restored_change_id = change.change_id;
+    refreshDashboardArtifacts();
+    appendAudit("evolution.deferred_idea_restored", "evolution", idea.idea_id, `Deferred idea restored: ${idea.title}`);
+    return {
+      report_type: "evolution_deferred_idea_restored",
+      generated_at: new Date().toISOString(),
+      idea,
+      change,
+      impact_plan: plan,
+      tasks
+    };
+  }
+
+  throw new Error(`Unknown deferred ideas action: ${subaction}`);
+}
+
+function getOpenDeferredIdeas(state) {
+  return (state.deferred_ideas || []).filter((item) => item.status === "deferred");
+}
+
+function nextDeferredIdeaId(items) {
+  return `deferred-${String((items || []).length + 1).padStart(3, "0")}`;
+}
+
+function renderEvolutionDeferredIdeasResult(result) {
+  if (result.report_type === "evolution_deferred_idea_added") {
+    return `Deferred idea added: ${result.idea.idea_id} - ${result.idea.title}`;
+  }
+  if (result.report_type === "evolution_deferred_idea_restored") {
+    return `Deferred idea restored: ${result.idea.idea_id} -> ${result.change.change_id}`;
+  }
+  if (result.report_type === "evolution_feature_request_placement") {
+    return renderEvolutionFeatureRequestPlacement(result);
+  }
+  if (result.report_type === "evolution_deferred_ideas") {
+    const rows = result.ideas.map((item) => [item.idea_id, item.status, item.title, item.created_at || ""]);
+    return [
+      "Kabeeri Deferred Development Ideas",
+      table(["Idea", "Status", "Title", "Created"], rows.length ? rows : [["", "", "No deferred ideas.", ""]]),
+      "",
+      `Open: ${result.open}/${result.total}`
+    ].join("\n");
+  }
+  return JSON.stringify(result, null, 2);
+}
+
+function renderEvolutionPriorities(report) {
+  const rows = report.priorities.map((item) => [
+    item.priority,
+    item.id,
+    item.status,
+    item.title
+  ]);
+  const tempRows = report.temporary_priorities ? report.temporary_priorities.slices.map((slice) => [
+    slice.order,
+    slice.slice_id,
+    slice.state,
+    slice.title
+  ]) : [];
+  return [
+    "Kabeeri Evolution Development Priorities",
+    table(["#", "ID", "Status", "Title"], rows),
+    "",
+    report.temporary_priorities ? [
+      "Temporary Execution Priorities",
+      table(["#", "ID", "Status", "Title"], tempRows),
+      ""
+    ].join("\n") : "",
+    `Multi-AI sync: ${report.multi_ai ? `${report.multi_ai.status} (${report.multi_ai.active_queues} active queues)` : "none"}`,
+    `Next: ${report.next_priority ? `${report.next_priority.id} - ${report.next_priority.title}` : "none"}`
+  ].join("\n");
+}
+
+function findExistingCapabilityMatches(description) {
+  const capabilityText = fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md")
+    ? readTextFile("docs/SYSTEM_CAPABILITIES_REFERENCE.md").toLowerCase()
+    : "";
+  const words = significantWords(description);
+  return words
+    .filter((word) => capabilityText.includes(word))
+    .slice(0, 12);
+}
+
+function findExistingEvolutionMatches(state, description) {
+  const words = significantWords(description);
+  return (state.changes || [])
+    .filter((change) => {
+      const text = `${change.title || ""} ${change.description || ""}`.toLowerCase();
+      return words.filter((word) => text.includes(word)).length >= Math.min(3, words.length);
+    })
+    .slice(0, 5)
+    .map((change) => ({ change_id: change.change_id, title: change.title, status: change.status }));
+}
+
+function significantWords(value) {
+  const stop = new Set(["add", "new", "the", "and", "for", "with", "from", "into", "system", "feature", "kabeeri", "kvdf", "عايز", "نظام", "ميزة"]);
+  return String(value || "")
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}_]+/u)
+    .map((word) => word.trim())
+    .filter((word) => word.length >= 4 && !stop.has(word))
+    .slice(0, 20);
 }
 
 function nextRecordId(items, field, prefix) {
@@ -4540,6 +5118,30 @@ function task(action, id, flags) {
   }
 
   throw new Error(`Unknown task action: ${action}`);
+}
+
+function renderTaskTrackerSummary(tracker) {
+  const summary = tracker.summary || {};
+  const actionItems = tracker.action_items || [];
+  return [
+    "Task Tracker Live State",
+    "",
+    `Generated at: ${tracker.generated_at || "unknown"}`,
+    `Tasks: ${summary.total || 0}`,
+    `Open: ${summary.open || 0}`,
+    `Blocked: ${summary.blocked || 0}`,
+    `Verified: ${summary.verified || 0}`,
+    `Active tokens: ${summary.active_tokens || 0}`,
+    `Active locks: ${summary.active_locks || 0}`,
+    "",
+    "Action items:",
+    actionItems.length ? table(["Severity", "Task", "Message", "Next Action"], actionItems.map((item) => [
+      item.severity || "info",
+      item.task_id || "",
+      item.message || "",
+      item.next_action || ""
+    ])) : "No action items."
+  ].join("\n");
 }
 
 function assertDocsFirstGateAllowsTaskStart(taskItem) {
@@ -6000,7 +6602,7 @@ function inferUiDecisionSignals(text, product, patternKey) {
   if (/commerce|checkout|buy|cart|marketplace|booking|compare|price|conversion/.test(text) || patternKey === "commerce_storefront") add("conversion_flow", "Answers or blueprint emphasize purchase, booking, or conversion.");
   if (/editorial|news|blog|docs|documentation|reader|content|article/.test(text) || patternKey === "seo_content_site") add("editorial_authority", "Answers or blueprint emphasize content authority.");
   if (/mobile|driver|field|employee|offline|touch|bottom nav/.test(text) || patternKey === "mobile_app") add("mobile_action", "Answers or blueprint emphasize mobile or field workflows.");
-  if (/arabic|rtl|bilingual|mena|عربي|العربية/.test(text)) add("rtl_arabic", "Answers indicate Arabic, bilingual, MENA, or RTL UI.");
+  if (/arabic|rtl|bilingual|mena|Ø¹Ø±Ø¨ÙŠ|Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©/.test(text)) add("rtl_arabic", "Answers indicate Arabic, bilingual, MENA, or RTL UI.");
   return signals;
 }
 
@@ -7388,11 +7990,11 @@ function buildUiDesignReview(target, flags = {}) {
   if (/delete|remove|archive|reject/.test(text) && !/consequence|cannot be undone|undo|confirm|object|record/.test(text)) {
     findings.push("Destructive action copy does not mention consequence or affected object.");
   }
-  const hasArabicOrRtlContext = includesArabicText(text) || /\brtl\b|arabic|bilingual|mena|العربية|عربي/.test(text) || isTruthyFlag(flags.rtl) || isTruthyFlag(flags.arabic);
+  const hasArabicOrRtlContext = includesArabicText(text) || /\brtl\b|arabic|bilingual|mena|Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©|Ø¹Ø±Ø¨ÙŠ/.test(text) || isTruthyFlag(flags.rtl) || isTruthyFlag(flags.arabic);
   if (hasArabicOrRtlContext) {
-    if (!/\brtl\b|dir=|direction|arabic|العربية|عربي/.test(text)) findings.push("Arabic/RTL UI does not mention direction handling.");
-    if (!/typography|font|خط|الخط/.test(text)) findings.push("Arabic/RTL UI does not mention Arabic typography.");
-    if (!/number|date|table|form|رقم|تاريخ|جدول|نموذج/.test(text)) findings.push("Arabic/RTL UI does not mention forms, tables, numbers, or dates.");
+    if (!/\brtl\b|dir=|direction|arabic|Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©|Ø¹Ø±Ø¨ÙŠ/.test(text)) findings.push("Arabic/RTL UI does not mention direction handling.");
+    if (!/typography|font|Ø®Ø·|Ø§Ù„Ø®Ø·/.test(text)) findings.push("Arabic/RTL UI does not mention Arabic typography.");
+    if (!/number|date|table|form|Ø±Ù‚Ù…|ØªØ§Ø±ÙŠØ®|Ø¬Ø¯ÙˆÙ„|Ù†Ù…ÙˆØ°Ø¬/.test(text)) findings.push("Arabic/RTL UI does not mention forms, tables, numbers, or dates.");
   }
   return {
     review_id: `ui-review-${Date.now()}`,
@@ -8175,7 +8777,7 @@ function policyIdForScope(scope) {
   if (!normalized || normalized === "task" || normalized === "verify" || normalized === "verification") return "task_verification_policy";
   if (["release", "publish"].includes(normalized)) return "release_policy";
   if (["handoff", "delivery"].includes(normalized)) return "handoff_policy";
-  if (["security", "secret", "secrets"].includes(normalized)) return "security_policy";
+  if (normalized === "security") return "security_policy";
   if (["migration", "migrate"].includes(normalized)) return "migration_policy";
   if (["github", "github_write", "github-write", "remote_write", "remote-write"].includes(normalized)) return "github_write_policy";
   return normalized.endsWith("_policy") ? normalized : `${normalized}_policy`;
@@ -8313,24 +8915,12 @@ function evaluateGovernancePolicyCheck(definition, check, context) {
   return fail(`Unknown check: ${check.check_id}`);
 }
 
-function getLatestSecurityScan() {
-  const scans = readStateArray(".kabeeri/security/security_scans.json", "scans");
-  return scans.length ? scans[scans.length - 1] : null;
-}
-
 function latestPolicyResults() {
   const results = readStateArray(".kabeeri/policies/policy_results.json", "results");
   const latest = new Map();
   for (const item of results) {
     latest.set(`${item.policy_id}|${item.subject_type}|${item.subject_id}`, item);
   }
-  return [...latest.values()];
-}
-
-function latestMigrationChecks() {
-  const checks = readStateArray(".kabeeri/migrations/migration_checks.json", "checks");
-  const latest = new Map();
-  for (const item of checks) latest.set(item.plan_id, item);
   return [...latest.values()];
 }
 
@@ -8450,145 +9040,6 @@ function buildPolicyReport(results) {
     lines.push(`| ${item.evaluated_at} | ${item.policy_id} | ${item.subject_id} | ${item.stage} | ${item.status} | ${(item.blockers || []).map((blocker) => blocker.check_id).join(", ") || "-"} |`);
   }
   return `${lines.join("\n")}\n`;
-}
-
-function deliveryMode(action, value, flags = {}, rest = []) {
-  const verb = String(action || "recommend").toLowerCase();
-  const known = new Set(["recommend", "advise", "advisor", "choose", "select", "decision", "history", "list", "show"]);
-  const effective = known.has(verb) ? verb : "recommend";
-  const description = flags.text || flags.description || flags.app || flags.project || (known.has(verb) ? [value, ...rest].filter(Boolean).join(" ") : [action, value, ...rest].filter(Boolean).join(" "));
-
-  if (effective === "history" || effective === "list") {
-    ensureWorkspace();
-    const data = readDeliveryDecisionState();
-    console.log(table(["ID", "Recommended", "Confidence", "Chosen", "Created"], (data.recommendations || []).map((item) => [item.recommendation_id, item.recommended_mode, item.confidence, item.chosen_mode || "", item.created_at])));
-    return;
-  }
-
-  if (effective === "show") {
-    ensureWorkspace();
-    const data = readDeliveryDecisionState();
-    const id = value || flags.id;
-    const found = (data.recommendations || []).find((item) => item.recommendation_id === id);
-    if (!found) throw new Error(`Delivery recommendation not found: ${id || ""}`);
-    console.log(JSON.stringify(found, null, 2));
-    return;
-  }
-
-  if (effective === "choose" || effective === "select" || effective === "decision") {
-    ensureWorkspace();
-    const mode = normalizeDeliveryMode(flags.mode || value || "structured");
-    const data = readDeliveryDecisionState();
-    const recommendationId = flags.recommendation || flags.id || null;
-    const recommendation = recommendationId ? (data.recommendations || []).find((item) => item.recommendation_id === recommendationId) : null;
-    const decision = {
-      decision_id: `delivery-decision-${String((data.decisions || []).length + 1).padStart(3, "0")}`,
-      recommendation_id: recommendationId,
-      chosen_mode: mode,
-      recommended_mode: recommendation ? recommendation.recommended_mode : null,
-      reason: flags.reason || "",
-      actor: getEffectiveActor(flags) || "local-cli",
-      decided_at: new Date().toISOString()
-    };
-    data.decisions = data.decisions || [];
-    data.decisions.push(decision);
-    data.current_mode = mode;
-    if (recommendation) {
-      recommendation.chosen_mode = mode;
-      recommendation.decision_id = decision.decision_id;
-    }
-    writeJsonFile(".kabeeri/delivery_decisions.json", data);
-    updateProjectDeliveryMode(mode);
-    appendAudit("delivery.mode_selected", "delivery", decision.decision_id, `Delivery mode selected: ${mode}`);
-    console.log(JSON.stringify(decision, null, 2));
-    return;
-  }
-
-  if (!description) throw new Error("Missing project/application description for delivery recommendation.");
-  const recommendation = buildDeliveryModeRecommendation(description, flags);
-  if (fileExists(".kabeeri")) {
-    const data = readDeliveryDecisionState();
-    data.recommendations = data.recommendations || [];
-    data.recommendations.push(recommendation);
-    writeJsonFile(".kabeeri/delivery_decisions.json", data);
-    appendAudit("delivery.mode_recommended", "delivery", recommendation.recommendation_id, `Delivery mode recommended: ${recommendation.recommended_mode}`);
-  }
-  if (flags.json) console.log(JSON.stringify(recommendation, null, 2));
-  else console.log(renderDeliveryModeRecommendation(recommendation));
-}
-
-function readDeliveryDecisionState() {
-  if (!fileExists(".kabeeri/delivery_decisions.json")) writeJsonFile(".kabeeri/delivery_decisions.json", { recommendations: [], decisions: [], current_mode: null });
-  const data = readJsonFile(".kabeeri/delivery_decisions.json");
-  data.recommendations = data.recommendations || [];
-  data.decisions = data.decisions || [];
-  return data;
-}
-
-function buildDeliveryModeRecommendation(description, flags = {}) {
-  const text = String(description || "").toLowerCase();
-  const signals = [];
-  let structuredScore = 0;
-  let agileScore = 0;
-  const add = (mode, weight, signal, evidence) => {
-    if (mode === "structured") structuredScore += weight;
-    else agileScore += weight;
-    signals.push({ mode, weight, signal, evidence });
-  };
-  const match = (pattern) => pattern.test(text);
-  if (match(/health|medical|hospital|clinic|finance|bank|payment|government|gov|insurance|erp|enterprise|multi-tenant|tenant|compliance|regulatory|audit|security|sso|roles|permissions|marketplace|large|complex|migration|integration|integrations|known scope|fixed scope|waterfall|structured|مستشفى|طبي|صحي|بنك|مالي|حكومي|امتثال|تدقيق|أمان|صلاحيات|متعدد|كبير|معقد|نطاق ثابت|متجر كبير/)) add("structured", 4, "complex_or_compliance_scope", "Large, regulated, integrated, or fixed-scope wording was detected.");
-  if (match(/exact|clear requirements|complete spec|documentation|upfront|phase|milestone|handoff|client approval|اعتماد|متطلبات واضحة|توثيق|مراحل|مرحلة|تسليم|موافقة العميل/)) add("structured", 3, "upfront_planning_needed", "The request suggests approved documentation, phases, or formal handoff.");
-  if (match(/mvp|prototype|startup|experiment|validate|feedback|iterate|pivot|quick|fast|2 weeks|4 weeks|social|fitness|landing|simple|dashboard|uncertain|idea|rough|agile|sprint|تجربة|ناشئ|فكرة|غير واضح|تغذية راجعة|سريع|بروتوتايب|تطبيق بسيط|داشبورد بسيط/)) add("agile", 4, "learning_or_mvp_scope", "The request suggests uncertainty, MVP speed, feedback, or iteration.");
-  if (match(/limited budget|small team|solo|founder|learn|users will tell|budget-conscious|ميزانية محدودة|فريق صغير|مطور واحد|نتعلم|المستخدمين/)) add("agile", 2, "budget_or_small_team", "The request suggests smaller increments and budget-conscious delivery.");
-  if (flags.compliance || flags.enterprise) add("structured", 4, "explicit_flag", "Compliance or enterprise flag was provided.");
-  if (flags.mvp || flags.experimental) add("agile", 4, "explicit_flag", "MVP or experimental flag was provided.");
-  if (!signals.length) {
-    add("structured", 1, "safe_default", "When unclear, Structured is safer for complete planning.");
-    add("agile", 1, "possible_if_uncertain", "Agile remains viable if discovery and feedback are more important.");
-  }
-  const recommendedMode = structuredScore >= agileScore ? "structured" : "agile";
-  const total = structuredScore + agileScore || 1;
-  const margin = Math.abs(structuredScore - agileScore);
-  const confidence = margin >= 4 ? "high" : margin >= 2 ? "medium" : "low";
-  return {
-    recommendation_id: `delivery-recommendation-${Date.now()}`,
-    created_at: new Date().toISOString(),
-    description,
-    recommended_mode: recommendedMode,
-    confidence,
-    scores: {
-      structured: structuredScore,
-      agile: agileScore,
-      structured_percent: Math.round((structuredScore / total) * 100),
-      agile_percent: Math.round((agileScore / total) * 100)
-    },
-    signals,
-    rationale: recommendedMode === "structured" ? "Structured is recommended because the app appears to benefit from approved requirements, phase gates, traceability, and controlled changes." : "Agile is recommended because the app appears to benefit from fast iteration, feedback, smaller stories, and learning before full scope commitment.",
-    developer_decision_required: true,
-    next_actions: recommendedMode === "structured" ? ["Run `kvdf delivery choose structured` if the developer agrees.", "Create approved requirements with `kvdf structured requirement add`.", "Plan phases and gates before implementation."] : ["Run `kvdf delivery choose agile` if the developer agrees.", "Create epics/stories with `kvdf agile story create`.", "Plan the first sprint after Definition of Ready is satisfied."]
-  };
-}
-
-function renderDeliveryModeRecommendation(recommendation) {
-  const lines = ["# Kabeeri Delivery Mode Recommendation", "", `Recommended mode: ${recommendation.recommended_mode}`, `Confidence: ${recommendation.confidence}`, `Structured score: ${recommendation.scores.structured}`, `Agile score: ${recommendation.scores.agile}`, "", "## Rationale", "", recommendation.rationale, "", "## Signals", ""];
-  for (const signal of recommendation.signals) lines.push(`- ${signal.mode}: ${signal.signal} (${signal.weight}) - ${signal.evidence}`);
-  lines.push("", "## Developer Decision", "", "The developer/Owner still chooses the final mode. This recommendation is advisory.", "", "## Next Actions", "");
-  for (const action of recommendation.next_actions) lines.push(`- ${action}`);
-  return `${lines.join("\n")}\n`;
-}
-
-function normalizeDeliveryMode(mode) {
-  const normalized = String(mode || "").toLowerCase();
-  if (["structured", "waterfall"].includes(normalized)) return "structured";
-  if (["agile", "scrum"].includes(normalized)) return "agile";
-  throw new Error("Invalid delivery mode. Use structured or agile.");
-}
-
-function updateProjectDeliveryMode(mode) {
-  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
-  project.delivery_mode = mode;
-  project.delivery_mode_updated_at = new Date().toISOString();
-  writeJsonFile(".kabeeri/project.json", project);
 }
 
 function structured(action, value, flags = {}, rest = []) {
@@ -9729,179 +10180,6 @@ function normalizeAgileSeverity(value) {
   return normalized;
 }
 
-function sprint(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/sprints.json";
-  const data = readJsonFile(file);
-  data.sprints = data.sprints || [];
-
-  if (!action || action === "list") {
-    console.log(table(["ID", "Name", "Status", "Start", "End"], data.sprints.map((item) => [
-      item.id,
-      item.name,
-      item.status,
-      item.start_date || "",
-      item.end_date || ""
-    ])));
-    return;
-  }
-
-  if (action === "create") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "create sprint");
-    const id = flags.id || value || `sprint-${String(data.sprints.length + 1).padStart(3, "0")}`;
-    const item = {
-      id,
-      name: flags.name || id,
-      status: flags.status || "planned",
-      start_date: flags.start || null,
-      end_date: flags.end || null,
-      goal: flags.goal || "",
-      created_at: new Date().toISOString()
-    };
-    data.sprints.push(item);
-    writeJsonFile(file, data);
-    appendAudit("sprint.created", "sprint", id, `Sprint created: ${item.name}`);
-    console.log(`Created sprint ${id}`);
-    return;
-  }
-
-  if (action === "summary") {
-    const sprintId = flags.id || value;
-    if (!sprintId) throw new Error("Missing sprint id.");
-    console.log(JSON.stringify(buildSprintSummary(sprintId), null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown sprint action: ${action}`);
-}
-
-function session(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/sessions.json";
-  const data = readJsonFile(file);
-  data.sessions = data.sessions || [];
-
-  if (!action || action === "list") {
-    console.log(table(["ID", "Task", "Developer", "Status", "Model"], data.sessions.map((item) => [
-      item.session_id,
-      item.task_id,
-      item.developer_id,
-      item.status,
-      `${item.provider || ""}/${item.model || ""}`
-    ])));
-    return;
-  }
-
-  if (action === "start") {
-    const taskId = flags.task || value;
-    const developerId = flags.developer || flags.assignee;
-    if (!taskId) throw new Error("Missing --task.");
-    if (!developerId) throw new Error("Missing --developer.");
-    if (flags.actor && flags.actor !== developerId) throw new Error("Actor must match session developer.");
-    const taskItem = getTaskById(taskId);
-    if (taskItem) {
-      requireTaskExecutor({ ...flags, actor: developerId }, taskItem);
-      if (hasConfiguredIdentities()) assertTaskCanStart(taskItem);
-    } else if (hasConfiguredIdentities()) {
-      throw new Error(`Task not found: ${taskId}`);
-    }
-    const token = findActiveTaskToken(taskId, developerId);
-    if (!token) throw new Error("Active task token required to start AI session.");
-    if (isExpired(token.expires_at)) throw new Error(`Task access token expired: ${token.token_id}`);
-    const item = {
-      session_id: flags.id || `session-${String(data.sessions.length + 1).padStart(3, "0")}`,
-      task_id: taskId,
-      sprint_id: getTaskSprint(taskId),
-      developer_id: developerId,
-      token_id: token ? token.token_id : null,
-      provider: flags.provider || "unknown",
-      model: flags.model || "unknown",
-      status: "active",
-      started_at: new Date().toISOString(),
-      files_touched: []
-    };
-    data.sessions.push(item);
-    writeJsonFile(file, data);
-    appendAudit("ai_session.started", "session", item.session_id, `AI session started for ${taskId}`);
-    console.log(`Started session ${item.session_id}`);
-    return;
-  }
-
-  if (action === "end") {
-    const sessionId = flags.id || value;
-    if (!sessionId) throw new Error("Missing session id.");
-    const item = data.sessions.find((entry) => entry.session_id === sessionId);
-    if (!item) throw new Error(`Session not found: ${sessionId}`);
-    if (flags.actor && flags.actor !== item.developer_id) throw new Error("Only the session developer can end this session.");
-    const inputTokens = Number(flags["input-tokens"] || 0);
-    const outputTokens = Number(flags["output-tokens"] || 0);
-    const cachedTokens = Number(flags["cached-tokens"] || 0);
-    const calculated = calculateUsageCost({
-      provider: item.provider || flags.provider || "unknown",
-      model: item.model || flags.model || "unknown",
-      inputTokens,
-      outputTokens,
-      cachedTokens
-    });
-    item.status = "completed";
-    item.ended_at = new Date().toISOString();
-    item.input_tokens = inputTokens;
-    item.output_tokens = outputTokens;
-    item.cached_tokens = cachedTokens;
-    item.total_tokens = inputTokens + outputTokens + cachedTokens;
-    item.cost = flags.cost !== undefined ? Number(flags.cost || 0) : calculated.cost;
-    item.cost_source = flags.cost !== undefined ? "manual" : calculated.source;
-    item.files_touched = parseCsv(flags.files);
-    enforceSessionAppBoundary(item);
-    enforceTokenFileScope(item);
-    enforceSessionLockCoverage(item);
-    enforceSessionWorkstreamBoundary(item);
-    item.summary = flags.summary || "";
-    item.checks_run = parseCsv(flags.checks);
-    item.risks = parseCsv(flags.risks);
-    item.known_limitations = parseCsv(flags.limitations);
-    item.needs_review = flags["needs-review"] || "";
-    item.next_suggested_task = flags.next || "";
-    writeJsonFile(file, data);
-    appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", {
-      event_id: `usage-${Date.now()}`,
-      timestamp: item.ended_at,
-      session_id: item.session_id,
-      task_id: item.task_id,
-      sprint_id: item.sprint_id || getTaskSprint(item.task_id),
-      developer_id: item.developer_id,
-      workstream: flags.workstream || "untracked",
-      provider: item.provider,
-      model: item.model,
-      input_tokens: item.input_tokens,
-      output_tokens: item.output_tokens,
-      cached_tokens: item.cached_tokens,
-      total_tokens: item.total_tokens,
-      cost: item.cost,
-      currency: flags.currency || "USD",
-      cost_source: item.cost_source,
-      source: "ai_session",
-      tracked: flags.tracked !== "false"
-    });
-    writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summarizeUsage());
-    writeTextFile(`.kabeeri/reports/${item.session_id}.handoff.md`, buildSessionHandoff(item));
-    appendAudit("ai_session.completed", "session", item.session_id, `AI session completed for ${item.task_id}`);
-    console.log(`Completed session ${item.session_id}`);
-    return;
-  }
-
-  if (action === "show") {
-    const sessionId = flags.id || value;
-    if (!sessionId) throw new Error("Missing session id.");
-    const item = data.sessions.find((entry) => entry.session_id === sessionId);
-    if (!item) throw new Error(`Session not found: ${sessionId}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown session action: ${action}`);
-}
-
 function findActiveTaskToken(taskId, developerId) {
   const tokens = readJsonFile(".kabeeri/tokens.json").tokens || [];
   return tokens.find((token) => token.task_id === taskId && token.assignee_id === developerId && token.status === "active") || null;
@@ -10085,333 +10363,6 @@ function isExpired(value) {
   return Boolean(value && Date.parse(value) <= Date.now());
 }
 
-function acceptance(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/acceptance.json";
-  const data = readJsonFile(file);
-  data.records = data.records || [];
-
-  if (!action || action === "list") {
-    console.log(table(["ID", "Subject", "Status"], data.records.map((item) => [item.id, item.task_id || item.version || item.subject_id || "", item.status || "draft"])));
-    return;
-  }
-
-  if (action === "create") {
-    requireAnyRole(flags, ["Owner", "Maintainer", "Reviewer", "Business Analyst"], "create acceptance");
-    const taskId = flags.task || value;
-    const type = flags.type || (flags.version ? "release" : "task");
-    const issueId = flags.issue || null;
-    if (!taskId && !issueId && type !== "release") throw new Error("Missing task id.");
-    if (type === "release" && !flags.version) throw new Error("Missing --version for release acceptance.");
-    const id = `acceptance-${String(data.records.length + 1).padStart(3, "0")}`;
-    data.records.push({
-      id,
-      type,
-      task_id: taskId || null,
-      issue_id: issueId,
-      version: flags.version || null,
-      subject_id: taskId || issueId || flags.version || null,
-      status: "draft",
-      criteria: flags.criteria ? [flags.criteria] : [],
-      created_at: new Date().toISOString()
-    });
-    writeJsonFile(file, data);
-    appendAudit("acceptance.created", "acceptance", id, `Acceptance created for ${taskId || issueId || flags.version}`);
-    console.log(`Created acceptance record ${id}`);
-    return;
-  }
-
-  if (action === "review") {
-    requireAnyRole(flags, ["Owner", "Maintainer", "Reviewer"], "review acceptance");
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing acceptance id.");
-    const record = data.records.find((item) => item.id === id || item.task_id === id);
-    if (!record) throw new Error(`Acceptance record not found: ${id}`);
-    record.status = flags.status || (flags.reject ? "rejected" : "reviewed");
-    record.result = flags.result || (flags.reject ? "fail" : "pass");
-    record.reviewer_id = flags.reviewer || flags.actor || "local-cli";
-    record.review_notes = flags.notes || flags.reason || "";
-    record.reviewed_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("acceptance.reviewed", "acceptance", record.id, `Acceptance reviewed for ${record.task_id || record.version || record.id}`);
-    console.log(`Reviewed acceptance record ${record.id}: ${record.result}`);
-    return;
-  }
-
-  throw new Error(`Unknown acceptance action: ${action}`);
-}
-
-function audit(action, value, flags = {}) {
-  ensureWorkspace();
-  const events = readAuditEvents();
-
-  if (!action || action === "list") {
-    const limit = flags.limit ? Number(flags.limit) : 20;
-    const rows = events.slice(-limit).map((event) => [
-      event.event_id || "",
-      event.timestamp || "",
-      event.event_type || "",
-      event.entity_type || "",
-      event.entity_id || ""
-    ]);
-    console.log(table(["Event", "Timestamp", "Type", "Entity", "ID"], rows));
-    return;
-  }
-
-  if (action === "report") {
-    const entityId = flags.task || flags.entity || value || null;
-    const filtered = entityId ? events.filter((event) => event.entity_id === entityId || event.metadata && event.metadata.task_id === entityId) : events;
-    const lines = buildAuditReport(filtered, entityId);
-    return outputLines(lines, flags.output);
-  }
-
-  throw new Error(`Unknown audit action: ${action}`);
-}
-
-function readAuditEvents() {
-  const fs = require("fs");
-  const path = require("path");
-  const file = path.join(repoRoot(), ".kabeeri", "audit_log.jsonl");
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
-}
-
-function buildAuditReport(events, entityId) {
-  const lines = [
-    `# Kabeeri Audit Report${entityId ? ` - ${entityId}` : ""}`,
-    "",
-    `Generated at: ${new Date().toISOString()}`,
-    `Events: ${events.length}`,
-    "",
-    "## Event Timeline"
-  ];
-  if (events.length === 0) {
-    lines.push("", "No audit events found.");
-    return lines;
-  }
-  for (const event of events) {
-    lines.push(
-      "",
-      `- ${event.timestamp || ""} ${event.event_type || ""}`,
-      `  Entity: ${event.entity_type || ""}/${event.entity_id || ""}`,
-      `  Actor: ${event.actor_id || ""} (${event.actor_role || ""})`,
-      `  Summary: ${event.summary || ""}`
-    );
-  }
-  return lines;
-}
-
-function memory(action, value, flags = {}) {
-  ensureWorkspace();
-  if (!action || action === "summary") {
-    const summary = buildMemorySummary();
-    writeJsonFile(".kabeeri/memory/memory_summary.json", summary);
-    console.log(JSON.stringify(summary, null, 2));
-    return;
-  }
-
-  if (action === "list") {
-    const type = normalizeMemoryType(flags.type || value || "decision");
-    const rows = readJsonLines(memoryFileForType(type)).map((item) => [
-      item.memory_id,
-      item.type,
-      item.status,
-      item.text
-    ]);
-    console.log(table(["ID", "Type", "Status", "Text"], rows));
-    return;
-  }
-
-  if (action === "add") {
-    requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "add project memory");
-    const type = normalizeMemoryType(flags.type || value || "decision");
-    if (!flags.text) throw new Error("Missing --text.");
-    const existing = readJsonLines(memoryFileForType(type));
-    const record = {
-      memory_id: `${type}-${String(existing.length + 1).padStart(3, "0")}`,
-      type,
-      text: flags.text,
-      source: flags.source || "manual",
-      status: flags.status || "active",
-      owner: flags.owner || getEffectiveActor(flags) || "local-cli",
-      review_date: flags.review || null,
-      created_at: new Date().toISOString()
-    };
-    appendJsonLine(memoryFileForType(type), record);
-    writeJsonFile(".kabeeri/memory/memory_summary.json", buildMemorySummary());
-    appendAudit("memory.added", "memory", record.memory_id, `Memory added: ${type}`);
-    console.log(`Added memory ${record.memory_id}`);
-    return;
-  }
-
-  throw new Error(`Unknown memory action: ${action}`);
-}
-
-function normalizeMemoryType(type) {
-  const normalized = String(type || "").toLowerCase().replace(/-/g, "_");
-  const aliases = {
-    decision: "decisions",
-    assumption: "assumptions",
-    constraint: "constraints",
-    risk: "risks",
-    deferred: "deferred_features",
-    deferred_feature: "deferred_features"
-  };
-  const value = aliases[normalized] || normalized;
-  if (!["decisions", "assumptions", "constraints", "risks", "deferred_features"].includes(value)) {
-    throw new Error("Invalid memory type. Use decision, assumption, constraint, risk, or deferred_feature.");
-  }
-  return value;
-}
-
-function memoryFileForType(type) {
-  return `.kabeeri/memory/${normalizeMemoryType(type)}.jsonl`;
-}
-
-function buildMemorySummary() {
-  const types = ["decisions", "assumptions", "constraints", "risks", "deferred_features"];
-  const summary = { generated_at: new Date().toISOString(), totals: {}, open_items: [] };
-  for (const type of types) {
-    const records = readJsonLines(memoryFileForType(type));
-    summary.totals[type] = records.length;
-    summary.open_items.push(...records.filter((item) => !["closed", "rejected", "resolved"].includes(item.status)).map((item) => ({
-      memory_id: item.memory_id,
-      type: item.type,
-      status: item.status,
-      text: item.text
-    })));
-  }
-  return summary;
-}
-
-function adr(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureDecisionHistoryState();
-  const file = ".kabeeri/adr/records.json";
-  const data = readJsonFile(file);
-  data.adrs = data.adrs || [];
-
-  if (!action || action === "list") {
-    const rows = data.adrs.map((item) => [
-      item.adr_id,
-      item.status,
-      item.title,
-      (item.related_tasks || []).join(","),
-      item.owner || ""
-    ]);
-    console.log(table(["ADR", "Status", "Title", "Tasks", "Owner"], rows));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value;
-    const item = findAdr(data.adrs, id);
-    if (!item) throw new Error(`ADR not found: ${id}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "create") {
-    requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "create ADR");
-    if (!flags.title) throw new Error("Missing --title.");
-    if (!flags.context) throw new Error("Missing --context.");
-    if (!flags.decision) throw new Error("Missing --decision.");
-    const status = normalizeAdrStatus(flags.status || "proposed");
-    const taskIds = parseCsv(flags.tasks || flags.task);
-    assertKnownTasks(taskIds);
-    const aiRunIds = parseCsv(flags["ai-runs"] || flags["ai-run"]);
-    assertKnownAiRuns(aiRunIds);
-    const id = flags.id || `adr-${String(data.adrs.length + 1).padStart(3, "0")}`;
-    if (data.adrs.some((item) => item.adr_id === id)) throw new Error(`ADR already exists: ${id}`);
-    const record = {
-      adr_id: id,
-      title: flags.title,
-      status,
-      date: flags.date || new Date().toISOString().slice(0, 10),
-      owner: flags.owner || getEffectiveActor(flags) || "local-cli",
-      context: flags.context,
-      options: parseCsv(flags.options),
-      decision: flags.decision,
-      why: flags.why || "",
-      risks: parseCsv(flags.risks || flags.risk),
-      consequences: parseCsv(flags.consequences),
-      impact: flags.impact || inferAdrImpact(flags),
-      related_tasks: taskIds,
-      related_ai_runs: aiRunIds,
-      related_policies: parseCsv(flags.policies || flags.policy),
-      supersedes: flags.supersedes || null,
-      approved_by: status === "approved" ? (flags.approvedBy || flags["approved-by"] || flags.owner || getEffectiveActor(flags) || "local-cli") : null,
-      approved_at: status === "approved" ? new Date().toISOString() : null,
-      created_at: new Date().toISOString()
-    };
-    data.adrs.push(record);
-    if (record.supersedes) markAdrSuperseded(data.adrs, record.supersedes, record.adr_id);
-    writeJsonFile(file, data);
-    if (aiRunIds.length) linkAdrsToAiRuns(record.adr_id, aiRunIds);
-    appendJsonLine(".kabeeri/memory/decisions.jsonl", {
-      memory_id: `decision-${String(readJsonLines(".kabeeri/memory/decisions.jsonl").length + 1).padStart(3, "0")}`,
-      type: "decisions",
-      text: `${record.title}: ${record.decision}`,
-      source: `adr:${record.adr_id}`,
-      status: record.status,
-      owner: record.owner,
-      links: [record.adr_id, ...record.related_tasks],
-      created_at: record.created_at
-    });
-    writeJsonFile(".kabeeri/memory/memory_summary.json", buildMemorySummary());
-    appendAudit("adr.created", "adr", record.adr_id, `ADR created: ${record.title}`);
-    console.log(JSON.stringify(record, null, 2));
-    return;
-  }
-
-  if (["approve", "reject", "supersede"].includes(action)) {
-    const id = flags.id || value;
-    const item = findAdr(data.adrs, id);
-    if (!item) throw new Error(`ADR not found: ${id}`);
-    if (action === "approve") {
-      requireAnyRole(flags, ["Owner", "Maintainer"], "approve ADR");
-      item.status = "approved";
-      item.approved_by = flags.owner || getEffectiveActor(flags) || "local-cli";
-      item.approved_at = new Date().toISOString();
-      if (flags.notes) item.approval_notes = flags.notes;
-    } else if (action === "reject") {
-      requireAnyRole(flags, ["Owner", "Maintainer"], "reject ADR");
-      if (!flags.reason) throw new Error("Missing --reason.");
-      item.status = "rejected";
-      item.rejection_reason = flags.reason;
-      item.rejected_at = new Date().toISOString();
-    } else {
-      requireAnyRole(flags, ["Owner", "Maintainer"], "supersede ADR");
-      if (!flags.by && !flags["superseded-by"]) throw new Error("Missing --by.");
-      item.status = "superseded";
-      item.superseded_by = flags.by || flags["superseded-by"];
-      item.superseded_reason = flags.reason || "";
-      item.superseded_at = new Date().toISOString();
-    }
-    item.updated_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit(`adr.${action}`, "adr", item.adr_id, `ADR ${action}: ${item.title}`);
-    console.log(`ADR ${item.adr_id} is now ${item.status}`);
-    return;
-  }
-
-  if (action === "report") {
-    return outputLines(buildAdrReport(data.adrs), flags.output);
-  }
-
-  if (action === "trace" || action === "history" || action === "decision-trace") {
-    const trace = buildAdrAiRunTraceReport(data.adrs, readAiRuns());
-    if (flags.json) console.log(JSON.stringify(trace, null, 2));
-    else return outputLines(buildAdrAiRunTraceMarkdown(trace), flags.output || ".kabeeri/reports/adr_ai_run_trace.md");
-    return;
-  }
-
-  throw new Error(`Unknown ADR action: ${action}`);
-}
-
 function findAgileRelease(data, releaseId) {
   if (!releaseId) throw new Error("Missing release id.");
   const release = (data.releases || []).find((item) => item.release_id === releaseId);
@@ -10440,468 +10391,6 @@ function computeReleaseReadiness(release, stories) {
   if (stories.some((story) => story.status !== "accepted")) return "needs_attention";
   if (["high", "critical"].includes(release.risk_level || "medium")) return "needs_attention";
   return "ready";
-}
-
-function aiRun(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureDecisionHistoryState();
-
-  if (!action || action === "list") {
-    const runs = readAiRuns();
-    const rows = runs.map((item) => [
-      item.run_id,
-      item.status || "recorded",
-      item.task_id || "",
-      item.developer_id || item.agent_id || "",
-      `${item.provider || ""}/${item.model || ""}`,
-      item.total_tokens || 0
-    ]);
-    console.log(table(["Run", "Status", "Task", "Developer", "Model", "Tokens"], rows));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value;
-    const item = readAiRuns().find((run) => run.run_id === id);
-    if (!item) throw new Error(`AI run not found: ${id}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "record") {
-    const taskId = flags.task || value || null;
-    if (taskId && !getTaskById(taskId)) throw new Error(`Task not found: ${taskId}`);
-    const developerId = flags.developer || flags.agent || flags.actor || "local-ai";
-    const relatedAdrs = parseCsv(flags.adrs || flags.adr);
-    assertKnownAdrs(relatedAdrs);
-    const inputTokens = Number(flags["input-tokens"] || 0);
-    const outputTokens = Number(flags["output-tokens"] || 0);
-    const cachedTokens = Number(flags["cached-tokens"] || 0);
-    const calculated = calculateUsageCost({
-      provider: flags.provider || "unknown",
-      model: flags.model || "unknown",
-      inputTokens,
-      outputTokens,
-      cachedTokens
-    });
-    const run = {
-      run_id: flags.id || `ai-run-${String(readAiRuns().length + 1).padStart(3, "0")}`,
-      task_id: taskId,
-      sprint_id: flags.sprint || getTaskSprint(taskId),
-      developer_id: developerId,
-      provider: flags.provider || "unknown",
-      model: flags.model || "unknown",
-      prompt_id: flags.prompt || flags["prompt-id"] || null,
-      source_reference: flags.source || "manual",
-      workstream: flags.workstream || (taskId ? getTaskWorkstreamsById(taskId)[0] || "untracked" : "untracked"),
-      files_changed: parseCsv(flags.files),
-      related_adrs: relatedAdrs,
-      summary: flags.summary || flags.result || "",
-      result: flags.result || "recorded",
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cached_tokens: cachedTokens,
-      total_tokens: inputTokens + outputTokens + cachedTokens,
-      cost: flags.cost !== undefined ? Number(flags.cost || 0) : calculated.cost,
-      currency: flags.currency || getPricingCurrency(),
-      cost_source: flags.cost !== undefined ? "manual" : calculated.source,
-      status: "recorded",
-      started_at: flags.started || new Date().toISOString(),
-      ended_at: flags.ended || new Date().toISOString(),
-      created_at: new Date().toISOString()
-    };
-    if (readAiRuns().some((item) => item.run_id === run.run_id)) throw new Error(`AI run already exists: ${run.run_id}`);
-    appendJsonLine(".kabeeri/ai_runs/prompt_runs.jsonl", run);
-    if (relatedAdrs.length) linkAiRunToAdrs(run.run_id, relatedAdrs);
-    if (run.total_tokens > 0 && flags["record-usage"] !== "false" && flags.usage !== "false") {
-      appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", {
-        event_id: `usage-${Date.now()}`,
-        timestamp: run.ended_at,
-        run_id: run.run_id,
-        task_id: run.task_id || "untracked",
-        sprint_id: run.sprint_id,
-        developer_id: run.developer_id,
-        workstream: run.workstream,
-        provider: run.provider,
-        model: run.model,
-        input_tokens: run.input_tokens,
-        output_tokens: run.output_tokens,
-        cached_tokens: run.cached_tokens,
-        total_tokens: run.total_tokens,
-        cost: run.cost,
-        currency: run.currency,
-        cost_source: run.cost_source,
-        source: "ai_run_history",
-        tracked: Boolean(run.task_id)
-      });
-      writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summarizeUsage());
-    }
-    appendAudit("ai_run.recorded", "ai_run", run.run_id, `AI run recorded for ${run.task_id || "untracked"}`);
-    console.log(JSON.stringify(run, null, 2));
-    return;
-  }
-
-  if (action === "link") {
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing AI run id.");
-    const adrIds = parseCsv(flags.adrs || flags.adr);
-    if (!adrIds.length) throw new Error("Missing --adr.");
-    assertKnownAdrs(adrIds);
-    const runs = readAiRuns();
-    const item = runs.find((run) => run.run_id === id);
-    if (!item) throw new Error(`AI run not found: ${id}`);
-    item.related_adrs = uniqueList([...(item.related_adrs || []), ...adrIds]);
-    item.updated_at = new Date().toISOString();
-    writeAiRuns(runs);
-    linkAiRunToAdrs(id, adrIds);
-    appendAudit("ai_run.linked_to_adr", "ai_run", id, `AI run linked to ADR(s): ${adrIds.join(", ")}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "accept" || action === "reject") {
-    const id = flags.id || value;
-    const runs = readAiRuns();
-    const item = runs.find((run) => run.run_id === id);
-    if (!item) throw new Error(`AI run not found: ${id}`);
-    if (action === "accept") {
-      requireAnyRole(flags, ["Owner", "Maintainer", "Reviewer"], "accept AI run");
-      item.status = "accepted";
-      item.accepted_by = flags.reviewer || flags.actor || getEffectiveActor(flags) || "local-cli";
-      item.acceptance_evidence = parseCsv(flags.evidence);
-      item.review_notes = flags.notes || "";
-      item.reviewed_at = new Date().toISOString();
-      appendJsonLine(".kabeeri/ai_runs/accepted_runs.jsonl", buildAiRunReviewRecord(item, "accepted"));
-    } else {
-      requireAnyRole(flags, ["Owner", "Maintainer", "Reviewer"], "reject AI run");
-      if (!flags.reason) throw new Error("Missing --reason.");
-      item.status = "rejected";
-      item.rejected_by = flags.reviewer || flags.actor || getEffectiveActor(flags) || "local-cli";
-      item.rejection_reason = flags.reason;
-      item.partially_reused = flags.reused === true || flags.reused === "true";
-      item.reviewed_at = new Date().toISOString();
-      appendJsonLine(".kabeeri/ai_runs/rejected_runs.jsonl", buildAiRunReviewRecord(item, "rejected"));
-    }
-    writeAiRuns(runs);
-    appendAudit(`ai_run.${action}ed`, "ai_run", item.run_id, `AI run ${action}ed`);
-    console.log(`AI run ${item.run_id} is now ${item.status}`);
-    return;
-  }
-
-  if (action === "report" || action === "waste") {
-    const report = buildAiRunHistoryReport();
-    if (flags.json) console.log(JSON.stringify(report, null, 2));
-    else return outputLines(buildAiRunReportMarkdown(report), flags.output);
-    return;
-  }
-
-  throw new Error(`Unknown AI run action: ${action}`);
-}
-
-function ensureDecisionHistoryState() {
-  const fs = require("fs");
-  const path = require("path");
-  const root = repoRoot();
-  fs.mkdirSync(path.join(root, ".kabeeri", "adr"), { recursive: true });
-  fs.mkdirSync(path.join(root, ".kabeeri", "ai_runs"), { recursive: true });
-  fs.mkdirSync(path.join(root, ".kabeeri", "memory"), { recursive: true });
-  if (!fileExists(".kabeeri/adr/records.json")) writeJsonFile(".kabeeri/adr/records.json", { adrs: [] });
-  for (const file of [
-    ".kabeeri/ai_runs/prompt_runs.jsonl",
-    ".kabeeri/ai_runs/accepted_runs.jsonl",
-    ".kabeeri/ai_runs/rejected_runs.jsonl",
-    ".kabeeri/memory/decisions.jsonl"
-  ]) {
-    const fullPath = path.join(root, file);
-    if (!fs.existsSync(fullPath)) fs.writeFileSync(fullPath, "", "utf8");
-  }
-}
-
-function normalizeAdrStatus(value) {
-  const status = String(value || "proposed").toLowerCase();
-  if (!["proposed", "approved", "superseded", "rejected"].includes(status)) {
-    throw new Error("Invalid ADR status. Use proposed, approved, superseded, or rejected.");
-  }
-  return status;
-}
-
-function inferAdrImpact(flags) {
-  const text = `${flags.title || ""} ${flags.context || ""} ${flags.decision || ""}`.toLowerCase();
-  if (/security|auth|migration|database|release|deploy|architecture|payment/.test(text)) return "high";
-  return "medium";
-}
-
-function findAdr(records, id) {
-  if (!id) return null;
-  return records.find((item) => item.adr_id === id);
-}
-
-function markAdrSuperseded(records, id, byId) {
-  const item = findAdr(records, id);
-  if (!item) throw new Error(`Superseded ADR not found: ${id}`);
-  item.status = "superseded";
-  item.superseded_by = byId;
-  item.superseded_at = new Date().toISOString();
-}
-
-function assertKnownTasks(taskIds) {
-  for (const taskId of taskIds || []) {
-    if (!getTaskById(taskId)) throw new Error(`Task not found: ${taskId}`);
-  }
-}
-
-function assertKnownAiRuns(runIds) {
-  if (!runIds || runIds.length === 0) return;
-  const known = new Set(readAiRuns().map((item) => item.run_id));
-  for (const runId of runIds) {
-    if (!known.has(runId)) throw new Error(`AI run not found: ${runId}`);
-  }
-}
-
-function assertKnownAdrs(adrIds) {
-  if (!adrIds || adrIds.length === 0) return;
-  const records = readStateArray(".kabeeri/adr/records.json", "adrs");
-  const known = new Set(records.map((item) => item.adr_id));
-  for (const adrId of adrIds) {
-    if (!known.has(adrId)) throw new Error(`ADR not found: ${adrId}`);
-  }
-}
-
-function linkAiRunToAdrs(runId, adrIds) {
-  const file = ".kabeeri/adr/records.json";
-  const data = readJsonFile(file);
-  data.adrs = data.adrs || [];
-  let changed = false;
-  for (const adrId of adrIds) {
-    const item = findAdr(data.adrs, adrId);
-    if (!item) throw new Error(`ADR not found: ${adrId}`);
-    item.related_ai_runs = uniqueList([...(item.related_ai_runs || []), runId]);
-    item.updated_at = new Date().toISOString();
-    changed = true;
-  }
-  if (changed) writeJsonFile(file, data);
-}
-
-function linkAdrsToAiRuns(adrId, runIds) {
-  if (!runIds || !runIds.length) return;
-  const runs = readAiRuns();
-  let changed = false;
-  for (const runId of runIds) {
-    const item = runs.find((run) => run.run_id === runId);
-    if (!item) throw new Error(`AI run not found: ${runId}`);
-    item.related_adrs = uniqueList([...(item.related_adrs || []), adrId]);
-    item.updated_at = new Date().toISOString();
-    changed = true;
-  }
-  if (changed) writeAiRuns(runs);
-}
-
-function buildAdrReport(records) {
-  const byStatus = summarizeBy(records, "status");
-  const highImpactOpen = records.filter((item) => ["critical", "high"].includes(item.impact) && item.status === "proposed");
-  return [
-    "# Kabeeri ADR Report",
-    "",
-    `Generated at: ${new Date().toISOString()}`,
-    `Total ADRs: ${records.length}`,
-    "",
-    "## Status",
-    ...Object.entries(byStatus).map(([status, count]) => `- ${status}: ${count}`),
-    "",
-    "## Open High-impact Decisions",
-    ...(highImpactOpen.length ? highImpactOpen.map((item) => `- ${item.adr_id}: ${item.title}`) : ["- none"]),
-    "",
-    "## ADR Index",
-    "",
-    "| ADR | Status | Impact | Title | Tasks |",
-    "| --- | --- | --- | --- | --- |",
-    ...(records.length ? records.map((item) => `| ${item.adr_id} | ${item.status} | ${item.impact || ""} | ${item.title} | ${(item.related_tasks || []).join(",")} |`) : ["| none |  |  |  |  |"])
-  ];
-}
-
-function readAiRuns() {
-  return readJsonLines(".kabeeri/ai_runs/prompt_runs.jsonl");
-}
-
-function writeAiRuns(runs) {
-  writeJsonLines(".kabeeri/ai_runs/prompt_runs.jsonl", runs);
-}
-
-function buildAiRunReviewRecord(item, decision) {
-  return {
-    review_id: `${decision}-${item.run_id}-${Date.now()}`,
-    run_id: item.run_id,
-    task_id: item.task_id || null,
-    decision,
-    reviewer_id: item.accepted_by || item.rejected_by || "local-cli",
-    reason: item.rejection_reason || null,
-    evidence: item.acceptance_evidence || [],
-    partially_reused: Boolean(item.partially_reused),
-    reviewed_at: item.reviewed_at || new Date().toISOString()
-  };
-}
-
-function buildAiRunHistoryReport() {
-  const runs = readAiRuns();
-  const accepted = runs.filter((item) => item.status === "accepted");
-  const rejected = runs.filter((item) => item.status === "rejected");
-  const unreviewed = runs.filter((item) => !["accepted", "rejected"].includes(item.status));
-  const missingTask = runs.filter((item) => !item.task_id || item.task_id === "untracked");
-  const missingTokenData = runs.filter((item) => Number(item.total_tokens || 0) === 0);
-  const rejectedCost = rejected.reduce((sum, item) => sum + Number(item.cost || 0), 0);
-  const unreviewedCost = unreviewed.reduce((sum, item) => sum + Number(item.cost || 0), 0);
-  const wasteSignals = [];
-  if (unreviewed.length) wasteSignals.push({ severity: "warning", signal: "unreviewed_runs", count: unreviewed.length, next_action: "Accept or reject AI runs after review." });
-  if (missingTask.length) wasteSignals.push({ severity: "warning", signal: "missing_task_links", count: missingTask.length, next_action: "Link runs to governed tasks or mark them untracked intentionally." });
-  if (missingTokenData.length) wasteSignals.push({ severity: "info", signal: "missing_token_data", count: missingTokenData.length, next_action: "Record token and cost data for pricing and efficiency reports." });
-  if (rejectedCost > 0) wasteSignals.push({ severity: "warning", signal: "rejected_output_cost", count: rejected.length, cost: rejectedCost, next_action: "Review rejected outputs and improve prompts or context packs." });
-  return {
-    generated_at: new Date().toISOString(),
-    totals: {
-      runs: runs.length,
-      accepted: accepted.length,
-      rejected: rejected.length,
-      unreviewed: unreviewed.length,
-      acceptance_rate: runs.length ? Number((accepted.length / runs.length).toFixed(3)) : 0,
-      total_tokens: runs.reduce((sum, item) => sum + Number(item.total_tokens || 0), 0),
-      total_cost: runs.reduce((sum, item) => sum + Number(item.cost || 0), 0),
-      accepted_cost: accepted.reduce((sum, item) => sum + Number(item.cost || 0), 0),
-      rejected_cost: rejectedCost,
-      unreviewed_cost: unreviewedCost
-    },
-    by_task: summarizeAiRunsBy(runs, "task_id"),
-    by_developer: summarizeAiRunsBy(runs, "developer_id"),
-    by_adr: summarizeAiRunsByMultiValue(runs, "related_adrs", "unlinked"),
-    waste_signals: wasteSignals,
-    unreviewed_run_ids: unreviewed.map((item) => item.run_id)
-  };
-}
-
-function summarizeAiRunsBy(runs, key) {
-  const output = {};
-  for (const item of runs) {
-    const id = item[key] || "untracked";
-    output[id] = output[id] || { runs: 0, accepted: 0, rejected: 0, unreviewed: 0, tokens: 0, cost: 0 };
-    output[id].runs += 1;
-    output[id].tokens += Number(item.total_tokens || 0);
-    output[id].cost += Number(item.cost || 0);
-    if (item.status === "accepted") output[id].accepted += 1;
-    else if (item.status === "rejected") output[id].rejected += 1;
-    else output[id].unreviewed += 1;
-  }
-  return output;
-}
-
-function summarizeAiRunsByMultiValue(runs, key, fallback) {
-  const output = {};
-  for (const item of runs) {
-    const values = (item[key] || []).length ? item[key] : [fallback];
-    for (const value of values) {
-      output[value] = output[value] || { runs: 0, accepted: 0, rejected: 0, unreviewed: 0, tokens: 0, cost: 0 };
-      output[value].runs += 1;
-      output[value].tokens += Number(item.total_tokens || 0);
-      output[value].cost += Number(item.cost || 0);
-      if (item.status === "accepted") output[value].accepted += 1;
-      else if (item.status === "rejected") output[value].rejected += 1;
-      else output[value].unreviewed += 1;
-    }
-  }
-  return output;
-}
-
-function buildAiRunReportMarkdown(report) {
-  return [
-    "# Kabeeri AI Run History Report",
-    "",
-    `Generated at: ${report.generated_at}`,
-    `Runs: ${report.totals.runs}`,
-    `Accepted: ${report.totals.accepted}`,
-    `Rejected: ${report.totals.rejected}`,
-    `Unreviewed: ${report.totals.unreviewed}`,
-    `Acceptance rate: ${report.totals.acceptance_rate}`,
-    `Total tokens: ${report.totals.total_tokens}`,
-    `Total cost: ${report.totals.total_cost}`,
-    "",
-    "## Waste Signals",
-    "",
-    "| Severity | Signal | Count | Next Action |",
-    "| --- | --- | ---: | --- |",
-    ...(report.waste_signals.length ? report.waste_signals.map((item) => `| ${item.severity} | ${item.signal} | ${item.count || 0} | ${item.next_action} |`) : ["| info | none | 0 | Continue normal review. |"]),
-    "",
-    "## By Task",
-    ...aiRunSummaryRows(report.by_task, "Task"),
-    "",
-    "## By Developer",
-    ...aiRunSummaryRows(report.by_developer, "Developer"),
-    "",
-    "## By ADR",
-    ...aiRunSummaryRows(report.by_adr, "ADR")
-  ];
-}
-
-function aiRunSummaryRows(buckets, label) {
-  const rows = [`| ${label} | Runs | Accepted | Rejected | Unreviewed | Tokens | Cost |`, "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"];
-  for (const [key, item] of Object.entries(buckets || {})) {
-    rows.push(`| ${key} | ${item.runs || 0} | ${item.accepted || 0} | ${item.rejected || 0} | ${item.unreviewed || 0} | ${item.tokens || 0} | ${item.cost || 0} |`);
-  }
-  if (rows.length === 2) rows.push(`| none | 0 | 0 | 0 | 0 | 0 | 0 |`);
-  return rows;
-}
-
-function github(action, value, flags) {
-  if (action === "config") {
-    return githubConfig(value, flags);
-  }
-  const subaction = value;
-  const version = flags.version || "v4.0.0";
-  const plan = findPlan(version);
-  const confirmed = Boolean(flags.confirm);
-
-  if (!confirmed || flags["dry-run"]) {
-    if (!action || action === "plan") {
-      return printGithubDryRun(plan, flags);
-    }
-
-    if (action === "label" && (!subaction || subaction === "sync")) {
-      return printGithubLabels(plan, flags);
-    }
-
-    if (action === "milestone" && (!subaction || subaction === "sync")) {
-      return printGithubMilestones(plan, flags);
-    }
-
-    if (action === "issue" && (!subaction || subaction === "sync")) {
-      return printGithubIssues(plan, flags);
-    }
-
-  if (action === "release" && (!subaction || subaction === "prepare")) {
-      return release("notes", version, { ...flags, stdout: true });
-    }
-
-    throw new Error(`Unknown GitHub dry-run command: github ${action} ${subaction || ""}`.trim());
-  }
-
-  if (action === "label" && (!subaction || subaction === "sync")) {
-    runGithubWriteGate(action, subaction, plan, flags);
-    return syncGithubLabels(plan);
-  }
-
-  if (action === "milestone" && (!subaction || subaction === "sync")) {
-    runGithubWriteGate(action, subaction, plan, flags);
-    return syncGithubMilestones(plan);
-  }
-
-  if (action === "issue" && (!subaction || subaction === "sync")) {
-    runGithubWriteGate(action, subaction, plan, flags);
-    return syncGithubIssues(plan);
-  }
-
-  if (action === "release" && subaction === "publish") {
-    runReleasePublishGates(plan, flags);
-    return publishGithubRelease(plan, { ...flags, publishGatesPassed: true });
-  }
-
-  throw new Error(`Unknown confirmed GitHub command: github ${action} ${subaction || ""}`.trim());
 }
 
 function runGithubWriteGate(action, subaction, plan, flags) {
@@ -11138,326 +10627,6 @@ function buildGithubIssueBody(plan, milestone, issue, issueKey) {
 function parseIssueNumber(output) {
   const match = String(output || "").match(/\/issues\/(\d+)/);
   return match ? Number(match[1]) : null;
-}
-
-function release(action, value, flags) {
-  const version = flags.version || value || "v4.0.0";
-  const plan = findPlan(version);
-
-  if (!action || action === "check") {
-    const validation = validateRepository("all");
-    const lines = [
-      `Release check for ${plan.version}`,
-      `Source: ${plan.file}`,
-      `Milestones: ${plan.data.milestones.length}/${plan.data.totals.milestones}`,
-      `Issues: ${countIssues(plan.data)}/${plan.data.totals.issues}`,
-      `Validation: ${validation.ok ? "OK" : "FAILED"}`,
-      "",
-      "## Validation",
-      ...validation.lines,
-      "",
-      `Status: ${validation.ok ? "ready for release review" : "blocked by validation failures"}`
-    ];
-    if (flags.strict && !validation.ok) process.exitCode = 1;
-    return outputLines(lines, flags.output);
-  }
-
-  if (action === "checklist") {
-    return outputLines(buildReleaseChecklist(plan), flags.output);
-  }
-
-  if (action === "notes") {
-    return outputLines(buildReleaseNotes(plan), flags.output);
-  }
-
-  if (action === "scenario" || action === "scenario-review") {
-    return outputLines(buildScenarioReview(plan), flags.output);
-  }
-
-  if (action === "gate") {
-    const result = runPolicyGate("release", { version: plan.version, confirm: true }, flags);
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  if (action === "publish-gate" || action === "publish-gates") {
-    const result = runReleasePublishGates(plan, flags);
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  if (action === "publish") {
-    if (!flags.confirm) {
-      const lines = [
-        `Release publish dry-run for ${plan.version}`,
-        `Would run: gh release create ${plan.version} --title "Kabeeri VDF ${plan.version}" --notes-file <generated-notes>`,
-        "",
-        "No remote GitHub changes were made. Add --confirm to publish."
-      ];
-      return outputLines(lines, flags.output);
-    }
-    return publishGithubRelease(plan, flags);
-  }
-
-  throw new Error(`Unknown release action: ${action}`);
-}
-
-function productPackage(action, value, flags = {}) {
-  const selected = action || "check";
-  if (selected === "check" || selected === "status") {
-    const report = buildPackageCheck();
-    if (flags.json) {
-      console.log(JSON.stringify(report, null, 2));
-      return;
-    }
-    const lines = renderPackageCheck(report);
-    return outputLines(lines, flags.output);
-  }
-  if (selected === "guide") {
-    return outputLines(readGuideLines("docs/production/PACKAGING_GUIDE.md"), flags.output);
-  }
-  throw new Error(`Unknown package action: ${selected}`);
-}
-
-function upgrade(action, value, flags = {}) {
-  const selected = action || "guide";
-  if (selected === "guide") {
-    return outputLines(readGuideLines("docs/production/UPGRADE_GUIDE.md"), flags.output);
-  }
-  if (selected === "check" || selected === "status") {
-    const report = buildUpgradeCheck();
-    if (flags.json) {
-      console.log(JSON.stringify(report, null, 2));
-      return;
-    }
-    return outputLines(renderUpgradeCheck(report), flags.output);
-  }
-  throw new Error(`Unknown upgrade action: ${selected}`);
-}
-
-function buildPackageCheck() {
-  const packageData = readJsonFile("package.json");
-  const requiredFiles = [
-    "bin/kvdf.js",
-    "src/cli/index.js",
-    "src/cli/workspace.js",
-    "src/cli/validate.js",
-    "README.md",
-    "CHANGELOG.md",
-    "LICENSE",
-    "docs/production/PACKAGING_GUIDE.md",
-    "docs/production/UPGRADE_GUIDE.md"
-  ];
-  const requiredPackageFields = ["name", "version", "description", "license", "bin", "files"];
-  const checks = [];
-  const warnings = [];
-  const add = (id, ok, detail) => checks.push({ check_id: id, status: ok ? "pass" : "fail", detail });
-  for (const field of requiredPackageFields) add(`package_field_${field}`, packageData[field] !== undefined, `${field} ${packageData[field] === undefined ? "missing" : "present"}`);
-  add("bin_kvdf_configured", packageData.bin && packageData.bin.kvdf === "bin/kvdf.js", "bin.kvdf should point to bin/kvdf.js");
-  add("node_engine_declared", packageData.engines && packageData.engines.node, "Node engine should be declared");
-  add("pack_check_script", packageData.scripts && packageData.scripts["pack:check"], "npm run pack:check should exist");
-  for (const file of requiredFiles) add(`file_${file.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`, fileExists(file), `${file} ${fileExists(file) ? "present" : "missing"}`);
-  const fileList = packageData.files || [];
-  for (const folder of ["bin/", "src/", "knowledge/", "packs/", "integrations/", "schemas/", "docs/", "cli/"]) {
-    add(`package_files_${folder.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`, fileList.includes(folder), `${folder} ${fileList.includes(folder) ? "included" : "missing from package files"}`);
-  }
-  for (const forbidden of [".kabeeri/", "node_modules/", ".env"]) {
-    if (fileList.includes(forbidden)) warnings.push(`${forbidden} should not be listed in package files.`);
-  }
-  const blockers = checks.filter((item) => item.status === "fail");
-  return {
-    report_id: `package-check-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
-    report_type: "package_check",
-    generated_at: new Date().toISOString(),
-    standalone: true,
-    source_of_truth: "package.json and repository files",
-    package: {
-      name: packageData.name,
-      version: packageData.version,
-      bin: packageData.bin || {},
-      files_count: fileList.length
-    },
-    status: blockers.length ? "blocked" : warnings.length ? "warning" : "ready",
-    blockers,
-    warnings,
-    checks,
-    next_actions: buildPackageNextActions(blockers, warnings)
-  };
-}
-
-function buildUpgradeCheck() {
-  const compatibility = fileExists(".kabeeri/version_compatibility.json") ? readJsonFile(".kabeeri/version_compatibility.json") : null;
-  const migrationState = fileExists(".kabeeri/migration_state.json") ? readJsonFile(".kabeeri/migration_state.json") : null;
-  const workspaceVersion = compatibility && (compatibility.current_engine_version || compatibility.created_with_version);
-  const migrationRequired = workspaceVersion ? compareSemver(workspaceVersion, VERSION) < 0 : false;
-  const blockers = [];
-  const warnings = [];
-  if (!fileExists(".kabeeri")) warnings.push("No local .kabeeri workspace found; upgrade check is package-only.");
-  if (migrationRequired) warnings.push(`Workspace engine version ${workspaceVersion} is older than CLI ${VERSION}.`);
-  if (migrationState && migrationState.pending_migration) blockers.push(`Pending migration: ${migrationState.pending_migration}`);
-  return {
-    report_id: `upgrade-check-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
-    report_type: "upgrade_check",
-    generated_at: new Date().toISOString(),
-    standalone: true,
-    source_of_truth: ".kabeeri/version_compatibility.json and .kabeeri/migration_state.json",
-    status: blockers.length ? "blocked" : warnings.length ? "warning" : "current",
-    current_cli_version: VERSION,
-    workspace_version: workspaceVersion || null,
-    migration_required: migrationRequired,
-    blockers,
-    warnings,
-    compatibility,
-    migration_state: migrationState,
-    next_actions: buildUpgradeNextActions(blockers, warnings, migrationRequired)
-  };
-}
-
-function renderPackageCheck(report) {
-  return [
-    "# Kabeeri Product Packaging Check",
-    "",
-    `Report ID: ${report.report_id}`,
-    `Generated at: ${report.generated_at}`,
-    `Package: ${report.package.name}@${report.package.version}`,
-    `Status: ${report.status}`,
-    `Standalone: ${report.standalone ? "yes" : "no"}`,
-    `Source of truth: ${report.source_of_truth}`,
-    `Interpretation: ${report.status === "warning" && report.blockers.length === 0 ? "Warning means packaging can continue only after human review." : report.status === "blocked" ? "Blocked means package distribution should stop until blockers are resolved." : "Ready means package contract blockers or warnings were not detected."}`,
-    "",
-    "## Blockers",
-    "",
-    ...(report.blockers.length ? report.blockers.map((item) => `- ${item.check_id}: ${item.detail}`) : ["No packaging blockers detected."]),
-    "",
-    "## Warnings",
-    "",
-    ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["No packaging warnings detected."]),
-    "",
-    "## Checks",
-    "",
-    ...report.checks.map((item) => `- ${item.status}: ${item.check_id} - ${item.detail}`),
-    "",
-    "## Next Actions",
-    "",
-    ...recordLines(report.next_actions || [], (item) => item)
-  ];
-}
-
-function renderUpgradeCheck(report) {
-  return [
-    "# Kabeeri Upgrade Check",
-    "",
-    `Report ID: ${report.report_id}`,
-    `Generated at: ${report.generated_at}`,
-    `CLI version: ${report.current_cli_version}`,
-    `Workspace version: ${report.workspace_version || "none"}`,
-    `Migration required: ${report.migration_required ? "yes" : "no"}`,
-    `Status: ${report.status}`,
-    `Standalone: ${report.standalone ? "yes" : "no"}`,
-    `Source of truth: ${report.source_of_truth}`,
-    "",
-    "## Blockers",
-    "",
-    ...(report.blockers.length ? report.blockers.map((item) => `- ${item}`) : ["No upgrade blockers detected."]),
-    "",
-    "## Warnings",
-    "",
-    ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["No upgrade warnings detected."]),
-    "",
-    "## Next Actions",
-    "",
-    ...recordLines(report.next_actions || [], (item) => item)
-  ];
-}
-
-function buildPackageNextActions(blockers, warnings) {
-  if (blockers.length) return [
-    "Fix failed package contract checks before npm dry-run or distribution.",
-    "Run `kvdf package check` again after updating package.json or required files.",
-    "Run `kvdf readiness report --target release --strict` before release review."
-  ];
-  if (warnings.length) return [
-    "Review packaging warnings before distributing the package.",
-    "Run `npm pack --dry-run` and inspect the file list manually.",
-    "Keep local .kabeeri state, secrets, node_modules, and generated local outputs out of package files."
-  ];
-  return [
-    "Run `npm pack --dry-run` and inspect the final file list.",
-    "Attach package check, readiness, and governance evidence to release notes.",
-    "Do not publish until Owner and policy gates approve."
-  ];
-}
-
-function buildUpgradeNextActions(blockers, warnings, migrationRequired) {
-  if (blockers.length) return [
-    "Stop upgrade work until pending migration blockers are resolved.",
-    "Review .kabeeri/migration_state.json and create a migration plan if needed.",
-    "Run `kvdf upgrade check` and `kvdf validate` after migration work."
-  ];
-  if (warnings.length || migrationRequired) return [
-    "Review workspace compatibility before continuing.",
-    "Run `kvdf readiness report --target workspace` and `kvdf governance report --target workspace`.",
-    "Record behavior-changing upgrade decisions in ADR or project memory."
-  ];
-  return [
-    "Workspace appears compatible with the current CLI.",
-    "Run validation and refresh live reports after any upgrade-related changes.",
-    "Keep version compatibility state current for future upgrades."
-  ];
-}
-
-function readGuideLines(file) {
-  if (!fileExists(file)) throw new Error(`Guide not found: ${file}`);
-  return readTextFile(file).replace(/\r\n/g, "\n").split("\n");
-}
-
-function compareSemver(left, right) {
-  const a = String(left || "0.0.0").split(".").map((item) => Number.parseInt(item, 10) || 0);
-  const b = String(right || "0.0.0").split(".").map((item) => Number.parseInt(item, 10) || 0);
-  for (let index = 0; index < Math.max(a.length, b.length); index += 1) {
-    const diff = (a[index] || 0) - (b[index] || 0);
-    if (diff !== 0) return diff > 0 ? 1 : -1;
-  }
-  return 0;
-}
-
-function runtimeReport(type, action, value, flags) {
-  ensureWorkspace();
-  const selected = value || action || "report";
-  if (!["report", "show", "status"].includes(selected)) throw new Error(`Unknown ${type} action: ${selected}`);
-  const report = type === "readiness" ? buildReadinessReport(flags) : buildGovernanceReport(flags);
-  refreshLiveReportsState({ [type]: report });
-  if (flags.json) {
-    const content = `${JSON.stringify(report, null, 2)}\n`;
-    if (flags.output && flags.output !== true) writeTextFile(flags.output, content);
-    else console.log(content.trimEnd());
-    return;
-  }
-  const lines = type === "readiness" ? renderReadinessReport(report) : renderGovernanceReport(report);
-  outputLines(lines, flags.output);
-}
-
-function reports(action, value, flags = {}) {
-  ensureWorkspace();
-  const selected = action || "live";
-  if (["live", "refresh", "state", "status"].includes(selected)) {
-    const state = refreshLiveReportsState();
-    if (flags.json || selected === "state") {
-      console.log(JSON.stringify(state, null, 2));
-      return;
-    }
-    return outputLines(renderLiveReportsState(state), flags.output);
-  }
-  if (selected === "show") {
-    const state = refreshLiveReportsState();
-    const reportName = value || flags.report;
-    if (!reportName) throw new Error("Missing report name. Use readiness, governance, package, upgrade, task_tracker, dashboard_ux, evolution, security, or migration.");
-    const report = state.reports[reportName];
-    if (!report) throw new Error(`Unknown live report: ${reportName}`);
-    console.log(JSON.stringify(report, null, 2));
-    return;
-  }
-  throw new Error(`Unknown reports action: ${selected}`);
 }
 
 function refreshLiveReportsState(overrides = {}) {
@@ -12013,121 +11182,6 @@ function recordLines(records, formatter) {
   return records.length ? records.map((item) => `- ${formatter(item)}`) : ["None."];
 }
 
-function buildReleaseChecklist(plan) {
-  const lines = [
-    `# ${plan.version} Release Checklist`,
-    "",
-    `Source: ${plan.file}`,
-    "",
-    "## Milestones"
-  ];
-
-  for (const milestone of plan.data.milestones) {
-    lines.push("", `- [ ] ${milestone.title}`, `  Goal: ${milestone.goal}`);
-    for (const issue of milestone.issues || []) {
-      lines.push(`  - [ ] ${issue.title}`);
-    }
-  }
-
-  lines.push("", "## Final Gate", "", "- [ ] Owner verified release readiness", "- [ ] GitHub dry-run reviewed", "- [ ] Release notes reviewed", "- [ ] Tag and release approved");
-  return lines;
-}
-
-function buildReleaseNotes(plan) {
-  const lines = [
-    `# Kabeeri VDF ${plan.version} Release Notes`,
-    "",
-    "## Summary",
-    "",
-    `${plan.version} includes ${plan.data.totals.milestones} planned milestones and ${plan.data.totals.issues} planned issues.`,
-    "",
-    "## Highlights"
-  ];
-
-  for (const rule of plan.data.rules || []) {
-    lines.push(`- ${rule}`);
-  }
-
-  lines.push("", "## Milestones");
-  for (const milestone of plan.data.milestones) {
-    lines.push("", `### ${milestone.title}`, "", milestone.goal, "");
-    for (const issue of milestone.issues || []) {
-      lines.push(`- ${issue.title}`);
-    }
-  }
-
-  lines.push("", "## Limitations", "", "- Runtime enforcement may still require future CLI, dashboard, VS Code, or GitHub write integration work.", "- GitHub write operations must remain dry-run until explicit confirmation support is implemented.", "- Owner approval is required before publishing the official release.");
-  return lines;
-}
-
-function buildScenarioReview(plan) {
-  const hasWorkspace = fileExists(".kabeeri");
-  const tasks = hasWorkspace && fileExists(".kabeeri/tasks.json") ? readJsonFile(".kabeeri/tasks.json").tasks || [] : [];
-  const locks = hasWorkspace && fileExists(".kabeeri/locks.json") ? readJsonFile(".kabeeri/locks.json").locks || [] : [];
-  const agents = hasWorkspace && fileExists(".kabeeri/agents.json") ? readJsonFile(".kabeeri/agents.json").agents || [] : [];
-  const developers = hasWorkspace && fileExists(".kabeeri/developers.json") ? readJsonFile(".kabeeri/developers.json").developers || [] : [];
-  const activeOwners = developers.filter((item) => item.role === "Owner" && item.status !== "inactive");
-  const workstreams = ["backend", "public_frontend", "admin_frontend"];
-  const lines = [
-    `# ${plan.version} Multi-AI Collaboration Scenario Review`,
-    "",
-    `Generated at: ${new Date().toISOString()}`,
-    "",
-    "## Scenario",
-    "",
-    "- Backend developer/agent works on backend tasks.",
-    "- Public frontend developer/agent works on public frontend tasks.",
-    "- Admin frontend developer/agent works on admin frontend tasks.",
-    "- Owner performs final verification.",
-    "",
-    "## Workspace Findings"
-  ];
-
-  if (!hasWorkspace) {
-    lines.push("", "No `.kabeeri` workspace found. Run `kvdf init` to review a real local scenario.");
-    return lines;
-  }
-
-  lines.push(
-    "",
-    `Owners: ${activeOwners.length}`,
-    `Agents: ${agents.length}`,
-    `Tasks: ${tasks.length}`,
-    `Active locks: ${locks.filter((lockItem) => lockItem.status === "active").length}`,
-    ""
-  );
-
-  for (const stream of workstreams) {
-    const streamTasks = tasks.filter((taskItem) => taskWorkstreams(taskItem).includes(stream));
-    const streamAgents = agents.filter((agent) => (agent.workstreams || []).map((item) => String(item).toLowerCase()).includes(stream));
-    lines.push(`- ${stream}: ${streamTasks.length} tasks, ${streamAgents.length} agents`);
-  }
-
-  const risks = [];
-  if (activeOwners.length !== 1) risks.push(`Expected exactly one active Owner, found ${activeOwners.length}.`);
-  for (const taskItem of tasks.filter((item) => ["assigned", "in_progress", "review"].includes(item.status))) {
-    if (!taskItem.assignee_id) risks.push(`Task ${taskItem.id} is ${taskItem.status} without assignee.`);
-    const hasLock = locks.some((lockItem) => lockItem.task_id === taskItem.id && lockItem.status === "active");
-    if (!hasLock && taskItem.status === "in_progress") risks.push(`Task ${taskItem.id} is in progress without active lock.`);
-  }
-  for (let index = 0; index < locks.length; index += 1) {
-    for (let other = index + 1; other < locks.length; other += 1) {
-      if (locks[index].status === "active" && locks[other].status === "active" && locksOverlap(locks[index], locks[other])) {
-        risks.push(`Lock overlap: ${locks[index].lock_id} overlaps ${locks[other].lock_id}.`);
-      }
-    }
-  }
-
-  lines.push("", "## Risks", "");
-  if (risks.length === 0) lines.push("No scenario risks detected.");
-  else lines.push(...risks.map((risk) => `- ${risk}`));
-  return lines;
-}
-
-function countIssues(planData) {
-  return (planData.milestones || []).reduce((sum, milestone) => sum + (milestone.issues || []).length, 0);
-}
-
 function outputLines(lines, outputPath) {
   const content = `${lines.join("\n")}\n`;
   if (outputPath && outputPath !== true) {
@@ -12140,331 +11194,6 @@ function outputLines(lines, outputPath) {
 
 function escapeShellText(value) {
   return String(value || "").replace(/"/g, '\\"');
-}
-
-function identity(kind, action, value, flags) {
-  ensureWorkspace();
-  if (kind === "developers" && ["solo", "fullstack", "full-stack", "owner-developer"].includes(String(action || "").toLowerCase())) {
-    return configureSoloDeveloper(action, value, flags);
-  }
-  const file = `.kabeeri/${kind}.json`;
-  const key = kind;
-  const data = readJsonFile(file);
-  data[key] = data[key] || [];
-
-  if (!action || action === "list") {
-    console.log(table(["ID", "Name", "Role", "Status"], data[key].map((item) => [item.id, item.display_name, item.role, item.status])));
-    return;
-  }
-
-  if (action === "add") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], `add ${kind.slice(0, -1)}`);
-    const id = flags.id || `${kind === "developers" ? "dev" : "agent"}-${String(data[key].length + 1).padStart(3, "0")}`;
-    if (!flags.name) throw new Error("Missing --name.");
-    const role = flags.role || (kind === "agents" ? "AI Developer" : "Viewer");
-    if (role === "Owner") ensureNoOtherOwner(id);
-    const workstreams = parseCsv(flags.workstreams || flags.workstream);
-    validateKnownWorkstreams(workstreams);
-    const item = {
-      id,
-      type: kind === "agents" ? "ai_developer" : "human",
-      display_name: flags.name,
-      role,
-      workstreams,
-      status: "active",
-      created_at: new Date().toISOString()
-    };
-    data[key].push(item);
-    writeJsonFile(file, data);
-    appendAudit(`${kind}.added`, kind.slice(0, -1), id, `${kind.slice(0, -1)} added: ${item.display_name}`);
-    console.log(`Added ${kind.slice(0, -1)} ${id}`);
-    return;
-  }
-
-  throw new Error(`Unknown ${kind.slice(0, -1)} action: ${action}`);
-}
-
-function configureSoloDeveloper(action, value, flags = {}) {
-  requireAnyRole(flags, ["Owner", "Maintainer"], "configure solo developer mode");
-  const file = ".kabeeri/developers.json";
-  const data = readJsonFile(file);
-  data.developers = data.developers || [];
-  const id = flags.id || value || "dev-main";
-  const name = flags.name || "Main Developer";
-  const role = String(action || "").toLowerCase() === "owner-developer" ? "Owner-Developer" : "Full-stack Developer";
-  if (role === "Owner-Developer") ensureNoOtherOwner(id);
-  const workstreams = parseCsv(flags.workstreams || "backend,public_frontend,admin_frontend,database,devops,qa,docs,integrations,security");
-  validateKnownWorkstreams(workstreams);
-  let item = data.developers.find((developer) => developer.id === id);
-  if (!item) {
-    item = {
-      id,
-      type: "human",
-      display_name: name,
-      role,
-      workstreams,
-      status: "active",
-      solo_mode: true,
-      created_at: new Date().toISOString()
-    };
-    data.developers.push(item);
-  } else {
-    item.display_name = flags.name || item.display_name || name;
-    item.role = role;
-    item.workstreams = workstreams;
-    item.status = "active";
-    item.solo_mode = true;
-    item.updated_at = new Date().toISOString();
-  }
-  writeJsonFile(file, data);
-  writeJsonFile(".kabeeri/developer_mode.json", {
-    mode: "solo",
-    solo_developer_id: id,
-    role,
-    workstreams,
-    configured_at: new Date().toISOString()
-  });
-  appendAudit("developer.solo_configured", "developer", id, `Solo developer mode configured: ${id}`);
-  console.log(`Configured solo developer mode for ${id}`);
-}
-
-function ensureNoOtherOwner(newId) {
-  for (const file of [".kabeeri/developers.json", ".kabeeri/agents.json"]) {
-    const data = readJsonFile(file);
-    const entries = data.developers || data.agents || [];
-    const owner = entries.find((item) => item.role === "Owner" && item.id !== newId && item.status === "active");
-    if (owner) throw new Error(`Single Owner rule violation: ${owner.id} is already Owner.`);
-  }
-}
-
-function owner(action, value, flags) {
-  ensureWorkspace();
-
-  if (action === "transfer") {
-    return ownerTransfer(value, flags);
-  }
-
-  if (!action || action === "status") {
-    const auth = readJsonFile(".kabeeri/owner_auth.json");
-    const session = readJsonFile(".kabeeri/session.json");
-    const active = isOwnerSessionActive(session);
-    console.log(table(["Field", "Value"], [
-      ["Auth configured", auth.configured ? "yes" : "no"],
-      ["Owner ID", auth.owner_id || ""],
-      ["Session active", active ? "yes" : "no"],
-      ["Session expires", session.expires_at || ""]
-    ]));
-    return;
-  }
-
-  if (action === "init") {
-    const ownerId = flags.id || value;
-    const name = flags.name || "Project Owner";
-    const passphrase = getPassphrase(flags);
-    if (!ownerId) throw new Error("Missing owner id.");
-    if (!passphrase) throw new Error("Missing passphrase. Use --passphrase or KVDF_OWNER_PASSPHRASE.");
-    ensureNoOtherOwner(ownerId);
-    upsertOwnerDeveloper(ownerId, name);
-    const auth = createOwnerAuth(ownerId, passphrase);
-    writeJsonFile(".kabeeri/owner_auth.json", auth);
-    writeJsonFile(".kabeeri/session.json", createOwnerSession(ownerId));
-    appendAudit("owner_auth.configured", "owner", ownerId, "Owner auth configured");
-    console.log(`Owner auth configured for ${ownerId}. Session started.`);
-    return;
-  }
-
-  if (action === "login") {
-    const ownerId = flags.id || value;
-    const passphrase = getPassphrase(flags);
-    if (!ownerId) throw new Error("Missing owner id.");
-    if (!passphrase) throw new Error("Missing passphrase. Use --passphrase or KVDF_OWNER_PASSPHRASE.");
-    const auth = readJsonFile(".kabeeri/owner_auth.json");
-    if (!auth.configured) throw new Error("Owner auth is not configured. Run `kvdf owner init` first.");
-    if (auth.owner_id !== ownerId) throw new Error("Owner id does not match configured owner.");
-    if (!verifyPassphrase(passphrase, auth)) throw new Error("Invalid owner passphrase.");
-    writeJsonFile(".kabeeri/session.json", createOwnerSession(ownerId));
-    appendAudit("owner_auth.login", "owner", ownerId, "Owner session started");
-    console.log(`Owner session started for ${ownerId}.`);
-    return;
-  }
-
-  if (action === "logout") {
-    const session = readJsonFile(".kabeeri/session.json");
-    writeJsonFile(".kabeeri/session.json", { active: false, owner_id: session.owner_id || null, logged_out_at: new Date().toISOString() });
-    appendAudit("owner_auth.logout", "owner", session.owner_id || "owner", "Owner session ended");
-    console.log("Owner session ended.");
-    return;
-  }
-
-  throw new Error(`Unknown owner action: ${action}`);
-}
-
-function ownerTransfer(action, flags) {
-  const file = ".kabeeri/owner_transfer_tokens.json";
-  if (!fileExists(file)) writeJsonFile(file, { tokens: [] });
-  const data = readJsonFile(file);
-  data.tokens = data.tokens || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Token", "From", "To", "Status", "Expires"], data.tokens.map((token) => [
-      token.token_id,
-      token.from_owner_id,
-      token.to_owner_id,
-      token.status,
-      token.expires_at || ""
-    ])));
-    return;
-  }
-
-  if (action === "issue") {
-    requireOwnerAuthority(flags);
-    const auth = readJsonFile(".kabeeri/owner_auth.json");
-    const toOwnerId = flags.to || flags["to-owner"];
-    if (!toOwnerId) throw new Error("Missing --to.");
-    const secret = flags.token || createSecretToken();
-    const tokenId = `owner-transfer-${String(data.tokens.length + 1).padStart(3, "0")}`;
-    const expiresAt = flags.expires || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-    data.tokens.push({
-      token_id: tokenId,
-      from_owner_id: auth.owner_id,
-      to_owner_id: toOwnerId,
-      to_owner_name: flags.name || toOwnerId,
-      status: "issued",
-      token_hash: hashTransferToken(secret),
-      created_at: new Date().toISOString(),
-      expires_at: expiresAt
-    });
-    writeJsonFile(file, data);
-    appendAudit("owner_transfer.issued", "owner_transfer", tokenId, `Owner transfer issued to ${toOwnerId}`);
-    console.log(`Issued owner transfer token ${tokenId}`);
-    console.log(`Transfer secret: ${secret}`);
-    return;
-  }
-
-  if (action === "accept") {
-    const tokenId = flags.id || flags.tokenId || flags["token-id"];
-    const secret = flags.token || flags.secret;
-    const passphrase = getPassphrase(flags);
-    if (!tokenId) throw new Error("Missing --id.");
-    if (!secret) throw new Error("Missing --token.");
-    if (!passphrase) throw new Error("Missing new owner passphrase. Use --passphrase or KVDF_OWNER_PASSPHRASE.");
-    const token = data.tokens.find((item) => item.token_id === tokenId);
-    if (!token) throw new Error(`Owner transfer token not found: ${tokenId}`);
-    if (token.status !== "issued") throw new Error(`Owner transfer token is not usable: ${token.status}`);
-    if (isExpired(token.expires_at)) {
-      token.status = "expired";
-      token.expired_at = new Date().toISOString();
-      writeJsonFile(file, data);
-      throw new Error(`Owner transfer token expired: ${tokenId}`);
-    }
-    if (token.token_hash !== hashTransferToken(secret)) throw new Error("Invalid owner transfer token.");
-    transferOwnerRole(token.from_owner_id, token.to_owner_id, token.to_owner_name);
-    writeJsonFile(".kabeeri/owner_auth.json", createOwnerAuth(token.to_owner_id, passphrase));
-    writeJsonFile(".kabeeri/session.json", createOwnerSession(token.to_owner_id));
-    token.status = "used";
-    token.used_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("owner_transfer.accepted", "owner_transfer", tokenId, `Owner transferred from ${token.from_owner_id} to ${token.to_owner_id}`);
-    console.log(`Owner transferred to ${token.to_owner_id}. Session started.`);
-    return;
-  }
-
-  if (action === "revoke") {
-    requireOwnerAuthority(flags);
-    const tokenId = flags.id || flags.tokenId || flags["token-id"];
-    if (!tokenId) throw new Error("Missing --id.");
-    const token = data.tokens.find((item) => item.token_id === tokenId);
-    if (!token) throw new Error(`Owner transfer token not found: ${tokenId}`);
-    token.status = "revoked";
-    token.revoked_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("owner_transfer.revoked", "owner_transfer", tokenId, "Owner transfer token revoked");
-    console.log(`Revoked owner transfer token ${tokenId}`);
-    return;
-  }
-
-  throw new Error(`Unknown owner transfer action: ${action}`);
-}
-
-function createSecretToken() {
-  const crypto = require("crypto");
-  return crypto.randomBytes(24).toString("base64url");
-}
-
-function hashTransferToken(token) {
-  const crypto = require("crypto");
-  return crypto.createHash("sha256").update(String(token)).digest("hex");
-}
-
-function transferOwnerRole(fromOwnerId, toOwnerId, toOwnerName) {
-  const file = ".kabeeri/developers.json";
-  const data = readJsonFile(file);
-  data.developers = data.developers || [];
-  for (const developer of data.developers) {
-    if (developer.role === "Owner") {
-      developer.role = developer.id === fromOwnerId ? "Maintainer" : developer.role;
-    }
-  }
-  let nextOwner = data.developers.find((developer) => developer.id === toOwnerId);
-  if (!nextOwner) {
-    nextOwner = {
-      id: toOwnerId,
-      type: "human",
-      display_name: toOwnerName || toOwnerId,
-      role: "Owner",
-      workstreams: [],
-      status: "active",
-      created_at: new Date().toISOString()
-    };
-    data.developers.push(nextOwner);
-  }
-  nextOwner.role = "Owner";
-  nextOwner.status = "active";
-  nextOwner.display_name = nextOwner.display_name || toOwnerName || toOwnerId;
-  writeJsonFile(file, data);
-}
-
-function getPassphrase(flags) {
-  return flags.passphrase || process.env.KVDF_OWNER_PASSPHRASE || "";
-}
-
-function createOwnerAuth(ownerId, passphrase) {
-  const crypto = require("crypto");
-  const salt = crypto.randomBytes(16).toString("hex");
-  return {
-    configured: true,
-    owner_id: ownerId,
-    algorithm: "scrypt-sha256",
-    salt,
-    passphrase_hash: hashPassphrase(passphrase, salt),
-    created_at: new Date().toISOString()
-  };
-}
-
-function hashPassphrase(passphrase, salt) {
-  const crypto = require("crypto");
-  return crypto.scryptSync(passphrase, salt, 32).toString("hex");
-}
-
-function verifyPassphrase(passphrase, auth) {
-  const crypto = require("crypto");
-  const expected = Buffer.from(auth.passphrase_hash, "hex");
-  const actual = Buffer.from(hashPassphrase(passphrase, auth.salt), "hex");
-  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
-}
-
-function createOwnerSession(ownerId) {
-  const now = Date.now();
-  return {
-    active: true,
-    owner_id: ownerId,
-    started_at: new Date(now).toISOString(),
-    expires_at: new Date(now + 8 * 60 * 60 * 1000).toISOString()
-  };
-}
-
-function isOwnerSessionActive(session) {
-  return Boolean(session && session.active && session.expires_at && Date.parse(session.expires_at) > Date.now());
 }
 
 function requireOwnerAuthority(flags) {
@@ -12544,2017 +11273,9 @@ function requireTaskExecutor(flags, task) {
   }
 }
 
-function upsertOwnerDeveloper(ownerId, name) {
-  const file = ".kabeeri/developers.json";
-  const data = readJsonFile(file);
-  data.developers = data.developers || [];
-  const existing = data.developers.find((developer) => developer.id === ownerId);
-  if (existing) {
-    existing.role = "Owner";
-    existing.display_name = existing.display_name || name;
-    existing.status = "active";
-  } else {
-    data.developers.push({
-      id: ownerId,
-      type: "human",
-      display_name: name,
-      role: "Owner",
-      workstreams: [],
-      status: "active",
-      created_at: new Date().toISOString()
-    });
-  }
-  writeJsonFile(file, data);
-}
-
-function lock(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/locks.json";
-  const data = readJsonFile(file);
-  data.locks = data.locks || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Lock", "Type", "Scope", "Task", "Owner", "Status"], data.locks.map((item) => [item.lock_id, item.type, item.scope, item.task_id, item.owner_id, item.status])));
-    return;
-  }
-
-  if (action === "create") {
-    if (!flags.type) throw new Error("Missing --type.");
-    if (!flags.scope) throw new Error("Missing --scope.");
-    if (!flags.task) throw new Error("Missing --task.");
-    if (!flags.owner) throw new Error("Missing --owner.");
-    if (flags.actor && flags.actor !== flags.owner) {
-      requireAnyRole(flags, ["Owner", "Maintainer"], "create lock for another actor");
-    } else {
-      requireAnyRole({ ...flags, actor: flags.owner }, ["Owner", "Maintainer", "Backend Developer", "Frontend Developer", "Admin Frontend Developer", "AI Developer"], "create lock");
-    }
-    const activeConflict = findLockConflict(data.locks, { type: flags.type, scope: flags.scope, task_id: flags.task });
-    if (activeConflict) throw new Error(`Active lock conflict: ${activeConflict.lock_id} (${activeConflict.type}:${activeConflict.scope})`);
-    const item = {
-      lock_id: `lock-${String(data.locks.length + 1).padStart(3, "0")}`,
-      type: flags.type,
-      scope: flags.scope,
-      task_id: flags.task,
-      owner_id: flags.owner,
-      reason: flags.reason || "",
-      status: "active",
-      created_at: new Date().toISOString(),
-      expires_at: flags.expires || null
-    };
-    data.locks.push(item);
-    writeJsonFile(file, data);
-    appendAudit("lock.created", "lock", item.lock_id, `Lock created for ${item.scope}`);
-    console.log(`Created lock ${item.lock_id}`);
-    return;
-  }
-
-  if (action === "release") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "release lock");
-    const lockId = value || flags.id;
-    if (!lockId) throw new Error("Missing lock id.");
-    const item = data.locks.find((entry) => entry.lock_id === lockId);
-    if (!item) throw new Error(`Lock not found: ${lockId}`);
-    item.status = "released";
-    item.released_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("lock.released", "lock", item.lock_id, `Lock released for ${item.scope}`);
-    console.log(`Released lock ${item.lock_id}`);
-    return;
-  }
-
-  throw new Error(`Unknown lock action: ${action}`);
-}
-
-function vscode(action, value, flags = {}) {
-  if (!action || action === "status") {
-    const files = [
-      ".vscode/tasks.json",
-      ".vscode/extensions.json",
-      ".vscode/kvdf.commands.json",
-      ".vscode/kvdf-extension/package.json",
-      ".vscode/kvdf-extension/extension.js"
-    ];
-    console.log(table(["File", "Status"], files.map((file) => [file, fileExists(file) ? "present" : "missing"])));
-    return;
-  }
-
-  if (action === "scaffold" || action === "init") {
-    const force = Boolean(flags.force);
-    writeJsonIfAllowed(".vscode/tasks.json", buildVscodeTasks(), force);
-    writeJsonIfAllowed(".vscode/extensions.json", {
-      recommendations: [],
-      unwantedRecommendations: []
-    }, force);
-    writeJsonIfAllowed(".vscode/kvdf.commands.json", {
-      version: 1,
-      source: "kvdf vscode scaffold",
-      commands: [
-        { title: "KVDF: Help", command: "kvdf --help" },
-        { title: "KVDF: Doctor", command: "kvdf doctor" },
-        { title: "KVDF: Validate", command: "kvdf validate" },
-        { title: "KVDF: Dashboard Export", command: "kvdf dashboard export" },
-        { title: "KVDF: GitHub Dry Run", command: "kvdf github issue sync --version v4.0.0 --dry-run" }
-      ]
-    }, force);
-    writeJsonIfAllowed(".vscode/kvdf-extension/package.json", buildVscodeExtensionPackage(), force);
-    writeIfAllowed(".vscode/kvdf-extension/extension.js", buildVscodeExtensionJs(), force);
-    writeIfAllowed(".vscode/kvdf-extension/README.md", buildVscodeExtensionReadme(), force);
-    console.log("VS Code KVDF workspace files generated.");
-    return;
-  }
-
-  throw new Error(`Unknown vscode action: ${action}`);
-}
-
-function buildVscodeExtensionPackage() {
-  return {
-    name: "kabeeri-vdf-local",
-    displayName: "Kabeeri VDF Local",
-    description: "Local VS Code panels for Kabeeri VDF workspace state.",
-    version: "0.1.0",
-    publisher: "kabeeri-local",
-    engines: { vscode: "^1.80.0" },
-    activationEvents: [
-      "onCommand:kvdf.openDashboard",
-      "onCommand:kvdf.openTasks",
-      "onCommand:kvdf.openUsage",
-      "onCommand:kvdf.syncGithub"
-    ],
-    main: "./extension.js",
-    contributes: {
-      commands: [
-        { command: "kvdf.openDashboard", title: "KVDF: Open Dashboard" },
-        { command: "kvdf.openTasks", title: "KVDF: Open Tasks" },
-        { command: "kvdf.openUsage", title: "KVDF: Show Token Usage" },
-        { command: "kvdf.syncGithub", title: "KVDF: GitHub Dry Run" }
-      ]
-    }
-  };
-}
-
-function buildVscodeExtensionJs() {
-  return `"use strict";
-
-const fs = require("fs");
-const path = require("path");
-const cp = require("child_process");
-const vscode = require("vscode");
-
-function activate(context) {
-  context.subscriptions.push(
-    vscode.commands.registerCommand("kvdf.openDashboard", () => showPanel("dashboard")),
-    vscode.commands.registerCommand("kvdf.openTasks", () => showPanel("tasks")),
-    vscode.commands.registerCommand("kvdf.openUsage", () => showPanel("usage")),
-    vscode.commands.registerCommand("kvdf.syncGithub", () => runKvdf("github issue sync --version v4.0.0 --dry-run"))
-  );
-}
-
-function workspaceRoot() {
-  const folder = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
-  return folder ? folder.uri.fsPath : process.cwd();
-}
-
-function readJson(relativePath, fallback) {
-  try {
-    return JSON.parse(fs.readFileSync(path.join(workspaceRoot(), relativePath), "utf8"));
-  } catch (_) {
-    return fallback;
-  }
-}
-
-function showPanel(kind) {
-  const panel = vscode.window.createWebviewPanel("kvdf." + kind, "KVDF " + kind, vscode.ViewColumn.One, { enableScripts: false });
-  panel.webview.html = buildHtml(kind);
-}
-
-function buildHtml(kind) {
-  const tasks = readJson(".kabeeri/tasks.json", { tasks: [] }).tasks || [];
-  const usage = readJson(".kabeeri/ai_usage/usage_summary.json", { total_tokens: 0, total_cost: 0 });
-  const technical = readJson(".kabeeri/dashboard/technical_state.json", {});
-  const apps = readJson(".kabeeri/customer_apps.json", { apps: [] }).apps || [];
-  const rows = kind === "tasks"
-    ? tasks.map((item) => [item.id, item.title, item.status, item.assignee_id || ""])
-    : kind === "usage"
-      ? [["total", usage.total_tokens || 0, usage.total_cost || 0, usage.currency || "USD"]]
-      : apps.map((item) => [item.username, item.name, item.status, "/customer/apps/" + item.username]);
-  return "<!doctype html><html><head><meta charset=\\"utf-8\\"><style>body{font-family:Arial,sans-serif;padding:18px;color:#1f2933}table{border-collapse:collapse;width:100%}td,th{border:1px solid #d9dee7;padding:8px;text-align:left}th{background:#eef2f7}code{background:#eef2f7;padding:2px 4px}</style></head><body>"
-    + "<h1>KVDF " + escape(kind) + "</h1>"
-    + "<p>Generated from local <code>.kabeeri</code> state. Dashboard generated at " + escape(technical.generated_at || "not generated") + ".</p>"
-    + table(rows)
-    + "</body></html>";
-}
-
-function table(rows) {
-  if (!rows.length) return "<p>No records.</p>";
-  return "<table><tbody>" + rows.map((row) => "<tr>" + row.map((cell) => "<td>" + escape(cell) + "</td>").join("") + "</tr>").join("") + "</tbody></table>";
-}
-
-function escape(value) {
-  return String(value == null ? "" : value).replace(/[&<>\\"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\\"": "&quot;" }[char]));
-}
-
-function runKvdf(command) {
-  const terminal = vscode.window.createTerminal("KVDF");
-  terminal.show();
-  terminal.sendText("kvdf " + command);
-}
-
-function deactivate() {}
-
-module.exports = { activate, deactivate };
-`;
-}
-
-function buildVscodeExtensionReadme() {
-  return `# Kabeeri VDF Local VS Code Extension
-
-This scaffold provides local VS Code command-palette panels for the current workspace:
-
-- KVDF: Open Dashboard
-- KVDF: Open Tasks
-- KVDF: Show Token Usage
-- KVDF: GitHub Dry Run
-
-It reads from local \`.kabeeri\` state files and does not become the source of truth.
-`;
-}
-
-function buildVscodeTasks() {
-  return {
-    version: "2.0.0",
-    tasks: [
-      vscodeShellTask("KVDF: Help", "kvdf --help"),
-      vscodeShellTask("KVDF: Doctor", "kvdf doctor"),
-      vscodeShellTask("KVDF: Validate", "kvdf validate"),
-      vscodeShellTask("KVDF: Dashboard Export", "kvdf dashboard export"),
-      vscodeShellTask("KVDF: GitHub Issue Dry Run", "kvdf github issue sync --version v4.0.0 --dry-run")
-    ]
-  };
-}
-
-function vscodeShellTask(label, command) {
-  return {
-    label,
-    type: "shell",
-    command,
-    group: "build",
-    problemMatcher: []
-  };
-}
-
-function docsSite(action, value, flags = {}) {
-  const mode = action || "open";
-  if (mode === "path") {
-    console.log(resolveAsset("docs/site/index.html"));
-    return;
-  }
-
-  if (mode === "code" || mode === "vscode") {
-    const target = value || "docs/site";
-    openInVsCode(target);
-    console.log(`Opening in VS Code: ${target}`);
-    return;
-  }
-
-  if (mode === "generate" || mode === "build") {
-    generateDocsSite();
-    console.log("Generated documentation site pages.");
-    return;
-  }
-
-  if (mode === "open" || mode === "serve" || mode === "live") {
-    generateDocsSite();
-    const shouldOpen = mode === "open" || flags.open === true || flags.open === "true";
-    return serveDocsSite(flags.port || 4188, { ...flags, open: shouldOpen });
-  }
-
-  throw new Error(`Unknown docs action: ${action}`);
-}
-
-function generateDocsSite() {
-  const { spawnSync } = require("child_process");
-  const path = require("path");
-  const script = path.join(repoRoot(), "docs", "site", "generate-pages.js");
-  if (!fileExists("docs/site/generate-pages.js")) throw new Error("Docs site generator not found: docs/site/generate-pages.js");
-  const result = spawnSync(process.execPath, [script], {
-    cwd: repoRoot(),
-    encoding: "utf8"
-  });
-  if (result.status !== 0) {
-    const output = [result.stdout, result.stderr].filter(Boolean).join("\n").trim();
-    throw new Error(`Docs site generation failed.${output ? `\n${output}` : ""}`);
-  }
-}
-
-function serveDocsSite(port, options = {}) {
-  const http = require("http");
-  const fs = require("fs");
-  const path = require("path");
-  const siteRoot = path.join(repoRoot(), "docs", "site");
-  const autoPort = String(port).toLowerCase() === "auto" || options["auto-port"] === true || options["auto-port"] === "true";
-  const startPort = autoPort ? Number(options.start || options["start-port"] || 4188) : Number(port || 4188);
-
-  function start(currentPort) {
-    const server = http.createServer((request, response) => {
-      const url = new URL(request.url, `http://127.0.0.1:${currentPort}`);
-      const requestPath = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
-      const safePath = path.normalize(requestPath).replace(/^[/\\]+/, "").replace(/^(\.\.[/\\])+/, "");
-      const filePath = path.join(siteRoot, safePath);
-      if (!filePath.startsWith(siteRoot) || !fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
-        response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-        response.end("Not found");
-        return;
-      }
-      response.writeHead(200, {
-        "content-type": docsMimeType(filePath),
-        "cache-control": "no-store"
-      });
-      response.end(fs.readFileSync(filePath));
-    });
-    server.on("error", (error) => {
-      if (error.code === "EADDRINUSE" && autoPort && currentPort < startPort + 100) {
-        server.close();
-        start(currentPort + 1);
-        return;
-      }
-      throw error;
-    });
-    server.listen(currentPort, "127.0.0.1", () => {
-      const url = `http://127.0.0.1:${currentPort}/`;
-      console.log(`Kabeeri docs site running at ${url}`);
-      console.log(`English docs: ${url}pages/en/what-is.html`);
-      console.log(`Arabic docs: ${url}pages/ar/what-is.html`);
-      if (options.open) openExternalUrl(url);
-    });
-  }
-
-  start(startPort);
-}
-
-function docsMimeType(filePath) {
-  const ext = require("path").extname(filePath).toLowerCase();
-  const types = {
-    ".html": "text/html; charset=utf-8",
-    ".css": "text/css; charset=utf-8",
-    ".js": "application/javascript; charset=utf-8",
-    ".json": "application/json; charset=utf-8",
-    ".svg": "image/svg+xml",
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".webp": "image/webp"
-  };
-  return types[ext] || "application/octet-stream";
-}
-
-function openExternalUrl(url) {
-  const { spawn } = require("child_process");
-  const command = process.platform === "win32" ? "cmd" : process.platform === "darwin" ? "open" : "xdg-open";
-  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
-  const child = spawn(command, args, { detached: true, stdio: "ignore" });
-  child.on("error", () => {});
-  child.unref();
-}
-
-function openInVsCode(target) {
-  const { spawn } = require("child_process");
-  const path = require("path");
-  const targetPath = path.resolve(repoRoot(), target);
-  const child = spawn("code", [targetPath], { detached: true, stdio: "ignore" });
-  child.on("error", () => {});
-  child.unref();
-}
-
-function writeJsonIfAllowed(relativePath, data, force) {
-  if (fileExists(relativePath) && !force) return;
-  writeJsonFile(relativePath, data);
-}
-
-function findLockConflict(locks, requested) {
-  return (locks || []).find((lockItem) => {
-    if (lockItem.status !== "active") return false;
-    if (lockItem.lock_id === requested.lock_id) return false;
-    return locksOverlap(lockItem, requested);
-  });
-}
-
-function locksOverlap(existing, requested) {
-  const existingType = normalizeLockType(existing.type);
-  const requestedType = normalizeLockType(requested.type);
-  const existingScope = normalizeLockScope(existing.scope);
-  const requestedScope = normalizeLockScope(requested.scope);
-
-  if (!existingScope || !requestedScope) return false;
-  if (existingType === requestedType && existingScope === requestedScope) return true;
-
-  if (existingType === "workstream" || requestedType === "workstream") {
-    return existingType === "workstream" && requestedType === "workstream" && existingScope === requestedScope;
-  }
-
-  if (existingType === "folder" && ["folder", "file"].includes(requestedType)) {
-    return pathScopeContains(existingScope, requestedScope);
-  }
-
-  if (requestedType === "folder" && ["folder", "file"].includes(existingType)) {
-    return pathScopeContains(requestedScope, existingScope);
-  }
-
-  return false;
-}
-
-function normalizeLockType(type) {
-  const value = String(type || "").toLowerCase().replace(/[_-]/g, "");
-  const aliases = {
-    directory: "folder",
-    dir: "folder",
-    folder: "folder",
-    file: "file",
-    task: "task",
-    workstream: "workstream",
-    databasetable: "database_table",
-    table: "database_table",
-    promptpack: "prompt_pack"
-  };
-  return aliases[value] || String(type || "").toLowerCase();
-}
-
-function normalizeLockScope(scope) {
-  return String(scope || "")
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/")
-    .replace(/^\.\//, "")
-    .replace(/\/$/, "")
-    .toLowerCase();
-}
-
-function pathScopeContains(parent, child) {
-  return child === parent || child.startsWith(`${parent}/`);
-}
-
-function dashboard(action, value, flags = {}) {
-  ensureWorkspace();
-  if (action === "workspace" || action === "workspaces") {
-    return dashboardWorkspace(value, flags);
-  }
-  if (action === "ux" || action === "ux-audit" || action === "audit-ux") {
-    return dashboardUxAudit(flags);
-  }
-
-  if (!action || action === "generate") {
-    writeDashboardStateFiles(collectDashboardState(flags));
-    appendAudit("dashboard.generated", "dashboard", "local", "Dashboard state generated");
-    console.log("Generated dashboard state files.");
-    return;
-  }
-
-  if (action === "export") {
-    writeDashboardStateFiles(collectDashboardState(flags));
-    appendAudit("dashboard.generated", "dashboard", "local", "Dashboard state generated");
-    const output = flags.output || ".kabeeri/site/index.html";
-    const dashboardOutput = flags["dashboard-output"] || ".kabeeri/site/__kvdf/dashboard/index.html";
-    writeTextFile(output, buildClientHomeHtml());
-    writeTextFile(dashboardOutput, buildDashboardHtml());
-    exportCustomerAppPages();
-    console.log(`Wrote customer page: ${output}`);
-    console.log(`Wrote private dashboard: ${dashboardOutput}`);
-    return;
-  }
-
-  if (action === "state" || action === "api") {
-    const state = collectDashboardState(flags);
-    writeDashboardStateFiles(state);
-    console.log(JSON.stringify(state, null, 2));
-    return;
-  }
-
-  if (["task-tracker", "tasks", "tracker", "task-state"].includes(action)) {
-    const state = collectDashboardState(flags);
-    writeDashboardStateFiles(state);
-    console.log(JSON.stringify(state.task_tracker, null, 2));
-    return;
-  }
-
-  if (action === "serve") {
-    dashboard("export", null, flags);
-    return serveSite(flags.port || 4177, flags);
-  }
-
-  throw new Error(`Unknown dashboard action: ${action}`);
-}
-
-function dashboardUxAudit(flags = {}) {
-  const state = collectDashboardState(flags);
-  writeDashboardStateFiles(state);
-  const html = buildDashboardHtml();
-  const audit = evaluateDashboardUx(state, html);
-  const file = ".kabeeri/dashboard/ux_audits.json";
-  if (!fileExists(file)) writeJsonFile(file, { audits: [] });
-  const data = readJsonFile(file);
-  data.audits = data.audits || [];
-  data.audits.push(audit);
-  writeJsonFile(file, data);
-  const output = flags.output || ".kabeeri/reports/dashboard_ux_report.md";
-  writeTextFile(output, buildDashboardUxReport(audit));
-  appendAudit("dashboard.ux_audited", "dashboard", audit.audit_id, `Dashboard UX audit: ${audit.status}`);
-  if (flags.json) console.log(JSON.stringify(audit, null, 2));
-  else console.log(`Dashboard UX audit ${audit.audit_id}: ${audit.status} (${audit.score}/${audit.max_score})`);
-}
-
-function evaluateDashboardUx(state, html) {
-  const checks = [];
-  const push = (id, status, message, weight = 1) => checks.push({ id, status, message, weight });
-  const technical = state.technical || {};
-  const business = state.business || {};
-  const records = state.records || {};
-  const blockers = buildDashboardActionItems(state).filter((item) => item.severity === "blocker");
-  const warnings = buildDashboardActionItems(state).filter((item) => item.severity === "warning");
-
-  push("source_of_truth_notice", html.includes(".kabeeri is the source of truth"), "Dashboard states that .kabeeri remains the source of truth.");
-  push("action_center", html.includes("Action Center") && html.includes("Next Action"), "Dashboard has a top action center for resume decisions.", 2);
-  push("live_status", html.includes("/__kvdf/api/state") && html.includes("live-status"), "Dashboard exposes live API status.");
-  push("responsive_tables", html.includes("table-wrap") && html.includes("overflow-x: auto"), "Tables are wrapped for small screens.");
-  push("empty_states", html.includes("empty-state"), "Empty tables render a readable empty state.");
-  push("workspace_boundary", html.includes("App Boundary Governance") && html.includes("KVDF Workspaces"), "Dashboard separates app boundaries from linked workspaces.");
-  push("dashboard_ux_governance", html.includes("Dashboard UX Governance") && html.includes("Widget Registry"), "Dashboard renders its own UX governance model.", 2);
-  push("role_visibility", html.includes("Role Visibility") && html.includes("Owner") && html.includes("AI Agent"), "Dashboard documents role-based widget visibility.", 2);
-  push("dashboard_controls", html.includes("app-filter") && html.includes("role-filter") && html.includes("Dashboard Controls"), "Dashboard exposes app and role controls.");
-  push("multi_app_multi_workspace_strategy", html.includes("same-product apps") && html.includes("Linked KVDF workspaces"), "Dashboard explains same-workspace apps versus separate KVDF workspaces.", 2);
-  push("live_state_ux_rules", html.includes("Stale data policy") && html.includes("poll the live API"), "Dashboard explains live refresh and stale/static export behavior.");
-  push("governance_visibility", html.includes("Policy Results") && html.includes("Security Scans") && html.includes("Migration Safety"), "Dashboard shows key governance blockers.", 2);
-  push("cost_visibility", html.includes("AI Usage by Task") && html.includes("Tracked vs Untracked AI Usage"), "Dashboard shows tracked and untracked AI usage.");
-  push("vibe_visibility", html.includes("Vibe-first Suggestions") && html.includes("Post-work Captures"), "Dashboard shows Vibe suggestions and post-work captures.");
-  push("agile_visibility", html.includes("Agile Backlog and Stories"), "Dashboard shows Agile stories and reviews.");
-  push("no_common_secret_patterns", !/(sk_live_|sk_test_|ghp_|BEGIN PRIVATE KEY|AWS_SECRET_ACCESS_KEY)/.test(html), "Dashboard HTML does not contain common secret patterns.", 2);
-  push("business_summary", Number(business.tasks_total || 0) >= 0 && Array.isArray(records.tasks || []), "Dashboard state includes business task summary.");
-  push("technical_summary", Boolean(technical.ai_usage && technical.tasks), "Dashboard state includes technical task and AI usage summaries.");
-
-  const maxScore = checks.reduce((sum, check) => sum + check.weight, 0);
-  const score = checks.filter((check) => check.status).reduce((sum, check) => sum + check.weight, 0);
-  const failed = checks.filter((check) => !check.status);
-  return {
-    audit_id: `dashboard-ux-${new Date().toISOString().replace(/[-:.TZ]/g, "").slice(0, 14)}`,
-    audited_at: new Date().toISOString(),
-    status: failed.some((check) => check.weight >= 2) || blockers.length ? "needs_attention" : "pass",
-    score,
-    max_score: maxScore,
-    action_items: buildDashboardActionItems(state),
-    blockers: blockers.length,
-    warnings: warnings.length,
-    checks
-  };
-}
-
-function buildDashboardUxReport(audit) {
-  const lines = [
-    `# Dashboard UX Governance Report - ${audit.audit_id}`,
-    "",
-    `- Status: ${audit.status}`,
-    `- Score: ${audit.score}/${audit.max_score}`,
-    `- Audited at: ${audit.audited_at}`,
-    "",
-    "## Action Items",
-    "",
-    "| Severity | Area | Message | Next Action |",
-    "| --- | --- | --- | --- |",
-    ...(audit.action_items.length ? audit.action_items.map((item) => `| ${item.severity} | ${item.area} | ${item.message} | ${item.next_action} |`) : ["| info | dashboard | No immediate dashboard actions found. | Continue normal validation. |"]),
-    "",
-    "## Checks",
-    "",
-    "| Check | Status | Message |",
-    "| --- | --- | --- |",
-    ...audit.checks.map((check) => `| ${check.id} | ${check.status ? "pass" : "fail"} | ${check.message} |`)
-  ];
-  return `${lines.join("\n")}\n`;
-}
-
-function buildDashboardActionItems(state) {
-  const technical = state.technical || {};
-  const business = state.business || {};
-  const records = state.records || {};
-  const items = [];
-  const add = (severity, area, message, nextAction) => items.push({ severity, area, message, next_action: nextAction });
-  const activeLocks = technical.active_locks || [];
-  const activeTokens = technical.active_tokens || [];
-  const policyBlocks = Object.entries(technical.policies || {}).filter(([status]) => status === "blocked").reduce((sum, [, count]) => sum + count, 0);
-  const securityBlocks = Object.entries(technical.security_scans || {}).filter(([status]) => status === "blocked").reduce((sum, [, count]) => sum + count, 0);
-  const migrationBlocks = business.migration_blocks || 0;
-  const untracked = technical.ai_usage && technical.ai_usage.tracked_vs_untracked ? technical.ai_usage.tracked_vs_untracked.untracked : null;
-  const openCaptures = (records.vibe_captures || []).filter((item) => ["captured", "linked", "converted_to_task"].includes(item.status || ""));
-  const readyStories = ((records.agile && records.agile.stories) || []).filter((item) => item.ready_status === "ready" && !item.task_id);
-  const proposedHighImpactAdrs = (records.adrs || []).filter((item) => item.status === "proposed" && ["critical", "high"].includes(item.impact || ""));
-  const aiRunWasteSignals = records.ai_run_report && records.ai_run_report.waste_signals ? records.ai_run_report.waste_signals : [];
-  const evolutionOpen = records.evolution_summary ? records.evolution_summary.open_follow_up_tasks || 0 : 0;
-
-  if (policyBlocks) add("blocker", "policy", `${policyBlocks} policy result(s) are blocked.`, "Run `kvdf policy status` and resolve or record an Owner override.");
-  if (securityBlocks) add("blocker", "security", `${securityBlocks} security scan(s) are blocked.`, "Run `kvdf security report` and remove high-risk findings.");
-  if (migrationBlocks) add("blocker", "migration", `${migrationBlocks} migration safety check(s) are blocked.`, "Run `kvdf migration audit` before release or publish.");
-  if (proposedHighImpactAdrs.length) add("warning", "ADR", `${proposedHighImpactAdrs.length} high-impact ADR(s) still need approval.`, "Run `kvdf adr list` and approve, reject, or supersede the decision.");
-  if (aiRunWasteSignals.length) add("warning", "AI run history", `${aiRunWasteSignals.length} AI run waste signal(s) need review.`, "Run `kvdf ai-run report` and accept or reject unreviewed runs.");
-  if (openCaptures.length) add("warning", "post-work capture", `${openCaptures.length} capture(s) need review.`, "Run `kvdf capture list` and link, convert, or resolve captures.");
-  if (evolutionOpen) add("warning", "Evolution Steward", `${evolutionOpen} framework update follow-up task(s) are still open.`, "Run `kvdf evolution status` before treating the Kabeeri update as complete.");
-  if (readyStories.length) add("info", "agile", `${readyStories.length} ready Agile stor(ies) are not tasks yet.`, "Run `kvdf agile story task <story-id>` for committed work.");
-  if (activeLocks.length) add("info", "locks", `${activeLocks.length} active lock(s).`, "Review `kvdf lock list` before assigning overlapping work.");
-  if (activeTokens.length) add("info", "tokens", `${activeTokens.length} active task token(s).`, "Review token scope and expiry before continuing AI sessions.");
-  if (untracked && untracked.cost > 0) add("warning", "ai cost", `Untracked AI cost is ${untracked.cost}.`, "Run `kvdf usage summary` and attach usage to tasks where possible.");
-  if (!items.length) add("info", "dashboard", "No immediate blockers found.", "Continue with the next governed task.");
-  return items;
-}
-
-function dashboardWorkspace(action, flags = {}) {
-  const path = require("path");
-  const file = ".kabeeri/dashboard/workspaces.json";
-  if (!fileExists(file)) writeJsonFile(file, { workspaces: [] });
-  const data = readJsonFile(file);
-  data.workspaces = data.workspaces || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Name", "Path", "Status"], data.workspaces.map((item) => [
-      item.name || path.basename(item.path || ""),
-      item.path,
-      summarizeWorkspaceRoot(item.path, false) ? "ok" : "missing"
-    ])));
-    return;
-  }
-
-  if (action === "add" || action === "link") {
-    const workspacePath = flags.path || flags.root || flags.workspace;
-    if (!workspacePath) throw new Error("Missing --path.");
-    const resolved = path.resolve(repoRoot(), workspacePath);
-    if (resolved === repoRoot()) throw new Error("Current workspace is already included.");
-    if (!summarizeWorkspaceRoot(resolved, false)) throw new Error(`Linked path is not a KVDF workspace: ${resolved}`);
-    if (data.workspaces.some((item) => path.resolve(repoRoot(), item.path) === resolved)) {
-      throw new Error(`Dashboard workspace already linked: ${resolved}`);
-    }
-    data.workspaces.push({
-      name: flags.name || path.basename(resolved),
-      path: resolved,
-      linked_at: new Date().toISOString()
-    });
-    writeJsonFile(file, data);
-    appendAudit("dashboard.workspace.linked", "dashboard", resolved, `Linked dashboard workspace: ${resolved}`);
-    console.log(`Linked dashboard workspace: ${resolved}`);
-    return;
-  }
-
-  if (action === "remove" || action === "unlink") {
-    const workspacePath = flags.path || flags.root || flags.workspace || flags.name;
-    if (!workspacePath) throw new Error("Missing --path.");
-    const resolved = path.resolve(repoRoot(), workspacePath);
-    const before = data.workspaces.length;
-    data.workspaces = data.workspaces.filter((item) => path.resolve(repoRoot(), item.path) !== resolved && item.name !== workspacePath);
-    writeJsonFile(file, data);
-    console.log(before === data.workspaces.length ? "No dashboard workspace removed." : `Unlinked dashboard workspace: ${workspacePath}`);
-    return;
-  }
-
-  throw new Error(`Unknown dashboard workspace action: ${action}`);
-}
-
-function collectDashboardState(options = {}) {
-  const path = require("path");
-  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
-  const apps = readStateArray(".kabeeri/customer_apps.json", "apps");
-  const features = readStateArray(".kabeeri/features.json", "features");
-  const journeys = readStateArray(".kabeeri/journeys.json", "journeys");
-  const tokens = readStateArray(".kabeeri/tokens.json", "tokens");
-  const locks = readStateArray(".kabeeri/locks.json", "locks");
-  const usageSummary = summarizeUsage();
-  const sprints = readStateArray(".kabeeri/sprints.json", "sprints");
-  const sessions = readStateArray(".kabeeri/sessions.json", "sessions");
-  const developers = readStateArray(".kabeeri/developers.json", "developers");
-  const agents = readStateArray(".kabeeri/agents.json", "agents");
-  const developerMode = fileExists(".kabeeri/developer_mode.json") ? readJsonFile(".kabeeri/developer_mode.json") : { mode: "unset" };
-  const workstreams = getWorkstreamRegistry();
-  const policyResults = readStateArray(".kabeeri/policies/policy_results.json", "results");
-  const contextPacks = readStateArray(".kabeeri/ai_usage/context_packs.json", "context_packs");
-  const preflights = readStateArray(".kabeeri/ai_usage/cost_preflights.json", "preflights");
-  const handoffPackages = readStateArray(".kabeeri/handoff/packages.json", "packages");
-  const securityScans = readStateArray(".kabeeri/security/security_scans.json", "scans");
-  const migrationPlans = readStateArray(".kabeeri/migrations/migration_plans.json", "plans");
-  const migrationChecks = readStateArray(".kabeeri/migrations/migration_checks.json", "checks");
-  const vibeIntents = readJsonLines(".kabeeri/interactions/user_intents.jsonl");
-  const vibeSuggestions = readStateArray(".kabeeri/interactions/suggested_tasks.json", "suggested_tasks");
-  const vibeCaptures = readStateArray(".kabeeri/interactions/post_work_captures.json", "captures");
-  const vibeSessions = readStateArray(".kabeeri/interactions/vibe_sessions.json", "sessions");
-  const contextBriefs = readStateArray(".kabeeri/interactions/context_briefs.json", "briefs");
-  const evolutionState = fileExists(".kabeeri/evolution.json") ? readJsonFile(".kabeeri/evolution.json") : { changes: [], impact_plans: [], current_change_id: null };
-  const evolutionSummary = buildEvolutionSummary(evolutionState);
-  const agileState = fileExists(".kabeeri/agile.json") ? readAgileState() : { backlog: [], epics: [], stories: [], sprint_reviews: [], impediments: [], retrospectives: [], releases: [] };
-  const agileLiveState = refreshAgileDashboardState(agileState);
-  const structuredState = fileExists(".kabeeri/structured.json") ? readStructuredState() : { requirements: [], phases: [], milestones: [], deliverables: [], approvals: [], change_requests: [], risks: [], gates: [] };
-  const structuredLiveState = refreshStructuredDashboardState(structuredState);
-  const adrRecords = readStateArray(".kabeeri/adr/records.json", "adrs");
-  const aiRuns = fileExists(".kabeeri/ai_runs/prompt_runs.jsonl") ? readAiRuns() : [];
-  const aiRunReport = fileExists(".kabeeri/ai_runs/prompt_runs.jsonl") ? buildAiRunHistoryReport() : { totals: { runs: 0, unreviewed: 0 }, waste_signals: [] };
-  const promptCompositions = readStateArray(".kabeeri/prompt_layer/compositions.json", "compositions");
-  const liveReports = fileExists(".kabeeri/reports/live_reports_state.json") ? readJsonFile(".kabeeri/reports/live_reports_state.json") : null;
-  const developerEfficiency = buildDeveloperEfficiency();
-  const generatedAt = new Date().toISOString();
-  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
-  const appSummaries = buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary);
-  const workstreamSummaries = buildWorkstreamSummaries(workstreams, tasks, sessions, usageSummary);
-  const workspaceSummaries = collectWorkspaceDashboardSummaries(options);
-  const dashboardUxGovernance = buildDashboardUxGovernanceState({
-    apps,
-    appSummaries,
-    workspaceSummaries,
-    project,
-    deliveryMode: project.delivery_mode || "",
-    developerMode
-  });
-  const taskTracker = buildTaskTrackerState({
-    generatedAt,
-    tasks,
-    apps,
-    tokens,
-    locks,
-    sessions,
-    sprints,
-    acceptanceRecords: readStateArray(".kabeeri/acceptance.json", "records"),
-    usageSummary,
-    vibeSuggestions,
-    vibeCaptures
-  });
-
-  return {
-    generated_at: generatedAt,
-    workspace: {
-      name: project.name || project.framework || path.basename(repoRoot()),
-      repo_root: repoRoot(),
-      product_name: project.product_name || project.name || "",
-      project_scope: project.project_scope || "single_product_multi_app",
-      forbid_unrelated_apps: project.forbid_unrelated_apps !== false,
-      profile: project.profile || "",
-      delivery_mode: project.delivery_mode || "",
-      language: project.language || "",
-      app_count: apps.length,
-      mode: apps.length > 1 ? "multi_app_workspace" : apps.length === 1 ? "single_app_workspace" : "project_workspace",
-      live_dashboard: {
-        customer_home: "/",
-        private_dashboard: "/__kvdf/dashboard",
-        api_state: "/__kvdf/api/state",
-        task_tracker_state: "/__kvdf/api/tasks",
-        agile_state: "/__kvdf/api/agile",
-        structured_state: "/__kvdf/api/structured",
-        live_reports_state: "/__kvdf/api/reports"
-      }
-    },
-    workspaces: workspaceSummaries,
-    technical: {
-      generated_at: generatedAt,
-      tasks: summarizeBy(tasks, "status"),
-      active_locks: locks.filter((item) => item.status === "active"),
-      active_tokens: tokens.filter((item) => item.status === "active"),
-      ai_usage: usageSummary,
-      sprints: sprints.map((item) => buildSprintSummary(item.id)),
-      sessions: summarizeBy(sessions, "status"),
-      developer_mode: developerMode,
-      workstreams: workstreamSummaries,
-      developers,
-      agents,
-      policies: summarizeBy(policyResults, "status"),
-      context_packs: contextPacks.length,
-      cost_preflights: summarizeBy(preflights, "budget_status"),
-      handoff_packages: handoffPackages.length,
-      security_scans: summarizeBy(securityScans, "status"),
-      migration_plans: summarizeBy(migrationPlans, "status"),
-      migration_checks: summarizeBy(migrationChecks, "status"),
-      vibe_intents: summarizeBy(vibeIntents, "intent_type"),
-      vibe_suggestions: summarizeBy(vibeSuggestions, "status"),
-      vibe_captures: summarizeBy(vibeCaptures, "classification"),
-      vibe_sessions: summarizeBy(vibeSessions, "status"),
-      context_briefs: contextBriefs.length,
-      evolution: evolutionSummary,
-      agile_backlog: summarizeBy(agileState.backlog, "status"),
-      agile_stories: summarizeBy(agileState.stories, "status"),
-      agile_sprint_reviews: agileState.sprint_reviews.length,
-      agile_health: agileLiveState.summary ? agileLiveState.summary.health : "unknown",
-      structured_requirements: summarizeBy(structuredState.requirements, "status"),
-      structured_phases: summarizeBy(structuredState.phases, "status"),
-      structured_health: structuredLiveState.summary ? structuredLiveState.summary.health : "unknown",
-      adrs: summarizeBy(adrRecords, "status"),
-      ai_runs: summarizeBy(aiRuns, "status"),
-      ai_run_waste_signals: aiRunReport.waste_signals.length,
-      prompt_compositions: promptCompositions.length,
-      live_reports_status: liveReports && liveReports.summary ? liveReports.summary.status : "missing",
-      developer_efficiency: developerEfficiency,
-      app_summaries: appSummaries,
-      workspace_count: workspaceSummaries.length,
-      dashboard_ux_governance: dashboardUxGovernance
-    },
-    business: {
-      generated_at: generatedAt,
-      customer_apps: apps,
-      app_summaries: appSummaries,
-      task_tracker: taskTracker,
-      workspaces: workspaceSummaries,
-      task_status: summarizeBy(tasks, "status"),
-      task_tracker_status: taskTracker.summary.by_status,
-      tasks_total: tasks.length,
-      verified_tasks: tasks.filter((item) => item.status === "owner_verified").length,
-      ai_usage_cost: usageSummary.total_cost,
-      ai_usage_tokens: usageSummary.total_tokens,
-      features,
-      feature_readiness: summarizeBy(features, "readiness"),
-      journeys,
-      journey_status: summarizeBy(journeys, "status"),
-      policy_status: summarizeBy(policyResults, "status"),
-      context_packs_total: contextPacks.length,
-      cost_preflight_status: summarizeBy(preflights, "budget_status"),
-      cost_preflight_approvals_required: preflights.filter((item) => item.approval_required).length,
-      handoff_packages_total: handoffPackages.length,
-      security_status: summarizeBy(securityScans, "status"),
-      migration_status: summarizeBy(migrationPlans, "status"),
-      migration_blocks: migrationChecks.filter((item) => item.status === "blocked").length,
-      vibe_suggestions_total: vibeSuggestions.length,
-      vibe_captures_total: vibeCaptures.length,
-      vibe_sessions_total: vibeSessions.length,
-      context_briefs_total: contextBriefs.length,
-      evolution_status: evolutionSummary.status,
-      evolution_changes_total: evolutionSummary.changes_total,
-      evolution_open_follow_up_tasks: evolutionSummary.open_follow_up_tasks,
-      agile_backlog_total: agileState.backlog.length,
-      agile_epics_total: agileState.epics.length,
-      agile_stories_total: agileState.stories.length,
-      agile_ready_stories_total: agileState.stories.filter((item) => item.ready_status === "ready").length,
-      agile_health: agileLiveState.summary ? agileLiveState.summary.health : "unknown",
-      structured_requirements_total: structuredState.requirements.length,
-      structured_approved_requirements_total: structuredState.requirements.filter((item) => item.approval_status === "approved").length,
-      structured_phases_total: structuredState.phases.length,
-      structured_health: structuredLiveState.summary ? structuredLiveState.summary.health : "unknown",
-      adrs_total: adrRecords.length,
-      adrs_approved_total: adrRecords.filter((item) => item.status === "approved").length,
-      ai_runs_total: aiRunReport.totals.runs || 0,
-      ai_runs_unreviewed_total: aiRunReport.totals.unreviewed || 0,
-      prompt_compositions_total: promptCompositions.length,
-      live_reports_status: liveReports && liveReports.summary ? liveReports.summary.status : "missing",
-      developer_efficiency: developerEfficiency,
-      developer_mode: developerMode,
-      dashboard_ux_governance: dashboardUxGovernance,
-      workstreams: workstreamSummaries,
-      sprints: sprints.map((item) => ({
-        id: item.id,
-        name: item.name,
-        status: item.status,
-        cost: buildSprintSummary(item.id).total_cost
-      }))
-    },
-    records: {
-      tasks,
-      task_tracker: taskTracker,
-      apps,
-      features,
-      journeys,
-      tokens,
-      locks,
-      policy_results: policyResults,
-      context_packs: contextPacks,
-      cost_preflights: preflights,
-      handoff_packages: handoffPackages,
-      security_scans: securityScans,
-      migration_plans: migrationPlans,
-      migration_checks: migrationChecks,
-      vibe_intents: vibeIntents,
-      vibe_suggestions: vibeSuggestions,
-      vibe_captures: vibeCaptures,
-      vibe_sessions: vibeSessions,
-      context_briefs: contextBriefs,
-      evolution: evolutionState,
-      evolution_summary: evolutionSummary,
-      agile: agileState,
-      agile_live: agileLiveState,
-      structured: structuredState,
-      structured_live: structuredLiveState,
-      adrs: adrRecords,
-      ai_runs: aiRuns,
-      ai_run_report: aiRunReport,
-      prompt_compositions: promptCompositions,
-      live_reports: liveReports,
-      app_summaries: appSummaries,
-      workspaces: workspaceSummaries,
-      dashboard_ux_governance: dashboardUxGovernance,
-      developer_mode: developerMode,
-      workstreams: workstreamSummaries,
-      usage: usageSummary
-    },
-    task_tracker: taskTracker
-  };
-}
-
-function refreshTaskTrackerState() {
-  ensureWorkspace();
-  const tracker = buildTaskTrackerStateFromFiles();
-  writeJsonFile(".kabeeri/dashboard/task_tracker_state.json", tracker);
-  return tracker;
-}
-
-function buildTaskTrackerStateFromFiles() {
-  return buildTaskTrackerState({
-    generatedAt: new Date().toISOString(),
-    tasks: readStateArray(".kabeeri/tasks.json", "tasks"),
-    apps: readStateArray(".kabeeri/customer_apps.json", "apps"),
-    tokens: readStateArray(".kabeeri/tokens.json", "tokens"),
-    locks: readStateArray(".kabeeri/locks.json", "locks"),
-    sessions: readStateArray(".kabeeri/sessions.json", "sessions"),
-    sprints: readStateArray(".kabeeri/sprints.json", "sprints"),
-    acceptanceRecords: readStateArray(".kabeeri/acceptance.json", "records"),
-    usageSummary: summarizeUsage(),
-    vibeSuggestions: readStateArray(".kabeeri/interactions/suggested_tasks.json", "suggested_tasks"),
-    vibeCaptures: readStateArray(".kabeeri/interactions/post_work_captures.json", "captures")
-  });
-}
-
-function buildTaskTrackerState(input = {}) {
-  const tasks = input.tasks || [];
-  const tokens = input.tokens || [];
-  const locks = input.locks || [];
-  const sessions = input.sessions || [];
-  const apps = input.apps || [];
-  const sprints = input.sprints || [];
-  const acceptanceRecords = input.acceptanceRecords || [];
-  const usageSummary = input.usageSummary || { by_task: {} };
-  const suggestions = input.vibeSuggestions || [];
-  const captures = input.vibeCaptures || [];
-  const appByUsername = Object.fromEntries(apps.map((item) => [item.username, item]));
-  const sprintById = Object.fromEntries(sprints.map((item) => [item.id, item]));
-  const usageByTask = usageSummary.by_task || {};
-  const activeTokensByTask = groupBy(tokens.filter((item) => item.status === "active"), "task_id");
-  const activeLocksByTask = groupBy(locks.filter((item) => item.status === "active"), "task_id");
-  const sessionsByTask = groupBy(sessions, "task_id");
-  const acceptanceByTask = groupBy(acceptanceRecords, "task_id");
-  const capturesByTask = groupBy(captures.filter((item) => item.task_id), "task_id");
-  const suggestionsByTask = groupBy(suggestions.filter((item) => item.task_id), "task_id");
-  const rows = tasks.map((taskItem) => {
-    const taskApps = taskAppUsernames(taskItem);
-    const taskTokens = activeTokensByTask[taskItem.id] || [];
-    const taskLocks = activeLocksByTask[taskItem.id] || [];
-    const taskSessions = sessionsByTask[taskItem.id] || [];
-    const taskAcceptance = acceptanceByTask[taskItem.id] || [];
-    const usage = usageByTask[taskItem.id] || { events: 0, tokens: 0, cost: 0 };
-    return {
-      id: taskItem.id,
-      title: taskItem.title,
-      status: taskItem.status,
-      type: taskItem.type || "general",
-      source: taskItem.source || "",
-      workstream: taskItem.workstream || "",
-      workstreams: taskWorkstreams(taskItem),
-      app_usernames: taskApps,
-      apps: taskApps.map((username) => {
-        const app = appByUsername[username] || {};
-        return { username, name: app.name || username, path: app.path || "" };
-      }),
-      sprint_id: taskItem.sprint_id || null,
-      sprint_name: taskItem.sprint_id && sprintById[taskItem.sprint_id] ? sprintById[taskItem.sprint_id].name || taskItem.sprint_id : "",
-      assignee_id: taskItem.assignee_id || "",
-      reviewer_id: taskItem.reviewer_id || "",
-      acceptance_criteria_count: (taskItem.acceptance_criteria || []).length,
-      acceptance_records: taskAcceptance.length,
-      active_tokens: taskTokens.map((item) => item.token_id),
-      active_locks: taskLocks.map((item) => item.lock_id),
-      active_sessions: taskSessions.filter((item) => item.status === "active").map((item) => item.session_id),
-      usage,
-      linked_suggestions: (suggestionsByTask[taskItem.id] || []).map((item) => item.suggestion_id),
-      linked_captures: (capturesByTask[taskItem.id] || []).map((item) => item.capture_id),
-      created_at: taskItem.created_at || null,
-      updated_at: taskItem.updated_at || taskItem.verified_at || taskItem.rejected_at || taskItem.reopened_at || taskItem.created_at || null,
-      blockers: buildTaskTrackerBlockers(taskItem, taskTokens, taskLocks, taskSessions, taskAcceptance),
-      next_action: inferTaskTrackerNextAction(taskItem)
-    };
-  });
-  const board = {};
-  for (const taskItem of rows) {
-    const status = taskItem.status || "unknown";
-    board[status] = board[status] || [];
-    board[status].push({
-      id: taskItem.id,
-      title: taskItem.title,
-      assignee_id: taskItem.assignee_id,
-      workstreams: taskItem.workstreams,
-      apps: taskItem.app_usernames,
-      blockers: taskItem.blockers.length,
-      next_action: taskItem.next_action
-    });
-  }
-  const openTasks = rows.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status));
-  const blockedTasks = rows.filter((item) => item.blockers.length > 0);
-  const generatedAt = input.generatedAt || new Date().toISOString();
-  return {
-    generated_at: generatedAt,
-    source: ".kabeeri/tasks.json",
-    live_json_path: ".kabeeri/dashboard/task_tracker_state.json",
-    live_api_path: "/__kvdf/api/tasks",
-    summary: {
-      total: rows.length,
-      open: openTasks.length,
-      verified: rows.filter((item) => item.status === "owner_verified").length,
-      rejected: rows.filter((item) => item.status === "rejected").length,
-      blocked: blockedTasks.length,
-      by_status: summarizeBy(rows, "status"),
-      by_workstream: summarizeTaskRowsByList(rows, "workstreams"),
-      by_app: summarizeTaskRowsByList(rows, "app_usernames"),
-      active_tokens: tokens.filter((item) => item.status === "active").length,
-      active_locks: locks.filter((item) => item.status === "active").length
-    },
-    board,
-    tasks: rows,
-    action_items: buildTaskTrackerActionItems(rows),
-    recently_updated: rows
-      .filter((item) => item.updated_at)
-      .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)))
-      .slice(0, 10)
-      .map((item) => ({ id: item.id, title: item.title, status: item.status, updated_at: item.updated_at, next_action: item.next_action }))
-  };
-}
-
-function groupBy(items, key) {
-  return (items || []).reduce((groups, item) => {
-    const value = item[key] || "unassigned";
-    groups[value] = groups[value] || [];
-    groups[value].push(item);
-    return groups;
-  }, {});
-}
-
-function taskAppUsernames(taskItem) {
-  return Array.isArray(taskItem.app_usernames) && taskItem.app_usernames.length
-    ? taskItem.app_usernames
-    : taskItem.app_username ? [taskItem.app_username] : [];
-}
-
-function summarizeTaskRowsByList(rows, key) {
-  return rows.reduce((summary, item) => {
-    const values = item[key] && item[key].length ? item[key] : ["unassigned"];
-    for (const value of values) summary[value] = (summary[value] || 0) + 1;
-    return summary;
-  }, {});
-}
-
-function buildTaskTrackerBlockers(taskItem, activeTokens, activeLocks, sessions, acceptanceRecords) {
-  const blockers = [];
-  if (["approved", "ready"].includes(taskItem.status) && !taskItem.assignee_id) blockers.push("missing_assignee");
-  if (taskItem.status === "assigned" && activeTokens.length === 0) blockers.push("missing_active_task_token");
-  if (taskItem.status === "in_progress" && activeLocks.length === 0) blockers.push("missing_active_lock");
-  if (taskItem.status === "review" && !taskItem.reviewer_id) blockers.push("missing_reviewer");
-  if (taskItem.status === "review" && (taskItem.acceptance_criteria || []).length === 0 && acceptanceRecords.length === 0) blockers.push("missing_acceptance_evidence");
-  if (taskItem.status === "in_progress" && sessions.filter((item) => item.status === "active").length === 0) blockers.push("no_active_session_recorded");
-  return blockers;
-}
-
-function inferTaskTrackerNextAction(taskItem) {
-  if (taskItem.status === "proposed") return "approve or refine task scope";
-  if (taskItem.status === "approved" || taskItem.status === "ready") return "assign task to a developer or AI agent";
-  if (taskItem.status === "assigned") return "issue/verify task token and start execution";
-  if (taskItem.status === "in_progress") return "continue execution or move to review with evidence";
-  if (taskItem.status === "review") return "review acceptance evidence and Owner verify or reject";
-  if (taskItem.status === "owner_verified") return "archive tokens/locks and include in handoff or release notes";
-  if (taskItem.status === "rejected") return "reopen with reason or replace with a clearer task";
-  return "inspect task status and choose next governed action";
-}
-
-function buildTaskTrackerActionItems(rows) {
-  const items = [];
-  const push = (severity, task, message, nextAction) => items.push({ severity, task_id: task.id, title: task.title, message, next_action: nextAction });
-  for (const task of rows) {
-    for (const blocker of task.blockers) {
-      const next = blocker === "missing_assignee" ? "run `kvdf task assign`"
-        : blocker === "missing_active_task_token" ? "run `kvdf token issue`"
-        : blocker === "missing_active_lock" ? "run `kvdf lock create`"
-        : blocker === "missing_reviewer" ? "run `kvdf task review --reviewer <id>`"
-        : blocker === "missing_acceptance_evidence" ? "run `kvdf acceptance create` and review it"
-        : blocker === "no_active_session_recorded" ? "run `kvdf session start` or capture post-work"
-        : task.next_action;
-      push(["missing_acceptance_evidence", "missing_active_task_token", "missing_active_lock"].includes(blocker) ? "warning" : "info", task, blocker, next);
-    }
-  }
-  return items;
-}
-
-function renderTaskTrackerSummary(tracker) {
-  const rows = Object.entries(tracker.summary.by_status || {}).map(([status, count]) => [status, count]);
-  return [
-    "# Task Tracker Live State",
-    "",
-    `Generated at: ${tracker.generated_at}`,
-    `Live JSON: ${tracker.live_json_path}`,
-    `Live API: ${tracker.live_api_path}`,
-    "",
-    `Total: ${tracker.summary.total}`,
-    `Open: ${tracker.summary.open}`,
-    `Blocked: ${tracker.summary.blocked}`,
-    "",
-    table(["Status", "Count"], rows)
-  ].join("\n");
-}
-
-function buildWorkstreamSummaries(workstreams, tasks, sessions, usageSummary) {
-  const usageByWorkstream = usageSummary.by_workstream || {};
-  return workstreams.map((stream) => {
-    const id = normalizeWorkstreamId(stream.id);
-    const streamTasks = tasks.filter((taskItem) => taskWorkstreams(taskItem).includes(id));
-    const streamSessions = sessions.filter((sessionItem) => getTaskWorkstreamsById(sessionItem.task_id).includes(id));
-    const usage = usageByWorkstream[id] || { events: 0, tokens: 0, cost: 0 };
-    return {
-      id,
-      name: stream.name || id,
-      status: stream.status || "active",
-      path_rules: stream.path_rules || [],
-      required_review: stream.required_review || [],
-      tasks_total: streamTasks.length,
-      open_tasks: streamTasks.filter((taskItem) => !["owner_verified", "rejected", "done"].includes(taskItem.status)).length,
-      verified_tasks: streamTasks.filter((taskItem) => taskItem.status === "owner_verified").length,
-      sessions_total: streamSessions.length,
-      active_sessions: streamSessions.filter((sessionItem) => sessionItem.status === "active").length,
-      ai_usage: usage
-    };
-  });
-}
-
-function buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary) {
-  const featureMap = Object.fromEntries(features.map((item) => [item.id, item]));
-  const journeyMap = Object.fromEntries(journeys.map((item) => [item.id, item]));
-  const usageByTask = usageSummary.by_task || {};
-  return apps.map((appItem) => {
-    const appFeatures = (appItem.feature_ids || []).map((id) => featureMap[id]).filter(Boolean);
-    const appJourneys = (appItem.journey_ids || []).map((id) => journeyMap[id]).filter(Boolean);
-    const taskIds = new Set(appFeatures.flatMap((featureItem) => featureItem.task_ids || []));
-    for (const taskItem of tasks) {
-      const taskApps = Array.isArray(taskItem.app_usernames) && taskItem.app_usernames.length
-        ? taskItem.app_usernames
-        : taskItem.app_username ? [taskItem.app_username] : [];
-      if (taskApps.includes(appItem.username)) taskIds.add(taskItem.id);
-    }
-    const appTasks = tasks.filter((taskItem) => taskIds.has(taskItem.id));
-    const usage = [...taskIds].reduce((summary, taskId) => {
-      const item = usageByTask[taskId] || {};
-      summary.events += Number(item.events || 0);
-      summary.tokens += Number(item.tokens || 0);
-      summary.cost += Number(item.cost || 0);
-      return summary;
-    }, { events: 0, tokens: 0, cost: 0 });
-    return {
-      username: appItem.username,
-      name: appItem.name,
-      app_type: appItem.app_type || appItem.type || "",
-      path: appItem.path || "",
-      product_name: appItem.product_name || "",
-      workstreams: appItem.workstreams || [],
-      status: appItem.status || "draft",
-      audience: appItem.audience || "",
-      public_url: publicCustomerAppUrl(appItem.username),
-      features_total: appFeatures.length,
-      ready_features: appFeatures.filter((item) => ["ready_to_demo", "ready_to_publish", "published"].includes(item.readiness)).length,
-      journeys_total: appJourneys.length,
-      ready_journeys: appJourneys.filter((item) => item.ready_to_show || ["ready_to_show", "published"].includes(item.status)).length,
-      tasks_total: appTasks.length,
-      verified_tasks: appTasks.filter((item) => item.status === "owner_verified").length,
-      open_tasks: appTasks.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status)).length,
-      ai_usage: usage
-    };
-  });
-}
-
-function collectWorkspaceDashboardSummaries(options = {}) {
-  const roots = getDashboardWorkspaceRoots(options);
-  const current = summarizeWorkspaceRoot(repoRoot(), true);
-  const external = roots
-    .map((root) => summarizeWorkspaceRoot(root, false))
-    .filter(Boolean)
-    .filter((item) => item.root !== current.root);
-  return [current, ...external];
-}
-
-function getDashboardWorkspaceRoots(options = {}) {
-  const roots = [];
-  const explicit = options.workspaces || options["workspace-roots"] || options.workspace || "";
-  if (explicit && String(explicit).toLowerCase() !== "auto") roots.push(...parseWorkspaceRoots(explicit));
-  if (process.env.KVDF_WORKSPACES) roots.push(...parseWorkspaceRoots(process.env.KVDF_WORKSPACES));
-  if (fileExists(".kabeeri/dashboard/workspaces.json")) {
-    const configured = readJsonFile(".kabeeri/dashboard/workspaces.json").workspaces || [];
-    roots.push(...configured.map((item) => item.path).filter(Boolean));
-  }
-  return [...new Set(roots)];
-}
-
-function parseWorkspaceRoots(value) {
-  const path = require("path");
-  return parseCsv(value).map((item) => path.resolve(repoRoot(), item));
-}
-
-function summarizeWorkspaceRoot(root, current) {
-  const fs = require("fs");
-  const path = require("path");
-  const stateDir = path.join(root, ".kabeeri");
-  if (!fs.existsSync(stateDir)) {
-    if (current) {
-      return { root, current: true, status: "missing_workspace", name: path.basename(root), apps_total: 0, tasks_total: 0 };
-    }
-    return null;
-  }
-  const read = (relative, fallback) => {
-    try {
-      return JSON.parse(fs.readFileSync(path.join(stateDir, relative), "utf8"));
-    } catch (_) {
-      return fallback;
-    }
-  };
-  const project = read("project.json", {});
-  const apps = read("customer_apps.json", { apps: [] }).apps || [];
-  const tasks = read("tasks.json", { tasks: [] }).tasks || [];
-  const features = read("features.json", { features: [] }).features || [];
-  const policyResults = read("policies/policy_results.json", { results: [] }).results || [];
-  const securityScans = read("security/security_scans.json", { scans: [] }).scans || [];
-  const migrationChecks = read("migrations/migration_checks.json", { checks: [] }).checks || [];
-  return {
-    root,
-    current,
-    status: "ok",
-    name: project.name || project.framework || path.basename(root),
-    product_name: project.product_name || project.name || "",
-    project_scope: project.project_scope || "single_product_multi_app",
-    boundary_mode: apps.length > 1 ? "same_product_multi_app" : apps.length === 1 ? "single_app" : "workspace",
-    profile: project.profile || "",
-    delivery_mode: project.delivery_mode || "",
-    apps_total: apps.length,
-    tasks_total: tasks.length,
-    open_tasks: tasks.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status)).length,
-    features_total: features.length,
-    policy_blocks: policyResults.filter((item) => item.status === "blocked").length,
-    security_blocks: securityScans.filter((item) => item.status === "blocked").length,
-    migration_blocks: migrationChecks.filter((item) => item.status === "blocked").length,
-    dashboard_command: `kvdf dashboard serve --port auto`,
-    apps: apps.map((item) => ({
-      username: item.username,
-      name: item.name,
-      app_type: item.app_type || item.type || "",
-      path: item.path || "",
-      product_name: item.product_name || project.product_name || ""
-    }))
-  };
-}
-
-function buildDashboardUxGovernanceState(input = {}) {
-  const apps = input.apps || [];
-  const appSummaries = input.appSummaries || [];
-  const workspaceSummaries = input.workspaceSummaries || [];
-  const project = input.project || {};
-  const currentWorkspace = workspaceSummaries.find((item) => item.current) || workspaceSummaries[0] || {};
-  const roleViews = [
-    {
-      role: "Owner",
-      visibility: "all_governance",
-      widgets: ["Action Center", "Policy Results", "Security Scans", "Migration Safety", "Handoff Packages", "AI Usage by Task"],
-      actions: ["verify", "approve", "reject", "override only through policy"]
-    },
-    {
-      role: "Maintainer",
-      visibility: "delivery_and_blockers",
-      widgets: ["Task Tracker Live Board", "Execution Scopes", "Workstream Governance", "Live Reports"],
-      actions: ["triage", "assign", "review", "prepare handoff"]
-    },
-    {
-      role: "Developer",
-      visibility: "assigned_work",
-      widgets: ["Task Tracker Live Board", "Active Locks", "Execution Scopes", "Post-work Captures"],
-      actions: ["continue task", "attach evidence", "avoid locked scopes"]
-    },
-    {
-      role: "AI Agent",
-      visibility: "scoped_context",
-      widgets: ["Task Tracker Live Board", "Execution Scopes", "Common Prompt Layer", "Tracked vs Untracked AI Usage"],
-      actions: ["read allowed files", "respect token scope", "report usage"]
-    },
-    {
-      role: "QA Reviewer",
-      visibility: "acceptance_and_risk",
-      widgets: ["Feature Readiness", "User Journeys", "Security Scans", "Migration Safety"],
-      actions: ["check acceptance", "record risks", "request evidence"]
-    },
-    {
-      role: "Client Viewer",
-      visibility: "business_summary",
-      widgets: ["Applications", "Feature Readiness", "User Journeys", "Handoff Packages"],
-      actions: ["review demo readiness", "avoid internal controls"]
-    }
-  ];
-  const widgetRegistry = [
-    ["action_center", "Action Center", "all_roles", "resume_decision", "top"],
-    ["task_tracker", "Task Tracker Live Board", "owner,maintainer,developer,ai_agent", "task_status", "primary"],
-    ["applications", "Applications", "all_roles", "same_workspace_apps", "summary"],
-    ["app_boundary", "App Boundary Governance", "owner,maintainer,developer,ai_agent", "multi_app_safety", "governance"],
-    ["workspace_summary", "KVDF Workspaces", "owner,maintainer", "separate_workspace_summaries", "governance"],
-    ["policy_results", "Policy Results", "owner,maintainer", "release_blockers", "governance"],
-    ["security_scans", "Security Scans", "owner,maintainer,qa", "security_risk", "governance"],
-    ["migration_safety", "Migration Safety", "owner,maintainer,qa", "migration_risk", "governance"],
-    ["ai_cost", "AI Usage by Task", "owner,maintainer,ai_agent", "cost_control", "finance"],
-    ["vibe_capture", "Post-work Captures", "owner,maintainer,developer", "traceability_restore", "workflow"]
-  ].map(([id, name, roles, purpose, placement]) => ({ id, name, roles, purpose, placement }));
-  const controls = [
-    { id: "app-filter", label: "App filter", purpose: "Focus on one app inside the current same-product workspace.", status: appSummaries.length ? "active" : "empty" },
-    { id: "role-filter", label: "Role view", purpose: "Explain which widgets each role should use first.", status: "documented" },
-    { id: "workspace-links", label: "Linked workspace summaries", purpose: "Summarize separate KVDF folders without merging their source state.", status: workspaceSummaries.length > 1 ? "active" : "available" },
-    { id: "live-refresh", label: "Live refresh", purpose: "Poll local API and reload when derived state changes.", status: "active" },
-    { id: "responsive-tables", label: "Responsive tables", purpose: "Keep wide governance tables readable on smaller screens.", status: "active" }
-  ];
-  return {
-    version: "dashboard-ux-governance-v1",
-    generated_at: new Date().toISOString(),
-    dashboard_types: ["private_governance_dashboard", "client_home", "customer_app_page", "linked_workspace_summary"],
-    workspace_strategy: {
-      current_workspace_mode: currentWorkspace.boundary_mode || (apps.length > 1 ? "same_product_multi_app" : apps.length === 1 ? "single_app" : "workspace"),
-      current_workspace_apps: apps.length,
-      linked_workspaces: Math.max(0, workspaceSummaries.length - 1),
-      rule: "Use one KVDF workspace for related apps in the same product. Use linked KVDF workspaces for separate products, clients, or release lifecycles.",
-      product_name: project.product_name || project.name || ""
-    },
-    role_views: roleViews,
-    widget_registry: widgetRegistry,
-    controls,
-    live_state_rules: [
-      "The dashboard is derived from .kabeeri and never becomes source of truth.",
-      "Local serve mode polls /__kvdf/api/state and reloads when the stable state fingerprint changes.",
-      "Static exports must still show the latest generated_at timestamp and readable empty states.",
-      "Linked workspaces are summarized only; their tasks, approvals, and policies are not merged."
-    ],
-    empty_error_rules: [
-      "Empty tables must render an explicit empty-state row or message.",
-      "Missing linked workspaces must not break the current workspace dashboard.",
-      "Blocked policy/security/migration states must appear in the Action Center."
-    ],
-    responsive_rules: [
-      "Wide tables must be wrapped in horizontal scrolling containers.",
-      "Metrics must use responsive grid columns.",
-      "Controls must wrap instead of overlapping on narrow screens."
-    ]
-  };
-}
-
 function readStateArray(file, key) {
   if (!fileExists(file)) return [];
   return readJsonFile(file)[key] || [];
-}
-
-function writeDashboardStateFiles(state) {
-  const usageSummary = state && state.records && state.records.usage ? state.records.usage : summarizeUsage();
-  writeJsonFile(".kabeeri/dashboard/technical_state.json", state.technical);
-  writeJsonFile(".kabeeri/dashboard/business_state.json", state.business);
-  writeJsonFile(".kabeeri/dashboard/task_tracker_state.json", state.task_tracker || buildTaskTrackerStateFromFiles());
-  writeJsonFile(".kabeeri/dashboard/agile_state.json", state.records && state.records.agile_live ? state.records.agile_live : refreshAgileDashboardState());
-  writeJsonFile(".kabeeri/dashboard/structured_state.json", state.records && state.records.structured_live ? state.records.structured_live : refreshStructuredDashboardState());
-  writeJsonFile(".kabeeri/ai_usage/usage_summary.json", usageSummary);
-  writeJsonFile(".kabeeri/ai_usage/cost_breakdown.json", {
-    by_task: usageSummary.by_task || {},
-    by_developer: usageSummary.by_developer || {},
-    by_workstream: usageSummary.by_workstream || {},
-    by_provider: usageSummary.by_provider || {},
-    by_sprint: usageSummary.by_sprint || {},
-    tracked_vs_untracked: usageSummary.tracked_vs_untracked || {}
-  });
-}
-
-function refreshDashboardArtifacts(options = {}) {
-  if (!localFileExists(".kabeeri/project.json")) return null;
-  const state = collectDashboardState(options);
-  writeDashboardStateFiles(state);
-  return state;
-}
-
-function buildClientHomeHtml() {
-  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
-  const apps = fileExists(".kabeeri/customer_apps.json") ? readJsonFile(".kabeeri/customer_apps.json").apps || [] : [];
-  const features = fileExists(".kabeeri/features.json") ? readJsonFile(".kabeeri/features.json").features || [] : [];
-  const journeys = fileExists(".kabeeri/journeys.json") ? readJsonFile(".kabeeri/journeys.json").journeys || [] : [];
-  const visibleFeatures = features.filter((item) => ["ready_to_demo", "ready_to_publish"].includes(item.readiness));
-  const visibleJourneys = journeys.filter((item) => item.ready_to_show || item.status === "ready_to_show");
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(project.name || "Kabeeri Client Portal")}</title>
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #f7f8fb; }
-    header { background: #ffffff; border-bottom: 1px solid #d9dee7; padding: 28px; }
-    main { max-width: 1080px; margin: 0 auto; padding: 24px; }
-    h1, h2 { margin: 0 0 12px; }
-    p { margin: 0 0 16px; color: #52606d; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; margin-bottom: 24px; }
-    .card { background: white; border: 1px solid #d9dee7; border-radius: 8px; padding: 16px; }
-    .status { display: inline-block; margin-top: 8px; font-size: 12px; color: #334e68; background: #e8f1f8; border-radius: 999px; padding: 4px 8px; }
-    a { color: #0b5cad; text-decoration: none; font-weight: 700; }
-    ul { background: white; border: 1px solid #d9dee7; border-radius: 8px; margin: 0 0 24px; padding: 16px 16px 16px 34px; }
-    li { margin: 8px 0; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>${escapeHtml(project.name || "Kabeeri Client Portal")}</h1>
-    <p>Customer-facing project page. Internal governance and dashboard data are kept on the private dashboard route.</p>
-  </header>
-  <main>
-    <section>
-      <h2>Apps</h2>
-      <div class="grid">
-        ${(apps.length ? apps : [{ username: "demo", name: "Demo App", status: "draft", public_url: "/customer/apps/demo" }]).map((appItem) => `
-          <article class="card">
-            <h3>${escapeHtml(appItem.name)}</h3>
-            <a href="${escapeHtml(publicCustomerAppUrl(appItem.username))}">${escapeHtml(publicCustomerAppUrl(appItem.username))}</a>
-            <div class="status">${escapeHtml(appItem.status || "draft")}</div>
-          </article>
-        `).join("")}
-      </div>
-    </section>
-    <section>
-      <h2>Ready Features</h2>
-      <ul>
-        ${(visibleFeatures.length ? visibleFeatures : [{ title: "No ready features yet", readiness: "needs_review" }]).map((featureItem) => `<li>${escapeHtml(featureItem.title)} <span class="status">${escapeHtml(featureItem.readiness || "")}</span></li>`).join("")}
-      </ul>
-    </section>
-    <section>
-      <h2>Ready Journeys</h2>
-      <ul>
-        ${(visibleJourneys.length ? visibleJourneys : [{ name: "No ready journeys yet", status: "draft" }]).map((journeyItem) => `<li>${escapeHtml(journeyItem.name)} <span class="status">${escapeHtml(journeyItem.status || "")}</span></li>`).join("")}
-      </ul>
-    </section>
-  </main>
-</body>
-</html>
-`;
-}
-
-function buildCustomerAppHtml(appItem) {
-  const features = readStateArray(".kabeeri/features.json", "features");
-  const journeys = readStateArray(".kabeeri/journeys.json", "journeys");
-  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
-  const summary = buildCustomerAppSummaries([appItem], features, journeys, tasks, summarizeUsage())[0];
-  const linkedFeatures = features.filter((featureItem) => (appItem.feature_ids || []).includes(featureItem.id));
-  const linkedJourneys = journeys.filter((journeyItem) => (appItem.journey_ids || []).includes(journeyItem.id));
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(appItem.name)}</title>
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #ffffff; }
-    main { max-width: 860px; margin: 0 auto; padding: 42px 24px; }
-    h1 { margin: 0 0 12px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 18px 0; }
-    .card { border: 1px solid #d9dee7; border-radius: 8px; padding: 14px; }
-    .metric { display: block; font-size: 24px; font-weight: 700; margin-top: 4px; }
-    .status { display: inline-block; margin-top: 12px; font-size: 13px; color: #334e68; background: #e8f1f8; border-radius: 999px; padding: 5px 9px; }
-    a { color: #0b5cad; text-decoration: none; font-weight: 700; }
-    li { margin: 8px 0; }
-  </style>
-</head>
-<body>
-  <main>
-    <a href="/">Back to apps</a>
-    <h1>${escapeHtml(appItem.name)}</h1>
-    <p>Public username: <strong>${escapeHtml(appItem.username)}</strong></p>
-    <p>Public route: <strong>${escapeHtml(publicCustomerAppUrl(appItem.username))}</strong></p>
-    <div class="status">${escapeHtml(appItem.status || "draft")}</div>
-    <section class="grid">
-      ${metricCard("Features", summary.features_total)}
-      ${metricCard("Ready Features", summary.ready_features)}
-      ${metricCard("Journeys", summary.journeys_total)}
-      ${metricCard("Open Tasks", summary.open_tasks)}
-    </section>
-    <section>
-      <h2>Linked Features</h2>
-      <ul>${(linkedFeatures.length ? linkedFeatures : [{ title: "No linked features yet", readiness: "draft" }]).map((featureItem) => `<li>${escapeHtml(featureItem.title)} <span class="status">${escapeHtml(featureItem.readiness || "")}</span></li>`).join("")}</ul>
-    </section>
-    <section>
-      <h2>Linked Journeys</h2>
-      <ul>${(linkedJourneys.length ? linkedJourneys : [{ name: "No linked journeys yet", status: "draft" }]).map((journeyItem) => `<li>${escapeHtml(journeyItem.name)} <span class="status">${escapeHtml(journeyItem.status || "")}</span></li>`).join("")}</ul>
-    </section>
-  </main>
-</body>
-</html>
-`;
-}
-
-function buildDashboardHtml() {
-  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
-  const technical = readJsonFile(".kabeeri/dashboard/technical_state.json");
-  const business = readJsonFile(".kabeeri/dashboard/business_state.json");
-  const apps = readStateArray(".kabeeri/customer_apps.json", "apps");
-  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
-  const features = readStateArray(".kabeeri/features.json", "features");
-  const journeys = readStateArray(".kabeeri/journeys.json", "journeys");
-  const tokens = readStateArray(".kabeeri/tokens.json", "tokens");
-  const locks = readStateArray(".kabeeri/locks.json", "locks");
-  const policyResults = readStateArray(".kabeeri/policies/policy_results.json", "results");
-  const contextPacks = readStateArray(".kabeeri/ai_usage/context_packs.json", "context_packs");
-  const preflights = readStateArray(".kabeeri/ai_usage/cost_preflights.json", "preflights");
-  const handoffPackages = readStateArray(".kabeeri/handoff/packages.json", "packages");
-  const securityScans = readStateArray(".kabeeri/security/security_scans.json", "scans");
-  const migrationPlans = readStateArray(".kabeeri/migrations/migration_plans.json", "plans");
-  const migrationChecks = readStateArray(".kabeeri/migrations/migration_checks.json", "checks");
-  const vibeSuggestions = readStateArray(".kabeeri/interactions/suggested_tasks.json", "suggested_tasks");
-  const vibeCaptures = readStateArray(".kabeeri/interactions/post_work_captures.json", "captures");
-  const vibeSessions = readStateArray(".kabeeri/interactions/vibe_sessions.json", "sessions");
-  const contextBriefs = readStateArray(".kabeeri/interactions/context_briefs.json", "briefs");
-  const agileState = fileExists(".kabeeri/agile.json") ? readAgileState() : { backlog: [], epics: [], stories: [], sprint_reviews: [], impediments: [], retrospectives: [], releases: [] };
-  const agileLiveState = refreshAgileDashboardState(agileState);
-  const structuredState = fileExists(".kabeeri/structured.json") ? readStructuredState() : { requirements: [], phases: [], milestones: [], deliverables: [], approvals: [], change_requests: [], risks: [], gates: [] };
-  const structuredLiveState = refreshStructuredDashboardState(structuredState);
-  const adrRecords = readStateArray(".kabeeri/adr/records.json", "adrs");
-  const aiRuns = fileExists(".kabeeri/ai_runs/prompt_runs.jsonl") ? readAiRuns() : [];
-  const aiRunReport = fileExists(".kabeeri/ai_runs/prompt_runs.jsonl") ? buildAiRunHistoryReport() : { totals: { runs: 0, unreviewed: 0 }, waste_signals: [] };
-  const promptCompositions = readStateArray(".kabeeri/prompt_layer/compositions.json", "compositions");
-  const liveReports = fileExists(".kabeeri/reports/live_reports_state.json") ? readJsonFile(".kabeeri/reports/live_reports_state.json") : null;
-  const usage = summarizeUsage();
-  const appSummaries = business.app_summaries || buildCustomerAppSummaries(apps, features, journeys, tasks, usage);
-  const workspaceSummaries = business.workspaces || [];
-  const workstreamSummaries = business.workstreams || [];
-  const dashboardUxGovernance = business.dashboard_ux_governance || {};
-  const dashboardActionItems = buildDashboardActionItems({
-    technical,
-    business,
-    records: {
-      vibe_captures: vibeCaptures,
-      agile: agileState,
-      structured: structuredState,
-      adrs: adrRecords,
-      ai_run_report: aiRunReport
-      , agile_live: agileLiveState
-      , structured_live: structuredLiveState
-    }
-  });
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kabeeri VDF Dashboard</title>
-  <style>
-    body { margin: 0; font-family: Arial, sans-serif; color: #202124; background: #f6f7f9; }
-    header { background: #1f2937; color: white; padding: 20px 28px; }
-    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
-    h1, h2 { margin: 0 0 12px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
-    .card { background: white; border: 1px solid #d9dee7; border-radius: 8px; padding: 16px; }
-    .metric { font-size: 30px; font-weight: 700; }
-    .muted { color: #5f6b7a; font-size: 13px; }
-    .source-note { margin-top: 8px; font-size: 13px; color: #d7e8ff; }
-    .section-help { margin: -6px 0 12px; color: #5f6b7a; font-size: 13px; max-width: 920px; }
-    .table-wrap { width: 100%; overflow-x: auto; margin-bottom: 24px; }
-    .empty-state { color: #5f6b7a; font-style: italic; }
-    .severity-blocker { color: #991b1b; font-weight: 700; }
-    .severity-warning { color: #92400e; font-weight: 700; }
-    .severity-info { color: #1d4ed8; font-weight: 700; }
-    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 18px 0 0; }
-    select { min-width: 220px; border: 1px solid #9aa7b6; border-radius: 6px; padding: 8px 10px; background: white; color: #202124; }
-    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #d9dee7; margin-bottom: 24px; }
-    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 10px; font-size: 14px; }
-    th { background: #eef2f7; }
-    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
-    .live { display: inline-block; margin-top: 8px; font-size: 13px; color: #c7f9cc; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>Kabeeri VDF Dashboard</h1>
-    <div>Generated at ${escapeHtml(technical.generated_at || new Date().toISOString())}</div>
-    <div class="live">Live endpoint: <code>/__kvdf/api/state</code> · Task tracker: <code>/__kvdf/api/tasks</code> · Agile: <code>/__kvdf/api/agile</code> · Reports: <code>/__kvdf/api/reports</code> · <span id="live-status">checking...</span></div>
-    <div class="source-note">Derived view; .kabeeri is the source of truth.</div>
-    <div class="toolbar">
-      <label for="app-filter">App</label>
-      <select id="app-filter">
-        <option value="">All apps in this KVDF workspace</option>
-        ${appSummaries.map((appItem) => `<option value="${escapeHtml(appItem.username)}">${escapeHtml(appItem.name || appItem.username)} (${escapeHtml(appItem.username)})</option>`).join("")}
-      </select>
-      <label for="role-filter">Role</label>
-      <select id="role-filter">
-        <option value="">All role guidance</option>
-        ${(dashboardUxGovernance.role_views || []).map((roleItem) => `<option value="${escapeHtml(roleItem.role)}">${escapeHtml(roleItem.role)}</option>`).join("")}
-      </select>
-      <span class="muted">Same-product apps share this workspace. Separate products should be linked as KVDF workspaces or served on their own port.</span>
-    </div>
-  </header>
-  <main>
-    <section class="grid">
-      ${metricCard("Tasks", tasks.length)}
-      ${metricCard("Verified", business.verified_tasks || 0)}
-      ${metricCard("Active Tokens", tokens.filter((item) => item.status === "active").length)}
-      ${metricCard("Active Locks", locks.filter((item) => item.status === "active").length)}
-      ${metricCard("Policy Blocks", policyResults.filter((item) => item.status === "blocked").length)}
-      ${metricCard("Context Packs", contextPacks.length)}
-      ${metricCard("Preflight Approvals", preflights.filter((item) => item.approval_required).length)}
-      ${metricCard("Handoff Packages", handoffPackages.length)}
-      ${metricCard("Security Blocks", securityScans.filter((item) => item.status === "blocked").length)}
-      ${metricCard("Migration Blocks", migrationChecks.filter((item) => item.status === "blocked").length)}
-      ${metricCard("Vibe Suggestions", vibeSuggestions.length)}
-      ${metricCard("Vibe Sessions", vibeSessions.length)}
-      ${metricCard("Agile Stories", agileState.stories.length)}
-      ${metricCard("Ready Stories", agileState.stories.filter((item) => item.ready_status === "ready").length)}
-      ${metricCard("Agile Health", agileLiveState.summary ? agileLiveState.summary.health : "unknown")}
-      ${metricCard("Structured Reqs", structuredState.requirements.length)}
-      ${metricCard("Structured Health", structuredLiveState.summary ? structuredLiveState.summary.health : "unknown")}
-      ${metricCard("ADRs", adrRecords.length)}
-      ${metricCard("AI Runs", aiRuns.length)}
-      ${metricCard("Unreviewed Runs", aiRunReport.totals.unreviewed || 0)}
-      ${metricCard("Composed Prompts", promptCompositions.length)}
-      ${metricCard("AI Tokens", usage.total_tokens)}
-      ${metricCard("AI Cost", `${usage.total_cost} ${usage.currency}`)}
-      ${metricCard("Untracked Cost", `${usage.tracked_vs_untracked && usage.tracked_vs_untracked.untracked ? usage.tracked_vs_untracked.untracked.cost : 0} ${usage.currency}`)}
-      ${metricCard("Apps", appSummaries.length)}
-      ${metricCard("Workstreams", workstreamSummaries.length)}
-      ${metricCard("KVDF Workspaces", workspaceSummaries.length || 1)}
-      ${metricCard("Developer Mode", business.developer_mode ? business.developer_mode.mode || "unset" : "unset")}
-    </section>
-    <section>
-      <h2>Action Center</h2>
-      ${htmlTable(["Severity", "Area", "Message", "Next Action"], dashboardActionItems.map((item) => [`<span class="severity-${item.severity}">${item.severity}</span>`, item.area, item.message, item.next_action]), { trustedHtmlColumns: [0] })}
-    </section>
-    <section>
-      <h2>Dashboard UX Governance</h2>
-      ${htmlTable(["Rule", "Value"], [
-        ["Workspace strategy", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.rule : ""],
-        ["Current workspace mode", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.current_workspace_mode : ""],
-        ["Current workspace apps", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.current_workspace_apps : 0],
-        ["Linked KVDF workspaces", dashboardUxGovernance.workspace_strategy ? dashboardUxGovernance.workspace_strategy.linked_workspaces : 0],
-        ["Stale data policy", "Served dashboards poll the live API; static exports show generated_at and remain readable without the server."]
-      ])}
-      <h3>Role Visibility</h3>
-      ${htmlTable(["Role", "Visibility", "Primary Widgets", "Allowed Actions"], (dashboardUxGovernance.role_views || []).map((item) => [item.role, item.visibility, (item.widgets || []).join(", "), (item.actions || []).join(", ")]))}
-      <h3>Widget Registry</h3>
-      ${htmlTable(["Widget", "Roles", "Purpose", "Placement"], (dashboardUxGovernance.widget_registry || []).map((item) => [item.name, item.roles, item.purpose, item.placement]))}
-      <h3>Dashboard Controls</h3>
-      ${htmlTable(["Control", "Status", "Purpose"], (dashboardUxGovernance.controls || []).map((item) => [item.label, item.status, item.purpose]))}
-    </section>
-    <section>
-      <h2>Task Tracker Live Board</h2>
-      ${htmlTable(["Status", "Count"], Object.entries((business.task_tracker_status || {})).map(([status, count]) => [status, count]))}
-      ${htmlTable(["Task", "Status", "Apps", "Workstreams", "Assignee", "Tokens", "Locks", "Usage Cost", "Blockers", "Next Action"], (business.task_tracker && business.task_tracker.tasks ? business.task_tracker.tasks : tasks).map((task) => [
-        task.id,
-        task.status,
-        ((task.app_usernames || []).join(",") || task.app_username || ""),
-        ((task.workstreams || (task.workstream ? [task.workstream] : [])).join(",")),
-        task.assignee_id || "",
-        (task.active_tokens || []).length || 0,
-        (task.active_locks || []).length || 0,
-        task.usage ? task.usage.cost || 0 : 0,
-        (task.blockers || []).join(","),
-        task.next_action || ""
-      ]))}
-    </section>
-    <section>
-      <h2>Live Reports</h2>
-      ${renderLiveReportsDashboard(liveReports)}
-    </section>
-    <section>
-      <h2>Applications</h2>
-      ${htmlTable(["App", "Type", "Product", "Path", "Status", "Features", "Journeys", "Tasks", "Open", "Route"], appSummaries.map((item) => [item.name || item.username, item.app_type, item.product_name, item.path, item.status, `${item.ready_features}/${item.features_total}`, `${item.ready_journeys}/${item.journeys_total}`, item.tasks_total, item.open_tasks, item.public_url]))}
-    </section>
-    <section>
-      <h2>App Boundary Governance</h2>
-      ${htmlTable(["Boundary", "Product", "Apps", "Rule", "Evidence"], [[project.project_scope || "single_product_multi_app", project.product_name || project.name || "", appSummaries.length, project.forbid_unrelated_apps === false ? "unrelated apps allowed" : "unrelated apps blocked", "tasks and AI sessions are checked against registered app paths"]])}
-    </section>
-    <section>
-      <h2>Workstream Governance</h2>
-      ${htmlTable(["Workstream", "Status", "Paths", "Tasks", "Open", "Sessions", "Tokens", "Cost"], workstreamSummaries.map((item) => [item.name || item.id, item.status, (item.path_rules || []).join(", "), item.tasks_total, item.open_tasks, item.sessions_total, item.ai_usage ? item.ai_usage.tokens || 0 : 0, item.ai_usage ? item.ai_usage.cost || 0 : 0]))}
-    </section>
-    <section>
-      <h2>Execution Scopes</h2>
-      ${htmlTable(["Token", "Task", "Assignee", "Mode", "Workstreams", "Apps", "Allowed Files", "Warnings"], tokens.map((item) => [item.token_id, item.task_id, item.assignee_id, item.scope_mode || "manual", (item.workstreams || []).join(","), (item.app_usernames || []).join(","), (item.allowed_files || []).join(","), (item.scope_warnings || []).join("; ")]))}
-    </section>
-    <section>
-      <h2>Vibe-first Suggestions</h2>
-      ${htmlTable(["Suggestion", "Title", "Workstream", "Risk", "Status", "Task"], vibeSuggestions.map((item) => [item.suggestion_id, item.title, item.workstream, item.risk_level, item.status, item.task_id || ""]))}
-    </section>
-    <section>
-      <h2>Post-work Captures</h2>
-      ${htmlTable(["Capture", "Task", "Classification", "Workstreams", "Files", "Missing Evidence", "Status", "Next Action"], vibeCaptures.slice(-20).reverse().map((item) => [item.capture_id, item.task_id || "", item.classification, (item.detected_workstreams || []).join(","), (item.files_changed || []).join(","), (item.missing_evidence || []).join(","), item.status, item.recommended_next_action || ""]))}
-    </section>
-    <section>
-      <h2>Vibe Sessions and Briefs</h2>
-      ${htmlTable(["Session", "Title", "Status", "Intents", "Suggestions", "Captures"], vibeSessions.map((item) => [item.session_id, item.title || "", item.status, (item.intent_ids || []).length, (item.suggestion_ids || []).length, (item.capture_ids || []).length]))}
-      ${htmlTable(["Brief", "Generated", "Current Session", "Open Suggestions", "Open Tasks"], contextBriefs.slice(-10).reverse().map((item) => [item.brief_id, item.generated_at, item.current_vibe_session || "", (item.open_suggestions || []).length, (item.open_tasks || []).length]))}
-    </section>
-    <section>
-      <h2>Agile Backlog and Stories</h2>
-      <p>Live JSON: <code>.kabeeri/dashboard/agile_state.json</code> · API: <code>/__kvdf/api/agile</code></p>
-      ${htmlTable(["Severity", "Area", "Message", "Next Action"], (agileLiveState.action_items || []).map((item) => [item.severity, item.area, item.message, item.next_action]))}
-      ${htmlTable(["Story", "Epic", "Sprint", "Points", "Ready", "Status", "Task", "Title"], agileState.stories.map((item) => [item.story_id, item.epic_id || "", item.sprint_id || "", item.estimate_points || 0, item.ready_status || "not_ready", item.status || "", item.task_id || "", item.title || ""]))}
-      ${htmlTable(["Review", "Sprint", "Accepted Points", "Rework Points", "Decision"], agileState.sprint_reviews.slice(-10).reverse().map((item) => [item.review_id, item.sprint_id, item.accepted_points || 0, item.rework_points || 0, item.owner_decision || ""]))}
-      ${htmlTable(["Impediment", "Severity", "Status", "Sprint", "Story", "Owner", "Title"], (agileState.impediments || []).filter((item) => item.status !== "resolved").map((item) => [item.impediment_id, item.severity, item.status, item.sprint_id || "", item.story_id || "", item.owner_id || "", item.title]))}
-    </section>
-    <section>
-      <h2>Structured Delivery</h2>
-      <p>Live JSON: <code>.kabeeri/dashboard/structured_state.json</code> - API: <code>/__kvdf/api/structured</code></p>
-      ${htmlTable(["Severity", "Area", "Message", "Next Action"], (structuredLiveState.action_items || []).map((item) => [item.severity, item.area, item.message, item.next_action]))}
-      ${htmlTable(["Requirement", "Type", "Priority", "Approval", "Phase", "Tasks", "Title"], structuredState.requirements.map((item) => [item.requirement_id, item.type, item.priority, item.approval_status || "", item.phase_id || "", (item.task_ids || []).join(","), item.title]))}
-      ${htmlTable(["Phase", "Status", "Gate", "Requirements", "Tasks", "Title"], structuredState.phases.map((item) => [item.phase_id, item.status, item.gate_status || "", (item.requirement_ids || []).length, (item.task_ids || []).length, item.title]))}
-      ${htmlTable(["Risk", "Severity", "Status", "Owner", "Title"], structuredState.risks.filter((item) => item.status === "open").map((item) => [item.risk_id, item.severity, item.status, item.owner_id || "", item.title]))}
-    </section>
-    <section>
-      <h2>ADR and AI Run History</h2>
-      ${htmlTable(["ADR", "Status", "Impact", "Title", "Tasks"], adrRecords.map((item) => [item.adr_id, item.status, item.impact || "", item.title || "", (item.related_tasks || []).join(",")]))}
-      ${htmlTable(["Run", "Status", "Task", "Developer", "Model", "Tokens", "Cost"], aiRuns.slice(-20).reverse().map((item) => [item.run_id, item.status || "recorded", item.task_id || "", item.developer_id || "", `${item.provider || ""}/${item.model || ""}`, item.total_tokens || 0, item.cost || 0]))}
-      ${htmlTable(["Severity", "Signal", "Count", "Next Action"], (aiRunReport.waste_signals || []).map((item) => [item.severity, item.signal, item.count || 0, item.next_action]))}
-    </section>
-    <section>
-      <h2>Common Prompt Layer</h2>
-      ${htmlTable(["Composition", "Pack", "Task", "Context", "Prompt", "Tokens", "Output"], promptCompositions.slice(-20).reverse().map((item) => [item.composition_id, item.pack, item.task_id || "", item.context_pack_id || "", item.selected_prompt || "", item.estimated_tokens || 0, item.output_path || ""]))}
-    </section>
-    <section>
-      <h2>KVDF Workspaces</h2>
-      ${htmlTable(["Workspace", "Mode", "Boundary", "Product", "Apps", "Tasks", "Open", "Policy Blocks", "Security Blocks", "Root"], workspaceSummaries.map((item) => [item.name, item.current ? "current" : "linked", item.boundary_mode || "", item.product_name || "", item.apps_total, item.tasks_total, item.open_tasks, item.policy_blocks, item.security_blocks, item.root]))}
-    </section>
-    <section>
-      <h2>Feature Readiness</h2>
-      ${htmlTable(["ID", "Title", "Readiness", "Audience", "Tasks"], features.map((featureItem) => [featureItem.id, featureItem.title, featureItem.readiness, featureItem.audience || "", (featureItem.task_ids || []).join(",")]))}
-    </section>
-    <section>
-      <h2>User Journeys</h2>
-      ${htmlTable(["ID", "Name", "Status", "Audience", "Steps"], journeys.map((journeyItem) => [journeyItem.id, journeyItem.name, journeyItem.status, journeyItem.audience || "", (journeyItem.steps || []).join(" -> ")]))}
-    </section>
-    <section>
-      <h2>Tasks</h2>
-      ${htmlTable(["ID", "Title", "App", "Status", "Assignee", "Workstream"], tasks.map((task) => [task.id, task.title, (task.app_usernames || []).join(",") || task.app_username || "", task.status, task.assignee_id || "", task.workstream || ""]))}
-    </section>
-    <section>
-      <h2>Active Locks</h2>
-      ${htmlTable(["Lock", "Type", "Scope", "Task", "Owner"], locks.filter((item) => item.status === "active").map((item) => [item.lock_id, item.type, item.scope, item.task_id, item.owner_id]))}
-    </section>
-    <section>
-      <h2>AI Usage by Task</h2>
-      ${htmlTable(["Task", "Events", "Tokens", "Cost"], Object.entries(usage.by_task).map(([task, item]) => [task, item.events, item.tokens, item.cost]))}
-    </section>
-    <section>
-      <h2>Tracked vs Untracked AI Usage</h2>
-      ${htmlTable(["Type", "Events", "Tokens", "Cost"], Object.entries(usage.tracked_vs_untracked || {}).map(([type, item]) => [type, item.events, item.tokens, item.cost]))}
-    </section>
-    <section>
-      <h2>Policy Results</h2>
-      ${htmlTable(["Time", "Policy", "Subject", "Stage", "Status", "Blockers"], policyResults.slice(-20).reverse().map((item) => [item.evaluated_at, item.policy_id, item.subject_id, item.stage, item.status, (item.blockers || []).map((blocker) => blocker.check_id).join(", ")]))}
-    </section>
-    <section>
-      <h2>Cost Preflights</h2>
-      ${htmlTable(["Time", "Task", "Risk", "Budget", "Model", "Approval"], preflights.slice(-20).reverse().map((item) => [item.created_at, item.task_id, item.risk_level, item.budget_status, item.recommended_model_class, item.approval_required]))}
-    </section>
-    <section>
-      <h2>Handoff Packages</h2>
-      ${htmlTable(["Package", "Audience", "Status", "Output", "Created"], handoffPackages.slice(-20).reverse().map((item) => [item.package_id, item.audience, item.status, item.output_dir, item.created_at]))}
-    </section>
-    <section>
-      <h2>Security Scans</h2>
-      ${htmlTable(["Scan", "Status", "Findings", "Critical", "High", "Generated"], securityScans.slice(-20).reverse().map((item) => [item.scan_id, item.status, item.findings_total, item.severity_counts.critical || 0, item.severity_counts.high || 0, item.generated_at]))}
-    </section>
-    <section>
-      <h2>Migration Safety</h2>
-      ${htmlTable(["Plan", "Status", "From", "To", "Risk", "Rollback"], migrationPlans.slice(-20).reverse().map((item) => [item.plan_id, item.status, item.from_version || "", item.to_version || "", item.risk_level, item.rollback_plan_id || ""]))}
-    </section>
-    <section>
-      <h2>Developer Token Efficiency</h2>
-      ${htmlTable(["Developer", "Events", "Tokens", "Cost", "Accepted", "Rejected", "Rework"], Object.entries(buildDeveloperEfficiency().by_developer).map(([developer, item]) => [developer, item.events, item.tokens, item.cost, item.accepted_cost, item.rejected_cost, item.rework_cost]))}
-    </section>
-    <section>
-      <h2>Developer Mode</h2>
-      ${htmlTable(["Mode", "Developer", "Role", "Workstreams"], [[business.developer_mode ? business.developer_mode.mode || "unset" : "unset", business.developer_mode ? business.developer_mode.solo_developer_id || "" : "", business.developer_mode ? business.developer_mode.role || "" : "", business.developer_mode ? (business.developer_mode.workstreams || []).join(", ") : ""]])}
-    </section>
-  </main>
-  <script>
-    let dashboardFingerprint = null;
-
-    const appFilter = document.getElementById("app-filter");
-    if (appFilter) {
-      appFilter.addEventListener("change", () => {
-        if (appFilter.value) window.location.href = "/customer/apps/" + encodeURIComponent(appFilter.value);
-      });
-    }
-
-    const dashboardDescriptions = {
-      "Action Center": "The first place to look. It explains blockers, warnings, and next actions derived from readiness, governance, reports, and task state.",
-      "Dashboard UX Governance": "Defines role visibility, widget purpose, live state behavior, and how same-product apps differ from separate KVDF workspaces.",
-      "Task Tracker Live Board": "Shows every governed task, its current status, assignee, active tokens, locks, usage, blockers, and the next recommended move.",
-      "Live Reports": "Summarizes readiness, governance, package, security, migration, Agile, Structured, and dashboard UX state from live JSON files.",
-      "Applications": "Lists registered apps inside this KVDF workspace so same-product apps stay connected while unrelated products remain separate.",
-      "App Boundary Governance": "Explains whether this workspace is single-app, same-product multi-app, or blocked from unrelated app work.",
-      "Workstream Governance": "Connects tasks, sessions, token usage, and folders to backend, frontend, mobile, QA, docs, and other workstreams.",
-      "Execution Scopes": "Shows task access tokens and the file boundaries each AI assistant or developer is allowed to touch.",
-      "Vibe-first Suggestions": "Natural-language requests that became reviewable task cards instead of immediate implementation.",
-      "Post-work Captures": "Detects work done outside the normal task flow and shows whether it was linked, converted, resolved, or still ungoverned.",
-      "Vibe Sessions and Briefs": "Groups natural-language intents, suggestions, captures, and context briefs so a resumed AI session knows where to continue.",
-      "Agile Backlog and Stories": "Scrum-style backlog, stories, reviews, and impediments for iterative delivery.",
-      "Structured Delivery": "Waterfall-style requirements, phases, gates, risks, and approvals for predictable enterprise delivery.",
-      "ADR and AI Run History": "Records architectural decisions and AI runs so reasoning, cost, and review status stay auditable.",
-      "Common Prompt Layer": "Tracks composed prompt packs and task-specific context to reduce repeated tokens and inconsistent instructions.",
-      "KVDF Workspaces": "Shows the current workspace and any linked KVDF workspaces for developers running multiple products side by side.",
-      "Feature Readiness": "Maps user-visible features to readiness states so demos and releases do not depend on vague progress claims.",
-      "User Journeys": "Shows end-user flows and whether they are ready to show, test, or hand off.",
-      "Tasks": "Raw task list from .kabeeri/tasks.json, useful when checking the source records behind the live board.",
-      "Active Locks": "Files or scopes currently reserved by a task to prevent developers or AI tools from overwriting each other.",
-      "AI Usage by Task": "Token and cost totals grouped by task, including admin operation buckets when no task exists.",
-      "Tracked vs Untracked AI Usage": "Separates governed task usage from admin, inquiry, planning, or other non-task AI usage.",
-      "Policy Results": "Latest policy gate evaluations that can block unsafe execution, review, release, or publishing.",
-      "Cost Preflights": "AI cost estimates and approval requirements before expensive work begins.",
-      "Handoff Packages": "Delivery bundles prepared for owners, reviewers, developers, or clients.",
-      "Security Scans": "Security checks and severity counts that affect readiness and release confidence.",
-      "Migration Safety": "Database or system migration plans, risk levels, and rollback visibility.",
-      "Developer Token Efficiency": "Token cost and accepted/rejected/rework signals by developer or AI assistant.",
-      "Developer Mode": "Shows whether the workspace is solo or team mode and which workstreams are owned."
-    };
-
-    document.querySelectorAll("main section > h2").forEach((heading) => {
-      const text = heading.textContent.trim();
-      if (!dashboardDescriptions[text] || heading.nextElementSibling?.classList?.contains("section-help")) return;
-      const help = document.createElement("p");
-      help.className = "section-help";
-      help.textContent = dashboardDescriptions[text];
-      heading.insertAdjacentElement("afterend", help);
-    });
-
-    function stableDashboardFingerprint(state) {
-      return JSON.stringify(state, (key, value) => key === "generated_at" ? undefined : value);
-    }
-
-    async function refreshLiveMetrics() {
-      try {
-        const response = await fetch("/__kvdf/api/state", { cache: "no-store" });
-        if (!response.ok) return;
-        const state = await response.json();
-        document.title = "Kabeeri VDF Dashboard - " + state.generated_at;
-        const nextFingerprint = stableDashboardFingerprint(state);
-        const status = document.getElementById("live-status");
-        if (status) status.textContent = "live, last checked " + new Date().toLocaleTimeString();
-        if (dashboardFingerprint && dashboardFingerprint !== nextFingerprint) {
-          window.location.reload();
-          return;
-        }
-        dashboardFingerprint = nextFingerprint;
-      } catch (_) {
-        /* Static exports keep working without the local live API. */
-      }
-    }
-    refreshLiveMetrics();
-    setInterval(refreshLiveMetrics, 3000);
-  </script>
-</body>
-</html>
-`;
-}
-
-function metricCard(label, value) {
-  return `<div class="card"><div>${escapeHtml(label)}</div><div class="metric">${escapeHtml(value)}</div></div>`;
-}
-
-function renderLiveReportsDashboard(liveReports) {
-  if (!liveReports || !liveReports.summary) {
-    return `<p class="empty-state">No live reports state yet. Run <code>kvdf reports live</code> to generate <code>.kabeeri/reports/live_reports_state.json</code>.</p>`;
-  }
-  const summary = liveReports.summary || {};
-  const actionItems = liveReports.action_items || [];
-  return `
-    <section class="grid">
-      ${metricCard("Status", summary.status || "unknown")}
-      ${metricCard("Readiness", summary.readiness || "unknown")}
-      ${metricCard("Governance", summary.governance || "unknown")}
-      ${metricCard("Package", summary.package || "unknown")}
-      ${metricCard("Security", summary.security || "unknown")}
-      ${metricCard("Migration", summary.migration || "unknown")}
-    </section>
-    <p>Live JSON: <code>${escapeHtml(liveReports.live_json_path || ".kabeeri/reports/live_reports_state.json")}</code></p>
-    ${htmlTable(["Severity", "Area", "Message", "Next Action"], actionItems.map((item) => [
-      item.severity,
-      item.area,
-      item.message,
-      item.next_action
-    ]))}
-  `;
-}
-
-function htmlTable(headers, rows, options = {}) {
-  const trusted = new Set(options.trustedHtmlColumns || []);
-  if (!rows.length) {
-    return `<div class="table-wrap"><table><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody><tr><td class="empty-state" colspan="${headers.length}">No records</td></tr></tbody></table></div>`;
-  }
-  return `<div class="table-wrap"><table><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${headers.map((_, index) => `<td>${trusted.has(index) ? String(row[index] || "") : escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
-}
-
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function exportCustomerAppPages() {
-  const apps = fileExists(".kabeeri/customer_apps.json") ? readJsonFile(".kabeeri/customer_apps.json").apps || [] : [];
-  for (const appItem of apps) {
-    writeTextFile(`.kabeeri/site/customer/apps/${appItem.username}/index.html`, buildCustomerAppHtml(appItem));
-  }
-}
-
-function serveSite(port, options = {}) {
-  const http = require("http");
-  const fs = require("fs");
-  const path = require("path");
-  const homeFile = path.join(repoRoot(), ".kabeeri", "site", "index.html");
-  const dashboardFile = path.join(repoRoot(), ".kabeeri", "site", "__kvdf", "dashboard", "index.html");
-  const autoPort = String(port).toLowerCase() === "auto" || options["auto-port"] === true || options["auto-port"] === "true";
-  const startPort = autoPort ? Number(options.start || options["start-port"] || 4177) : Number(port || 4177);
-
-  function start(currentPort) {
-  const server = http.createServer((request, response) => {
-    const url = new URL(request.url, `http://127.0.0.1:${currentPort}`);
-    const pathname = url.pathname.replace(/\/$/, "") || "/";
-    let file = null;
-    if (pathname === "/" || pathname === "/index.html") {
-      file = homeFile;
-    } else if (pathname === "/__kvdf/dashboard" || pathname === "/__kvdf/dashboard/index.html") {
-      const state = collectDashboardState(options);
-      writeDashboardStateFiles(state);
-      response.writeHead(200, {
-        "content-type": "text/html; charset=utf-8",
-        "cache-control": "no-store"
-      });
-      response.end(buildDashboardHtml());
-      return;
-    } else if (pathname === "/__kvdf/api/state") {
-      const state = collectDashboardState(options);
-      writeDashboardStateFiles(state);
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store"
-      });
-      response.end(JSON.stringify(state, null, 2));
-      return;
-    } else if (pathname === "/__kvdf/api/tasks" || pathname === "/__kvdf/api/task-tracker") {
-      const state = collectDashboardState(options);
-      writeDashboardStateFiles(state);
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store"
-      });
-      response.end(JSON.stringify(state.task_tracker, null, 2));
-      return;
-    } else if (pathname === "/__kvdf/api/reports" || pathname === "/__kvdf/api/live-reports") {
-      const state = refreshLiveReportsState();
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store"
-      });
-      response.end(JSON.stringify(state, null, 2));
-      return;
-    } else if (pathname === "/__kvdf/api/agile") {
-      const state = refreshAgileDashboardState();
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store"
-      });
-      response.end(JSON.stringify(state, null, 2));
-      return;
-    } else if (pathname === "/__kvdf/api/structured") {
-      const state = refreshStructuredDashboardState();
-      response.writeHead(200, {
-        "content-type": "application/json; charset=utf-8",
-        "cache-control": "no-store"
-      });
-      response.end(JSON.stringify(state, null, 2));
-      return;
-    } else {
-      const match = pathname.match(/^\/customer\/apps\/([^/]+)$/);
-      if (match) {
-        const username = match[1];
-        try {
-          normalizePublicUsername(username);
-          const appFile = path.join(repoRoot(), ".kabeeri", "site", "customer", "apps", username, "index.html");
-          if (fs.existsSync(appFile)) file = appFile;
-        } catch (_) {
-          file = null;
-        }
-      }
-    }
-    if (!file || !fs.existsSync(file)) {
-      response.writeHead(404, { "content-type": "text/plain" });
-      response.end("Not found");
-      return;
-    }
-    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-    response.end(fs.readFileSync(file, "utf8"));
-  });
-  server.on("error", (error) => {
-    if (error.code === "EADDRINUSE" && autoPort && currentPort < startPort + 100) {
-      server.close();
-      start(currentPort + 1);
-      return;
-    }
-    throw error;
-  });
-  server.listen(currentPort, "127.0.0.1", () => {
-    console.log(`Kabeeri customer page running at http://127.0.0.1:${currentPort}/`);
-    console.log(`Private dashboard running at http://127.0.0.1:${currentPort}/__kvdf/dashboard`);
-    console.log(`Live state API running at http://127.0.0.1:${currentPort}/__kvdf/api/state`);
-  });
-  }
-
-  start(startPort);
 }
 
 function generateVerificationReport(task) {
@@ -14626,1806 +11347,6 @@ function releaseTaskLocks(taskId, reason) {
   if (changed) writeJsonFile(file, data);
 }
 
-function token(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/tokens.json";
-  const data = readJsonFile(file);
-  data.tokens = data.tokens || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Token", "Task", "Assignee", "Scope", "Status"], data.tokens.map((item) => [item.token_id, item.task_id, item.assignee_id, item.scope_mode || "manual", item.status])));
-    return;
-  }
-
-  if (action === "show" || action === "status") {
-    const tokenId = value || flags.id;
-    if (!tokenId) throw new Error("Missing token id.");
-    const tokenItem = data.tokens.find((item) => item.token_id === tokenId);
-    if (!tokenItem) throw new Error(`Token not found: ${tokenId}`);
-    console.log(JSON.stringify(tokenItem, null, 2));
-    return;
-  }
-
-  if (action === "issue") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "issue token");
-    const taskId = flags.task || value;
-    const assignee = flags.assignee;
-    if (!taskId) throw new Error("Missing --task.");
-    if (!assignee) throw new Error("Missing --assignee.");
-    assertTokenCanBeIssued(taskId, assignee);
-    const scope = buildExecutionScope(taskId, flags);
-    const token = {
-      token_id: `task-token-${String(data.tokens.length + 1).padStart(3, "0")}`,
-      task_id: taskId,
-      assignee_id: assignee,
-      status: "active",
-      created_at: new Date().toISOString(),
-      expires_at: flags.expires || null,
-      workstreams: scope.workstreams,
-      app_usernames: scope.app_usernames,
-      allowed_files: scope.allowed_files,
-      forbidden_files: scope.forbidden_files,
-      scope_mode: scope.scope_mode,
-      scope_source: scope.scope_source,
-      scope_warnings: scope.scope_warnings,
-      max_usage_tokens: flags["max-usage-tokens"] ? Number(flags["max-usage-tokens"]) : null,
-      max_cost: flags["max-cost"] ? Number(flags["max-cost"]) : null,
-      budget_approval_required: Boolean(flags["budget-approval-required"])
-    };
-    data.tokens.push(token);
-    writeJsonFile(file, data);
-    appendAudit("access_token.issued", "token", token.token_id, `Token issued for ${taskId}`);
-    console.log(`Issued token ${token.token_id}`);
-    return;
-  }
-
-  if (action === "revoke") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "revoke token");
-    const tokenId = value || flags.id;
-    if (!tokenId) throw new Error("Missing token id.");
-    const token = data.tokens.find((item) => item.token_id === tokenId);
-    if (!token) throw new Error(`Token not found: ${tokenId}`);
-    token.status = "revoked";
-    token.revoked_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("access_token.revoked", "token", token.token_id, `Token revoked`);
-    console.log(`Revoked token ${token.token_id}`);
-    return;
-  }
-
-  if (action === "reissue") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "reissue token");
-    const tokenId = value || flags.id;
-    if (!tokenId) throw new Error("Missing token id.");
-    const previous = data.tokens.find((item) => item.token_id === tokenId);
-    if (!previous) throw new Error(`Token not found: ${tokenId}`);
-    if (previous.status === "active" && !flags.force) {
-      throw new Error("Cannot reissue an active token without --force.");
-    }
-    const taskId = flags.task || previous.task_id;
-    const assignee = flags.assignee || previous.assignee_id;
-    assertTokenCanBeIssued(taskId, assignee);
-    const scope = buildExecutionScope(taskId, flags, previous);
-    const token = {
-      ...previous,
-      token_id: `task-token-${String(data.tokens.length + 1).padStart(3, "0")}`,
-      task_id: taskId,
-      assignee_id: assignee,
-      status: "active",
-      created_at: new Date().toISOString(),
-      expires_at: flags.expires || previous.expires_at || null,
-      workstreams: scope.workstreams,
-      app_usernames: scope.app_usernames,
-      allowed_files: scope.allowed_files,
-      forbidden_files: scope.forbidden_files,
-      scope_mode: scope.scope_mode,
-      scope_source: scope.scope_source,
-      scope_warnings: scope.scope_warnings,
-      max_usage_tokens: flags["max-usage-tokens"] ? Number(flags["max-usage-tokens"]) : previous.max_usage_tokens || null,
-      max_cost: flags["max-cost"] ? Number(flags["max-cost"]) : previous.max_cost || null,
-      budget_approval_required: flags["budget-approval-required"] !== undefined ? Boolean(flags["budget-approval-required"]) : Boolean(previous.budget_approval_required),
-      reissued_from: previous.token_id,
-      reissue_reason: flags.reason || "",
-      revoked_at: undefined,
-      revocation_reason: undefined
-    };
-    data.tokens.push(token);
-    writeJsonFile(file, data);
-    appendAudit("access_token.reissued", "token", token.token_id, `Token reissued from ${previous.token_id}`);
-    console.log(`Reissued token ${token.token_id} from ${previous.token_id}`);
-    return;
-  }
-
-  throw new Error(`Unknown token action: ${action}`);
-}
-
-function buildExecutionScope(taskId, flags = {}, previous = null) {
-  const taskItem = getTaskById(taskId);
-  if (!taskItem) throw new Error(`Task not found: ${taskId}`);
-  const workstreams = taskWorkstreams(taskItem).filter((item) => item !== "unassigned");
-  validateKnownWorkstreams(workstreams);
-  const appUsernames = Array.isArray(taskItem.app_usernames) && taskItem.app_usernames.length
-    ? taskItem.app_usernames
-    : taskItem.app_username ? [taskItem.app_username] : [];
-  const explicitAllowed = flags["allowed-files"] ? parseCsv(flags["allowed-files"]) : null;
-  const explicitForbidden = flags["forbidden-files"] ? parseCsv(flags["forbidden-files"]) : null;
-  const autoAllowed = deriveExecutionAllowedFiles(taskItem, workstreams);
-  const allowedFiles = explicitAllowed || (previous && !flags["auto-scope"] ? previous.allowed_files || [] : autoAllowed);
-  const forbiddenFiles = explicitForbidden || (previous && !flags["forbidden-files"] ? previous.forbidden_files || [] : defaultForbiddenFiles());
-  const scopeMode = explicitAllowed ? "manual" : "auto";
-  const warnings = [];
-  if (allowedFiles.length === 0) warnings.push("token has no allowed_files; execution falls back to app/workstream/session gates");
-  if (explicitAllowed) {
-    const broad = findPathsOutsideDerivedScope(explicitAllowed, autoAllowed);
-    if (broad.length > 0 && !flags["allow-broad-scope"]) {
-      throw new Error(`Token scope is broader than task app/workstream boundaries: ${broad.join(", ")}. Use --allow-broad-scope for an audited override.`);
-    }
-    if (broad.length > 0) warnings.push(`broad scope override: ${broad.join(", ")}`);
-  }
-  return {
-    workstreams,
-    app_usernames: appUsernames,
-    allowed_files: allowedFiles,
-    forbidden_files: forbiddenFiles,
-    scope_mode: scopeMode,
-    scope_source: explicitAllowed && warnings.some((item) => item.startsWith("broad scope override"))
-      ? "manual_allowed_files_override"
-      : explicitAllowed ? "manual_allowed_files" : "task_app_and_workstream_boundaries",
-    scope_warnings: warnings
-  };
-}
-
-function deriveExecutionAllowedFiles(taskItem, workstreams) {
-  const appPaths = getTaskAppPaths(taskItem);
-  const workstreamPaths = workstreams.flatMap((stream) => getWorkstreamPathRules(stream));
-  if (appPaths.length > 0 && workstreamPaths.length > 0) {
-    const scoped = [];
-    for (const appPath of appPaths) {
-      const appScope = normalizeLockScope(appPath);
-      for (const streamPath of workstreamPaths) {
-        const streamScope = normalizeLockScope(streamPath);
-        if (!streamScope) continue;
-        if (pathScopeContains(appScope, streamScope)) scoped.push(streamScope);
-        else if (pathScopeContains(streamScope, appScope)) scoped.push(appScope);
-      }
-    }
-    if (scoped.length > 0) return uniqueList(scoped);
-  }
-  return uniqueList([...appPaths, ...workstreamPaths].map((item) => normalizePathRule(item)).filter(Boolean));
-}
-
-function defaultForbiddenFiles() {
-  return [".env", ".env.*", "secrets/", ".kabeeri/owner_auth.json", ".kabeeri/session.json"];
-}
-
-function findPathsOutsideDerivedScope(requested, derived) {
-  if (!derived || derived.length === 0) return [];
-  return requested.filter((item) => {
-    const target = normalizeLockScope(item);
-    return !derived.some((scope) => {
-      const normalized = normalizeLockScope(scope);
-      return target === normalized || pathScopeContains(normalized, target) || pathScopeContains(target, normalized);
-    });
-  });
-}
-
-function uniqueList(values) {
-  return [...new Set((values || []).filter(Boolean))];
-}
-
-function assertTokenCanBeIssued(taskId, assigneeId) {
-  const taskItem = getTaskById(taskId);
-  if (!taskItem) throw new Error(`Task not found: ${taskId}`);
-  assertAssigneeCanTakeTask(assigneeId, taskItem);
-  if (hasConfiguredIdentities()) {
-    const identity = getIdentity(assigneeId);
-    if (!identity) throw new Error(`Unknown assignee: ${assigneeId}`);
-    if (taskItem.assignee_id && taskItem.assignee_id !== assigneeId) {
-      throw new Error(`Token assignee mismatch: ${taskId} is assigned to ${taskItem.assignee_id}.`);
-    }
-  }
-}
-
-function budget(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/ai_usage/budget_approvals.json";
-  if (!fileExists(file)) writeJsonFile(file, { approvals: [] });
-  const data = readJsonFile(file);
-  data.approvals = data.approvals || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Approval", "Task", "Status", "Tokens", "Cost", "Expires"], data.approvals.map((item) => [
-      item.approval_id,
-      item.task_id,
-      item.status,
-      item.extra_tokens || "",
-      item.extra_cost || "",
-      item.expires_at || ""
-    ])));
-    return;
-  }
-
-  if (action === "approve") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "approve budget overrun");
-    const taskId = flags.task || value;
-    if (!taskId) throw new Error("Missing --task.");
-    const approval = {
-      approval_id: `budget-approval-${String(data.approvals.length + 1).padStart(3, "0")}`,
-      task_id: taskId,
-      status: "active",
-      extra_tokens: flags.tokens ? Number(flags.tokens) : null,
-      extra_cost: flags.cost ? Number(flags.cost) : null,
-      reason: flags.reason || "",
-      approved_by: getEffectiveActor(flags) || getOwnerActor(flags),
-      created_at: new Date().toISOString(),
-      expires_at: flags.expires || null
-    };
-    data.approvals.push(approval);
-    writeJsonFile(file, data);
-    appendAudit("budget.approved", "task", taskId, `Budget overrun approved: ${approval.approval_id}`);
-    console.log(`Approved budget overrun ${approval.approval_id}`);
-    return;
-  }
-
-  if (action === "revoke") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "revoke budget approval");
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing approval id.");
-    const approval = data.approvals.find((item) => item.approval_id === id);
-    if (!approval) throw new Error(`Budget approval not found: ${id}`);
-    approval.status = "revoked";
-    approval.revoked_at = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("budget.revoked", "task", approval.task_id, `Budget approval revoked: ${id}`);
-    console.log(`Revoked budget approval ${id}`);
-    return;
-  }
-
-  throw new Error(`Unknown budget action: ${action}`);
-}
-
-function contextPack(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureCostControlState();
-  const file = ".kabeeri/ai_usage/context_packs.json";
-  const data = readJsonFile(file);
-  data.context_packs = data.context_packs || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Context Pack", "Task", "Workstream", "Tokens", "Cost"], data.context_packs.map((item) => [
-      item.context_pack_id,
-      item.task_id,
-      item.workstream || "",
-      item.estimated_tokens || 0,
-      item.estimated_cost || 0
-    ])));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing context pack id.");
-    const item = data.context_packs.find((entry) => entry.context_pack_id === id);
-    if (!item) throw new Error(`Context pack not found: ${id}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "create") {
-    const taskId = flags.task || value;
-    if (!taskId) throw new Error("Missing --task.");
-    const taskItem = getTaskById(taskId);
-    if (!taskItem) throw new Error(`Task not found: ${taskId}`);
-    const allowedFiles = parseCsv(flags["allowed-files"]);
-    const forbiddenFiles = parseCsv(flags["forbidden-files"] || ".env,secrets/,.git/");
-    const inputTokens = Number(flags["input-tokens"] || flags.tokens || estimateContextPackTokens(taskItem, allowedFiles));
-    const outputTokens = Number(flags["output-tokens"] || 0);
-    const cachedTokens = Number(flags["cached-tokens"] || 0);
-    const provider = flags.provider || "unknown";
-    const model = flags.model || "unknown";
-    const cost = calculateUsageCost({ provider, model, inputTokens, outputTokens, cachedTokens });
-    const id = flags.id || `ctx-${String(data.context_packs.length + 1).padStart(3, "0")}`;
-    if (data.context_packs.some((entry) => entry.context_pack_id === id)) throw new Error(`Context pack already exists: ${id}`);
-    const pack = {
-      context_pack_id: id,
-      task_id: taskId,
-      source_reference: taskItem.source || flags.source || "manual",
-      workstream: taskItem.workstream || "unassigned",
-      goal: flags.goal || taskItem.title,
-      allowed_files: allowedFiles,
-      forbidden_files: forbiddenFiles,
-      required_specs: parseCsv(flags.specs),
-      acceptance_criteria: taskItem.acceptance_criteria || [],
-      memory_summary: getMemorySummaryText(),
-      open_questions: parseCsv(flags.questions || flags["open-questions"]),
-      estimated_tokens: inputTokens + outputTokens + cachedTokens,
-      estimated_input_tokens: inputTokens,
-      estimated_output_tokens: outputTokens,
-      estimated_cached_tokens: cachedTokens,
-      estimated_cost: flags.cost !== undefined ? Number(flags.cost || 0) : cost.cost,
-      cost_source: flags.cost !== undefined ? "manual" : cost.source,
-      currency: flags.currency || getPricingCurrency() || "USD",
-      created_at: new Date().toISOString()
-    };
-    data.context_packs.push(pack);
-    writeJsonFile(file, data);
-    writeTextFile(`.kabeeri/ai_usage/${id}.context.md`, buildContextPackMarkdown(pack));
-    appendAudit("context_pack.created", "context_pack", id, `Context pack created for ${taskId}`);
-    console.log(JSON.stringify(pack, null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown context-pack action: ${action}`);
-}
-
-function preflight(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureCostControlState();
-  const file = ".kabeeri/ai_usage/cost_preflights.json";
-  const data = readJsonFile(file);
-  data.preflights = data.preflights || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Preflight", "Task", "Risk", "Budget", "Model", "Approval"], data.preflights.map((item) => [
-      item.preflight_id,
-      item.task_id,
-      item.risk_level,
-      item.budget_status,
-      item.recommended_model_class,
-      item.approval_required
-    ])));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing preflight id.");
-    const item = data.preflights.find((entry) => entry.preflight_id === id);
-    if (!item) throw new Error(`Preflight not found: ${id}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "estimate") {
-    const taskId = flags.task || value;
-    if (!taskId) throw new Error("Missing --task.");
-    const taskItem = getTaskById(taskId);
-    if (!taskItem) throw new Error(`Task not found: ${taskId}`);
-    const contextPackId = flags.context || flags["context-pack"] || findLatestContextPackForTask(taskId);
-    const pack = contextPackId ? getContextPack(contextPackId) : null;
-    const inputTokens = Number(flags["input-tokens"] || (pack ? pack.estimated_input_tokens || pack.estimated_tokens || 0 : estimateContextPackTokens(taskItem, [])));
-    const outputTokens = Number(flags["output-tokens"] || 3500);
-    const cachedTokens = Number(flags["cached-tokens"] || (pack ? pack.estimated_cached_tokens || 0 : 0));
-    const provider = flags.provider || "unknown";
-    const model = flags.model || "unknown";
-    const cost = calculateUsageCost({ provider, model, inputTokens, outputTokens, cachedTokens });
-    const riskLevel = flags.risk || inferTaskRisk(taskItem);
-    const taskKind = flags.kind || inferTaskKind(taskItem, riskLevel);
-    const route = recommendModelRoute(taskKind, riskLevel);
-    const estimatedCost = flags.cost !== undefined ? Number(flags.cost || 0) : cost.cost;
-    const budget = getTaskBudget(taskId);
-    const budgetStatus = budget.max_cost && estimatedCost > budget.max_cost ? "over_budget" : budget.max_usage_tokens && (inputTokens + outputTokens + cachedTokens) > budget.max_usage_tokens ? "over_budget" : "within_budget";
-    const broadContext = Boolean(flags["broad-context"]) || inputTokens > 30000;
-    const approvalRequired = budgetStatus === "over_budget" || broadContext || ["high", "critical"].includes(riskLevel) || route.recommended_model_class === "premium";
-    const preflightItem = {
-      preflight_id: flags.id || `preflight-${String(data.preflights.length + 1).padStart(3, "0")}`,
-      task_id: taskId,
-      context_pack_id: contextPackId || null,
-      requested_action: taskKind,
-      risk_level: riskLevel,
-      estimated_input_tokens: inputTokens,
-      estimated_output_tokens: outputTokens,
-      estimated_cached_tokens: cachedTokens,
-      estimated_cost: estimatedCost,
-      cost_source: flags.cost !== undefined ? "manual" : cost.source,
-      currency: flags.currency || getPricingCurrency() || "USD",
-      budget_status: budgetStatus,
-      recommended_path: broadContext ? "split_context_first" : "context_pack_first",
-      recommended_model_class: route.recommended_model_class,
-      split_recommended: broadContext || inputTokens + outputTokens > 50000,
-      approval_required: approvalRequired,
-      reason: route.reason,
-      created_at: new Date().toISOString()
-    };
-    data.preflights.push(preflightItem);
-    writeJsonFile(file, data);
-    appendAudit("cost_preflight.created", "preflight", preflightItem.preflight_id, `Cost preflight created for ${taskId}`);
-    console.log(JSON.stringify(preflightItem, null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown preflight action: ${action}`);
-}
-
-function modelRoute(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureCostControlState();
-  const routes = readJsonFile(".kabeeri/ai_usage/model_routing.json").routes || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Task Kind", "Model Class", "Reason"], routes.map((item) => [item.task_kind, item.recommended_model_class, item.reason])));
-    return;
-  }
-
-  if (action === "recommend") {
-    const taskKind = flags.kind || value || "implementation";
-    const risk = flags.risk || "medium";
-    console.log(JSON.stringify(recommendModelRoute(taskKind, risk), null, 2));
-    return;
-  }
-
-  throw new Error(`Unknown model-route action: ${action}`);
-}
-
-function ensureCostControlState() {
-  const fs = require("fs");
-  const path = require("path");
-  fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "ai_usage"), { recursive: true });
-  if (!fileExists(".kabeeri/ai_usage/context_packs.json")) writeJsonFile(".kabeeri/ai_usage/context_packs.json", { context_packs: [] });
-  if (!fileExists(".kabeeri/ai_usage/cost_preflights.json")) writeJsonFile(".kabeeri/ai_usage/cost_preflights.json", { preflights: [] });
-  if (!fileExists(".kabeeri/ai_usage/model_routing.json")) {
-    writeJsonFile(".kabeeri/ai_usage/model_routing.json", {
-      routes: [
-        { task_kind: "intent_classification", recommended_model_class: "cheap", reason: "Short classification can use low-cost models or local rules." },
-        { task_kind: "context_pack_generation", recommended_model_class: "cheap", reason: "File lists, summaries, and acceptance extraction should be inexpensive." },
-        { task_kind: "standard_docs_spec", recommended_model_class: "balanced", reason: "Documentation synthesis needs quality but usually does not require premium reasoning." },
-        { task_kind: "implementation", recommended_model_class: "balanced", reason: "Production code changes usually need stronger reasoning than simple classification." },
-        { task_kind: "security_review", recommended_model_class: "premium", reason: "Security review has higher risk and benefits from stronger reasoning." },
-        { task_kind: "owner_verify", recommended_model_class: "human_only", reason: "Final verification is Owner-only." }
-      ]
-    });
-  }
-}
-
-function estimateContextPackTokens(taskItem, allowedFiles) {
-  const base = 1200;
-  const acceptance = (taskItem.acceptance_criteria || []).join(" ").length * 0.35;
-  const fileCost = (allowedFiles || []).length * 450;
-  return Math.ceil(base + acceptance + fileCost);
-}
-
-function getMemorySummaryText() {
-  if (fileExists(".kabeeri/memory/memory_summary.json")) {
-    const summary = readJsonFile(".kabeeri/memory/memory_summary.json");
-    return JSON.stringify(summary);
-  }
-  return "No memory summary generated yet.";
-}
-
-function buildContextPackMarkdown(pack) {
-  return `# Task Context Pack - ${pack.context_pack_id}
-
-Task: ${pack.task_id}
-Workstream: ${pack.workstream}
-Goal: ${pack.goal}
-
-## Allowed Files
-
-${pack.allowed_files.length ? pack.allowed_files.map((item) => `- ${item}`).join("\n") : "- None listed."}
-
-## Forbidden Files
-
-${pack.forbidden_files.length ? pack.forbidden_files.map((item) => `- ${item}`).join("\n") : "- None listed."}
-
-## Required Specs
-
-${pack.required_specs.length ? pack.required_specs.map((item) => `- ${item}`).join("\n") : "- None listed."}
-
-## Acceptance Criteria
-
-${pack.acceptance_criteria.length ? pack.acceptance_criteria.map((item) => `- ${item}`).join("\n") : "- None listed."}
-
-## Memory Summary
-
-${pack.memory_summary}
-
-## Open Questions
-
-${pack.open_questions.length ? pack.open_questions.map((item) => `- ${item}`).join("\n") : "- None recorded."}
-
-## Estimate
-
-- Tokens: ${pack.estimated_tokens}
-- Cost: ${pack.estimated_cost} ${pack.currency}
-- Cost source: ${pack.cost_source}
-`;
-}
-
-function getPricingCurrency() {
-  if (!fileExists(".kabeeri/ai_usage/pricing_rules.json")) return "USD";
-  return readJsonFile(".kabeeri/ai_usage/pricing_rules.json").currency || "USD";
-}
-
-function findLatestContextPackForTask(taskId) {
-  const packs = readStateArray(".kabeeri/ai_usage/context_packs.json", "context_packs").filter((item) => item.task_id === taskId);
-  return packs.length ? packs[packs.length - 1].context_pack_id : null;
-}
-
-function getContextPack(id) {
-  const pack = readStateArray(".kabeeri/ai_usage/context_packs.json", "context_packs").find((item) => item.context_pack_id === id);
-  if (!pack) throw new Error(`Context pack not found: ${id}`);
-  return pack;
-}
-
-function inferTaskRisk(taskItem) {
-  const text = `${taskItem.title || ""} ${taskItem.workstream || ""} ${(taskItem.workstreams || []).join(" ")}`.toLowerCase();
-  if (/security|secret|payment|stripe|migration|release|publish|production|privacy/.test(text)) return "high";
-  return "medium";
-}
-
-function inferTaskKind(taskItem, riskLevel) {
-  if (riskLevel === "high") return "security_review";
-  const text = `${taskItem.title || ""} ${taskItem.source || ""}`.toLowerCase();
-  if (/doc|spec|documentation/.test(text)) return "standard_docs_spec";
-  return "implementation";
-}
-
-function recommendModelRoute(taskKind, risk) {
-  const routes = readJsonFile(".kabeeri/ai_usage/model_routing.json").routes || [];
-  const route = routes.find((item) => item.task_kind === taskKind) || routes.find((item) => item.task_kind === "implementation") || {
-    task_kind: taskKind,
-    recommended_model_class: "balanced",
-    reason: "No exact route exists, so balanced is the safe default."
-  };
-  if (["high", "critical"].includes(risk) && !["human_only", "premium"].includes(route.recommended_model_class)) {
-    return { ...route, risk_level: risk, recommended_model_class: "premium", reason: `${route.reason} Risk is ${risk}, so premium review is recommended.` };
-  }
-  return { ...route, risk_level: risk };
-}
-
-function getTaskBudget(taskId) {
-  const tokens = readStateArray(".kabeeri/tokens.json", "tokens").filter((item) => item.task_id === taskId && item.status === "active");
-  const active = tokens[0] || {};
-  return {
-    max_usage_tokens: active.max_usage_tokens || null,
-    max_cost: active.max_cost || null
-  };
-}
-
-function handoff(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureHandoffState();
-  const file = ".kabeeri/handoff/packages.json";
-  const data = readJsonFile(file);
-  data.packages = data.packages || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Package", "Audience", "Status", "Output", "Created"], data.packages.map((item) => [
-      item.package_id,
-      item.audience,
-      item.status,
-      item.output_dir,
-      item.created_at
-    ])));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing handoff package id.");
-    const item = data.packages.find((entry) => entry.package_id === id);
-    if (!item) throw new Error(`Handoff package not found: ${id}`);
-    console.log(JSON.stringify(item, null, 2));
-    return;
-  }
-
-  if (action === "package" || action === "generate") {
-    const id = flags.id || value || `handoff-${String(data.packages.length + 1).padStart(3, "0")}`;
-    assertSafeName(id);
-    if (data.packages.some((entry) => entry.package_id === id)) throw new Error(`Handoff package already exists: ${id}`);
-    const outputDir = (flags.output || `.kabeeri/handoff/${id}`).replace(/\\/g, "/").replace(/\/$/, "");
-    const audience = normalizeHandoffAudience(flags.audience || "owner");
-    runPolicyGate("handoff", { packageId: id, audience }, flags);
-    const state = collectDashboardState();
-    const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
-    const usageSummary = summarizeUsage();
-    const packageItem = {
-      package_id: id,
-      audience,
-      status: "generated",
-      output_dir: outputDir,
-      created_by: getEffectiveActor(flags) || "local-cli",
-      created_at: new Date().toISOString(),
-      files: [
-        `${outputDir}/00_INDEX.md`,
-        `${outputDir}/01_BUSINESS_SUMMARY.md`,
-        `${outputDir}/02_TECHNICAL_SUMMARY.md`,
-        `${outputDir}/03_FEATURE_READINESS.md`,
-        `${outputDir}/04_PRODUCTION_PUBLISH_STATUS.md`,
-        `${outputDir}/05_AI_COST_SUMMARY.md`,
-        `${outputDir}/06_NEXT_ROADMAP.md`
-      ]
-    };
-    writeTextFile(packageItem.files[0], buildHandoffIndex(packageItem, project));
-    writeTextFile(packageItem.files[1], buildBusinessHandoffSummary(state, project));
-    writeTextFile(packageItem.files[2], buildTechnicalHandoffSummary(state, project));
-    writeTextFile(packageItem.files[3], buildFeatureReadinessReport(state));
-    writeTextFile(packageItem.files[4], buildProductionPublishReport(state));
-    writeTextFile(packageItem.files[5], buildAiCostHandoffReport(usageSummary, state));
-    writeTextFile(packageItem.files[6], buildNextRoadmapReport(state));
-    data.packages.push(packageItem);
-    writeJsonFile(file, data);
-    appendAudit("handoff.generated", "handoff", id, `Handoff package generated: ${outputDir}`);
-    console.log(`Generated handoff package ${id}: ${outputDir}`);
-    return;
-  }
-
-  throw new Error(`Unknown handoff action: ${action}`);
-}
-
-function ensureHandoffState() {
-  const fs = require("fs");
-  const path = require("path");
-  fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "handoff"), { recursive: true });
-  if (!fileExists(".kabeeri/handoff/packages.json")) writeJsonFile(".kabeeri/handoff/packages.json", { packages: [] });
-}
-
-function normalizeHandoffAudience(value) {
-  const normalized = String(value || "owner").toLowerCase().replace(/-/g, "_");
-  const allowed = new Set(["client", "owner", "internal", "team"]);
-  if (!allowed.has(normalized)) throw new Error("Invalid handoff audience. Use client, owner, internal, or team.");
-  return normalized;
-}
-
-function buildHandoffIndex(packageItem, project) {
-  return `# Kabeeri Handoff Package - ${packageItem.package_id}
-
-Project: ${project.name || project.framework || "Kabeeri project"}
-Audience: ${packageItem.audience}
-Generated at: ${packageItem.created_at}
-
-## Files
-
-- [Business Summary](01_BUSINESS_SUMMARY.md)
-- [Technical Summary](02_TECHNICAL_SUMMARY.md)
-- [Feature Readiness](03_FEATURE_READINESS.md)
-- [Production Vs Publish Status](04_PRODUCTION_PUBLISH_STATUS.md)
-- [AI Cost Summary](05_AI_COST_SUMMARY.md)
-- [Next Roadmap](06_NEXT_ROADMAP.md)
-
-## Owner Note
-
-This package is generated from local .kabeeri governance state. Owner approval is still required before final delivery, release, publish, or scope closure.
-`;
-}
-
-function buildBusinessHandoffSummary(state, project) {
-  const business = state.business;
-  const readyFeatures = (business.features || []).filter((item) => ["ready_to_demo", "ready_to_publish"].includes(item.readiness));
-  const readyJourneys = (business.journeys || []).filter((item) => item.ready_to_show || item.status === "ready_to_show");
-  return `# Business Handoff Summary
-
-## Project
-
-- Name: ${project.name || project.framework || "Kabeeri project"}
-- Profile: ${project.profile || ""}
-- Delivery mode: ${project.delivery_mode || ""}
-- Language: ${project.language || ""}
-- Version: ${project.version || ""}
-
-## Readiness Snapshot
-
-- Total tasks: ${business.tasks_total || 0}
-- Owner verified tasks: ${business.verified_tasks || 0}
-- Ready features: ${readyFeatures.length}
-- Ready journeys: ${readyJourneys.length}
-- AI usage cost: ${business.ai_usage_cost || 0}
-- AI usage tokens: ${business.ai_usage_tokens || 0}
-
-## Ready To Show
-
-${readyFeatures.length ? readyFeatures.map((item) => `- ${item.title} (${item.readiness})`).join("\n") : "- No ready features recorded yet."}
-
-## Ready Journeys
-
-${readyJourneys.length ? readyJourneys.map((item) => `- ${item.name} (${item.status})`).join("\n") : "- No ready journeys recorded yet."}
-`;
-}
-
-function buildTechnicalHandoffSummary(state, project) {
-  const technical = state.technical;
-  return `# Technical Handoff Summary
-
-## Project Metadata
-
-- Framework: ${project.framework || "Not recorded"}
-- Profile: ${project.profile || "Not recorded"}
-- Delivery mode: ${project.delivery_mode || "Not recorded"}
-- Engine version: ${project.version || "Not recorded"}
-
-## Governance State
-
-- Task status: ${JSON.stringify(technical.tasks || {})}
-- Active locks: ${(technical.active_locks || []).length}
-- Active tokens: ${(technical.active_tokens || []).length}
-- Session status: ${JSON.stringify(technical.sessions || {})}
-- Policy status: ${JSON.stringify(technical.policies || {})}
-- Context packs: ${technical.context_packs || 0}
-- Cost preflight status: ${JSON.stringify(technical.cost_preflights || {})}
-
-## Developers
-
-${(technical.developers || []).length ? technical.developers.map((item) => `- ${item.id}: ${item.display_name || item.name || ""} (${item.role || ""})`).join("\n") : "- No human developers recorded."}
-
-## AI Agents
-
-${(technical.agents || []).length ? technical.agents.map((item) => `- ${item.id}: ${item.display_name || item.name || ""} (${item.role || ""})`).join("\n") : "- No AI agents recorded."}
-`;
-}
-
-function buildFeatureReadinessReport(state) {
-  const features = state.records.features || [];
-  const tasks = state.records.tasks || [];
-  const taskMap = Object.fromEntries(tasks.map((item) => [item.id, item]));
-  const rows = features.map((featureItem) => {
-    const evidence = (featureItem.task_ids || []).map((taskId) => `${taskId}:${taskMap[taskId] ? taskMap[taskId].status : "missing"}`).join(", ") || "-";
-    return `| ${featureItem.id} | ${featureItem.title} | ${featureItem.readiness} | ${evidence} | ${featureItem.audience || ""} |`;
-  });
-  return `# Feature Readiness Report
-
-| ID | Feature | Readiness | Evidence | Audience |
-| --- | --- | --- | --- | --- |
-${rows.length ? rows.join("\n") : "| - | No features recorded | - | - | - |"}
-`;
-}
-
-function buildProductionPublishReport(state) {
-  const tasks = state.records.tasks || [];
-  const activeLocks = (state.records.locks || []).filter((item) => item.status === "active");
-  const activeTokens = (state.records.tokens || []).filter((item) => item.status === "active");
-  const blockedPolicies = (state.records.policy_results || []).filter((item) => item.status === "blocked");
-  const unverifiedTasks = tasks.filter((item) => item.status !== "owner_verified");
-  const publishStatus = blockedPolicies.length || activeLocks.length || activeTokens.length || unverifiedTasks.length ? "not_ready_to_publish" : "ready_to_publish";
-  return `# Production Vs Publish Status
-
-Status: ${publishStatus}
-
-## Blocking Signals
-
-- Unverified tasks: ${unverifiedTasks.length}
-- Active locks: ${activeLocks.length}
-- Active tokens: ${activeTokens.length}
-- Blocked policy results: ${blockedPolicies.length}
-
-## Notes
-
-Kabeeri treats publish as an Owner-governed decision. A clean report does not deploy or publish by itself.
-`;
-}
-
-function buildAiCostHandoffReport(usage, state) {
-  const preflights = state.records.cost_preflights || [];
-  return `# AI Token Cost Summary
-
-## Totals
-
-- Events: ${usage.total_events}
-- Tokens: ${usage.total_tokens}
-- Cost: ${usage.total_cost} ${usage.currency}
-- Input tokens: ${usage.input_tokens}
-- Output tokens: ${usage.output_tokens}
-- Cached tokens: ${usage.cached_tokens}
-
-## By Task
-
-${handoffObjectTable(["Task", "Events", "Tokens", "Cost"], usage.by_task)}
-
-## By Developer
-
-${handoffObjectTable(["Developer", "Events", "Tokens", "Cost"], usage.by_developer)}
-
-## Cost Preflights
-
-${preflights.length ? preflights.map((item) => `- ${item.preflight_id}: ${item.task_id}, ${item.budget_status}, approval_required=${item.approval_required}`).join("\n") : "- No cost preflights recorded."}
-`;
-}
-
-function buildNextRoadmapReport(state) {
-  const tasks = state.records.tasks || [];
-  const features = state.records.features || [];
-  const blockedPolicies = (state.records.policy_results || []).filter((item) => item.status === "blocked");
-  const candidates = tasks.filter((item) => !["owner_verified", "rejected"].includes(item.status)).slice(0, 20);
-  const futureFeatures = features.filter((item) => ["future", "needs_review"].includes(item.readiness)).slice(0, 20);
-  return `# Next Roadmap
-
-## Task Candidates
-
-${candidates.length ? candidates.map((item) => `- ${item.id}: ${item.title} (${item.status})`).join("\n") : "- No open task candidates recorded."}
-
-## Feature Candidates
-
-${futureFeatures.length ? futureFeatures.map((item) => `- ${item.id}: ${item.title} (${item.readiness})`).join("\n") : "- No future or needs-review features recorded."}
-
-## Governance Follow-Ups
-
-${blockedPolicies.length ? blockedPolicies.map((item) => `- Resolve policy blockers for ${item.subject_id}: ${(item.blockers || []).map((blocker) => blocker.check_id).join(", ")}`).join("\n") : "- No blocked policy results recorded."}
-`;
-}
-
-function handoffObjectTable(headers, data) {
-  const entries = Object.entries(data || {});
-  if (!entries.length) return "| Name | Events | Tokens | Cost |\n| --- | ---: | ---: | ---: |\n| - | 0 | 0 | 0 |";
-  return `| ${headers.join(" | ")} |\n| --- | ---: | ---: | ---: |\n${entries.map(([key, item]) => `| ${key} | ${item.events || 0} | ${item.tokens || 0} | ${item.cost || 0} |`).join("\n")}`;
-}
-
-function security(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureSecurityState();
-  const file = ".kabeeri/security/security_scans.json";
-  const data = readJsonFile(file);
-  data.scans = data.scans || [];
-
-  if (!action || action === "list") {
-    console.log(table(["Scan", "Status", "Findings", "Critical", "High", "Generated"], data.scans.map((item) => [
-      item.scan_id,
-      item.status,
-      item.findings_total,
-      item.severity_counts.critical || 0,
-      item.severity_counts.high || 0,
-      item.generated_at
-    ])));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value || (data.scans.length ? data.scans[data.scans.length - 1].scan_id : null);
-    if (!id) throw new Error("No security scan exists yet.");
-    const scan = data.scans.find((item) => item.scan_id === id);
-    if (!scan) throw new Error(`Security scan not found: ${id}`);
-    console.log(JSON.stringify(scan, null, 2));
-    return;
-  }
-
-  if (action === "scan") {
-    const scan = runSecurityScan(flags);
-    data.scans.push(scan);
-    writeJsonFile(file, data);
-    writeJsonFile(".kabeeri/security/latest_security_scan.json", scan);
-    writeTextFile(".kabeeri/security/latest_security_report.md", buildSecurityReport(scan));
-    appendAudit("security.scan", "security", scan.scan_id, `Security scan completed: ${scan.status}`);
-    console.log(JSON.stringify(scan, null, 2));
-    return;
-  }
-
-  if (action === "report") {
-    const id = flags.id || value || (data.scans.length ? data.scans[data.scans.length - 1].scan_id : null);
-    if (!id) throw new Error("No security scan exists yet.");
-    const scan = data.scans.find((item) => item.scan_id === id);
-    if (!scan) throw new Error(`Security scan not found: ${id}`);
-    const output = flags.output || `.kabeeri/security/${id}.security.md`;
-    writeTextFile(output, buildSecurityReport(scan));
-    appendAudit("security.report", "security", id, `Security report written: ${output}`);
-    console.log(`Wrote security report: ${output}`);
-    return;
-  }
-
-  if (action === "gate") {
-    const scan = runSecurityScan(flags);
-    data.scans.push(scan);
-    writeJsonFile(file, data);
-    writeJsonFile(".kabeeri/security/latest_security_scan.json", scan);
-    writeTextFile(".kabeeri/security/latest_security_report.md", buildSecurityReport(scan));
-    appendAudit("security.gate", "security", scan.scan_id, `Security gate evaluated: ${scan.status}`);
-    if (scan.status === "blocked") {
-      throw new Error(`Security gate blocked: ${scan.blockers.length} blocker finding(s). Run kvdf security report --id ${scan.scan_id}.`);
-    }
-    console.log(`Security gate passed: ${scan.scan_id}`);
-    return;
-  }
-
-  throw new Error(`Unknown security action: ${action}`);
-}
-
-function ensureSecurityState() {
-  const fs = require("fs");
-  const path = require("path");
-  fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "security"), { recursive: true });
-  if (!fileExists(".kabeeri/security/security_scans.json")) writeJsonFile(".kabeeri/security/security_scans.json", { scans: [] });
-  if (!fileExists(".kabeeri/security/security_readiness.json")) writeJsonFile(".kabeeri/security/security_readiness.json", { checks: [] });
-}
-
-function runSecurityScan(flags = {}) {
-  const fs = require("fs");
-  const path = require("path");
-  const root = repoRoot();
-  const include = parseCsv(flags.include || "");
-  const exclude = new Set([
-    ".git",
-    "node_modules",
-    ".kabeeri/security",
-    ".kabeeri/site",
-    "vendor",
-    "storage/logs",
-    "dist",
-    "build",
-    "coverage",
-    ...parseCsv(flags.exclude || "")
-  ].map(normalizeScanPath));
-  const files = [];
-  const maxBytes = Number(flags["max-bytes"] || 300000);
-
-  function walk(current) {
-    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
-      const fullPath = path.join(current, entry.name);
-      const relative = normalizeScanPath(path.relative(root, fullPath));
-      if (!relative) continue;
-      if (isScanExcluded(relative, exclude)) continue;
-      if (entry.isDirectory()) {
-        walk(fullPath);
-      } else if (entry.isFile()) {
-        if (include.length > 0 && !include.some((item) => relative.startsWith(normalizeScanPath(item)))) continue;
-        if (isLikelyTextFile(relative) && fs.statSync(fullPath).size <= maxBytes) files.push({ fullPath, relative });
-      }
-    }
-  }
-
-  walk(root);
-  const findings = [];
-  for (const fileItem of files) {
-    const fileName = fileItem.relative.split("/").pop() || "";
-    if (fileName === ".env") {
-      findings.push({
-        finding_id: `finding-${String(findings.length + 1).padStart(3, "0")}`,
-        rule_id: "env_file_committed",
-        severity: "high",
-        file: fileItem.relative,
-        line: 1,
-        message: "A real .env file should not be committed or shared with AI tools.",
-        evidence: "[file path only]"
-      });
-    }
-    const content = fs.readFileSync(fileItem.fullPath, "utf8");
-    const lines = content.split(/\r?\n/);
-    lines.forEach((line, index) => {
-      for (const rule of securityScanRules()) {
-        if (rule.pattern.test(line)) {
-          findings.push({
-            finding_id: `finding-${String(findings.length + 1).padStart(3, "0")}`,
-            rule_id: rule.id,
-            severity: rule.severity,
-            file: fileItem.relative,
-            line: index + 1,
-            message: rule.message,
-            evidence: redactSecretEvidence(line)
-          });
-        }
-      }
-    });
-  }
-
-  const severityCounts = summarizeBy(findings, "severity");
-  const blockers = findings.filter((item) => ["critical", "high"].includes(item.severity));
-  return {
-    scan_id: flags.id || `security-scan-${Date.now()}`,
-    generated_at: new Date().toISOString(),
-    status: blockers.length > 0 ? "blocked" : findings.length > 0 ? "warning" : "pass",
-    files_scanned: files.length,
-    findings_total: findings.length,
-    severity_counts: severityCounts,
-    blockers,
-    findings,
-    rules: securityScanRules().map((rule) => ({ rule_id: rule.id, severity: rule.severity, message: rule.message })),
-    notes: [
-      "This is a lightweight KVDF pattern scan, not a replacement for a professional security scanner.",
-      "Do not send files with blocker findings to AI tools until reviewed."
-    ]
-  };
-}
-
-function securityScanRules() {
-  return [
-    { id: "private_key", severity: "critical", message: "Private key material appears in a file.", pattern: /-----BEGIN (RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY-----/i },
-    { id: "openai_api_key", severity: "critical", message: "OpenAI-style API key appears in a file.", pattern: /\bsk-(proj-)?[A-Za-z0-9_-]{20,}\b/ },
-    { id: "stripe_secret_key", severity: "critical", message: "Stripe secret key appears in a file.", pattern: /\bsk_(live|test)_[A-Za-z0-9]{16,}\b/ },
-    { id: "github_token", severity: "critical", message: "GitHub token appears in a file.", pattern: /\b(ghp|gho|ghu|ghs|ghr)_[A-Za-z0-9_]{20,}\b/ },
-    { id: "aws_access_key", severity: "critical", message: "AWS access key appears in a file.", pattern: /\bAKIA[0-9A-Z]{16}\b/ },
-    { id: "env_file_committed", severity: "high", message: "A real .env file should not be committed or shared with AI tools.", pattern: /a^/ },
-    { id: "generic_secret_assignment", severity: "high", message: "Potential secret assignment found.", pattern: /\b(password|passwd|secret|api[_-]?key|access[_-]?token|client[_-]?secret|db[_-]?password)\b\s*[:=]\s*['"]?[^'"\s]{8,}/i }
-  ];
-}
-
-function normalizeScanPath(value) {
-  return String(value || "").replace(/\\/g, "/").replace(/^\.\//, "").replace(/\/$/, "");
-}
-
-function isScanExcluded(relative, exclude) {
-  const normalized = normalizeScanPath(relative);
-  return [...exclude].some((item) => normalized === item || normalized.startsWith(`${item}/`));
-}
-
-function isLikelyTextFile(relative) {
-  const name = relative.split("/").pop() || "";
-  if (name === ".env" || name.startsWith(".env.")) return true;
-  const blocked = /\.(png|jpg|jpeg|gif|webp|ico|pdf|zip|gz|tar|7z|exe|dll|bin|woff|woff2|ttf|docx|xlsx|pptx)$/i;
-  return !blocked.test(relative);
-}
-
-function redactSecretEvidence(line) {
-  const trimmed = String(line || "").trim();
-  if (trimmed.length <= 12) return "[redacted]";
-  return `${trimmed.slice(0, 8)}...[redacted]...${trimmed.slice(-4)}`;
-}
-
-function buildSecurityReport(scan) {
-  const lines = [
-    `# Security Scan Report - ${scan.scan_id}`,
-    "",
-    `Generated at: ${scan.generated_at}`,
-    `Status: ${scan.status}`,
-    `Files scanned: ${scan.files_scanned}`,
-    `Findings: ${scan.findings_total}`,
-    "",
-    "## Severity Counts",
-    "",
-    `- critical: ${scan.severity_counts.critical || 0}`,
-    `- high: ${scan.severity_counts.high || 0}`,
-    `- medium: ${scan.severity_counts.medium || 0}`,
-    `- low: ${scan.severity_counts.low || 0}`,
-    "",
-    "## Findings",
-    "",
-    "| Severity | Rule | File | Line | Message | Evidence |",
-    "| --- | --- | --- | ---: | --- | --- |"
-  ];
-  if (scan.findings.length === 0) {
-    lines.push("| pass | - | - | 0 | No findings. | - |");
-  } else {
-    for (const finding of scan.findings) {
-      lines.push(`| ${finding.severity} | ${finding.rule_id} | ${finding.file} | ${finding.line} | ${finding.message} | ${finding.evidence.replace(/\|/g, "\\|")} |`);
-    }
-  }
-  lines.push("", "## Guidance", "", "- Rotate any real secret that was committed or shared.", "- Add real secrets to local environment stores, not repository files.", "- Use `.env.example` for safe placeholder values only.", "- Do not send blocker files to AI tools until reviewed.");
-  return `${lines.join("\n")}\n`;
-}
-
-function migration(action, value, flags = {}) {
-  ensureWorkspace();
-  ensureMigrationState();
-
-  if (!action || action === "list") {
-    const plans = readStateArray(".kabeeri/migrations/migration_plans.json", "plans");
-    console.log(table(["Plan", "Status", "From", "To", "Risk", "Rollback"], plans.map((item) => [
-      item.plan_id,
-      item.status,
-      item.from_version || "",
-      item.to_version || "",
-      item.risk_level,
-      item.rollback_plan_id || ""
-    ])));
-    return;
-  }
-
-  if (action === "show") {
-    const id = flags.id || value;
-    if (!id) throw new Error("Missing migration plan id.");
-    const plan = getMigrationPlan(id);
-    console.log(JSON.stringify(plan, null, 2));
-    return;
-  }
-
-  if (action === "plan") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "create migration plan");
-    const plansFile = ".kabeeri/migrations/migration_plans.json";
-    const data = readJsonFile(plansFile);
-    data.plans = data.plans || [];
-    const id = flags.id || `migration-plan-${String(data.plans.length + 1).padStart(3, "0")}`;
-    if (data.plans.some((item) => item.plan_id === id)) throw new Error(`Migration plan already exists: ${id}`);
-    const plan = {
-      plan_id: id,
-      title: flags.title || value || id,
-      status: "planned",
-      from_version: flags.from || flags["from-version"] || "",
-      to_version: flags.to || flags["to-version"] || "",
-      scope: parseCsv(flags.scope || flags.files),
-      reason: flags.reason || "",
-      risk_level: normalizeMigrationRisk(flags.risk || inferMigrationRisk(flags)),
-      backup_reference: flags.backup || flags["backup-reference"] || "",
-      rollback_plan_id: null,
-      dry_run_required: flags["dry-run-required"] !== "false",
-      owner_approval_required: flags["owner-approval-required"] !== "false",
-      created_by: getEffectiveActor(flags) || "local-cli",
-      created_at: new Date().toISOString()
-    };
-    data.plans.push(plan);
-    writeJsonFile(plansFile, data);
-    updateMigrationState({ phase: "planned", pending_migration: id, rollback_available: false, migration_risks: [plan.risk_level] });
-    writeTextFile(`.kabeeri/migrations/${id}.plan.md`, buildMigrationPlanMarkdown(plan));
-    appendMigrationAudit("migration.plan.created", id, `Migration plan created: ${plan.title}`);
-    appendAudit("migration.plan.created", "migration", id, `Migration plan created: ${plan.title}`);
-    console.log(JSON.stringify(plan, null, 2));
-    return;
-  }
-
-  if (action === "rollback-plan" || action === "rollback") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "create rollback plan");
-    const planId = flags.plan || value;
-    if (!planId) throw new Error("Missing --plan.");
-    const plan = getMigrationPlan(planId);
-    const file = ".kabeeri/migrations/rollback_plans.json";
-    const data = readJsonFile(file);
-    data.rollback_plans = data.rollback_plans || [];
-    const id = flags.id || `rollback-plan-${String(data.rollback_plans.length + 1).padStart(3, "0")}`;
-    if (data.rollback_plans.some((item) => item.rollback_plan_id === id)) throw new Error(`Rollback plan already exists: ${id}`);
-    const rollback = {
-      rollback_plan_id: id,
-      plan_id: planId,
-      status: "planned",
-      backup_reference: flags.backup || flags["backup-reference"] || plan.backup_reference || "",
-      steps: parseCsv(flags.steps || "restore backup,run rollback migrations,verify application,record audit result"),
-      verification: parseCsv(flags.verify || flags.verification || "tests pass,owner reviews critical paths"),
-      created_by: getEffectiveActor(flags) || "local-cli",
-      created_at: new Date().toISOString()
-    };
-    data.rollback_plans.push(rollback);
-    writeJsonFile(file, data);
-    linkRollbackPlan(planId, id, rollback.backup_reference);
-    updateMigrationState({ rollback_available: true });
-    writeTextFile(`.kabeeri/migrations/${id}.rollback.md`, buildRollbackPlanMarkdown(rollback));
-    appendMigrationAudit("migration.rollback_plan.created", planId, `Rollback plan created: ${id}`);
-    appendAudit("migration.rollback_plan.created", "migration", planId, `Rollback plan created: ${id}`);
-    console.log(JSON.stringify(rollback, null, 2));
-    return;
-  }
-
-  if (action === "check" || action === "dry-run") {
-    const planId = flags.plan || value;
-    if (!planId) throw new Error("Missing migration plan id.");
-    const plan = getMigrationPlan(planId);
-    const rollback = plan.rollback_plan_id ? getRollbackPlan(plan.rollback_plan_id) : null;
-    const result = evaluateMigrationPlan(plan, rollback, flags);
-    const file = ".kabeeri/migrations/migration_checks.json";
-    const data = readJsonFile(file);
-    data.checks = data.checks || [];
-    data.checks.push(result);
-    writeJsonFile(file, data);
-    updateMigrationPlanStatus(planId, result.status === "blocked" ? "blocked" : "checked");
-    updateMigrationState({ phase: result.status === "blocked" ? "blocked" : "checked", pending_migration: planId, migration_risks: result.warnings.map((item) => item.check_id) });
-    appendMigrationAudit("migration.check", planId, `Migration check: ${result.status}`);
-    appendAudit("migration.check", "migration", planId, `Migration check: ${result.status}`);
-    console.log(JSON.stringify(result, null, 2));
-    return;
-  }
-
-  if (action === "report") {
-    const planId = flags.plan || value;
-    if (!planId) throw new Error("Missing migration plan id.");
-    const plan = getMigrationPlan(planId);
-    const rollback = plan.rollback_plan_id ? getRollbackPlan(plan.rollback_plan_id) : null;
-    const checks = readStateArray(".kabeeri/migrations/migration_checks.json", "checks").filter((item) => item.plan_id === planId);
-    const output = flags.output || `.kabeeri/migrations/${planId}.migration_report.md`;
-    writeTextFile(output, buildMigrationReport(plan, rollback, checks));
-    appendMigrationAudit("migration.report", planId, `Migration report written: ${output}`);
-    appendAudit("migration.report", "migration", planId, `Migration report written: ${output}`);
-    console.log(`Wrote migration report: ${output}`);
-    return;
-  }
-
-  if (action === "audit") {
-    const events = readJsonFile(".kabeeri/migrations/migration_audit.json").events || [];
-    console.log(table(["Time", "Event", "Plan", "Message"], events.map((item) => [item.timestamp, item.event, item.plan_id, item.message])));
-    return;
-  }
-
-  throw new Error(`Unknown migration action: ${action}`);
-}
-
-function ensureMigrationState() {
-  const fs = require("fs");
-  const path = require("path");
-  fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "migrations"), { recursive: true });
-  if (!fileExists(".kabeeri/migrations/migration_plans.json")) writeJsonFile(".kabeeri/migrations/migration_plans.json", { plans: [] });
-  if (!fileExists(".kabeeri/migrations/rollback_plans.json")) writeJsonFile(".kabeeri/migrations/rollback_plans.json", { rollback_plans: [] });
-  if (!fileExists(".kabeeri/migrations/migration_checks.json")) writeJsonFile(".kabeeri/migrations/migration_checks.json", { checks: [] });
-  if (!fileExists(".kabeeri/migrations/migration_audit.json")) writeJsonFile(".kabeeri/migrations/migration_audit.json", { events: [] });
-  if (!fileExists(".kabeeri/migration_state.json")) writeJsonFile(".kabeeri/migration_state.json", { phase: "none", pending_migration: null, last_migration: null, rollback_available: false, migration_risks: [] });
-  if (!fileExists(".kabeeri/version_compatibility.json")) writeJsonFile(".kabeeri/version_compatibility.json", { created_with_version: VERSION, current_engine_version: VERSION, compatibility_status: "current", migration_required: false, last_migration: null });
-}
-
-function normalizeMigrationRisk(value) {
-  const normalized = String(value || "medium").toLowerCase();
-  const allowed = new Set(["low", "medium", "high", "critical"]);
-  if (!allowed.has(normalized)) throw new Error("Invalid migration risk. Use low, medium, high, or critical.");
-  return normalized;
-}
-
-function inferMigrationRisk(flags) {
-  const text = `${flags.scope || ""} ${flags.files || ""} ${flags.title || ""}`.toLowerCase();
-  if (/database|migration|schema|payment|stripe|production|auth|permission|role|tenant/.test(text)) return "high";
-  return "medium";
-}
-
-function getMigrationPlan(id) {
-  const plan = readStateArray(".kabeeri/migrations/migration_plans.json", "plans").find((item) => item.plan_id === id);
-  if (!plan) throw new Error(`Migration plan not found: ${id}`);
-  return plan;
-}
-
-function getRollbackPlan(id) {
-  const rollback = readStateArray(".kabeeri/migrations/rollback_plans.json", "rollback_plans").find((item) => item.rollback_plan_id === id);
-  if (!rollback) throw new Error(`Rollback plan not found: ${id}`);
-  return rollback;
-}
-
-function linkRollbackPlan(planId, rollbackPlanId, backupReference) {
-  const file = ".kabeeri/migrations/migration_plans.json";
-  const data = readJsonFile(file);
-  const plan = (data.plans || []).find((item) => item.plan_id === planId);
-  if (!plan) throw new Error(`Migration plan not found: ${planId}`);
-  plan.rollback_plan_id = rollbackPlanId;
-  if (backupReference) plan.backup_reference = backupReference;
-  plan.updated_at = new Date().toISOString();
-  writeJsonFile(file, data);
-}
-
-function updateMigrationPlanStatus(planId, status) {
-  const file = ".kabeeri/migrations/migration_plans.json";
-  const data = readJsonFile(file);
-  const plan = (data.plans || []).find((item) => item.plan_id === planId);
-  if (!plan) throw new Error(`Migration plan not found: ${planId}`);
-  plan.status = status;
-  plan.updated_at = new Date().toISOString();
-  writeJsonFile(file, data);
-}
-
-function updateMigrationState(patch) {
-  const file = ".kabeeri/migration_state.json";
-  const current = fileExists(file) ? readJsonFile(file) : {};
-  writeJsonFile(file, { ...current, ...patch, updated_at: new Date().toISOString() });
-  const compatibilityFile = ".kabeeri/version_compatibility.json";
-  const compatibility = fileExists(compatibilityFile) ? readJsonFile(compatibilityFile) : {};
-  writeJsonFile(compatibilityFile, {
-    created_with_version: compatibility.created_with_version || VERSION,
-    current_engine_version: VERSION,
-    compatibility_status: patch.pending_migration ? "migration_pending" : compatibility.compatibility_status || "current",
-    migration_required: Boolean(patch.pending_migration || compatibility.migration_required),
-    last_migration: compatibility.last_migration || null,
-    updated_at: new Date().toISOString()
-  });
-}
-
-function evaluateMigrationPlan(plan, rollback, flags = {}) {
-  const checks = [];
-  const add = (check_id, severity, passed, message) => checks.push({ check_id, severity, result: passed ? "pass" : severity === "warn" ? "warn" : "fail", message });
-  add("backup_reference_present", "fail", Boolean(plan.backup_reference || flags.backup), "Migration must record a backup reference.");
-  add("rollback_plan_present", "fail", Boolean(rollback), "Migration must have a rollback plan.");
-  add("scope_present", "fail", (plan.scope || []).length > 0, "Migration scope must list files, folders, database areas, or version areas.");
-  add("reason_present", "warn", Boolean(plan.reason), "Migration should explain why the change is needed.");
-  add("dry_run_required", "warn", plan.dry_run_required !== false, "Dry-run should remain required unless Owner approves otherwise.");
-  add("high_risk_owner_approval", "fail", !["high", "critical"].includes(plan.risk_level) || Boolean(flags.approved || flags["owner-approved"]), "High/critical migrations require Owner approval evidence.");
-  const blockers = checks.filter((item) => item.result === "fail" && item.severity === "fail");
-  const warnings = checks.filter((item) => item.result === "warn");
-  return {
-    check_id: flags.id || `migration-check-${Date.now()}`,
-    plan_id: plan.plan_id,
-    generated_at: new Date().toISOString(),
-    status: blockers.length > 0 ? "blocked" : warnings.length > 0 ? "warning" : "pass",
-    blockers,
-    warnings,
-    checks,
-    dry_run: true,
-    note: "KVDF migration check is a governance dry-run. It does not execute database or file migrations."
-  };
-}
-
-function appendMigrationAudit(event, planId, message) {
-  const file = ".kabeeri/migrations/migration_audit.json";
-  const data = fileExists(file) ? readJsonFile(file) : { events: [] };
-  data.events = data.events || [];
-  data.events.push({ timestamp: new Date().toISOString(), event, plan_id: planId, message });
-  writeJsonFile(file, data);
-}
-
-function buildMigrationPlanMarkdown(plan) {
-  return `# Migration Plan - ${plan.plan_id}
-
-Title: ${plan.title}
-Status: ${plan.status}
-From version: ${plan.from_version || "not recorded"}
-To version: ${plan.to_version || "not recorded"}
-Risk: ${plan.risk_level}
-
-## Scope
-
-${(plan.scope || []).length ? plan.scope.map((item) => `- ${item}`).join("\n") : "- No scope recorded."}
-
-## Reason
-
-${plan.reason || "No reason recorded."}
-
-## Safety Requirements
-
-- Backup reference: ${plan.backup_reference || "missing"}
-- Rollback plan: ${plan.rollback_plan_id || "missing"}
-- Dry-run required: ${plan.dry_run_required}
-- Owner approval required: ${plan.owner_approval_required}
-`;
-}
-
-function buildRollbackPlanMarkdown(rollback) {
-  return `# Rollback Plan - ${rollback.rollback_plan_id}
-
-Migration plan: ${rollback.plan_id}
-Backup reference: ${rollback.backup_reference || "missing"}
-
-## Steps
-
-${(rollback.steps || []).map((item) => `- ${item}`).join("\n")}
-
-## Verification
-
-${(rollback.verification || []).map((item) => `- ${item}`).join("\n")}
-`;
-}
-
-function buildMigrationReport(plan, rollback, checks) {
-  const latest = checks.length ? checks[checks.length - 1] : null;
-  return `# Migration Safety Report - ${plan.plan_id}
-
-## Summary
-
-- Title: ${plan.title}
-- Status: ${plan.status}
-- Risk: ${plan.risk_level}
-- From version: ${plan.from_version || "not recorded"}
-- To version: ${plan.to_version || "not recorded"}
-- Backup reference: ${plan.backup_reference || "missing"}
-- Rollback plan: ${plan.rollback_plan_id || "missing"}
-- Latest check: ${latest ? latest.status : "not checked"}
-
-## Scope
-
-${(plan.scope || []).length ? plan.scope.map((item) => `- ${item}`).join("\n") : "- No scope recorded."}
-
-## Latest Check Findings
-
-${latest ? latest.checks.map((item) => `- ${item.result}: ${item.check_id} - ${item.message}`).join("\n") : "- No checks recorded."}
-
-## Rollback
-
-${rollback ? (rollback.steps || []).map((item) => `- ${item}`).join("\n") : "- No rollback plan recorded."}
-
-## Note
-
-This report is a KVDF governance artifact. It does not execute migrations.
-`;
-}
-
-function usage(action, value, flags) {
-  ensureWorkspace();
-
-  if (!action || action === "summary") {
-    const summary = summarizeUsage();
-    writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summary);
-    writeJsonFile(".kabeeri/ai_usage/cost_breakdown.json", {
-      by_task: summary.by_task,
-      by_developer: summary.by_developer,
-      by_workstream: summary.by_workstream,
-      by_provider: summary.by_provider,
-      by_sprint: summary.by_sprint
-    });
-    refreshDashboardArtifacts();
-    console.log(JSON.stringify(summary, null, 2));
-    return;
-  }
-
-  if (action === "efficiency") {
-    console.log(JSON.stringify(buildDeveloperEfficiency(), null, 2));
-    return;
-  }
-
-  if (action === "report") {
-    return outputLines(buildUsageReport(), flags.output);
-  }
-
-  if (action === "list") {
-    const events = readUsageEvents();
-    console.log(table(["Event", "Task", "Developer", "Tokens", "Cost"], events.map((event) => [
-      event.event_id,
-      event.task_id || "",
-      event.developer_id || "",
-      event.total_tokens || 0,
-      event.cost || 0
-    ])));
-    return;
-  }
-
-  if (action === "record") {
-    return recordUsageEvent(value, flags);
-  }
-
-  if (["admin", "inquiry", "question", "planning", "docs"].includes(action)) {
-    return recordUsageEvent(value, {
-      ...flags,
-      untracked: true,
-      operation: flags.operation || action,
-      source: flags.source || `ai_${action}_usage`
-    });
-  }
-
-  throw new Error(`Unknown usage action: ${action}`);
-}
-
-function recordUsageEvent(value, flags = {}) {
-  const isUntracked = Boolean(flags.untracked);
-  const operationType = flags.operation || flags.kind || flags.type || (isUntracked ? "untracked" : "task");
-  const taskId = flags.task || value || (isUntracked ? `admin:${operationType}` : null);
-  const developerId = flags.developer || flags.assignee || flags.actor || (isUntracked ? "untracked" : null);
-  if (!taskId) throw new Error("Missing --task.");
-  if (!developerId) throw new Error("Missing --developer.");
-  const inputTokens = Number(flags["input-tokens"] || 0);
-  const outputTokens = Number(flags["output-tokens"] || 0);
-  const cachedTokens = Number(flags["cached-tokens"] || 0);
-  const totalTokens = inputTokens + outputTokens + cachedTokens;
-  const calculated = calculateUsageCost({
-    provider: flags.provider || "unknown",
-    model: flags.model || "unknown",
-    inputTokens,
-    outputTokens,
-    cachedTokens
-  });
-  const cost = flags.cost !== undefined ? Number(flags.cost || 0) : calculated.cost;
-  const event = {
-    event_id: `usage-${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    task_id: taskId,
-    sprint_id: isUntracked ? flags.sprint || null : flags.sprint || getTaskSprint(taskId),
-    developer_id: developerId,
-    workstream: flags.workstream || (isUntracked ? "admin" : "untracked"),
-    provider: flags.provider || "unknown",
-    model: flags.model || "unknown",
-    input_tokens: inputTokens,
-    output_tokens: outputTokens,
-    cached_tokens: cachedTokens,
-    total_tokens: totalTokens,
-    cost,
-    currency: flags.currency || "USD",
-    cost_source: flags.cost !== undefined ? "manual" : calculated.source,
-    source: flags.source || (isUntracked ? "untracked_ai_usage" : "manual_entry"),
-    operation_type: operationType,
-    prompt_kind: flags.prompt || flags["prompt-kind"] || operationType,
-    tracked: isUntracked ? false : flags.tracked !== "false"
-  };
-  if (!isUntracked) enforceBudgetApproval(taskId, totalTokens, cost);
-  appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", event);
-  const summary = summarizeUsage();
-  writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summary);
-  refreshDashboardArtifacts();
-  appendAudit("ai_usage.recorded", isUntracked ? "operation" : "task", taskId, `AI usage recorded: ${totalTokens} tokens`);
-  const warning = isUntracked ? null : getBudgetWarning(taskId, summary);
-  console.log(`Recorded usage event ${event.event_id}`);
-  if (warning) console.log(`WARN ${warning}`);
-}
-
-function pricing(action, value, flags) {
-  ensureWorkspace();
-  const file = ".kabeeri/ai_usage/pricing_rules.json";
-  const data = readJsonFile(file);
-  data.currency = data.currency || "USD";
-  data.providers = data.providers || [];
-
-  if (!action || action === "list") {
-    const rows = [];
-    for (const provider of data.providers) {
-      for (const model of provider.models || []) {
-        rows.push([
-          provider.name,
-          model.name,
-          data.currency,
-          model.unit || "1M",
-          model.input_price || 0,
-          model.output_price || 0,
-          model.cached_price || 0
-        ]);
-      }
-    }
-    console.log(table(["Provider", "Model", "Currency", "Unit", "Input", "Output", "Cached"], rows));
-    return;
-  }
-
-  if (action === "show") {
-    console.log(JSON.stringify(data, null, 2));
-    return;
-  }
-
-  if (action === "set") {
-    requireAnyRole(flags, ["Owner", "Maintainer"], "set pricing");
-    const providerName = flags.provider || value;
-    const modelName = flags.model;
-    if (!providerName) throw new Error("Missing --provider.");
-    if (!modelName) throw new Error("Missing --model.");
-    const provider = upsertProvider(data, providerName);
-    const model = upsertModel(provider, modelName);
-    model.unit = normalizePricingUnit(flags.unit || model.unit || "1M");
-    model.input_price = Number(flags.input || flags["input-price"] || model.input_price || 0);
-    model.output_price = Number(flags.output || flags["output-price"] || model.output_price || 0);
-    model.cached_price = Number(flags.cached || flags["cached-price"] || model.cached_price || 0);
-    data.currency = flags.currency || data.currency || "USD";
-    data.last_updated = new Date().toISOString();
-    writeJsonFile(file, data);
-    appendAudit("pricing.updated", "pricing", `${providerName}/${modelName}`, "Pricing rule updated");
-    console.log(`Saved pricing for ${providerName}/${modelName}.`);
-    return;
-  }
-
-  throw new Error(`Unknown pricing action: ${action}`);
-}
-
-function upsertProvider(data, providerName) {
-  let provider = data.providers.find((item) => item.name === providerName);
-  if (!provider) {
-    provider = { name: providerName, models: [] };
-    data.providers.push(provider);
-  }
-  return provider;
-}
-
-function upsertModel(provider, modelName) {
-  provider.models = provider.models || [];
-  let model = provider.models.find((item) => item.name === modelName);
-  if (!model) {
-    model = { name: modelName };
-    provider.models.push(model);
-  }
-  return model;
-}
-
-function normalizePricingUnit(unit) {
-  const normalized = String(unit).toLowerCase();
-  if (["token", "1", "per-token"].includes(normalized)) return "token";
-  if (["1k", "k", "1000"].includes(normalized)) return "1K";
-  if (["1m", "m", "1000000"].includes(normalized)) return "1M";
-  throw new Error("Invalid pricing unit. Use token, 1K, or 1M.");
-}
-
-function calculateUsageCost({ provider, model, inputTokens, outputTokens, cachedTokens }) {
-  const rules = fileExists(".kabeeri/ai_usage/pricing_rules.json") ? readJsonFile(".kabeeri/ai_usage/pricing_rules.json") : { providers: [] };
-  const providerRule = (rules.providers || []).find((item) => item.name === provider);
-  const modelRule = providerRule ? (providerRule.models || []).find((item) => item.name === model) : null;
-  if (!modelRule) return { cost: 0, source: "missing_pricing_rule" };
-  const divisor = pricingDivisor(modelRule.unit || "1M");
-  const inputCost = (inputTokens / divisor) * Number(modelRule.input_price || 0);
-  const outputCost = (outputTokens / divisor) * Number(modelRule.output_price || 0);
-  const cachedCost = (cachedTokens / divisor) * Number(modelRule.cached_price || 0);
-  return {
-    cost: roundMoney(inputCost + outputCost + cachedCost),
-    source: "pricing_rules"
-  };
-}
-
-function pricingDivisor(unit) {
-  if (unit === "token") return 1;
-  if (unit === "1K") return 1000;
-  return 1000000;
-}
-
-function roundMoney(value) {
-  return Math.round((value + Number.EPSILON) * 1000000) / 1000000;
-}
-
-function readUsageEvents() {
-  const fs = require("fs");
-  const path = require("path");
-  const file = path.join(repoRoot(), ".kabeeri", "ai_usage", "usage_events.jsonl");
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
-}
-
-function summarizeUsage() {
-  const events = readUsageEvents();
-  const summary = {
-    total_events: events.length,
-    total_tokens: 0,
-    input_tokens: 0,
-    output_tokens: 0,
-    cached_tokens: 0,
-    total_cost: 0,
-    currency: events[0] ? events[0].currency : "USD",
-    by_task: {},
-    by_developer: {},
-    by_workstream: {},
-    by_provider: {},
-    by_sprint: {},
-    tracked_vs_untracked: {
-      tracked: { events: 0, tokens: 0, cost: 0 },
-      untracked: { events: 0, tokens: 0, cost: 0 }
-    }
-  };
-
-  for (const event of events) {
-    const tokens = Number(event.total_tokens || 0);
-    const cost = Number(event.cost || 0);
-    summary.total_tokens += tokens;
-    summary.input_tokens += Number(event.input_tokens || 0);
-    summary.output_tokens += Number(event.output_tokens || 0);
-    summary.cached_tokens += Number(event.cached_tokens || 0);
-    summary.total_cost += cost;
-    addUsageBucket(summary.by_task, event.task_id || "untracked", tokens, cost);
-    addUsageBucket(summary.by_developer, event.developer_id || "untracked", tokens, cost);
-    addUsageBucket(summary.by_workstream, event.workstream || "untracked", tokens, cost);
-    addUsageBucket(summary.by_provider, event.provider || "unknown", tokens, cost);
-    addUsageBucket(summary.by_sprint, event.sprint_id || "unassigned", tokens, cost);
-    const trackedKey = event.tracked === false ? "untracked" : "tracked";
-    summary.tracked_vs_untracked[trackedKey].events += 1;
-    summary.tracked_vs_untracked[trackedKey].tokens += tokens;
-    summary.tracked_vs_untracked[trackedKey].cost += cost;
-  }
-
-  return summary;
-}
-
-function buildUsageReport() {
-  const summary = summarizeUsage();
-  const lines = [
-    "# Kabeeri AI Usage Cost Report",
-    "",
-    `Generated at: ${new Date().toISOString()}`,
-    `Total events: ${summary.total_events}`,
-    `Total tokens: ${summary.total_tokens}`,
-    `Total cost: ${summary.total_cost} ${summary.currency}`,
-    "",
-    "## By Task",
-    ...usageMarkdownRows(summary.by_task, "Task"),
-    "",
-    "## By Developer",
-    ...usageMarkdownRows(summary.by_developer, "Developer"),
-    "",
-    "## By Workstream",
-    ...usageMarkdownRows(summary.by_workstream, "Workstream"),
-    "",
-    "## By Sprint",
-    ...usageMarkdownRows(summary.by_sprint, "Sprint"),
-    "",
-    "## Tracked vs Untracked",
-    ...usageMarkdownRows(summary.tracked_vs_untracked, "Type"),
-    "",
-    "## Developer Efficiency",
-    ...developerEfficiencyRows(buildDeveloperEfficiency().by_developer)
-  ];
-  return lines;
-}
-
-function usageMarkdownRows(buckets, label) {
-  const rows = [`| ${label} | Events | Tokens | Cost |`, "| --- | ---: | ---: | ---: |"];
-  for (const [key, item] of Object.entries(buckets || {})) {
-    rows.push(`| ${key} | ${item.events || 0} | ${item.tokens || 0} | ${item.cost || 0} |`);
-  }
-  if (rows.length === 2) rows.push(`| none | 0 | 0 | 0 |`);
-  return rows;
-}
-
-function developerEfficiencyRows(buckets) {
-  const rows = ["| Developer | Events | Tokens | Cost | Accepted | Rejected | Rework | Untracked |", "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |"];
-  for (const [key, item] of Object.entries(buckets || {})) {
-    rows.push(`| ${key} | ${item.events || 0} | ${item.tokens || 0} | ${item.cost || 0} | ${item.accepted_cost || 0} | ${item.rejected_cost || 0} | ${item.rework_cost || 0} | ${item.untracked_cost || 0} |`);
-  }
-  if (rows.length === 2) rows.push("| none | 0 | 0 | 0 | 0 | 0 | 0 | 0 |");
-  return rows;
-}
-
-function getTaskSprint(taskId) {
-  if (!fileExists(".kabeeri/tasks.json")) return null;
-  const task = (readJsonFile(".kabeeri/tasks.json").tasks || []).find((item) => item.id === taskId);
-  return task ? task.sprint_id || null : null;
-}
-
-function buildSprintSummary(sprintId) {
-  const sprints = readStateArray(".kabeeri/sprints.json", "sprints");
-  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
-  const usage = summarizeUsage();
-  const sprint = sprints.find((item) => item.id === sprintId) || { id: sprintId, name: sprintId };
-  const sprintTasks = tasks.filter((taskItem) => taskItem.sprint_id === sprintId);
-  const usageEvents = readUsageEvents().filter((event) => (event.sprint_id || getTaskSprint(event.task_id)) === sprintId);
-  const acceptedTasks = sprintTasks.filter((taskItem) => taskItem.status === "owner_verified");
-  const reworkEvents = usageEvents.filter((event) => event.source === "rework");
-
-  return {
-    sprint,
-    tasks_total: sprintTasks.length,
-    tasks_verified: acceptedTasks.length,
-    total_tokens: usageEvents.reduce((sum, event) => sum + Number(event.total_tokens || 0), 0),
-    total_cost: usageEvents.reduce((sum, event) => sum + Number(event.cost || 0), 0),
-    usage: usage.by_sprint[sprintId] || { events: 0, tokens: 0, cost: 0 },
-    by_task: Object.fromEntries(sprintTasks.map((taskItem) => [taskItem.id, usage.by_task[taskItem.id] || { events: 0, tokens: 0, cost: 0 }])),
-    rework_cost: reworkEvents.reduce((sum, event) => sum + Number(event.cost || 0), 0),
-    untracked_cost: usageEvents.filter((event) => event.tracked === false).reduce((sum, event) => sum + Number(event.cost || 0), 0)
-  };
-}
-
-function buildDeveloperEfficiency() {
-  const events = readUsageEvents();
-  const tasks = fileExists(".kabeeri/tasks.json") ? readJsonFile(".kabeeri/tasks.json").tasks || [] : [];
-  const taskStatus = Object.fromEntries(tasks.map((taskItem) => [taskItem.id, taskItem.status]));
-  const byDeveloper = {};
-  for (const event of events) {
-    const developer = event.developer_id || "untracked";
-    byDeveloper[developer] = byDeveloper[developer] || {
-      events: 0,
-      tokens: 0,
-      cost: 0,
-      accepted_cost: 0,
-      rejected_cost: 0,
-      rework_cost: 0,
-      untracked_cost: 0
-    };
-    const bucket = byDeveloper[developer];
-    const cost = Number(event.cost || 0);
-    bucket.events += 1;
-    bucket.tokens += Number(event.total_tokens || 0);
-    bucket.cost += cost;
-    if (event.tracked === false || !event.task_id || event.task_id === "untracked") bucket.untracked_cost += cost;
-    if (event.source === "rework") bucket.rework_cost += cost;
-    if (taskStatus[event.task_id] === "owner_verified") bucket.accepted_cost += cost;
-    if (taskStatus[event.task_id] === "rejected") bucket.rejected_cost += cost;
-  }
-  return {
-    generated_at: new Date().toISOString(),
-    by_developer: byDeveloper
-  };
-}
-
-function addUsageBucket(target, key, tokens, cost) {
-  target[key] = target[key] || { events: 0, tokens: 0, cost: 0 };
-  target[key].events += 1;
-  target[key].tokens += tokens;
-  target[key].cost += cost;
-}
-
-function getBudgetWarning(taskId, summary) {
-  const tokens = readJsonFile(".kabeeri/tokens.json").tokens || [];
-  const active = tokens.find((token) => token.task_id === taskId && token.status === "active");
-  if (!active) return null;
-  const taskUsage = summary.by_task[taskId] || { tokens: 0, cost: 0 };
-  if (active.max_usage_tokens && taskUsage.tokens > active.max_usage_tokens) {
-    return `Task ${taskId} exceeded token budget (${taskUsage.tokens}/${active.max_usage_tokens}).`;
-  }
-  if (active.max_usage_tokens && taskUsage.tokens >= active.max_usage_tokens * 0.9) {
-    return `Task ${taskId} is above 90% token budget (${taskUsage.tokens}/${active.max_usage_tokens}).`;
-  }
-  if (active.max_cost && taskUsage.cost > active.max_cost) {
-    return `Task ${taskId} exceeded cost budget (${taskUsage.cost}/${active.max_cost}).`;
-  }
-  if (active.max_cost && taskUsage.cost >= active.max_cost * 0.9) {
-    return `Task ${taskId} is above 90% cost budget (${taskUsage.cost}/${active.max_cost}).`;
-  }
-  return null;
-}
-
-function enforceBudgetApproval(taskId, newTokens, newCost) {
-  const tokens = readJsonFile(".kabeeri/tokens.json").tokens || [];
-  const active = tokens.find((token) => token.task_id === taskId && token.status === "active");
-  if (!active || !active.budget_approval_required) return;
-  const summary = summarizeUsage();
-  const current = summary.by_task[taskId] || { tokens: 0, cost: 0 };
-  const projectedTokens = Number(current.tokens || 0) + Number(newTokens || 0);
-  const projectedCost = Number(current.cost || 0) + Number(newCost || 0);
-  const tokenOverrun = active.max_usage_tokens && projectedTokens > active.max_usage_tokens;
-  const costOverrun = active.max_cost && projectedCost > active.max_cost;
-  if (!tokenOverrun && !costOverrun) return;
-  const approval = findActiveBudgetApproval(taskId, {
-    extraTokens: tokenOverrun ? projectedTokens - active.max_usage_tokens : 0,
-    extraCost: costOverrun ? projectedCost - active.max_cost : 0
-  });
-  if (!approval) {
-    throw new Error(`Budget approval required for ${taskId}. Run \`kvdf budget approve --task ${taskId}\` before recording over-budget usage.`);
-  }
-}
-
-function findActiveBudgetApproval(taskId, required) {
-  const file = ".kabeeri/ai_usage/budget_approvals.json";
-  if (!fileExists(file)) return null;
-  const approvals = readJsonFile(file).approvals || [];
-  return approvals.find((approval) => {
-    if (approval.task_id !== taskId || approval.status !== "active") return false;
-    if (isExpired(approval.expires_at)) return false;
-    if (approval.extra_tokens !== null && approval.extra_tokens !== undefined && required.extraTokens > Number(approval.extra_tokens)) return false;
-    if (approval.extra_cost !== null && approval.extra_cost !== undefined && required.extraCost > Number(approval.extra_cost)) return false;
-    return true;
-  }) || null;
-}
-
 function appendJsonLine(relativePath, value) {
   const fs = require("fs");
   const path = require("path");
@@ -16466,3 +11387,6 @@ function appendAudit(eventType, entityType, entityId, summary) {
 }
 
 module.exports = { run };
+
+
+

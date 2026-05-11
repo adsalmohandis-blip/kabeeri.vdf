@@ -1,5 +1,9 @@
 # Question Generation Rules
 
+Do not search the repository tree to discover question intent. Use the
+questionnaire flow and capability list first, then ask the smallest helpful
+question.
+
 - Required areas produce direct questions.
 - Unknown areas produce short helper questions.
 - Deferred areas produce roadmap notes, not implementation tasks.

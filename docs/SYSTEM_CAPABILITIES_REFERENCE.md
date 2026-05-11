@@ -17,6 +17,9 @@ state are involved.
 | CLI Engine | Runs local workspace operations and governance commands. | `bin/kvdf.js`, `src/cli/`, `cli/CLI_COMMAND_REFERENCE.md` |
 | Repository Foldering System | Defines a Laravel-like root architecture so maintainers and AI tools know where runtime, knowledge, packs, integrations, schemas, docs, tests, and local state belong. | `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`, `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, `kvdf structure` |
 | Workspace State | Stores the project truth under `.kabeeri/`. | `.kabeeri/`, `src/cli/workspace.js` |
+| Session Resume Guard | Detects whether a new session is framework-owner development, a user app workspace, or an uninitialized app folder, and separates app npm roots from the Kabeeri engine root. | `kvdf resume`, `kvdf start` |
+| Framework Boundary Guard | Blocks accidental edits to Kabeeri framework internals from user workspaces unless an explicit framework-edit override is used, including capture and session file scopes. | `kvdf guard`, `kvdf capture`, `kvdf session` |
+| Conflict Scan | Checks command/help alignment, guard wiring, core/runtime schema validation, and workspace task/capture/session/lock drift before new framework development. | `kvdf conflict scan` |
 | Vibe-first UX | Converts natural language into governed suggestions, plans, captures, briefs, and next actions. | `knowledge/vibe_ux/`, `.kabeeri/interactions/` |
 | Delivery Mode Advisor | Recommends Agile or Structured from the requested application context and records the developer's final choice. | `knowledge/delivery_modes/`, `.kabeeri/delivery_decisions.json`, `kvdf delivery` |
 | Product Blueprint Catalog | Maps real market systems to channels, backend modules, frontend pages, database entities, workstreams, and risk flags for compact AI planning. | `knowledge/standard_systems/PRODUCT_BLUEPRINT_CATALOG.json`, `.kabeeri/product_blueprints.json`, `kvdf blueprint` |
@@ -33,18 +36,19 @@ state are involved.
 | Workstream Governance | Separates backend, frontend, mobile, admin, QA, security, docs, and integration work. | `knowledge/governance/WORKSTREAM_GOVERNANCE.md`, `kvdf workstream` |
 | App Boundary Governance | Allows same-product multi-app workspaces while blocking unrelated products in one folder. | `knowledge/governance/APP_BOUNDARY_GOVERNANCE.md`, `kvdf app` |
 | Execution Scope Governance | Derives allowed files, apps, and workstreams for task access tokens. | `knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md`, `kvdf token` |
-| Multi-AI Governance | Controls identities, roles, sessions, locks, tokens, audit, and Owner verification. | `knowledge/governance/`, `integrations/multi_ai_governance/` |
+| Multi-AI Governance | Controls Evolution-led session leadership, per-AI queues, sync/distribution of the active Evolution temporary queue, semantic merge bundles with surface planning, locks, tokens, audit, and Owner verification. | `knowledge/governance/`, `knowledge/governance/MULTI_AI_GOVERNANCE.md`, `.kabeeri/multi_ai_governance.json` |
 | Policy Gates | Blocks unsafe verification, release, handoff, security, migration, and GitHub write operations. | `kvdf policy`, `schemas/policy*.json` |
 | Runtime Schema Registry | Maps `.kabeeri/` JSON and JSONL runtime files to schemas for drift checks. | `schemas/runtime/`, `kvdf validate runtime-schemas` |
-| Evolution Steward | Governs Kabeeri's own updates by recording requested framework changes, inferring impacted areas, creating follow-up tasks, and exposing unfinished dependent work to dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution` |
+| Evolution Steward | Acts as the single framework-development backlog by recording requested framework changes, ordered priorities, temporary execution queues for the active priority, duplicate-capability signals, impacted areas, follow-up tasks, and unfinished dependent work for dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution` |
 | Design Governance | Converts design sources into approved text specs before frontend implementation. | `knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`, `kvdf design` |
-| UI/UX Advisor | Recommends frontend experience pattern, component groups, page templates, stacks, SEO/GEO rules, and dashboard/mobile UX rules from the product blueprint. | `knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`, `.kabeeri/design_sources/ui_advisor.json`, `kvdf design recommend` |
+| UI/UX Advisor | Recommends frontend experience pattern, component groups, page templates, stacks, SEO/GEO rules, dashboard/mobile UX rules, theme presets, screen compositions, framework adapters, UI decisions, playbooks, and creative variants from the product blueprint. | `knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`, `knowledge/design_system/`, `.kabeeri/design_sources/ui_advisor.json`, `kvdf design recommend` |
 | UI/UX Reference Library | Stores approved UI/UX rules and reference patterns, then generates design questions and governed frontend/design tasks from them. | `knowledge/design_system/ui_ux_reference/`, `.kabeeri/design_sources/ui_ux_reference.json`, `kvdf design reference-*` |
 | ADR And AI Run History | Records formal architecture decisions and accepted/rejected AI prompt runs. | `knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`, `kvdf adr`, `kvdf ai-run` |
 | AI Cost Control | Tracks usage, budgets, context packs, preflight estimates, and model routing. | `knowledge/ai_cost_control/`, `kvdf usage`, `kvdf preflight` |
 | Live Dashboard | Shows live state for tasks, governance, apps, costs, policies, linked workspaces, and dashboard UX audits. | `integrations/dashboard/`, `kvdf dashboard` |
 | VS Code Integration | Scaffolds workspace tasks and command helpers. | `integrations/vscode_extension/`, `kvdf vscode` |
 | GitHub Sync | Plans and optionally confirms labels, milestones, issues, and releases through `gh`. | `integrations/github_sync/`, `integrations/github/`, `kvdf github` |
+| GitHub Team Sync Preflight | Reports branch, remote, upstream, ahead/behind, local changes, dry-run pull/push commands, and whether sync is optional for solo work or recommended for team work. | `kvdf sync` |
 | Security Governance | Scans local files for common secret patterns and blocks high-risk readiness gates. | `kvdf security`, `.kabeeri/security/` |
 | Migration Safety | Records migration plans, rollback plans, checks, reports, and approval state. | `kvdf migration`, `.kabeeri/migrations/` |
 | Handoff Packages | Generates Owner/client reports from local state. | `kvdf handoff`, `.kabeeri/handoff/` |
@@ -129,24 +133,46 @@ Main commands:
 
 ```bash
 kvdf init
+kvdf resume
+kvdf start
+kvdf conflict scan
 kvdf validate
 kvdf dashboard state
 ```
 
+`kvdf resume` is the safe first command for a new session. It prevents ambiguous
+phrases such as "start development" from mixing framework-owner work with user
+application work. It reports the session mode, current root, Kabeeri engine
+root, app npm root when a Next.js/React-style app is detected, warnings, next
+actions, and optional `--scan` checks.
+
+`kvdf conflict scan` is the next pre-development check. It catches simple drift
+between command routing, help text, guard wiring, schemas, and local workspace
+records before a new framework slice starts.
+
 ## 3. Evolution Steward
 
-Evolution Steward controls changes to Kabeeri itself. When the Owner requests a
-new framework feature or improvement, this capability creates an impact plan so
-the implementation, CLI help, task tracking, schemas, dashboard, reports,
-documentation, capability map, tests, changelog, and release guidance are not
-forgotten.
+Evolution Steward controls changes to Kabeeri itself. It is the single
+framework-development backlog: when the Owner requests a new framework feature
+or improvement, this capability stores the request, keeps the ordered
+development priorities, checks possible duplicate capability matches, and
+creates an impact plan so implementation, CLI help, task tracking, schemas,
+dashboard, reports, documentation, capability map, tests, changelog, and release
+guidance are not forgotten.
 
 Main commands:
 
 ```bash
 kvdf evolution plan "Add a new Kabeeri capability"
+kvdf evolution plan "Add a new Kabeeri capability" --confirm-placement --priority-position 4
 kvdf evolution list
 kvdf evolution status
+kvdf evolution priorities
+kvdf evolution next
+kvdf evolution defer "Future idea"
+kvdf evolution deferred
+kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
+kvdf evolution priority evo-auto-001 --status in_progress
 kvdf evolution show evo-001
 kvdf evolution impact evo-001
 kvdf evolution tasks evo-001
@@ -604,15 +630,24 @@ Main reference:
 ## 13. Multi-AI Governance
 
 This layer makes AI-assisted work traceable and safer across one developer,
-many developers, one AI agent, or multiple AI agents.
+many developers, one AI agent, or multiple AI agents. Evolution is the global
+priority governor, the first AI to enter a development session becomes the
+Leader for that session, workers execute only inside temporary queues, and the
+Merger layer combines workspace copies or patch bundles back into the original
+files under validation.
 
 It covers:
 
+- Evolution-led priority governance
 - single active Owner
 - Owner sessions and Owner transfer
 - developer identities
 - AI agent identities
 - role permissions
+- session leadership and leader transfer
+- per-AI temporary queues
+- Evolution sync and worker distribution
+- semantic merge bundles, semantic surface plans, and provenance
 - locks
 - task access tokens
 - AI sessions
@@ -630,12 +665,24 @@ kvdf developer solo --id dev-main --name "Main Developer"
 kvdf agent add --id agent-001 --name "AI Backend Agent" --role "AI Developer" --workstreams backend
 kvdf lock create --type folder --scope src/api --task task-001 --owner agent-001
 kvdf session start --task task-001 --developer agent-001 --provider openai --model gpt
+kvdf multi-ai status
+kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
+kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
+kvdf multi-ai queue add --ai agent-002 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
+kvdf multi-ai queue start multi-ai-queue-001
+kvdf multi-ai queue advance multi-ai-queue-001
+kvdf multi-ai queue complete multi-ai-queue-001
+kvdf multi-ai merge add --sources multi-ai-queue-001,multi-ai-queue-002 --title "Leader merge"
+kvdf multi-ai merge preview multi-ai-merge-001
+kvdf multi-ai merge validate multi-ai-merge-001
+kvdf multi-ai merge commit multi-ai-merge-001
 kvdf session end session-001 --files src/api/users.ts --summary "Implemented endpoint"
 ```
 
 Main references:
 
 - `knowledge/governance/README.md`
+- `knowledge/governance/MULTI_AI_GOVERNANCE.md`
 - `knowledge/governance/SINGLE_OWNER_RULE.md`
 - `knowledge/governance/ROLE_PERMISSION_MATRIX.md`
 - `knowledge/governance/ASSIGNMENT_EXECUTION_GOVERNANCE.md`
@@ -711,6 +758,18 @@ kvdf design visual-review --page page-spec-001 --task task-001 --screenshots des
 kvdf design gate --task task-001 --page page-spec-001 --json
 kvdf design governance --json
 kvdf design missing-report --source design-source-001 --items responsive,empty-state --risk high
+kvdf design theme-presets
+kvdf design theme-recommend ecommerce --json
+kvdf design composition-list
+kvdf design composition-recommend erp --page "invoice approval table" --json
+kvdf design framework-adapters
+kvdf design framework-plan bootstrap --blueprint erp --composition crud_table_workspace --json
+kvdf design ui-questions ecommerce --json
+kvdf design ui-decisions ecommerce --page checkout --json
+kvdf design playbooks
+kvdf design playbook erp --json
+kvdf design variant-archetypes
+kvdf design variants ecommerce --page checkout --count 3 --json
 kvdf design reference-list
 kvdf design reference-show ADMIT-ADB01
 kvdf design reference-recommend "admin ecommerce dashboard with orders and revenue"
@@ -724,11 +783,28 @@ sources, text specs, design tokens, page specs, component contracts, visual
 reviews, UI advisor context, UI/UX reference selections, missing design reports,
 and frontend-task readiness.
 
+The modern UI/UX Advisor is made of smaller governed catalogs rather than one
+large prompt. Theme Token Intelligence picks product-aware palette presets;
+Component Composition Intelligence picks screen structures; Framework Adapter
+Intelligence maps those decisions into Bootstrap, Tailwind, Bulma, Foundation,
+MUI, Ant Design, daisyUI, or shadcn/ui; UI Decision Intake converts
+developer/client answers into density, tone, navigation, and surface choices;
+Project UI Playbooks gives every product blueprint a default UI direction; and
+Creative Variant Intelligence keeps similar products visually distinct without
+breaking accessibility, performance, RTL, content, motion, or governance rules.
+
 Main references:
 
 - `knowledge/design_sources/`
 - `knowledge/design_system/`
 - `knowledge/design_system/ui_ux_reference/`
+- `knowledge/design_system/theme_token_intelligence/`
+- `knowledge/design_system/component_composition_intelligence/`
+- `knowledge/design_system/framework_adapter_intelligence/`
+- `knowledge/design_system/ui_decision_intake/`
+- `knowledge/design_system/project_ui_playbooks/`
+- `knowledge/design_system/creative_variant_intelligence/`
+- `knowledge/design_system/business_ui_patterns/`
 - `knowledge/frontend_specs/`
 - `knowledge/design_sources/VISUAL_ACCEPTANCE_RUNTIME.md`
 - `docs/reports/V7_DESIGN_SOURCE_GOVERNANCE_IMPLEMENTATION_REPORT.md`

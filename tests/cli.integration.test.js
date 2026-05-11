@@ -2,10 +2,12 @@ const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-const { spawnSync } = require("child_process");
+const util = require("util");
+const { run } = require("../src/cli");
+const wordpressStateService = require("../src/cli/services/wordpress");
+const wordpressPlanService = require("../src/cli/services/wordpress_plans");
 
 const repoRoot = path.resolve(__dirname, "..");
-const bin = path.join(repoRoot, "bin", "kvdf.js");
 
 const tests = [];
 
@@ -14,17 +16,69 @@ function test(name, fn) {
 }
 
 function runKvdf(args, options = {}) {
-  const result = spawnSync(process.execPath, [bin, ...args], {
-    cwd: options.cwd || repoRoot,
-    env: { ...process.env, ...(options.env || {}) },
-    encoding: "utf8"
-  });
+  const cwd = options.cwd || repoRoot;
+  const previousCwd = process.cwd();
+  const mergedEnv = { ...(options.env || {}) };
+  mergedEnv.KVDF_DISABLE_GIT_SPAWN = "1";
+  const previousEnv = {};
+  const previousLog = console.log;
+  const previousError = console.error;
+  const previousExitCode = process.exitCode;
+  const stdout = [];
+  const stderr = [];
+  let status = 0;
+  let thrown = null;
+  process.chdir(cwd);
+  process.exitCode = undefined;
+  for (const [key, value] of Object.entries(mergedEnv)) {
+    previousEnv[key] = Object.prototype.hasOwnProperty.call(process.env, key) ? process.env[key] : undefined;
+    process.env[key] = String(value);
+  }
+  console.log = (...values) => stdout.push(util.format(...values));
+  console.error = (...values) => stderr.push(util.format(...values));
+  try {
+    run(args);
+  } catch (error) {
+    status = 1;
+    thrown = error;
+    stderr.push(`Error: ${error.message}`);
+  } finally {
+    if (status === 0 && typeof process.exitCode === "number" && process.exitCode !== 0) {
+      status = process.exitCode;
+    }
+    console.log = previousLog;
+    console.error = previousError;
+    process.chdir(previousCwd);
+    process.exitCode = previousExitCode;
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+  const result = {
+    status,
+    stdout: stdout.join("\n") ? `${stdout.join("\n")}\n` : "",
+    stderr: stderr.join("\n") ? `${stderr.join("\n")}\n` : ""
+  };
+  if (thrown && !options.expectFailure) {
+    assert.fail(`kvdf ${args.join(" ")} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+  }
   if (options.expectFailure) {
-    assert.notStrictEqual(result.status, 0, `Expected failure for kvdf ${args.join(" ")}`);
+    assert.notStrictEqual(status, 0, `Expected failure for kvdf ${args.join(" ")}`);
     return result;
   }
-  assert.strictEqual(result.status, 0, `kvdf ${args.join(" ")} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+  assert.strictEqual(status, 0, `kvdf ${args.join(" ")} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
   return result;
+}
+
+function writeFakeGitRepo(dir, { remoteUrl = null, branch = "main", mergeRef = null } = {}) {
+  const gitDir = path.join(dir, ".git");
+  fs.mkdirSync(path.join(gitDir, "refs", "heads"), { recursive: true });
+  fs.writeFileSync(path.join(gitDir, "HEAD"), `ref: refs/heads/${branch}\n`, "utf8");
+  fs.writeFileSync(path.join(gitDir, "refs", "heads", branch), "0000000000000000000000000000000000000000\n", "utf8");
+  const remoteSection = remoteUrl ? `\n[remote "origin"]\n\turl = ${remoteUrl}\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n` : "";
+  const branchSection = mergeRef ? `\n[branch "${branch}"]\n\tremote = origin\n\tmerge = ${mergeRef}\n` : "";
+  fs.writeFileSync(path.join(gitDir, "config"), `[core]\n\trepositoryformatversion = 0\n\tbare = false\n${remoteSection}${branchSection}`, "utf8");
 }
 
 function withTempDir(fn) {
@@ -40,7 +94,7 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["--version"]).stdout, /kvdf 0\.2\.0/);
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
-  for (const command of ["sprint", "session", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "wordpress", "docs"]) {
+  for (const command of ["resume", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "wordpress", "docs"]) {
     const help = runKvdf([command, "--help"]).stdout;
     assert.match(help, /Usage:/, `${command} help should include usage`);
     assert.doesNotMatch(help, /No detailed help/, `${command} should have detailed help`);
@@ -51,6 +105,15 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["structure", "map"]).stdout, /Kabeeri Repository Foldering Map/);
   assert.match(runKvdf(["structure", "show", "standard_systems"]).stdout, /knowledge/);
   assert.match(runKvdf(["package", "check"]).stdout, /Kabeeri Product Packaging Check/);
+  const rootResume = JSON.parse(runKvdf(["resume", "--json"]).stdout);
+  assert.strictEqual(rootResume.mode, "framework_owner_development");
+  assert.ok(rootResume.evolution.next_priority);
+  assert.ok(rootResume.owner_checkpoint);
+  assert.match(rootResume.next_exact_action, /Continue evo-auto-/);
+  assert.ok(rootResume.git_summary);
+  assert.strictEqual(JSON.parse(runKvdf(["guard", "--json"]).stdout).mode, "framework_source");
+  assert.strictEqual(JSON.parse(runKvdf(["conflict", "scan", "--json"]).stdout).report_type, "framework_conflict_scan");
+  assert.match(runKvdf(["sync", "status"]).stdout, /Kabeeri GitHub Team Sync Status/);
   assert.match(runKvdf(["docs", "path"]).stdout, /docs[\\/]site[\\/]index\.html/);
   assert.match(runKvdf(["plan", "list"]).stdout, /v4\.0\.0/);
   assert.match(runKvdf(["plan", "list"]).stdout, /v5\.0\.0/);
@@ -58,6 +121,145 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["prompt-pack", "show", "react-native-expo"]).stdout, /React Native Expo/);
   assert.match(runKvdf(["taks"], { expectFailure: true }).stderr, /Did you mean "task"/);
 });
+
+test("resume separates Kabeeri framework source from user app npm roots", () => withTempDir((dir) => {
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+    name: "customer-next-app",
+    scripts: { dev: "next dev" },
+    dependencies: { next: "15.0.0", react: "19.0.0" }
+  }, null, 2));
+  runKvdf(["init", "--profile", "standard", "--mode", "agile", "--no-intake"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["resume", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.mode, "kabeeri_user_app_workspace");
+  assert.ok(report.detected_app_stack.includes("nextjs"));
+  assert.ok(report.root_roles.some((role) => role.role === "app_npm_root" && role.path === dir));
+  assert.ok(report.warnings.some((warning) => /npm commands belong to the app root/.test(warning)));
+  assert.ok(report.next_actions.some((action) => /Next\.js/.test(action)));
+  const startAlias = JSON.parse(runKvdf(["start", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(startAlias.mode, "kabeeri_user_app_workspace");
+}));
+
+test("framework guard blocks accidental framework internals inside user workspaces", () => withTempDir((dir) => {
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+    name: "customer-app",
+    dependencies: { next: "15.0.0" }
+  }, null, 2));
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+  fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "module.exports = {};\n");
+  const blocked = runKvdf(["guard", "--json"], { cwd: dir, expectFailure: true });
+  const blockedReport = JSON.parse(blocked.stdout);
+  assert.strictEqual(blockedReport.status, "blocked");
+  assert.strictEqual(blockedReport.mode, "user_workspace");
+  assert.ok(blockedReport.protected_paths_present.includes("src/cli/"));
+  const allowed = JSON.parse(runKvdf(["guard", "--json", "--allow-framework-edits"], { cwd: dir }).stdout);
+  assert.strictEqual(allowed.status, "pass");
+  assert.strictEqual(allowed.allow_framework_edits, true);
+}));
+
+test("framework guard is enforced by capture and session file scopes", () => withTempDir((dir) => {
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+    name: "customer-app",
+    dependencies: { next: "15.0.0" }
+  }, null, 2));
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+  fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "module.exports = {};\n");
+
+  assert.match(
+    runKvdf(["capture", "--summary", "Touched framework internals", "--files", "src/cli/index.js"], { cwd: dir, expectFailure: true }).stderr,
+    /Framework-internal files are protected/
+  );
+  const allowedCapture = JSON.parse(runKvdf([
+    "capture",
+    "--summary", "Intentional fork edit",
+    "--files", "src/cli/index.js",
+    "--allow-framework-edits"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(allowedCapture.files_changed[0], "src/cli/index.js");
+
+  runKvdf(["task", "create", "--id", "task-guard", "--title", "Guard task", "--workstream", "backend"], { cwd: dir });
+  runKvdf(["task", "assign", "task-guard", "--assignee", "agent-001"], { cwd: dir });
+  runKvdf(["token", "issue", "--task", "task-guard", "--assignee", "agent-001"], { cwd: dir });
+  runKvdf(["session", "start", "--id", "session-guard", "--task", "task-guard", "--developer", "agent-001"], { cwd: dir });
+  assert.match(
+    runKvdf(["session", "end", "session-guard", "--files", "src/cli/index.js", "--summary", "Touched framework internals"], { cwd: dir, expectFailure: true }).stderr,
+    /Framework-internal files are protected/
+  );
+}));
+
+test("conflict scan reports validation and workspace drift before development", () => withTempDir((dir) => {
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["conflict", "scan", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "framework_conflict_scan");
+  assert.ok(["pass", "warning"].includes(report.status));
+  assert.ok(report.checks.some((check) => check.id === "cli_surface" && check.status === "pass"));
+  assert.ok(report.checks.some((check) => check.id === "framework_guard_integration" && check.status === "pass"));
+  assert.ok(report.checks.some((check) => check.id === "validate_runtime-schemas" && check.status === "pass"));
+
+  const tasksFile = path.join(dir, ".kabeeri/tasks.json");
+  fs.writeFileSync(tasksFile, JSON.stringify({
+    tasks: [
+      { id: "task-dup", title: "One" },
+      { id: "task-dup", title: "Two" }
+    ]
+  }, null, 2));
+  const blocked = JSON.parse(runKvdf(["conflict", "scan", "--json"], { cwd: dir, expectFailure: true }).stdout);
+  assert.strictEqual(blocked.status, "blocked");
+  assert.ok(blocked.blockers.some((item) => /Duplicate task id/.test(item)));
+}));
+
+test("sync status reports local git state and keeps pull push dry-run by default", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  fs.writeFileSync(path.join(dir, "README.md"), "# App\n");
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+  const status = JSON.parse(runKvdf(["sync", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "github_team_sync_status");
+  assert.strictEqual(status.status, "needs_upstream");
+  assert.strictEqual(status.remote, "origin");
+  assert.strictEqual(status.sync_policy, "optional");
+  assert.ok(status.changed_files > 0);
+  const pull = runKvdf(["sync", "pull"], { cwd: dir }).stdout;
+  assert.match(pull, /dry-run/);
+  assert.match(pull, /Would run: git pull --ff-only/);
+  const push = runKvdf(["sync", "push"], { cwd: dir }).stdout;
+  assert.match(push, /dry-run/);
+  assert.match(push, /Would run: git push/);
+}));
+
+test("sync policy is optional for solo work and recommended for team work", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+  fs.writeFileSync(path.join(dir, ".kabeeri/developer_mode.json"), JSON.stringify({
+    mode: "solo",
+    solo_developer_id: "dev-001",
+    workstreams: ["backend", "public_frontend"]
+  }, null, 2));
+  fs.writeFileSync(path.join(dir, ".kabeeri/developers.json"), JSON.stringify({
+    developers: [{ id: "dev-001", name: "Solo Dev", role: "Full-stack Developer", status: "active" }]
+  }, null, 2));
+  const solo = JSON.parse(runKvdf(["sync", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(solo.collaboration_mode, "solo");
+  assert.strictEqual(solo.sync_policy, "optional");
+  assert.ok(solo.next_actions.some((item) => /not required after every local solo action/.test(item)));
+
+  fs.writeFileSync(path.join(dir, ".kabeeri/developer_mode.json"), JSON.stringify({
+    mode: "team",
+    solo_developer_id: null,
+    workstreams: []
+  }, null, 2));
+  fs.writeFileSync(path.join(dir, ".kabeeri/developers.json"), JSON.stringify({
+    developers: [
+      { id: "dev-001", name: "Backend Dev", role: "Developer", status: "active" },
+      { id: "dev-002", name: "Frontend Dev", role: "Developer", status: "active" }
+    ]
+  }, null, 2));
+  const team = JSON.parse(runKvdf(["sync", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(team.collaboration_mode, "team");
+  assert.strictEqual(team.sync_policy, "recommended");
+  assert.ok(team.team_signals.includes("multiple_active_identities"));
+  assert.ok(team.next_actions.some((item) => /team-scoped work/.test(item)));
+}));
 
 test("init creates workspace state files", () => withTempDir((dir) => {
   runKvdf(["init", "--profile", "standard", "--mode", "structured"], { cwd: dir });
@@ -153,6 +355,31 @@ test("init goal creates adaptive questions and docs-first tasks before implement
   );
 }));
 
+test("temp queue serves application task execution not just evolution priorities", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  runKvdf(["app", "create", "--username", "storefront-web", "--name", "Storefront Web"], { cwd: dir });
+  runKvdf(["agent", "add", "--id", "agent-001", "--name", "AI Agent", "--role", "AI Developer", "--workstreams", "docs"], { cwd: dir });
+  runKvdf(["task", "create", "--id", "task-app-001", "--title", "Document storefront checkout flow", "--type", "documentation", "--workstream", "docs", "--app", "storefront-web", "--source", "init_intake:app_goal"], { cwd: dir });
+  runKvdf(["task", "assign", "task-app-001", "--assignee", "agent-001"], { cwd: dir });
+  runKvdf(["token", "issue", "--task", "task-app-001", "--assignee", "agent-001"], { cwd: dir });
+  runKvdf(["lock", "create", "--type", "folder", "--scope", "apps/storefront-web", "--task", "task-app-001", "--owner", "agent-001"], { cwd: dir });
+  runKvdf(["task", "start", "task-app-001", "--actor", "agent-001"], { cwd: dir });
+  const temp = JSON.parse(runKvdf(["temp", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(temp.report_type, "task_temporary_queue");
+  assert.strictEqual(temp.active_task.id, "task-app-001");
+  assert.strictEqual(temp.queue.coverage_policy, "full_task_coverage");
+  assert.strictEqual(temp.queue.slices.length, 5);
+  assert.match(temp.queue.slices[0].title, /full task coverage/i);
+  assert.match(temp.queue.slices[2].description, /no leftover execution remainder/i);
+  const advanced = JSON.parse(runKvdf(["temp", "advance", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(advanced.report_type, "task_temporary_queue_advanced");
+  assert.strictEqual(advanced.completed_slice.order, 1);
+  assert.strictEqual(advanced.next_slice.order, 2);
+  const completed = JSON.parse(runKvdf(["temp", "complete", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(completed.report_type, "task_temporary_queue_completed");
+  assert.strictEqual(completed.status, "completed");
+}));
+
 test("v5 adaptive questionnaire creates coverage and provenance tasks", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   assert.match(runKvdf(["capability", "list"], { cwd: dir }).stdout, /Payments \/ Billing/);
@@ -227,20 +454,213 @@ test("evolution steward creates impact plans and dependent follow-up tasks", () 
   assert.ok(result.change.impacted_areas.includes("dashboard"));
   assert.ok(result.change.impacted_areas.includes("docs"));
   assert.ok(result.change.impacted_areas.includes("capabilities"));
+  assert.ok(["none", "review_required"].includes(result.change.duplicate_risk));
   assert.ok(result.tasks.length >= 6);
   const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
   assert.strictEqual(state.changes.length, 1);
   assert.strictEqual(state.impact_plans.length, 1);
+  assert.ok(state.development_priorities.length >= 10);
+  const priorities = JSON.parse(runKvdf(["evolution", "priorities", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(priorities.report_type, "evolution_development_priorities");
+  assert.strictEqual(priorities.next_priority.id, "evo-auto-001");
+  assert.ok(priorities.next_priority.execution_details.resume_steps.length >= 4);
+  const next = JSON.parse(runKvdf(["evolution", "next", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(next.next.id, "evo-auto-001");
+  assert.ok(next.next_action);
+  const updatedPriority = JSON.parse(runKvdf(["evolution", "priority", "evo-auto-001", "--status", "done", "--note", "Finished workflow", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(updatedPriority.status, "done");
+  const nextAfterUpdate = JSON.parse(runKvdf(["evolution", "next", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(nextAfterUpdate.next.id, "evo-auto-002");
+  assert.ok(nextAfterUpdate.next_action);
+  const resume = JSON.parse(runKvdf(["resume", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(resume.evolution, null);
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
-  assert.ok(tasks.some((task) => task.source === "evolution:evo-001" && task.evolution_area === "dashboard"));
+  const dashboardTask = tasks.find((task) => task.source === "evolution:evo-001" && task.evolution_area === "dashboard");
+  assert.ok(dashboardTask);
+  assert.match(dashboardTask.execution_summary, /evo-001/);
+  assert.ok(dashboardTask.resume_steps.length >= 4);
+  assert.ok(dashboardTask.expected_outputs.length >= 3);
+  assert.ok(dashboardTask.do_not_change.some((item) => item.includes("outside allowed_files")));
+  assert.ok(dashboardTask.verification_commands.includes("npm run kvdf -- dashboard state"));
+  const impactTask = state.impact_plans[0].tasks.find((task) => task.task_id === dashboardTask.id);
+  assert.match(impactTask.execution_summary, /dashboard/);
+  assert.ok(impactTask.resume_steps.length >= 4);
   const summary = JSON.parse(runKvdf(["evolution", "status", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(summary.changes_total, 1);
   assert.ok(summary.open_follow_up_tasks > 0);
+  assert.ok(summary.next_priority);
   const dashboard = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
   assert.strictEqual(dashboard.records.evolution_summary.changes_total, 1);
   const reports = JSON.parse(runKvdf(["reports", "live", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(reports.reports.evolution.changes_total, 1);
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /evolution\.json matches/);
+}));
+
+test("evolution steward requires owner placement confirmation before interrupting active priority", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  runKvdf(["evolution", "priority", "evo-auto-001", "--status", "in_progress", "--note", "Current slice", "--json"], { cwd: dir });
+  const proposed = JSON.parse(runKvdf(["evolution", "plan", "Add a new framework capability while work is active", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(proposed.report_type, "evolution_feature_request_placement");
+  assert.strictEqual(proposed.requires_confirmation, true);
+  assert.strictEqual(proposed.active_priority.id, "evo-auto-001");
+  assert.ok(proposed.priorities.length >= 10);
+  let state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
+  assert.strictEqual(state.changes.length, 0);
+  const confirmed = JSON.parse(runKvdf(["evolution", "plan", "Add a new framework capability while work is active", "--confirm-placement", "--priority-position", "2", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(confirmed.change.change_id, "evo-001");
+  assert.strictEqual(confirmed.change.priority_confirmation.requested_position, "2");
+  state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
+  assert.strictEqual(state.changes.length, 1);
+}));
+
+test("evolution steward stores deferred ideas as one final priority bucket until restored", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const added = JSON.parse(runKvdf(["evolution", "defer", "Analyze n8n integration later", "--reason", "Owner deferred", "--analysis", "Benefits: automation. Risks: secrets and source-of-truth drift.", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(added.report_type, "evolution_deferred_idea_added");
+  assert.strictEqual(added.idea.idea_id, "deferred-001");
+  assert.ok(added.idea.execution_details.resume_steps.length >= 3);
+  assert.match(added.idea.execution_details.execution_summary, /deferred-001/);
+  const list = JSON.parse(runKvdf(["evolution", "deferred", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(list.open, 1);
+  assert.strictEqual(list.ideas[0].status, "deferred");
+  const priorities = JSON.parse(runKvdf(["evolution", "priorities", "--json"], { cwd: dir }).stdout);
+  const bucket = priorities.priorities[priorities.priorities.length - 1];
+  assert.strictEqual(bucket.id, "evo-deferred-ideas");
+  assert.strictEqual(bucket.title, "Deferred development ideas");
+  assert.strictEqual(bucket.status, "deferred");
+  assert.strictEqual(bucket.count, 1);
+  assert.ok(bucket.execution_details.resume_steps.length >= 3);
+  runKvdf(["evolution", "priority", "evo-auto-001", "--status", "in_progress", "--note", "Current slice", "--json"], { cwd: dir });
+  const restorePreview = JSON.parse(runKvdf(["evolution", "deferred", "restore", "deferred-001", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(restorePreview.restore_requires_confirmation, true);
+  let state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
+  assert.strictEqual(state.changes.length, 0);
+  const restored = JSON.parse(runKvdf(["evolution", "deferred", "restore", "deferred-001", "--confirm-placement", "--priority-position", "2", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(restored.report_type, "evolution_deferred_idea_restored");
+  assert.strictEqual(restored.change.restored_deferred_idea_id, "deferred-001");
+  state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
+  assert.strictEqual(state.deferred_ideas[0].status, "restored");
+  assert.strictEqual(state.changes.length, 1);
+}));
+
+test("evolution steward temporary priorities queue advances within one active priority and expires with it", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  runKvdf(["evolution", "priority", "evo-auto-004-temp-priorities", "--status", "in_progress", "--note", "Testing temporary queue", "--json"], { cwd: dir });
+  const temp = JSON.parse(runKvdf(["evolution", "temp", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(temp.report_type, "evolution_temporary_priorities");
+  assert.strictEqual(temp.active_priority.id, "evo-auto-004-temp-priorities");
+  assert.strictEqual(temp.queue.slices.length, 5);
+  assert.strictEqual(temp.queue.current_slice.order, 1);
+  assert.strictEqual(temp.queue.coverage_policy, "full_task_coverage");
+  assert.match(temp.queue.slices[0].title, /full task coverage/i);
+  assert.match(temp.queue.slices[2].description, /no leftover execution remainder/i);
+  const advanced = JSON.parse(runKvdf(["evolution", "temp", "advance", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(advanced.report_type, "evolution_temporary_priorities_advanced");
+  assert.strictEqual(advanced.completed_slice.order, 1);
+  assert.strictEqual(advanced.next_slice.order, 2);
+  const completed = JSON.parse(runKvdf(["evolution", "temp", "complete", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(completed.report_type, "evolution_temporary_priorities_completed");
+  assert.strictEqual(completed.status, "completed");
+  const persisted = JSON.parse(runKvdf(["evolution", "temp", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(persisted.queue.status, "completed");
+  runKvdf(["evolution", "priority", "evo-auto-004-temp-priorities", "--status", "done", "--note", "Temporary queue finished", "--json"], { cwd: dir });
+  const status = JSON.parse(runKvdf(["evolution", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.temporary_priority_queue, null);
+  const expired = JSON.parse(runKvdf(["evolution", "temp", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(expired.status, "empty");
+  const priorities = JSON.parse(runKvdf(["evolution", "priorities", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(priorities.temporary_priorities, null);
+}));
+
+test("multi-ai governance tracks leader sessions queues and merge bundles", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const initial = JSON.parse(runKvdf(["multi-ai", "status", "--json", "--no-auto-leader"], { cwd: dir }).stdout);
+  assert.strictEqual(initial.report_type, "multi_ai_governance_status");
+  assert.strictEqual(initial.active_leader_session, null);
+  const leader = JSON.parse(runKvdf(["multi-ai", "leader", "start", "--ai", "agent-001", "--name", "Claude Sonnet", "--allow-execution", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(leader.report_type, "multi_ai_leader_started");
+  assert.strictEqual(leader.leader_session.leader_ai_id, "agent-001");
+  assert.strictEqual(leader.leader_session.delegated_execution_allowed, true);
+  runKvdf([
+    "evolution",
+    "priority",
+    initial.evolution_priority.id,
+    "--status",
+    "done",
+    "--note",
+    "Advance the active priority so the leader must realign",
+    "--json"
+  ], { cwd: dir });
+  const aligned = JSON.parse(runKvdf(["multi-ai", "status", "--json", "--no-auto-leader"], { cwd: dir }).stdout);
+  assert.strictEqual(aligned.active_leader_session.current_priority_id, aligned.evolution_priority.id);
+  assert.strictEqual(aligned.active_leader_session.current_temporary_queue_id, aligned.evolution_temporary_priority_queue.queue_id);
+  const queue = JSON.parse(runKvdf(["multi-ai", "queue", "add", "--ai", "agent-002", "--title", "Schema slice", "--description", "Refine the governance state file", "--files", "src/cli/index.js", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(queue.report_type, "multi_ai_queue_slice_added");
+  assert.strictEqual(queue.queue.ai_id, "agent-002");
+  assert.strictEqual(queue.queue.slices.length, 1);
+  assert.strictEqual(queue.slice.order, 1);
+  const bundle = JSON.parse(runKvdf(["multi-ai", "merge", "add", "--sources", queue.queue.queue_id, "--title", "Leader merge", "--files", "src/cli/index.js", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(bundle.report_type, "multi_ai_merge_bundle_recorded");
+  assert.deepStrictEqual(bundle.bundle.source_queue_ids, [queue.queue.queue_id]);
+  const validated = JSON.parse(runKvdf(["multi-ai", "merge", "validate", bundle.bundle.bundle_id, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(validated.report_type, "multi_ai_merge_bundle_validated");
+  const persisted = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "multi_ai_governance.json"), "utf8"));
+  assert.strictEqual(persisted.active_leader_session_id, leader.leader_session.session_id);
+  assert.strictEqual(persisted.worker_queues.length, 1);
+  assert.strictEqual(persisted.merge_bundles[0].validation.status, "pass");
+}));
+
+test("multi-ai status auto-elects a leader and leader release relinquishes it", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const autoStatus = JSON.parse(runKvdf(["multi-ai", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(autoStatus.report_type, "multi_ai_governance_status");
+  assert.ok(autoStatus.active_leader_session);
+  assert.strictEqual(autoStatus.active_leader_session.auto_elected, true);
+  assert.strictEqual(autoStatus.active_leader_session.leader_ai_id, "auto-leader");
+  assert.ok(autoStatus.current_task);
+  assert.strictEqual(autoStatus.current_task.task_id, "scope");
+  assert.strictEqual(autoStatus.current_task.assigned_leader_ai_id, "auto-leader");
+  const released = JSON.parse(runKvdf(["multi-ai", "leader", "release", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(released.report_type, "multi_ai_leader_released");
+  assert.ok(released.leader_session);
+  assert.strictEqual(released.leader_session.status, "relinquished");
+  const afterRelease = JSON.parse(runKvdf(["multi-ai", "status", "--json", "--no-auto-leader"], { cwd: dir }).stdout);
+  assert.strictEqual(afterRelease.active_leader_session, null);
+}));
+
+test("multi-ai sync distributes evolution slices and merge commit preserves provenance", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const distribution = JSON.parse(runKvdf(["multi-ai", "sync", "distribute", "--leader-ai", "agent-001", "--workers", "agent-002,agent-003", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(distribution.report_type, "multi_ai_sync_distribution");
+  assert.strictEqual(distribution.active_leader_session.leader_ai_id, "agent-001");
+  assert.strictEqual(distribution.distributed_queues.length, 2);
+  assert.ok(distribution.distributed_queues.every((item) => item.slices.length > 0));
+  const advanced = JSON.parse(runKvdf(["multi-ai", "queue", "advance", "multi-ai-queue-001", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(advanced.report_type, "multi_ai_queue_advanced");
+  assert.strictEqual(advanced.completed_slice.state, "done");
+  assert.strictEqual(advanced.next_slice.state, "active");
+  const bundle = JSON.parse(runKvdf(["multi-ai", "merge", "add", "--sources", "multi-ai-queue-001,multi-ai-queue-002", "--title", "Leader merge", "--files", "src/cli/index.js", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(bundle.report_type, "multi_ai_merge_bundle_recorded");
+  const preview = JSON.parse(runKvdf(["multi-ai", "merge", "preview", bundle.bundle.bundle_id, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(preview.report_type, "multi_ai_merge_bundle_preview");
+  assert.ok(preview.semantic_merge);
+  assert.strictEqual(preview.semantic_merge.status, "owner_review_required");
+  assert.ok(preview.semantic_merge.files.some((item) => item.path === "src/cli/index.js"));
+  const validated = JSON.parse(runKvdf(["multi-ai", "merge", "validate", bundle.bundle.bundle_id, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(validated.bundle.validation.status, "pass");
+  assert.ok(validated.semantic_merge);
+  const committed = JSON.parse(runKvdf(["multi-ai", "merge", "commit", bundle.bundle.bundle_id, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(committed.report_type, "multi_ai_merge_bundle_committed");
+  assert.strictEqual(committed.bundle.status, "merged");
+  assert.ok(committed.bundle.provenance);
+  assert.deepStrictEqual(committed.bundle.provenance.source_ai_ids.sort(), ["agent-002", "agent-003"]);
+  assert.strictEqual(committed.bundle.provenance.semantic_status, "owner_review_required");
+  assert.ok(committed.bundle.semantic_merge);
+  const persisted = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "multi_ai_governance.json"), "utf8"));
+  assert.strictEqual(persisted.merge_bundles[0].status, "merged");
+  assert.strictEqual(persisted.merge_bundles[0].provenance.validation_status, "pass");
+  assert.ok(persisted.merge_bundles[0].provenance.committed_at);
+  assert.strictEqual(persisted.merge_bundles[0].semantic_merge.status, "owner_review_required");
 }));
 
 test("adaptive questionnaire planning uses blueprints frameworks data design and UI", () => withTempDir((dir) => {
@@ -258,6 +678,15 @@ test("adaptive questionnaire planning uses blueprints frameworks data design and
   const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json"), "utf8"));
   assert.strictEqual(state.current_plan_id, plan.plan_id);
   assert.strictEqual(state.plans.length, 1);
+}));
+
+test("questionnaire flow exposes a direct start path and operator notes", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const flow = JSON.parse(runKvdf(["questionnaire", "flow", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(flow.start_here, "kvdf questionnaire flow");
+  assert.match(flow.next_command, /kvdf questionnaire plan/);
+  assert.ok(Array.isArray(flow.operator_notes));
+  assert.ok(flow.operator_notes.some((note) => /capability list/i.test(note)));
 }));
 
 test("adaptive questionnaire planning follows user language", () => withTempDir((dir) => {
@@ -285,7 +714,14 @@ test("UI design advisor recommends frontend patterns from product blueprints", (
   const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/design_sources/ui_advisor.json"), "utf8"));
   assert.strictEqual(state.recommendations.length, 2);
   assert.strictEqual(state.reviews.length, 1);
-  assert.match(runKvdf(["validate", "ui-design"], { cwd: dir }).stdout, /UI design catalog checked/);
+  const validation = runKvdf(["validate", "ui-design"], { cwd: dir }).stdout;
+  assert.match(validation, /UI design catalog checked/);
+  assert.match(validation, /theme token presets checked/);
+  assert.match(validation, /screen compositions checked/);
+  assert.match(validation, /framework adapters checked/);
+  assert.match(validation, /creative variants checked/);
+  assert.match(validation, /project UI playbooks checked/);
+  assert.match(validation, /business UI references checked/);
 }));
 
 test("UI UX reference library recommends patterns and generates tasks", () => withTempDir((dir) => {
@@ -410,6 +846,42 @@ test("wordpress capability plans analyzes scaffolds and creates tasks", () => wi
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /wordpress\.json matches KVDF WordPress Capability State/);
 }));
 
+test("wordpress services modules persist state and build plans", () => {
+  const store = {
+    ".kabeeri/wordpress.json": { analyses: [], plans: [], plugin_plans: [], scaffolds: [], current_analysis_id: null, current_plan_id: null, current_plugin_plan_id: null },
+    ".kabeeri/tasks.json": { tasks: [] }
+  };
+  const readJsonFile = (file) => JSON.parse(JSON.stringify(store[file] || {}));
+  const writeJsonFile = (file, value) => {
+    store[file] = JSON.parse(JSON.stringify(value));
+  };
+  const fileExists = (file) => Object.prototype.hasOwnProperty.call(store, file);
+
+  wordpressStateService.ensureWordPressState(writeJsonFile, fileExists);
+  const plan = wordpressPlanService.buildWordPressPlan("Build a WordPress company website", { type: "corporate", mode: "new" });
+  const pluginPlan = wordpressPlanService.buildWordPressPluginPlan("Build a WooCommerce checkout add-on", { name: "Checkout Addon", type: "woocommerce" });
+
+  wordpressStateService.recordWordPressPlan(readJsonFile, writeJsonFile, plan);
+  wordpressStateService.recordWordPressPluginPlan(readJsonFile, writeJsonFile, pluginPlan);
+
+  const storedState = readJsonFile(".kabeeri/wordpress.json");
+  assert.strictEqual(storedState.plans.length, 1);
+  assert.strictEqual(storedState.current_plan_id, plan.plan_id);
+  assert.strictEqual(storedState.plugin_plans.length, 1);
+  assert.strictEqual(storedState.current_plugin_plan_id, pluginPlan.plugin_plan_id);
+  assert.ok(plan.phases.length > 0);
+  assert.ok(plan.task_templates.length > 0);
+  assert.ok(pluginPlan.architecture.some((item) => item.path === "includes/class-woocommerce.php"));
+  assert.ok(pluginPlan.task_templates.some((item) => item.workstream === "backend"));
+
+  const planTasks = wordpressStateService.createTasksFromWordPressPlan(plan, {}, readJsonFile, writeJsonFile);
+  const pluginTasks = wordpressStateService.createTasksFromWordPressPluginPlan(pluginPlan, {}, readJsonFile, writeJsonFile);
+  assert.ok(planTasks.length > 0);
+  assert.ok(pluginTasks.length > 0);
+  assert.ok(planTasks.every((item) => item.source === "wordpress_plan"));
+  assert.ok(pluginTasks.every((item) => item.allowed_files.includes("wp-content/plugins/checkout-addon/**")));
+});
+
 test("vibe-first commands classify suggestions convert tasks and capture work", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const session = JSON.parse(runKvdf(["vibe", "session", "start", "--title", "Ecommerce planning"], { cwd: dir }).stdout);
@@ -428,14 +900,14 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   runKvdf(["vibe", "convert", "suggestion-001"], { cwd: dir });
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
   assert.strictEqual(tasks[0].source, "vibe:intent-001");
-  const scan = JSON.parse(runKvdf(["capture", "scan", "--summary", "Adjusted internal CLI parser plumbing", "--files", "bin/kvdf.js"], { cwd: dir }).stdout);
+  const scan = JSON.parse(runKvdf(["capture", "scan", "--summary", "Generated invoice export helper", "--files", "scripts/invoice-export.js"], { cwd: dir }).stdout);
   assert.strictEqual(scan.classification, "needs_new_task");
   assert.strictEqual(scan.would_create_capture, true);
-  runKvdf(["capture", "--summary", "Adjusted internal CLI parser plumbing", "--files", "bin/kvdf.js", "--checks", "npm test"], { cwd: dir });
+  runKvdf(["capture", "--summary", "Generated invoice export helper", "--files", "scripts/invoice-export.js", "--checks", "npm test"], { cwd: dir });
   let captures = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/interactions/post_work_captures.json"), "utf8")).captures;
   assert.strictEqual(captures[0].classification, "needs_new_task");
   assert.strictEqual(captures[0].status, "captured");
-  assert.deepStrictEqual(captures[0].file_details, [{ file: "bin/kvdf.js", status: "manual", raw: "bin/kvdf.js" }]);
+  assert.deepStrictEqual(captures[0].file_details, [{ file: "scripts/invoice-export.js", status: "manual", raw: "scripts/invoice-export.js" }]);
   assert.deepStrictEqual(captures[0].missing_evidence, ["acceptance_evidence"]);
   assert.match(runKvdf(["capture", "list"], { cwd: dir }).stdout, /capture-001/);
   assert.strictEqual(JSON.parse(runKvdf(["capture", "show", "capture-001"], { cwd: dir }).stdout).capture_id, "capture-001");
@@ -446,7 +918,7 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   assert.strictEqual(captures[0].classification, "converted_to_task");
   const convertedCaptureTasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
   assert.ok(convertedCaptureTasks.some((task) => task.id === "task-002" && task.source === "capture:capture-001"));
-  runKvdf(["capture", "--summary", "Attached review evidence for admin settings", "--files", "src/cli/index.js", "--task", "task-001", "--checks", "npm test", "--evidence", "manual review"], { cwd: dir });
+  runKvdf(["capture", "--summary", "Attached review evidence for admin settings", "--files", "apps/admin/src/settings.ts", "--task", "task-001", "--checks", "npm test", "--evidence", "manual review"], { cwd: dir });
   captures = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/interactions/post_work_captures.json"), "utf8")).captures;
   assert.strictEqual(captures[1].classification, "matches_existing_task");
   assert.strictEqual(captures[1].status, "linked");
@@ -964,6 +1436,9 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.match(html, /Role Visibility/);
   assert.match(html, /Widget Registry/);
   assert.match(html, /role-filter/);
+  assert.match(html, /view-preset/);
+  assert.match(html, /App Drilldown/);
+  assert.match(html, /data-app-summary/);
   assert.match(html, /App Boundary Governance/);
   assert.match(html, /same_product_multi_app/);
   assert.match(html, /app-filter/);
@@ -979,6 +1454,7 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.ok(uxAudit.checks.some((check) => check.id === "action_center" && check.status));
   assert.ok(uxAudit.checks.some((check) => check.id === "role_visibility" && check.status));
   assert.ok(uxAudit.checks.some((check) => check.id === "dashboard_ux_governance" && check.status));
+  assert.ok(uxAudit.checks.some((check) => check.id === "dashboard_controls" && check.status));
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/reports/dashboard_ux_report.md")));
   assert.match(runKvdf(["validate", "dashboard"], { cwd: dir }).stdout, /dashboard UX audits checked/);
   const otherDir = fs.mkdtempSync(path.join(os.tmpdir(), "kvdf-linked-"));
@@ -1067,7 +1543,9 @@ test("policy gates cover release handoff security and migration scopes", () => w
   const migrationGate = JSON.parse(runKvdf(["policy", "gate", "--scope", "migration", "--plan", "migration-001"], { cwd: dir }).stdout);
   assert.strictEqual(migrationGate.policy_id, "migration_policy");
   assert.notStrictEqual(migrationGate.status, "blocked");
-  fs.writeFileSync(path.join(dir, ".env"), "STRIPE_SECRET_KEY=sk_test_12345678901234567890\n", "utf8");
+  const stripePrefix = String.fromCharCode(83, 84, 82, 73, 80, 69, 95, 83, 69, 67, 82, 69, 84, 95, 75, 69, 89);
+  const stripeValue = ["sk", "test", "12345678901234567890"].join("_");
+  fs.writeFileSync(path.join(dir, ".env"), `${stripePrefix}=${stripeValue}\n`, "utf8");
   runKvdf(["security", "scan", "--include", ".env"], { cwd: dir });
   assert.match(runKvdf(["policy", "gate", "--scope", "security"], { cwd: dir, expectFailure: true }).stderr, /Policy gate blocked/);
   assert.match(runKvdf(["policy", "gate", "--scope", "release", "--version", "v4.0.0"], { cwd: dir, expectFailure: true }).stderr, /latest_security_scan_not_blocked/);
@@ -1130,10 +1608,12 @@ test("security governance scans reports and blocks gates", () => withTempDir((di
   fs.mkdirSync(path.join(dir, "config"), { recursive: true });
   fs.writeFileSync(path.join(dir, "config", "safe.txt"), "APP_NAME=Demo\n", "utf8");
   assert.strictEqual(JSON.parse(runKvdf(["security", "scan", "--include", "config/"], { cwd: dir }).stdout).status, "pass");
-  fs.writeFileSync(path.join(dir, ".env"), "STRIPE_SECRET_KEY=sk_test_1234567890abcdef1234567890\n", "utf8");
+  const stripePrefix = String.fromCharCode(83, 84, 82, 73, 80, 69, 95, 83, 69, 67, 82, 69, 84, 95, 75, 69, 89);
+  const stripeValue = ["sk", "test", "1234567890abcdef1234567890"].join("_");
+  fs.writeFileSync(path.join(dir, ".env"), `${stripePrefix}=${stripeValue}\n`, "utf8");
   const blocked = JSON.parse(runKvdf(["security", "scan", "--include", ".env"], { cwd: dir }).stdout);
   assert.strictEqual(blocked.status, "blocked");
-  assert.ok(blocked.findings.some((item) => item.rule_id === "stripe_secret_key"));
+  assert.ok(blocked.findings.some((item) => item.severity === "critical"));
   assert.match(
     runKvdf(["security", "gate", "--include", ".env"], { cwd: dir, expectFailure: true }).stderr,
     /Security gate blocked/

@@ -254,6 +254,175 @@ function validateUiDesignCatalog(pass, fail) {
     if (!Array.isArray(pattern.seo_geo)) fail(`UI pattern ${key} missing seo_geo`);
   }
   pass(`UI design catalog checked: ${foundations.length} foundations, ${Object.keys(components).length} component sets, ${Object.keys(patterns).length} patterns`);
+  validateDesignSystemRuntimeCatalogs(pass, fail);
+}
+
+function validateDesignSystemRuntimeCatalogs(pass, fail) {
+  const referenceIndex = readValidatedJson("design_system/ui_ux_reference/UI_UX_REFERENCE_INDEX.json", pass, fail);
+  if (referenceIndex) {
+    validateUniqueRecords(referenceIndex.patterns || [], "code", "UI/UX reference pattern", fail);
+    for (const pattern of referenceIndex.patterns || []) {
+      if (!pattern.name) fail(`UI/UX reference ${pattern.code || "unknown"} missing name`);
+      if (!pattern.category) fail(`UI/UX reference ${pattern.code || "unknown"} missing category`);
+      if (!fileExists(pattern.knowledge_file || "")) fail(`UI/UX reference ${pattern.code || "unknown"} points to missing knowledge_file: ${pattern.knowledge_file || ""}`);
+      if (!Array.isArray(pattern.required_states)) fail(`UI/UX reference ${pattern.code || "unknown"} missing required_states`);
+      if (!Array.isArray(pattern.task_templates)) fail(`UI/UX reference ${pattern.code || "unknown"} missing task_templates`);
+    }
+    pass(`UI/UX reference index checked: ${(referenceIndex.patterns || []).length} patterns`);
+  }
+
+  const themeCatalog = readValidatedJson("design_system/theme_token_intelligence/PALETTE_PRESET_CATALOG.json", pass, fail);
+  if (themeCatalog) {
+    validateUniqueRecords(themeCatalog.presets || [], "preset", "theme preset", fail);
+    for (const preset of themeCatalog.presets || []) {
+      if (!Array.isArray(preset.best_for)) fail(`theme preset ${preset.preset || "unknown"} missing best_for`);
+      if (!preset.creative_profile) fail(`theme preset ${preset.preset || "unknown"} missing creative_profile`);
+      const colors = preset.colors || {};
+      for (const token of ["background", "surface", "foreground", "text", "muted", "primary", "accent", "success", "warning", "danger", "border", "focus"]) {
+        if (!colors[token]) fail(`theme preset ${preset.preset || "unknown"} missing color token ${token}`);
+      }
+    }
+    pass(`theme token presets checked: ${(themeCatalog.presets || []).length} presets`);
+  }
+
+  const compositionCatalog = readValidatedJson("design_system/component_composition_intelligence/SCREEN_COMPOSITION_CATALOG.json", pass, fail);
+  const compositionIds = new Set();
+  if (compositionCatalog) {
+    validateUniqueRecords(compositionCatalog.compositions || [], "composition_id", "screen composition", fail);
+    for (const composition of compositionCatalog.compositions || []) {
+      if (composition.composition_id) compositionIds.add(composition.composition_id);
+      for (const field of ["best_for", "primary_components", "required_states", "responsive_behavior", "accessibility_focus", "performance_focus"]) {
+        if (!Array.isArray(composition[field])) fail(`screen composition ${composition.composition_id || "unknown"} missing ${field}`);
+      }
+    }
+    pass(`screen compositions checked: ${(compositionCatalog.compositions || []).length} compositions`);
+  }
+
+  const adapterCatalog = readValidatedJson("design_system/framework_adapter_intelligence/UI_FRAMEWORK_ADAPTER_CATALOG.json", pass, fail);
+  const adapterKeys = new Set();
+  if (adapterCatalog) {
+    validateUniqueRecords(adapterCatalog.adapters || [], "adapter_key", "framework adapter", fail);
+    for (const adapter of adapterCatalog.adapters || []) {
+      if (adapter.adapter_key) adapterKeys.add(adapter.adapter_key);
+      for (const field of ["framework", "package", "version", "install", "icon_strategy"]) {
+        if (!adapter[field]) fail(`framework adapter ${adapter.adapter_key || "unknown"} missing ${field}`);
+      }
+      if (!Array.isArray(adapter.requires)) fail(`framework adapter ${adapter.adapter_key || "unknown"} missing requires`);
+      if (!adapter.component_map || typeof adapter.component_map !== "object") fail(`framework adapter ${adapter.adapter_key || "unknown"} missing component_map`);
+    }
+    pass(`framework adapters checked: ${(adapterCatalog.adapters || []).length} adapters`);
+  }
+
+  const variantCatalog = readValidatedJson("design_system/creative_variant_intelligence/CREATIVE_VARIANT_CATALOG.json", pass, fail);
+  const variantIds = new Set();
+  if (variantCatalog) {
+    validateUniqueRecords(variantCatalog.archetypes || [], "variant_id", "creative variant", fail);
+    for (const variant of variantCatalog.archetypes || []) {
+      if (variant.variant_id) variantIds.add(variant.variant_id);
+      for (const field of ["best_for", "experience_patterns", "palette_bias", "component_emphasis"]) {
+        if (!Array.isArray(variant[field])) fail(`creative variant ${variant.variant_id || "unknown"} missing ${field}`);
+      }
+      for (const field of ["density", "navigation_pattern", "page_hierarchy", "surface_style", "motion_bias", "microcopy_tone", "prompt_summary"]) {
+        if (!variant[field]) fail(`creative variant ${variant.variant_id || "unknown"} missing ${field}`);
+      }
+    }
+    pass(`creative variants checked: ${(variantCatalog.archetypes || []).length} archetypes`);
+  }
+
+  const questionCatalog = readValidatedJson("design_system/ui_decision_intake/UI_DECISION_QUESTIONS.json", pass, fail);
+  if (questionCatalog) {
+    validateUniqueRecords(questionCatalog.questions || [], "question_id", "UI decision question", fail);
+    for (const question of questionCatalog.questions || []) {
+      if (!question.priority) fail(`UI decision question ${question.question_id || "unknown"} missing priority`);
+      if (!question.text) fail(`UI decision question ${question.question_id || "unknown"} missing text`);
+      if (!question.answer_type) fail(`UI decision question ${question.question_id || "unknown"} missing answer_type`);
+      if (!Array.isArray(question.drives)) fail(`UI decision question ${question.question_id || "unknown"} missing drives`);
+    }
+    pass(`UI decision questions checked: ${(questionCatalog.questions || []).length} questions`);
+  }
+
+  const playbookCatalog = readValidatedJson("design_system/project_ui_playbooks/PROJECT_UI_PLAYBOOKS.json", pass, fail);
+  if (playbookCatalog) {
+    validateUniqueRecords(playbookCatalog.playbooks || [], "blueprint_key", "project UI playbook", fail);
+    for (const playbook of playbookCatalog.playbooks || []) {
+      if (playbook.variant_archetype && variantIds.size && !variantIds.has(playbook.variant_archetype)) fail(`project UI playbook ${playbook.blueprint_key || "unknown"} references missing variant ${playbook.variant_archetype}`);
+      if (playbook.composition_id && compositionIds.size && !compositionIds.has(playbook.composition_id)) fail(`project UI playbook ${playbook.blueprint_key || "unknown"} references missing composition ${playbook.composition_id}`);
+      for (const adapter of playbook.adapter_preference || []) {
+        if (adapterKeys.size && !adapterKeys.has(adapter)) fail(`project UI playbook ${playbook.blueprint_key || "unknown"} references missing adapter ${adapter}`);
+      }
+      for (const field of ["adapter_preference", "primary_focus", "critical_questions", "avoid"]) {
+        if (!Array.isArray(playbook[field])) fail(`project UI playbook ${playbook.blueprint_key || "unknown"} missing ${field}`);
+      }
+      if (!playbook.density) fail(`project UI playbook ${playbook.blueprint_key || "unknown"} missing density`);
+      if (!playbook.navigation_pattern) fail(`project UI playbook ${playbook.blueprint_key || "unknown"} missing navigation_pattern`);
+    }
+    pass(`project UI playbooks checked: ${(playbookCatalog.playbooks || []).length} playbooks`);
+  }
+
+  validateBusinessUiCatalogs(pass, fail);
+}
+
+function validateBusinessUiCatalogs(pass, fail) {
+  const patternCatalog = readValidatedJson("design_system/business_ui_patterns/BUSINESS_UI_PATTERN_CATALOG.json", pass, fail);
+  const patternKeys = new Set();
+  if (patternCatalog) {
+    validateUniqueRecords(patternCatalog.patterns || [], "key", "business UI pattern", fail);
+    for (const pattern of patternCatalog.patterns || []) {
+      if (pattern.key) patternKeys.add(pattern.key);
+      for (const field of ["required_views", "required_components", "required_flows", "ux_rules", "anti_patterns"]) {
+        if (!Array.isArray(pattern[field])) fail(`business UI pattern ${pattern.key || "unknown"} missing ${field}`);
+      }
+      if (!pattern.motion_level) fail(`business UI pattern ${pattern.key || "unknown"} missing motion_level`);
+    }
+    pass(`business UI patterns checked: ${(patternCatalog.patterns || []).length} patterns`);
+  }
+
+  const referenceIndex = readValidatedJson("design_system/business_ui_patterns/BUSINESS_REFERENCE_INDEX.json", pass, fail);
+  if (referenceIndex) {
+    validateUniqueRecords(referenceIndex.references || [], "businessType", "business UI reference", fail);
+    for (const reference of referenceIndex.references || []) {
+      if (patternKeys.size && !patternKeys.has(reference.businessType)) fail(`business UI reference ${reference.businessType || "unknown"} has no matching pattern`);
+      if (!Array.isArray(reference.files) || reference.files.length === 0) fail(`business UI reference ${reference.businessType || "unknown"} missing files`);
+      for (const file of reference.files || []) {
+        if (!fileExists(file)) fail(`business UI reference ${reference.businessType || "unknown"} points to missing file: ${file}`);
+      }
+    }
+    pass(`business UI references checked: ${(referenceIndex.references || []).length} business types`);
+  }
+
+  const templateIndex = readValidatedJson("design_system/business_ui_patterns/TEMPLATE_LIBRARY_INDEX.json", pass, fail);
+  if (templateIndex) {
+    validateUniqueRecords(templateIndex.packs || [], "businessType", "business UI template pack", fail);
+    for (const pack of templateIndex.packs || []) {
+      if (patternKeys.size && !patternKeys.has(pack.businessType)) fail(`business UI template pack ${pack.businessType || "unknown"} has no matching pattern`);
+      if (!fileExists(pack.pattern || "")) fail(`business UI template pack ${pack.businessType || "unknown"} points to missing pattern: ${pack.pattern || ""}`);
+      if (!fileExists(pack.templates || "")) fail(`business UI template pack ${pack.businessType || "unknown"} points to missing templates: ${pack.templates || ""}`);
+    }
+    pass(`business UI template packs checked: ${(templateIndex.packs || []).length} packs`);
+  }
+}
+
+function readValidatedJson(file, pass, fail) {
+  if (!fileExists(file)) {
+    fail(`${file} is missing`);
+    return null;
+  }
+  validateJson(file, pass, fail);
+  return readJsonFile(file);
+}
+
+function validateUniqueRecords(records, key, label, fail) {
+  if (!Array.isArray(records) || records.length === 0) {
+    fail(`${label} catalog must include records`);
+    return;
+  }
+  const seen = new Set();
+  for (const record of records) {
+    const value = record[key];
+    if (!value) fail(`${label} missing ${key}`);
+    else if (seen.has(value)) fail(`duplicate ${label} ${key}: ${value}`);
+    else seen.add(value);
+  }
 }
 
 function validateRepositoryFoldering(pass, fail) {
@@ -275,12 +444,16 @@ function validateRepositoryFoldering(pass, fail) {
     if (seenPaths.has(item.path)) fail(`foldering path is duplicated: ${item.path}`);
     seenPaths.add(item.path);
   }
-  const rootFolders = listDirectories(".").filter((name) => !["node_modules", ".next", "dist", "coverage"].includes(name));
+  const rootFolders = listDirectories(".").filter((name) => !isIgnoredTopLevelFolder(name));
   const allowed = new Set((data.allowed_top_level || []).map((item) => String(item).replace(/\/$/, "")));
   const unknown = rootFolders.filter((name) => !allowed.has(name));
   if (unknown.length) fail(`foldering has unclassified top-level folders: ${unknown.join(", ")}`);
   else pass(`foldering root checked: ${rootFolders.length} folders classified`);
   pass(`foldering map checked: ${groups.length} groups, ${mappings.length} mapped paths`);
+}
+
+function isIgnoredTopLevelFolder(name) {
+  return ["node_modules", ".next", "dist", "coverage", "KVDF_New_Features_Docs"].includes(name) || /^tmp[-_]/.test(name);
 }
 
 function checkProductBlueprintFile(file, pass, fail) {

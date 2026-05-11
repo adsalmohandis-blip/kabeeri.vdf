@@ -17,7 +17,7 @@ When starting a new development session:
 
 ## Current State
 
-- Date: 2026-05-08
+- Date: 2026-05-11
 - Branch: `main`
 - Latest known commit: `68c2ab3 Expand Kabeeri governance CLI and docs system`
 - Package: `kabeeri-vdf`
@@ -25,6 +25,7 @@ When starting a new development session:
 - Test command: `npm test`
 - Smoke command: `npm run test:smoke`
 - Full local check: `npm run check`
+- Latest session focus: added a direct start path and operator notes to questionnaire flow, made `evolution next` return a direct next-action hint, exposed a current task in Multi-AI status reports, transferred the active leader session to `codex`, kept `npm test` green, continued safe `src/cli/index.js` modularization, and added a general `kvdf temp` queue for application task execution alongside Evolution compatibility.
 
 ## Active Focus
 
@@ -39,10 +40,35 @@ Build Kabeeri VDF as a practical framework and CLI engine for:
 
 ## Last Session Notes
 
+- 2026-05-11: Started Multi-AI Governance enhancement (evo-auto-017). Completed Slice 1 (Lock Scope Statement), Slice 2 (Dependency Map), and Slice 3 (Verified Implementation). Created scope statement in `docs/reports/EVO_AUTO_017_SCOPE_STATEMENT.md` and dependency map in `docs/reports/EVO_AUTO_017_DEPENDENCY_MAP.md`. Verified all surfaces are wired: runtime state, CLI commands, help text, schemas, validation, docs, capabilities reference, and integration tests. All 72 integration tests pass. Updated CHANGELOG with Multi-AI Governance verification notes. Ready for Slice 4 (Sync Docs) and Slice 5 (Validate & Close).
+- 2026-05-11: Continued evo-auto-004 by extracting WordPress state persistence and WordPress task generation into `src/cli/services/wordpress.js`, leaving `src/cli/commands/wordpress.js` as the thinner command facade. Syntax checks passed for both files.
+- 2026-05-11: Advanced evo-auto-004 map work by adding `docs/reports/EVO_AUTO_004_DEPENDENCY_MAP.md` and extracting WordPress planning/blueprint builders into `src/cli/services/wordpress_plans.js`. Command dispatch now uses the service module for plan and checklist generation.
+- 2026-05-11: Added integration coverage for the new WordPress services modules so `wordpress` plan/state helpers are exercised directly, not only through the CLI facade. All 73 integration tests pass.
+- 2026-05-11: Added a general `kvdf temp` command for application task execution that keeps `evolution temp` as the Evolution-specific compatibility path. All 74 integration tests pass.
+- 2026-05-11: Synced evo-auto-004 documentation so the CLI reference and WordPress adoption guide now point at `src/cli/services/wordpress.js` and `src/cli/services/wordpress_plans.js` for governed runtime behavior.
+- 2026-05-11: Began evo-auto-004 runtime services extraction by delegating WordPress command handling to `src/cli/commands/wordpress.js` from `src/cli/index.js`. Fixed the plugin architecture helper call in the module and kept all 72 integration tests green.
+- 2026-05-11: Continued evo-auto-004 by extracting the questionnaire router into `src/cli/commands/questionnaire.js` and wiring `src/cli/index.js` to the new module. All 72 integration tests still pass.
+- 2026-05-11: Continued evo-auto-004 by extracting blueprint and data-design routing into `src/cli/commands/blueprint.js` and wiring `src/cli/index.js` to the new module. All 72 integration tests still pass.
+- 2026-05-11: Tightened Evolution and Multi-AI guidance so any AI tool starting work on an active priority must read `kvdf evolution temp` first and follow the current temporary slice before implementation.
+- 2026-05-11: Classified `.kilo/` as `runtime_state` in the repository foldering map and documented it as local tooling/worktree state in the foldering guide.
+- 2026-05-11: `npm run kvdf -- validate foldering` now passes, and `npm test` passed with all 71 integration tests.
+- 2026-05-11: Resumed the framework-owner session, read the owner checkpoint, confirmed `kvdf resume` reports `framework_owner_development`, and verified the local dashboard serves successfully on `http://127.0.0.1:4177/__kvdf/dashboard`.
+- 2026-05-11: Extracted the `init` command and docs-first intake seeding into `src/cli/commands/init.js`, keeping the CLI router slimmer while preserving workspace bootstrap behavior.
+- 2026-05-11: Extracted release checklist, notes, scenario review, and issue counting helpers into `src/cli/commands/release.js`, then wired `github` and `release` paths to the shared module exports.
+- 2026-05-11: Fixed Multi-AI leader auto-election fallback so command names like `status` cannot become leader identities. The active leader session was transferred to `codex` for the current workspace.
+- 2026-05-11: Exposed `current_task` in Multi-AI governance status reports so worker tools can see the active Evolution slice directly instead of inferring it from the leader session.
+- 2026-05-11: Added a direct next-action hint to `kvdf evolution next` so worker tools get an execution step instead of just the next priority title.
+- 2026-05-11: Added `start_here`, `next_command`, and operator notes to `kvdf questionnaire flow`, and documented a direct start path in questionnaire activation rules so tools stop scanning unrelated folders.
 - The repository already has a large `kvdf` Node CLI implementation under `src/cli/`.
 - `.kabeeri/` is ignored by git and should be treated as local runtime state.
 - Current local workspace has uncommitted changes in CLI, docs, reports, and integration tests.
 - This file was added to solve the owner resume problem: disconnected sessions should restart from here.
+- 2026-05-11: Added temporary execution priorities for the active `in_progress` evolution priority. `kvdf evolution temp`, `kvdf evolution temp advance`, and `kvdf evolution temp complete` now manage a short-lived slice queue that expires with the source priority.
+- 2026-05-11: Added Multi-AI Governance with `kvdf multi-ai` status/leader/queue/merge commands, a repo-backed `.kabeeri/multi_ai_governance.json` state file, and Evolution-led leader orchestration for per-AI temporary queues and semantic merge bundles.
+- 2026-05-11: Added Evolution sync for Multi-AI orchestration. `kvdf multi-ai sync` now aligns the Leader AI with the active Evolution temporary queue and `kvdf multi-ai sync distribute` can split slices across worker AIs with provenance metadata.
+- 2026-05-11: Added Multi-AI queue lifecycle and merge commit support. Worker queues can now be claimed, advanced, completed, blocked, or handed off, and merge bundles can be committed with provenance after validation.
+- 2026-05-11: Added integration coverage for Multi-AI sync distribution, queue advancement, and merge commit provenance so the lifecycle stays pinned down in tests.
+- 2026-05-11: Added semantic merge preview and surface planning for Multi-AI bundles. Merge bundles now record file sections, contributor overlaps, surface risk, and owner-review-required semantics before commit.
 - 2026-05-08: `npm test` passed with 37 integration tests.
 - 2026-05-08: `npm run test:smoke` passed for version, doctor, validate, prompt pack list, and plan list.
 - 2026-05-08: Policy Gates development started. Added policy status, policy validation, and policy schema files.
@@ -79,6 +105,42 @@ Build Kabeeri VDF as a practical framework and CLI engine for:
 - 2026-05-09: Added UI/UX Advisor inside Design Governance. `kvdf design recommend <blueprint>` now maps product blueprints to frontend experience patterns, stacks, component groups, page templates, SEO/GEO rules, dashboard/mobile UX rules, and `.kabeeri/design_sources/ui_advisor.json`.
 - 2026-05-09: Added Repository Foldering System. `kvdf structure` and `kvdf validate foldering` now expose a Laravel-like root map for Kabeeri itself, with current folders grouped into core, knowledge, packs, integrations, contracts, documentation, quality, and runtime state.
 - 2026-05-09: Added adaptive questionnaire intake planning. `kvdf questionnaire plan` now combines application blueprints, framework prompt packs, data design, UI/UX advisor, and delivery mode advisor to generate focused questions that help choose Agile/Structured and the technical stack before task generation.
+- 2026-05-10: Added `kvdf resume` / `kvdf start`, `kvdf guard`, and `kvdf sync` for the owner problem intake. Resume separates framework-owner work from user app work and npm roots; guard blocks framework-like paths in user workspaces; sync provides solo/team GitHub preflight.
+- 2026-05-10: Integrated the framework boundary guard into post-work capture and AI session completion so user workspaces cannot record Kabeeri internals as app work unless `--allow-framework-edits` is explicit.
+- 2026-05-10: Added `kvdf conflict scan` as a pre-development drift check for CLI router/help alignment, guard wiring, core/runtime schema validation, and workspace task/capture/session/lock conflicts.
+- 2026-05-10: `npm test` passed with 65 integration tests after the conflict scan slice.
+- 2026-05-10: Strengthened Evolution Steward as the single framework-development backlog. `kvdf evolution priorities` and `kvdf evolution next` now expose ordered development phases, `kvdf resume --scan` includes Evolution and conflict checks, and feature requests get duplicate-capability signals before being treated as new.
+- 2026-05-10: `KVDF_New_Features_Docs/` is now a manual-only ignored feature-docs inbox. It is not part of automatic scans. Current batch contains 38 core governance docs and 83 project reference packs; import must go through Evolution Steward and capability-map duplicate review before implementation.
+- 2026-05-10: `npm test` passed with 65 integration tests after the Evolution Steward backlog update.
+- 2026-05-10: Enhanced `kvdf resume` for framework-owner sessions with Evolution priorities, parsed owner checkpoint, compact git summary, and one exact next development action. Direct integration test command `node tests/cli.integration.test.js` passed with 65 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `doctor` and `validate` routing into `src/cli/commands/health.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 65 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `delivery` routing and the shared delivery recommendation helper into `src/cli/commands/delivery.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 65 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `memory` routing and memory summary generation into `src/cli/commands/memory.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 65 tests.
+- 2026-05-10: Added Evolution Steward placement gate so new feature requests during an `in_progress` priority show the unfinished work, full priority list, and recommended placement, then wait for explicit Owner confirmation before creating changes/tasks.
+- 2026-05-10: Added Evolution deferred ideas store. `kvdf evolution defer` records ideas, `kvdf evolution deferred` reviews them, selected ideas restore only with explicit placement confirmation, and `kvdf evolution priorities` shows them as one final deferred-ideas bucket. The n8n integration analysis is stored as `deferred-001`.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `prompt-pack` routing, export handling, and prompt-pack catalog helpers into `src/cli/commands/prompt_pack.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `audit` routing and audit report reading into `src/cli/commands/audit.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `generator` / `create` routing, skeleton generation, and generator governance tasks into `src/cli/commands/generator.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `vscode` routing and VS Code scaffold builders into `src/cli/commands/vscode.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `docs` / `doc` site routing into `src/cli/commands/docs_site.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `budget` routing into `src/cli/commands/budget.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `context-pack`, `preflight`, and `model-route` cost-control routing into `src/cli/commands/cost_control.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `handoff` routing and handoff report builders into `src/cli/commands/handoff.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `security` routing and the latest security scan helper into `src/cli/commands/security.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `migration` routing and migration policy helpers into `src/cli/commands/migration.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `token` routing and execution-scope helpers into `src/cli/commands/token.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `lock` routing and lock-scope helpers into `src/cli/commands/lock.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `developer` / `agent` identity routing into `src/cli/commands/identity.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `owner` auth and transfer routing into `src/cli/commands/owner.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `acceptance` routing into `src/cli/commands/acceptance.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `usage` / `pricing` routing and AI cost helpers into `src/cli/commands/usage_pricing.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `sprint` routing into `src/cli/commands/sprint.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `readiness` / `governance` runtime report routing into `src/cli/commands/runtime_report.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `reports` routing into `src/cli/commands/reports.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `release` routing into `src/cli/commands/release.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `session` routing into `src/cli/commands/session.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `github` routing into `src/cli/commands/github.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
+- 2026-05-10: Continued `src/cli/index.js` modularization by extracting `adr` routing into `src/cli/commands/adr.js`. Direct integration test command `node tests/cli.integration.test.js` passed with 67 tests.
 
 ## Open Local Changes
 
@@ -104,13 +166,70 @@ npm test
 
 ## Next Actions
 
-1. Review the current uncommitted diff in detail, especially `src/cli/index.js`, `src/cli/validate.js`, `dashboard/LIVE_DASHBOARD_RUNTIME.md`, and `governance/APP_BOUNDARY_GOVERNANCE.md`.
-2. Decide whether the Live Dashboard needs browser visual QA before commit.
-3. Keep `docs/SYSTEM_CAPABILITIES_REFERENCE.md` updated whenever a new major capability is added or removed.
-4. Review `docs/reports/DOCUMENTATION_CLEANUP_AUDIT.md` and decide which documents to delete, archive, or consolidate.
-5. Decide whether to add dashboard tabs/filters or Team Governance as the next UX/governance slice.
-4. Commit the stable set of changes with a clear message.
-5. Decide the next product slice: Live Dashboard multi-workspace UX, resume workflow command, Vibe command layer, or broader runtime schemas.
+0. Continue the owner problem intake before broad feature work.
+1. Continue safe `src/cli/index.js` modularization.
+2. Start runtime services extraction after command module boundaries stabilize.
+3. Analyze `KVDF_New_Features_Docs/` only when explicitly requested, starting with duplicate review against `docs/SYSTEM_CAPABILITIES_REFERENCE.md`.
+4. Import only missing core governance/reference-pack knowledge into existing Kabeeri systems, then clear the inbox contents.
+5. Make UI/UX-questionnaire linkage visible in docs, resume output, and task generation so missing UI decisions become explicit before frontend work.
+6. Add low-cost project start mode with compact context, focused packs, and cheap model-routing defaults.
+7. Deepen team GitHub sync with issue/PR/status/comment integration and action-triggered feedback only when team mode is detected.
+8. Expand conflict scan later with dashboard/docs/policy drift checks after the basic scan proves stable.
+9. Review the current uncommitted diff before commit, especially `src/cli/index.js`, `src/cli/validate.js`, `src/cli/ui.js`, docs, and tests.
+
+## Owner Problem Intake - 2026-05-10
+
+These are current product risks discovered during owner review and should guide the next development slices:
+
+1. Session intent ambiguity:
+   - Problem: Natural phrases like "start development", "start Kabeeri", or "let's begin" can mean framework-owner development inside this repository, or user application work inside a project using Kabeeri.
+   - Risk: AI may edit Kabeeri internals while acting as a user project assistant, or may start app implementation without reading `.kabeeri` state.
+   - First fix: `kvdf resume` / `kvdf start` now detects session mode and root roles.
+   - Next fix: integrate resume guidance into docs, dashboard, and AI workflow prompts.
+2. npm root ambiguity:
+   - Problem: Kabeeri is a Node CLI, while user apps may also be Next.js/React Node apps.
+   - Risk: `npm install`, `npm test`, or `npm run dev` may run in the wrong root.
+   - First fix: `kvdf resume` reports the current app npm root separately from the Kabeeri engine root.
+   - Next fix: add stronger package/workspace root checks before package-sensitive commands.
+3. Owner framework-development resume:
+   - Problem: The framework owner may forget the previous development phase, plan, or half-finished slice.
+   - Risk: duplicated work, abandoned refactors, or work starting without reviewing the checkpoint.
+   - Current support: `kvdf resume` summarizes `OWNER_DEVELOPMENT_STATE.md`, Evolution priorities, git diff state, and one exact next action. `kvdf resume --scan` also runs Evolution priority review, conflict scan, workspace validation, and integration tests.
+   - Next fix: continue reducing `src/cli/index.js` while keeping resume as the canonical first-session command.
+4. Cross-feature logic conflicts:
+   - Problem: New Kabeeri capabilities can conflict with older runtime logic.
+   - Risk: feature drift that normal tests may not explain clearly.
+   - Current support: `kvdf validate`, policy gates, runtime schemas, reports.
+   - First fix: `kvdf conflict scan` now checks CLI router/help alignment, guard wiring, core/runtime schema validation, and local workspace task/capture/session/lock conflicts before new development starts.
+   - Next fix: expand the scan with dashboard/docs/policy drift checks.
+5. UI/UX-questionnaire linkage:
+   - Problem: It is not obvious whether UI/UX guidance is connected to extracted questions and vibe-coder answers.
+   - Current state: `kvdf questionnaire plan` already uses UI/UX advisor context, and UI decision answers can feed `kvdf design ui-decisions`.
+   - Next fix: make this link visible in docs, resume output, and task generation so missing UI decisions become explicit questions before frontend work.
+6. Token/cost pressure:
+   - Problem: Developing new apps with Kabeeri can consume too many AI tokens.
+   - Current support: context packs, preflight estimates, model routing, usage tracking.
+   - Next fix: add a low-cost project start path that defaults to compact resume summaries, focused context packs, and cheap model routes for classification/question generation.
+7. Team-local state versus GitHub coordination:
+   - Problem: Kabeeri usage is local on each developer machine, but multi-developer coordination must stay synchronized through GitHub.
+   - Risk: each developer's `.kabeeri` state can drift, causing stale task status, duplicate work, lock conflicts, or outdated understanding of what teammates already finished.
+   - Next fix: design a GitHub-backed sync loop where local Kabeeri emits quick feedback after developer actions and pulls/refreshes current team state before new work starts.
+   - First fix: `kvdf sync status`, `kvdf sync pull`, and `kvdf sync push` now provide a safe git/GitHub preflight, with pull/push as dry-runs unless `--confirm` is provided.
+   - Scope rule: sync is optional for solo or single-developer local workspaces, and recommended for team workspaces with multiple active developers or agents.
+   - Required next capabilities: GitHub issue/PR/comment/status integration, conflict detection, action-triggered feedback after task/session/capture changes, and clear offline behavior.
+8. User access to framework internals:
+   - Problem: Users need to use, understand, and possibly copy Kabeeri, but should not casually modify Kabeeri framework internals while building their own app.
+   - Risk: user project work can corrupt the framework source, confuse app files with engine files, or create unsupported local forks by accident.
+   - Next fix: define installation/usage profiles that separate `framework_source`, `installed_engine`, and `user_workspace`; make the default user experience read-only toward Kabeeri internals.
+   - First fix: `kvdf guard` now reports framework boundary status and blocks framework-like paths inside user workspaces unless `--allow-framework-edits` is explicitly provided.
+   - Second fix: post-work capture and AI session completion now enforce the same protected-path guard for changed-file lists.
+   - Possible next implementation: publish/use Kabeeri as a package or linked CLI, keep project state in `.kabeeri`, expose docs and commands, and expand read-only usage profiles.
+9. System-command-first operation:
+   - Problem: AI assistants may bypass Kabeeri commands and inspect/edit directly before the runtime has classified the session.
+   - Risk: work starts without current state, task scope, GitHub sync, cost controls, or owner checkpoint.
+   - Owner rule: when entering Kabeeri, always use Kabeeri system commands first. Do not bypass them unless the Owner explicitly orders a bypass.
+   - First command: `kvdf resume` / `kvdf start`.
+   - Next fix: make `resume` the official preflight for Kabeeri-aware sessions, and add docs/prompt guidance that direct editing is only allowed after resume/context/task state is known.
 
 ## Decision Log
 
@@ -229,6 +348,44 @@ Current slice:
 
 Next exact step:
 - Run final validation and tests for this slice.
+
+## Session 2026-05-11
+
+Done:
+- Resumed framework-owner development and confirmed the repo is in `framework_owner_development` mode.
+- Verified `kvdf resume` and `kvdf doctor` on the local workspace.
+- Confirmed the dashboard server responds successfully at `/__kvdf/dashboard` and `/__kvdf/api/state`.
+- Classified `.kilo/` as local runtime tooling state in the repository foldering map.
+- Updated the repository foldering guide to describe `.kilo/` alongside `.kabeeri/`.
+- Re-ran `npm run kvdf -- validate foldering` and `npm test`; both passed.
+- Extracted `init` bootstrap and intake handling into `src/cli/commands/init.js`.
+- Kept the `init` CLI behavior and tests green after the extraction.
+- Extracted release reporting helpers into `src/cli/commands/release.js`.
+- Kept `github` and `release` CLI behavior and tests green after the extraction.
+
+Changed files:
+- `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`
+- `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`
+- `src/cli/commands/release.js`
+- `src/cli/commands/dashboard_state.js`
+- `src/cli/commands/init.js`
+- `src/cli/index.js`
+- `OWNER_DEVELOPMENT_STATE.md`
+
+Checks run:
+- `npm run kvdf -- resume`
+- `npm run kvdf -- doctor`
+- `npm run kvdf -- validate foldering`
+- `npm test`
+- `node -c src/cli/commands/init.js`
+- `node -c src/cli/commands/release.js`
+- `node -c src/cli/index.js`
+
+Known risks:
+- The tree still contains a large existing uncommitted diff from previous slices, so the next edit should stay tightly scoped.
+
+Next exact step:
+- Continue safe `src/cli/index.js` modularization, likely by extracting one more isolated command cluster.
 
 ## 2026-05-08 - Agile Templates Runtime Upgrade
 

@@ -20,6 +20,7 @@
     { "path": ".kabeeri/agile.json", "schema": "schemas/runtime/agile-state.schema.json" },
     { "path": ".kabeeri/structured.json", "schema": "schemas/runtime/structured-state.schema.json" },
     { "path": ".kabeeri/sessions.json", "schema": "schemas/runtime/sessions-state.schema.json" },
+    { "path": ".kabeeri/multi_ai_governance.json", "schema": "schemas/runtime/multi-ai-governance-state.schema.json" },
     { "path": ".kabeeri/developers.json", "schema": "schemas/runtime/identities-state.schema.json" },
     { "path": ".kabeeri/agents.json", "schema": "schemas/runtime/identities-state.schema.json" },
     { "path": ".kabeeri/developer_mode.json", "schema": "schemas/runtime/developer-mode-state.schema.json" },

@@ -19,7 +19,7 @@ knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json
 | `contracts` | JSON schemas and runtime contracts | `schemas/` |
 | `documentation` | Human docs and references | `docs/`, `docs/site/`, `docs/codex_context/`, root readmes |
 | `quality` | Tests and validation fixtures | `tests/` |
-| `runtime_state` | Workspace-local live state | `.kabeeri/` |
+| `runtime_state` | Workspace-local live state and local tooling state | `.kabeeri/`, `.kilo/` |
 
 ## Why Not Move Everything Immediately?
 
@@ -38,6 +38,7 @@ docs/
 schemas/
 tests/
 .kabeeri/
+.kilo/
 ```
 
 ## CLI

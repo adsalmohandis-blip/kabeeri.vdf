@@ -21,6 +21,7 @@ The `.kabeeri/` workspace remains source of truth. Governance examples live besi
 - `.kabeeri/developers.json.example`
 - `.kabeeri/agents.json.example`
 - `.kabeeri/locks.json.example`
+- `.kabeeri/multi_ai_governance.json`
 - `.kabeeri/access_tokens/README.md`
 
 ## Spec Files
@@ -36,3 +37,4 @@ The `.kabeeri/` workspace remains source of truth. Governance examples live besi
 - `AI_DEVELOPER_OUTPUT_CONTRACT.md`
 - `TOKEN_BUDGET_RULES.md`
 - `OWNER_VERIFY_TOKEN_REVOCATION_AUDIT.md`
+- `MULTI_AI_GOVERNANCE.md`

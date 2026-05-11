@@ -32,10 +32,119 @@
           "change_id": { "type": "string" },
           "status": { "type": "string" },
           "impacted_areas": { "type": "array", "items": { "type": "string" } },
-          "tasks": { "type": "array" }
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "task_id": { "type": "string" },
+                "area": { "type": "string" },
+                "title": { "type": "string" },
+                "workstream": { "type": "string" },
+                "allowed_files": { "type": "array", "items": { "type": "string" } },
+                "execution_summary": { "type": "string" },
+                "resume_steps": { "type": "array", "items": { "type": "string" } },
+                "expected_outputs": { "type": "array", "items": { "type": "string" } },
+                "verification_commands": { "type": "array", "items": { "type": "string" } }
+              }
+            }
+          }
         }
       }
     },
     "current_change_id": { "type": ["string", "null"] }
+    ,
+    "temporary_priorities": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "queue_id": { "type": "string" },
+        "source_priority_id": { "type": "string" },
+        "source_priority_title": { "type": "string" },
+        "source_priority_summary": { "type": ["string", "null"] },
+        "source_signature": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "updated_at": { "type": ["string", "null"] },
+        "expires_at": { "type": ["string", "null"] },
+        "expires_when_priority_changes": { "type": "boolean" },
+        "status": { "type": "string" },
+        "current_slice_index": { "type": "number" },
+        "current_slice": { "type": ["object", "null"] },
+        "completed_at": { "type": ["string", "null"] },
+        "slices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "slice_id": { "type": "string" },
+              "order": { "type": "number" },
+              "title": { "type": "string" },
+              "description": { "type": "string" },
+              "done_definition": { "type": "string" },
+              "owner_confirmation_required": { "type": "boolean" },
+              "state": { "type": "string" },
+              "completed_at": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    },
+    "development_priorities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["id", "priority", "title", "status"],
+        "properties": {
+          "id": { "type": "string" },
+          "priority": { "type": "number" },
+          "title": { "type": "string" },
+          "summary": { "type": "string" },
+          "status": { "type": "string" },
+          "source": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "notes": { "type": "array" },
+          "execution_details": { "$ref": "#/$defs/executionDetails" }
+        }
+      }
+    },
+    "deferred_ideas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["idea_id", "title", "description", "status"],
+        "properties": {
+          "idea_id": { "type": "string" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "status": { "type": "string" },
+          "source": { "type": "string" },
+          "reason": { "type": "string" },
+          "analysis_summary": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "restored_at": { "type": ["string", "null"] },
+          "restored_change_id": { "type": ["string", "null"] },
+          "execution_details": { "$ref": "#/$defs/executionDetails" }
+        }
+      }
+    },
+    "priorities_last_reviewed_at": { "type": ["string", "null"] }
+  },
+  "$defs": {
+    "executionDetails": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "execution_summary": { "type": "string" },
+        "resume_steps": { "type": "array", "items": { "type": "string" } },
+        "required_inputs": { "type": "array", "items": { "type": "string" } },
+        "expected_outputs": { "type": "array", "items": { "type": "string" } },
+        "do_not_change": { "type": "array", "items": { "type": "string" } },
+        "verification_commands": { "type": "array", "items": { "type": "string" } }
+      }
+    }
   }
 }

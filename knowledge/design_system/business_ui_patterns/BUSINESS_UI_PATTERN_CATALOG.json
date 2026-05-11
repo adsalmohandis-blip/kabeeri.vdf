@@ -1,6 +1,6 @@
 {
   "catalog_version": "1.0.0",
-  "source": "Adapted from uiux specifications/Kvdf UIUX System For Codex for Kabeeri's existing knowledge/design_system structure.",
+  "source": "Adapted from the archived KVDF UI/UX system notes into Kabeeri's current knowledge/design_system structure.",
   "principle": "Business Type -> Views -> Data -> Flows -> UI Contract -> Review Checklist, with creative variation driven by product answers.",
   "patterns": [
     {
@@ -181,4 +181,3 @@
     }
   ]
 }
-

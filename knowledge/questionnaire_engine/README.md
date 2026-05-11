@@ -8,6 +8,12 @@ Flow:
 Entry Questions -> Project Type Detection -> System Area Activation -> Grouped Questionnaires -> Conditional Deep Questions -> Coverage Review -> Missing Answers Only -> Generated Docs / Tasks
 ```
 
+Start here:
+
+1. `kvdf questionnaire flow`
+2. `kvdf capability list`
+3. `kvdf questionnaire plan "<project>"`
+
 Runtime support is available through:
 
 ```bash

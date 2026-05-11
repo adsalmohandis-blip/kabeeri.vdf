@@ -1,13 +1,16 @@
 # Evolution Steward
 
-Evolution Steward is the Kabeeri capability that governs changes to Kabeeri
-itself.
+Evolution Steward is the single Kabeeri capability that governs changes to
+Kabeeri itself. Do not create a parallel framework-change manager; extend this
+system when framework development tracking needs more behavior.
 
 Its purpose is to prevent framework updates from becoming isolated code or docs
 edits. When the Owner asks for a new Kabeeri capability, bug fix, governance
 rule, dashboard behavior, CLI surface, schema, or documentation change,
-Evolution Steward records the change, infers the impacted system areas, creates
-follow-up tasks, and exposes the unfinished work to dashboard and live reports.
+Evolution Steward records the change, keeps the ordered development priorities,
+checks possible duplicate capability matches, infers the impacted system areas,
+creates follow-up tasks, and exposes the unfinished work to dashboard and live
+reports.
 
 ## Source Of Truth
 
@@ -16,6 +19,7 @@ follow-up tasks, and exposes the unfinished work to dashboard and live reports.
 - Central capability reference: `docs/SYSTEM_CAPABILITIES_REFERENCE.md`
 - CLI reference: `cli/CLI_COMMAND_REFERENCE.md`
 - Dashboard/live reports: `.kabeeri/dashboard/*.json` and `.kabeeri/reports/live_reports_state.json`
+- Multi-AI governance runtime: `.kabeeri/multi_ai_governance.json`
 - Schema: `schemas/runtime/evolution-state.schema.json`
 
 ## Why This Exists
@@ -43,6 +47,12 @@ kvdf evolution plan "Add docs-first init gate"
 kvdf evolution plan "Improve dashboard descriptions" --areas cli,docs,dashboard,tests
 kvdf evolution list
 kvdf evolution status
+kvdf evolution priorities
+kvdf evolution next
+kvdf evolution temp
+kvdf evolution temp advance
+kvdf evolution temp complete
+kvdf evolution priority evo-auto-001 --status in_progress --note "Working now"
 kvdf evolution show evo-001
 kvdf evolution impact evo-001
 kvdf evolution tasks evo-001
@@ -53,12 +63,84 @@ kvdf evolution verify evo-001
 
 1. Owner requests a Kabeeri update.
 2. The AI assistant runs `kvdf evolution plan "<request>"`.
-3. Kabeeri records a change under `.kabeeri/evolution.json`.
-4. Kabeeri creates proposed follow-up tasks for impacted areas.
-5. The AI assistant implements the update through the generated tasks.
-6. The dashboard and live reports show open follow-up work.
-7. The Owner or maintainer verifies the evolution change when dependent tasks
+3. If an existing priority is `in_progress`, Kabeeri must not interrupt or
+   reorder development automatically. It shows the unfinished priority, the
+   ordered priority list, and a recommended placement for the new request.
+4. The Owner confirms the placement with `--confirm-placement` and, when
+   needed, `--priority-position <number>`.
+5. Kabeeri checks the central capability reference for possible duplicate
+   capability matches before treating the change as new.
+6. Kabeeri records a change under `.kabeeri/evolution.json`.
+7. Kabeeri creates proposed follow-up tasks for impacted areas.
+8. The AI assistant implements the update through the generated tasks.
+9. The dashboard and live reports show open follow-up work.
+10. The Owner or maintainer verifies the evolution change when dependent tasks
    are complete.
+11. Before implementation begins, every AI tool reads `kvdf evolution temp`
+    and executes only the current temporary slice for the active priority.
+
+Temporary execution priorities are a short-lived execution queue attached to
+the single active `in_progress` development priority. Every AI tool that starts
+work on an active priority must begin by reading `kvdf evolution temp` and
+following the current temporary slice. `kvdf evolution temp` shows or
+generates the queue for the current active priority, splitting it into
+execution-grade slices with durable descriptions. `kvdf evolution temp
+advance` marks the current slice done and moves to the next slice inside the
+same priority. `kvdf evolution temp complete` closes the queue when the active
+priority has finished. The queue expires automatically when the priority leaves
+`in_progress`, so it never becomes a second backlog. The queue must cover the
+full current task from the first required step to the last required step, with
+no leftover execution remainder outside the queue.
+
+For application task execution, use `kvdf temp` against the active task in
+`.kabeeri/tasks.json`. `kvdf evolution temp` remains the Evolution-specific
+queue for framework priorities.
+
+## Development Priorities
+
+`kvdf evolution priorities` is the canonical ordered development list for
+Kabeeri framework work. It replaces chat memory as the place to ask:
+
+- What phase are we in?
+- What is next?
+- What did the Owner add during conversation?
+- Which feature requests are planned, in progress, done, deferred, or rejected?
+
+`kvdf evolution next` returns the next open priority plus a direct next-action
+hint so worker tools can start execution without inferring the task from the
+title alone.
+
+The manual feature-docs inbox `KVDF_New_Features_Docs/` is intentionally not
+read automatically. It is read only when the Owner explicitly asks Kabeeri/Codex
+to analyze it, then imported features should be represented in Evolution
+Steward before implementation.
+
+Every framework-owner session should start by showing the ordered priorities.
+`kvdf resume` includes the next priority, top priorities, owner checkpoint,
+git summary, and one exact next action. `kvdf resume --scan` also checks the
+Evolution priority state and conflict scan before work continues. Use
+`kvdf evolution priority <id> --status ...` to keep the list accurate as work
+moves from planned to in progress, blocked, done, deferred, or rejected.
+
+When a priority is already `in_progress`, the first execution step for any AI
+tool is always `kvdf evolution temp`. Do not start implementation, docs,
+tests, or follow-up edits until the current temporary slice is visible and
+selected.
+
+When a new requested feature appears while a priority is `in_progress`, the
+assistant must warn the Owner instead of silently switching work. Kabeeri
+supports this through the placement gate in `kvdf evolution plan`: it returns
+`evolution_feature_request_placement`, recommends where the request should sit,
+and waits for explicit Owner confirmation before adding the change or creating
+follow-up tasks.
+
+Deferred development ideas are for useful concepts the Owner explicitly wants
+to remember but not implement yet. Store them with `kvdf evolution defer
+"<idea>"`. Review them with `kvdf evolution deferred`. They appear in
+`kvdf evolution priorities` only as one final bucket named deferred development
+ideas, not as executable priorities. A selected idea moves into active
+Evolution work only when the Owner runs `kvdf evolution deferred restore
+<idea-id> --confirm-placement --priority-position <number>`.
 
 ## Impact Areas
 
