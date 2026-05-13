@@ -1,4 +1,5 @@
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
+const { isExpired } = require("../services/collections");
 const { table } = require("../ui");
 
 function token(action, value, flags = {}, deps = {}) {
@@ -10,7 +11,17 @@ function token(action, value, flags = {}, deps = {}) {
   data.tokens = data.tokens || [];
 
   if (!action || action === "list") {
-    console.log(table(["Token", "Task", "Assignee", "Scope", "Status"], data.tokens.map((item) => [item.token_id, item.task_id, item.assignee_id, item.scope_mode || "manual", item.status])));
+    console.log(table(
+      ["Token", "Task", "Assignee", "Scope", "Runtime", "Reason"],
+      data.tokens.map((item) => [
+        item.token_id,
+        item.task_id,
+        item.assignee_id,
+        item.scope_mode || "manual",
+        getTokenRuntimeStatus(item),
+        getTokenReason(item) || "-"
+      ])
+    ));
     return;
   }
 
@@ -19,7 +30,11 @@ function token(action, value, flags = {}, deps = {}) {
     if (!tokenId) throw new Error("Missing token id.");
     const tokenItem = data.tokens.find((item) => item.token_id === tokenId);
     if (!tokenItem) throw new Error(`Token not found: ${tokenId}`);
-    console.log(JSON.stringify(tokenItem, null, 2));
+    console.log(JSON.stringify({
+      ...tokenItem,
+      runtime_status: getTokenRuntimeStatus(tokenItem),
+      visible_reason: getTokenReason(tokenItem)
+    }, null, 2));
     return;
   }
 
@@ -64,6 +79,7 @@ function token(action, value, flags = {}, deps = {}) {
     if (!tokenItem) throw new Error(`Token not found: ${tokenId}`);
     tokenItem.status = "revoked";
     tokenItem.revoked_at = new Date().toISOString();
+    tokenItem.revocation_reason = flags.reason || tokenItem.revocation_reason || "";
     writeJsonFile(file, data);
     appendAudit("access_token.revoked", "token", tokenItem.token_id, "Token revoked");
     console.log(`Revoked token ${tokenItem.token_id}`);
@@ -102,7 +118,7 @@ function token(action, value, flags = {}, deps = {}) {
       max_cost: flags["max-cost"] ? Number(flags["max-cost"]) : previous.max_cost || null,
       budget_approval_required: flags["budget-approval-required"] !== undefined ? Boolean(flags["budget-approval-required"]) : Boolean(previous.budget_approval_required),
       reissued_from: previous.token_id,
-      reissue_reason: flags.reason || "",
+      reissue_reason: flags.reason || previous.revocation_reason || "",
       revoked_at: undefined,
       revocation_reason: undefined
     };
@@ -198,7 +214,7 @@ function findPathsOutsideDerivedScope(requested, derived, deps = {}) {
     const target = normalizeLockScope(item);
     return !derived.some((scope) => {
       const normalized = normalizeLockScope(scope);
-      return target === normalized || pathScopeContains(normalized, target) || pathScopeContains(target, normalized);
+      return target === normalized || pathScopeContains(normalized, target);
     });
   });
 }
@@ -223,6 +239,18 @@ function assertTokenCanBeIssued(taskId, assigneeId, deps = {}) {
 function requireDep(deps, name) {
   if (typeof deps[name] !== "function") throw new Error(`Missing token dependency: ${name}`);
   return deps[name];
+}
+
+function getTokenRuntimeStatus(token) {
+  if (!token) return "unknown";
+  if (token.status === "revoked") return "revoked";
+  if (token.status === "active" && isExpired(token.expires_at)) return "expired";
+  return token.status || "unknown";
+}
+
+function getTokenReason(token) {
+  if (!token) return "";
+  return token.reissue_reason || token.revocation_reason || "";
 }
 
 function uniqueList(values) {

@@ -4,6 +4,137 @@
 
 ### Added
 
+- Verified `kabeeri-075` by confirming the command reference and capability reference already document the command lifecycle ledger plus the important folder ownership map and remaining migration gaps.
+
+- Verified `kabeeri-074` by confirming docs and site surfaces already direct readers to the correct owner-track and app-track entry points.
+
+- Verified `kabeeri-073` by confirming prompt-pack, questionnaire, and vibe surfaces already support owner-track and app-track contexts.
+
+- Verified `kabeeri-072` by confirming dashboard state, live reports, and resume summaries separate owner-track and app-track context.
+
+- Verified `kabeeri-071` by confirming task tracker, token scope, and lock scope derive from workstream and app boundaries.
+
+- Verified `kabeeri-070` by confirming workspace bootstrap and app workspace commands already keep owner and developer app state separated.
+
+- Verified `kabeeri-069` by confirming help and docs already separate owner-track and app-track command groups by workspace type.
+
+- Verified `kabeeri-068` by confirming the existing resume, app, task, and questionnaire surfaces already support the app-developer track.
+
+- Verified `kabeeri-067` by confirming owner-only controls, policy gates, and evolution commands already compose the owner-track surface.
+
+- Verified `kabeeri-066` by confirming the CLI help and routing guidance already separate Framework Owner and Vibe App Developer tracks.
+
+- Verified `kabeeri-065` by confirming release, handoff, and reports surfaces already produce linked local artifacts from the same state.
+
+- Verified `kabeeri-064` by confirming the command lifecycle ledger documents active, migrated, compatibility, and duplicated surfaces.
+
+- Verified `kabeeri-063` by confirming `docs generate` already keeps command reference, changelog, owner state, and release notes in sync.
+
+- Verified `kabeeri-062` by confirming `kvdf structure` already provides normalized repository foldering maps, validation, and navigation guidance.
+
+- Verified `kabeeri-061` by confirming `kvdf design` already captures design intelligence, visual reviews, and UI advisor outputs as durable CLI records.
+
+- Verified `kabeeri-060` by confirming ADR create/list/show/approve/reject/supersede/report/trace flows already persist durable decision records.
+
+- Verified `kabeeri-059` by confirming owner login/logout, session state, and privileged command gates already enforce local session boundaries.
+
+- Verified `kabeeri-058` by confirming handoff package and reports surfaces already generate structured local artifacts from `.kabeeri` state.
+
+- Verified `kabeeri-057` by confirming app workspace scaffolding, registry state, and product boundary rules are already covered by the current CLI and tests.
+
+- Verified `kabeeri-056` by confirming release publish-gate and GitHub write policy surfaces already block unsafe confirmed publishing.
+
+- Verified `kabeeri-055` by confirming migration plan, rollback-plan, check, report, list, show, and audit outputs already track local migration state.
+
+- Verified `kabeeri-054` by confirming security scan, report, gate, list, and show outputs already write and read local security state.
+
+- Verified `kabeeri-053` by confirming GitHub, VS Code, sync, and release workflows are already callable from CLI and documented in the command surface.
+
+- Verified `kabeeri-052` by confirming generator, init, and questionnaire surfaces already produce governed scaffold and intake artifacts for supported profiles.
+
+- Verified `kabeeri-051` by confirming prompt-pack composition and questionnaire planning already share reusable compact guidance across AI flows.
+
+- Verified `kabeeri-050` by confirming docs generation and validation keep the docs site, command reference, and localized guidance in sync.
+
+- Verified `kabeeri-049` by confirming AI run, capture, and audit surfaces already trace a task through provenance without relying on chat history.
+
+- Verified `kabeeri-048` by confirming multi-AI status, leader calls, queue dispatch, and relay inbox surfaces already separate leader and worker behavior cleanly.
+
+- Verified `kabeeri-047` by confirming usage summary and cost-control surfaces already expose spend, approvals, and budget pressure from `.kabeeri` state.
+
+- Verified `kabeeri-046` by confirming release checks already surface policy, security, and migration blockers before confirmed publish steps and keep the release gate blocked while warnings remain.
+
+- Verified `kabeeri-045` by confirming readiness, governance, and release report surfaces already derive from `.kabeeri` state, expose blockers, and export clean markdown outputs; the task tracker now marks the task `owner_verified`.
+
+- Verified `kabeeri-044` by confirming dashboard state and dashboard help surfaces already expose consistent sections and refresh from `.kabeeri` source state; the task tracker now marks the task `owner_verified`.
+
+- Verified `kabeeri-043` by confirming structured and agile delivery commands already expose distinct runtime artifacts and readiness outputs through help and tests; the task tracker now marks the task `owner_verified`.
+
+- Verified `kabeeri-042` by confirming blueprint, data-design, and design commands already produce distinct CLI-driven reports and are surfaced through help and tests; the task tracker now marks the task `owner_verified`.
+
+- Verified `kabeeri-041` by confirming questionnaire coverage, missing-answer reports, and adaptive intake outputs are already implemented in the CLI questionnaire commands and are surfaced through help and tests; the task tracker now marks the task `owner_verified`.
+
+- Verified `kabeeri-040` by confirming the owner docs token gate and owner transfer lifecycle are already implemented in the CLI owner commands, covered by integration tests, and surfaced through the help and governance docs; the task tracker now marks the task `owner_verified`.
+
+- Completed `kabeeri-039` by deriving task token and lock scopes from task app and workstream boundaries, tightening the scope checks to fail closed on broader requests, and updating the governance docs and integration coverage.
+
+- Completed `kabeeri-038` by persisting session track decisions from resume, entry, and onboarding into durable state so later commands can read the current route consistently.
+
+- Completed `kabeeri-037` by seeding deterministic `.kabeeri` workspace metadata, delivery-mode state, and startup guidance, then registering the new runtime files in the schema registry so init and validation stay green.
+
+- Completed `kabeeri-036` by aligning generator profiles with governed intake scaffolds, adding architecture-guide and folder-questionnaire markdown files, and updating project-intake guidance and tests.
+
+- Completed `kabeeri-035` by aligning the docs site, English docs, and Arabic docs with the current command surface through explicit docs validation, ai-run provenance, and localized parity notes.
+
+- Completed `kabeeri-034` by adding compact guidance to prompt-pack composition, surfacing prompt-pack recommendations in questionnaire planning, and documenting the short-path vibe runtime flow.
+
+- Completed `kabeeri-033` by adding an AI run provenance model that links execution, usage, captures, and audit events through durable trace records and a CLI provenance report.
+
+- Completed `kabeeri-024` by adding read-only GitHub and VS Code integration reports, wiring the new report actions into CLI help and source-truth docs, and surfacing the editor bridge as explicit tasks and palette items so the integration surfaces stay traceable without hidden writes.
+
+- Completed `task-020` by updating the changelog and owner checkpoint so the `evo-004` follow-up work remains documented after the human docs, capability reference, and automated tests slices.
+
+- Completed `task-016` by adding durable execution-record guidance to task tracking docs, aligning task template statuses with canonical tracker states, and normalizing multi-workstream follow-up tasks to `integration` so task validation passes again.
+
+- Marked `task-015` as `owner_verified` after confirming the durable runtime implementation for `evo-004` is already present in the CLI evolution services and commands, while leaving the source change open for its remaining follow-up tasks.
+
+- Moved `uniqueList` callers in `ai_run`, `vibe_interactions`, `prompt_pack`, and `project_profile` onto the shared collections helper, reducing another class of duplicate command-local utilities.
+
+- Moved `uniqueList` callers in `ai_run` and `vibe_interactions` onto the shared collections helper, and moved `summarizeBy` callers in `security` and `services/evolution` onto shared state utilities so those helper patterns stay centralized.
+
+- Centralized the last `readStateArray` helper in `src/cli/commands/cost_control.js` onto shared state utilities, leaving `src/cli/services/state_utils.js` as the single source of truth for this state-loading pattern.
+
+- Extended the shared `state_utils` helper to the remaining command-local readers in `change_control`, `traceability`, `migration`, `security`, `evolution`, and `services/evolution`, so the broader runtime-services cleanup stays centralized without changing report behavior.
+
+- Centralized the remaining JSONL helpers in `src/cli/services/jsonl.js`, moved the last local `readStateArray` callers in `ai_run`, `vibe_interactions`, and `usage_pricing` onto shared state utilities, and added direct tests for `appendJsonLine` and `writeJsonLines` so the runtime-services extraction stays covered.
+
+- Added a shared JSONL reader in `src/cli/services/jsonl.js` and reused it from the CLI façade and dashboard/AI-memory services so line-delimited state reads stay centralized.
+
+- Added shared report item and output helpers in `src/cli/services/report_items.js` and `src/cli/services/report_output.js`, plus shared state readers in `src/cli/services/state_utils.js`, so dashboard, readiness, governance, package, and usage reports reuse the same formatting and file-loading logic.
+
+- Added a shared session handoff builder in `src/cli/services/session_handoff.js` and reused it from `kvdf session` so the resumable markdown handoff report stays centralized in the runtime-services layer.
+- Added shared collections helpers in `src/cli/services/collections.js` and reused them from the CLI façade so CSV parsing, de-duplication, path matching, expiry checks, and title casing stay centralized in the runtime-services layer.
+
+- Added shared text helpers in `src/cli/services/text.js` and reused them from the CLI façade so language detection, output-language routing, and keyword matching stay centralized in the runtime-services layer.
+
+- Added shared command suggestion helpers in `src/cli/services/command_suggestions.js` so unknown CLI commands can use a reusable suggestion engine instead of keeping the Levenshtein lookup in the façade.
+- Added shared git snapshot helpers in `src/cli/services/git_snapshot.js` and reused them from `resume` so local git status detection stays centralized in the runtime-services layer.
+- Added `kvdf evolution report` and `docs/reports/EVO_AUTO_041_EXECUTION_REPORT.md` so the next open Evolution priority can be resumed from a durable report without chat history.
+- Added `kvdf capability search` and `docs/reports/KVDF_CAPABILITY_SEARCH_INDEX.json` so the capability registry, CLI surface, documentation matrix, and roadmap views can be searched by track, capability, command, phase, and report type.
+- Added `kvdf validate blocked-scenarios` and the track-aware blocked-scenarios report so invalid or blocked runtime scenarios are surfaced clearly with next actions while keeping `validate all` stable.
+- Added `kvdf task coverage` with `.kabeeri/reports/task_coverage_board.json` and per-task task coverage reports so each task can be broken into full temporary execution slices and the remaining slices stay visible before the queue closes.
+- Extended `kvdf governance report` with a governance coverage view for trust, safety, privacy, compliance, and extensibility so the workspace governance snapshot explains the broader operating model, not only owner/workstream/token/lock health.
+- Added persisted developer onboarding with `kvdf onboarding report` and `.kabeeri/reports/session_onboarding.json` so the first-session enter/route/resume guidance can be recalled later without re-reading chat history.
+- Added `kvdf capability matrix` and `.kabeeri/reports/KVDF_CAPABILITY_DOC_MATRIX.json` so every capability now points at docs, CLI, runtime, tests, and report links in one traceable matrix.
+- Added `kvdf source-package normalize` and `.kabeeri/reports/KVDF_NEW_FEATURES_DOCS_NORMALIZATION_MAP.md` so the imported source roots and sections have lowercase aliases with preserved mappings before redistribution.
+- Added a docs-generation workflow report with `kvdf docs workflow`, a `page-templates.json` template catalog, and generated docs workflow validation so docs generation is treated as a resumable workflow with templates, manifests, page contracts, and coverage instead of loose files.
+- Added scale-specific prompt pack routing with `kvdf prompt-pack scale` and the `scale_specific_packs_report.json` report so enterprise and high-risk projects can receive larger prompt bundles than the default stack pack.
+- Added `kvdf project profile report` and `.kabeeri/reports/project_profile_report.json` so the current Lite/Standard/Enterprise routing decision can be resumed without re-reading the live state file.
+- Added docs-to-CLI synchronization with `kvdf docs build`, `kvdf docs preview`, and `kvdf docs sync`, plus a generated `DOCS_SITE_SYNC_REPORT.json` so the docs site can stay aligned with help text and runtime behavior.
+- Added a capability CLI surface report with `kvdf capability surface` and `docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json` so every imported capability area is mapped to a clear command family and docs reference.
+- Added docs site deep publishing coverage with `kvdf docs coverage`, a generated `DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json` report, and validation hooks so the site can show which developer-facing families are fully published.
+- Added a change-control layer with `kvdf change report` and `kvdf risk report` so structured change requests, Evolution changes, and risk register entries appear together in one consolidated report, backed by `change_control_report.json`, schema registry entries, and integration tests.
+- Added a traceability layer with `kvdf trace report` so task assessments, ADRs, AI runs, docs source-of-truth checks, and verification commands can be reviewed together before change control decisions.
 - Strengthened Multi-AI Governance integration with Evolution Steward. The active Leader now always knows the current Evolution temporary slice from `kvdf multi-ai status`, Worker queues are scoped to the active priority with automatic expiry, merge bundles include Evolution priority tracking, and the scope/dependency map documents how Multi-AI respects Evolution as the global priority governor without circular dependencies.
 - Verified Multi-AI Governance completeness: runtime state, CLI commands, help text, schemas, validation, docs, capabilities reference, and integration tests are all wired together, so multiple AI tools can work safely across devices with provenance tracking.
 - Added semantic merge preview and surface planning for Multi-AI bundles, so merge bundles now record file sections, surface risk, and owner-review-required overlaps before commit.

@@ -49,6 +49,11 @@ kvdf evolution list
 kvdf evolution status
 kvdf evolution priorities
 kvdf evolution next
+kvdf evolution app status
+kvdf evolution app priorities
+kvdf evolution app temp
+kvdf evolution app defer "Future app idea"
+kvdf evolution app deferred
 kvdf evolution temp
 kvdf evolution temp advance
 kvdf evolution temp complete
@@ -92,6 +97,20 @@ priority has finished. The queue expires automatically when the priority leaves
 full current task from the first required step to the last required step, with
 no leftover execution remainder outside the queue.
 
+Application developers can use `kvdf evolution app ...` as the developer-
+facing alias for the same lifecycle. It preserves the same `priorities`,
+`temp`, and `deferred` behavior but uses app-oriented wording so a vibe
+developer can manage app work without framework-owner language.
+
+Framework-owner and vibe-app sessions share the same engine but remain
+separate operating tracks:
+
+- Framework-owner track: `kvdf evolution ...`
+- Vibe app-developer track: `kvdf evolution app ...`
+
+Both tracks still obey the same placement gate, ordered priorities, and full
+temporary queue coverage before execution counts as complete.
+
 For application task execution, use `kvdf temp` against the active task in
 `.kabeeri/tasks.json`. `kvdf evolution temp` remains the Evolution-specific
 queue for framework priorities.
@@ -110,10 +129,14 @@ Kabeeri framework work. It replaces chat memory as the place to ask:
 hint so worker tools can start execution without inferring the task from the
 title alone.
 
-The manual feature-docs inbox `KVDF_New_Features_Docs/` is intentionally not
-read automatically. It is read only when the Owner explicitly asks Kabeeri/Codex
-to analyze it, then imported features should be represented in Evolution
-Steward before implementation.
+The `KVDF_New_Features_Docs/` source package is intentionally not read
+automatically. It is a dual-purpose reference package: one side contains
+software design systems that have already been analyzed for permanent Kabeeri
+reference, and the other side contains the project-documentation generator
+system that teaches Kabeeri how to produce the full docs stack for an
+application. The package is read only when the Owner explicitly asks
+Kabeeri/Codex to analyze it, and imported content should be represented in
+Evolution Steward before implementation.
 
 Every framework-owner session should start by showing the ordered priorities.
 `kvdf resume` includes the next priority, top priorities, owner checkpoint,
@@ -133,6 +156,12 @@ supports this through the placement gate in `kvdf evolution plan`: it returns
 `evolution_feature_request_placement`, recommends where the request should sit,
 and waits for explicit Owner confirmation before adding the change or creating
 follow-up tasks.
+
+When any new task request is opened through Evolution Steward, Kabeeri first
+shows the current priority list, recommends the placement order, and marks the
+request as waiting for a decision. No change record, impact plan, or follow-up
+task is created until the caller confirms placement with
+`--confirm-placement`.
 
 Deferred development ideas are for useful concepts the Owner explicitly wants
 to remember but not implement yet. Store them with `kvdf evolution defer

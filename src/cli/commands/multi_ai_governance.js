@@ -3,6 +3,14 @@ const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
+const { synchronizeRelayWithGovernance } = require("./multi_ai_communications");
+const { ensureEvolutionDevelopmentPriorities } = require("../services/evolution");
+const {
+  resolvePlannedAiCandidateFromList,
+  resolvePlannedAiCandidates,
+  buildGovernanceCandidatePool,
+  resolvePlannedWorkersForDistribution: resolvePlannedWorkersForDistributionService
+} = require("../services/ai_planner");
 
 function multiAiGovernance(action, value, flags = {}, deps = {}) {
   const { appendAudit, rest = [] } = deps;
@@ -14,6 +22,7 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
 
   if (!action || action === "status" || action === "summary") {
     ensureAutoLeaderSession(state, flags, appendAudit, "status");
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "status" });
     const report = buildMultiAiGovernanceReport(state);
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(report, null, 2));
@@ -23,15 +32,26 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
 
   if (action === "leader") {
     const result = handleLeaderAction(state, value, flags, appendAudit, rest);
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "leader" });
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(result, null, 2));
     else console.log(renderLeaderResult(result));
     return;
   }
 
+  if (action === "agent") {
+    const result = handleAgentAction(state, value, flags, appendAudit, rest);
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "agent" });
+    writeJsonFile(file, state);
+    if (flags.json) console.log(JSON.stringify(result, null, 2));
+    else console.log(renderAgentResult(result));
+    return;
+  }
+
   if (action === "queue") {
     ensureAutoLeaderSession(state, flags, appendAudit, "queue");
     const result = handleQueueAction(state, value, flags, appendAudit, rest);
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "queue" });
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(result, null, 2));
     else console.log(renderQueueResult(result));
@@ -41,6 +61,7 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
   if (action === "merge") {
     ensureAutoLeaderSession(state, flags, appendAudit, "merge");
     const result = handleMergeAction(state, value, flags, appendAudit, rest);
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "merge" });
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(result, null, 2));
     else console.log(renderMergeResult(result));
@@ -50,6 +71,7 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
   if (action === "sync" || action === "align" || action === "distribute") {
     ensureAutoLeaderSession(state, flags, appendAudit, "sync");
     const result = handleSyncAction(state, action, value, flags, appendAudit, rest);
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "sync" });
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(result, null, 2));
     else console.log(renderSyncResult(result));
@@ -214,6 +236,10 @@ function handleLeaderAction(state, value, flags, appendAudit, rest = []) {
     };
   }
 
+  if (subaction === "call" || subaction === "ask" || subaction === "request" || subaction === "dispatch" || subaction === "delegate") {
+    return recordLeaderDispatch(state, flags, appendAudit, subaction);
+  }
+
   if (subaction === "end" || subaction === "close") {
     const current = getActiveLeaderSession(state);
     if (!current) throw new Error("No active leader session exists.");
@@ -221,7 +247,9 @@ function handleLeaderAction(state, value, flags, appendAudit, rest = []) {
     current.status = "ended";
     current.ended_at = now;
     current.updated_at = now;
+    retireAgentEntryForLeader(state, current.leader_ai_id, now, "ended");
     state.active_leader_session_id = null;
+    const promoted = promoteNextLeaderFromAgents(state, appendAudit, now, "leader_end", { excludeAgentId: current.leader_ai_id });
     state.updated_at = now;
     if (appendAudit) {
       appendAudit("multi_ai.leader_ended", "multi_ai", current.session_id, `Leader session ended for ${current.leader_ai_id}`);
@@ -229,7 +257,8 @@ function handleLeaderAction(state, value, flags, appendAudit, rest = []) {
     return {
       report_type: "multi_ai_leader_ended",
       generated_at: now,
-      leader_session: current
+      leader_session: current,
+      next_leader_session: promoted
     };
   }
 
@@ -247,7 +276,9 @@ function handleLeaderAction(state, value, flags, appendAudit, rest = []) {
     current.status = "relinquished";
     current.ended_at = now;
     current.updated_at = now;
+    retireAgentEntryForLeader(state, current.leader_ai_id, now, "relinquished");
     state.active_leader_session_id = null;
+    const promoted = promoteNextLeaderFromAgents(state, appendAudit, now, "leader_release", { excludeAgentId: current.leader_ai_id });
     state.updated_at = now;
     if (appendAudit) {
       appendAudit("multi_ai.leader_relinquished", "multi_ai", current.session_id, `Leader session relinquished for ${current.leader_ai_id}`);
@@ -255,11 +286,686 @@ function handleLeaderAction(state, value, flags, appendAudit, rest = []) {
     return {
       report_type: "multi_ai_leader_released",
       generated_at: now,
-      leader_session: current
+      leader_session: current,
+      next_leader_session: promoted
     };
   }
 
   throw new Error(`Unknown multi-ai leader action: ${subaction}`);
+}
+
+function handleAgentAction(state, value, flags, appendAudit, rest = []) {
+  const subaction = normalizeSubaction(value, flags);
+  if (!subaction || subaction === "list" || subaction === "show") {
+    return buildAgentHubReport(state);
+  }
+
+  if (["register", "enter", "join", "start", "claim"].includes(subaction)) {
+    const entry = recordAgentEntry(state, flags, appendAudit, subaction);
+    const leaderSession = ensureLeaderFromAgentHub(state, flags, appendAudit, entry);
+    const becameLeader = leaderSession && leaderSession.leader_ai_id === entry.agent_id && leaderSession.leader_entry_id === entry.entry_id;
+    return {
+      report_type: becameLeader ? "multi_ai_agent_entered_and_leader" : "multi_ai_agent_entered",
+      generated_at: entry.entered_at,
+      agent_entry: entry,
+      active_leader_session: leaderSession || getActiveLeaderSession(state)
+    };
+  }
+
+  if (["heartbeat", "ping", "touch"].includes(subaction)) {
+    const entry = upsertAgentHeartbeat(state, flags, appendAudit);
+    return {
+      report_type: "multi_ai_agent_heartbeat",
+      generated_at: entry.updated_at,
+      agent_entry: entry
+    };
+  }
+
+  if (["call", "ask", "notify", "request"].includes(subaction)) {
+    return recordLeaderCall(state, flags, appendAudit, subaction);
+  }
+
+  if (["next", "claim-next", "autonomy", "take-next"].includes(subaction)) {
+    return claimAutonomousPriority(state, flags, appendAudit);
+  }
+
+  if (["respond", "answer", "reply"].includes(subaction)) {
+    return respondToLeaderCall(state, flags, appendAudit);
+  }
+
+  if (["leave", "disconnect", "release", "end"].includes(subaction)) {
+    return leaveAgentHub(state, flags, appendAudit);
+  }
+
+  throw new Error(`Unknown multi-ai agent action: ${subaction}`);
+}
+
+function buildAgentHubReport(state) {
+  const activeLeaderSession = getActiveLeaderSession(state);
+  const communications = readMultiAiCommunicationsSnapshot();
+  return {
+    report_type: "multi_ai_agent_hub_status",
+    generated_at: new Date().toISOString(),
+    active_leader_session: activeLeaderSession,
+    leader_lease: activeLeaderSession ? {
+      lease_expires_at: activeLeaderSession.lease_expires_at || null,
+      last_heartbeat_at: activeLeaderSession.last_heartbeat_at || null,
+      lease_seconds: state.lease_policy.lease_seconds
+    } : null,
+    agent_entries: state.agent_entries,
+    call_inbox: state.call_inbox,
+    autonomy_claims: state.autonomy_claims,
+    autonomy_board: buildAutonomyBoard(state),
+    conversation_hub: communications ? {
+      state_file: ".kabeeri/multi_ai_communications.json",
+      conversations: communications.counts.conversations,
+      open_conversations: communications.counts.open_conversations,
+      pending_messages: communications.counts.pending_messages
+    } : null,
+    lease_policy: state.lease_policy,
+    counts: {
+      agents: state.agent_entries.length,
+      active_agents: state.agent_entries.filter((item) => item.status === "active").length,
+      pending_calls: state.call_inbox.filter((item) => item.status === "pending").length,
+      autonomy_claims: state.autonomy_claims.length,
+      conversations: communications ? communications.counts.conversations : 0,
+      open_conversations: communications ? communications.counts.open_conversations : 0,
+      pending_messages: communications ? communications.counts.pending_messages : 0
+    }
+  };
+}
+
+function resolveAgentHubId(flags = {}, fallback = "") {
+  const candidate = flags.ai || flags.agent || flags["agent-id"] || flags.developer || flags.leader || process.env.KVDF_MULTI_AI_ID || process.env.KVDF_AI_ID || process.env.KVDF_AGENT_ID || fallback;
+  const normalized = String(candidate || "").trim();
+  return normalized || "agent-unknown";
+}
+
+function resolveLeaderEligibility(flags = {}, existingEntry = null) {
+  if (isTruthyFlag(flags["leader-eligible"]) || isTruthyFlag(flags.leader_eligible) || isTruthyFlag(flags["allow-leadership"])) {
+    return true;
+  }
+  if (isTruthyFlag(flags["worker-only"]) || isTruthyFlag(flags.worker_only)) {
+    return false;
+  }
+  const explicitRole = String(flags.role || existingEntry?.role || "").trim().toLowerCase();
+  if (explicitRole === "leader") return true;
+  if (explicitRole === "worker") return false;
+  const provider = String(flags.provider || existingEntry?.provider || "").trim().toLowerCase();
+  const model = String(flags.model || existingEntry?.model || "").trim().toLowerCase();
+  const agentId = String(flags.ai || flags.agent || flags["agent-id"] || existingEntry?.agent_id || "").trim().toLowerCase();
+  const agentName = String(flags.name || flags.label || existingEntry?.agent_name || "").trim().toLowerCase();
+  const disallowedProviders = ["gemini", "google", "bard"];
+  if ([provider, model, agentId, agentName].some((value) => disallowedProviders.some((token) => value.includes(token)))) {
+    return false;
+  }
+  if (typeof existingEntry?.leader_eligible === "boolean") {
+    return existingEntry.leader_eligible;
+  }
+  return true;
+}
+
+function resolveAutonomyLeaderEligibility(flags = {}, existingEntry = null) {
+  if (isTruthyFlag(flags["leader-eligible"]) || isTruthyFlag(flags.leader_eligible) || isTruthyFlag(flags["allow-leadership"])) {
+    return true;
+  }
+  if (isTruthyFlag(flags["worker-only"]) || isTruthyFlag(flags.worker_only)) {
+    return false;
+  }
+  if (String(flags.role || existingEntry?.role || "").trim().toLowerCase() === "leader") {
+    return true;
+  }
+  return false;
+}
+
+function recordAgentEntry(state, flags, appendAudit, source) {
+  const now = new Date().toISOString();
+  const agentId = resolveAgentHubId(flags, source);
+  let entry = state.agent_entries.find((item) => item.agent_id === agentId);
+  if (!entry) {
+    entry = {
+      entry_id: `multi-ai-agent-${String(state.agent_entries.length + 1).padStart(3, "0")}`,
+      agent_id: agentId,
+      agent_name: flags.name || flags.label || agentId,
+      provider: flags.provider || "unknown",
+      model: flags.model || "unknown",
+      role: flags.role || "worker",
+      capabilities: normalizeAiList(flags.capabilities || flags.skills || flags.tags || flags.capability || []),
+      leader_eligible: resolveLeaderEligibility(flags, null),
+      status: "active",
+      entered_at: now,
+      last_seen_at: now,
+      entered_source: source,
+      notes: flags.notes || flags.note || null
+    };
+    state.agent_entries.push(entry);
+  } else {
+    entry.status = "active";
+    entry.agent_name = flags.name || flags.label || entry.agent_name;
+    entry.provider = flags.provider || entry.provider || "unknown";
+    entry.model = flags.model || entry.model || "unknown";
+    entry.role = flags.role || entry.role || "worker";
+    if (flags.capabilities || flags.skills || flags.tags || flags.capability) {
+      entry.capabilities = normalizeAiList(flags.capabilities || flags.skills || flags.tags || flags.capability || []);
+    } else {
+      entry.capabilities = normalizeAiList(entry.capabilities || []);
+    }
+    entry.leader_eligible = resolveLeaderEligibility(flags, entry);
+    entry.last_seen_at = now;
+    entry.reentered_at = now;
+    entry.updated_at = now;
+  }
+  if (appendAudit) {
+    appendAudit("multi_ai.agent_entered", "multi_ai", entry.entry_id, `Agent entered: ${entry.agent_id}`);
+  }
+  return entry;
+}
+
+function upsertAgentHeartbeat(state, flags, appendAudit) {
+  const now = new Date().toISOString();
+  const agentId = resolveAgentHubId(flags, "heartbeat");
+  let entry = state.agent_entries.find((item) => item.agent_id === agentId);
+  if (!entry) {
+    entry = recordAgentEntry(state, { ...flags, ai: agentId }, appendAudit, "heartbeat");
+  } else {
+    entry.last_seen_at = now;
+    entry.updated_at = now;
+  }
+  const leader = getActiveLeaderSession(state);
+  if (leader && leader.leader_ai_id === entry.agent_id) {
+    refreshLeaderLease(leader, state, now);
+  }
+  if (appendAudit) {
+    appendAudit("multi_ai.agent_heartbeat", "multi_ai", entry.entry_id, `Agent heartbeat: ${entry.agent_id}`);
+  }
+  return entry;
+}
+
+function ensureLeaderFromAgentHub(state, flags, appendAudit, entry) {
+  const current = getActiveLeaderSession(state);
+  if (current) {
+    if (current.leader_ai_id === entry.agent_id) refreshLeaderLease(current, state, new Date().toISOString());
+    return current;
+  }
+  const activeAgents = state.agent_entries
+    .filter((item) => item.status === "active" && item.leader_eligible !== false)
+    .sort((a, b) => compareDates(a.entered_at, b.entered_at));
+  const selected = activeAgents[0] || entry;
+  if (!selected || selected.leader_eligible === false) return null;
+  const now = new Date().toISOString();
+  const session = createLeaderSessionFromAgentEntry(state, selected, flags, now, "agent_hub_first_entry");
+  refreshLeaderLease(session, state, now);
+  if (appendAudit) {
+    appendAudit("multi_ai.leader_promoted_from_agent_hub", "multi_ai", session.session_id, `Leader promoted from agent entry: ${selected.agent_id}`);
+  }
+  return session;
+}
+
+function createLeaderSessionFromAgentEntry(state, entry, flags, now, source) {
+  const activePriority = getCurrentEvolutionPriority();
+  const session = {
+    session_id: flags.session || nextLeaderSessionId(state),
+    leader_ai_id: entry.agent_id,
+    leader_name: entry.agent_name || entry.agent_id,
+    provider: entry.provider || flags.provider || "unknown",
+    model: entry.model || flags.model || "unknown",
+    role: "orchestrator",
+    delegated_execution_allowed: isTruthyFlag(flags.delegated) || isTruthyFlag(flags["allow-execution"]) || false,
+    delegated_by_owner_id: flags.owner || flags["owner-id"] || null,
+    delegated_scope: flags.scope || null,
+    source,
+    current_priority_id: activePriority ? activePriority.id : null,
+    current_priority_title: activePriority ? activePriority.title : null,
+    current_priority_status: activePriority ? activePriority.status : null,
+    current_temporary_queue_id: null,
+    current_temporary_slice_id: null,
+    current_temporary_slice_title: null,
+    status: "active",
+    started_at: now,
+    updated_at: now,
+    auto_elected: true,
+    leader_entry_id: entry.entry_id,
+    leader_eligible: true
+  };
+  state.leader_sessions.push(session);
+  state.active_leader_session_id = session.session_id;
+  state.updated_at = now;
+  return session;
+}
+
+function refreshLeaderLease(leaderSession, state, now) {
+  if (!leaderSession) return null;
+  const leaseSeconds = Number(state.lease_policy && state.lease_policy.lease_seconds ? state.lease_policy.lease_seconds : 60);
+  leaderSession.last_heartbeat_at = now;
+  leaderSession.lease_expires_at = addSeconds(now, leaseSeconds);
+  leaderSession.updated_at = now;
+  return leaderSession;
+}
+
+function recordLeaderCall(state, flags, appendAudit, source) {
+  const now = new Date().toISOString();
+  let leaderSession = getActiveLeaderSession(state);
+  if (!leaderSession) {
+    leaderSession = ensureAutoLeaderSession(state, flags, appendAudit, "leader_call");
+  }
+  if (!leaderSession) throw new Error("No active leader session exists.");
+  const fromAgentId = resolveAgentHubId(flags, source);
+  const requestText = String(flags.request || flags.message || flags.title || flags.subject || "leader call").trim();
+  const callKey = [fromAgentId, leaderSession.session_id, requestText].join("|");
+  let call = state.call_inbox.find((item) => item.call_key === callKey && item.status === "pending");
+  if (!call) {
+    call = {
+      call_id: `multi-ai-call-${String(state.call_inbox.length + 1).padStart(3, "0")}`,
+      call_key: callKey,
+      from_agent_id: fromAgentId,
+      to_leader_session_id: leaderSession.session_id,
+      request: requestText,
+      status: "pending",
+      attempt_count: 1,
+      created_at: now,
+      last_called_at: now,
+      updated_at: now
+    };
+    state.call_inbox.push(call);
+  } else {
+    call.attempt_count += 1;
+    call.last_called_at = now;
+    call.updated_at = now;
+  }
+  const windowMs = Number(state.lease_policy.unanswered_window_seconds || 20) * 1000;
+  if (call.attempt_count >= Number(state.lease_policy.unanswered_call_limit || 2) && compareDates(now, call.created_at) <= windowMs) {
+    const released = forceLeaderReleaseForUnansweredCall(state, leaderSession, appendAudit, call, now);
+    return {
+      report_type: "multi_ai_leader_call_escalated",
+      generated_at: now,
+      call,
+      previous_leader_session: released.previous_leader_session,
+      leader_session: released.leader_session
+    };
+  }
+  if (appendAudit) {
+    appendAudit("multi_ai.leader_call_recorded", "multi_ai", call.call_id, `Leader call recorded for ${leaderSession.leader_ai_id}`);
+  }
+  return {
+    report_type: "multi_ai_leader_call_recorded",
+    generated_at: now,
+    call,
+    leader_session: leaderSession
+  };
+}
+
+function recordLeaderDispatch(state, flags, appendAudit, source) {
+  const now = new Date().toISOString();
+  let leaderSession = getActiveLeaderSession(state);
+  if (!leaderSession) {
+    leaderSession = ensureAutoLeaderSession(state, flags, appendAudit, "leader_call");
+  }
+  if (!leaderSession) throw new Error("No active leader session exists.");
+  const requestText = String(flags.request || flags.message || flags.title || flags.subject || "leader dispatch").trim();
+  const targetAiId = resolveDispatchTargetAiId(state, flags, leaderSession, requestText);
+  if (!targetAiId) throw new Error("Missing --ai or no suitable target agent found.");
+  const callKey = [leaderSession.leader_ai_id, targetAiId, leaderSession.session_id, requestText].join("|");
+  let call = state.call_inbox.find((item) => item.call_key === callKey && item.status === "pending");
+  if (!call) {
+    call = {
+      call_id: `multi-ai-call-${String(state.call_inbox.length + 1).padStart(3, "0")}`,
+      call_key: callKey,
+      from_agent_id: leaderSession.leader_ai_id,
+      to_agent_id: targetAiId,
+      from_leader_session_id: leaderSession.session_id,
+      request: requestText,
+      status: "pending",
+      attempt_count: 1,
+      created_at: now,
+      last_called_at: now,
+      updated_at: now,
+      dispatch_mode: "leader_to_agent",
+      source
+    };
+    state.call_inbox.push(call);
+  } else {
+    call.attempt_count += 1;
+    call.last_called_at = now;
+    call.updated_at = now;
+  }
+  if (appendAudit) {
+    appendAudit("multi_ai.leader_dispatch_recorded", "multi_ai", call.call_id, `Leader dispatch recorded for ${leaderSession.leader_ai_id} -> ${targetAiId}`);
+  }
+  return {
+    report_type: "multi_ai_leader_dispatch_recorded",
+    generated_at: now,
+    call,
+    leader_session: leaderSession
+  };
+}
+
+function resolveDispatchTargetAiId(state, flags, leaderSession, requestText) {
+  const explicit = flags.ai || flags.to || flags.target || flags["to-ai"];
+  const normalizedExplicit = String(explicit || "").trim();
+  if (normalizedExplicit) return normalizedExplicit;
+  return resolvePlannedAiCandidateFromList(
+    buildGovernanceCandidatePool(state),
+    {
+      request: requestText,
+      title: flags.title,
+      name: flags.name,
+      label: flags.label,
+      description: flags.description,
+      summary: flags.summary,
+      topic: flags.topic
+    },
+    {
+      explicitKeys: [],
+      excludeAgentId: leaderSession.leader_ai_id,
+      fallbackText: requestText
+    }
+  );
+}
+
+function respondToLeaderCall(state, flags, appendAudit) {
+  const now = new Date().toISOString();
+  const callId = flags.id || flags.call || flags.call_id || null;
+  let call = null;
+  if (callId) {
+    call = state.call_inbox.find((item) => item.call_id === callId || item.call_key === callId);
+  }
+  if (!call) call = [...state.call_inbox].reverse().find((item) => item.status === "pending") || null;
+  if (!call) throw new Error("No pending leader call found.");
+  call.status = "responded";
+  call.response = flags.response || flags.reply || flags.message || "responded";
+  call.responded_by = resolveAgentHubId(flags, "respond");
+  call.responded_at = now;
+  call.updated_at = now;
+  if (appendAudit) {
+    appendAudit("multi_ai.leader_call_responded", "multi_ai", call.call_id, `Leader call responded: ${call.call_id}`);
+  }
+  return {
+    report_type: "multi_ai_leader_call_responded",
+    generated_at: now,
+    call
+  };
+}
+
+function claimAutonomousPriority(state, flags, appendAudit) {
+  const now = new Date().toISOString();
+  let leaderSession = getActiveLeaderSession(state);
+  if (!leaderSession) {
+    leaderSession = ensureAutoLeaderSession(state, flags, appendAudit, "autonomy");
+  }
+  if (!leaderSession) throw new Error("An active leader session is required before autonomy claims.");
+
+  const agentId = String(flags.ai || flags.agent || flags["agent-id"] || flags.developer || "").trim();
+  if (!agentId) throw new Error("Missing --ai.");
+  const claimCount = Math.max(1, Math.min(6, Number(flags.count || flags.limit || 1) || 1));
+  const agentName = flags.name || flags.label || null;
+  const provider = flags.provider || null;
+  const model = flags.model || null;
+  const capabilities = normalizeAiList(flags.capabilities || flags.skills || flags.tags || flags.capability || []);
+
+  let entry = state.agent_entries.find((item) => item.agent_id === agentId);
+  if (!entry) {
+    entry = {
+      entry_id: `multi-ai-agent-${String(state.agent_entries.length + 1).padStart(3, "0")}`,
+      agent_id: agentId,
+      agent_name: agentName || agentId,
+      provider: provider || "unknown",
+      model: model || "unknown",
+      role: flags.role || "worker",
+      capabilities,
+      leader_eligible: resolveAutonomyLeaderEligibility(flags, null),
+      status: "active",
+      entered_at: now,
+      last_seen_at: now,
+      entered_source: "autonomy_claim",
+      notes: flags.notes || flags.note || "Auto-registered for priority claiming"
+    };
+    state.agent_entries.push(entry);
+  } else {
+    entry.status = "active";
+    entry.agent_name = agentName || entry.agent_name || agentId;
+    entry.provider = provider || entry.provider || "unknown";
+    entry.model = model || entry.model || "unknown";
+    entry.role = flags.role || entry.role || "worker";
+    if (capabilities.length) entry.capabilities = capabilities;
+    entry.leader_eligible = resolveAutonomyLeaderEligibility(flags, entry);
+    entry.last_seen_at = now;
+    entry.updated_at = now;
+  }
+
+  const evolutionSnapshot = readEvolutionSnapshot();
+  const priorities = Array.isArray(evolutionSnapshot.state && evolutionSnapshot.state.development_priorities)
+    ? evolutionSnapshot.state.development_priorities
+    : [];
+  const activePriorityId = evolutionSnapshot.active_priority ? evolutionSnapshot.active_priority.id : null;
+  const claimedPriorityIds = new Set((state.autonomy_claims || [])
+    .filter((claim) => ["claimed", "active", "queued"].includes(claim.status))
+    .map((claim) => claim.priority_id));
+  const availablePriorities = priorities
+    .filter((priority) => priority && priority.id !== activePriorityId && !["done", "deferred", "rejected"].includes(priority.status))
+    .filter((priority) => !claimedPriorityIds.has(priority.id))
+    .sort((a, b) => Number(a.priority || 999) - Number(b.priority || 999));
+  const selectedPriorities = availablePriorities.slice(0, claimCount);
+
+  if (!selectedPriorities.length) {
+    return {
+      report_type: "multi_ai_autonomy_claimed",
+      generated_at: now,
+      agent_entry: entry,
+      leader_session: leaderSession,
+      claims: [],
+      available_priorities: buildAutonomyPriorityList(availablePriorities, state),
+      message: "No unclaimed open priorities were available."
+    };
+  }
+
+  const queue = ensurePriorityAutonomyQueue(state, leaderSession, entry, flags, now);
+  const claims = [];
+  for (const priority of selectedPriorities) {
+    const claim = createAutonomyClaim(state, queue, entry, leaderSession, priority, flags, now);
+    claims.push(claim);
+  }
+  if (!queue.current_slice_id && queue.slices[0]) {
+    queue.current_slice_id = queue.slices[0].slice_id;
+  }
+  queue.status = "active";
+  queue.updated_at = now;
+  state.updated_at = now;
+  if (appendAudit) {
+    appendAudit("multi_ai.autonomy_claimed", "multi_ai", queue.queue_id, `Autonomous priorities claimed by ${agentId}`);
+  }
+  return {
+    report_type: "multi_ai_autonomy_claimed",
+    generated_at: now,
+    agent_entry: entry,
+    leader_session: leaderSession,
+    queue,
+    claims,
+    available_priorities: buildAutonomyPriorityList(availablePriorities.slice(selectedPriorities.length), state)
+  };
+}
+
+function ensurePriorityAutonomyQueue(state, leaderSession, agentEntry, flags, now) {
+  const assignmentMode = "priority_autonomy";
+  let queue = state.worker_queues.find((item) => item.leader_session_id === leaderSession.session_id && item.ai_id === agentEntry.agent_id && item.status === "active" && item.assignment_mode === assignmentMode);
+  if (queue) return queue;
+  queue = {
+    queue_id: flags.id || `multi-ai-queue-${String(state.worker_queues.length + 1).padStart(3, "0")}`,
+    leader_session_id: leaderSession.session_id,
+    ai_id: agentEntry.agent_id,
+    ai_name: agentEntry.agent_name || agentEntry.agent_id,
+    provider: agentEntry.provider || "unknown",
+    model: agentEntry.model || "unknown",
+    capabilities: normalizeAiList(agentEntry.capabilities || []),
+    evolution_priority_id: null,
+    evolution_priority_title: null,
+    source_priority_queue_id: null,
+    source_priority_id: null,
+    source_priority_title: null,
+    assignment_mode: assignmentMode,
+    tool_symbol: flags.symbol || agentEntry.agent_id,
+    status: "active",
+    created_at: now,
+    updated_at: now,
+    current_slice_id: null,
+    source_priority_slice_ids: [],
+    slices: []
+  };
+  state.worker_queues.push(queue);
+  return queue;
+}
+
+function createAutonomyClaim(state, queue, agentEntry, leaderSession, priority, flags, now) {
+  const queueSliceId = `slice-${String(queue.slices.length + 1).padStart(3, "0")}`;
+  const claimId = `multi-ai-autonomy-${String(state.autonomy_claims.length + 1).padStart(3, "0")}`;
+  const claim = {
+    claim_id: claimId,
+    agent_id: agentEntry.agent_id,
+    agent_name: agentEntry.agent_name || agentEntry.agent_id,
+    queue_id: queue.queue_id,
+    slice_id: queueSliceId,
+    leader_session_id: leaderSession.session_id,
+    priority_id: priority.id,
+    priority_title: priority.title,
+    priority_order: Number(priority.priority || 0),
+    assignment_mode: queue.assignment_mode,
+    status: "claimed",
+    created_at: now,
+    updated_at: now
+  };
+  state.autonomy_claims.push(claim);
+  const slice = createQueueSlice(queue, `Claim priority: ${priority.title}`, {
+    id: queueSliceId,
+    description: priority.summary || priority.description || "",
+    done: (priority.execution_details && priority.execution_details.execution_summary) || priority.summary || `Complete ${priority.title} and report back.`,
+    files: Array.isArray(priority.execution_details && priority.execution_details.included_surfaces) ? priority.execution_details.included_surfaces : [],
+    source_slice_id: priority.id,
+    source_priority_id: priority.id,
+    assigned_ai_id: agentEntry.agent_id,
+    assigned_by_leader_session_id: leaderSession.session_id,
+    tool_symbol: flags.symbol || agentEntry.agent_id,
+    provenance_tag: `autonomy:${priority.id}:${agentEntry.agent_id}`
+  });
+  slice.state = queue.slices.length === 0 ? "active" : "queued";
+  queue.slices.push(slice);
+  queue.source_priority_slice_ids.push(priority.id);
+  if (queue.slices.length === 1) {
+    queue.current_slice_id = slice.slice_id;
+  }
+  if (!queue.evolution_priority_id) {
+    queue.evolution_priority_id = priority.id;
+    queue.evolution_priority_title = priority.title;
+    queue.source_priority_id = priority.id;
+    queue.source_priority_title = priority.title;
+  }
+  return claim;
+}
+
+function buildAutonomyPriorityList(priorities, state) {
+  const activeClaims = new Set((state.autonomy_claims || [])
+    .filter((claim) => ["claimed", "active", "queued"].includes(claim.status))
+    .map((claim) => claim.priority_id));
+  return (Array.isArray(priorities) ? priorities : []).map((priority) => ({
+    priority_id: priority.id,
+    priority_order: Number(priority.priority || 0),
+    title: priority.title,
+    status: priority.status,
+    claimed: activeClaims.has(priority.id)
+  }));
+}
+
+function leaveAgentHub(state, flags, appendAudit) {
+  const now = new Date().toISOString();
+  const agentId = resolveAgentHubId(flags, "leave");
+  const entry = state.agent_entries.find((item) => item.agent_id === agentId);
+  if (entry) {
+    entry.status = "inactive";
+    entry.left_at = now;
+    entry.updated_at = now;
+  }
+  const currentLeader = getActiveLeaderSession(state);
+  let promotion = null;
+  if (currentLeader && currentLeader.leader_ai_id === agentId) {
+    promotion = releaseAndPromoteNextLeader(state, appendAudit, now, "agent_left");
+  }
+  if (appendAudit) {
+    appendAudit("multi_ai.agent_left", "multi_ai", entry ? entry.entry_id : agentId, `Agent left hub: ${agentId}`);
+  }
+  return {
+    report_type: "multi_ai_agent_left",
+    generated_at: now,
+    agent_entry: entry,
+    previous_leader_session: promotion ? promotion.previous_leader_session : currentLeader,
+    active_leader_session: promotion ? promotion.leader_session : getActiveLeaderSession(state)
+  };
+}
+
+function forceLeaderReleaseForUnansweredCall(state, leaderSession, appendAudit, call, now) {
+  const current = leaderSession || getActiveLeaderSession(state);
+  if (!current) {
+    return { previous_leader_session: null, leader_session: null };
+  }
+  current.status = "relinquished";
+  current.ended_at = now;
+  current.updated_at = now;
+  current.released_due_to_call_id = call.call_id;
+  current.released_due_to_call_attempts = call.attempt_count;
+  retireAgentEntryForLeader(state, current.leader_ai_id, now, "unanswered_call");
+  state.active_leader_session_id = null;
+  const promoted = promoteNextLeaderFromAgents(state, appendAudit, now, "unanswered_call", { excludeAgentId: current.leader_ai_id });
+  if (appendAudit) {
+    appendAudit("multi_ai.leader_released_unanswered_call", "multi_ai", current.session_id, `Leader released after unanswered calls for ${current.leader_ai_id}`);
+  }
+  return { previous_leader_session: current, leader_session: promoted };
+}
+
+function releaseAndPromoteNextLeader(state, appendAudit, now, reason) {
+  const current = getActiveLeaderSession(state);
+  if (!current) return { previous_leader_session: null, leader_session: null };
+  current.status = "relinquished";
+  current.ended_at = now;
+  current.updated_at = now;
+  retireAgentEntryForLeader(state, current.leader_ai_id, now, "agent_left");
+  state.active_leader_session_id = null;
+  const promoted = promoteNextLeaderFromAgents(state, appendAudit, now, reason, { excludeAgentId: current.leader_ai_id });
+  return { previous_leader_session: current, leader_session: promoted };
+}
+
+function retireAgentEntryForLeader(state, leaderAiId, now, reason) {
+  if (!leaderAiId) return null;
+  const entry = state.agent_entries.find((item) => item.agent_id === leaderAiId);
+  if (!entry) return null;
+  entry.status = "inactive";
+  entry.released_at = now;
+  entry.release_reason = reason;
+  entry.updated_at = now;
+  return entry;
+}
+
+function promoteNextLeaderFromAgents(state, appendAudit, now, reason, options = {}) {
+  const candidates = state.agent_entries
+    .filter((item) => item.status === "active" && item.leader_eligible !== false && item.agent_id !== options.excludeAgentId)
+    .sort((a, b) => compareDates(a.entered_at, b.entered_at));
+  const next = candidates[0] || null;
+  if (!next) return null;
+  const existing = state.leader_sessions.find((item) => item.leader_ai_id === next.agent_id && item.status === "active");
+  if (existing) {
+    state.active_leader_session_id = existing.session_id;
+    refreshLeaderLease(existing, state, now);
+    return existing;
+  }
+  const session = createLeaderSessionFromAgentEntry(state, next, { source: reason || "leader_promotion" }, now, reason || "leader_promotion");
+  refreshLeaderLease(session, state, now);
+  if (appendAudit) {
+    appendAudit("multi_ai.leader_promoted", "multi_ai", session.session_id, `Leader promoted to ${next.agent_id}`);
+  }
+  return session;
+}
+
+function addSeconds(value, seconds) {
+  const base = value instanceof Date ? value : new Date(value);
+  const result = new Date(base.getTime());
+  result.setUTCSeconds(result.getUTCSeconds() + Number(seconds || 0));
+  return result.toISOString();
 }
 
 function handleQueueAction(state, value, flags, appendAudit, rest = []) {
@@ -275,7 +981,7 @@ function handleQueueAction(state, value, flags, appendAudit, rest = []) {
   if (subaction === "add" || subaction === "push") {
     const leaderSession = getActiveLeaderSession(state);
     if (!leaderSession) throw new Error("An active leader session is required before queue assignment.");
-    const aiId = flags.ai || flags.developer || flags.assignee || flags.owner;
+    const aiId = resolveQueueAiId(state, flags);
     if (!aiId) throw new Error("Missing --ai.");
     const title = flags.title || flags.name || flags.label;
     if (!title) throw new Error("Missing --title.");
@@ -558,6 +1264,7 @@ function buildMultiAiGovernanceReport(state) {
   const activeQueues = state.worker_queues.filter((queue) => queue.status === "active");
   const pendingBundles = state.merge_bundles.filter((bundle) => bundle.status === "pending_validation");
   const evolutionSnapshot = readEvolutionSnapshot();
+  const communicationsSnapshot = readMultiAiCommunicationsSnapshot();
   const currentTask = buildMultiAiCurrentTask(activeLeaderSession, evolutionSnapshot);
   return {
     report_type: "multi_ai_governance_status",
@@ -566,18 +1273,41 @@ function buildMultiAiGovernanceReport(state) {
     evolution_priority: evolutionSnapshot.active_priority,
     evolution_temporary_priority_queue: evolutionSnapshot.temporary_queue,
     active_leader_session: activeLeaderSession,
+    agent_hub: buildAgentHubReport(state),
+    conversation_hub: communicationsSnapshot ? {
+      state_file: ".kabeeri/multi_ai_communications.json",
+      conversations: communicationsSnapshot.counts.conversations,
+      open_conversations: communicationsSnapshot.counts.open_conversations,
+      pending_messages: communicationsSnapshot.counts.pending_messages,
+      responded_messages: communicationsSnapshot.counts.responded_messages,
+      dispatch_threads: communicationsSnapshot.counts.dispatch_threads || 0
+    } : null,
+    relay_board: communicationsSnapshot ? communicationsSnapshot.dispatch_board || [] : [],
     current_task: currentTask,
     leader_takeover_ready: !activeLeaderSession,
     leader_sessions: state.leader_sessions,
     worker_queues: state.worker_queues,
     merge_bundles: state.merge_bundles,
+    autonomy_board: buildAutonomyBoard(state),
     counts: {
       leader_sessions: state.leader_sessions.length,
+      agents: state.agent_entries.length,
+      active_agents: state.agent_entries.filter((item) => item.status === "active").length,
+      pending_calls: state.call_inbox.filter((item) => item.status === "pending").length,
+      conversations: communicationsSnapshot ? communicationsSnapshot.counts.conversations : 0,
+      open_conversations: communicationsSnapshot ? communicationsSnapshot.counts.open_conversations : 0,
+      pending_messages: communicationsSnapshot ? communicationsSnapshot.counts.pending_messages : 0,
       active_queues: activeQueues.length,
       merge_bundles: state.merge_bundles.length,
       pending_validation_bundles: pendingBundles.length,
-      distributed_slices: state.worker_queues.reduce((total, queue) => total + queue.slices.length, 0)
-    }
+      distributed_slices: state.worker_queues.reduce((total, queue) => total + queue.slices.length, 0),
+      autonomy_claims: Array.isArray(state.autonomy_claims) ? state.autonomy_claims.length : 0
+    },
+    ai_instructions: [
+      "Before claiming a queue, check `multi-ai status` to see if a Leader is orchestrating the priority.",
+      "Do NOT poll status to wait for tasks. Use `kvdf multi-ai relay watch --interval 2000` to wait efficiently.",
+      "Merge bundles require semantic validation. Create a bundle and resolve conflicts before committing."
+    ]
   };
 }
 
@@ -590,19 +1320,61 @@ function buildMultiAiSyncReport(state) {
   };
 }
 
+function buildAutonomyBoard(state) {
+  const evolutionSnapshot = readEvolutionSnapshot();
+  const priorities = Array.isArray(evolutionSnapshot.state && evolutionSnapshot.state.development_priorities)
+    ? evolutionSnapshot.state.development_priorities
+    : [];
+  const activePriorityId = evolutionSnapshot.active_priority ? evolutionSnapshot.active_priority.id : null;
+  const openPriorities = priorities
+    .filter((priority) => priority && priority.id !== activePriorityId && !["done", "deferred", "rejected"].includes(priority.status))
+    .sort((a, b) => Number(a.priority || 999) - Number(b.priority || 999));
+  const activeClaims = Array.isArray(state.autonomy_claims) ? state.autonomy_claims.filter((claim) => ["claimed", "active", "queued"].includes(claim.status)) : [];
+  const claimedIds = new Set(activeClaims.map((claim) => claim.priority_id));
+  return {
+    status: openPriorities.length ? "available" : "empty",
+    total_open_priorities: openPriorities.length,
+    available_priorities: buildAutonomyPriorityList(openPriorities.filter((priority) => !claimedIds.has(priority.id)), state),
+    claims: activeClaims.map((claim) => ({
+      claim_id: claim.claim_id,
+      agent_id: claim.agent_id,
+      agent_name: claim.agent_name,
+      queue_id: claim.queue_id,
+      slice_id: claim.slice_id,
+      priority_id: claim.priority_id,
+      priority_title: claim.priority_title,
+      priority_order: claim.priority_order,
+      status: claim.status,
+      created_at: claim.created_at,
+      updated_at: claim.updated_at
+    }))
+  };
+}
+
 function renderMultiAiGovernanceReport(report) {
+  const agentHub = report.agent_hub || {};
+  const conversationHub = report.conversation_hub || {};
+  const autonomyBoard = report.autonomy_board || {};
   const lines = [
     "Multi-AI Governance",
     "",
     `Evolution governor: ${report.evolution_governor.evolution_priority_id || "none"}`,
     `Evolution temp queue: ${report.evolution_temporary_priority_queue ? `${report.evolution_temporary_priority_queue.queue_id} (${report.evolution_temporary_priority_queue.status})` : "none"}`,
     `Active leader: ${report.active_leader_session ? `${report.active_leader_session.leader_ai_id} (${report.active_leader_session.session_id})` : "none"}`,
+    `Agent hub entries: ${agentHub.counts ? `${agentHub.counts.agents} total, ${agentHub.counts.active_agents} active` : "0 total, 0 active"}`,
+    `Pending calls: ${agentHub.counts ? agentHub.counts.pending_calls : 0}`,
+    `Conversation threads: ${conversationHub.conversations || 0} total, ${conversationHub.open_conversations || 0} open`,
+    `Pending relay messages: ${conversationHub.pending_messages || 0}`,
+    `Dispatch threads: ${conversationHub.dispatch_threads || 0}`,
+    `Leader lease: ${agentHub.leader_lease && agentHub.leader_lease.lease_expires_at ? `expires ${agentHub.leader_lease.lease_expires_at}` : "none"}`,
     `Current task: ${report.current_task ? `${report.current_task.task_id} - ${report.current_task.title}` : "none"}`,
     `Delegated execution: ${report.active_leader_session && report.active_leader_session.delegated_execution_allowed ? "enabled" : "disabled"}`,
     `Worker queues: ${report.worker_queues.length} (active ${report.counts.active_queues})`,
     `Distributed slices: ${report.counts.distributed_slices}`,
+    `Autonomy claims: ${report.counts.autonomy_claims || 0}`,
     `Merge bundles: ${report.counts.merge_bundles}`,
     `Pending validation bundles: ${report.counts.pending_validation_bundles}`,
+    `Autonomy board: ${autonomyBoard.total_open_priorities || 0} open / ${Array.isArray(autonomyBoard.claims) ? autonomyBoard.claims.length : 0} claimed`,
     "",
     "Queues:"
   ];
@@ -639,7 +1411,22 @@ function renderLeaderResult(result) {
   if (result.report_type === "multi_ai_leader_transferred") return `Leader AI transferred to: ${result.leader_session.leader_ai_id} (${result.leader_session.session_id})`;
   if (result.report_type === "multi_ai_leader_ended") return `Leader AI ended: ${result.leader_session.leader_ai_id} (${result.leader_session.session_id})`;
   if (result.report_type === "multi_ai_leader_released") return result.leader_session ? `Leader AI released: ${result.leader_session.leader_ai_id} (${result.leader_session.session_id})` : "Leader AI released.";
+  if (result.report_type === "multi_ai_leader_dispatch_recorded") return `Leader dispatch recorded: ${result.call.call_id} -> ${result.call.to_agent_id}`;
   return "Leader AI updated.";
+}
+
+function renderAgentResult(result) {
+  if (result.report_type === "multi_ai_agent_entered_and_leader") {
+    return `Agent entered and leader promoted: ${result.agent_entry.agent_id} (${result.agent_entry.entry_id})`;
+  }
+  if (result.report_type === "multi_ai_agent_entered") return `Agent entered: ${result.agent_entry.agent_id} (${result.agent_entry.entry_id})`;
+  if (result.report_type === "multi_ai_agent_heartbeat") return `Agent heartbeat: ${result.agent_entry.agent_id} (${result.agent_entry.entry_id})`;
+  if (result.report_type === "multi_ai_autonomy_claimed") return `Autonomy claimed: ${result.agent_entry.agent_id} (${result.claims.length} task(s))`;
+  if (result.report_type === "multi_ai_leader_call_recorded") return `Leader call recorded: ${result.call.call_id}`;
+  if (result.report_type === "multi_ai_leader_call_escalated") return `Leader call escalated and leadership released: ${result.call.call_id}`;
+  if (result.report_type === "multi_ai_leader_call_responded") return `Leader call responded: ${result.call.call_id}`;
+  if (result.report_type === "multi_ai_agent_left") return `Agent left hub: ${result.agent_entry ? result.agent_entry.agent_id : "unknown"}`;
+  return "Agent hub updated.";
 }
 
 function renderQueueResult(result) {
@@ -677,9 +1464,17 @@ function defaultMultiAiGovernanceState() {
       current_temporary_slice_title: null
     },
     active_leader_session_id: null,
+    agent_entries: [],
+    call_inbox: [],
+    lease_policy: {
+      lease_seconds: 60,
+      unanswered_window_seconds: 20,
+      unanswered_call_limit: 2
+    },
     leader_sessions: [],
     worker_queues: [],
     merge_bundles: [],
+    autonomy_claims: [],
     audit_trail: [],
     updated_at: null
   };
@@ -690,9 +1485,13 @@ function ensureMultiAiGovernanceState(state) {
   state.version = state.version || defaults.version;
   state.evolution_governor = mergeObject(defaults.evolution_governor, state.evolution_governor);
   state.active_leader_session_id = state.active_leader_session_id || null;
+  state.agent_entries = Array.isArray(state.agent_entries) ? state.agent_entries : [];
+  state.call_inbox = Array.isArray(state.call_inbox) ? state.call_inbox : [];
+  state.lease_policy = mergeObject(defaults.lease_policy, state.lease_policy);
   state.leader_sessions = Array.isArray(state.leader_sessions) ? state.leader_sessions : [];
   state.worker_queues = Array.isArray(state.worker_queues) ? state.worker_queues : [];
   state.merge_bundles = Array.isArray(state.merge_bundles) ? state.merge_bundles : [];
+  state.autonomy_claims = Array.isArray(state.autonomy_claims) ? state.autonomy_claims : [];
   state.audit_trail = Array.isArray(state.audit_trail) ? state.audit_trail : [];
   state.updated_at = state.updated_at || null;
   const activePriority = getCurrentEvolutionPriority();
@@ -731,9 +1530,20 @@ function ensureAutoLeaderSession(state, flags, appendAudit, reason) {
     return current;
   }
   if (flags && (flags["no-auto-leader"] === true || flags["no-auto-leader"] === "true")) return null;
-  const leaderAiId = resolveLeaderAiId(flags, reason);
   const now = new Date().toISOString();
   const activePriority = getCurrentEvolutionPriority();
+  const activeAgents = state.agent_entries
+    .filter((item) => item.status === "active" && item.leader_eligible !== false)
+    .sort((a, b) => compareDates(a.entered_at, b.entered_at));
+  const hasAnyActiveAgents = state.agent_entries.some((item) => item.status === "active");
+  const selectedAgent = activeAgents[0] || null;
+  if (!selectedAgent && hasAnyActiveAgents) {
+    if (appendAudit) {
+      appendAudit("multi_ai.leader_auto_election_blocked", "multi_ai", "multi-ai", "Leader auto-election blocked because no active agents are leader-eligible.");
+    }
+    return null;
+  }
+  const leaderAiId = selectedAgent ? selectedAgent.agent_id : resolveLeaderAiId(flags, reason);
   const session = {
     session_id: flags.session || nextLeaderSessionId(state),
     leader_ai_id: leaderAiId,
@@ -754,7 +1564,9 @@ function ensureAutoLeaderSession(state, flags, appendAudit, reason) {
     status: "active",
     started_at: now,
     updated_at: now,
-    auto_elected: true
+    auto_elected: true,
+    leader_entry_id: selectedAgent ? selectedAgent.entry_id : null,
+    source: selectedAgent ? "agent_hub_auto_elected" : `auto_elected:${reason || "operation"}`
   };
   state.leader_sessions.push(session);
   state.active_leader_session_id = session.session_id;
@@ -782,13 +1594,16 @@ function getCurrentEvolutionPriority() {
 function readEvolutionSnapshot() {
   const evolutionFile = ".kabeeri/evolution.json";
   if (!localFileExists(evolutionFile)) {
+    const state = { development_priorities: [], temporary_priorities: null };
+    ensureEvolutionDevelopmentPriorities(state);
     return {
-      state: { development_priorities: [], temporary_priorities: null },
-      active_priority: null,
+      state,
+      active_priority: state.development_priorities.find((item) => item.status === "in_progress") || state.development_priorities.find((item) => item.priority === 1) || defaultEvolutionPriority(),
       temporary_queue: null
     };
   }
   const state = readJsonFile(evolutionFile);
+  ensureEvolutionDevelopmentPriorities(state);
   const priorities = Array.isArray(state.development_priorities) ? state.development_priorities : [];
   const activePriority = priorities.find((item) => item.status === "in_progress") || priorities.find((item) => item.priority === 1) || defaultEvolutionPriority();
   const persistedQueue = state.temporary_priorities && typeof state.temporary_priorities === "object" ? state.temporary_priorities : null;
@@ -799,11 +1614,42 @@ function readEvolutionSnapshot() {
   };
 }
 
+function readMultiAiCommunicationsSnapshot() {
+  const communicationsFile = ".kabeeri/multi_ai_communications.json";
+  if (!localFileExists(communicationsFile)) return null;
+  const state = readJsonFile(communicationsFile);
+  const conversations = Array.isArray(state.conversations) ? state.conversations : [];
+  const messages = conversations.flatMap((conversation) => Array.isArray(conversation.messages) ? conversation.messages.map((message) => ({ ...message, conversation_id: conversation.conversation_id })) : []);
+  const dispatchBoard = conversations.filter((conversation) => conversation.relay_type === "dispatch" || conversation.sync_channel === "multi_ai").map((conversation) => ({
+    conversation_id: conversation.conversation_id,
+    topic: conversation.topic,
+    status: conversation.status,
+    participants: conversation.participants,
+    message_count: Array.isArray(conversation.messages) ? conversation.messages.length : 0,
+    pending_messages: Array.isArray(conversation.messages) ? conversation.messages.filter((message) => message.status === "pending").length : 0,
+    last_message_at: conversation.last_message_at || conversation.updated_at || null
+  }));
+  return {
+    state,
+    conversations,
+    counts: {
+      conversations: conversations.length,
+      open_conversations: conversations.filter((item) => item.status === "open").length,
+      closed_conversations: conversations.filter((item) => item.status === "closed").length,
+      pending_messages: messages.filter((item) => item.status === "pending").length,
+      responded_messages: messages.filter((item) => item.status === "responded").length,
+      delivered_messages: messages.filter((item) => item.status === "delivered").length,
+      dispatch_threads: dispatchBoard.length
+    },
+    dispatch_board: dispatchBoard
+  };
+}
+
 function defaultEvolutionPriority() {
   return {
-    id: "evo-auto-001",
+    id: "evo-auto-044-task-trash-system",
     priority: 1,
-    title: "Continue Kabeeri framework evolution safely",
+    title: "Task Trash System",
     summary: "Default Evolution-governed priority used when a new workspace has not materialized the full priority list yet.",
     status: "planned"
   };
@@ -849,15 +1695,43 @@ function buildEphemeralTemporaryQueue(priority) {
 }
 
 function getActiveLeaderSession(state) {
+  const now = new Date().toISOString();
   if (state.active_leader_session_id) {
     const active = state.leader_sessions.find((item) => item.session_id === state.active_leader_session_id);
-    if (active) return active;
+    if (active && active.status === "active") {
+      if (active.lease_expires_at && compareDates(now, active.lease_expires_at) > 0) {
+        active.status = "expired";
+        active.ended_at = now;
+        active.updated_at = now;
+        retireAgentEntryForLeader(state, active.leader_ai_id, now, "lease_expired");
+        state.active_leader_session_id = null;
+        return promoteNextLeaderFromAgents(state, null, now, "lease_expired", { excludeAgentId: active.leader_ai_id });
+      }
+      return active;
+    }
+    if (active) {
+      state.active_leader_session_id = null;
+    }
   }
-  return state.leader_sessions.find((item) => item.status === "active") || null;
+  const fallback = state.leader_sessions.find((item) => item.status === "active") || null;
+  if (fallback && fallback.lease_expires_at && compareDates(now, fallback.lease_expires_at) > 0) {
+    fallback.status = "expired";
+    fallback.ended_at = now;
+    fallback.updated_at = now;
+    retireAgentEntryForLeader(state, fallback.leader_ai_id, now, "lease_expired");
+    if (state.active_leader_session_id === fallback.session_id) state.active_leader_session_id = null;
+    return promoteNextLeaderFromAgents(state, null, now, "lease_expired", { excludeAgentId: fallback.leader_ai_id });
+  }
+  return fallback;
+}
+
+function compareDates(left, right) {
+  return new Date(left).getTime() - new Date(right).getTime();
 }
 
 function ensureWorkerQueue(state, leaderSessionId, aiId, flags = {}) {
-  const existing = state.worker_queues.find((item) => item.leader_session_id === leaderSessionId && item.ai_id === aiId && item.status === "active");
+  const assignmentMode = flags.assignment_mode || "manual";
+  const existing = state.worker_queues.find((item) => item.leader_session_id === leaderSessionId && item.ai_id === aiId && item.status === "active" && item.assignment_mode === assignmentMode);
   if (existing) return existing;
   const activePriority = getCurrentEvolutionPriority();
   const evolutionSnapshot = readEvolutionSnapshot();
@@ -869,6 +1743,7 @@ function ensureWorkerQueue(state, leaderSessionId, aiId, flags = {}) {
     ai_name: flags.name || flags.label || aiId,
     provider: flags.provider || "unknown",
     model: flags.model || "unknown",
+    capabilities: normalizeAiList(flags.capabilities || flags.skills || flags.tags || flags.capability || []),
     evolution_priority_id: flags.priority || flags.priority_id || (activePriority ? activePriority.id : null),
     evolution_priority_title: activePriority ? activePriority.title : null,
     source_priority_queue_id: evolutionSnapshot.temporary_queue ? evolutionSnapshot.temporary_queue.queue_id : null,
@@ -1250,7 +2125,7 @@ function syncWithEvolution(state, flags = {}, appendAudit, options = {}) {
     alignLeaderSessionWithEvolution(leaderSession, activePriority, temporaryQueue, now);
   }
 
-  const distribution = distribute && workerAis.length
+  const distribution = distribute && leaderSession
     ? distributeTemporaryPrioritySlices(state, leaderSession, workerAis, temporaryQueue, flags, now)
     : [];
 
@@ -1318,9 +2193,11 @@ function alignLeaderSessionWithEvolution(leaderSession, activePriority, temporar
 function distributeTemporaryPrioritySlices(state, leaderSession, workerAis, temporaryQueue, flags, now) {
   if (!temporaryQueue) return [];
   const availableSlices = Array.isArray(temporaryQueue.slices) ? temporaryQueue.slices : [];
+  const plannedWorkers = Array.isArray(workerAis) && workerAis.length ? workerAis : resolvePlannedWorkersForDistributionService(state, leaderSession, temporaryQueue, flags);
+  if (!plannedWorkers.length) return [];
   const distributions = [];
-  const workerCount = workerAis.length;
-  workerAis.forEach((aiId, workerIndex) => {
+  const workerCount = plannedWorkers.length;
+  plannedWorkers.forEach((aiId, workerIndex) => {
     const queue = ensureWorkerQueue(state, leaderSession.session_id, aiId, {
       id: flags.id ? `${flags.id}-${workerIndex + 1}` : undefined,
       name: flags.name || flags.label || aiId,
@@ -1370,6 +2247,21 @@ function distributeTemporaryPrioritySlices(state, leaderSession, workerAis, temp
   return distributions;
 }
 
+function resolvePlannedWorkersForDistribution(state, leaderSession, temporaryQueue, flags) {
+  const candidates = resolvePlannedAiCandidates(buildQueueCandidatePool(state), {
+    title: temporaryQueue ? temporaryQueue.source_priority_title : flags.title,
+    name: temporaryQueue ? temporaryQueue.source_priority_title : flags.name,
+    label: flags.label,
+    description: temporaryQueue ? temporaryQueue.source_priority_summary : flags.description,
+    summary: temporaryQueue ? temporaryQueue.source_priority_summary : flags.summary,
+    topic: temporaryQueue ? temporaryQueue.source_priority_title : flags.topic
+  }, {
+    excludeAgentId: leaderSession ? leaderSession.leader_ai_id : null
+  });
+  const limit = Math.max(1, Math.min(3, Array.isArray(temporaryQueue && temporaryQueue.slices) ? temporaryQueue.slices.length : 0 || 1));
+  return candidates.slice(0, limit).map((candidate) => candidate.agent_id);
+}
+
 function buildMultiAiAlignment(state, report) {
   const activeLeader = report.active_leader_session || getActiveLeaderSession(state);
   const evolutionPriorityId = report.evolution_priority ? report.evolution_priority.id : null;
@@ -1405,6 +2297,88 @@ function buildMultiAiCurrentTask(activeLeaderSession, evolutionSnapshot) {
     assigned_leader_session_id: activeLeaderSession ? activeLeaderSession.session_id : null,
     type: "evolution_slice"
   };
+}
+
+function resolveQueueAiId(state, flags = {}) {
+  const explicit = flags.ai || flags.developer || flags.assignee || flags.owner;
+  if (explicit) return explicit;
+  return resolvePlannedAiCandidateFromList(buildGovernanceCandidatePool(state), flags, {
+    searchKeys: ["title", "name", "label", "description", "summary", "topic"]
+  });
+}
+
+function buildQueueCandidatePool(state) {
+  const activeAgents = Array.isArray(state.agent_entries) ? state.agent_entries.filter((entry) => entry.status === "active") : [];
+  const activeQueues = Array.isArray(state.worker_queues) ? state.worker_queues.filter((queue) => queue.status === "active" && queue.ai_id) : [];
+  const byAgentId = new Map();
+  for (const entry of activeAgents) {
+    byAgentId.set(entry.agent_id, {
+      agent_id: entry.agent_id,
+      agent_name: entry.agent_name || entry.agent_id,
+      provider: entry.provider || "unknown",
+      model: entry.model || "unknown",
+      role: entry.role || "worker",
+      capabilities: normalizeAiList(entry.capabilities || entry.skills || entry.tags || entry.capability || []),
+      leader_eligible: entry.leader_eligible,
+      entered_at: entry.entered_at || null,
+      last_seen_at: entry.last_seen_at || null,
+      active_queue_count: 0,
+      queue_labels: []
+    });
+  }
+  for (const queue of activeQueues) {
+    const candidate = byAgentId.get(queue.ai_id) || {
+      agent_id: queue.ai_id,
+      agent_name: queue.ai_name || queue.ai_id,
+      provider: queue.provider || "unknown",
+      model: queue.model || "unknown",
+      role: "worker",
+      capabilities: normalizeAiList(queue.capabilities || queue.skills || queue.tags || queue.capability || []),
+      leader_eligible: false,
+      entered_at: queue.created_at || null,
+      last_seen_at: queue.updated_at || null,
+      active_queue_count: 0,
+      queue_labels: []
+    };
+    candidate.active_queue_count += 1;
+    candidate.queue_labels.push(String(queue.assignment_mode || "queue").toLowerCase());
+    byAgentId.set(queue.ai_id, candidate);
+  }
+  return Array.from(byAgentId.values());
+}
+
+function scoreQueueCandidate(candidate, priorityText) {
+  const labelText = String([
+    candidate.agent_id,
+    candidate.agent_name,
+    candidate.provider,
+    candidate.model,
+    candidate.role,
+    ...(candidate.capabilities || []),
+    ...(candidate.queue_labels || [])
+  ].join(" ")).trim().toLowerCase();
+  const capabilityText = String((candidate.capabilities || []).join(" ")).trim().toLowerCase();
+  let score = 0;
+  if (!candidate.active_queue_count) score += 3;
+  if (priorityText.includes("review") || priorityText.includes("validate") || priorityText.includes("test") || priorityText.includes("qa")) {
+    if (/(review|qa|test|validate|check|audit)/.test(labelText)) score += 6;
+  }
+  if (priorityText.includes("relay") || priorityText.includes("conversation") || priorityText.includes("inbox") || priorityText.includes("dispatch")) {
+    if (/(relay|conversation|inbox|dispatch|assistant|agent)/.test(labelText)) score += 5;
+    if (/(coordinator|orchestrator)/.test(candidate.role) || (candidate.queue_labels && candidate.queue_labels.includes("relay"))) score += 6;
+    if (/(coordinator|orchestrator|dispatcher|relay|communications|inbox|conversation)/.test(capabilityText)) score += 4;
+  }
+  if (priorityText.includes("docs") || priorityText.includes("doc") || priorityText.includes("report") || priorityText.includes("sync")) {
+    if (/(doc|docs|report|writer|sync)/.test(labelText)) score += 4;
+  }
+  if (priorityText.includes("implement") || priorityText.includes("runtime") || priorityText.includes("service") || priorityText.includes("backend") || priorityText.includes("api")) {
+    if (/(code|implement|dev|backend|api|runtime|service)/.test(labelText)) score += 4;
+  }
+  if (priorityText.includes("ui") || priorityText.includes("frontend") || priorityText.includes("design")) {
+    if (/(ui|frontend|design|layout|visual)/.test(labelText)) score += 4;
+  }
+  score -= candidate.active_queue_count;
+  return score;
 }
 
 function normalizeAiList(value) {

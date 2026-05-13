@@ -22,3 +22,7 @@ Use `governance/TOKEN_BUDGET_RULES.md` for:
 - over-budget approval rules
 - audit requirements
 - token budget policy connected to task access tokens and AI usage sessions
+
+The runtime `usage summary` now also emits a `budget_pressure` rollup so the
+current warning, attention, and over-budget tasks stay visible in state as well
+as in the report output.

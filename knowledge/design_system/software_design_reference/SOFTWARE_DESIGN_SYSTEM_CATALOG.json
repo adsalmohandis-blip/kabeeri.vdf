@@ -1,0 +1,55 @@
+{
+  "catalog_type": "software_design_system_reference_catalog",
+  "title": "Software Design System Reference Catalog",
+  "source_package": "KVDF_New_Features_Docs",
+  "sections": [
+    {
+      "section_id": "core-extraction-rules",
+      "title": "Core Extraction Rules",
+      "items": [
+        "route by project type before implementation starts",
+        "choose one primary reference source first",
+        "prefer a modular monolith before splitting into services",
+        "make security, testing, observability, and release rules part of the reference system",
+        "preserve system design knowledge as a learning library",
+        "keep the source package temporary"
+      ]
+    },
+    {
+      "section_id": "durable-patterns",
+      "title": "Durable Patterns",
+      "items": [
+        "domain routing",
+        "primary / supporting sources",
+        "assessment before build",
+        "modular monolith first",
+        "domain-specific safety rules",
+        "pack-driven reuse"
+      ]
+    },
+    {
+      "section_id": "duplicate-analysis-guardrails",
+      "title": "Duplicate Analysis Guardrails",
+      "items": [
+        "compare the reference against the central capability map",
+        "reuse existing Kabeeri capability names instead of inventing duplicates",
+        "treat the source package as temporary until redistribution is complete",
+        "move only missing gaps into permanent folders",
+        "keep traceability in reports and permanent knowledge folders"
+      ]
+    },
+    {
+      "section_id": "domain-signals",
+      "title": "Notable Domain Signals",
+      "items": [
+        "booking",
+        "ecommerce",
+        "SaaS",
+        "marketplace",
+        "healthcare",
+        "fintech",
+        "GRC"
+      ]
+    }
+  ]
+}

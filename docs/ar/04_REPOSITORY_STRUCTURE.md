@@ -1,66 +1,49 @@
-# 04 — هيكل المستودع المقترح
+# 04 - هيكل المستودع
+
+هذا الملف هو النظير العربي الكانوني لملف `docs/en/04_REPOSITORY_STRUCTURE.md`.
+
+## الجذر
 
 ```text
-Kabeeri-Vibe-Developer-Framework/
+kabeeri-vdf/
+├── bin/
+├── src/
 ├── generators/
-│   ├── lite.json
-│   ├── standard.json
-│   └── enterprise.json
-│
 ├── templates/
-│   ├── arabic/
-│   └── english/
-│
 ├── questionnaires/
-│   ├── core/
-│   ├── production/
-│   └── extension/
-│
+├── questionnaire_engine/
+├── standard_systems/
+├── project_intake/
 ├── prompt_packs/
-│   ├── laravel/
-│   ├── dotnet/
-│   ├── nextjs/
-│   └── wordpress/
-│
 ├── task_tracking/
+├── governance/
 ├── acceptance_checklists/
 ├── schemas/
 ├── examples/
-└── docs/
+├── dashboard/
+├── docs/
+└── docs_site/
 ```
 
-## generators
+## المسؤوليات الرئيسية
 
-يحتوي على ملفات JSON التي تنشئ Skeleton المشروع. يجب أن تكون محدودة: فولدرات + دليل + ملفات أسئلة.
+| المجال | المسؤولية |
+| --- | --- |
+| `bin/`, `src/` | نقطة تشغيل الـ CLI وتنفيذ المنطق. |
+| `generators/` | تعريفات skeleton لـ Lite وStandard وEnterprise. |
+| `templates/` | قوالب عربية وإنجليزية قابلة لإعادة الاستخدام. |
+| `questionnaires/` | مصادر الأسئلة الأساسية والإنتاجية والإضافية. |
+| `task_tracking/` | مخططات المهام، القوالب، الأمثلة، الحالات، وحوكمة التنفيذ مع ذاكرة استئناف دائمة. |
+| `governance/` | سياسات المالك، المهام، حدود التطبيقات، workstreams، tokens، والتنفيذ. |
+| `acceptance_checklists/` | قوالب المراجعة والقبول. |
+| `schemas/` | JSON Schemas وسجل التحقق من الحالات الحية. |
+| `examples/` | أمثلة على سير العمل والملخصات. |
+| `dashboard/` | الداشبورد الحي وملفاته المساعدة. |
+| `docs/` | التوثيق العربي والإنجليزي والعمليات والتقارير. |
+| `docs_site/` | الموقع الثابت للوثائق. |
 
-## templates
+## القاعدة
 
-قوالب Word أو Markdown للدليل وملفات الأسئلة.
+يجب توثيق القدرات الجديدة في المجلد الأقرب لمجالها، ثم إدراجها في
+`docs/SYSTEM_CAPABILITIES_REFERENCE.md` عندما تصبح جزءًا من واجهة النظام.
 
-## questionnaires
-
-الأسئلة الأصلية لكل فولدر، مقسمة إلى Core و Production و Extension.
-
-## prompt_packs
-
-برومبتات تنفيذ مخصصة لكل Framework.
-
-## task_tracking
-
-أدوات تتبع المهام.
-
-## acceptance_checklists
-
-قوائم قبول جاهزة.
-
-## schemas
-
-تعريفات JSON Schema للتحقق من ملفات generators و prompt packs.
-
-## examples
-
-أمثلة مشاريع مبنية بالفريمورك.
-
-## docs
-
-كل التوثيق الرسمي.

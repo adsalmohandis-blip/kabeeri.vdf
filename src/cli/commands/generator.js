@@ -69,6 +69,9 @@ function createProjectSkeleton(generatorData, flags, deps = {}) {
     created.push(path.relative(outputPath, readmePath).replace(/\\/g, "/"));
   }
 
+  const governedArtifacts = createGeneratorGovernanceArtifacts(generatorData, outputPath, force);
+  created.push(...governedArtifacts);
+
   const manifest = {
     framework: "Kabeeri VDF",
     generated_at: new Date().toISOString(),
@@ -159,10 +162,119 @@ function inferGeneratorWorkstream(profile) {
   return "unassigned";
 }
 
+function createGeneratorGovernanceArtifacts(generatorData, outputPath, force) {
+  const created = [];
+  const architectureGuideFiles = Array.isArray(generatorData.default_files && generatorData.default_files.architecture_guides)
+    ? generatorData.default_files.architecture_guides
+    : [];
+  const questionnaireFiles = Array.isArray(generatorData.default_files && generatorData.default_files.folder_questionnaires)
+    ? generatorData.default_files.folder_questionnaires
+    : [];
+
+  for (const file of architectureGuideFiles) {
+    const content = file.includes("_AR.")
+      ? buildArchitectureGuide(generatorData, "ar")
+      : buildArchitectureGuide(generatorData, "en");
+    const target = path.join(outputPath, file);
+    writeIfAllowed(target, content, force);
+    created.push(path.relative(outputPath, target).replace(/\\/g, "/"));
+  }
+
+  for (const folder of generatorData.folders || []) {
+    if (!folder.create_questionnaires) continue;
+    for (const file of questionnaireFiles) {
+      const target = path.join(outputPath, folder.path, file);
+      const content = file.includes("_AR.")
+        ? buildFolderQuestionnaire(generatorData, folder, "ar")
+        : buildFolderQuestionnaire(generatorData, folder, "en");
+      writeIfAllowed(target, content, force);
+      created.push(path.relative(outputPath, target).replace(/\\/g, "/"));
+    }
+    const answersPath = path.join(outputPath, folder.path, "answers.md");
+    writeIfAllowed(answersPath, buildFolderAnswersShell(folder), force);
+    created.push(path.relative(outputPath, answersPath).replace(/\\/g, "/"));
+  }
+
+  return created;
+}
+
 function writeIfAllowed(filePath, content, force) {
   if (fs.existsSync(filePath) && !force) return;
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, content, "utf8");
+}
+
+function buildArchitectureGuide(generatorData, lang = "en") {
+  const isAr = String(lang).toLowerCase() === "ar";
+  const title = isAr ? "دليل معمارية هيكل المشروع" : "Project Skeleton Architecture Guide";
+  const intro = isAr
+    ? "يشرح هذا الملف بنية الهيكل المولد وكيف تبدأ بأسئلة الحوكمة قبل أي تنفيذ."
+    : "This file explains the generated skeleton structure and how to start with governed questions before implementation.";
+  const rule = isAr ? "قاعدة التوليد" : "Generation Rule";
+  const next = isAr ? "الخطوات التالية" : "Next Steps";
+  const folderLines = (generatorData.folders || []).map((folder) => `- \`${folder.path}\` - ${folder.purpose || (isAr ? "بدون وصف." : "No purpose documented.")}`).join("\n");
+
+  return `# ${title}
+
+${intro}
+
+## ${rule}
+
+${generatorData.core_rule || (isAr ? "أنشئ الهيكل فقط ولا تملأ المحتوى التفصيلي قبل أسئلة الفولدر." : "Create only the skeleton and do not fill detailed content before folder questionnaires are answered.")}
+
+## ${isAr ? "الهيكل" : "Structure"}
+
+${folderLines}
+
+## ${next}
+
+1. ${isAr ? "أجب عن أسئلة كل فولدر قبل إنشاء المحتوى التفصيلي." : "Answer each folder questionnaire before generating detailed content."}
+2. ${isAr ? "استخدم التاسكات المحكومة لمراجعة أي تنفيذ داخل `.kabeeri/tasks.json`." : "Use governed tasks in `.kabeeri/tasks.json` to review any implementation work."}
+3. ${isAr ? "اربط البرومبت المناسب بكل تاسك قبل البدء في التنفيذ." : "Bind the correct prompt pack to each task before starting implementation."}
+`;
+}
+
+function buildFolderQuestionnaire(generatorData, folder, lang = "en") {
+  const isAr = String(lang).toLowerCase() === "ar";
+  const title = isAr ? `استبيان فولدر ${folder.path}` : `${folder.path} Questionnaire`;
+  const purpose = folder.purpose || (isAr ? "لا يوجد وصف." : "No purpose documented.");
+  const policy = folder.detailed_documents_policy || generatorData.core_rule || (isAr ? "لا تنشئ محتوى تفصيليًا بعد." : "Do not create detailed content yet.");
+  const questions = isAr
+    ? [
+      "ما الهدف الأولي لهذا الفولدر؟",
+      "ما الملفات المسموح إنشاؤها هنا الآن؟",
+      "ما المعلومات التي يجب تأجيلها حتى تكتمل المراجعة؟",
+      "ما معيار القبول لهذا الجزء من الهيكل؟"
+    ]
+    : [
+      "What is the initial purpose of this folder?",
+      "What files are allowed to exist here right now?",
+      "What information must wait until review is complete?",
+      "What is the acceptance criterion for this part of the skeleton?"
+    ];
+
+  return `# ${title}
+
+## ${isAr ? "الغرض" : "Purpose"}
+
+${purpose}
+
+## ${isAr ? "السياسة" : "Policy"}
+
+${policy}
+
+## ${isAr ? "الأسئلة" : "Questions"}
+
+${questions.map((question) => `- ${question}`).join("\n")}
+`;
+}
+
+function buildFolderAnswersShell(folder, lang = "en") {
+  const isAr = String(lang).toLowerCase() === "ar";
+  return `# ${isAr ? "إجابات" : "Answers"}: ${folder.path}
+
+${isAr ? "أضف هنا إجابات صاحب المشروع أو الفريق قبل إنشاء المحتوى التفصيلي." : "Add project-owner or team answers here before generating detailed content."}
+`;
 }
 
 function buildProjectReadme(generatorData) {

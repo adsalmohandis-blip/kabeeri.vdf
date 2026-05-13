@@ -1,0 +1,36 @@
+{
+  "template_version": 1,
+  "generated_by": "docs/site/generate-pages.js",
+  "site_name": "Kabeeri VDF Docs",
+  "template_count": 2,
+  "templates": [
+    {
+      "template_id": "docs-site-index",
+      "title": "Docs Site Index Template",
+      "purpose": "Render the landing shell for the documentation site.",
+      "output_paths": [
+        "index.html"
+      ],
+      "languages": [
+        "en"
+      ],
+      "surface": "docs/site",
+      "source": "docs/site/generate-pages.js"
+    },
+    {
+      "template_id": "docs-site-page",
+      "title": "Docs Site Page Template",
+      "purpose": "Render each localized docs page shell under pages/en and pages/ar.",
+      "output_paths": [
+        "pages/en/*.html",
+        "pages/ar/*.html"
+      ],
+      "languages": [
+        "en",
+        "ar"
+      ],
+      "surface": "docs/site/pages",
+      "source": "docs/site/generate-pages.js"
+    }
+  ]
+}

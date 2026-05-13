@@ -166,6 +166,8 @@ mkdir -p .kabeeri/metadata
 
 Get questionnaire templates and story templates:
 
+`kvdf generate` now seeds the generated skeleton with architecture-guide and questionnaire markdown files, so the initial intake prompts live beside the scaffold instead of being added later by hand.
+
 **Structured:**
 - Copy questionnaires from `/questionnaires/core/` to each workstream folder
 - Copy task template to `tasks/`

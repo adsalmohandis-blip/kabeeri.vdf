@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { writeJsonFile } = require("../workspace");
+const { readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 
@@ -14,6 +14,13 @@ function vscode(action, value, flags = {}) {
       ".vscode/kvdf-extension/extension.js"
     ];
     console.log(table(["File", "Status"], files.map((file) => [file, fileExists(file) ? "present" : "missing"])));
+    return;
+  }
+
+  if (action === "report") {
+    const report = buildVscodeIntegrationReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else renderVscodeIntegrationReport(report);
     return;
   }
 
@@ -32,7 +39,9 @@ function vscode(action, value, flags = {}) {
         { title: "KVDF: Doctor", command: "kvdf doctor" },
         { title: "KVDF: Validate", command: "kvdf validate" },
         { title: "KVDF: Dashboard Export", command: "kvdf dashboard export" },
-        { title: "KVDF: GitHub Dry Run", command: "kvdf github issue sync --version v4.0.0 --dry-run" }
+        { title: "KVDF: GitHub Dry Run", command: "kvdf github issue sync --version v4.0.0 --dry-run" },
+        { title: "KVDF: GitHub Integration Report", command: "kvdf github report --json" },
+        { title: "KVDF: VS Code Integration Report", command: "kvdf vscode report --json" }
       ]
     }, force);
     writeJsonIfAllowed(".vscode/kvdf-extension/package.json", buildVscodeExtensionPackage(), force);
@@ -166,9 +175,68 @@ function buildVscodeTasks() {
       vscodeShellTask("KVDF: Doctor", "kvdf doctor"),
       vscodeShellTask("KVDF: Validate", "kvdf validate"),
       vscodeShellTask("KVDF: Dashboard Export", "kvdf dashboard export"),
-      vscodeShellTask("KVDF: GitHub Issue Dry Run", "kvdf github issue sync --version v4.0.0 --dry-run")
+      vscodeShellTask("KVDF: GitHub Issue Dry Run", "kvdf github issue sync --version v4.0.0 --dry-run"),
+      vscodeShellTask("KVDF: GitHub Integration Report", "kvdf github report --json"),
+      vscodeShellTask("KVDF: VS Code Integration Report", "kvdf vscode report --json")
     ]
   };
+}
+
+function buildVscodeIntegrationReport(flags = {}) {
+  const files = [
+    ".vscode/tasks.json",
+    ".vscode/extensions.json",
+    ".vscode/kvdf.commands.json",
+    ".vscode/kvdf-extension/package.json",
+    ".vscode/kvdf-extension/extension.js",
+    "integrations/vscode_extension/README.md",
+    "integrations/vscode_extension/COMMAND_PALETTE_PLAN.md"
+  ];
+  const fileState = files.map((file) => ({
+    file,
+    status: fileExists(file) ? "present" : "missing"
+  }));
+  const commandPalette = fileExists(".vscode/kvdf.commands.json") ? readJsonFile(".vscode/kvdf.commands.json") : { commands: [] };
+  const tasks = fileExists(".vscode/tasks.json") ? readJsonFile(".vscode/tasks.json") : { tasks: [] };
+  const extensionPackage = fileExists(".vscode/kvdf-extension/package.json") ? readJsonFile(".vscode/kvdf-extension/package.json") : {};
+  const report = {
+    report_type: "vscode_integration_report",
+    generated_at: new Date().toISOString(),
+    source_of_truth: ".kabeeri",
+    file_state: fileState,
+    workspace_tasks: Array.isArray(tasks.tasks) ? tasks.tasks.length : 0,
+    command_palette_entries: Array.isArray(commandPalette.commands) ? commandPalette.commands.length : 0,
+    extension_commands: Array.isArray(extensionPackage.contributes && extensionPackage.contributes.commands) ? extensionPackage.contributes.commands.length : 0,
+    activation_events: Array.isArray(extensionPackage.activationEvents) ? extensionPackage.activationEvents.length : 0,
+    next_actions: buildVscodeIntegrationActions(fileState)
+  };
+  if (flags.json) return report;
+  return report;
+}
+
+function renderVscodeIntegrationReport(report) {
+  console.log("Kabeeri VS Code Integration Report");
+  console.log(table(["Field", "Value"], [
+    ["Workspace tasks", report.workspace_tasks],
+    ["Command palette entries", report.command_palette_entries],
+    ["Extension commands", report.extension_commands],
+    ["Activation events", report.activation_events]
+  ]));
+  console.log("");
+  console.log("Files:");
+  for (const item of report.file_state) console.log(`- ${item.file}: ${item.status}`);
+  console.log("");
+  console.log("Next actions:");
+  for (const item of report.next_actions) console.log(`- ${item}`);
+}
+
+function buildVscodeIntegrationActions(fileState) {
+  const actions = [];
+  if (fileState.some((item) => item.status === "missing")) actions.push("Run `kvdf vscode scaffold` to materialize the missing editor bridge files.");
+  else actions.push("The VS Code scaffold is present; use `kvdf vscode status` or `kvdf vscode report` to review it.");
+  actions.push("Keep VS Code commands as thin wrappers over the CLI and `.kabeeri` state.");
+  actions.push("Do not write project truth from the extension; keep Kabeeri as the source of truth.");
+  return actions;
 }
 
 function vscodeShellTask(label, command) {

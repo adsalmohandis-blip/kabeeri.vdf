@@ -5,6 +5,7 @@ const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { summarizeUsage } = require("./usage_pricing");
 const { buildCustomerAppSummaries } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
+const { readStateArray } = require("../services/state_utils");
 
 function buildClientHomeHtml() {
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
@@ -618,11 +619,6 @@ function exportCustomerAppPages() {
   for (const appItem of apps) {
     writeTextFile(`.kabeeri/site/customer/apps/${appItem.username}/index.html`, buildCustomerAppHtml(appItem));
   }
-}
-
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  return readJsonFile(file)[key] || [];
 }
 
 function publicCustomerAppUrl(username) {

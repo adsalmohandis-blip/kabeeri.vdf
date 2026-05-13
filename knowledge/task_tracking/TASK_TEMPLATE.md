@@ -27,12 +27,18 @@ T001
 Choose one:
 
 ```text
-todo
+proposed
+approved
+ready
+assigned
 in_progress
-blocked
 review
+owner_verified
+rejected
+blocked
 done
 closed
+trashed
 ```
 
 ## Task type
@@ -134,6 +140,45 @@ Explain why this task helps the framework, the developer, or the AI assistant.
 
 Use an empty list if there are no dependencies.
 
+## Execution summary
+
+```text
+Summarize the task in one sentence so the next session can resume without chat history.
+```
+
+## Resume steps
+
+```text
+- Read the source record.
+- Inspect only the allowed files.
+- Apply the smallest coherent change.
+- Run the listed checks.
+```
+
+## Execution inputs
+
+```text
+- ...
+```
+
+## Expected outputs
+
+```text
+- ...
+```
+
+## Do not change
+
+```text
+- ...
+```
+
+## Verification commands
+
+```text
+- npm test
+```
+
 ## Tests/checks
 
 ```text
@@ -152,6 +197,7 @@ Do not add future features.
 Do not modify unrelated files.
 Do not commit real secrets.
 Create or edit only the allowed files.
+Keep the task memory fields in sync with the task record.
 After finishing, explain:
 1. What you changed.
 2. Which files changed.

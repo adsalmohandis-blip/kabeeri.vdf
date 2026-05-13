@@ -1,3 +1,5 @@
+const { buildTaskMemory, ensureTaskMemory } = require("../services/task_memory");
+
 function temp(action, value, flags = {}, rest = [], deps = {}) {
   const {
     ensureWorkspace = () => {},
@@ -87,6 +89,7 @@ function buildTaskTemporaryQueueReport(readJsonFile, writeJsonFile, fileExists, 
     };
   }
 
+  const taskMemory = ensureTaskMemory(activeTask);
   const sourceSignature = [activeTask.id, activeTask.status, activeTask.updated_at || activeTask.created_at || ""].join("|");
   const existing = queue && queue.source_task_id === activeTask.id && queue.source_signature === sourceSignature ? queue : null;
   const generatedAt = new Date().toISOString();
@@ -95,13 +98,14 @@ function buildTaskTemporaryQueueReport(readJsonFile, writeJsonFile, fileExists, 
     source_task_id: activeTask.id,
     source_task_title: activeTask.title,
     source_task_status: activeTask.status,
+    source_task_memory: taskMemory,
     source_task_signature: sourceSignature,
     generated_at: generatedAt,
     expires_when_task_changes: true,
     coverage_policy: "full_task_coverage",
     status: "active",
     current_slice_index: 0,
-    slices: buildTaskTemporaryQueueSlices(activeTask).map((slice, index) => ({
+    slices: buildTaskTemporaryQueueSlices(activeTask, taskMemory).map((slice, index) => ({
       ...slice,
       state: index === 0 ? "active" : "pending",
       completed_at: null
@@ -209,14 +213,20 @@ function resolveActiveTask(tasks, explicitTaskId) {
   return tasks.find((item) => item.status === "in_progress") || null;
 }
 
-function buildTaskTemporaryQueueSlices(task) {
+function buildTaskTemporaryQueueSlices(task, memory = null) {
   const title = task ? task.title : "Task";
+  const taskMemory = memory || ensureTaskMemory(task) || buildTaskMemory(task);
+  const allowedFiles = (taskMemory.source_of_truth && taskMemory.source_of_truth.allowed_files) || [];
+  const workstreams = (taskMemory.source_of_truth && taskMemory.source_of_truth.workstreams) || [];
+  const appUsernames = (taskMemory.source_of_truth && taskMemory.source_of_truth.app_usernames) || [];
+  const acceptanceCriteria = taskMemory.acceptance_criteria || [];
+  const verificationCommands = taskMemory.verification_commands || [];
   return [
     {
       slice_id: "scope",
       order: 1,
       title: `Lock full task coverage for ${title}`,
-      description: "Restate the full task, app boundary, and execution outcome so no part of the task is left outside the queue.",
+      description: `Restate the task memory in execution form so no part of the task is left outside the queue. ${taskMemory.scope || ""}`.trim(),
       done_definition: "The full task is written down from start to finish without omissions.",
       owner_confirmation_required: false
     },
@@ -224,7 +234,7 @@ function buildTaskTemporaryQueueSlices(task) {
       slice_id: "map",
       order: 2,
       title: "Map app and task surfaces",
-      description: "Identify the task files, app paths, workstreams, docs, tests, acceptance criteria, and handoff surfaces that must move together.",
+      description: `Identify the task files, app paths, workstreams, docs, tests, acceptance criteria, and handoff surfaces that must move together. ${allowedFiles.length ? `Allowed files: ${allowedFiles.join(", ")}.` : ""} ${workstreams.length ? `Workstreams: ${workstreams.join(", ")}.` : ""} ${appUsernames.length ? `Apps: ${appUsernames.join(", ")}.` : ""}`.trim(),
       done_definition: "All task surfaces are named and no known part is left out.",
       owner_confirmation_required: false
     },
@@ -232,7 +242,7 @@ function buildTaskTemporaryQueueSlices(task) {
       slice_id: "implement",
       order: 3,
       title: "Implement the complete task path",
-      description: "Make the smallest code and state change that still covers the entire current task path from entry to finish with no leftover execution remainder.",
+      description: `Make the smallest code and state change that still covers the entire current task path from entry to finish with no leftover execution remainder. ${acceptanceCriteria.length ? `Acceptance criteria: ${acceptanceCriteria.join(" | ")}.` : ""}`.trim(),
       done_definition: "The task path is implemented with no leftover execution remainder outside the queue.",
       owner_confirmation_required: false
     },
@@ -240,7 +250,7 @@ function buildTaskTemporaryQueueSlices(task) {
       slice_id: "sync",
       order: 4,
       title: "Sync docs, state, and reports",
-      description: "Update the source-of-truth docs, runtime state, and reports so the full task path is visible everywhere.",
+      description: `Update the source-of-truth docs, runtime state, and reports so the full task path is visible everywhere. ${taskMemory.handoff_note || ""}`.trim(),
       done_definition: "Documentation, live state, and reports all reflect the complete task path.",
       owner_confirmation_required: false
     },
@@ -248,7 +258,7 @@ function buildTaskTemporaryQueueSlices(task) {
       slice_id: "validate",
       order: 5,
       title: "Validate and close the queue",
-      description: "Run the relevant checks, confirm there are no conflicts, and close the queue only when the entire current task has been covered from start to finish.",
+      description: `Run the relevant checks, confirm there are no conflicts, and close the queue only when the entire current task has been covered from start to finish. ${verificationCommands.length ? `Verification commands: ${verificationCommands.join(" | ")}.` : ""}`.trim(),
       done_definition: "Validation passes and no uncovered part of the active task remains.",
       owner_confirmation_required: false
     }
@@ -263,7 +273,8 @@ function taskSummary(task) {
     workstreams: Array.isArray(task.workstreams) ? task.workstreams : task.workstream ? [task.workstream] : [],
     app_username: task.app_username || null,
     app_usernames: Array.isArray(task.app_usernames) ? task.app_usernames : [],
-    app_paths: Array.isArray(task.app_paths) ? task.app_paths : []
+    app_paths: Array.isArray(task.app_paths) ? task.app_paths : [],
+    memory: task.memory || null
   };
 }
 
@@ -283,6 +294,7 @@ function renderTaskTemporaryQueueReport(report, table) {
     "Task Temporary Queue",
     "",
     `Active task: ${report.active_task.id} - ${report.active_task.title}`,
+    report.active_task.memory ? `Memory: ${report.active_task.memory.summary || report.active_task.memory.purpose || "available"}` : "Memory: available",
     `Queue status: ${report.status}`,
     `Current slice: ${queue.current_slice ? `${queue.current_slice.order}. ${queue.current_slice.title}` : "none"}`,
     `Coverage policy: ${queue.coverage_policy || "full_task_coverage"}`,
@@ -295,4 +307,14 @@ function renderTaskTemporaryQueueReport(report, table) {
   return lines.join("\n");
 }
 
-module.exports = { temp };
+module.exports = {
+  temp,
+  buildTaskTemporaryQueueReport,
+  advanceTaskTemporaryQueue,
+  completeTaskTemporaryQueue,
+  buildTaskTemporaryQueueSlices,
+  resolveActiveTask,
+  taskSummary,
+  renderTaskTemporaryQueueReport,
+  ensureTaskTempState
+};

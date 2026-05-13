@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF App Workspaces Registry State",
+  "type": "object",
+  "required": ["version", "workspaces"],
+  "properties": {
+    "version": { "type": "string" },
+    "workspaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slug", "name", "app_type", "root", "status", "created_at"],
+        "properties": {
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "app_type": { "type": "string" },
+          "root": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": ["string", "null"] },
+          "updated_at": { "type": ["string", "null"] },
+          "local_state_exists": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "updated_at": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

@@ -2,6 +2,10 @@ const path = require("path");
 
 const { fileExists, repoRoot } = require("../fs_utils");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
+const { buildDashboardContracts, validateDashboardContracts } = require("../services/dashboard_contract");
+const { readStateArray, summarizeBy } = require("../services/state_utils");
+const { readJsonLines } = require("../services/jsonl");
+const { buildTaskLifecycleState, buildTaskLifecycleBoard } = require("./task_lifecycle");
 
 function collectDashboardState(options = {}, deps = {}) {
   const {
@@ -82,7 +86,7 @@ function collectDashboardState(options = {}, deps = {}) {
     vibeCaptures
   });
 
-  return {
+  const state = {
     generated_at: generatedAt,
     workspace: {
       name: project.name || project.framework || path.basename(repoRoot()),
@@ -245,6 +249,10 @@ function collectDashboardState(options = {}, deps = {}) {
     },
     task_tracker: taskTracker
   };
+  return {
+    ...state,
+    contracts: buildDashboardContracts(state)
+  };
 }
 
 function refreshTaskTrackerState(deps = {}) {
@@ -297,10 +305,13 @@ function buildTaskTrackerState(input = {}, deps = {}) {
     const taskSessions = sessionsByTask[taskItem.id] || [];
     const taskAcceptance = acceptanceByTask[taskItem.id] || [];
     const usage = usageByTask[taskItem.id] || { events: 0, tokens: 0, cost: 0 };
+    const lifecycle = buildTaskLifecycleState(taskItem);
     return {
       id: taskItem.id,
       title: taskItem.title,
       status: taskItem.status,
+      lifecycle_stage: lifecycle.current_stage,
+      lifecycle_next_action: lifecycle.next_action,
       type: taskItem.type || "general",
       source: taskItem.source || "",
       workstream: taskItem.workstream || "",
@@ -344,6 +355,7 @@ function buildTaskTrackerState(input = {}, deps = {}) {
   }
   const openTasks = rows.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status));
   const blockedTasks = rows.filter((item) => item.blockers.length > 0);
+  const lifecycle = buildTaskLifecycleBoard(rows);
   const generatedAt = input.generatedAt || new Date().toISOString();
   return {
     generated_at: generatedAt,
@@ -360,8 +372,12 @@ function buildTaskTrackerState(input = {}, deps = {}) {
       by_workstream: summarizeTaskRowsByList(rows, "workstreams"),
       by_app: summarizeTaskRowsByList(rows, "app_usernames"),
       active_tokens: tokens.filter((item) => item.status === "active").length,
-      active_locks: locks.filter((item) => item.status === "active").length
+      active_locks: locks.filter((item) => item.status === "active").length,
+      lifecycle_by_stage: lifecycle.summary.by_stage,
+      lifecycle_active: lifecycle.summary.active_total,
+      lifecycle_archived: lifecycle.summary.archived_total
     },
+    lifecycle,
     board,
     tasks: rows,
     action_items: buildTaskTrackerActionItems(rows),
@@ -705,6 +721,10 @@ function writeDashboardStateFiles(state, deps = {}) {
 function refreshDashboardArtifacts(options = {}, deps = {}) {
   if (!fileExists(".kabeeri/project.json")) return null;
   const state = collectDashboardState(options, deps);
+  const validation = validateDashboardContracts(state);
+  if (!validation.ok) {
+    throw new Error(`Dashboard contract validation failed: ${validation.failures.join(", ")}`);
+  }
   writeDashboardStateFiles(state, deps);
   return state;
 }
@@ -804,29 +824,6 @@ function normalizeStructuredDashboardState(data = {}) {
     deliverables,
     approvals
   };
-}
-
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  return readJsonFile(file)[key] || [];
-}
-
-function readJsonLines(relativePath) {
-  const fs = require("fs");
-  const file = path.join(repoRoot(), relativePath);
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
-}
-
-function summarizeBy(items, key) {
-  return (items || []).reduce((summary, item) => {
-    const value = item && item[key] ? item[key] : "unknown";
-    summary[value] = (summary[value] || 0) + 1;
-    return summary;
-  }, {});
 }
 
 function normalizeWorkstreamId(value) {

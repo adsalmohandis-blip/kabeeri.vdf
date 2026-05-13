@@ -1,0 +1,218 @@
+{
+  "report_type": "docs_site_deep_publishing_coverage",
+  "generated_at": "2026-05-13T12:22:56.855Z",
+  "site_name": "Kabeeri VDF Docs",
+  "report_path": "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json",
+  "page_count": 39,
+  "contract_count": 78,
+  "template_count": 2,
+  "coverage": {
+    "total_families": 8,
+    "complete_families": 8,
+    "partial_families": 0,
+    "missing_families": []
+  },
+  "families": [
+    {
+      "family_id": "orientation",
+      "title": "Orientation and start-up",
+      "command_focus": [
+        "kvdf start",
+        "kvdf entry",
+        "kvdf resume"
+      ],
+      "page_slugs": [
+        "what-is",
+        "start-here",
+        "install-profiles",
+        "ai-with-kabeeri",
+        "developer-onboarding"
+      ],
+      "published_pages": [
+        "what-is",
+        "start-here",
+        "install-profiles",
+        "ai-with-kabeeri",
+        "developer-onboarding"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "capability-foundation",
+      "title": "Capability and repository foundation",
+      "command_focus": [
+        "kvdf capability",
+        "kvdf validate",
+        "kvdf docs"
+      ],
+      "page_slugs": [
+        "capabilities",
+        "repository-layout"
+      ],
+      "published_pages": [
+        "capabilities",
+        "repository-layout"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "project-intake",
+      "title": "Project intake and delivery mode",
+      "command_focus": [
+        "kvdf project",
+        "kvdf questionnaire",
+        "kvdf blueprint",
+        "kvdf data-design"
+      ],
+      "page_slugs": [
+        "new-project",
+        "existing-kabeeri-project",
+        "existing-non-kabeeri-project",
+        "delivery-mode",
+        "agile-delivery",
+        "structured-delivery",
+        "questionnaire-engine",
+        "product-blueprints",
+        "data-design"
+      ],
+      "published_pages": [
+        "new-project",
+        "existing-kabeeri-project",
+        "existing-non-kabeeri-project",
+        "delivery-mode",
+        "agile-delivery",
+        "structured-delivery",
+        "questionnaire-engine",
+        "product-blueprints",
+        "data-design"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "design-guidance",
+      "title": "Design and prompt guidance",
+      "command_focus": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "page_slugs": [
+        "ui-ux-advisor",
+        "ui-ux-reference-library",
+        "vibe-first",
+        "prompt-packs"
+      ],
+      "published_pages": [
+        "ui-ux-advisor",
+        "ui-ux-reference-library",
+        "vibe-first",
+        "prompt-packs"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "governance",
+      "title": "Task, workstream, and boundary governance",
+      "command_focus": [
+        "kvdf task",
+        "kvdf workstream",
+        "kvdf app"
+      ],
+      "page_slugs": [
+        "task-governance",
+        "app-boundary",
+        "workstreams-scope"
+      ],
+      "published_pages": [
+        "task-governance",
+        "app-boundary",
+        "workstreams-scope"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "platform-operations",
+      "title": "Platform operations and collaboration",
+      "command_focus": [
+        "kvdf wordpress",
+        "kvdf dashboard",
+        "kvdf usage",
+        "kvdf multi-ai",
+        "kvdf github",
+        "kvdf release"
+      ],
+      "page_slugs": [
+        "wordpress-development",
+        "wordpress-plugins",
+        "dashboard-monitoring",
+        "ai-cost-control",
+        "multi-ai-governance",
+        "github-release"
+      ],
+      "published_pages": [
+        "wordpress-development",
+        "wordpress-plugins",
+        "dashboard-monitoring",
+        "ai-cost-control",
+        "multi-ai-governance",
+        "github-release"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "examples",
+      "title": "Practical builds and examples",
+      "command_focus": [
+        "kvdf example",
+        "kvdf project route"
+      ],
+      "page_slugs": [
+        "practical-examples",
+        "example-ecommerce",
+        "example-ai-team-ecommerce",
+        "example-blog",
+        "example-wordpress-digital-agency",
+        "example-dental-clinic",
+        "example-crm",
+        "example-mobile-commerce",
+        "example-pos"
+      ],
+      "published_pages": [
+        "practical-examples",
+        "example-ecommerce",
+        "example-ai-team-ecommerce",
+        "example-blog",
+        "example-wordpress-digital-agency",
+        "example-dental-clinic",
+        "example-crm",
+        "example-mobile-commerce",
+        "example-pos"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    },
+    {
+      "family_id": "support",
+      "title": "Troubleshooting and support",
+      "command_focus": [
+        "kvdf validate",
+        "kvdf doctor",
+        "kvdf conflict scan"
+      ],
+      "page_slugs": [
+        "troubleshooting"
+      ],
+      "published_pages": [
+        "troubleshooting"
+      ],
+      "missing_pages": [],
+      "coverage_status": "complete"
+    }
+  ]
+}

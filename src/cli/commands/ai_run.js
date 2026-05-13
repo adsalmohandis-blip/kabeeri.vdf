@@ -3,7 +3,15 @@ const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { table } = require("../ui");
+const { uniqueList } = require("../services/collections");
+const { appendJsonLine, readJsonLines, writeJsonLines } = require("../services/jsonl");
+const { readStateArray } = require("../services/state_utils");
 const { calculateUsageCost, getPricingCurrency, getTaskSprint, summarizeUsage } = require("./usage_pricing");
+
+const AI_RUNS_FILE = ".kabeeri/ai_runs/prompt_runs.jsonl";
+const CAPTURES_FILE = ".kabeeri/interactions/post_work_captures.json";
+const USAGE_EVENTS_FILE = ".kabeeri/ai_usage/usage_events.jsonl";
+const AUDIT_LOG_FILE = ".kabeeri/audit_log.jsonl";
 
 function aiRun(action, value, flags = {}, deps = {}) {
   const {
@@ -45,6 +53,7 @@ function aiRun(action, value, flags = {}, deps = {}) {
     if (taskId && !getTaskById(taskId)) throw new Error(`Task not found: ${taskId}`);
     const developerId = flags.developer || flags.agent || flags.actor || "local-ai";
     const relatedAdrs = parseCsv(flags.adrs || flags.adr);
+    const captureIds = uniqueList(parseCsv(flags.captures || flags.capture));
     assertKnownAdrs(relatedAdrs);
     const inputTokens = Number(flags["input-tokens"] || 0);
     const outputTokens = Number(flags["output-tokens"] || 0);
@@ -68,6 +77,7 @@ function aiRun(action, value, flags = {}, deps = {}) {
       workstream: flags.workstream || (taskId ? getTaskWorkstreamsById(taskId)[0] || "untracked" : "untracked"),
       files_changed: parseCsv(flags.files),
       related_adrs: relatedAdrs,
+      capture_ids: captureIds,
       summary: flags.summary || flags.result || "",
       result: flags.result || "recorded",
       input_tokens: inputTokens,
@@ -77,18 +87,27 @@ function aiRun(action, value, flags = {}, deps = {}) {
       cost: flags.cost !== undefined ? Number(flags.cost || 0) : calculated.cost,
       currency: flags.currency || getPricingCurrency(),
       cost_source: flags.cost !== undefined ? "manual" : calculated.source,
+      provenance: buildAiRunProvenance({
+        task_id: taskId,
+        capture_ids: captureIds,
+        related_adrs: relatedAdrs,
+        source_reference: flags.source || "manual",
+        workstream: flags.workstream || (taskId ? getTaskWorkstreamsById(taskId)[0] || "untracked" : "untracked")
+      }),
       status: "recorded",
       started_at: flags.started || new Date().toISOString(),
       ended_at: flags.ended || new Date().toISOString(),
       created_at: new Date().toISOString()
     };
     if (readAiRuns().some((item) => item.run_id === run.run_id)) throw new Error(`AI run already exists: ${run.run_id}`);
-    appendJsonLine(".kabeeri/ai_runs/prompt_runs.jsonl", run);
+    appendJsonLine(AI_RUNS_FILE, run);
     if (relatedAdrs.length) linkAiRunToAdrs(run.run_id, relatedAdrs);
+    if (captureIds.length) linkCapturesToAiRun(run.run_id, captureIds);
     if (run.total_tokens > 0 && flags["record-usage"] !== "false" && flags.usage !== "false") {
-      appendJsonLine(".kabeeri/ai_usage/usage_events.jsonl", {
+      appendJsonLine(USAGE_EVENTS_FILE, {
         event_id: `usage-${Date.now()}`,
         timestamp: run.ended_at,
+        ai_run_id: run.run_id,
         run_id: run.run_id,
         task_id: run.task_id || "untracked",
         sprint_id: run.sprint_id,
@@ -104,11 +123,18 @@ function aiRun(action, value, flags = {}, deps = {}) {
         currency: run.currency,
         cost_source: run.cost_source,
         source: "ai_run_history",
-        tracked: Boolean(run.task_id)
+        tracked: Boolean(run.task_id),
+        capture_ids: captureIds,
+        provenance: run.provenance
       });
       writeJsonFile(".kabeeri/ai_usage/usage_summary.json", summarizeUsage());
     }
-    appendAudit("ai_run.recorded", "ai_run", run.run_id, `AI run recorded for ${run.task_id || "untracked"}`);
+    appendAudit("ai_run.recorded", "ai_run", run.run_id, `AI run recorded for ${run.task_id || "untracked"}`, {
+      task_id: run.task_id || null,
+      capture_ids: captureIds,
+      related_adrs: relatedAdrs,
+      source_reference: run.source_reference
+    });
     console.log(JSON.stringify(run, null, 2));
     return;
   }
@@ -155,7 +181,12 @@ function aiRun(action, value, flags = {}, deps = {}) {
       appendJsonLine(".kabeeri/ai_runs/rejected_runs.jsonl", buildAiRunReviewRecord(item, "rejected"));
     }
     writeAiRuns(runs);
-    appendAudit(`ai_run.${action}ed`, "ai_run", item.run_id, `AI run ${action}ed`);
+    appendAudit(`ai_run.${action}ed`, "ai_run", item.run_id, `AI run ${action}ed`, {
+      run_id: item.run_id,
+      task_id: item.task_id || null,
+      capture_ids: item.capture_ids || [],
+      decision: action
+    });
     console.log(`AI run ${item.run_id} is now ${item.status}`);
     return;
   }
@@ -164,6 +195,13 @@ function aiRun(action, value, flags = {}, deps = {}) {
     const report = buildAiRunHistoryReport();
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else return outputLines(buildAiRunReportMarkdown(report), flags.output);
+    return;
+  }
+
+  if (action === "provenance") {
+    const report = buildAiRunProvenanceReport();
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else return outputLines(buildAiRunProvenanceMarkdown(report), flags.output);
     return;
   }
 
@@ -176,13 +214,20 @@ function ensureDecisionHistoryState() {
   fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "memory"), { recursive: true });
   if (!fileExists(".kabeeri/adr/records.json")) writeJsonFile(".kabeeri/adr/records.json", { adrs: [] });
   for (const file of [
-    ".kabeeri/ai_runs/prompt_runs.jsonl",
+    AI_RUNS_FILE,
     ".kabeeri/ai_runs/accepted_runs.jsonl",
     ".kabeeri/ai_runs/rejected_runs.jsonl",
-    ".kabeeri/memory/decisions.jsonl"
+    ".kabeeri/memory/decisions.jsonl",
+    CAPTURES_FILE,
+    USAGE_EVENTS_FILE,
+    AUDIT_LOG_FILE
   ]) {
     const fullPath = path.join(repoRoot(), file);
-    if (!fs.existsSync(fullPath)) fs.writeFileSync(fullPath, "", "utf8");
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      if (file === CAPTURES_FILE) writeJsonFile(CAPTURES_FILE, { captures: [] });
+      else fs.writeFileSync(fullPath, "", "utf8");
+    }
   }
 }
 
@@ -253,11 +298,11 @@ function assertKnownAiRuns(runIds) {
 }
 
 function readAiRuns() {
-  return readJsonLines(".kabeeri/ai_runs/prompt_runs.jsonl");
+  return readJsonLines(AI_RUNS_FILE);
 }
 
 function writeAiRuns(runs) {
-  writeJsonLines(".kabeeri/ai_runs/prompt_runs.jsonl", runs);
+  writeJsonLines(AI_RUNS_FILE, runs);
 }
 
 function buildAiRunReviewRecord(item, decision) {
@@ -307,6 +352,38 @@ function buildAiRunHistoryReport() {
     by_adr: summarizeAiRunsByMultiValue(runs, "related_adrs", "unlinked"),
     waste_signals: wasteSignals,
     unreviewed_run_ids: unreviewed.map((item) => item.run_id)
+  };
+}
+
+function buildAiRunProvenanceReport() {
+  const runs = readAiRuns();
+  const captures = readCaptureRecords();
+  const usageEvents = readJsonLines(USAGE_EVENTS_FILE);
+  const auditEvents = readJsonLines(AUDIT_LOG_FILE);
+  const chains = runs.map((run) => buildAiRunProvenanceChain(run, captures, usageEvents, auditEvents));
+  const linkedRuns = chains.filter((chain) => chain.capture_ids.length > 0 && chain.audit_event_ids.length > 0);
+  const missingEvidence = chains.filter((chain) => chain.capture_ids.length === 0 || chain.audit_event_ids.length === 0);
+  return {
+    report_type: "ai_run_provenance_report",
+    generated_at: new Date().toISOString(),
+    summary: {
+      runs: runs.length,
+      captures: captures.length,
+      usage_events: usageEvents.length,
+      audit_events: auditEvents.length,
+      linked_runs: linkedRuns.length,
+      missing_evidence_chains: missingEvidence.length
+    },
+    chains,
+    missing_evidence: missingEvidence.map((item) => ({
+      run_id: item.run_id,
+      task_id: item.task_id || null,
+      missing_capture_link: item.capture_ids.length === 0,
+      missing_audit_link: item.audit_event_ids.length === 0,
+      next_action: item.capture_ids.length === 0
+        ? `Link a capture to ${item.run_id}`
+        : `Add audit metadata for ${item.run_id}`
+    }))
   };
 }
 
@@ -372,6 +449,29 @@ function buildAiRunReportMarkdown(report) {
   ];
 }
 
+function buildAiRunProvenanceMarkdown(report) {
+  return [
+    "# Kabeeri AI Run Provenance Report",
+    "",
+    `Generated at: ${report.generated_at}`,
+    `Runs: ${report.summary.runs}`,
+    `Captures: ${report.summary.captures}`,
+    `Usage events: ${report.summary.usage_events}`,
+    `Audit events: ${report.summary.audit_events}`,
+    `Linked chains: ${report.summary.linked_runs}`,
+    `Missing evidence chains: ${report.summary.missing_evidence_chains}`,
+    "",
+    "## Provenance Chains",
+    "",
+    "| Run | Task | Captures | Usage events | Audit events | Status |",
+    "| --- | --- | ---: | ---: | ---: | --- |",
+    ...(report.chains.length ? report.chains.map((item) => `| ${item.run_id} | ${item.task_id || "untracked"} | ${item.capture_ids.length} | ${item.usage_event_ids.length} | ${item.audit_event_ids.length} | ${item.provenance_status} |`) : ["| none |  | 0 | 0 | 0 | missing |"]),
+    "",
+    "## Missing Evidence",
+    ...(report.missing_evidence.length ? report.missing_evidence.map((item) => `- ${item.run_id}: ${item.next_action}`) : ["- None."])
+  ];
+}
+
 function aiRunSummaryRows(buckets, label) {
   const rows = [`| ${label} | Runs | Accepted | Rejected | Unreviewed | Tokens | Cost |`, "| --- | ---: | ---: | ---: | ---: | ---: | ---: |"];
   for (const [key, item] of Object.entries(buckets || {})) {
@@ -379,15 +479,6 @@ function aiRunSummaryRows(buckets, label) {
   }
   if (rows.length === 2) rows.push(`| none | 0 | 0 | 0 | 0 | 0 | 0 |`);
   return rows;
-}
-
-function assertKnownAdrs(adrIds) {
-  if (!adrIds || adrIds.length === 0) return;
-  const records = readStateArray(".kabeeri/adr/records.json", "adrs");
-  const known = new Set(records.map((item) => item.adr_id));
-  for (const adrId of adrIds) {
-    if (!known.has(adrId)) throw new Error(`ADR not found: ${adrId}`);
-  }
 }
 
 function linkAdrsToAiRuns(adrId, runIds) {
@@ -436,14 +527,74 @@ function summarizeBy(records, key) {
   return output;
 }
 
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  const data = readJsonFile(file);
-  return data[key] || [];
+function buildAiRunProvenance(run) {
+  return {
+    source_reference: run.source_reference || "manual",
+    task_id: run.task_id || null,
+    capture_ids: Array.isArray(run.capture_ids) ? uniqueList(run.capture_ids) : [],
+    related_adrs: Array.isArray(run.related_adrs) ? uniqueList(run.related_adrs) : [],
+    workstream: run.workstream || "untracked"
+  };
 }
 
-function uniqueList(items) {
-  return [...new Set((items || []).filter(Boolean))];
+function readCaptureRecords() {
+  try {
+    const data = readJsonFile(CAPTURES_FILE);
+    return Array.isArray(data.captures) ? data.captures : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function linkCapturesToAiRun(runId, captureIds) {
+  if (!captureIds || captureIds.length === 0) return;
+  const data = readJsonFile(CAPTURES_FILE);
+  data.captures = data.captures || [];
+  let changed = false;
+  for (const captureId of captureIds) {
+    const capture = data.captures.find((item) => item.capture_id === captureId);
+    if (!capture) continue;
+    capture.ai_run_id = runId;
+    capture.source_ai_run_ids = uniqueList([...(capture.source_ai_run_ids || []), runId]);
+    capture.provenance = {
+      ...(capture.provenance || {}),
+      ai_run_ids: uniqueList([...(capture.provenance && capture.provenance.ai_run_ids ? capture.provenance.ai_run_ids : []), runId]),
+      task_id: capture.task_id || null
+    };
+    capture.updated_at = new Date().toISOString();
+    changed = true;
+  }
+  if (changed) writeJsonFile(CAPTURES_FILE, data);
+}
+
+function buildAiRunProvenanceChain(run, captures, usageEvents, auditEvents) {
+  const linkedCaptureIds = uniqueList([
+    ...(Array.isArray(run.capture_ids) ? run.capture_ids : []),
+    ...captures.filter((capture) => capture.ai_run_id === run.run_id || (Array.isArray(capture.source_ai_run_ids) && capture.source_ai_run_ids.includes(run.run_id))).map((capture) => capture.capture_id)
+  ]);
+  const runUsageEvents = usageEvents.filter((item) => item.ai_run_id === run.run_id || item.run_id === run.run_id);
+  const auditEventIds = auditEvents
+    .filter((event) => event.entity_id === run.run_id
+      || (event.metadata && (
+        event.metadata.run_id === run.run_id
+        || event.metadata.ai_run_id === run.run_id
+        || (Array.isArray(event.metadata.capture_ids) && event.metadata.capture_ids.some((captureId) => linkedCaptureIds.includes(captureId)))
+        || (event.metadata.capture_id && linkedCaptureIds.includes(event.metadata.capture_id))
+      )))
+    .map((event) => event.event_id);
+  const provenanceStatus = linkedCaptureIds.length && auditEventIds.length ? "linked" : linkedCaptureIds.length ? "capture_linked" : "missing";
+  return {
+    run_id: run.run_id,
+    task_id: run.task_id || null,
+    capture_ids: linkedCaptureIds,
+    usage_event_ids: runUsageEvents.map((item) => item.event_id || null).filter(Boolean),
+    audit_event_ids: auditEventIds,
+    provenance_status: provenanceStatus,
+    source_reference: run.source_reference || "manual",
+    workstream: run.workstream || "untracked",
+    cost: Number(run.cost || 0),
+    total_tokens: Number(run.total_tokens || 0)
+  };
 }
 
 function parseCsv(value) {
@@ -453,27 +604,6 @@ function parseCsv(value) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
-}
-
-function appendJsonLine(file, value) {
-  const fullPath = path.join(repoRoot(), file);
-  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-  fs.appendFileSync(fullPath, `${JSON.stringify(value)}\n`, "utf8");
-}
-
-function writeJsonLines(file, rows) {
-  const fullPath = path.join(repoRoot(), file);
-  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-  fs.writeFileSync(fullPath, `${(rows || []).map((row) => JSON.stringify(row)).join("\n")}${(rows || []).length ? "\n" : ""}`, "utf8");
-}
-
-function readJsonLines(file) {
-  const fullPath = path.join(repoRoot(), file);
-  if (!fs.existsSync(fullPath)) return [];
-  return fs.readFileSync(fullPath, "utf8")
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
 }
 
 function defaultOutputLines(lines, outputPath) {
@@ -494,6 +624,9 @@ module.exports = {
   buildAiRunReviewRecord,
   buildAiRunHistoryReport,
   buildAiRunReportMarkdown,
+  buildAiRunProvenanceReport,
+  buildAiRunProvenanceMarkdown,
+  buildAiRunProvenance,
   aiRunSummaryRows,
   findAdr,
   normalizeAdrStatus,
@@ -503,5 +636,6 @@ module.exports = {
   assertKnownAiRuns,
   assertKnownAdrs,
   linkAdrsToAiRuns,
+  linkCapturesToAiRun,
   buildAdrReport
 };

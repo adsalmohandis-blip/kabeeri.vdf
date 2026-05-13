@@ -58,6 +58,8 @@ AI usage accounting records:
 - cost
 - tracked vs untracked usage
 - accepted, rejected, rework, exploration, and urgent incident cost
+- a visible `budget_pressure` rollup in `usage summary` and `usage report` for
+  tasks that are at 75 percent, 90 percent, or over budget
 
 Main commands:
 
@@ -88,6 +90,10 @@ Budgets can apply to:
 At 75 percent usage, Kabeeri should warn. At 90 percent, it should require
 acknowledgement. At 100 percent, official usage should be blocked unless an
 active approval covers the overrun.
+
+The `usage summary` state now includes `budget_pressure`, which surfaces active
+approvals and tasks that are nearing or exceeding their token or cost limits
+before the spend becomes unbounded.
 
 The canonical governance policy for budget approval lives in
 [../governance/TOKEN_BUDGET_RULES.md](../governance/TOKEN_BUDGET_RULES.md).

@@ -100,7 +100,9 @@ kvdf validate prompt-layer
 ```
 
 `compose` merges common rules, stack-specific prompt text, task acceptance,
-allowed/forbidden files, and an optional context pack into one reviewable prompt.
+allowed/forbidden files, an optional context pack, and compact guidance into one reviewable prompt.
+The compact guidance keeps the prompt short, task-specific, and easier to reuse
+across repeated AI starts.
 
 ## Current prompt pack categories
 

@@ -38,7 +38,7 @@ kabeeri-vdf/
 | `standard_systems/` | Capability maps and standard project area definitions. |
 | `project_intake/` | New/existing project intake rules. |
 | `prompt_packs/` | Stack-specific AI coding prompts and common prompt layer. |
-| `task_tracking/` | Task schemas, templates, examples, states, and review formats. |
+| `task_tracking/` | Task schemas, templates, examples, states, durable resume memory, and review formats. |
 | `governance/` | Owner, task, app boundary, workstream, token, and execution policies. |
 | `acceptance_checklists/` | Review and acceptance formats. |
 | `schemas/` | JSON schemas and runtime schema registry. |

@@ -28,3 +28,7 @@ kvdf prompt-pack compose react --task task-001
 The common layer is composed before the stack prompt. It should never install a
 framework, publish a release, write GitHub state, run destructive migrations, or
 override Owner approval by itself.
+
+When `kvdf prompt-pack compose` renders a task-specific prompt, it also includes
+compact guidance so the AI can focus on one stack prompt, one task scope, and
+the smallest useful next step.

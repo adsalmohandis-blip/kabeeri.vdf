@@ -6,6 +6,7 @@ const pages = [
   ["start-here", "Start Here", "ابدأ من هنا"],
   ["install-profiles", "Install and Profiles", "التثبيت والبروفايلات"],
   ["ai-with-kabeeri", "AI Works Inside Kabeeri", "كيف يعمل AI داخل كبيري"],
+  ["developer-onboarding", "Developer Onboarding", "تأهيل المطور"],
   ["capabilities", "System Capabilities", "قدرات النظام"],
   ["repository-layout", "Repository Layout", "تنظيم المستودع"],
   ["new-project", "Start a New Application", "بدء تطبيق جديد"],
@@ -41,6 +42,85 @@ const pages = [
   ["example-pos", "Example: Supermarket POS", "مثال: POS سوبرماركت"],
   ["troubleshooting", "Troubleshooting", "حل المشكلات"]
 ];
+
+const templates = [
+  {
+    template_id: "docs-site-index",
+    title: "Docs Site Index Template",
+    purpose: "Render the landing shell for the documentation site.",
+    output_paths: ["index.html"],
+    languages: ["en"],
+    surface: "docs/site",
+    source: "docs/site/generate-pages.js"
+  },
+  {
+    template_id: "docs-site-page",
+    title: "Docs Site Page Template",
+    purpose: "Render each localized docs page shell under pages/en and pages/ar.",
+    output_paths: ["pages/en/*.html", "pages/ar/*.html"],
+    languages: ["en", "ar"],
+    surface: "docs/site/pages",
+    source: "docs/site/generate-pages.js"
+  }
+];
+
+function buildSiteManifest() {
+  return {
+    manifest_version: 1,
+    generated_by: "docs/site/generate-pages.js",
+    site_name: "Kabeeri VDF Docs",
+    default_language: "en",
+    languages: ["en", "ar"],
+    template_count: templates.length,
+    page_count: pages.length,
+    pages: pages.map(([slug, enTitle, arTitle]) => ({
+      slug,
+      titles: { en: enTitle, ar: arTitle },
+      paths: {
+        en: `pages/en/${slug}.html`,
+        ar: `pages/ar/${slug}.html`
+      }
+    }))
+  };
+}
+
+function buildPageContracts() {
+  const contracts = [];
+  for (const [slug, enTitle, arTitle] of pages) {
+    contracts.push({
+      contract_id: `${slug}.en`,
+      slug,
+      language: "en",
+      direction: "ltr",
+      title: enTitle,
+      path: `pages/en/${slug}.html`,
+      root_path: "../../",
+      template: "docs-site-page",
+      surface: "docs/site/pages",
+      source: "docs/site/generate-pages.js"
+    });
+    contracts.push({
+      contract_id: `${slug}.ar`,
+      slug,
+      language: "ar",
+      direction: "rtl",
+      title: arTitle,
+      path: `pages/ar/${slug}.html`,
+      root_path: "../../",
+      template: "docs-site-page",
+      surface: "docs/site/pages",
+      source: "docs/site/generate-pages.js"
+    });
+  }
+  return {
+    contract_version: 1,
+    generated_by: "docs/site/generate-pages.js",
+    site_name: "Kabeeri VDF Docs",
+    template_count: templates.length,
+    page_count: contracts.length,
+    contracts
+  };
+}
 
 function html({ lang, dir, title, slug, rootPath }) {
   const filter = lang === "ar" ? "تصفية" : "Filter";
@@ -87,7 +167,20 @@ function write(filePath, body) {
   fs.writeFileSync(path.join(__dirname, filePath), body, "utf8");
 }
 
+function writeJson(filePath, data) {
+  write(filePath, `${JSON.stringify(data, null, 2)}\n`);
+}
+
 write("index.html", html({ lang: "en", dir: "ltr", title: "Overview", slug: "what-is", rootPath: "" }));
+writeJson("page-templates.json", {
+  template_version: 1,
+  generated_by: "docs/site/generate-pages.js",
+  site_name: "Kabeeri VDF Docs",
+  template_count: templates.length,
+  templates
+});
+writeJson("site-manifest.json", buildSiteManifest());
+writeJson("page-contracts.json", buildPageContracts());
 
 for (const [slug, enTitle, arTitle] of pages) {
   write(path.join("pages", "en", `${slug}.html`), html({ lang: "en", dir: "ltr", title: enTitle, slug, rootPath: "../../" }));

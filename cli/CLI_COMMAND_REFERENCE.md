@@ -28,8 +28,10 @@ kvdf dashboard --help
 kvdf release --help
 kvdf github --help
 kvdf resume --help
+kvdf track --help
 kvdf multi-ai --help
 kvdf conflict --help
+kvdf source-package --help
 ```
 
 Common command aliases are supported for terminal convenience:
@@ -65,6 +67,60 @@ When `kvdf init` is run interactively, Kabeeri asks one short question: what sof
 
 The docs-first tasks are intentional. They make Kabeeri ask and document the project before implementation tasks start, reducing the chance that an AI assistant skips project documentation and jumps directly into code.
 
+## Operating Tracks
+
+Kabeeri is organized around two primary tracks:
+
+```text
+Framework Owner Track
+resume -> evolution priorities -> evolution temp -> implement -> sync -> validate -> verify
+
+Vibe App Developer Track
+resume -> vibe/ask -> blueprint/questionnaire -> temp -> tasks/capture -> validate -> handoff
+```
+
+Framework-owner sessions use Evolution Steward to change Kabeeri itself. Vibe app-developer sessions use the same CLI engine to build an application with governed tasks, captures, blueprints, and validation. The shared commands `resume`, `guard`, `conflict`, `validate`, `dashboard`, `reports`, and `sync` keep both tracks safe and resumable.
+
+See `docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md` for the canonical track map and session cycle summary.
+See `knowledge/governance/TRACK_ROUTING_GOVERNANCE.md` for the route and block rules that decide which track activates at entry.
+
+## Command Lifecycle Ledger
+
+The current command and deprecation ledger lives in
+`docs/reports/KVDF_COMMAND_DEPRECATION_LEDGER.md`. Use it when you need a quick
+answer to four questions:
+
+- Which command families are active and canonical right now?
+- Which surfaces were migrated out of the monolithic CLI facade?
+- Which older entry points remain only as compatibility aliases?
+- Which surfaces are still intentionally duplicated during migration?
+
+At the moment, no user-facing command is deprecated. Compatibility aliases are
+retained for convenience, and the release publish path still exists through both
+`kvdf release publish` and `kvdf github release publish` because both routes
+must respect the same release and GitHub write gates.
+
+## Folder Ownership Ledger
+
+The migration ledger also needs to explain where the important folders live and
+which track owns them:
+
+| Folder | Track / Status | Notes |
+| --- | --- | --- |
+| `src/cli/index.js` | shared bridge / migrating | Legacy facade still holds a little routing glue while command modules finish the split. |
+| `src/cli/commands/` | shared platform layer / migrated | Canonical command modules live here instead of the monolith. |
+| `src/cli/services/` | shared platform layer | Reusable runtime helpers that both owner and app surfaces can call. |
+| `plugins/owner-track/` | owner-track | Owner-only framework controls and packaging metadata. |
+| `workspaces/apps/<app-slug>/` | app-track | Isolated developer-app workspaces with their own local state. |
+| `docs/reports/` | shared reporting layer | Ledger, traceability, readiness, and migration reports. |
+| `knowledge/` | shared reference layer | Governance and runtime knowledge that informs both tracks. |
+| `packs/` | shared prompt/input layer | Prompt packs, generators, and questionnaires that feed both tracks. |
+
+Remaining migration gaps are kept visible on purpose: `src/cli/index.js` still
+acts as a compatibility bridge, and `kvdf release publish` and
+`kvdf github release publish` remain duplicated until the publish path fully
+settles on one canonical entry point.
+
 ## Resume / Start
 
 ```bash
@@ -72,6 +128,11 @@ kvdf resume
 kvdf resume --json
 kvdf resume --scan
 kvdf start
+kvdf entry
+kvdf track status
+kvdf track route
+kvdf onboarding
+kvdf onboarding report
 ```
 
 Use `resume` as the first command in a new AI/developer session. It detects whether the current folder is Kabeeri framework source, a user application workspace with `.kabeeri`, or an application folder that has not been initialized with Kabeeri yet.
@@ -79,6 +140,12 @@ Use `resume` as the first command in a new AI/developer session. It detects whet
 The command separates the current application npm root from the Kabeeri engine root. This prevents confusion when a user project is a Next.js or React app but Kabeeri itself is also a Node.js CLI. In a user app workspace, application `npm` commands belong to the app root while Kabeeri should be used as the `kvdf` engine. In the framework source, `npm test` and package commands belong to Kabeeri itself.
 
 For framework owner development, `resume` also shows the Evolution Steward next priority, the top ordered development priorities, a parsed `OWNER_DEVELOPMENT_STATE.md` checkpoint, a compact git diff summary, and one exact next action for the current session. This is the required first-session view before continuing framework work.
+
+Use `kvdf entry` or `kvdf start` when you want automatic routing into the correct track without choosing it yourself. Use `kvdf track status` to inspect the active track state, and `kvdf track route` to persist the current routing decision into `.kabeeri/session_track.json`.
+
+Use `kvdf onboarding` when you want the guided first-session route in a compact form. It shows the current workspace path, the safe first steps, the enter/route/resume sequence, and the commands you should run before touching code. The command also writes `.kabeeri/reports/session_onboarding.json`, and `kvdf onboarding report` reloads that persisted onboarding report when you want the saved first-session guide instead of regenerating it.
+
+The selected track is persisted in `.kabeeri/session_track.json` so the next session can resume the same context without re-deriving it from memory.
 
 `--scan` also runs a small resume scan, including git status and workspace validation when `.kabeeri` exists. For framework owner development it also checks Evolution priorities, runs `kvdf conflict scan`, and runs the test suite.
 
@@ -119,6 +186,56 @@ kvdf sync push --confirm
 Use `sync status` before starting a task in a multi-developer workspace. Use `sync pull` to preview a safe `git pull --ff-only`. Use `sync push` to preview remote publication after tests, validation, and Owner review.
 
 For solo or single-developer local workspaces, `sync` is optional and acts as a manual safety check. For team workspaces with multiple active developers or agents, Kabeeri treats sync as recommended before starting team-scoped work and after task/session/capture changes.
+
+## Source Package
+
+```bash
+kvdf source-package
+kvdf source-package study
+kvdf source-package inventory
+kvdf source-package map
+kvdf source-package source-map
+kvdf source-package placement
+kvdf source-package normalize
+kvdf source-package compare
+kvdf source-package verify
+kvdf source-package migration
+kvdf source-package manifest
+kvdf source-package cleanup
+kvdf source-package decommission
+kvdf source-package decommission --confirm-remove
+kvdf source-package --json
+```
+
+`KVDF_New_Features_Docs/` is a dual-purpose source package, not a generic inbox. It holds a Software Design System reference library plus a project documentation generator system. Use `source-package study` to inspect the dual-purpose intent, `source-package inventory` to review the current file distribution, `source-package map` to see the permanent destination plan, `source-package source-map` to map source branches to capability surfaces and runtime targets, `source-package normalize` to preserve lowercase aliases for the imported roots and sections, `source-package compare` to check overlap against the capability map, `source-package verify` to confirm redistribution readiness before decommissioning the source folder, `source-package cleanup` to preview the safe removal plan after redistribution is complete, and `source-package decommission` to request approval before the folder is actually removed. Pass `--confirm-remove` only when the owner explicitly approves the removal request and you want the CLI to record that confirmation state.
+
+
+The permanent extraction targets for the imported knowledge are now:
+
+- `knowledge/design_system/software_design_reference/`
+- `knowledge/documentation_generator/`
+
+Those folders hold the durable software-design and documentation-lifecycle
+references that future Kabeeri sessions should reuse after the source package
+is removed.
+
+The permanent reference folders are also available through CLI:
+
+```bash
+kvdf software-design list
+kvdf software-design index
+kvdf software-design map
+kvdf software-design compare
+kvdf software-design show SOFTWARE_DESIGN_SYSTEM_PATTERNS.md
+kvdf docs-generator list
+kvdf docs-generator index
+kvdf docs-generator map
+kvdf docs-generator compare
+kvdf docs-generator show DOCS_GENERATION_REFERENCE.md
+```
+
+`kvdf software-design compare` produces a duplicate-analysis report for the permanent software design reference and compares it against the central capability map, so we reuse existing capability names instead of inventing duplicates.
+`kvdf docs-generator compare` produces the same style of duplicate-analysis report for the permanent documentation generator reference, so lifecycle knowledge stays reusable without inventing duplicate capability names.
 
 ## Generators
 
@@ -186,6 +303,17 @@ kvdf evolution list
 kvdf evolution status
 kvdf evolution priorities
 kvdf evolution next
+kvdf evolution roadmap
+kvdf evolution partition
+kvdf evolution report
+kvdf plugins status
+kvdf plugins enable owner-track
+kvdf plugins disable owner-track
+kvdf evolution app status
+kvdf evolution app priorities
+kvdf evolution app temp
+kvdf evolution app defer "Future app idea"
+kvdf evolution app deferred
 kvdf evolution temp
 kvdf evolution temp advance
 kvdf evolution temp complete
@@ -193,6 +321,7 @@ kvdf evolution defer "Future idea"
 kvdf evolution deferred
 kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
 kvdf evolution priority evo-auto-001 --status in_progress --note "Working now"
+kvdf evolution roadmap
 kvdf evolution show evo-001
 kvdf evolution impact evo-001
 kvdf evolution tasks evo-001
@@ -201,14 +330,38 @@ kvdf multi-ai status
 ```
 
 Evolution Steward is the single framework-development backlog. It records the
-Owner's change request, keeps ordered development priorities, checks possible
-duplicate capability matches against the central capability reference, infers
-impacted areas, creates proposed follow-up tasks, and exposes unfinished
-dependent work in dashboard/live reports. Use it when a requested Kabeeri change
-may affect runtime code, CLI help, task tracking, schemas, dashboard state,
-reports, prompt/AI guidance, docs, the capability map, tests, changelog, or
-release guidance. When a priority is already `in_progress`, every AI tool must
-start with `kvdf evolution temp` and work only on the current temporary slice.
+Owner's change request, keeps ordered development priorities, exposes the
+seven-step KVDF restructure roadmap and the capability partition matrix,
+emits resumable execution reports for each priority, checks possible duplicate
+capability matches against the central capability reference, infers impacted
+areas, creates proposed follow-up tasks, and exposes unfinished dependent work
+in dashboard/live reports. Use it when a requested Kabeeri change may affect
+runtime code, CLI help, task tracking,
+schemas, dashboard state, reports, prompt/AI guidance, docs, the capability
+map, tests, changelog, or release guidance. When a priority is already
+`in_progress`, every AI tool must start with `kvdf evolution temp` and work
+only on the current temporary slice.
+
+The active Runtime services layer priority keeps reusable orchestration logic
+inside `src/cli/services/` modules such as `evolution.js`, `ai_planner.js`,
+and `multi_ai_relay.js` so the command facades stay thin while the shared
+runtime behavior remains reusable and testable.
+
+The plugin loader is a shared core surface. It reads manifests from `plugins/`
+and enablement state from `.kabeeri/plugins.json`, then reports which bundles
+are active. Use `kvdf plugins status` to inspect the current load state and
+`kvdf plugins show <plugin-id>` to inspect bundle metadata, then use
+`kvdf plugins enable|disable <plugin-id>` to adjust the removable owner bundle
+without changing the shared core. The owner bundle is packaged as a manifest-
+driven removable extension, so `plugins/owner-track/plugin.json` is the source
+of truth for its load strategy, version, and command/docs surfaces.
+
+Application developers can also use `kvdf evolution app ...` as a developer-
+facing alias. It keeps the same ordered lists and temporary queue behavior but
+uses app-friendly labels so a vibe developer can manage app priorities, temp
+slices, and deferred ideas without needing framework-owner language. That alias
+belongs to the vibe app-developer track, while the unqualified `kvdf evolution`
+surface belongs to the framework-owner track.
 
 Use `kvdf evolution priority <id> --status ...` to keep the development phase
 list current. Allowed statuses are `planned`, `in_progress`, `blocked`, `done`,
@@ -217,8 +370,9 @@ list current. Allowed statuses are `planned`, `in_progress`, `blocked`, `done`,
 If a framework development priority is already `in_progress`, a new
 `kvdf evolution plan "<request>"` does not create the change immediately. It
 returns a placement report that shows the unfinished priority, the full ordered
-priority list, and a recommended insertion point. The Owner must confirm the
-placement before Kabeeri records the new change:
+priority list, a recommended insertion point, and an explicit waiting state.
+The Owner must confirm the placement before Kabeeri records the new change or
+creates follow-up tasks:
 
 ```bash
 kvdf evolution plan "New feature" --confirm-placement --priority-position 4
@@ -256,6 +410,24 @@ remainder. Use `kvdf temp` for app work and task execution. Use
 The source of truth is `.kabeeri/evolution.json`, with human rules in
 `knowledge/governance/EVOLUTION_STEWARD.md`.
 
+## Task Scheduler
+
+```bash
+kvdf schedule status
+kvdf schedule route task-001 --to temp
+kvdf schedule route task-001 --to trash
+kvdf schedule route task-001 --to restore
+kvdf schedule route task-001 --to agent --agent agent-001
+kvdf schedule route task-001 --to deferred
+kvdf schedule history
+```
+
+`kvdf schedule` is the orchestration layer for task movement across active
+tasks, temporary queues, trash, deferred routes, and AI agent handoffs. It
+records every route in `.kabeeri/task_scheduler.json`, reuses the real temp and
+trash systems for actual moves, and keeps a durable movement trail that a
+future session can read without rebuilding the route from chat memory.
+
 ## Multi-AI Governance
 
 ```bash
@@ -263,6 +435,17 @@ kvdf multi-ai status
 kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
 kvdf multi-ai leader transfer --ai agent-002
 kvdf multi-ai leader end
+kvdf multi-ai agent register --ai agent-001 --name "Claude Sonnet"
+kvdf multi-ai agent heartbeat --ai agent-001
+kvdf multi-ai agent next --ai agent-001 --count 3
+kvdf multi-ai agent call --ai agent-002 --request "Please align the leader lease"
+kvdf multi-ai agent respond --call multi-ai-call-001
+kvdf multi-ai agent leave --ai agent-001
+kvdf multi-ai conversation start --from agent-001 --to agent-002 --topic "Scope" --message "Please review the scope"
+kvdf multi-ai conversation send --from agent-001 --to agent-002 --conversation multi-ai-conversation-001 --message "Please review the scope"
+kvdf multi-ai conversation inbox --agent agent-002
+kvdf multi-ai conversation reply --agent agent-002 --message-id multi-ai-message-001 --reply "Reviewed"
+kvdf multi-ai conversation close --conversation multi-ai-conversation-001
 kvdf multi-ai sync
 kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
 kvdf multi-ai queue add --ai agent-001 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
@@ -274,15 +457,34 @@ kvdf multi-ai merge add --sources multi-ai-queue-001,multi-ai-queue-002 --title 
 kvdf multi-ai merge preview multi-ai-merge-001
 kvdf multi-ai merge validate multi-ai-merge-001
 kvdf multi-ai merge commit multi-ai-merge-001
+kvdf schedule status
+kvdf schedule route task-001 --to temp
+kvdf schedule route task-001 --to trash
+kvdf schedule route task-001 --to restore
+kvdf schedule route task-001 --to agent --agent agent-001
+kvdf schedule route task-001 --to deferred
 ```
 
 Multi-AI Governance keeps Evolution as the global priority governor, gives the
-first AI in a session Leader orchestration status, stores temporary queues per
-AI, can sync and distribute the active Evolution temporary queue across worker
-AIs, advances queue slices through a durable lifecycle, and records semantic
-merge bundles with semantic surface plans so several AI tools can work from the
-same repo without trampling one another. The Leader does not execute by
-default; execution requires explicit Owner delegation for a scoped slice.
+first leader-eligible AI entry Leader orchestration status, stores agent hub
+entries and leader leases with heartbeat and call tracking, can sync and
+distribute the active Evolution temporary queue across worker AIs, advances
+queue slices through a durable lifecycle, and records semantic merge bundles
+with semantic surface plans so several AI tools can work from the same repo
+without trampling one another. The Leader does not execute by default;
+execution requires explicit Owner delegation for a scoped slice. Worker-only
+tools such as Gemini may still join the hub, but they remain non-leader
+participants unless leadership is explicitly allowed. If the Leader disappears
+or stops answering calls, the hub promotes the next active leader-eligible
+agent after the lease rules are exceeded.
+
+`kvdf multi-ai agent next --ai <agent-id> --count <n>` lets a worker claim the
+next available Evolution priorities in order, so AI tools can pull from the
+live priority list instead of waiting for a manual task handoff.
+
+The conversation relay layer is separate from leader calls. Use it for durable
+agent-to-agent messages, inboxes, replies, and thread closure when two tools
+need to coordinate without depending on the human chat transcript.
 
 ## Prompt packs
 
@@ -294,6 +496,7 @@ kvdf prompt-pack export <name> --output <folder>
 kvdf prompt-pack use <name>
 kvdf prompt-pack compose <name> --task <task-id>
 kvdf prompt-pack compose <name> --task <task-id> --context <context-pack-id> --output <file>
+kvdf prompt-pack scale --profile enterprise --goal "Build a hospital ERP"
 kvdf prompt-pack compositions
 kvdf prompt-pack composition-show <composition-id>
 kvdf prompt-pack validate <name>
@@ -311,6 +514,7 @@ kvdf prompt-pack export react-native-expo --output my-project/07_AI_CODE_PROMPTS
 kvdf prompt-pack use react --output my-project/07_AI_CODE_PROMPTS/react
 kvdf prompt-pack compose react --task task-001 --context ctx-001
 kvdf prompt-pack compose react-native-expo --task task-mobile-001
+kvdf prompt-pack scale --profile enterprise --goal "Build a hospital ERP"
 ```
 
 `prompt-pack use` is a convenience install command. Without `--output`, it writes to `07_AI_CODE_PROMPTS/<name>`.
@@ -323,6 +527,12 @@ The common layer also adds shared policy-gate and traceability metadata so a
 composed prompt reminds the AI about scope, security, migration, handoff,
 release, GitHub writes, AI-run history, ADR links, post-work capture, and task
 evidence.
+
+`prompt-pack scale` recommends large-system prompt bundles for enterprise,
+regulated, and high-risk projects. It writes
+`.kabeeri/reports/scale_specific_packs_report.json` and can be used before
+`project profile report` or `prompt-pack compose` when a simple stack pack is
+not enough for the requested system.
 
 React Native Expo is available as a mobile pack for Expo apps. Use it when the
 same Kabeeri product includes an iOS/Android app connected to the product API
@@ -394,11 +604,21 @@ kvdf task create --title "Add API" --sprint sprint-001
 kvdf task create --title "Integration task" --type integration --workstreams backend,public_frontend
 kvdf task list
 kvdf task status
+kvdf task assessment
+kvdf task coverage
+kvdf task lifecycle
+kvdf trace report
+kvdf task memory
 kvdf task approve
 kvdf task assign
 kvdf task start
 kvdf task review
 kvdf task verify
+kvdf task complete
+kvdf task trash list
+kvdf task trash show
+kvdf task trash restore
+kvdf task trash purge
 kvdf task reject
 kvdf task reopen
 ```
@@ -408,13 +628,34 @@ Examples:
 ```bash
 kvdf task create --title "Add task tracking format" --type task-tracking --issue 6
 kvdf task status --id T006
+kvdf task assessment task-001
+kvdf task coverage task-001
+kvdf task lifecycle task-001
+kvdf trace status
+kvdf task memory task-001
 kvdf task assign task-001 --assignee agent-001
 kvdf task start task-001 --actor agent-001
 kvdf task review task-001 --actor reviewer-001
 kvdf task verify task-001 --owner owner-001
+kvdf task complete task-001 --owner owner-001
+kvdf task trash list
+kvdf task trash show task-001
+kvdf task trash restore task-001
 ```
 
 When an Owner identity or Owner auth is configured, mutating commands enforce role permissions. Use `--actor <id>` for non-Owner actions, or an active Owner session for Owner/Maintainer-level actions.
+
+`kvdf task assessment` generates a structured assessment before large work starts so scope, blockers, dependencies, and readiness gates are visible. `kvdf task coverage` writes a full-task-coverage report that shows the planned execution slices, the materialized temporary queue, and whether any remainder is still open. `kvdf task lifecycle` renders the visible lifecycle board from intake to ready, execution, validation, closure, and archived states. `kvdf task status` shows a single task with its lifecycle stage and next action, and reads from trash when a task is no longer active. `kvdf task complete`, `close`, `finish`, and `archive` move an owner-verified task into `.kabeeri/task_trash.json` and remove it from `.kabeeri/tasks.json`. The trash retains the full task payload plus the trashed timestamp, expiry timestamp, reason, actor, original position, and retention metadata. `kvdf task trash restore <task-id>` returns the task to the active list, and `kvdf task trash purge` / `kvdf task trash sweep` remove expired trash records.
+
+`kvdf trace report` builds the end-to-end traceability report. It links tasks, task assessments, ADRs, AI runs, docs source-of-truth checks, and verification commands so change evidence is visible from one command. `kvdf trace status` prints the same report in summary form, and `kvdf trace show` / `kvdf trace list` are aliases for the report view.
+
+`kvdf change report` builds the change-control report. It consolidates structured change requests, evolution changes, and risk register entries so high-risk work can be reviewed before release or handoff. `kvdf risk report` is an alias for the same report.
+
+`kvdf docs coverage` builds the docs site deep publishing coverage report. It groups the generated docs site pages into major framework families so orientation, governance, project intake, platform operations, examples, and support coverage stay visible from one command.
+
+`kvdf docs build`, `kvdf docs preview`, and `kvdf docs sync` are CLI-first aliases for the docs publishing lifecycle. `build` regenerates the site, `preview` opens the site for local review, and `sync` regenerates, validates, and writes a docs site sync report so docs, CLI help, and runtime behavior stay aligned.
+
+Any task created through `kvdf task create` inherits a default `do_not_change` rule that protects the `KVDF_New_Features_Docs/` intake folder. Folder-structure tasks may analyze that folder, but they must not move, rename, delete, or recreate it.
 
 Task assignment also checks workstream ownership. If an assignee has `workstreams` configured, they can only receive tasks in those workstreams. Tasks that span multiple workstreams must be created with `--type integration`.
 
@@ -662,6 +903,11 @@ kvdf owner init --id owner-001 --name "Project Owner"
 kvdf owner login --id owner-001
 kvdf owner status
 kvdf owner logout
+kvdf owner session status
+kvdf owner session close
+kvdf owner docs open
+kvdf owner docs status
+kvdf owner docs close
 kvdf owner transfer issue --to owner-002 --name "New Owner"
 kvdf owner transfer accept --id owner-transfer-001 --token TRANSFER-SECRET
 kvdf owner transfer list
@@ -675,6 +921,10 @@ kvdf agent add --id agent-001 --name "AI Backend Agent" --role "AI Developer" --
 ```
 
 `owner init` and `owner login` read the passphrase from `--passphrase` or `KVDF_OWNER_PASSPHRASE`. When Owner auth is configured, `task verify` requires an active Owner session.
+
+`owner docs open` issues a fresh 50-character mixed owner-docs token, stores it as a one-minute gate, and revokes any previous active owner-docs token for the current session. `owner docs status` lists the current gate state. `owner docs close` revokes the active gate without ending the Owner session.
+
+`owner session close` ends the Owner session explicitly and also revokes any active owner-docs token. `owner logout` is an alias for ending the active Owner session.
 
 `developer solo` configures one `Full-stack Developer` across the standard backend, frontend, admin, database, DevOps, QA, docs, integration, and security workstreams. It keeps app boundaries, locks, tokens, usage tracking, and policy gates active. See `governance/SOLO_DEVELOPER_MODE.md`.
 
@@ -800,6 +1050,14 @@ kvdf task create --title "Wire API to storefront" --type integration --apps back
 kvdf validate routes
 ```
 
+Developer app workspaces live under `workspaces/apps/<app-slug>/` and keep app-local `.kabeeri` state, tests, docs, and package metadata isolated from `kabeeri-core`:
+
+```bash
+kvdf app workspace create --slug storefront-web --name "Storefront Web" --type frontend
+kvdf app workspace list
+kvdf app workspace show storefront-web
+```
+
 Customer-facing app routes always use `username`, never numeric IDs:
 
 ```text
@@ -818,6 +1076,11 @@ See `governance/APP_BOUNDARY_GOVERNANCE.md`.
 kvdf capability list
 kvdf capability show payments_billing
 kvdf capability map
+kvdf capability registry
+kvdf capability registry payments_billing
+kvdf capability registry map
+kvdf capability matrix
+kvdf capability search
 kvdf questionnaire flow
 kvdf questionnaire answer entry.project_type --value saas
 kvdf questionnaire answer entry.has_users --value yes
@@ -829,6 +1092,13 @@ kvdf validate questionnaire
 ```
 
 `questionnaire coverage` generates `.kabeeri/questionnaires/coverage_matrix.json` for the 53 standard system areas. `questionnaire missing` writes `.kabeeri/questionnaires/missing_answers_report.json`. `questionnaire generate-tasks` creates proposed tasks with provenance fields for `system_area_key`, `question_ids`, `answer_ids`, and `source_mode`.
+`kvdf capability registry` exposes the same 53 areas as named, traceable units with owner/workstream and source mapping so the imported capability catalog stays machine-readable. `kvdf capability registry payments_billing` shows one registry entry directly; `kvdf capability registry map` returns the grouped registry map as JSON.
+
+`kvdf capability surface` builds a CLI capability surface report that maps the same registry entries to discoverable command families and docs references so new capabilities always have an obvious operational entry point.
+
+`kvdf capability matrix` builds the capability-to-documentation matrix so every imported capability has traceable docs, CLI, runtime, test, and report links in one place.
+
+`kvdf capability search` builds a searchable reference index over the registry, surface, matrix, and roadmap views, then filters that index by track, capability, command, phase, and report type. It writes `docs/reports/KVDF_CAPABILITY_SEARCH_INDEX.json` so the same facets are available to later sessions.
 
 ## Project Memory
 
@@ -1001,6 +1271,10 @@ kvdf docs open
 kvdf docs serve --port 4188
 kvdf docs serve --port auto --open
 kvdf docs generate
+kvdf docs workflow
+kvdf docs manifest
+kvdf docs contracts
+kvdf docs validate
 kvdf docs path
 kvdf docs code
 ```
@@ -1010,9 +1284,15 @@ and opens the site in the default browser. This is the recommended reading
 flow for developers.
 
 `docs serve` runs the same local docs server without opening a browser unless
-`--open` is provided. `docs generate` rebuilds `docs/site/pages/*` from the
-site source. `docs path` prints the generated docs home file. `docs code`
-opens `docs/site` in VS Code for editing.
+`--open` is provided. `docs generate` rebuilds `docs/site/pages/*` plus the
+generated template catalog, site manifest, and page contracts from the site
+source. `docs workflow` prints the resumable generation workflow report,
+including the templates, manifest, contracts, validation steps, and coverage
+report at `docs/reports/DOCS_SITE_GENERATION_WORKFLOW.json`. `docs manifest`
+prints the manifest, `docs contracts` prints the page contract set, and
+`docs validate` checks that all generated artifacts stay in sync. `docs path`
+prints the generated docs home file. `docs code` opens `docs/site` in VS Code
+for editing.
 
 ## Independent Readiness And Governance Reports
 
@@ -1029,6 +1309,8 @@ kvdf governance report --target publish --strict
 kvdf governance report --output .kabeeri/reports/governance_report.md
 kvdf reports live
 kvdf reports live --json
+kvdf reports blocked
+kvdf reports blocked --json
 kvdf reports show readiness
 ```
 
@@ -1040,12 +1322,19 @@ checks, handoff packages, AI run review state, and unresolved post-work captures
 `governance report` summarizes whether the workspace governance model is healthy.
 It checks Owner identity, developer and agent counts, workstreams, active locks,
 lock conflicts, active/expired task tokens, missing assignees, unknown
-workstreams, policy blockers, and workspace governance validation.
+workstreams, policy blockers, workspace governance validation, and a governance
+coverage view for trust, safety, privacy, compliance, and extensibility.
 
 `reports live` writes `.kabeeri/reports/live_reports_state.json`, a compact
 derived JSON state for Codex, dashboard widgets, VS Code views, and automation.
 Markdown reports remain human-readable snapshots; live JSON is the fast-changing
 operational surface.
+
+`reports blocked` writes `.kabeeri/reports/blocked_scenarios_report.json`, a
+derived blocker summary that explains what cannot proceed yet, why it is blocked
+or warning-level, and what the next governed action should be. Use it when you
+want a single concise report for blocked or invalid scenarios instead of
+reading multiple live reports.
 
 Supported report targets are `workspace`, `demo`, `handoff`, `release`, and
 `publish`. Use `--strict` when warnings should block release, publish, or final
@@ -1083,9 +1372,10 @@ Main references:
 ```bash
 kvdf vscode scaffold
 kvdf vscode status
+kvdf vscode report
 ```
 
-`vscode scaffold` writes `.vscode/tasks.json`, `.vscode/extensions.json`, and `.vscode/kvdf.commands.json` so common Kabeeri CLI actions can be run from VS Code tasks.
+`vscode scaffold` writes `.vscode/tasks.json`, `.vscode/extensions.json`, and `.vscode/kvdf.commands.json` so common Kabeeri CLI actions can be run from VS Code tasks. `vscode report` summarizes the generated editor bridge, the command palette contract, and the file-state trace that keeps the extension read-only.
 
 ## Plans
 
@@ -1100,6 +1390,11 @@ kvdf plan show v4.0.0
 ```bash
 kvdf project analyze --path .
 kvdf project analyze --path existing-app --json
+kvdf project route --goal "Build a SaaS product"
+kvdf project profile route --goal "Build a SaaS product"
+kvdf project profile route --profile enterprise --goal "Build a hospital ERP"
+kvdf project profile status
+kvdf project profile report
 kvdf adopt analyze --path existing-app
 ```
 
@@ -1108,9 +1403,21 @@ governing it. It records detected stacks, likely app boundaries, suggested
 workstreams, risk signals, and next adoption actions in
 `.kabeeri/project_analysis.json`.
 
+`project profile route` inspects the current codebase or the supplied project
+goal and writes `.kabeeri/project_profile.json`. It selects Lite, Standard, or
+Enterprise, recommends a delivery mode, and suggests prompt packs and intake
+groups before the workspace is created. `project profile report` writes
+`.kabeeri/reports/project_profile_report.json` so the current routing decision
+can be resumed without re-reading the full state file. The report also records
+the current scale pack bundle selection for large systems.
+
 ## GitHub Dry Run
 
 ```bash
+kvdf github status
+kvdf github report
+kvdf github feedback list
+kvdf github feedback record --type status --subject task-001 --message "Ready for review"
 kvdf github plan --version v4.0.0 --dry-run
 kvdf github label sync --version v4.0.0 --dry-run
 kvdf github milestone sync --version v4.0.0 --dry-run
@@ -1120,7 +1427,7 @@ kvdf github config set --repo owner/repo --branch main --default-version v4.0.0
 kvdf github config show
 ```
 
-These commands do not write to GitHub.
+These commands do not write to GitHub. `github report` is the trace surface for the local sync adapter and reads the same `.kabeeri` state that powers the dry-run and confirmed write flows.
 
 ## GitHub Confirmed Sync
 
@@ -1132,6 +1439,7 @@ kvdf github release publish --version v4.0.0 --confirm
 ```
 
 Confirmed commands use the installed GitHub CLI (`gh`) and write to the current GitHub repository. Issue creation is recorded in `.kabeeri/github/issue_map.json` when a workspace exists.
+`kvdf github status` and `kvdf github feedback` stay local but summarize issue/PR/status/comment feedback records when the workspace is in team mode.
 Confirmed GitHub writes are protected by `github_write_policy` before the CLI calls `gh`. Dry-runs do not require this gate. Use `kvdf policy status` and `kvdf validate policy` to inspect the latest write-gate result before retrying a blocked operation.
 
 ## Examples
@@ -1152,6 +1460,8 @@ kvdf validate acceptance
 kvdf validate prompt-packs
 kvdf validate generators
 kvdf validate runtime-schemas
+kvdf validate historical-source-clarity
+kvdf validate blocked-scenarios
 ```
 
 ## Release
@@ -1181,3 +1491,4 @@ release command runs.
 ```bash
 kvdf doctor
 ```
+

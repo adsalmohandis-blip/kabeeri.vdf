@@ -105,6 +105,51 @@ LICENSE
 - The format is easy for beginners and useful with GitHub Issues.
 ```
 
+## Execution summary
+
+```text
+Create the first task tracking format for Kabeeri VDF so contributors and vibe developers can manage AI implementation work in small, reviewable steps.
+```
+
+## Resume steps
+
+```text
+- Read the task tracking README.
+- Inspect the task template and example task.
+- Keep the task inside the allowed task_tracking/ folder.
+- Run the relevant validation checks.
+```
+
+## Required inputs
+
+```text
+- task tracking requirements
+- task governance rules
+```
+
+## Expected outputs
+
+```text
+- task_tracking README updates
+- task template updates
+- reusable task guidance
+```
+
+## Do not change
+
+```text
+- Do not build the CLI.
+- Do not edit prompt packs.
+- Do not edit generator files.
+- Do not add GitHub Actions.
+```
+
+## Verification commands
+
+```text
+- git status
+```
+
 ## Suggested commit message
 
 ```bash

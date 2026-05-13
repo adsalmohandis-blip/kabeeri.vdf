@@ -39,7 +39,9 @@ An AI session is governed only when all of these are true:
   "expires_at": "2026-06-08T00:00:00Z",
   "max_usage_tokens": 50000,
   "max_cost": 10,
-  "status": "active"
+  "status": "active",
+  "reissue_reason": "",
+  "revocation_reason": ""
 }
 ```
 
@@ -75,6 +77,22 @@ kvdf token issue --task task-001 --assignee agent-001 --allowed-files src/ --all
 
 The override is stored in `scope_source` and `scope_warnings` so the dashboard and audit trail show that the token was intentionally broadened.
 
+## Lock Scope
+
+Task locks derive their scope from the same task boundaries:
+
+- `task` locks use the task id as the scope
+- `folder` and `file` locks derive from the task app/workstream boundary
+- if the requested lock scope is broader than the derived boundary, the command fails closed
+- if Kabeeri cannot derive a unique narrow scope, the owner must provide `--scope` explicitly
+
+```bash
+kvdf lock create --type folder --task task-001 --owner agent-001
+kvdf lock create --type folder --task task-001 --owner agent-001 --scope src/api
+```
+
+This keeps lock coverage aligned with the task boundary instead of relying on hand-entered paths.
+
 ## Lifecycle
 
 ```text
@@ -88,7 +106,7 @@ Rules:
 
 - Tokens are scoped to one task and one assignee.
 - Tokens must not be transferred to another developer silently.
-- Reissued tokens reference the previous token and a reason.
+- Reissued tokens reference the previous token and a visible reason.
 - Owner verification revokes active task tokens.
 - Owner rejection revokes active task tokens.
 - Broader reissue needs an explicit override.

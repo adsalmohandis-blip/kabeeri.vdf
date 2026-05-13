@@ -7,9 +7,79 @@ function acceptance(action, value, flags = {}, deps = {}) {
   const file = ".kabeeri/acceptance.json";
   const data = readJsonFile(file);
   data.records = data.records || [];
+  data.checklists = data.checklists || [];
 
   if (!action || action === "list") {
     console.log(table(["ID", "Subject", "Status"], data.records.map((item) => [item.id, item.task_id || item.version || item.subject_id || "", item.status || "draft"])));
+    return;
+  }
+
+  if (action === "create-checklist") {
+    if (requireAnyRole) requireAnyRole(flags, ["Owner", "Maintainer", "Reviewer", "Business Analyst"], "create checklist");
+    const taskId = flags.task;
+    if (!taskId) throw new Error("Missing --task.");
+    
+    if (data.checklists.some(c => c.task_id === taskId)) {
+      throw new Error("Checklist already exists for this task.");
+    }
+
+    data.checklists.push({
+      task_id: taskId,
+      items: [
+        { question: "هل الناتج يطابق المطلوب؟", checked: false },
+        { question: "هل أضاف AI أشياء غير مطلوبة؟", checked: false },
+        { question: "هل يمكن لمبتدئ فهم الناتج؟ (Understandable by a beginner)", checked: false },
+        { question: "هل توجد خطوات اختبار؟ (Test steps provided)", checked: false },
+        { question: "هل توجد صلاحيات واضحة؟", checked: false },
+        { question: "هل لا توجد أسرار أو بيانات حساسة؟ (No secrets/sensitive data)", checked: false },
+        { question: "هل هناك قسم للنواقص أو الافتراضات؟", checked: false }
+      ]
+    });
+    writeJsonFile(file, data);
+    console.log(`Created acceptance checklist for task: ${taskId}`);
+    return;
+  }
+
+  if (action === "show-checklist") {
+    const taskId = value;
+    if (!taskId) throw new Error("Missing task id.");
+    const checklist = data.checklists.find(c => c.task_id === taskId);
+    if (!checklist) throw new Error(`No checklist found for task ${taskId}`);
+    
+    if (flags.json) {
+      console.log(JSON.stringify(checklist, null, 2));
+    } else {
+      checklist.items.forEach(item => console.log(`[${item.checked ? 'x' : ' '}] ${item.question}`));
+    }
+    return;
+  }
+
+  if (action === "check-item" || action === "uncheck-item") {
+    if (requireAnyRole) requireAnyRole(flags, ["Owner", "Maintainer", "Reviewer"], "modify checklist");
+    const taskId = flags.task;
+    if (!taskId) throw new Error("Missing --task.");
+    const index = parseInt(flags.index, 10);
+    if (isNaN(index)) throw new Error("Missing or invalid --index.");
+    
+    const checklist = data.checklists.find(c => c.task_id === taskId);
+    if (!checklist) throw new Error(`No checklist found for task ${taskId}`);
+    
+    if (index < 0 || index >= checklist.items.length) throw new Error("Item index out of range.");
+    
+    checklist.items[index].checked = (action === "check-item");
+    writeJsonFile(file, data);
+    console.log(`Item ${index} marked as ${checklist.items[index].checked ? 'checked' : 'unchecked'} for task ${taskId}`);
+    return;
+  }
+
+  if (action === "verify-checklist") {
+    const taskId = flags.task || value;
+    if (!taskId) throw new Error("Missing task id.");
+    const checklist = data.checklists.find(c => c.task_id === taskId);
+    if (!checklist || checklist.items.some(item => !item.checked)) {
+      throw new Error(`Checklist incomplete for task ${taskId}. Please complete all checklist items first.`);
+    }
+    console.log(`Checklist verified complete for task ${taskId}.`);
     return;
   }
 

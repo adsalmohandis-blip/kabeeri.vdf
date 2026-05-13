@@ -82,6 +82,8 @@ kvdf session end session-001 --files src/api/users.ts --summary "Implemented end
 
 If a backend task touches a frontend-only file, the session is blocked.
 
+Workstream locks are broad and block overlapping file, folder, and task locks inside the same engineering lane. Task locks are exclusive for the task they protect, so a second lock for the same task cannot be acquired silently.
+
 Task access tokens also derive `allowed_files` from the task app and workstream boundaries:
 
 ```bash
@@ -118,3 +120,5 @@ App Boundary Governance and Workstream Governance are separate layers:
 - Developer capability says who can execute it.
 
 For example, a Laravel API and React storefront can be one product with multiple apps, while backend and public frontend remain separate workstreams.
+
+Cross-app tasks stay inside one product boundary. If a task references multiple apps from different products, KVDF rejects it before the work starts, even when the task type is `integration`.

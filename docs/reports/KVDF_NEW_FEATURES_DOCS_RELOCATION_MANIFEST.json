@@ -1,0 +1,75 @@
+{
+  "report_type": "kvdf_source_package_relocation_manifest",
+  "generated_at": "2026-05-13T12:22:28.525Z",
+  "source_package": "KVDF_New_Features_Docs",
+  "sections": [
+    {
+      "section_id": "software_design_system",
+      "title": "Software Design System",
+      "source_root": "software design system to follow",
+      "targets": [
+        {
+          "source_class": "00_START",
+          "destination": "knowledge/governance/",
+          "note": "routing, manifest, and intake rules"
+        },
+        {
+          "source_class": "01_CORE",
+          "destination": "knowledge/governance/",
+          "note": "core policy and operating rules"
+        },
+        {
+          "source_class": "02_PACKS",
+          "destination": "knowledge/design_system/software_design_reference/",
+          "note": "analyzed design patterns and reusable reference knowledge"
+        },
+        {
+          "source_class": "02_PACKS",
+          "destination": "knowledge/standard_systems/",
+          "note": "normalized reference maps and stable catalog data"
+        },
+        {
+          "source_class": "99_ARCH",
+          "destination": "docs/reports/",
+          "note": "traceability and archive evidence"
+        }
+      ]
+    },
+    {
+      "section_id": "project_docs_generator",
+      "title": "Project Documentation Generator",
+      "source_root": "software project docs sys to generate",
+      "targets": [
+        {
+          "source_class": "r001.md-r015.md",
+          "destination": "knowledge/documentation_generator/",
+          "note": "reusable lifecycle rules and generator guidance"
+        },
+        {
+          "source_class": "r001.md-r015.md",
+          "destination": "knowledge/task_tracking/",
+          "note": "task lifecycle and coverage behavior"
+        },
+        {
+          "source_class": "r001.md-r015.md",
+          "destination": "knowledge/governance/",
+          "note": "phase gates and policy rules"
+        },
+        {
+          "source_class": "p00-p28",
+          "destination": "docs/site/",
+          "note": "rendered docs pages and navigation"
+        },
+        {
+          "source_class": "r006.csv-r010.json",
+          "destination": "docs/reports/",
+          "note": "machine-readable mapping and traceability data"
+        }
+      ]
+    }
+  ],
+  "permanent_targets": [
+    "knowledge/design_system/software_design_reference/",
+    "knowledge/documentation_generator/"
+  ]
+}

@@ -3,6 +3,7 @@ const pages = [
   ["start-here", "Start Here", "ابدأ من هنا"],
   ["install-profiles", "Install and Profiles", "التثبيت والبروفايلات"],
   ["ai-with-kabeeri", "AI Works Inside Kabeeri", "كيف يعمل AI داخل كبيري"],
+  ["developer-onboarding", "Developer Onboarding", "تأهيل المطور"],
   ["capabilities", "System Capabilities", "قدرات النظام"],
   ["repository-layout", "Repository Layout", "تنظيم المستودع"],
   ["new-project", "Start a New Application", "بدء تطبيق جديد"],
@@ -54,7 +55,7 @@ const capabilityRows = {
     ["Prompt Packs", "Provides framework-aware prompts for Laravel, React, Next.js, Vue, Angular, Django, FastAPI, WordPress, Expo, Flutter, and more.", "`packs/prompt_packs/`"],
     ["WordPress Development", "Plans new WordPress sites, adopts existing sites, analyzes plugins/themes, scaffolds safe plugins/themes, creates tasks, and uses the WordPress prompt pack without editing WordPress core.", "`packs/prompt_packs/wordpress/`, `.kabeeri/wordpress.json`, `schemas/runtime/wordpress-state.schema.json`"],
     ["WordPress Plugin Development", "Creates governed plugin plans, scoped tasks, secure plugin scaffolds, acceptance checklists, and AI-ready implementation context for custom WordPress plugins.", "`.kabeeri/wordpress.json`, `knowledge/wordpress/WORDPRESS_PLUGIN_DEVELOPMENT.md`, `wp-content/plugins/<slug>/`"],
-    ["Task Governance", "Turns work into scoped, source-backed, reviewable, token-aware, acceptance-driven units.", "`knowledge/task_tracking/`, `.kabeeri/tasks.json`"],
+    ["Task Governance", "Turns work into scoped, source-backed, reviewable, token-aware, acceptance-driven units with durable execution fields, source-of-truth task memory, and fast resume support.", "`knowledge/task_tracking/`, `.kabeeri/tasks.json`"],
     ["App Boundary Governance", "Allows related apps in one product workspace and blocks unrelated products from mixing in one folder.", "`knowledge/governance/APP_BOUNDARY_GOVERNANCE.md`"],
     ["Execution Scope Governance", "Connects tasks, apps, workstreams, allowed files, locks, and task access tokens.", "`knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md`"],
     ["Design Governance", "Converts design sources into approved text specs, page specs, component contracts, and visual checks.", "`knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`"],
@@ -65,7 +66,6 @@ const capabilityRows = {
     ["Live Dashboard", "Shows live technical, business, governance, task, app, cost, policy, workspace, and UX state.", "`integrations/dashboard/`, `.kabeeri/dashboard/`"],
     ["GitHub Sync", "Plans labels, milestones, issues, and release writes with dry-run defaults and confirmed write gates.", "`integrations/github_sync/`, `integrations/github/`"],
     ["Policy Gates", "Blocks unsafe verification, release, handoff, security, migration, and GitHub write operations.", "`schemas/policy*.json`, `.kabeeri/policies/`"],
-    ["Evolution Steward", "Governs Kabeeri's own updates by recording requested framework changes, temporary execution queues for the active priority, inferring impacted areas, creating follow-up tasks, and exposing unfinished dependent work to dashboard/live reports.", "`knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution`"],
     ["Packaging and Upgrade", "Checks npm package readiness and workspace upgrade compatibility.", "`docs/production/PACKAGING_GUIDE.md`, `docs/production/UPGRADE_GUIDE.md`"]
   ],
   ar: [
@@ -82,7 +82,7 @@ const capabilityRows = {
     ["حزم البرومبت", "توفر برومبتات واعية بالفريمورك مثل Laravel وReact وNext.js وVue وAngular وDjango وFastAPI وWordPress وExpo وFlutter وغيرها.", "`packs/prompt_packs/`"],
     ["تطوير WordPress", "يخطط مواقع WordPress الجديدة، ويعتمد المواقع القائمة، ويحلل plugins/themes، وينشئ plugins/themes آمنة، ويحول الخطة إلى تاسكات مع WordPress prompt pack بدون تعديل WordPress core.", "`packs/prompt_packs/wordpress/`, `.kabeeri/wordpress.json`, `schemas/runtime/wordpress-state.schema.json`"],
     ["تطوير إضافات WordPress", "ينشئ خطط plugins محكومة، وتاسكات محددة النطاق، وscaffold آمن، وقوائم قبول، وسياق جاهز للذكاء الاصطناعي لتطوير إضافات WordPress.", "`.kabeeri/wordpress.json`, `knowledge/wordpress/WORDPRESS_PLUGIN_DEVELOPMENT.md`, `wp-content/plugins/<slug>/`"],
-    ["حوكمة التاسكات", "تحول العمل إلى وحدات ذات مصدر ونطاق ومراجعة وتوكنز ومعايير قبول.", "`knowledge/task_tracking/`, `.kabeeri/tasks.json`"],
+    ["حوكمة التاسكات", "تحول العمل إلى وحدات ذات مصدر ونطاق ومراجعة وتوكنز ومعايير قبول وحقول تنفيذ دائمة وذاكرة مصدر الحقيقة للاستئناف السريع.", "`knowledge/task_tracking/`, `.kabeeri/tasks.json`"],
     ["حوكمة حدود التطبيقات", "تسمح بتطبيقات مرتبطة داخل منتج واحد وتمنع خلط منتجات غير مرتبطة في فولدر واحد.", "`knowledge/governance/APP_BOUNDARY_GOVERNANCE.md`"],
     ["حوكمة نطاق التنفيذ", "تربط التاسكات والتطبيقات ومسارات العمل والملفات المسموحة واللوكس وتوكنز التاسك.", "`knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md`"],
     ["حوكمة التصميم", "تحول مصادر التصميم إلى مواصفات نصية وصفحات وعقود مكونات وفحوصات بصرية معتمدة.", "`knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`"],
@@ -113,7 +113,7 @@ const docs = {
     },
     pages: {
       "what-is": {
-        lead: "Kabeeri VDF is a local-first operating framework for AI-assisted software development. It works with any AI coding assistant or automation tool the developer chooses. It does not replace Laravel, React, Next.js, Django, .NET, WordPress, hosting, Git, or the AI tool itself; it governs how a software idea becomes answers, tasks, prompts, implementation, review, dashboards, cost records, Owner verification, and release decisions.",
+        lead: "Kabeeri VDF is a local-first operating framework for AI-assisted software development. It works with any AI coding assistant or automation tool the developer chooses. It does not replace Laravel, React, Next.js, Django, .NET, WordPress, hosting, Git, or the AI tool itself; it governs how a software idea becomes answers, tasks, prompts, implementation, review, dashboards, cost records, final verification, and release decisions.",
         beginner: "Think of Kabeeri as the project memory, delivery rulebook, AI coordination layer, and live dashboard around your codebase. The application is still built with its normal stack; Kabeeri keeps the work scoped, traceable, reviewable, and resumable.",
         sections: [
           ["What it governs", "Project intake, delivery mode, application boundaries, workstreams, questionnaires, product blueprints, data design, UI/UX guidance, prompt packs, tasks, reviews, policies, dashboards, GitHub sync, AI usage, and releases."],
@@ -124,7 +124,7 @@ const docs = {
         steps: ["Open the repository", "Read current state", "Validate", "Choose scenario", "Answer missing questions", "Create scoped tasks", "Use AI on one task", "Review and verify", "Release or defer"],
         details: [
           ["Developer mental model", ["Use Kabeeri before coding to decide what should be built, during coding to constrain AI work, and after coding to record evidence and acceptance.", "If a session is closed, the next developer or AI assistant should recover from `.kabeeri/`, docs, task state, and dashboard state instead of old chat memory."]],
-          ["Professional output", ["Every serious feature should have a source, scope, workstream, acceptance criteria, changed files, evidence, cost record, review status, and Owner decision.", "This is the difference between vibe coding as improvisation and vibe coding as a repeatable engineering workflow."]]
+          ["Professional output", ["Every serious feature should have a source, scope, workstream, acceptance criteria, changed files, evidence, cost record, review status, and lead decision.", "This is the difference between vibe coding as improvisation and vibe coding as a repeatable engineering workflow."]]
         ],
         checklist: ["The project has `.kabeeri/` state or an adoption plan.", "The repository layout is understood.", "The current scenario is selected: new app, existing Kabeeri app, or existing non-Kabeeri app.", "The delivery mode is explicit.", "The next task is scoped and testable."],
         commands: ["node bin/kvdf.js validate", "node bin/kvdf.js structure map", "node bin/kvdf.js dashboard state"]
@@ -139,7 +139,7 @@ const docs = {
           ["Scenario 4: unclear request", "Use Vibe-first to turn natural language into reviewable task suggestions instead of executing a vague command."],
           ["Scenario 5: release or GitHub write", "Run readiness, governance, policy, security, migration, and GitHub write gates before publishing or syncing confirmed writes."]
         ],
-        steps: ["Identify scenario", "Validate", "Read dashboard", "Plan questions", "Select Agile or Structured", "Create tasks", "Use prompt pack", "Record evidence", "Owner verify"],
+        steps: ["Identify scenario", "Validate", "Read dashboard", "Plan questions", "Select Agile or Structured", "Create tasks", "Use prompt pack", "Record evidence", "Final verify"],
         details: [
           ["First ten minutes", ["Run validation, read the system capabilities file, inspect the repository layout, and open the dashboard state.", "Do not ask AI to modify code until the target task, allowed scope, and acceptance criteria are known."]],
           ["How Kabeeri reduces token use", ["The foldering map tells AI where to look first. Product blueprints and data design reduce repeated discovery. Prompt packs give stack-specific context. Task scope and context packs prevent broad scans.", "The result is less repeated explanation, less chat memory loss, and fewer accidental edits."]]
@@ -148,14 +148,15 @@ const docs = {
         commands: ["node bin/kvdf.js validate", "node bin/kvdf.js questionnaire plan", "node bin/kvdf.js delivery recommend", "node bin/kvdf.js task tracker --json"]
       },
       "install-profiles": {
-        lead: "This page explains how to get Kabeeri from GitHub, run it locally, expose the `kvdf` command, and choose the right project profile: `lite`, `standard`, or `enterprise`.",
-        beginner: "`lite` is the small starter, `standard` is the normal recommended setup, and `enterprise` is the full governance setup.",
+        lead: "This page explains how to get Kabeeri from GitHub, run it locally, expose the `kvdf` command, and either choose or route the right project profile: `lite`, `standard`, or `enterprise`.",
+        beginner: "`lite` is the small starter, `standard` is the normal recommended setup, and `enterprise` is the full governance setup. If you do not want to choose manually, `kvdf project profile route` can infer a profile from the goal and current stack.",
         sections: [
           ["Install from GitHub", "Clone the repository, install dependencies, run validation, then use `npm run kvdf -- ...` until the `kvdf` binary is linked or installed."],
           ["When `kvdf` becomes available", "After local linking or package installation, use `kvdf` directly in daily work. `node bin/kvdf.js` remains a source-code fallback for framework development."],
           ["`lite` profile", "Smallest practical project pack. Good for experiments, solo prototypes, simple websites, and early product discovery where heavy governance would slow the first steps."],
           ["`standard` profile", "Recommended default. Good for real client work, normal apps, AI-assisted builds, dashboards, task governance, prompt packs, and balanced Agile/Structured delivery."],
-          ["`enterprise` profile", "Full operating pack. Good for large systems, teams, regulated work, multi-AI coordination, deeper acceptance, production governance, release gates, and stronger traceability."]
+          ["`enterprise` profile", "Full operating pack. Good for large systems, teams, regulated work, multi-AI coordination, deeper acceptance, production governance, release gates, and stronger traceability."],
+          ["Automatic profile routing", "If the goal already describes the product, `kvdf project profile route` can choose the profile, delivery mode, prompt packs, and intake groups before the workspace is created."]
         ],
         steps: ["Clone from GitHub", "Install dependencies", "Validate", "Choose profile", "Create project", "Open project", "Run dashboard", "Start with AI"],
         details: [
@@ -175,7 +176,7 @@ const docs = {
           ["Dashboard role", "The dashboard is the visual monitoring layer. It shows current truth from `.kabeeri/` so the developer can resume quickly."],
           ["Why use Kabeeri", "It reduces forgotten context, broad AI edits, unclear tasks, missing acceptance, repeated prompts, untracked token cost, and unsafe release decisions."]
         ],
-        steps: ["Talk normally", "Kabeeri records intent", "AI receives scoped context", "AI implements one task", "Kabeeri records evidence", "Owner verifies"],
+        steps: ["Talk normally", "Kabeeri records intent", "AI receives scoped context", "AI implements one task", "Kabeeri records evidence", "Final review"],
         details: [
           ["What the developer actually does", ["Open the project folder, tell the assistant what you want, review the suggested plan and tasks, approve or adjust them, then let the assistant execute task by task.", "When a command is needed, the assistant can run it. The developer only needs to understand the journey, not memorize every command."]],
           ["What the AI must respect", ["AI should not modify unrelated files, skip validation, invent missing requirements, publish without gates, or treat vague chat as approval.", "AI should use product blueprints, questions, data design, UI/UX advisor, prompt packs, task scope, and dashboard state before implementation."]]
@@ -190,7 +191,7 @@ const docs = {
         sections: [
           ["How to read the table", "Each row is a system capability. The middle column explains the practical job. The source column tells the developer where to inspect or extend it."],
           ["What makes capabilities useful", "A capability is useful only if it has documentation, runtime state or executable checks, and a clear relationship to tasks, dashboards, or AI context."],
-          ["How capabilities connect", "Product Blueprints feed Questionnaires. Questionnaires feed Tasks. Data Design and UI/UX Advisor improve those tasks. Prompt Packs guide AI implementation. Dashboard, policies, cost, and Owner verification close the loop."]
+          ["How capabilities connect", "Product Blueprints feed Questionnaires. Questionnaires feed Tasks. Data Design and UI/UX Advisor improve those tasks. Prompt Packs guide AI implementation. Dashboard, policies, cost, and final verification close the loop."]
         ],
         steps: ["Find capability", "Open source", "Check runtime state", "Run command", "Update docs and tests", "Validate"],
         details: [
@@ -207,6 +208,8 @@ const docs = {
           ["`knowledge/`", "Reusable operating knowledge: governance, product intelligence, delivery modes, questionnaires, task tracking, data design, UI/UX, Vibe UX, and design governance."],
           ["`packs/`", "Exportable assets: prompt packs, generators, templates, and examples used to start or guide customer projects."],
           ["`integrations/`", "External-facing adapters and surfaces: dashboard, GitHub, VS Code, platform integration, and multi-AI coordination material."],
+          ["`plugins/`", "Optional removable bundles such as the owner track plugin that extend Kabeeri without becoming part of core runtime."],
+          ["`workspaces/`", "Developer app workspaces that live under `workspaces/apps/<app-slug>/` with local app `.kabeeri` state, tests, docs, and package metadata."],
           ["`docs/`", "Human documentation, architecture notes, production guides, reports, bilingual docs, docs site, and AI context."],
           ["`.kabeeri/`", "Live local workspace state. This is the source of truth for current project work, not a documentation folder."]
         ],
@@ -226,17 +229,17 @@ const docs = {
           ["2. Start monitoring", "Generate or serve the dashboard so project state is visible from the beginning, not only at the end."],
           ["3. Use Vibe-first through the assistant", "Tell the AI what you want in normal language. The assistant can use Vibe-first and CLI commands under the hood."],
           ["4. Validate Kabeeri files", "Run validation before planning and before release. Broken state means unreliable AI context."],
-          ["5. Verify Owner setup", "Create or check the Owner session when final acceptance will require Owner verification."],
+          ["5. Verify review setup", "Create or check the review session when final acceptance will require explicit verification."],
           ["6. Start the question system", "Use adaptive questions to discover product type, backend, frontend, database, UI/UX, delivery mode, and release risks."],
           ["7. Plan and execute", "Use blueprint, data design, UI/UX advisor, prompt packs, task governance, context packs, and dashboard monitoring to continue development."]
         ],
-        steps: ["Kabeeri folder", "Dashboard", "Vibe-first", "Validate", "Owner", "Questions", "Plan", "AI implementation", "Review", "Handoff"],
+        steps: ["Kabeeri folder", "Dashboard", "Vibe-first", "Validate", "Review", "Questions", "Plan", "AI implementation", "Review", "Handoff"],
         details: [
           ["Example: ecommerce with Laravel and React", ["Kabeeri treats backend Laravel and frontend React as related apps in one product workspace when they serve the same store.", "The product blueprint activates commerce, inventory, payments, shipping, customers, admin, storefront, SEO, security, tests, and release readiness."]],
           ["What good planning produces", ["A list of apps, workstreams, entities, pages, APIs, integrations, roles, acceptance criteria, risks, and initial tasks.", "The first implementation tasks should be small enough for one AI session and one review cycle."]]
         ],
         checklist: ["Product type selected.", "Apps and boundaries defined.", "Delivery mode selected.", "Questionnaire coverage known.", "Initial data model drafted.", "Initial UI pattern selected.", "Tasks are ready before coding."],
-        commands: ["node bin/kvdf.js init --profile standard --mode agile", "node bin/kvdf.js dashboard generate", "node bin/kvdf.js vibe \"I want to build an ecommerce store\"", "node bin/kvdf.js validate", "node bin/kvdf.js owner status", "node bin/kvdf.js questionnaire plan \"Build an ecommerce store\"", "node bin/kvdf.js blueprint recommend \"Build an ecommerce store\"", "node bin/kvdf.js data-design context ecommerce", "node bin/kvdf.js design recommend ecommerce", "node bin/kvdf.js prompt-pack list"]
+        commands: ["node bin/kvdf.js init --profile standard --mode agile", "node bin/kvdf.js dashboard generate", "node bin/kvdf.js vibe \"I want to build an ecommerce store\"", "node bin/kvdf.js validate", "node bin/kvdf.js track status", "node bin/kvdf.js questionnaire plan \"Build an ecommerce store\"", "node bin/kvdf.js blueprint recommend \"Build an ecommerce store\"", "node bin/kvdf.js data-design context ecommerce", "node bin/kvdf.js design recommend ecommerce", "node bin/kvdf.js prompt-pack list"]
       },
       "existing-kabeeri-project": {
         lead: "Use this roadmap when the project already has `.kabeeri/` state and you are returning after a session break or another developer worked before you.",
@@ -246,9 +249,9 @@ const docs = {
           ["Read dashboard state", "Use the live dashboard and task tracker to see progress, ready work, blockers, cost, workstreams, app state, and release status."],
           ["Inspect recent captures", "If work happened outside the ideal task flow, post-work capture can classify changed files and link them back to tasks or suggested tasks."],
           ["Continue only ready work", "Pick a task that is ready, assigned, scoped, and has acceptance criteria. Avoid restarting from vague memory."],
-          ["Close the loop", "Record evidence, review output, update dashboard state, close locks or tokens, and ask for Owner verification when complete."]
+          ["Close the loop", "Record evidence, review output, update dashboard state, close locks or tokens, and ask for final verification when complete."]
         ],
-        steps: ["Validate", "Dashboard", "Tasks", "Captures", "Locks/tokens", "Continue", "Evidence", "Owner verify"],
+        steps: ["Validate", "Dashboard", "Tasks", "Captures", "Locks/tokens", "Continue", "Evidence", "Final review"],
         details: [
           ["Session recovery", ["Use `context_briefs` and live dashboard state as the restart point. The goal is to avoid asking the AI to rediscover the whole repository.", "If the last session ended abruptly, run capture and validation before new implementation."]],
           ["Team recovery", ["When multiple developers are involved, check workstreams, locks, task tokens, and assignments before editing files.", "If you are the only developer, still use the same flow because it protects you from your own forgotten context."]]
@@ -276,7 +279,7 @@ const docs = {
         commands: ["node bin/kvdf.js init --profile standard --mode structured", "node bin/kvdf.js project analyze --path .", "node bin/kvdf.js validate", "node bin/kvdf.js app list", "node bin/kvdf.js workstream list", "node bin/kvdf.js questionnaire plan \"Adopt existing application\"", "node bin/kvdf.js adr list"]
       },
       "delivery-mode": {
-        lead: "Kabeeri supports two major delivery systems: Agile and Structured. The AI assistant should help the developer choose, but the developer or Owner makes the final decision.",
+        lead: "Kabeeri supports two major delivery systems: Agile and Structured. The AI assistant should help the developer choose, but the developer or project lead makes the final decision.",
         beginner: "Agile is best when scope changes and you need learning through iterations. Structured is best when scope, approvals, documents, traceability, and phase gates matter more.",
         sections: [
           ["Use Agile when", "The product is evolving, the team expects feedback loops, priorities may change, and delivery is best organized as backlog, stories, sprints, reviews, and retrospectives."],
@@ -284,9 +287,9 @@ const docs = {
           ["Use both carefully", "A high-level Structured phase can contain Agile execution inside a phase, but Kabeeri should record which mode owns the decision and reporting."],
           ["Let Kabeeri recommend", "The recommendation should consider project type, uncertainty, client governance, team size, release pressure, risk, and documentation needs."]
         ],
-        steps: ["Describe product", "Assess uncertainty", "Assess approvals", "Assess team workflow", "Recommend", "Owner chooses", "Record decision"],
+        steps: ["Describe product", "Assess uncertainty", "Assess approvals", "Assess team workflow", "Recommend", "Decision recorded", "Record decision"],
         details: [
-          ["Decision examples", ["A startup SaaS MVP with unclear scope usually fits Agile.", "A government ERP rollout with signed requirements usually fits Structured.", "An ecommerce MVP for one owner may use Agile, while a client ecommerce platform with fixed deliverables may use Structured."]],
+          ["Decision examples", ["A startup SaaS MVP with unclear scope usually fits Agile.", "A government ERP rollout with signed requirements usually fits Structured.", "An ecommerce MVP for one team may use Agile, while a client ecommerce platform with fixed deliverables may use Structured."]],
           ["Avoid mode confusion", ["Do not call everything Agile just because tasks exist. Do not call everything Structured just because documents exist.", "The selected mode should shape planning, dashboard, reports, and acceptance flow."]]
         ],
         checklist: ["Recommendation is documented.", "Final choice is recorded.", "Dashboard state matches mode.", "Tasks or phases follow the selected mode."],
@@ -299,7 +302,7 @@ const docs = {
           ["Backlog", "Collects desired work with value, source, priority, dependencies, and readiness."],
           ["Epics and stories", "Breaks large goals into user-centered, testable slices with acceptance criteria."],
           ["Sprint planning", "Selects ready stories based on capacity, dependencies, risk, and AI cost expectations."],
-          ["Sprint review", "Records accepted work, rework, goal result, evidence, and Owner feedback."],
+          ["Sprint review", "Records accepted work, rework, goal result, evidence, and review feedback."],
           ["Retrospective", "Captures process improvements, waste, blockers, and next sprint actions."]
         ],
         steps: ["Product goal", "Backlog", "Epics", "Stories", "Ready check", "Sprint", "Implementation", "Review", "Retro"],
@@ -444,30 +447,33 @@ const docs = {
         commands: ["node bin/kvdf.js vibe \"Add checkout\"", "node bin/kvdf.js capture list", "node bin/kvdf.js vibe brief"]
       },
       "task-governance": {
-        lead: "Task Governance is the core mechanism that turns ideas, answers, issues, and captures into safe executable work.",
-        beginner: "A Kabeeri task is more than a todo. It has source, scope, workstream, assignee, reviewer, acceptance criteria, allowed files, token budget, evidence, and final verification path.",
+        lead: "Task Governance turns ideas, answers, issues, and captures into executable work with a durable record that can be resumed from the source of truth.",
+        beginner: "A Kabeeri task is more than a todo. It keeps source, scope, workstream, assignee, reviewer, acceptance criteria, allowed files, token budget, evidence, durable execution details, and final verification steps in one place so the next session can resume without rereading chat history.",
         sections: [
-          ["Source", "Every task should come from a product answer, blueprint, bug report, design spec, capture, GitHub issue, release need, or Owner decision."],
+          ["Source", "Every task should come from a product answer, blueprint, bug report, design spec, capture, GitHub issue, release need, or lead decision."],
+          ["Source of truth", "The task record is the source of truth for what must happen, what must not change, and how completion is verified."],
           ["Definition of Ready", "A task is not ready if scope, acceptance, workstream, dependencies, or reviewer are unknown."],
-          ["Execution", "Work starts with assignment, optional lock, token scope, AI session, and allowed files."],
+          ["Execution", "Work starts with assignment, optional lock, token scope, AI session, allowed files, and the task memory block that preserves the exact resume context."],
           ["Review", "Review checks changed files, evidence, tests, acceptance criteria, and policy gates."],
-          ["Verification", "Owner verification accepts or rejects final completion and closes the loop."]
+          ["Verification", "Final verification accepts or rejects completion and closes the loop."],
+          ["Durable execution records", "Execution summary, resume steps, required inputs, expected outputs, do-not-change rules, and verification commands are stored with the task so a later session can resume from the record instead of the conversation."]
         ],
-        steps: ["Source", "Draft", "Ready", "Assign", "Execute", "Review", "Owner verify", "Close"],
+        steps: ["Source", "Draft", "Ready", "Assign", "Execute", "Review", "Final verify", "Close"],
         details: [
           ["Why it prevents chaos", ["AI tools are powerful but can drift. Task governance gives each session a boundary and an acceptance target.", "This is especially important when multiple apps, developers, or AI agents share one workspace."]],
-          ["Live JSON", ["Task tracker state can be represented as live JSON for dashboards and editor integrations.", "This reduces manual docs editing after every task because UI surfaces can read state directly."]]
+          ["Live JSON", ["Task tracker state can be represented as live JSON for dashboards and editor integrations.", "This reduces manual docs editing after every task because UI surfaces can read state directly."]],
+          ["Resuming later", ["The task memory block can be re-read by `kvdf task memory <id>` or by the temporary queue when the task enters `kvdf temp`.", "That means the next session can continue with less chat history and less token spend."]]
         ],
-        checklist: ["Task has source.", "Acceptance criteria are testable.", "Allowed files are clear.", "Reviewer exists.", "Evidence is recorded.", "Owner decision is recorded when required."],
-        commands: ["node bin/kvdf.js task tracker --json", "node bin/kvdf.js validate task"]
+        checklist: ["Task has source.", "Acceptance criteria are testable.", "Allowed files are clear.", "Reviewer exists.", "Evidence is recorded.", "Final decision is recorded when required."],
+        commands: ["node bin/kvdf.js task tracker --json", "node bin/kvdf.js task memory task-001", "node bin/kvdf.js validate task"]
       },
       "app-boundary": {
         lead: "App Boundary Governance decides whether multiple applications can live inside one Kabeeri workspace without mixing unrelated products.",
-        beginner: "Backend Laravel plus React storefront plus admin dashboard can be one product if they serve the same ecommerce system. A store and a news platform for a different client should not share one Kabeeri folder.",
+        beginner: "Backend Laravel plus React storefront plus admin dashboard can be one product if they serve the same ecommerce system. A store and a news platform for a different client should not share one Kabeeri folder. Developer app workspaces belong under `workspaces/apps/<app-slug>/`.",
         sections: [
-          ["Allowed", "Related apps in one product: backend API, storefront, admin panel, mobile app, worker, docs site, vendor portal, or driver app."],
-          ["Blocked", "Unrelated products, unrelated clients, separate business lifecycles, or apps that need separate tasks, releases, cost, ownership, and governance."],
-          ["Boundaries", "Each app should have path, type, product, workstreams, status, and integration relationship."],
+          ["Allowed", "Related apps in one product: backend API, storefront, admin panel, mobile app, worker, docs site, vendor portal, or driver app. Each app can be scaffolded as a developer workspace under `workspaces/apps/<app-slug>/`."],
+          ["Blocked", "Unrelated products, unrelated clients, separate business lifecycles, or apps that need separate tasks, releases, cost, responsibility, and governance."],
+          ["Boundaries", "Each app should have path, type, product, workstreams, status, and integration relationship. The workspace root should be discoverable from `workspaces/apps/<app-slug>/`."],
           ["Cross-app work", "Integration tasks should explicitly mention every affected app and workstream."]
         ],
         steps: ["Identify product", "List apps", "Check relatedness", "Assign paths", "Assign workstreams", "Validate boundaries"],
@@ -475,7 +481,7 @@ const docs = {
           ["Practical rule", ["A backend and frontend for the same ecommerce product are related applications, not unrelated products.", "Two different applications requested by the developer in the same folder are blocked unless they are modules/channels of one product."]],
           ["Why it matters", ["Without boundaries, tasks, costs, dashboards, releases, and AI context become polluted.", "Boundary governance keeps one workspace coherent."]]
         ],
-        checklist: ["Every app has a product owner.", "Every app has a path.", "Relatedness is explicit.", "Cross-app tasks are marked as integration work."],
+        checklist: ["Every app has a product lead.", "Every app has a path.", "Relatedness is explicit.", "Cross-app tasks are marked as integration work."],
         commands: ["node bin/kvdf.js app list", "node bin/kvdf.js validate routes"]
       },
       "workstreams-scope": {
@@ -490,7 +496,7 @@ const docs = {
         steps: ["Select task", "Select workstream", "Derive files", "Issue token", "Create lock", "Execute", "Close token/lock"],
         details: [
           ["Solo developer", ["Even one developer benefits because scope rules reduce accidental broad edits and make session recovery easier.", "Solo mode can be lighter, but the same state model still works."]],
-          ["Team mode", ["Teams need explicit ownership, locks, and token scopes before parallel work.", "AI agents should be treated as identities with constrained workstreams."]]
+          ["Team mode", ["Teams need explicit responsibility, locks, and token scopes before parallel work.", "AI agents should be treated as identities with constrained workstreams."]]
         ],
         checklist: ["Workstream exists.", "Allowed files are derived.", "Token is not broader than needed.", "Lock conflicts are checked.", "Session files match scope."],
         commands: ["node bin/kvdf.js workstream list", "node bin/kvdf.js token show task-token-001", "node bin/kvdf.js validate workstream"]
@@ -507,7 +513,7 @@ const docs = {
         steps: ["Select stack", "Select task", "Compose prompt", "Run AI", "Review output", "Record run"],
         details: [
           ["Token saving", ["A prompt pack replaces repeated manual explanation of framework conventions.", "Combined with context briefs, it makes AI sessions shorter and more consistent."]],
-          ["Quality rule", ["Prompt packs should guide implementation, not bypass review.", "The output still needs tests, evidence, and Owner verification where required."]]
+          ["Quality rule", ["Prompt packs should guide implementation, not bypass review.", "The output still needs tests, evidence, and final verification where required."]]
         ],
         checklist: ["Correct stack pack selected.", "Common prompt layer included.", "Task scope included.", "Acceptance criteria included.", "AI run recorded."],
         commands: ["node bin/kvdf.js prompt-pack list", "node bin/kvdf.js prompt-pack compose react --task task-001"]
@@ -525,7 +531,7 @@ const docs = {
         steps: ["Describe site", "Analyze or classify", "Confirm staging/backup", "Select blueprint", "Create WordPress plan", "Generate tasks", "Scaffold safe layer", "Compose WordPress prompt", "Implement one task", "Test and handoff"],
         details: [
           ["From scratch flow", ["Start with `kvdf wordpress plan \"Build a WordPress company website\" --type corporate --mode new`.", "Then create tasks, scaffold a plugin/theme if needed, compose WordPress prompt pack per task, implement, scan, validate, and hand off."]],
-          ["Existing site flow", ["Start with `kvdf wordpress analyze --path existing-wordpress --staging --backup`.", "If staging or backup is missing, Kabeeri records risk and the AI should not perform broad changes until the Owner accepts the risk."]],
+          ["Existing site flow", ["Start with `kvdf wordpress analyze --path existing-wordpress --staging --backup`.", "If staging or backup is missing, Kabeeri records risk and the AI should not perform broad changes until the lead accepts the risk."]],
           ["When not to use WordPress", ["If the project needs a custom SaaS app, complex real-time operations, or non-CMS-heavy workflows, Kabeeri may recommend Laravel, Next.js, Django, or another stack instead.", "WordPress is strongest for content sites, corporate sites, editorial sites, plugin-driven business sites, and WooCommerce stores."]]
         ],
         checklist: ["Site type is known.", "Existing site has staging and backup confirmed.", "WordPress core paths are forbidden.", "Implementation route is plugin, theme, or child theme.", "Tasks have acceptance criteria.", "WordPress prompt pack is composed per task.", "Security, SEO/GEO, accessibility, performance, and handoff are reviewed."],
@@ -552,7 +558,7 @@ const docs = {
         commands: ["kvdf wordpress plugin plan \"Build a clinic booking plugin\" --name \"Clinic Booking\" --type booking", "kvdf wordpress plugin plan \"Create a WooCommerce checkout add-on\" --name \"Checkout Addon\" --type woocommerce", "kvdf wordpress plugin scaffold --name \"Clinic Booking\"", "kvdf wordpress plugin tasks", "kvdf wordpress plugin checklist", "kvdf prompt-pack compose wordpress --task task-001"]
       },
       "dashboard-monitoring": {
-        lead: "The Live Dashboard is the operational view over `.kabeeri/` state. It helps developers, Owners, and AI assistants understand current truth quickly.",
+        lead: "The Live Dashboard is the operational view over `.kabeeri/` state. It helps developers and AI assistants understand current truth quickly.",
         beginner: "Use the dashboard to see what is ready, blocked, expensive, risky, verified, unfinished, or ready for release without reading every file.",
         sections: [
           ["Task tracker", "Shows task readiness, status, assignees, acceptance, review, and verification."],
@@ -582,35 +588,36 @@ const docs = {
         steps: ["Estimate", "Prepare context", "Choose model", "Record usage", "Review output", "Summarize cost"],
         details: [
           ["For solo developers", ["Cost control still matters because session resets and repeated explanations waste time and money.", "Context briefs and task-scoped prompts reduce that waste."]],
-          ["For teams", ["Cost by sprint, workstream, assignee, task, and accepted output helps the Owner understand ROI.", "Budget approvals prevent silent overuse."]]
+          ["For teams", ["Cost by sprint, workstream, assignee, task, and accepted output helps the lead understand ROI.", "Budget approvals prevent silent overuse."]]
         ],
         checklist: ["Pricing rules exist.", "Usage is linked to task or marked untracked.", "Context pack exists for large tasks.", "Accepted/rejected output is tracked.", "Budget approval exists for broad or expensive work."],
         commands: ["node bin/kvdf.js usage summary", "node bin/kvdf.js preflight estimate --task task-001", "node bin/kvdf.js model-route recommend --kind implementation --risk medium"]
       },
       "multi-ai-governance": {
-        lead: "Multi-AI Governance controls identities, roles, sessions, locks, tokens, budgets, and Owner verification when humans and AI agents collaborate.",
+        lead: "Multi-AI Governance controls identities, roles, sessions, locks, tokens, budgets, and final verification when humans and AI agents collaborate.",
         beginner: "Even if you are one developer, Kabeeri can treat you, AI coding assistants, IDE agents, and automation tools as actors whose work should be scoped, auditable, and reviewable.",
         sections: [
           ["Identities", "Developers and AI agents have IDs, roles, capabilities, and workstreams."],
           ["Sessions", "AI work sessions record task, developer or agent, provider, model, files, summary, and outcome."],
           ["Locks", "Prevent overlapping edits across people or agents."],
-          ["Owner rule", "Only the active Owner can make final verification decisions when Owner verification is required."],
+          ["Conversation relay", "Agents can exchange durable messages, inboxes, replies, and closed threads through repo-backed state in `.kabeeri/multi_ai_communications.json` without depending on the chat transcript."],
+          ["Verification rule", "Only the active reviewer or lead can make final verification decisions when final verification is required."],
           ["Audit", "Important actions become audit events so project history survives chat resets."]
         ],
-        steps: ["Define Owner", "Add developers/agents", "Assign workstreams", "Issue token", "Lock scope", "Record session", "Verify"],
+        steps: ["Define lead", "Add developers/agents", "Assign workstreams", "Issue token", "Lock scope", "Record session", "Verify"],
         details: [
           ["Solo mode", ["Solo mode can reduce ceremony while keeping the same state shape.", "This means the project can later grow into team mode without losing governance."]],
           ["Parallel AI", ["Parallel agents should own disjoint scopes and should never silently overwrite each other.", "Kabeeri helps expose conflicts before they become broken code."]]
         ],
-        checklist: ["Owner is known.", "Developers and agents are identified.", "Assignments are scoped.", "Locks are checked.", "Sessions are recorded.", "Owner verification is respected."],
-        commands: ["node bin/kvdf.js developer solo --id dev-main --name \"Main Developer\"", "node bin/kvdf.js session start --task task-001 --developer agent-001"]
+        checklist: ["Reviewer is known.", "Developers and agents are identified.", "Assignments are scoped.", "Locks are checked.", "Sessions are recorded.", "Final verification is respected."],
+        commands: ["node bin/kvdf.js developer solo --id dev-main --name \"Main Developer\"", "node bin/kvdf.js session start --task task-001 --developer agent-001", "node bin/kvdf.js multi-ai conversation start --from agent-001 --to agent-002 --topic \"Scope\" --message \"Please review the scope\""]
       },
       "github-release": {
-        lead: "GitHub and Release Gates help Kabeeri publish or sync only after local truth, policies, security, migrations, and Owner decisions are ready.",
+        lead: "GitHub and Release Gates help Kabeeri publish or sync only after local truth, policies, security, migrations, and lead decisions are ready.",
         beginner: "GitHub is a collaboration and publishing surface. It should not become the only source of truth for Kabeeri delivery state.",
         sections: [
           ["GitHub sync", "Maps tasks to issues, labels, milestones, and release plans, usually through dry-run first."],
-          ["Release readiness", "Checks validation, notes, checklist, policies, security, migrations, blockers, and Owner evidence."],
+          ["Release readiness", "Checks validation, notes, checklist, policies, security, migrations, blockers, and lead evidence."],
           ["Publish gates", "Separate production-ready from actually published. A project can be deployable but intentionally not public."],
           ["Confirmed writes", "GitHub writes require explicit confirmation and policy gates."],
           ["Packaging", "Product packaging checks ensure the framework can be distributed with the right files after folder reorganization."]
@@ -620,7 +627,7 @@ const docs = {
           ["Why dry-run matters", ["Dry-run lets the developer inspect labels, issues, milestones, and release changes before touching GitHub.", "This protects the repository from accidental public or team-visible changes."]],
           ["Package readiness", ["After foldering changes, packaging must include `knowledge/`, `packs/`, `integrations/`, `schemas/`, `docs/`, `src/`, `bin/`, and `cli/`.", "Package checks prevent publishing an incomplete framework."]]
         ],
-        checklist: ["Validation passed.", "Security state is acceptable.", "Migration risk is reviewed.", "Policy gates pass.", "GitHub write is dry-run first.", "Owner confirmation exists."],
+        checklist: ["Validation passed.", "Security state is acceptable.", "Migration risk is reviewed.", "Policy gates pass.", "GitHub write is dry-run first.", "Lead confirmation exists."],
         commands: ["node bin/kvdf.js release check --strict", "node bin/kvdf.js package check", "node bin/kvdf.js github plan --dry-run"]
       },
       "practical-examples": {
@@ -629,20 +636,20 @@ const docs = {
         sections: [
           ["1. Full ecommerce website", "Use one product workspace with related apps: backend API, public storefront, admin panel, and possibly worker jobs. Recommended stack: Laravel or NestJS/FastAPI backend, React/Next.js storefront, admin dashboard with React/Mantine/Ant Design. Use Agile for MVP discovery or Structured for a client store with fixed scope. Kabeeri activates commerce, inventory, payments, shipping, coupons, reviews, customers, admin, SEO, security, tests, release gates, AI cost, and GitHub sync."],
           ["2. Personal blog website", "Use a simple content blueprint. Recommended stack: Astro or Next.js with Markdown/MDX, or WordPress if the user wants a CMS. Use Agile for iterative content/design or Structured if a client has approved pages. Kabeeri plans pages, posts, authors, categories, tags, SEO, sitemap, newsletter, comments, analytics, content workflow, UI typography, and deployment readiness."],
-          ["3. Dental clinic booking website/system", "Treat it as booking plus service website plus admin panel. Recommended stack: Laravel or Django backend with React/Next.js frontend. Use Structured if the clinic owner has strict requirements, or Agile for fast MVP. Kabeeri plans services, dentists, availability, appointments, patient records, reminders, admin calendar, cancellation policy, roles, privacy, notifications, and reports."],
+          ["3. Dental clinic booking website/system", "Treat it as booking plus service website plus admin panel. Recommended stack: Laravel or Django backend with React/Next.js frontend. Use Structured if the clinic client has strict requirements, or Agile for fast MVP. Kabeeri plans services, dentists, availability, appointments, patient records, reminders, admin calendar, cancellation policy, roles, privacy, notifications, and reports."],
           ["4. Professional CRM", "Treat it as a data-heavy business operations system. Recommended stack: Laravel/NestJS/.NET/FastAPI backend with React, Angular, or Vue admin frontend. Use Structured for enterprise CRM or Agile for startup CRM. Kabeeri plans leads, contacts, companies, deals, pipeline, activities, follow-ups, quotes, permissions, audit, import/export, dashboards, reports, and integrations."],
           ["5. Mobile app for the ecommerce store", "Treat it as a related mobile channel for the ecommerce product, not a separate product. Recommended stack: React Native Expo or Flutter. Use Agile because mobile UX usually evolves through testing. Kabeeri links it to the ecommerce backend and plans onboarding, auth, product feed, search, cart, checkout, orders, push notifications, profile, deep links, offline cache, app versions, analytics, and store release readiness."],
           ["6. Supermarket POS system", "Treat it as a POS operations system with inventory and possibly offline mode. Recommended stack: Laravel/.NET/NestJS backend, React/Vue/Angular POS screen, or Electron/web kiosk if needed. Use Structured for serious retail rollout because devices, shifts, receipts, cash drawer, returns, inventory, and audit are critical. Kabeeri plans cashier flow, barcode, products, prices, taxes, shifts, payments, receipts, offline sales, stock movements, reports, permissions, and security."],
           ["7. WordPress digital agency website", "Use WordPress for a digital marketing agency website with public service pages, blog, case studies, lead forms, and four custom plugins for customers, service requests, invoices, and accounts. Kabeeri keeps each plugin scoped, secure, and task-governed under `wp-content/plugins/`."]
         ],
-        steps: ["Describe idea", "Select blueprint", "Choose delivery mode", "Answer questions", "Plan data", "Plan UI", "Select prompt packs", "Create tasks", "AI implements", "Review", "Owner verifies", "Handoff"],
+        steps: ["Describe idea", "Select blueprint", "Choose delivery mode", "Answer questions", "Plan data", "Plan UI", "Select prompt packs", "Create tasks", "AI implements", "Review", "Final verify", "Handoff"],
         details: [
           ["Universal AI flow", ["Tell your AI assistant what product in plain language. AI assistant uses Kabeeri to recommend blueprint, delivery mode, data design, UI direction, framework prompt packs, and first tasks.", "The AI assistant should implement only one governed task at a time, record changed files and evidence, then run validation and tests."]],
           ["Backend planning pattern", ["For every example, define users, roles, entities, APIs, validation, permissions, audit logs, integrations, tests, and release risks before asking AI to code.", "Use `data-design context` to avoid weak database models."]],
           ["Frontend planning pattern", ["For every example, define pages, layouts, components, empty/loading/error states, responsive behavior, accessibility, and SEO/GEO needs if public.", "Use `design recommend` and design source governance before frontend implementation."]],
           ["Handoff pattern", ["Before delivery, run validation, dashboard, readiness report, governance report, security scan, release gates, and handoff package.", "The result should be a project with visible state, not only generated code."]]
         ],
-        checklist: ["Each example has a product blueprint.", "Delivery mode is selected.", "Backend and frontend are planned separately.", "Prompt packs match chosen stacks.", "Tasks are scoped before AI edits code.", "Dashboard and Owner verification close the work."],
+        checklist: ["Each example has a product blueprint.", "Delivery mode is selected.", "Backend and frontend are planned separately.", "Prompt packs match chosen stacks.", "Tasks are scoped before AI edits code.", "Dashboard and final verification close the work."],
         commands: ["node bin/kvdf.js blueprint recommend \"Build a supermarket POS\"", "node bin/kvdf.js questionnaire plan \"Build a dental clinic booking system\"", "node bin/kvdf.js data-design context ecommerce", "node bin/kvdf.js design recommend ecommerce", "node bin/kvdf.js prompt-pack compose react-native-expo --task task-mobile-001", "kvdf wordpress plan \"Build a WordPress digital marketing agency website with services blog case studies and lead forms\" --type corporate --mode new", "node bin/kvdf.js handoff package --id client-handoff --audience client"]
       },
       "example-ecommerce": {
@@ -656,7 +663,7 @@ const docs = {
           ["App boundaries", "Keep backend API, storefront, admin dashboard, and worker jobs in one Kabeeri workspace if they belong to the same store. Create separate Kabeeri workspaces only for unrelated stores or clients."],
           ["Main workstreams", "backend, database, public_frontend, admin_frontend, integration, qa, security, docs, release."]
         ],
-        steps: ["Describe store", "Select ecommerce blueprint", "Choose Agile/Structured", "Answer questions", "Design database", "Plan storefront", "Plan admin", "Create tasks", "AI implements", "Test checkout", "Owner verifies", "Handoff"],
+        steps: ["Describe store", "Select ecommerce blueprint", "Choose Agile/Structured", "Answer questions", "Design database", "Plan storefront", "Plan admin", "Create tasks", "AI implements", "Test checkout", "Final verify", "Handoff"],
         details: [
           ["Questions Kabeeri should ask", ["What product types exist: simple, variants, digital, subscriptions, bundles?", "Do you need stock management, low-stock alerts, warehouses, or branches?", "Which payment providers and shipping providers are required?", "Do customers need accounts, guest checkout, coupons, reviews, wishlist, returns, invoices, and order tracking?", "Which languages, currencies, taxes, SEO pages, analytics, and emails are required?"]],
           ["Database plan", ["Core: users, roles, permissions, organizations, settings, files, audit_logs.", "Commerce: customers, products, product_variants, categories, prices, carts, cart_items, orders, order_items, payments, invoices, shipments, coupons, reviews, returns, refunds.", "Inventory: warehouses, stock_movements, stock_balances, stock_reservations.", "Important rule: order_items and invoices must store snapshots so old orders do not change when product prices change."]],
@@ -671,19 +678,19 @@ const docs = {
       },
       "example-ai-team-ecommerce": {
         lead: "This playbook explains how one team lead can coordinate three AI developers building one ecommerce product: one backend AI developer, one web storefront AI developer, and one mobile app AI developer.",
-        beginner: "The improved scenario is not three AIs freely editing the same project. The safe scenario is one product workspace, one team lead/Owner, three registered AI agents, separate app boundaries, separate workstreams, scoped tasks, locks, tokens, handoff evidence, then integration tasks to join everything.",
+        beginner: "The improved scenario is not three AIs freely editing the same project. The safe scenario is one product workspace, one team lead, three registered AI agents, separate app boundaries, separate workstreams, scoped tasks, locks, tokens, handoff evidence, then integration tasks to join everything.",
         sections: [
           ["Recommended structure", "Treat the store as one product with related apps: `store-api`, `storefront-web`, `store-mobile`, and optional `admin-dashboard` or workers. The backend AI owns APIs and database changes. The web AI owns public storefront pages. The mobile AI owns Expo/Flutter screens and mobile integration. The team lead owns planning, approvals, task splitting, integration decisions, policy gates, and final verification."],
-          ["Team lead role", "The lead is the human developer, Owner, or technical reviewer. The lead selects the product blueprint, chooses Agile or Structured, answers or approves questionnaire decisions, creates apps/workstreams, assigns tasks, issues tokens, reviews outputs, resolves conflicts, and decides when work is integrated."],
+          ["Team lead role", "The lead is the human developer or technical reviewer. The lead selects the product blueprint, chooses Agile or Structured, answers or approves questionnaire decisions, creates apps/workstreams, assigns tasks, issues tokens, reviews outputs, resolves conflicts, and decides when work is integrated."],
           ["Backend AI role", "The backend AI works only on API, database, auth, products, cart, checkout, orders, payments, inventory, webhooks, tests, and backend docs. It must publish API contracts before web/mobile consume them."],
           ["Web AI role", "The web AI works only on public ecommerce storefront: home, categories, product list, product detail, search, filters, cart drawer, checkout UI, account/order pages, SEO, responsive states, and web tests."],
           ["Mobile AI role", "The mobile AI works only on the mobile channel: onboarding, auth, product feed, search, product detail, cart, checkout integration, orders, profile, push token registration, offline/error states, and device testing."],
           ["How tasks move", "Tasks do not move by chat memory. A task is created, assigned, scoped, tokenized, locked, implemented, ended with evidence, reviewed, and then either verified or rejected. Cross-team work becomes an integration task owned by the lead or explicitly assigned as `type=integration`."],
-          ["How the store is finished", "The store is not finished when three agents say done. It is finished when backend contracts are stable, web and mobile flows pass against the same backend, payment and order lifecycle are tested, policy/security/readiness gates pass, Owner verification is recorded, and a handoff package exists."]
+          ["How the store is finished", "The store is not finished when three agents say done. It is finished when backend contracts are stable, web and mobile flows pass against the same backend, payment and order lifecycle are tested, policy/security/readiness gates pass, final verification is recorded, and a handoff package exists."]
         ],
-        steps: ["Create product workspace", "Register apps", "Register AI agents", "Create workstreams", "Plan API contracts", "Split tasks", "Issue tokens and locks", "Backend builds contracts", "Web and mobile consume contracts", "Run integration tasks", "Review evidence", "Owner verifies", "Handoff"],
+        steps: ["Create product workspace", "Register apps", "Register AI agents", "Create workstreams", "Plan API contracts", "Split tasks", "Issue tokens and locks", "Backend builds contracts", "Web and mobile consume contracts", "Run integration tasks", "Review evidence", "Final verify", "Handoff"],
         details: [
-          ["Permissions model", ["Owner or team lead can create apps, add agents, assign tasks, issue/revoke tokens, approve budget overruns, run policy gates, and verify final work.", "Backend AI can only work inside backend/database/API scopes assigned to its task.", "Web AI can only work inside storefront web paths assigned to public_frontend tasks.", "Mobile AI can only work inside mobile app paths assigned to mobile tasks.", "No AI agent should have Owner authority. If an AI needs broader scope, the lead creates a new integration task with explicit allowed files."]],
+          ["Permissions model", ["The project lead can create apps, add agents, assign tasks, issue/revoke tokens, approve budget overruns, run policy gates, and verify final work.", "Backend AI can only work inside backend/database/API scopes assigned to its task.", "Web AI can only work inside storefront web paths assigned to public_frontend tasks.", "Mobile AI can only work inside mobile app paths assigned to mobile tasks.", "No AI agent should have elevated authority. If an AI needs broader scope, the lead creates a new integration task with explicit allowed files."]],
           ["Suggested apps", ["`store-api`: backend API and admin/API services.", "`storefront-web`: public web storefront.", "`store-mobile`: customer mobile app.", "`admin-dashboard`: optional admin panel if separated from backend.", "All apps can stay in one Kabeeri workspace because they are one ecommerce product. A separate unrelated store should use a separate Kabeeri folder."]],
           ["Task exchange rules", ["Backend AI does not hand files directly to the web/mobile AI. It hands over API contracts, endpoint notes, changed files, tests, and risks through session summary, capture, ADR if needed, and task evidence.", "Web/mobile AIs do not change backend code when an endpoint is missing. They create or request a backend task.", "Shared decisions such as auth strategy, cart sync, payment redirect, and order status naming should become ADRs or approved task notes.", "If web and mobile need the same API shape, the lead creates one contract task before UI tasks proceed."]],
           ["Per-agent handoff", ["Each AI session must end with changed files, checks run, summary, risks, and what remains blocked.", "Backend handoff must include endpoints, migrations, seed data, auth rules, idempotency/webhook notes, and tests.", "Web handoff must include pages/screens completed, API dependencies, responsive states, SEO/accessibility notes, and tests.", "Mobile handoff must include screens completed, API dependencies, device/platform notes, permissions, offline/error states, and release blockers."]],
@@ -691,15 +698,15 @@ const docs = {
           ["Conflict prevention", ["Use app boundaries so mobile cannot edit storefront and storefront cannot edit backend.", "Use workstreams so backend/database/public_frontend/mobile/security are explicit.", "Use locks before AI starts editing shared files.", "Use task access tokens so each AI has allowed_files and forbidden_files.", "Use policy gates before final verification or release."]],
           ["Common failure modes", ["All agents start coding before API contracts exist.", "Frontend agents invent mock data that does not match backend responses.", "Mobile app becomes a second product instead of a channel for the same store.", "The lead accepts separate demos but never tests the full checkout/order lifecycle.", "One agent edits shared config or auth files without an integration task."]]
         ],
-        checklist: ["One ecommerce product workspace exists.", "Apps are registered with stable usernames.", "Backend, web, and mobile agents are registered.", "Each task has one owner, app scope, workstream, allowed files, and acceptance criteria.", "API contracts exist before frontend implementation depends on them.", "Integration tasks join backend, web, and mobile work.", "Each AI submits evidence and risks.", "Lead reviews, Owner verifies, gates pass, handoff package is generated."],
-        commands: ["node bin/kvdf.js init --profile standard --mode agile", "node bin/kvdf.js app create --username store-api --name \"Store API\" --type backend --path apps/api --product Store", "node bin/kvdf.js app create --username storefront-web --name \"Storefront Web\" --type frontend --path apps/web --product Store", "node bin/kvdf.js app create --username store-mobile --name \"Store Mobile\" --type mobile --path apps/mobile --product Store", "node bin/kvdf.js agent add --id ai-backend --name \"AI Backend Developer\" --role \"AI Developer\" --workstreams backend,database,integration", "node bin/kvdf.js agent add --id ai-web --name \"AI Web Frontend Developer\" --role \"AI Developer\" --workstreams public_frontend", "node bin/kvdf.js agent add --id ai-mobile --name \"AI Mobile Developer\" --role \"AI Developer\" --workstreams mobile,integration", "node bin/kvdf.js task create --title \"Define ecommerce API contracts\" --app store-api --workstream backend", "node bin/kvdf.js task create --title \"Build storefront product listing\" --app storefront-web --workstream public_frontend", "node bin/kvdf.js task create --title \"Build mobile product feed\" --app store-mobile --workstream mobile", "node bin/kvdf.js task create --title \"Integrate checkout across API web and mobile\" --type integration --apps store-api,storefront-web,store-mobile --workstreams backend,public_frontend,mobile,integration", "node bin/kvdf.js token issue --task task-001 --assignee ai-backend", "node bin/kvdf.js lock create --type folder --scope apps/api --task task-001 --owner ai-backend", "node bin/kvdf.js session start --task task-001 --developer ai-backend", "node bin/kvdf.js session end session-001 --input-tokens 1000 --output-tokens 500 --files apps/api --summary \"API contracts implemented\" --checks \"npm test\" --risks \"Payment sandbox not connected\"", "node bin/kvdf.js readiness report", "node bin/kvdf.js governance report", "node bin/kvdf.js handoff package --id ecommerce-team-handoff --audience owner"]
+        checklist: ["One ecommerce product workspace exists.", "Apps are registered with stable usernames.", "Backend, web, and mobile agents are registered.", "Each task has one responsible party, app scope, workstream, allowed files, and acceptance criteria.", "API contracts exist before frontend implementation depends on them.", "Integration tasks join backend, web, and mobile work.", "Each AI submits evidence and risks.", "Lead reviews, final verification passes, gates pass, handoff package is generated."],
+        commands: ["node bin/kvdf.js init --profile standard --mode agile", "node bin/kvdf.js app create --username store-api --name \"Store API\" --type backend --path apps/api --product Store", "node bin/kvdf.js app create --username storefront-web --name \"Storefront Web\" --type frontend --path apps/web --product Store", "node bin/kvdf.js app create --username store-mobile --name \"Store Mobile\" --type mobile --path apps/mobile --product Store", "node bin/kvdf.js agent add --id ai-backend --name \"AI Backend Developer\" --role \"AI Developer\" --workstreams backend,database,integration", "node bin/kvdf.js agent add --id ai-web --name \"AI Web Frontend Developer\" --role \"AI Developer\" --workstreams public_frontend", "node bin/kvdf.js agent add --id ai-mobile --name \"AI Mobile Developer\" --role \"AI Developer\" --workstreams mobile,integration", "node bin/kvdf.js task create --title \"Define ecommerce API contracts\" --app store-api --workstream backend", "node bin/kvdf.js task create --title \"Build storefront product listing\" --app storefront-web --workstream public_frontend", "node bin/kvdf.js task create --title \"Build mobile product feed\" --app store-mobile --workstream mobile", "node bin/kvdf.js task create --title \"Integrate checkout across API web and mobile\" --type integration --apps store-api,storefront-web,store-mobile --workstreams backend,public_frontend,mobile,integration", "node bin/kvdf.js token issue --task task-001 --assignee ai-backend", "node bin/kvdf.js lock create --type folder --scope apps/api --task task-001 --owner ai-backend", "node bin/kvdf.js session start --task task-001 --developer ai-backend", "node bin/kvdf.js session end session-001 --input-tokens 1000 --output-tokens 500 --files apps/api --summary \"API contracts implemented\" --checks \"npm test\" --risks \"Payment sandbox not connected\"", "node bin/kvdf.js readiness report", "node bin/kvdf.js governance report", "node bin/kvdf.js handoff package --id ecommerce-team-handoff --audience team"]
       },
       "example-blog": {
         lead: "This playbook explains how to build a personal blog with Kabeeri and an AI assistant. The goal is not only pages; it is a maintainable content system with SEO, clean reading experience, and simple publishing flow.",
         beginner: "Tell your AI assistant: 'I want a personal blog.' Kabeeri should discover whether it is a static blog, CMS-backed blog, portfolio blog, newsletter blog, or paid-content blog before code starts.",
         sections: [
           ["Product shape", "A personal blog publishes articles, author profile, categories, tags, search, newsletter, SEO pages, about/contact pages, and maybe comments or paid content."],
-          ["Recommended stack", "Astro or Next.js with Markdown/MDX for a fast personal blog. WordPress if the owner wants a classic CMS. Strapi or headless CMS if content should be managed separately."],
+          ["Recommended stack", "Astro or Next.js with Markdown/MDX for a fast personal blog. WordPress if the client wants a classic CMS. Strapi or headless CMS if content should be managed separately."],
           ["Delivery mode", "Use Agile for personal iteration and content growth. Use Structured if it is for a client with approved pages, brand rules, and SEO deliverables."],
           ["Kabeeri capabilities to activate", "Product Blueprint, Questionnaire Engine, UI/UX Advisor, Design Governance, Prompt Packs, Task Governance, SEO/GEO, Release Gates, Dashboard, and Handoff."],
           ["Main workstreams", "public_frontend, content, design, seo, qa, docs, release."],
@@ -754,7 +761,7 @@ const docs = {
           ["Main workstreams", "backend, database, public_frontend, admin_frontend, integration, security, qa, docs."],
           ["Success definition", "A patient can request/book an appointment, the clinic can manage availability, staff can confirm/cancel/reschedule, and reminders are sent safely."]
         ],
-        steps: ["Define clinic services", "Plan booking rules", "Design data", "Plan public site", "Plan admin calendar", "Create tasks", "AI implements", "Test booking conflicts", "Owner verifies"],
+        steps: ["Define clinic services", "Plan booking rules", "Design data", "Plan public site", "Plan admin calendar", "Create tasks", "AI implements", "Test booking conflicts", "Final verify"],
         details: [
           ["Questions Kabeeri should ask", ["How many doctors and branches?", "What services exist and how long does each take?", "Can patients choose doctor or only service?", "Are appointments confirmed immediately or pending approval?", "What cancellation/no-show policy exists?", "What reminders are needed: email, SMS, WhatsApp, push?", "What patient data is sensitive and who can access it?"]],
           ["Database plan", ["Core: users, roles, permissions, audit_logs, settings.", "Clinic: dentists, services, staff_availability, appointments, patients, appointment_status_history, reminders, branches, rooms, cancellations.", "Optional: treatment categories, files, notes, payments, invoices, insurance fields depending on scope.", "Important rule: appointment start_at and end_at are required; date only is not enough. Prevent overlapping bookings."]],
@@ -823,7 +830,7 @@ const docs = {
           ["Main workstreams", "backend, database, admin_frontend, pos_frontend or public_frontend, integration, qa, security, docs, release."],
           ["Success definition", "Cashier can sell quickly, receipt is correct, stock changes correctly, returns are controlled, shifts close accurately, and managers can audit sales."]
         ],
-        steps: ["Define store operations", "Choose Structured", "Design POS data", "Plan cashier UI", "Plan admin", "Create phase tasks", "AI implements", "Test sales/returns/offline", "Owner verifies"],
+        steps: ["Define store operations", "Choose Structured", "Design POS data", "Plan cashier UI", "Plan admin", "Create phase tasks", "AI implements", "Test sales/returns/offline", "Final verify"],
         details: [
           ["Questions Kabeeri should ask", ["How many branches and registers?", "Do products use barcode, SKU, variants, units, weighted items?", "Which payment types: cash, card, split payment, wallet?", "Do you need receipt printer, cash drawer, barcode scanner, customer display?", "Is offline selling required?", "How are returns, discounts, taxes, and shift closing handled?"]],
           ["Database plan", ["Core: users, roles, permissions, branches, settings, audit_logs.", "POS: pos_devices, pos_sessions, cash_drawers, sales, sale_items, payments, returns, receipts.", "Inventory: products, barcodes, categories, stock_movements, stock_balances, warehouses, adjustments.", "Important rule: stock changes must be movements, not direct edits. Sales and receipts need snapshots."]],
@@ -844,7 +851,7 @@ const docs = {
           ["Docs path looks old", "Remember legacy aliases exist. New physical paths should be used in docs and new files, but old command outputs may still display compatible aliases."],
           ["Dashboard looks stale", "Regenerate or export dashboard state from `.kabeeri/` instead of editing UI output manually."],
           ["AI changed too much", "Use task scope, locks, token allowed files, and post-work capture to classify and control the changes."],
-          ["Release blocked", "Check policy results, security scan, migration state, unresolved blockers, and Owner evidence."]
+          ["Release blocked", "Check policy results, security scan, migration state, unresolved blockers, and lead evidence."]
         ],
         steps: ["Run validate", "Find source", "Fix source", "Regenerate derived output", "Run tests", "Validate again"],
         details: [
@@ -1067,7 +1074,7 @@ const arDeepOverrides = {
       ["فعل المراقبة", "شغل `dashboard generate` أو `dashboard serve` حتى ترى الحالة من البداية."],
       ["استخدم Vibe-first عبر المساعد", "قل للمساعد ما تريد باللغة العادية، وهو يستخدم Vibe-first وCLI تحت السطح."],
       ["تحقق من ملفات كبيري", "شغل validation قبل التخطيط وقبل الإصدار."],
-      ["تحقق من المالك", "افحص أو أنشئ Owner عندما يكون القبول النهائي مطلوبًا."],
+      ["تحقق نهائي", "افحص أو أنشئ سجل المراجعة عندما يكون القبول النهائي مطلوبًا."],
       ["ابدأ نظام الأسئلة", "استخدم questionnaire plan لاكتشاف المنتج والباك إند والفرونت إند والبيانات والواجهة والمخاطر."],
       ["أكمل التطوير", "استخدم blueprint وdata design وUI/UX وprompt packs والتاسكات والداشبورد للتنفيذ خطوة بخطوة."]
     ],
@@ -1075,7 +1082,7 @@ const arDeepOverrides = {
       ["مثال متجر إلكتروني", ["Laravel backend وReact storefront يعتبران تطبيقين مرتبطين داخل منتج واحد.", "الخريطة تفعل commerce وinventory وpayments وshipping وadmin وSEO وsecurity والاختبارات."]],
       ["الناتج الجيد", ["قائمة apps وموديولات وجداول وصفحات APIs ومخاطر وتاسكات أولى.", "أول تاسكات تكون صغيرة بما يكفي لجلسة AI واحدة ومراجعة واحدة."]]
     ],
-    checklist: ["فولدر كبيري موجود.", "الداشبورد يعمل.", "Vibe-first متاح عبر المساعد.", "validation ناجح.", "Owner واضح.", "الأسئلة بدأت.", "التطوير مستمر بتاسكات صغيرة."]
+    checklist: ["فولدر كبيري موجود.", "الداشبورد يعمل.", "Vibe-first متاح عبر المساعد.", "validation ناجح.", "المراجع واضح.", "الأسئلة بدأت.", "التطوير مستمر بتاسكات صغيرة."]
   },
   "existing-kabeeri-project": {
     sections: [
@@ -1220,16 +1227,21 @@ const arDeepOverrides = {
     checklist: ["النية مصنفة.", "الغموض لا ينفذ مباشرة.", "الكارت قابل للمراجعة.", "capture يربط العمل غير المتتبع.", "context brief موجود."]
   },
   "task-governance": {
+    lead: "حوكمة التاسكات تحول الأفكار والإجابات والمشاكل والالتقاطات إلى عمل قابل للتنفيذ مع سجل دائم يمكن استئنافه من مصدر الحقيقة.",
+    beginner: "تاسك كبيري ليس todo عاديًا. يحتفظ بالمصدر، والنطاق، ومسار العمل، والمسند، والمراجع، ومعايير القبول، والملفات المسموح بها، وميزانية التوكنز، والدليل، وتفاصيل التنفيذ الدائمة، وخطوات التحقق النهائية في مكان واحد حتى تستأنف الجلسة التالية من السجل بدل المحادثة.",
     sections: [
       ["المصدر", "كل تاسك يأتي من إجابة أو blueprint أو bug أو design spec أو capture أو GitHub issue أو قرار مالك."],
-      ["Definition of Ready", "التاسك غير جاهز إذا النطاق أو القبول أو المسار أو الاعتماديات مجهولة."],
-      ["التنفيذ", "يبدأ بإسناد ونطاق وتوكن وربما lock وجلسة AI."],
+      ["مصدر الحقيقة", "سجل التاسك هو مصدر الحقيقة لما يجب أن يحدث، وما لا يجب تغييره، وكيف يتم التحقق من الإكمال."],
+      ["تعريف الجاهزية", "التاسك غير جاهز إذا النطاق أو القبول أو المسار أو الاعتماديات أو المراجع غير معروفة."],
+      ["التنفيذ", "يبدأ بإسناد ونطاق وتوكن وربما lock وجلسة AI وكتلة ذاكرة التنفيذ التي تحفظ سياق الاستئناف بدقة."],
       ["المراجعة", "تفحص الملفات والدليل والاختبارات ومعايير القبول والسياسات."],
-      ["التحقق", "قرار المالك يغلق الحلقة بالقبول أو الرفض."]
+      ["التحقق", "قرار المالك يغلق الحلقة بالقبول أو الرفض."],
+      ["سجلات التنفيذ الدائمة", "ملخص التنفيذ، وخطوات الاستئناف، والمدخلات المطلوبة، والمخرجات المتوقعة، وقواعد عدم التغيير، وأوامر التحقق تُحفظ مع التاسك حتى تستأنف الجلسة اللاحقة من السجل بدلًا من المحادثة."]
     ],
     details: [
       ["لماذا تمنع الفوضى", ["AI قد يتمدد خارج النطاق.", "التاسك يعطي كل جلسة حدودًا وهدف قبول."]],
-      ["Live JSON", ["حالة task tracker يمكن قراءتها من الداشبورد وVS Code.", "هذا يقلل تعديل ملفات توثيق بعد كل تاسك."]]
+      ["Live JSON", ["حالة task tracker يمكن قراءتها من الداشبورد وVS Code.", "هذا يقلل تعديل ملفات توثيق بعد كل تاسك."]],
+      ["الاستئناف لاحقًا", ["يمكن إعادة قراءة كتلة ذاكرة التاسك عبر `kvdf task memory <id>` أو عبر queue المؤقتة عندما يدخل التاسك إلى `kvdf temp`.", "وبذلك تتابع الجلسة التالية العمل مع تاريخ محادثة أقل وتكلفة توكنز أقل."]]
     ],
     checklist: ["التاسك له مصدر.", "القبول قابل للاختبار.", "الملفات المسموحة واضحة.", "الدليل مسجل.", "قرار المالك مسجل عند الحاجة."]
   },
@@ -1308,7 +1320,7 @@ const arDeepOverrides = {
       ["Identities", "المطورون ووكلاء AI لهم IDs وأدوار وقدرات ومسارات عمل."],
       ["Sessions", "جلسات AI تسجل التاسك والموديل والملفات والملخص والنتيجة."],
       ["Locks", "تمنع تعديل نفس النطاق بالتوازي."],
-      ["Owner rule", "المالك النشط يملك قرار التحقق النهائي عند الحاجة."],
+      ["Verification rule", "المراجع النشط يملك قرار التحقق النهائي عند الحاجة."],
       ["Audit", "الأفعال المهمة تسجل حتى لا تضيع مع إغلاق الشات."]
     ],
     details: [
@@ -1489,7 +1501,7 @@ const arDeepOverrides = {
       ["مسار قديم", "قد يكون alias للتوافق؛ لا تعيد إنشاء فولدر قديم."],
       ["داشبورد قديم", "أعد توليد الحالة من `.kabeeri/` بدل تعديل UI يدويًا."],
       ["AI عدل كثيرًا", "استخدم scope وlocks وtokens وpost-work capture."],
-      ["release blocked", "افحص policy results وsecurity وmigration وOwner evidence."]
+    ["release blocked", "افحص policy results وsecurity وmigration وlead evidence."]
     ],
     details: [
       ["بعد تنظيم الفولدرات", ["لو ظهر مسار قديم تحقق هل هو alias.", "الملف الفعلي غالبًا تحت `knowledge/` أو `packs/` أو `integrations/`."]],
@@ -1502,6 +1514,44 @@ const arDeepOverrides = {
 for (const [slug, override] of Object.entries(arDeepOverrides)) {
   docs.ar.pages[slug] = { ...docs.ar.pages[slug], ...override };
 }
+
+docs.en.pages["developer-onboarding"] = {
+  lead: "This page gives a first-session path for developers who need to enter a Kabeeri workspace safely, understand the track, and choose the next command without guessing.",
+  beginner: "Use this when you are new to the folder or returning after a break. It keeps the opening sequence short: identify the track, confirm the workspace, inspect the docs and state, then move into the first safe task.",
+  sections: [
+    ["Framework owner onboarding", "Run resume, inspect the active Evolution priority, confirm the temporary queue, and then follow the current slice before making framework changes."],
+    ["App developer onboarding", "Run resume, confirm the app track, inspect the task tracker, and use vibe or task commands only inside the app workspace."],
+    ["New workspace onboarding", "If the folder is not yet a Kabeeri workspace, initialize it first, then return to resume and confirm the track before any implementation."],
+    ["The opening rule", "The first command should tell you where you are, what you are allowed to touch, and what exact step comes next. If it does not, keep reading state instead of editing code."]
+  ],
+  steps: ["Run resume", "Confirm the track", "Read the docs or dashboard", "Inspect the next safe command", "Open the first task", "Implement one slice", "Record evidence"],
+  details: [
+    ["What to do in the first ten minutes", ["Read the current state, check the repository map, open the docs manifest, and inspect the top-level task or evolution queue.", "Do not start a broad refactor just because the folder is familiar. The safe path is always smaller than it feels."]],
+    ["How this reduces mistakes", ["Onboarding keeps the first session short, which reduces accidental edits, wrong-track commands, and repeated context hunting.", "The point is not speed alone. The point is a clean restart that can be repeated tomorrow by another developer or AI agent."]]
+  ],
+  checklist: ["The current track is known.", "The workspace mode is known.", "The next exact command is visible.", "The first task or priority is scoped.", "The developer can resume without chat history."],
+  commands: ["node bin/kvdf.js resume --json", "node bin/kvdf.js onboarding", "node bin/kvdf.js docs manifest", "node bin/kvdf.js dashboard state"]
+};
+
+docs.ar.pages["developer-onboarding"] = {
+  ...docs.en.pages["developer-onboarding"],
+  arTitle: "تأهيل المطور",
+  lead: "هذه الصفحة تعطي مسار الجلسة الأولى للمطور الذي يدخل مساحة Kabeeri بأمان، يفهم المسار، ويختار الأمر التالي بدون تخمين.",
+  beginner: "استخدمها عندما تكون جديدًا على الفولدر أو عائدًا بعد انقطاع. المسار قصير: حدّد track، تأكد من مساحة العمل، راجع الدوكس والحالة، ثم انتقل إلى أول تاسك آمن.",
+  sections: [
+    ["تهيئة صاحب المشروع", "شغّل resume، راجع أولوية Evolution النشطة، تأكد من الـ temporary queue، ثم اتبع الـ slice الحالي قبل أي تغيير في الـ framework."],
+    ["تهيئة مطور التطبيق", "شغّل resume، تأكد من track الخاص بالتطبيق، وراجع task tracker، ثم استخدم vibe أو task فقط داخل مساحة التطبيق."],
+    ["تهيئة مساحة جديدة", "إذا لم تكن المجلدات مهيأة بعد كمساحة Kabeeri، نفّذ init أولًا، ثم عد إلى resume لتأكيد المسار قبل أي تنفيذ."],
+    ["قاعدة البداية", "أول أمر يجب أن يوضح أين أنت، وما المسموح لك لمسه، وما الخطوة الدقيقة التالية. إذا لم يفعل ذلك، استمر في قراءة الحالة بدل تعديل الكود."]
+  ],
+  steps: ["شغّل resume", "أكد المسار", "اقرأ docs أو dashboard", "راجع الأمر الآمن التالي", "افتح أول تاسك", "نفذ slice واحد", "سجل الأدلة"],
+  details: [
+    ["ماذا تفعل في أول عشر دقائق", ["اقرأ الحالة الحالية، راجع خريطة المستودع، افتح manifest الخاص بالـ docs، وراجع أعلى task أو evolution queue.", "لا تبدأ refactor واسع فقط لأنك تعرف المجلد. المسار الآمن دائمًا أصغر مما يبدو."]],
+    ["كيف يقلل الأخطاء", ["التأهيل يبقي الجلسة الأولى قصيرة، فيقلل التعديلات الخطأ وأوامر track الخاطئة والبحث المتكرر عن السياق.", "الهدف ليس السرعة فقط، بل إعادة بدء نظيفة يمكن تكرارها غدًا بواسطة مطور آخر أو وكيل AI."]]
+  ],
+  checklist: ["المسار الحالي معروف.", "وضع مساحة العمل معروف.", "الأمر الدقيق التالي ظاهر.", "أول task أو priority محدد النطاق.", "المطور يستطيع الاستئناف بدون ذاكرة chat."],
+  commands: ["node bin/kvdf.js resume --json", "node bin/kvdf.js onboarding", "node bin/kvdf.js docs manifest", "node bin/kvdf.js dashboard state"]
+};
 
 docs.ar.pages["example-ai-team-ecommerce"] = {
   ...docs.en.pages["example-ai-team-ecommerce"],
@@ -1519,7 +1569,7 @@ docs.ar.pages["example-ai-team-ecommerce"] = {
   ],
   steps: ["إنشاء مساحة المنتج", "تسجيل التطبيقات", "تسجيل وكلاء AI", "إنشاء مسارات العمل", "تثبيت API contracts", "تقسيم التاسكات", "إصدار tokens وlocks", "الباك إند يبني العقود", "الويب والموبايل يستهلكان العقود", "تاسكات التكامل", "مراجعة الأدلة", "تحقق المالك", "التسليم"],
   details: [
-    ["نموذج الصلاحيات", ["القائد أو المالك يستطيع إنشاء التطبيقات وإضافة الوكلاء وإسناد التاسكات وإصدار أو سحب التوكنز وتشغيل policy gates والتحقق النهائي.", "AI الباك إند يعمل فقط داخل backend/database/API scopes الخاصة بتاسكه.", "AI الويب يعمل فقط داخل مسارات storefront web.", "AI الموبايل يعمل فقط داخل مسارات تطبيق الموبايل.", "لا يحصل أي وكيل AI على صلاحية Owner. توسيع النطاق يتم بتاسك integration واضح ومراجع."]],
+    ["نموذج الصلاحيات", ["القائد يستطيع إنشاء التطبيقات وإضافة الوكلاء وإسناد التاسكات وإصدار أو سحب التوكنز وتشغيل policy gates والتحقق النهائي.", "AI الباك إند يعمل فقط داخل backend/database/API scopes الخاصة بتاسكه.", "AI الويب يعمل فقط داخل مسارات storefront web.", "AI الموبايل يعمل فقط داخل مسارات تطبيق الموبايل.", "لا يحصل أي وكيل AI على صلاحية عليا. توسيع النطاق يتم بتاسك integration واضح ومراجع."]],
     ["التطبيقات المقترحة", ["`store-api`: الباك إند وAPI والخدمات.", "`storefront-web`: واجهة المتجر على الإنترنت.", "`store-mobile`: تطبيق العميل للموبايل.", "`admin-dashboard`: لوحة الإدارة إذا كانت منفصلة.", "كل هذه التطبيقات يمكن أن تعيش داخل نفس مساحة كبيري لأنها منتج واحد. متجر آخر أو عميل آخر يحتاج مساحة كبيري منفصلة."]],
     ["قواعد تبادل العمل", ["AI الباك إند لا يسلم ملفات مباشرة للويب أو الموبايل؛ يسلم API contracts وendpoint notes والملفات المتغيرة والاختبارات والمخاطر.", "AI الويب والموبايل لا يغيران الباك إند عند نقص endpoint. يطلبان أو ينشئان تاسك باك إند.", "قرارات auth وcart sync وpayment redirect وorder status تسجل كـ ADR أو ملاحظات تاسك معتمدة.", "لو الويب والموبايل يحتاجان نفس API shape، ينشئ القائد تاسك contract قبل تنفيذ الواجهات."]],
     ["تسليم كل وكيل AI", ["كل session تنتهي بملفات متغيرة، checks، summary، risks، وما بقي blocked.", "تسليم الباك إند يشمل endpoints وmigrations وseed data وقواعد auth وidempotency/webhook notes والاختبارات.", "تسليم الويب يشمل الصفحات المكتملة واعتمادات API وحالات responsive وSEO/accessibility.", "تسليم الموبايل يشمل الشاشات واعتمادات API وملاحظات الأجهزة والصلاحيات وoffline/error states وrelease blockers."]],
@@ -1527,7 +1577,7 @@ docs.ar.pages["example-ai-team-ecommerce"] = {
     ["منع التعارض", ["استخدم app boundaries حتى لا يلمس الموبايل ملفات الويب ولا الويب ملفات الباك إند.", "استخدم workstreams لتوضيح backend وdatabase وpublic_frontend وmobile وsecurity.", "استخدم locks قبل بدء أي AI في ملفات مشتركة.", "استخدم task access tokens لتحديد allowed_files وforbidden_files.", "استخدم policy gates قبل التحقق النهائي أو الإصدار."]],
     ["أخطاء شائعة", ["كل الوكلاء يبدأون الكود قبل وجود API contracts.", "وكلاء الواجهة يخترعون mock data لا تطابق ردود الباك إند.", "تطبيق الموبايل يتحول إلى منتج منفصل بدل قناة لنفس المتجر.", "القائد يقبل عروض منفصلة ولا يختبر checkout/order lifecycle كامل.", "وكيل يغير auth أو config مشترك بدون تاسك integration."]]
   ],
-  checklist: ["مساحة متجر واحدة موجودة.", "التطبيقات مسجلة بأسماء usernames ثابتة.", "وكلاء backend وweb وmobile مسجلون.", "كل تاسك له owner وapp scope وworkstream وallowed files وacceptance criteria.", "API contracts موجودة قبل اعتماد الواجهات عليها.", "تاسكات التكامل تجمع backend وweb وmobile.", "كل AI يسلم evidence وrisks.", "القائد يراجع والمالك يتحقق والـ gates تمر وحزمة التسليم تتولد."]
+  checklist: ["مساحة متجر واحدة موجودة.", "التطبيقات مسجلة بأسماء usernames ثابتة.", "وكلاء backend وweb وmobile مسجلون.", "كل تاسك له جهة مسؤولة وapp scope وworkstream وallowed files وacceptance criteria.", "API contracts موجودة قبل اعتماد الواجهات عليها.", "تاسكات التكامل تجمع backend وweb وmobile.", "كل AI يسلم evidence وrisks.", "القائد يراجع والتحقق النهائي يمر وحزمة التسليم تتولد."]
 };
 
 const cleanArabicTitles = {
@@ -1638,6 +1688,12 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js blueprint recommend \"Describe the app you want\"", "Map the idea to a known product blueprint such as ecommerce, CRM, POS, blog, or booking.", "يربط الفكرة بخريطة منتج معروفة مثل متجر أو CRM أو POS أو مدونة أو حجز."),
     c("node bin/kvdf.js task tracker --json", "Inspect current tasks as machine-readable state for AI and dashboard use.", "يعرض التاسكات بصيغة JSON مفيدة للذكاء الاصطناعي والداشبورد.")
   ],
+  "developer-onboarding": [
+    c("node bin/kvdf.js onboarding", "Show the guided first-session route for the current workspace.", "ÙŠØ¹Ø±Ø¶ Ø®Ø· Ø§Ù„Ø¬Ù„Ø³Ø© Ø§Ù„Ø£ÙˆÙ„Ù‰ Ø§Ù„Ù…ÙˆØ¬Ù‡ Ù„Ù„Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ø­Ø§Ù„ÙŠØ©."),
+    c("node bin/kvdf.js resume --json", "Inspect the exact current track, workspace mode, and next action.", "ÙŠÙØ­Øµ Ø§Ù„Ù…Ø³Ø§Ø± Ø§Ù„Ø­Ø§Ù„ÙŠ Ø¨Ø§Ù„Ø¯Ù‚Ø© ÙˆÙˆØ¶Ø¹ Ø§Ù„Ù…Ø³Ø§Ø­Ø© ÙˆØ§Ù„Ø®Ø·ÙˆØ© Ø§Ù„ØªØ§Ù„ÙŠØ©."),
+    c("node bin/kvdf.js docs manifest", "Open the generated documentation manifest before editing the site.", "ÙŠØ¹Ø±Ø¶ manifest Ø§Ù„ÙˆØ«Ø§Ø¦Ù‚ Ø§Ù„Ù…ÙˆÙ„Ø¯ Ù‚Ø¨Ù„ ØªØ¹Ø¯ÙŠÙ„ Ø§Ù„Ù…ÙˆÙ‚Ø¹."),
+    c("node bin/kvdf.js dashboard state", "Read the live workspace state before starting a first task.", "ÙŠÙ‚Ø±Ø£ Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ø­ÙŠØ© Ù‚Ø¨Ù„ Ø¨Ø¯Ø¡ Ø£ÙˆÙ„ ØªØ§Ø³Ùƒ.")
+  ],
   "install-profiles": [
     c("git clone <repo-url> kabeeri-vdf", "Download Kabeeri from GitHub into a local folder.", "يحمل كبيري من GitHub داخل فولدر محلي."),
     c("cd kabeeri-vdf", "Enter the cloned Kabeeri repository.", "يدخل إلى فولدر الريبو بعد التحميل."),
@@ -1653,7 +1709,9 @@ const pageCommandCatalog = {
   "ai-with-kabeeri": [
     c("node bin/kvdf.js vibe \"Build an ecommerce store\"", "Turn natural language into governed suggested tasks instead of executing blindly.", "يحول الكلام الطبيعي إلى اقتراحات تاسكات محكومة بدل التنفيذ العشوائي."),
     c("node bin/kvdf.js docs serve --port auto --open", "Serve the Kabeeri documentation site locally and open it in the browser.", "يشغل موقع وثائق كبيري محليًا ويفتحه في المتصفح."),
+    c("node bin/kvdf.js docs validate --json", "Validate the docs site pages, generated contracts, and localized content before publishing.", "يفحص صفحات موقع الوثائق والعقود المولدة والمحتوى المحلي قبل النشر."),
     c("node bin/kvdf.js context-pack create --task task-001", "Create a compact AI context pack for one task to reduce token waste.", "ينشئ حزمة سياق صغيرة لتاسك واحد لتقليل استهلاك التوكنز."),
+    c("node bin/kvdf.js ai-run provenance --json", "Inspect AI-run provenance tied to tasks, sessions, acceptance, and durable records.", "يعرض provenance لتنفيذات AI المرتبطة بالتاسكات والجلسات والقبول والسجلات الدائمة."),
     c("node bin/kvdf.js prompt-pack compose react --task task-001", "Compose framework-aware instructions for AI using the task context.", "يركب تعليمات واعية بالفريمورك للذكاء الاصطناعي حسب التاسك."),
     c("node bin/kvdf.js session start --task task-001 --developer agent-001", "Start a governed AI session tied to a task and developer or AI agent.", "يبدأ جلسة AI محكومة ومربوطة بتاسك ومطور أو وكيل AI."),
     c("node bin/kvdf.js session end session-001 --input-tokens 1000 --output-tokens 500 --files src/example --summary \"Done\"", "Close the AI session with usage, touched files, summary, checks, and risks.", "ينهي جلسة AI مع تسجيل التوكنز والملفات والملخص والفحوصات والمخاطر.")
@@ -1663,7 +1721,8 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js capability list", "List the adaptive capability areas known to the questionnaire system.", "يعرض مناطق القدرات المعروفة لنظام الأسئلة."),
     c("node bin/kvdf.js capability show payments_billing", "Show one capability area and the questions or coverage related to it.", "يعرض قدرة واحدة والأسئلة أو التغطية المرتبطة بها."),
     c("node bin/kvdf.js capability map", "Print the capability map used by adaptive questionnaire coverage.", "يعرض خريطة القدرات المستخدمة في تغطية الأسئلة."),
-    c("node bin/kvdf.js validate", "Confirm that the documented capabilities still match real runtime assets.", "يتأكد أن القدرات الموثقة ما زالت متوافقة مع الأصول الحقيقية.")
+    c("node bin/kvdf.js validate", "Confirm that the documented capabilities still match real runtime assets.", "يتأكد أن القدرات الموثقة ما زالت متوافقة مع الأصول الحقيقية."),
+    c("node bin/kvdf.js docs validate --json", "Validate the docs site and localized guidance against the current command surface.", "يفحص موقع الوثائق والإرشادات المحلية مقابل سطح الأوامر الحالي.")
   ],
   "repository-layout": [
     c("node bin/kvdf.js structure map", "Print the Kabeeri folder map and current top-level groups.", "يعرض خريطة فولدرات كبيري والمجموعات الرئيسية."),
@@ -1677,7 +1736,7 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js init --profile standard --mode structured", "Initialize a standard workspace for a more planned Structured product.", "ينشئ مساحة عمل قياسية لمشروع يحتاج Structured."),
     c("node bin/kvdf.js dashboard generate", "Generate dashboard state after workspace initialization.", "يولد حالة الداشبورد بعد إنشاء مساحة العمل."),
     c("node bin/kvdf.js vibe \"I want to build an ecommerce store\"", "Start from natural language and let Kabeeri create reviewable suggested work.", "يبدأ من كلام طبيعي ويجعل كبيري يقترح عمل قابل للمراجعة."),
-    c("node bin/kvdf.js owner status", "Check whether Owner auth is configured and whether a session is active.", "يفحص حالة المالك وهل توجد جلسة مالك نشطة."),
+    c("node bin/kvdf.js track status", "Check whether the active track is configured and whether a session is active.", "يفحص حالة المسار النشط وهل توجد جلسة فعالة."),
     c("node bin/kvdf.js questionnaire plan \"Build an ecommerce store\"", "Generate the first focused project-intake questions.", "ينشئ أول أسئلة مركزة لفهم المشروع."),
     c("node bin/kvdf.js blueprint recommend \"Build an ecommerce store\"", "Choose the closest market product blueprint.", "يقترح أقرب خريطة منتج من أنظمة السوق."),
     c("node bin/kvdf.js data-design context ecommerce", "Create database design context from the selected product blueprint.", "ينشئ سياق تصميم قاعدة البيانات من خريطة المنتج."),
@@ -1702,7 +1761,7 @@ const pageCommandCatalog = {
   "delivery-mode": [
     c("node bin/kvdf.js delivery recommend \"Describe the project\"", "Score Agile vs Structured and return rationale and next actions.", "يقارن Agile وStructured ويرجع الأسباب والخطوات التالية."),
     c("node bin/kvdf.js delivery recommend \"Describe the project\" --json", "Return the delivery recommendation as JSON for automation.", "يعرض توصية نمط التسليم بصيغة JSON للأتمتة."),
-    c("node bin/kvdf.js delivery choose agile --reason \"MVP discovery\"", "Record the Owner/developer decision to use Agile.", "يسجل قرار استخدام Agile مع السبب."),
+    c("node bin/kvdf.js delivery choose agile --reason \"MVP discovery\"", "Record the delivery decision to use Agile.", "يسجل قرار استخدام Agile مع السبب."),
     c("node bin/kvdf.js delivery choose structured --reason \"Known compliant scope\"", "Record the decision to use Structured delivery.", "يسجل قرار استخدام Structured مع السبب."),
     c("node bin/kvdf.js delivery history", "Show previous recommendations and delivery decisions.", "يعرض تاريخ التوصيات وقرارات نمط التسليم.")
   ],
@@ -1710,7 +1769,7 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js agile summary", "Show Agile runtime state: backlog, epics, stories, sprints, and reviews.", "يعرض حالة Agile: الباك لوج والإبيكس والستوريز والاسبرنتات والمراجعات."),
     c("node bin/kvdf.js agile backlog add --id BL-001 --title \"Checkout MVP\" --type epic --priority high --source \"vision\"", "Add a backlog item with priority and source provenance.", "يضيف عنصر باك لوج مع الأولوية والمصدر."),
     c("node bin/kvdf.js agile epic create --id epic-checkout --title \"Checkout\" --goal \"Customers can place orders\" --users customer --source \"vision\"", "Create an Agile epic with goal, users, and source.", "ينشئ epic بهدف ومستخدمين ومصدر."),
-    c("node bin/kvdf.js agile story create --id story-checkout-001 --epic epic-checkout --title \"Cart checkout\" --role customer --want \"pay\" --value \"complete order\" --points 5 --workstream backend --acceptance \"Order is created\" --reviewer owner-001", "Create a user story with role, value, points, workstream, acceptance, and reviewer.", "ينشئ user story بدور وقيمة ونقاط ومسار عمل ومعايير قبول ومراجع."),
+    c("node bin/kvdf.js agile story create --id story-checkout-001 --epic epic-checkout --title \"Cart checkout\" --role customer --want \"pay\" --value \"complete order\" --points 5 --workstream backend --acceptance \"Order is created\" --reviewer lead-001", "Create a user story with role, value, points, workstream, acceptance, and reviewer.", "ينشئ user story بدور وقيمة ونقاط ومسار عمل ومعايير قبول ومراجع."),
     c("node bin/kvdf.js agile story ready story-checkout-001", "Mark a story ready when it has enough detail.", "يحول الستوري إلى جاهزة عندما تكتمل تفاصيلها."),
     c("node bin/kvdf.js agile story task story-checkout-001 --task task-001", "Link an Agile story to a governed Kabeeri task.", "يربط الستوري بتاسك محكوم في كبيري."),
     c("node bin/kvdf.js agile sprint plan sprint-001 --stories story-checkout-001 --capacity-points 10 --goal \"Checkout foundation\"", "Plan a sprint from ready stories and capacity.", "يخطط اسبرنت من ستوريز جاهزة وسعة محددة."),
@@ -1720,10 +1779,10 @@ const pageCommandCatalog = {
   "structured-delivery": [
     c("node bin/kvdf.js structured health", "Show Structured delivery health and unresolved issues.", "يعرض صحة Structured والمشاكل المفتوحة."),
     c("node bin/kvdf.js structured requirement add --id REQ-001 --title \"Email login\" --source questionnaire --acceptance \"User can login\"", "Add a requirement with source and acceptance criteria.", "يضيف متطلبًا بمصدر ومعايير قبول."),
-    c("node bin/kvdf.js structured requirement approve REQ-001 --reason \"Owner reviewed\"", "Approve a requirement before implementation planning.", "يعتمد المتطلب قبل تخطيط التنفيذ."),
+    c("node bin/kvdf.js structured requirement approve REQ-001 --reason \"Reviewed\"", "Approve a requirement before implementation planning.", "يعتمد المتطلب قبل تخطيط التنفيذ."),
     c("node bin/kvdf.js structured phase plan phase-001 --requirements REQ-001 --goal \"Authentication foundation\"", "Plan a phase around approved requirements.", "يخطط مرحلة بناءً على متطلبات معتمدة."),
     c("node bin/kvdf.js structured task REQ-001 --task task-001", "Trace a requirement to a governed implementation task.", "يربط المتطلب بتاسك تنفيذ محكوم."),
-    c("node bin/kvdf.js structured deliverable add --id deliv-001 --phase phase-001 --title \"Authentication specification\" --acceptance \"Owner approved\"", "Add a phase deliverable with acceptance criteria.", "يضيف مخرج مرحلة بمعايير قبول."),
+    c("node bin/kvdf.js structured deliverable add --id deliv-001 --phase phase-001 --title \"Authentication specification\" --acceptance \"Reviewed\"", "Add a phase deliverable with acceptance criteria.", "يضيف مخرج مرحلة بمعايير قبول."),
     c("node bin/kvdf.js structured gate check phase-001", "Check whether a phase can pass its gate.", "يفحص هل المرحلة يمكنها عبور البوابة."),
     c("node bin/kvdf.js validate structured", "Validate Structured runtime consistency.", "يفحص اتساق حالة Structured.")
   ],
@@ -1817,7 +1876,7 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js task assign task-001 --assignee agent-001", "Assign a task to a developer or AI agent.", "يسند تاسك لمطور أو وكيل AI."),
     c("node bin/kvdf.js task start task-001 --actor agent-001", "Move a task into active execution.", "ينقل التاسك إلى التنفيذ."),
     c("node bin/kvdf.js task review task-001 --actor reviewer-001", "Move a task into review.", "ينقل التاسك إلى المراجعة."),
-    c("node bin/kvdf.js task verify task-001 --owner owner-001", "Owner-verify a completed task when evidence is ready.", "يتحقق المالك من تاسك مكتمل عند وجود الدليل."),
+    c("node bin/kvdf.js task verify task-001 --reviewer lead-001", "Verify a completed task when evidence is ready.", "يتحقق من تاسك مكتمل عند وجود الدليل."),
     c("node bin/kvdf.js task reject task-001", "Reject a task that fails review or verification.", "يرفض تاسك فشل في المراجعة أو التحقق."),
     c("node bin/kvdf.js validate task", "Validate task state and governance rules.", "يفحص حالة التاسكات وقواعد حوكمتها.")
   ],
@@ -1866,13 +1925,14 @@ const pageCommandCatalog = {
     c("node bin/kvdf.js usage record --untracked --input-tokens 1000 --output-tokens 500 --cost 0.25 --source ad-hoc-prompt", "Record untracked/ad-hoc usage so it is not invisible.", "يسجل استهلاكًا عشوائيًا حتى لا يختفي من الحساب."),
     c("node bin/kvdf.js usage summary", "Show aggregated token and cost summary.", "يعرض ملخص التوكنز والتكلفة."),
     c("node bin/kvdf.js usage efficiency", "Show accepted, rejected, rework, and waste efficiency signals.", "يعرض إشارات كفاءة المخرجات المقبولة والمرفوضة والهدر."),
-    c("node bin/kvdf.js budget approve --task task-001 --tokens 5000 --reason \"Owner approved extra work\"", "Approve a token budget overrun for a task.", "يعتمد تجاوز ميزانية توكنز لتاسك."),
+    c("node bin/kvdf.js budget approve --task task-001 --tokens 5000 --reason \"Reviewed extra work\"", "Approve a token budget overrun for a task.", "يعتمد تجاوز ميزانية توكنز لتاسك."),
     c("node bin/kvdf.js preflight estimate --task task-001 --context ctx-001 --provider openai --model gpt-4", "Estimate token/cost/risk before sending context to AI.", "يقدر التوكنز والتكلفة والمخاطر قبل إرسال السياق لـ AI."),
     c("node bin/kvdf.js model-route recommend --kind implementation --risk medium", "Recommend cheap, balanced, premium, or human-only model routing.", "يقترح توجيه الموديل: رخيص أو متوازن أو قوي أو بشري فقط.")
   ],
   "multi-ai-governance": [
-    c("node bin/kvdf.js owner init --id owner-001 --name \"Project Owner\"", "Create the single Owner identity.", "ينشئ هوية المالك الوحيد."),
-    c("node bin/kvdf.js owner login --id owner-001", "Start an Owner session for protected operations.", "يبدأ جلسة مالك للعمليات المحمية."),
+    c("node bin/kvdf.js track status", "Inspect the active track and session before sensitive operations.", "يفحص المسار النشط والجلسة قبل العمليات الحساسة."),
+    c("node bin/kvdf.js entry", "Enter the correct track automatically from workspace context.", "يدخل المسار الصحيح تلقائيًا من سياق مساحة العمل."),
+    c("node bin/kvdf.js multi-ai conversation start --from agent-001 --to agent-002 --topic \"Scope\" --message \"Please review the scope\"", "Open a durable agent-to-agent conversation relay thread.", "يفتح موضوع تواصل دائم بين وكلاء AI."),
     c("node bin/kvdf.js developer solo --id dev-main --name \"Main Developer\"", "Configure one developer as full-stack across standard workstreams.", "يضبط مطورًا واحدًا كـ full-stack على المسارات القياسية."),
     c("node bin/kvdf.js developer add --id dev-001 --name \"Backend Dev\" --role Developer", "Add a human developer identity.", "يضيف هوية مطور بشري."),
     c("node bin/kvdf.js agent add --id agent-001 --name \"AI Backend Agent\" --role \"AI Developer\" --workstreams backend", "Add an AI agent identity with workstream limits.", "يضيف وكيل AI بحدود مسارات عمل."),
@@ -2014,7 +2074,7 @@ function vibeFirstRow(command, description, lang) {
     [/app create|app list|app show|app status|validate routes/, isAr ? "سجل التطبيقات وحدودها حتى لا تختلط ملفات المشاريع." : "Register app boundaries so project files do not get mixed.", isAr ? "يحكم العلاقة بين backend/frontend/mobile داخل نفس المنتج أو يمنع الخلط." : "Governs backend/frontend/mobile boundaries inside one product and prevents mixing."],
     [/workstream|token issue|lock create|lock list|session start|session end/, isAr ? "نظم صلاحيات المطورين والـ AI وحدود الملفات أثناء التنفيذ." : "Organize developer and AI permissions and file scope during execution.", isAr ? "يربط المسارات والتوكنز والأقفال والجلسات حتى يقل التضارب والهدر." : "Connects workstreams, tokens, locks, and sessions to reduce overlap and waste."],
     [/usage|pricing|budget|preflight|model-route/, isAr ? "قدر تكلفة AI والتوكنز واختر مستوى الموديل المناسب قبل التنفيذ." : "Estimate AI cost/tokens and choose the right model level before execution.", isAr ? "يسجل التكلفة والاستهلاك ويمنع هدر التوكنز في سياق غير ضروري." : "Tracks usage and cost and prevents token waste from oversized context."],
-    [/owner|developer solo|developer add|agent add|validate business/, isAr ? "اضبط هوية المالك والمطورين ووكلاء AI وصلاحياتهم." : "Set up the Owner, developers, AI agents, and their permissions.", isAr ? "يحفظ الهويات والأدوار وحدود العمل قبل توزيع المهام." : "Stores identities, roles, and work boundaries before task distribution."],
+    [/track status|developer solo|developer add|agent add|validate business/, isAr ? "اضبط هوية الفريق ووكلاء AI وصلاحياتهم." : "Set up the team, developers, AI agents, and their permissions.", isAr ? "يحفظ الهويات والأدوار وحدود العمل قبل توزيع المهام." : "Stores identities, roles, and work boundaries before task distribution."],
     [/github|release|package check|handoff|readiness report|governance report|policy status|security scan/, isAr ? "راجع الجاهزية والسياسات والتسليم قبل النشر أو رفع التغييرات." : "Review readiness, policies, and handoff before publish or GitHub changes.", isAr ? "ينتج تقارير وبوابات تمنع النشر أو التسليم قبل اكتمال الدليل." : "Produces reports and gates that block publish or handoff until evidence is ready."]
   ];
   for (const [pattern, request, outcome] of rows) {
@@ -2070,7 +2130,7 @@ function describeCommand(command, lang) {
     [/task create .*--app storefront-web/, ["Create a web storefront task scoped to the web app.", "ينشئ تاسك واجهة ويب محدد لتطبيق المتجر على الإنترنت."]],
     [/task create .*--app store-mobile/, ["Create a mobile task scoped to the customer mobile app.", "ينشئ تاسك موبايل محدد لتطبيق العميل."]],
     [/readiness report/, ["Generate a readiness report for demo, handoff, release, or publish review.", "ينشئ تقرير جاهزية للعرض أو التسليم أو مراجعة الإصدار أو النشر."]],
-    [/governance report/, ["Generate a governance health report for Owner, agents, tasks, locks, tokens, and blockers.", "ينشئ تقرير صحة الحوكمة للمالك والوكلاء والتاسكات والأقفال والتوكنز والموانع."]],
+    [/governance report/, ["Generate a governance health report for leads, agents, tasks, locks, tokens, and blockers.", "ينشئ تقرير صحة الحوكمة للمراجع والوكلاء والتاسكات والأقفال والتوكنز والموانع."]],
   ];
   for (const [pattern, [en, ar]] of descriptions) {
     if (pattern.test(text)) return isAr ? ar : en;
@@ -2098,7 +2158,7 @@ function describeCommand(command, lang) {
   if (text.includes("agile summary")) return isAr ? "يعرض ملخص حالة Agile." : "Show Agile runtime summary.";
   if (text.includes("structured health")) return isAr ? "يعرض صحة مسار Structured." : "Show Structured delivery health.";
   if (text.includes("capture list")) return isAr ? "يعرض الالتقاطات المسجلة بعد العمل." : "List post-work captures.";
-  if (text.includes("owner status")) return isAr ? "يعرض حالة المالك وجلسة التحقق." : "Show Owner and auth-session status.";
+  if (text.includes("track status")) return isAr ? "يعرض حالة المسار والجلسة." : "Show active track and session status.";
   if (text.includes("app list")) return isAr ? "يعرض التطبيقات المسجلة في مساحة العمل." : "List registered apps.";
   if (text.includes("workstream list")) return isAr ? "يعرض مسارات العمل المسجلة." : "List registered workstreams.";
   if (text.includes("adr list")) return isAr ? "يعرض قرارات المعمارية المسجلة." : "List ADR records.";
@@ -2212,12 +2272,28 @@ function vibeFirstRow(command, description, lang) {
       "كبيري يركب قواعد WordPress الخاصة بـ hooks وnonces وcapabilities وsanitization وescaping وREST routes وWooCommerce والتسليم."
     );
   }
+  if (lower.includes("ai-run provenance")) {
+    return row(
+      "Inspect the provenance trail for AI runs tied to tasks, sessions, acceptance, and durable records.",
+      "افحص مسار provenance لتنفيذات AI المرتبطة بالتاسكات والجلسات والقبول والسجلات الدائمة.",
+      "Kabeeri shows how AI work is linked to task records, sessions, accept/reject decisions, and durable audit artifacts.",
+      "كبيري يوضح كيف يرتبط عمل AI بسجلات التاسكات والجلسات وقرارات القبول أو الرفض ومواد التدقيق الدائمة."
+    );
+  }
   if (lower.includes("docs open") || lower.includes("docs serve")) {
     return row(
       "Open the Kabeeri documentation site so I can read the current guidance.",
       "افتح موقع وثائق كبيري حتى أقرأ الإرشادات الحالية.",
       "Kabeeri regenerates the docs site, serves it locally, and can open it in the browser.",
       "كبيري يعيد توليد موقع الوثائق ويشغله محليًا ويمكنه فتحه في المتصفح."
+    );
+  }
+  if (lower.includes("docs validate")) {
+    return row(
+      "Validate the docs site before publishing so the generated pages and localized guidance stay in sync.",
+      "افحص موقع الوثائق قبل النشر حتى تبقى الصفحات المولدة والإرشادات المحلية متطابقة.",
+      "Kabeeri compares the docs site, generated page contracts, and localized guidance against the current command surface.",
+      "كبيري يقارن موقع الوثائق وعقود الصفحات المولدة والإرشادات المحلية بسطح الأوامر الحالي."
     );
   }
   if (lower.includes("questionnaire plan")) {
@@ -2278,7 +2354,7 @@ function vibeFirstRow(command, description, lang) {
   }
   if (lower.includes("app create")) {
     return row(
-      "Register this app inside the product boundary so files and ownership stay clear.",
+      "Register this app inside the product boundary so files and responsibilities stay clear.",
       "سجل هذا التطبيق داخل حدود المنتج حتى تظل الملفات والملكية واضحة.",
       "Kabeeri records app username, type, path, product, route, and task boundary rules.",
       "كبيري يسجل username ونوع التطبيق ومساره والمنتج والرابط وقواعد حدود التاسكات."
@@ -2296,7 +2372,7 @@ function vibeFirstRow(command, description, lang) {
     return row(
       `Create a governed task${app ? ` for ${app}` : ""} with clear scope and acceptance criteria.`,
       `أنشئ تاسك محكوم${app ? ` لتطبيق ${app}` : ""} بنطاق ومعايير قبول واضحة.`,
-      "Kabeeri records the task source, app, workstream, type, owner, reviewer, allowed files, and acceptance targets.",
+      "Kabeeri records the task source, app, workstream, type, responsible party, reviewer, allowed files, and acceptance targets.",
       "كبيري يسجل مصدر التاسك والتطبيق ومسار العمل والنوع والمسؤول والمراجع والملفات المسموحة ومعايير القبول."
     );
   }
@@ -2353,7 +2429,7 @@ const universalDeepGuides = {
       "If you are building a real product, keep the live dashboard open and ask the AI assistant to translate your request into governed tasks before code changes begin."
     ]],
     ["What the developer decides", [
-      "The developer or owner decides product intent, delivery mode, acceptance criteria, priorities, and whether a suggested task is approved.",
+      "The developer or project lead decides product intent, delivery mode, acceptance criteria, priorities, and whether a suggested task is approved.",
       "Kabeeri should expose options, risks, missing answers, and implementation paths in a form that is easy to approve or reject.",
       "For ambiguous requests, prefer a small approved task over a large vague build. That keeps the project understandable when the session is resumed later."
     ]],
@@ -2365,7 +2441,7 @@ const universalDeepGuides = {
     ["Evidence you should expect", [
       "A useful Kabeeri run leaves behind task records, live dashboard state, validation output, session notes, captures, and sometimes ADRs or release gate results.",
       "If a page describes a workflow but no evidence can be produced, treat that as a gap to fix before presenting the workflow as reliable.",
-      "For team work, evidence must include ownership, touched files, checks, blockers, and handoff notes so another AI assistant or developer can continue safely."
+      "For team work, evidence must include responsibility, touched files, checks, blockers, and handoff notes so another AI assistant or developer can continue safely."
     ]]
   ],
   ar: [
@@ -2397,7 +2473,7 @@ const focusedDeepGuides = {
     "new-project": [["New product intake depth", [
       "For a new app, Kabeeri should first identify whether you are describing one product with multiple channels or multiple unrelated products. Ecommerce backend plus web storefront plus mobile app is one product with related apps.",
       "The first useful output is not code. It is product type, delivery mode, app boundaries, expected modules, data entities, UI surfaces, risks, and a short list of questions that block planning.",
-      "After answers are captured, Kabeeri should create initial tasks with owners, workstreams, allowed files, acceptance criteria, and validation steps."
+      "After answers are captured, Kabeeri should create initial tasks with responsible parties, workstreams, allowed files, acceptance criteria, and validation steps."
     ]]],
     "existing-non-kabeeri-project": [["Adopting an existing app", [
       "Do not move an existing app blindly. Kabeeri should analyze the current stack, folder layout, framework conventions, database shape, environment files, tests, and deployment assumptions first.",
@@ -2406,7 +2482,7 @@ const focusedDeepGuides = {
     ]]],
     "questionnaire-engine": [["Question quality", [
       "Good questions reduce token waste because the AI does not need to rediscover product intent every session.",
-      "Kabeeri should ask only questions that change planning: product type, audience, data ownership, payments, permissions, integrations, delivery mode, UI channel, release target, and risk constraints.",
+      "Kabeeri should ask only questions that change planning: product type, audience, data custody, payments, permissions, integrations, delivery mode, UI channel, release target, and risk constraints.",
       "Answers should become reusable state, not chat memory only. The dashboard, task generator, prompt packs, and policy gates should all benefit from the same answers."
     ]]],
     "product-blueprints": [["Blueprint depth", [
@@ -2417,7 +2493,7 @@ const focusedDeepGuides = {
     "data-design": [["Database design depth", [
       "Kabeeri should design from business workflow before screens. Screens change quickly, but workflows such as order, payment, shipment, return, booking, article publishing, and stock movement are more stable.",
       "Strong data design must cover relationships, constraints, indexes, snapshots, audit logs, status history, transactions, idempotency, reporting tables, and backup/restore expectations.",
-      "The AI assistant should not generate migrations until the workflow, entities, ownership, and historical records are clear enough to avoid painful redesign."
+      "The AI assistant should not generate migrations until the workflow, entities, responsibility, and historical records are clear enough to avoid painful redesign."
     ]]],
     "ui-ux-advisor": [["Interface design depth", [
       "Kabeeri should choose UI patterns from the product job: SEO content pages need semantic HTML and structured data; dashboards need dense tables, filters, permissions, and fast repeated actions; mobile needs offline, touch, and notification states.",
@@ -2490,7 +2566,7 @@ const exampleDeepGuides = {
     ["What success looks like", [
       "The product has a visible app boundary, selected delivery mode, approved tasks, framework-aware prompt pack, database plan, UI plan, and a live dashboard state.",
       "The AI assistant can resume without rereading the whole repository because Kabeeri stores the important answers, decisions, task evidence, and current state.",
-      "The owner can inspect progress in normal language: what is done, what is blocked, what remains, which risks matter, and what should be built next."
+      "The project lead can inspect progress in normal language: what is done, what is blocked, what remains, which risks matter, and what should be built next."
     ]]
   ],
   ar: [

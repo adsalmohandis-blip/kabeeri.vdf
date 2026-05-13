@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Multi-AI Communications State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "relay_policy", "conversations"],
+  "properties": {
+    "version": { "type": "string" },
+    "relay_policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["response_deadline_seconds", "ack_required", "visible_to_owner"],
+      "properties": {
+        "response_deadline_seconds": { "type": "number" },
+        "ack_required": { "type": "boolean" },
+        "visible_to_owner": { "type": "boolean" }
+      }
+    },
+    "conversations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["conversation_id", "topic", "status", "participants", "messages", "created_at", "updated_at"],
+        "properties": {
+          "conversation_id": { "type": "string" },
+          "topic": { "type": "string" },
+          "status": { "type": "string" },
+          "participants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["agent_id"],
+              "properties": {
+                "agent_id": { "type": "string" },
+                "role": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["message_id", "conversation_id", "from_agent_id", "to_agent_id", "body", "status", "created_at", "updated_at"],
+              "properties": {
+                "message_id": { "type": "string" },
+                "conversation_id": { "type": "string" },
+                "from_agent_id": { "type": "string" },
+                "to_agent_id": { "type": "string" },
+                "body": { "type": "string" },
+                "status": { "type": "string" },
+                "reply_to_message_id": { "type": ["string", "null"] },
+                "response_body": { "type": ["string", "null"] },
+                "responded_by": { "type": ["string", "null"] },
+                "responded_at": { "type": ["string", "null"] },
+                "created_at": { "type": "string" },
+                "updated_at": { "type": "string" },
+                "delivered_at": { "type": ["string", "null"] },
+                "acknowledged_at": { "type": ["string", "null"] },
+                "closed_at": { "type": ["string", "null"] }
+              }
+            }
+          },
+          "created_by": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "last_message_id": { "type": ["string", "null"] },
+          "last_message_at": { "type": ["string", "null"] },
+          "closed_at": { "type": ["string", "null"] },
+          "relay_policy": { "type": ["object", "null"] }
+        }
+      }
+    },
+    "audit_trail": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "updated_at": { "type": ["string", "null"] }
+  }
+}

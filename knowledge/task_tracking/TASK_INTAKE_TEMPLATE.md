@@ -22,7 +22,16 @@ scope:
 allowed_files:
 forbidden_files:
 dependencies:
+assessment_id:
+assessment_status:
+assessment_summary:
 acceptance_criteria:
+execution_summary:
+resume_steps:
+required_inputs:
+expected_outputs:
+do_not_change:
+verification_commands:
 rollback_notes:
 ai_usage_budget:
   max_input_tokens:

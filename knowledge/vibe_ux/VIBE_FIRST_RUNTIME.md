@@ -4,6 +4,8 @@ Vibe-first runtime commands are an optional human-first layer over the normal `k
 
 Kabeeri still works without this layer. Existing commands such as `kvdf task`, `kvdf token`, `kvdf dashboard`, and `kvdf validate` remain the direct engine. Vibe-first commands only add a safer natural-language entry point and post-work capture records.
 
+This runtime belongs to the vibe app-developer track: it is the human-friendly intake and capture surface for building applications, while Evolution Steward remains the framework-owner track for changing Kabeeri itself.
+
 ## Runtime State
 
 `kvdf init` creates:
@@ -79,7 +81,20 @@ kvdf vibe next
 
 - writes a compact context brief under `.kabeeri/interactions/context_briefs.json`
 - lists latest intent, open suggestions, open tasks, and recent captures
+- keeps the briefing short and task-specific so it can seed the next prompt or questionnaire step
 - is designed to reduce token usage when a new AI session resumes work
+
+`kvdf questionnaire plan`:
+
+- turns one natural-language project description into a compact intake plan
+- recommends the matching framework packs and a short prompt-pack path
+- keeps the generated questions focused on missing decisions only
+
+`kvdf prompt-pack compose`:
+
+- composes the common layer, stack-specific prompt, and an optional task context into one reviewable prompt
+- adds compact guidance so the AI gets one prompt at a time instead of a large bundle
+- keeps the selected prompt and next actions specific to the task scope
 
 `kvdf vibe next`:
 

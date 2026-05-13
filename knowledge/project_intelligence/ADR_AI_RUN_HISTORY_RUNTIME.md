@@ -11,7 +11,7 @@ output history without relying on chat history.
 Kabeeri already has:
 
 - `kvdf memory` for lightweight durable notes.
-- `kvdf session` for governed execution sessions, task tokens, locks, and touched files.
+- `kvdf session` for governed execution sessions, task tokens, locks, touched files, session contracts, and handoff evidence.
 - `kvdf usage` for token and cost accounting.
 - audit events for system mutations.
 
@@ -81,6 +81,7 @@ kvdf ai-run show ai-run-001
 kvdf ai-run accept ai-run-001 --reviewer reviewer-001 --evidence tests-pass
 kvdf ai-run reject ai-run-001 --reason "Wrong scope"
 kvdf ai-run link ai-run-001 --adr adr-001
+kvdf ai-run provenance --json
 kvdf ai-run report
 kvdf ai-run report --json
 kvdf validate ai-run
@@ -101,6 +102,13 @@ By default, `kvdf ai-run record` also writes a usage event when token data is
 provided. Use `--record-usage false` if the same token usage was already recorded
 through `kvdf session end` or `kvdf usage record`.
 
+If a post-work capture is available, link it with `kvdf capture --ai-run <run-id>`
+or `kvdf capture link <capture-id> --ai-run <run-id>` so the provenance chain
+includes execution, usage, capture, and audit evidence.
+
+`kvdf ai-run provenance` summarizes that chain and reports missing links when a
+run has usage but no capture or audit trail.
+
 ## How It Helps AI Coding
 
 Before a new AI coding pass, Kabeeri can inspect:
@@ -112,6 +120,9 @@ Before a new AI coding pass, Kabeeri can inspect:
 
 This reduces repeated context reading, repeated architectural debate, random
 prompting, and unreviewed AI output.
+
+See `AI_SESSION_CONTRACT_RUNTIME.md` for the session contract and handoff
+evidence shape used by governed AI sessions.
 
 ## Decision Trace
 
@@ -131,6 +142,9 @@ kvdf adr trace --output .kabeeri/reports/adr_ai_run_trace.md
 The trace shows ADR status, impact, linked AI runs, accepted/rejected/unreviewed
 run counts, tokens, cost, unlinked AI runs, and high-impact proposed ADRs that
 still need approval.
+
+The provenance report adds capture links, usage-event links, and audit-event
+links so the chain can be replayed without chat memory.
 
 ## Dashboard
 

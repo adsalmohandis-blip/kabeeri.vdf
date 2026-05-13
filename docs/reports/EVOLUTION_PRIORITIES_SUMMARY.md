@@ -4,13 +4,15 @@
 
 ---
 
-## ✅ المنجز (Done) — 3 أولويات
+## ✅ المنجز (Done) — 5 أولويات
 
 | # | المعرف | العنوان | ملخص |
 |---|--------|---------|------|
 | 1 | `evo-auto-001` | **Autonomous Evolution Steward workflow** | جعل Evolution Steward هو backlog التلقائي الوحيد لأولويات تطوير الإطار |
 | 2 | `evo-auto-002` | **Owner resume scan** | تحسين `kvdf resume --scan` مع نقطة تفتيش المالك وملخص التغييرات |
 | 3 | `evo-auto-003` | **Continue CLI index modularization** | استخراج 20+ أمر CLI من `src/cli/index.js` إلى وحدات أوامر منفصلة ✅ |
+| 4 | `evo-auto-004-temp-priorities` | **Temporary execution priorities** | إنشاء قائمة مهام مؤقتة وتقسيم الأولوية النشطة |
+| 5 | `evo-auto-005-durable-task-details` | **Durable execution-grade task descriptions** | تفاصيل مهام دقيقة قابلة للتنفيذ لتجاوز مشكلة انقطاع الجلسة |
 
 ---
 
@@ -18,9 +20,9 @@
 
 | # | المعرف | العنوان | الوضع الحالي |
 |---|--------|---------|-------------|
-| **4** 🎯 | `evo-auto-004-temp-priorities` | **Temporary execution priorities** | الشريحة الحالية: `scope` (تحديد نطاق العمل) |
+| **6** 🎯 | `evo-auto-004` | **Runtime services layer** | الشريحة الحالية: `scope` (تحديد نطاق العمل) |
 
-**التفاصيل:** إنشاء قائمة مهام مؤقتة للأولوية النشطة، تقسيمها إلى شرائح تنفيذية بأوصاف دقيقة.
+**التفاصيل:** نقل المنطق المتكرر من معالجات الأوامر إلى خدمات وقت التشغيل.
 
 **الشرائح:**
 | الشريحة | الحالة | الوصف |
@@ -33,16 +35,14 @@
 
 ---
 
-## 📝 مخطط (Planned) — 13 أولوية
+## 📝 مخطط (Planned) — 11 أولوية
 
 | # | المعرف | العنوان | ملخص |
 |---|--------|---------|------|
-| 5 | `evo-auto-005-durable-task-details` | **Durable execution-grade task descriptions** | تفاصيل مهام دقيقة قابلة للتنفيذ بعد انقطاع الجلسة |
-| 6 | `evo-auto-004` | **Runtime services layer** | نقل المنطق المتكرر من معالجات الأوامر إلى خدمات وقت التشغيل |
-| 7 | `evo-auto-005` | **Manual feature-docs inbox** | التعامل مع مجلد `KVDF_New_Features_Docs` يدوياً فقط |
-| 8 | `evo-auto-006` | **Feature-docs duplicate analysis** | تحليل 38 وثيقة حوكمة مقابل خريطة القدرات المركزية |
-| 9 | `evo-auto-007` | **Project reference packs import** | استيراد 83 حزمة مرجعية مفقودة |
-| 10 | `evo-auto-008` | **Feature-docs inbox cleanup workflow** | تنظيف مجلد الميزات بعد الاستيراد |
+| 7 | `evo-auto-005` | **Manual source package intake** | التعامل مع `KVDF_New_Features_Docs` كمصدر تصميم ووثائق مرجعي مؤقت |
+| 8 | `evo-auto-006` | **Reference design duplicate analysis** | تحليل أنظمة التصميم المرجعية مقابل خريطة القدرات المركزية |
+| 9 | `evo-auto-007` | **Project documentation generator import** | استيراد مولد وثائق المشاريع والـ templates المرتبطة به |
+| 10 | `evo-auto-008` | **Source package cleanup and removal workflow** | نقل المحتوى ثم إزالة الفولدر المصدر بعد التحقق |
 | 11 | `evo-auto-009` | **UI/UX questionnaire linkage** | ربط قرارات UI/UX بالاستبيانات وتوليد المهام |
 | 12 | `evo-auto-010` | **Low-cost project start mode** | وضع بدء مشروع منخفض التكلفة بسياق مضغوط |
 | 13 | `evo-auto-011` | **Runtime schema registry enforcement** | منع ملفات الحالة الجديدة دون تغطية مخططات |
@@ -90,3 +90,21 @@ node bin/kvdf.js evolution temp advance
 
 # عرض الأفكار المؤجلة
 node bin/kvdf.js evolution deferred
+## Current Runtime Update
+
+- `evo-auto-034-developer-onboarding` is now `done`.
+- `evo-auto-035-governance-expansion` is now `done`.
+- `evo-auto-036-capability-doc-matrix` is now `done`.
+- `evo-auto-037-source-normalization` is now `done`.
+- `evo-auto-038-full-task-coverage` is now `done`.
+- `evo-auto-039-blocked-scenarios` is now done.
+- `evo-auto-040-searchable-reference` is now done.
+- `evo-auto-041-execution-reports` is now done.
+- `kvdf evolution report` now writes `docs/reports/EVO_AUTO_041_EXECUTION_REPORT.md` as a resumable execution snapshot for the next session.
+- No Evolution priorities remain open right now; continue the runtime-services slice by extracting the remaining reusable helpers out of `src/cli/index.js`.
+- Shared command suggestions and git snapshot helpers now live in `src/cli/services/command_suggestions.js` and `src/cli/services/git_snapshot.js`.
+- `kvdf capability search` now publishes a searchable index across the registry, CLI surface, documentation matrix, and roadmap views.
+- The onboarding workflow now persists `kvdf onboarding` guidance in `.kabeeri/reports/session_onboarding.json` and can be reloaded with `kvdf onboarding report`.
+- `kvdf governance report` now includes a governance coverage view for trust, safety, privacy, compliance, and extensibility.
+- `kvdf capability matrix` now publishes the docs, CLI, runtime, tests, and report links for every capability in a single traceable matrix.
+- `kvdf source-package normalize` now publishes lowercase aliases and preserved mappings for the imported source roots and sections.

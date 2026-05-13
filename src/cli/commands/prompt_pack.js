@@ -3,6 +3,10 @@ const path = require("path");
 const { readJsonFile } = require("../workspace");
 const { listDirectories, listFiles, fileExists, repoRoot, resolveAsset, assertSafeName } = require("../fs_utils");
 const { table } = require("../ui");
+const { uniqueList } = require("../services/collections");
+
+const { composePromptPack: composePromptPackService } = require("../services/prompt_pack");
+const SCALE_SPECIFIC_PACKS_REPORT_FILE = ".kabeeri/reports/scale_specific_packs_report.json";
 
 function promptPack(action, name, flags = {}, dependencies = {}) {
   if (!action || action === "list") {
@@ -26,10 +30,17 @@ function promptPack(action, name, flags = {}, dependencies = {}) {
 
   if (action === "compose" || action === "build") {
     if (!name) throw new Error("Missing prompt pack name.");
-    if (typeof dependencies.composePromptPack !== "function") {
-      throw new Error("Prompt pack composition service is not available.");
-    }
-    return dependencies.composePromptPack(name, flags);
+    const composePromptPack = dependencies.composePromptPack || composePromptPackService;
+    if (typeof composePromptPack !== "function") throw new Error("Prompt pack composition service is not available.");
+    return composePromptPack(name, flags);
+  }
+
+  if (action === "scale") {
+    const report = buildScaleSpecificPackReport(name, flags);
+    writeScaleSpecificPackReport(report);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else renderScaleSpecificPackReport(report);
+    return report;
   }
 
   if (["composition-list", "compositions", "compiled", "history"].includes(action)) {
@@ -150,13 +161,179 @@ function recommendFrameworkPacksForBlueprint(blueprint, packs) {
   return uniqueList(recommended).slice(0, 4);
 }
 
-function uniqueList(items) {
-  return [...new Set((items || []).filter(Boolean))];
+function buildScaleSpecificPackReport(input, flags = {}) {
+  const packs = getPromptPackCatalog();
+  const available = new Set(["common", ...packs.map((pack) => pack.pack)]);
+  const text = collectScalePackText(input, flags);
+  const lower = text.toLowerCase();
+  const profile = normalizeScaleProfile(flags.profile || inferScaleProfile(lower, flags));
+  const riskLevel = String(flags.risk || inferScaleRiskLevel(lower, profile)).toLowerCase();
+  const detectedPacks = uniqueList(detectFrameworkPacks(text, packs));
+  const foundationPacks = uniqueList(["common", ...detectedPacks].filter((pack) => available.has(pack))).slice(0, 4);
+  const backendPacks = uniqueList(matchScalePackGroup(lower, available, ["laravel", "nestjs", "dotnet", "fastapi", "django", "expressjs", "springboot", "go-gin", "rails"]));
+  const frontendPacks = uniqueList(matchScalePackGroup(lower, available, ["nextjs", "react", "vue", "angular", "sveltekit", "astro", "nuxt-vue"]));
+  const mobilePacks = uniqueList(matchScalePackGroup(lower, available, ["react-native-expo", "flutter"]));
+  const contentPacks = uniqueList(matchScalePackGroup(lower, available, ["wordpress", "shopify", "strapi", "supabase", "firebase"]));
+  const enterpriseBoost = profile === "enterprise" || riskLevel === "high";
+  const bundleRecommendations = [
+    {
+      bundle_id: "foundation",
+      title: "Foundation pack bundle",
+      packs: foundationPacks,
+      reason: "Always include the common layer and the directly detected stack packs."
+    }
+  ];
+  if (backendPacks.length) {
+    bundleRecommendations.push({
+      bundle_id: "backend_scale",
+      title: "Backend scale bundle",
+      packs: backendPacks,
+      reason: enterpriseBoost ? "Large systems often need stronger backend, API, and integration context." : "Backend keywords were detected in the request."
+    });
+  }
+  if (frontendPacks.length) {
+    bundleRecommendations.push({
+      bundle_id: "frontend_scale",
+      title: "Frontend scale bundle",
+      packs: frontendPacks,
+      reason: enterpriseBoost ? "Large systems usually need a dedicated UI/app surface pack in addition to backend context." : "Frontend keywords were detected in the request."
+    });
+  }
+  if (mobilePacks.length) {
+    bundleRecommendations.push({
+      bundle_id: "mobile_scale",
+      title: "Mobile scale bundle",
+      packs: mobilePacks,
+      reason: "Mobile systems need a separate mobile prompt path so the AI does not overload the web context."
+    });
+  }
+  if (contentPacks.length) {
+    bundleRecommendations.push({
+      bundle_id: "content_scale",
+      title: "Content and platform bundle",
+      packs: contentPacks,
+      reason: "CMS, commerce, and backend-as-a-service platforms benefit from a dedicated content/platform pack selection."
+    });
+  }
+
+  const selectedPromptPacks = uniqueList(bundleRecommendations.flatMap((bundle) => bundle.packs)).slice(0, enterpriseBoost ? 8 : 6);
+  const scaleTier = enterpriseBoost ? "large_system" : profile === "standard" ? "standard_system" : "lightweight";
+
+  return {
+    report_type: "scale_specific_packs_report",
+    generated_at: new Date().toISOString(),
+    report_path: SCALE_SPECIFIC_PACKS_REPORT_FILE,
+    input: text,
+    profile,
+    risk_level: riskLevel,
+    scale_tier: scaleTier,
+    foundation_packs: foundationPacks,
+    bundle_recommendations: bundleRecommendations,
+    selected_prompt_packs: selectedPromptPacks,
+    source_of_truth: {
+      prompt_pack_catalog: true,
+      pack_manifests: true
+    },
+    next_actions: [
+      "Use the foundation bundle first when composing the AI context.",
+      "Add the backend or frontend scale bundle when the system is large or high-risk.",
+      "Route the selected packs into `kvdf prompt-pack compose` or `kvdf project profile report`."
+    ]
+  };
+}
+
+function writeScaleSpecificPackReport(report) {
+  fs.mkdirSync(path.dirname(path.join(repoRoot(), SCALE_SPECIFIC_PACKS_REPORT_FILE)), { recursive: true });
+  fs.writeFileSync(path.join(repoRoot(), SCALE_SPECIFIC_PACKS_REPORT_FILE), `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+function renderScaleSpecificPackReport(report) {
+  console.log(`Scale-specific packs: ${report.scale_tier}`);
+  console.log(table(["Field", "Value"], [
+    ["Profile", report.profile],
+    ["Risk", report.risk_level],
+    ["Selected packs", (report.selected_prompt_packs || []).join(", ") || "none"],
+    ["Foundation packs", (report.foundation_packs || []).join(", ") || "none"]
+  ]));
+  console.log("");
+  console.log("Bundle recommendations:");
+  for (const bundle of report.bundle_recommendations || []) {
+    console.log(`- ${bundle.title}: ${(bundle.packs || []).join(", ") || "none"}`);
+  }
+}
+
+function collectScalePackText(input, flags = {}) {
+  return [
+    input,
+    flags.goal,
+    flags.description,
+    flags.text,
+    flags.profile,
+    flags.blueprint,
+    flags.risk,
+    flags.path
+  ].filter(Boolean).join(" ").trim();
+}
+
+function inferScaleProfile(text, flags = {}) {
+  const explicit = String(flags.profile || "").toLowerCase();
+  if (["lite", "standard", "enterprise"].includes(explicit)) return explicit;
+  if (/enterprise|regulated|compliance|audit|multi-tenant|multi tenant|erp|crm|billing|payments|hospital|government|gov/.test(text)) return "enterprise";
+  if (/mvp|prototype|blog|landing|small|simple|lite/.test(text)) return "lite";
+  return "standard";
+}
+
+function inferScaleRiskLevel(text, profile) {
+  if (profile === "enterprise") return "high";
+  if (/audit|compliance|security|migration|billing|payments|multi-tenant|multi tenant|integration/.test(text)) return "medium";
+  return "low";
+}
+
+function normalizeScaleProfile(profile) {
+  const value = String(profile || "").toLowerCase();
+  if (["lite", "standard", "enterprise"].includes(value)) return value;
+  return "standard";
+}
+
+function matchScalePackGroup(text, available, candidates) {
+  const keywords = new Map([
+    ["laravel", ["laravel", "php", "backend", "erp", "billing", "crm"]],
+    ["nestjs", ["nestjs", "node", "api", "backend", "integration"]],
+    ["dotnet", ["dotnet", ".net", "enterprise", "backend", "integration"]],
+    ["fastapi", ["fastapi", "python", "api", "backend"]],
+    ["django", ["django", "python", "admin", "backend"]],
+    ["expressjs", ["express", "node", "api", "backend"]],
+    ["springboot", ["spring", "enterprise", "backend", "integration"]],
+    ["go-gin", ["go", "gin", "api", "backend"]],
+    ["rails", ["rails", "ruby", "backend"]],
+    ["nextjs", ["next", "web", "frontend", "dashboard", "customer portal", "admin"]],
+    ["react", ["react", "frontend", "dashboard", "admin"]],
+    ["vue", ["vue", "frontend", "dashboard"]],
+    ["angular", ["angular", "admin", "enterprise", "dashboard"]],
+    ["sveltekit", ["svelte", "frontend", "site"]],
+    ["astro", ["astro", "content", "docs", "marketing"]],
+    ["nuxt-vue", ["nuxt", "vue", "frontend", "site"]],
+    ["react-native-expo", ["expo", "react native", "mobile", "app"]],
+    ["flutter", ["flutter", "mobile", "app"]],
+    ["wordpress", ["wordpress", "cms", "content", "marketing", "site"]],
+    ["shopify", ["shopify", "commerce", "store", "ecommerce"]],
+    ["strapi", ["strapi", "cms", "content", "headless"]],
+    ["supabase", ["supabase", "backend as a service", "b2b", "real-time"]],
+    ["firebase", ["firebase", "mobile", "realtime", "auth"]],
+  ]);
+  const selected = [];
+  for (const pack of candidates) {
+    if (!available.has(pack)) continue;
+    const words = keywords.get(pack) || [pack];
+    if (words.some((word) => text.includes(word))) selected.push(pack);
+  }
+  return selected;
 }
 
 module.exports = {
   promptPack,
   getPromptPackCatalog,
   detectFrameworkPacks,
-  recommendFrameworkPacksForBlueprint
+  recommendFrameworkPacksForBlueprint,
+  buildScaleSpecificPackReport
 };

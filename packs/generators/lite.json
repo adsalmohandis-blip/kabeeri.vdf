@@ -10,15 +10,15 @@
   "core_rule": "Create folders, architecture guide files inside 00_SYSTEM_INDEX, and questionnaire files inside each folder only. Do not create detailed empty project documents before the folder questionnaire is answered.",
   "default_files": {
     "architecture_guides": [
-      "00_SYSTEM_INDEX/08_PROJECT_FILES_ARCHITECTURE_AND_FOLDER_GUIDE_AR.docx",
-      "00_SYSTEM_INDEX/08_PROJECT_FILES_ARCHITECTURE_AND_FOLDER_GUIDE_EN.docx"
+      "00_SYSTEM_INDEX/08_PROJECT_FILES_ARCHITECTURE_AND_FOLDER_GUIDE_AR.md",
+      "00_SYSTEM_INDEX/08_PROJECT_FILES_ARCHITECTURE_AND_FOLDER_GUIDE_EN.md"
     ],
     "folder_questionnaires": [
-      "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-      "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+      "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+      "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
     ]
   },
-  "word_file_rule": "All .docx files must be valid Word documents. Architecture guide and questionnaire files must contain useful starter content. Do not create zero-byte or corrupted .docx files.",
+  "word_file_rule": "All guidance files must contain useful starter content. Do not create zero-byte or empty guidance files.",
   "ai_instruction": "When this generator is given to an AI assistant, create a compressed ZIP project skeleton according to this JSON. Do not generate detailed folder documents yet. Detailed documents are generated later from answered folder questionnaires.",
   "layers": {
     "core": "Essential planning and execution folders required to understand and build the first usable version.",
@@ -49,8 +49,8 @@
       "purpose": "Project entry point, architecture guide, version notes, and instructions for using the skeleton.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -60,8 +60,8 @@
       "purpose": "Clarifies the idea, audience, problem, value, scope, and simplest useful version.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -71,8 +71,8 @@
       "purpose": "Explains the main product parts in simple language and how they relate to each other.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -82,8 +82,8 @@
       "purpose": "Defines what belongs in the first version and what should be postponed.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -93,8 +93,8 @@
       "purpose": "Turns the idea into a practical implementation order for AI-assisted development.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -104,8 +104,8 @@
       "purpose": "Stores the first AI coding prompts after planning is complete.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -115,8 +115,8 @@
       "purpose": "Tracks the small tasks executed by AI tools and their review status.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -126,8 +126,8 @@
       "purpose": "Provides simple checklists to review whether generated work is complete enough.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     },
@@ -137,8 +137,8 @@
       "purpose": "Stores old or replaced material so AI tools do not treat it as current guidance.",
       "create_questionnaires": true,
       "questionnaire_files": [
-        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.docx",
-        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.docx"
+        "00_FOLDER_OWNER_QUESTIONNAIRE_AR.md",
+        "00_FOLDER_OWNER_QUESTIONNAIRE_EN.md"
       ],
       "detailed_documents_policy": "Do not create detailed documents in this folder until the folder questionnaire is answered and sent to AI."
     }

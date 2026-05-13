@@ -22,7 +22,7 @@ Phase 05 canonical intake files:
 
 **Process:**
 1. Choose delivery mode (Structured or Agile)
-2. Choose project profile (Lite, Standard, Enterprise)
+2. Choose project profile (Lite, Standard, Enterprise) or let `kvdf project profile route` infer it from the goal and current stack
 3. Kabeeri scaffolds folder structure
 4. Begin questionnaires/vision workshop
 5. Start development
@@ -74,7 +74,7 @@ Phase 05 canonical intake files:
 ### Prerequisites
 
 - Delivery mode decided (Structured or Agile)
-- Project profile chosen (Lite, Standard, Enterprise)
+- Project profile chosen (Lite, Standard, Enterprise) or routed from the goal
 - Team assembled
 - Technology stack selected (optional, can refine after)
 
@@ -94,6 +94,9 @@ cd my-project
 #### Step 2: Folder Structure Created
 
 Kabeeri scaffolds the core folder structure immediately:
+
+The current `kvdf generate` flow also seeds bilingual architecture-guide markdown files in `00_SYSTEM_INDEX` and folder questionnaire markdown files in each governed folder so the intake phase starts with explicit prompts instead of blank directories.
+`kvdf init` also seeds deterministic `.kabeeri/metadata/*` files and a delivery-mode record so the workspace starts from a predictable governed baseline.
 
 **For Structured mode:**
 ```

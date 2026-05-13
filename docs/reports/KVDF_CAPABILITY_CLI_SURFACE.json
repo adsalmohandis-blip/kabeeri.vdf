@@ -1,0 +1,1178 @@
+{
+  "report_type": "kvdf_capability_cli_surface",
+  "generated_at": "2026-05-13T12:23:00.149Z",
+  "total_capabilities": 53,
+  "coverage": {
+    "total_capabilities": 53,
+    "complete_capabilities": 53,
+    "partial_capabilities": 0
+  },
+  "capabilities": [
+    {
+      "id": 1,
+      "key": "product_business",
+      "name": "Product & Business",
+      "group": "A. Product & Business",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf project route",
+        "kvdf questionnaire plan",
+        "kvdf blueprint"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 2,
+      "key": "users_roles",
+      "name": "Users & Roles",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 3,
+      "key": "permissions",
+      "name": "Permissions",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 4,
+      "key": "user_journeys",
+      "name": "User Journeys",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 5,
+      "key": "onboarding",
+      "name": "Onboarding",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 6,
+      "key": "offboarding",
+      "name": "Offboarding",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 7,
+      "key": "public_frontend",
+      "name": "Public Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 8,
+      "key": "user_frontend",
+      "name": "User Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 9,
+      "key": "admin_frontend",
+      "name": "Admin Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 10,
+      "key": "internal_operations_frontend",
+      "name": "Internal Operations Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 11,
+      "key": "backend_apis",
+      "name": "Backend APIs",
+      "group": "D. Backend, Data, and APIs",
+      "owner": "backend",
+      "cli_surface": [
+        "kvdf data-design",
+        "kvdf migration",
+        "kvdf release"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 12,
+      "key": "business_logic",
+      "name": "Business Logic",
+      "group": "D. Backend, Data, and APIs",
+      "owner": "backend",
+      "cli_surface": [
+        "kvdf data-design",
+        "kvdf migration",
+        "kvdf release"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 13,
+      "key": "database",
+      "name": "Database",
+      "group": "D. Backend, Data, and APIs",
+      "owner": "backend",
+      "cli_surface": [
+        "kvdf data-design",
+        "kvdf migration",
+        "kvdf release"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 14,
+      "key": "authentication",
+      "name": "Authentication",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 15,
+      "key": "authorization",
+      "name": "Authorization",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf owner",
+        "kvdf developer",
+        "kvdf task assessment"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 16,
+      "key": "admin_panel",
+      "name": "Admin Panel",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "admin_frontend",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 17,
+      "key": "settings_system",
+      "name": "Settings System",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "admin_frontend",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 18,
+      "key": "theme_branding",
+      "name": "Theme / Colors / Branding / Design Tokens",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 19,
+      "key": "dashboard_customization",
+      "name": "Dashboard Customization",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 20,
+      "key": "notifications",
+      "name": "Notifications",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 21,
+      "key": "search_filtering",
+      "name": "Search & Filtering",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 22,
+      "key": "files_media",
+      "name": "Files & Media",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 23,
+      "key": "reports_analytics",
+      "name": "Reports & Analytics",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 24,
+      "key": "audit_logs",
+      "name": "Audit Logs",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 25,
+      "key": "security",
+      "name": "Security",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "qa",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 26,
+      "key": "integrations",
+      "name": "Integrations",
+      "group": "G. Commerce and Integrations",
+      "owner": "backend",
+      "cli_surface": [
+        "kvdf github",
+        "kvdf sync",
+        "kvdf release"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 27,
+      "key": "payments_billing",
+      "name": "Payments / Billing",
+      "group": "G. Commerce and Integrations",
+      "owner": "backend",
+      "cli_surface": [
+        "kvdf github",
+        "kvdf sync",
+        "kvdf release"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 28,
+      "key": "seo",
+      "name": "SEO",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 29,
+      "key": "localization_languages",
+      "name": "Localization / Languages",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 30,
+      "key": "accessibility",
+      "name": "Accessibility",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "cli_surface": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 31,
+      "key": "performance",
+      "name": "Performance",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "qa",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 32,
+      "key": "error_handling",
+      "name": "Error Handling",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 33,
+      "key": "testing_qa",
+      "name": "Testing / QA",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "qa",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 34,
+      "key": "deployment",
+      "name": "Deployment",
+      "group": "I. Operations and Release",
+      "owner": "qa",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 35,
+      "key": "production_publish",
+      "name": "Production vs Publish",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 36,
+      "key": "backup_recovery",
+      "name": "Backup / Recovery",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 37,
+      "key": "monitoring",
+      "name": "Monitoring",
+      "group": "I. Operations and Release",
+      "owner": "qa",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 38,
+      "key": "documentation",
+      "name": "Documentation",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 39,
+      "key": "support_help_center",
+      "name": "Support / Help Center",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 40,
+      "key": "legal_compliance",
+      "name": "Legal / Compliance",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 41,
+      "key": "content_management",
+      "name": "Content Management",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 42,
+      "key": "workflows_approvals",
+      "name": "Workflows / Approvals",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 43,
+      "key": "multi_tenancy",
+      "name": "Multi-Tenancy",
+      "group": "G. Commerce and Integrations",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf github",
+        "kvdf sync",
+        "kvdf release"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 44,
+      "key": "feature_flags",
+      "name": "Feature Flags",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 45,
+      "key": "data_import_export",
+      "name": "Data Import / Export",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 46,
+      "key": "scheduling_automation",
+      "name": "Scheduling / Automation",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 47,
+      "key": "ai_product_features",
+      "name": "AI Product Features",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf docs",
+        "kvdf prompt-pack",
+        "kvdf example"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 48,
+      "key": "data_governance",
+      "name": "Data Governance",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 49,
+      "key": "tenant_admin_customization",
+      "name": "Tenant / Admin Customization",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "admin_frontend",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 50,
+      "key": "email_notification_templates",
+      "name": "Email / Notification Templates",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 51,
+      "key": "dynamic_forms_custom_fields",
+      "name": "Dynamic Forms / Custom Fields",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf dashboard",
+        "kvdf task",
+        "kvdf policy"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 52,
+      "key": "versioning_api_versioning",
+      "name": "Versioning / API Versioning",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf release",
+        "kvdf dashboard",
+        "kvdf handoff"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    },
+    {
+      "id": 53,
+      "key": "kabeeri_control_layer",
+      "name": "Kabeeri Development Control Layer",
+      "group": "J. Kabeeri Control Layer",
+      "owner": "docs",
+      "cli_surface": [
+        "kvdf task",
+        "kvdf change report",
+        "kvdf trace report"
+      ],
+      "docs_surface": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/pages/en/capabilities.html",
+        "docs/site/pages/ar/capabilities.html",
+        "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+      ],
+      "source_reference": [
+        "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md"
+      ]
+    }
+  ]
+}

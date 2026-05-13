@@ -4,6 +4,7 @@ const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { table } = require("../ui");
+const { readStateArray } = require("../services/state_utils");
 
 function contextPack(action, value, flags = {}, deps = {}) {
   ensureWorkspace();
@@ -51,6 +52,15 @@ function contextPack(action, value, flags = {}, deps = {}) {
     const cost = calculateUsageCost({ provider, model, inputTokens, outputTokens, cachedTokens });
     const id = flags.id || `ctx-${String(data.context_packs.length + 1).padStart(3, "0")}`;
     if (data.context_packs.some((entry) => entry.context_pack_id === id)) throw new Error(`Context pack already exists: ${id}`);
+    const taskKind = flags.kind || inferTaskKind(taskItem, inferTaskRisk(taskItem));
+    const compactGuidance = buildCompactGuidance(taskItem, {
+      taskKind,
+      allowedFiles,
+      forbiddenFiles,
+      openQuestions: parseCsv(flags.questions || flags["open-questions"]),
+      promptPack: flags.prompt_pack || flags.pack || null,
+      route: recommendModelRoute(taskKind, inferTaskRisk(taskItem))
+    });
     const pack = {
       context_pack_id: id,
       task_id: taskId,
@@ -70,6 +80,7 @@ function contextPack(action, value, flags = {}, deps = {}) {
       estimated_cost: flags.cost !== undefined ? Number(flags.cost || 0) : cost.cost,
       cost_source: flags.cost !== undefined ? "manual" : cost.source,
       currency: flags.currency || getPricingCurrency() || "USD",
+      compact_guidance: compactGuidance,
       created_at: new Date().toISOString()
     };
     data.context_packs.push(pack);
@@ -190,18 +201,26 @@ function ensureCostControlState() {
   fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "ai_usage"), { recursive: true });
   if (!fileExists(".kabeeri/ai_usage/context_packs.json")) writeJsonFile(".kabeeri/ai_usage/context_packs.json", { context_packs: [] });
   if (!fileExists(".kabeeri/ai_usage/cost_preflights.json")) writeJsonFile(".kabeeri/ai_usage/cost_preflights.json", { preflights: [] });
-  if (!fileExists(".kabeeri/ai_usage/model_routing.json")) {
-    writeJsonFile(".kabeeri/ai_usage/model_routing.json", {
-      routes: [
-        { task_kind: "intent_classification", recommended_model_class: "cheap", reason: "Short classification can use low-cost models or local rules." },
-        { task_kind: "context_pack_generation", recommended_model_class: "cheap", reason: "File lists, summaries, and acceptance extraction should be inexpensive." },
-        { task_kind: "standard_docs_spec", recommended_model_class: "balanced", reason: "Documentation synthesis needs quality but usually does not require premium reasoning." },
-        { task_kind: "implementation", recommended_model_class: "balanced", reason: "Production code changes usually need stronger reasoning than simple classification." },
-        { task_kind: "security_review", recommended_model_class: "premium", reason: "Security review has higher risk and benefits from stronger reasoning." },
-        { task_kind: "owner_verify", recommended_model_class: "human_only", reason: "Final verification is Owner-only." }
-      ]
-    });
+  const routeFile = ".kabeeri/ai_usage/model_routing.json";
+  const desiredRoutes = [
+    { task_kind: "intent_classification", recommended_model_class: "cheap", reason: "Short classification can use low-cost models or local rules." },
+    { task_kind: "context_pack_generation", recommended_model_class: "cheap", reason: "File lists, summaries, and acceptance extraction should be inexpensive." },
+    { task_kind: "project_start", recommended_model_class: "cheap", reason: "Start-of-project intake, questionnaire summaries, and compact guidance should be low-cost by default." },
+    { task_kind: "standard_docs_spec", recommended_model_class: "balanced", reason: "Documentation synthesis needs quality but usually does not require premium reasoning." },
+    { task_kind: "implementation", recommended_model_class: "balanced", reason: "Production code changes usually need stronger reasoning than simple classification." },
+    { task_kind: "security_review", recommended_model_class: "premium", reason: "Security review has higher risk and benefits from stronger reasoning." },
+    { task_kind: "owner_verify", recommended_model_class: "human_only", reason: "Final verification is Owner-only." }
+  ];
+  if (!fileExists(routeFile)) {
+    writeJsonFile(routeFile, { routes: desiredRoutes });
+    return;
   }
+  const state = readJsonFile(routeFile);
+  state.routes = state.routes || [];
+  for (const route of desiredRoutes) {
+    if (!state.routes.some((item) => item.task_kind === route.task_kind)) state.routes.push(route);
+  }
+  writeJsonFile(routeFile, state);
 }
 
 function estimateContextPackTokens(taskItem, allowedFiles) {
@@ -246,6 +265,10 @@ ${pack.acceptance_criteria.length ? pack.acceptance_criteria.map((item) => `- ${
 
 ${pack.memory_summary}
 
+## Compact Guidance
+
+${renderCompactGuidance(pack.compact_guidance)}
+
 ## Open Questions
 
 ${pack.open_questions.length ? pack.open_questions.map((item) => `- ${item}`).join("\n") : "- None recorded."}
@@ -256,6 +279,87 @@ ${pack.open_questions.length ? pack.open_questions.map((item) => `- ${item}`).jo
 - Cost: ${pack.estimated_cost} ${pack.currency}
 - Cost source: ${pack.cost_source}
 `;
+}
+
+function buildCompactGuidance(taskItem, options = {}) {
+  const taskKind = options.taskKind || inferTaskKind(taskItem, inferTaskRisk(taskItem));
+  const allowedFiles = options.allowedFiles || [];
+  const forbiddenFiles = options.forbiddenFiles || [];
+  const openQuestions = options.openQuestions || [];
+  const route = options.route || recommendModelRoute(taskKind, inferTaskRisk(taskItem));
+  const uiDecisionSummary = readQuestionnaireUiDecisionSummary();
+  return {
+    task_kind: taskKind,
+    token_saving_hint: "Use this compact guidance instead of rereading the whole repository or previous chat history.",
+    execution_mode: ["implementation", "project_start", "context_pack_generation"].includes(taskKind) && allowedFiles.length <= 4 ? "compact_first" : "guided_first",
+    recommended_model_class: route.recommended_model_class || "balanced",
+    routing_reason: route.reason || "Balanced by default.",
+    allowed_files_count: allowedFiles.length,
+    forbidden_files_count: forbiddenFiles.length,
+    key_acceptance_summary: (taskItem.acceptance_criteria || []).slice(0, 4),
+    open_questions: openQuestions.slice(0, 8),
+    ui_decisions: uiDecisionSummary ? {
+      pending_count: uiDecisionSummary.pending_count,
+      pending_titles: uiDecisionSummary.pending_titles.slice(0, 6),
+      report_path: uiDecisionSummary.report_path
+    } : null,
+    next_actions: buildCompactNextActions(taskItem, route, openQuestions, uiDecisionSummary)
+  };
+}
+
+function buildCompactNextActions(taskItem, route, openQuestions, uiDecisionSummary) {
+  const actions = [];
+  actions.push(`Use ${route.recommended_model_class || "balanced"} routing for ${inferTaskKind(taskItem, inferTaskRisk(taskItem))}.`);
+  actions.push("Compose the prompt from compact guidance, allowed files, and acceptance criteria only.");
+  if (uiDecisionSummary && uiDecisionSummary.pending_count > 0) {
+    actions.push(`Resolve ${uiDecisionSummary.pending_count} pending UI decision(s) before full frontend implementation.`);
+  }
+  if (openQuestions.length) actions.push("Ask only the unanswered questions that block implementation.");
+  return actions;
+}
+
+function renderCompactGuidance(compactGuidance) {
+  if (!compactGuidance) return "- None recorded.";
+  const lines = [
+    `- Task kind: ${compactGuidance.task_kind || "unknown"}`,
+    `- Execution mode: ${compactGuidance.execution_mode || "guided_first"}`,
+    `- Recommended model class: ${compactGuidance.recommended_model_class || "balanced"}`,
+    `- Routing reason: ${compactGuidance.routing_reason || "No routing reason recorded."}`,
+    `- Token-saving hint: ${compactGuidance.token_saving_hint || ""}`,
+    `- Allowed files count: ${compactGuidance.allowed_files_count || 0}`,
+    `- Forbidden files count: ${compactGuidance.forbidden_files_count || 0}`
+  ];
+  if ((compactGuidance.key_acceptance_summary || []).length) {
+    lines.push("- Key acceptance summary:");
+    lines.push(...compactGuidance.key_acceptance_summary.map((item) => `  - ${item}`));
+  }
+  if ((compactGuidance.open_questions || []).length) {
+    lines.push("- Open questions:");
+    lines.push(...compactGuidance.open_questions.map((item) => `  - ${item}`));
+  }
+  if (compactGuidance.ui_decisions && compactGuidance.ui_decisions.pending_count) {
+    lines.push(`- Pending UI decisions: ${compactGuidance.ui_decisions.pending_count}`);
+    lines.push(...compactGuidance.ui_decisions.pending_titles.map((item) => `  - ${item}`));
+  }
+  if ((compactGuidance.next_actions || []).length) {
+    lines.push("- Next actions:");
+    lines.push(...compactGuidance.next_actions.map((item) => `  - ${item}`));
+  }
+  return lines.join("\n");
+}
+
+function readQuestionnaireUiDecisionSummary() {
+  const filePath = path.join(repoRoot(), ".kabeeri", "questionnaires", "missing_answers_report.json");
+  if (!fileExists(filePath)) return null;
+  const report = readJsonFile(filePath);
+  const uiAreas = new Set(["ui_ux_design", "public_frontend", "admin_frontend", "internal_operations_frontend", "theme_branding", "dashboard_customization", "accessibility"]);
+  const pending = [...(report.missing || []), ...(report.follow_up || [])].filter((item) => uiAreas.has(item.area_key));
+  if (!pending.length) return null;
+  return {
+    report_path: ".kabeeri/questionnaires/missing_answers_report.json",
+    pending_count: pending.length,
+    pending_titles: pending.map((item) => item.area).filter(Boolean)
+  };
 }
 
 function defaultPricingCurrency() {
@@ -283,6 +387,7 @@ function inferTaskRisk(taskItem) {
 function inferTaskKind(taskItem, riskLevel) {
   if (riskLevel === "high") return "security_review";
   const text = `${taskItem.title || ""} ${taskItem.source || ""}`.toLowerCase();
+  if (/(questionnaire|intake|onboarding|brief|start mode|project start|start pack|prompt pack)/.test(text)) return "project_start";
   if (/doc|spec|documentation/.test(text)) return "standard_docs_spec";
   return "implementation";
 }
@@ -307,12 +412,6 @@ function getTaskBudget(taskId) {
     max_usage_tokens: active.max_usage_tokens || null,
     max_cost: active.max_cost || null
   };
-}
-
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  const data = readJsonFile(file);
-  return Array.isArray(data[key]) ? data[key] : [];
 }
 
 function parseCsv(value) {

@@ -1,8 +1,8 @@
 # Kabeeri VDF Documentation Site
 
-This is a static local documentation site. It keeps the existing visual style
-and renders detailed Arabic and English documentation from
-`assets/js/app.js`.
+This is a static local documentation site for developers and app builders only.
+It keeps the existing visual style and renders detailed Arabic and English
+documentation from `assets/js/app.js`.
 
 ## Open Locally
 
@@ -16,10 +16,27 @@ node docs/site/generate-pages.js
 
 The generator creates the shell pages for both languages. The detailed content
 is rendered in the browser from `assets/js/app.js`.
+The same docs-site build also emits a deep publishing coverage report in
+`docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json` so the published
+families stay visible from CLI and validation. The generator also writes a
+template catalog in `docs/site/page-templates.json`, a site manifest in
+`docs/site/site-manifest.json`, page contracts in
+`docs/site/page-contracts.json`, and a docs-generation workflow report in
+`docs/reports/DOCS_SITE_GENERATION_WORKFLOW.json`.
+Use `kvdf docs workflow` when you want the workflow report itself without
+opening the browser.
+Use `kvdf docs validate --json` to confirm the site, generated pages, and
+localized guidance still match the current command surface before publishing.
+`kvdf docs sync` writes a docs site sync report to
+`docs/reports/DOCS_SITE_SYNC_REPORT.json` after rebuilding and validating the
+site.
 
 ## Structure
 
 - `index.html`
+- `page-templates.json`
+- `site-manifest.json`
+- `page-contracts.json`
 - `assets/css/style.css`
 - `assets/js/app.js`
 - `pages/en/*.html`
@@ -27,10 +44,11 @@ is rendered in the browser from `assets/js/app.js`.
 
 ## Coverage
 
-The site is organized around `docs/SYSTEM_CAPABILITIES_REFERENCE.md` and covers:
+The site is organized around developer-facing capability docs and covers:
 
 - complete system capabilities
 - how AI works inside the Kabeeri environment
+- developer onboarding
 - repository foldering
 - new application roadmap
 - continuing existing Kabeeri projects
@@ -45,9 +63,14 @@ The site is organized around `docs/SYSTEM_CAPABILITIES_REFERENCE.md` and covers:
 - app boundary governance
 - workstreams and execution scope
 - prompt packs
+- WordPress development and WordPress plugin development
 - live dashboard
 - AI cost control
 - multi-AI governance
 - GitHub and release gates
-- six practical build playbooks
+- AI run provenance and docs validation
+- docs site generation and page contracts
+- eight practical build playbooks
 - troubleshooting
+
+Framework-internal governance content is intentionally excluded from this site.

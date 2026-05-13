@@ -21,11 +21,16 @@ GitHub sync connects Kabeeri tasks, milestones, labels, issues, and releases to 
 
 ```bash
 kvdf github plan --version v3.0.0 --dry-run
+kvdf github report
 kvdf github label sync --version v3.0.0 --dry-run
 kvdf github milestone sync --version v3.0.0 --dry-run
 kvdf github issue sync --version v3.0.0 --dry-run
 kvdf github issue sync --version v3.0.0 --confirm
 ```
+
+`kvdf github report` is the read-only trace surface for the local GitHub sync
+adapter. It summarizes the current config, issue map, team feedback records, and
+the CLI paths that can safely invoke dry-run or confirmed writes.
 
 ## Audit
 

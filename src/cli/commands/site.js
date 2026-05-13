@@ -1,3 +1,5 @@
+const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../services/local_server");
+
 function serveSite(port, options = {}, deps = {}) {
   const http = require("http");
   const fs = require("fs");
@@ -15,6 +17,16 @@ function serveSite(port, options = {}, deps = {}) {
   const homeFile = path.join(repoRoot(), ".kabeeri", "site", "index.html");
   const autoPort = String(port).toLowerCase() === "auto" || options["auto-port"] === true || options["auto-port"] === "true";
   const startPort = autoPort ? Number(options.start || options["start-port"] || 4177) : Number(port || 4177);
+  if (!shouldStartLocalServer(options)) {
+    const message = buildLocalServerSkipMessage("Kabeeri customer page server");
+    console.log(message);
+    return {
+      report_type: "local_server_skipped",
+      server: "customer_page",
+      skipped: true,
+      message
+    };
+  }
 
   function start(currentPort) {
     const server = http.createServer((request, response) => {

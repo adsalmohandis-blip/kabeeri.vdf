@@ -4,6 +4,7 @@ const path = require("path");
 const { ensureWorkspace, writeJsonFile } = require("../workspace");
 const { repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
+const { appendJsonLine, readJsonLines } = require("../services/jsonl");
 
 function memory(action, value, flags = {}, deps = {}) {
   const appendAudit = deps.appendAudit || (() => {});
@@ -87,18 +88,6 @@ function buildMemorySummary() {
     })));
   }
   return summary;
-}
-
-function appendJsonLine(relativePath, value) {
-  const file = path.join(repoRoot(), relativePath);
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, `${JSON.stringify(value)}\n`, "utf8");
-}
-
-function readJsonLines(relativePath) {
-  const file = path.join(repoRoot(), relativePath);
-  if (!fs.existsSync(file)) return [];
-  return fs.readFileSync(file, "utf8").split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
 }
 
 module.exports = {

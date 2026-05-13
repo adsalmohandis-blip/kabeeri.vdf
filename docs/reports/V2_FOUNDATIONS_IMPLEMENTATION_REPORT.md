@@ -1,5 +1,15 @@
 # V2 Foundations Implementation Report
 
+## Current Status Addendum
+
+Updated: 2026-05-12.
+
+This is a historical implementation report. The current runtime now includes
+task governance, Agile delivery, sprint support, project intake flows, runtime
+schemas, dashboard state, questionnaire coverage, prompt packs, and the newer
+CLI validation and source-package surfaces. The original v2 wording is kept as
+phase history only.
+
 ## Summary
 
 Phase 05 applied the v2 deep foundation layer. The work created canonical delivery mode, project intake, task governance/provenance, Agile delivery, sprint cost, and `.kabeeri/ai_usage` files while preserving existing v1/v2 documents.

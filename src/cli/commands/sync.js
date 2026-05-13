@@ -52,8 +52,9 @@ function buildSyncStatus(flags = {}) {
   const aheadBehind = upstream ? readAheadBehind(upstream, cwd) : { ahead: null, behind: null, available: false };
   const hasWorkspace = fs.existsSync(path.join(cwd, ".kabeeri"));
   const collaboration = detectCollaborationMode(cwd, hasWorkspace);
+  const githubTeamFeedback = collaboration.mode === "team" ? readGitHubTeamFeedback(cwd) : { items: [] };
   const status = decideSyncStatus({ statusEntries, aheadBehind, upstream });
-  const warnings = buildSyncWarnings({ statusEntries, aheadBehind, upstream, remoteUrl, hasWorkspace, collaboration });
+  const warnings = buildSyncWarnings({ statusEntries, aheadBehind, upstream, remoteUrl, hasWorkspace, collaboration, githubTeamFeedback });
 
   return {
     report_type: "github_team_sync_status",
@@ -73,6 +74,13 @@ function buildSyncStatus(flags = {}) {
     sync_policy: collaboration.sync_policy,
     team_signals: collaboration.signals,
     team_counts: collaboration.counts,
+    github_team_feedback: collaboration.mode === "team" ? {
+      total: githubTeamFeedback.items.length,
+      issue_feedback: githubTeamFeedback.items.filter((item) => item.feedback_type === "issue").length,
+      pr_feedback: githubTeamFeedback.items.filter((item) => item.feedback_type === "pr").length,
+      status_feedback: githubTeamFeedback.items.filter((item) => item.feedback_type === "status").length,
+      comment_feedback: githubTeamFeedback.items.filter((item) => item.feedback_type === "comment").length
+    } : null,
     warnings,
     next_actions: buildSyncNextActions({ statusEntries, aheadBehind, upstream, hasWorkspace, collaboration }),
     recommended_commands: [
@@ -171,7 +179,7 @@ function detectCollaborationMode(cwd, hasWorkspace) {
   };
 }
 
-function buildSyncWarnings({ statusEntries, aheadBehind, upstream, remoteUrl, hasWorkspace, collaboration }) {
+function buildSyncWarnings({ statusEntries, aheadBehind, upstream, remoteUrl, hasWorkspace, collaboration, githubTeamFeedback }) {
   const warnings = [];
   if (!remoteUrl) warnings.push("No git remote URL detected.");
   if (!upstream) warnings.push("No upstream branch detected for the current branch.");
@@ -180,6 +188,7 @@ function buildSyncWarnings({ statusEntries, aheadBehind, upstream, remoteUrl, ha
   if (statusEntries.length) warnings.push(`Working tree has ${statusEntries.length} changed file(s).`);
   if (!hasWorkspace) warnings.push("No .kabeeri workspace found; team sync can only report git state.");
   if (collaboration.mode !== "team" && collaboration.sync_policy === "optional") warnings.push("Team sync is optional for solo or single-developer local workspaces.");
+  if (collaboration.mode === "team" && githubTeamFeedback.items.length === 0) warnings.push("GitHub team feedback is empty; issue/PR/status/comment sync can seed the log.");
   return warnings;
 }
 
@@ -187,6 +196,7 @@ function buildSyncNextActions({ statusEntries, aheadBehind, upstream, hasWorkspa
   const actions = [];
   if (collaboration.mode !== "team" && collaboration.sync_policy === "optional") actions.push("Use sync as a manual safety check; it is not required after every local solo action.");
   if (collaboration.mode === "team") actions.push("Use `kvdf sync status` before starting team-scoped work and after task/session/capture changes.");
+  if (collaboration.mode === "team") actions.push("Use `kvdf github status` to review issue, PR, status, and comment feedback before coordinating remote work.");
   if (!upstream) actions.push("Set an upstream branch before team sync can compare local and remote progress.");
   if (aheadBehind.behind && aheadBehind.behind > 0) actions.push("Run `kvdf sync pull` to preview the safe pull command; use --confirm only after reviewing local changes.");
   if (statusEntries.length) actions.push("Capture, commit, or intentionally ignore local changes before pulling team updates.");
@@ -210,6 +220,16 @@ function renderSyncStatus(report) {
     ["Collaboration mode", report.collaboration_mode || "unknown"],
     ["Sync policy", report.sync_policy || "optional"]
   ]));
+  if (report.github_team_feedback) {
+    console.log("");
+    console.log(table(["GitHub Team Feedback", "Value"], [
+      ["Total", report.github_team_feedback.total],
+      ["Issue feedback", report.github_team_feedback.issue_feedback],
+      ["PR feedback", report.github_team_feedback.pr_feedback],
+      ["Status feedback", report.github_team_feedback.status_feedback],
+      ["Comment feedback", report.github_team_feedback.comment_feedback]
+    ]));
+  }
   console.log("");
   console.log("Warnings:");
   for (const item of report.warnings.length ? report.warnings : ["None."]) console.log(`- ${item}`);
@@ -377,6 +397,10 @@ function readJson(filePath) {
   } catch (_) {
     return null;
   }
+}
+
+function readGitHubTeamFeedback(cwd) {
+  return readJson(path.join(cwd, ".kabeeri", "github", "team_feedback.json")) || { items: [] };
 }
 
 module.exports = {

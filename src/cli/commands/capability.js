@@ -1,7 +1,16 @@
+const fs = require("fs");
+const path = require("path");
 const { table } = require("../ui");
+const { repoRoot } = require("../fs_utils");
+const { buildKVDFFeatureRestructureRoadmap } = require("../services/evolution");
 
-function capability(action, value) {
+const CAPABILITY_SURFACE_REPORT = "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json";
+const CAPABILITY_DOC_MATRIX_REPORT = "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json";
+const CAPABILITY_SEARCH_INDEX_REPORT = "docs/reports/KVDF_CAPABILITY_SEARCH_INDEX.json";
+
+function capability(action, value, flags = {}) {
   const areas = getSystemAreas();
+  const registry = buildCapabilityRegistry(areas);
   if (!action || action === "list") {
     console.log(table(["ID", "Area", "Group"], areas.map((area) => [area.id, area.name, area.group])));
     return;
@@ -17,7 +26,67 @@ function capability(action, value) {
   }
 
   if (action === "map") {
-    console.log(JSON.stringify({ areas, groups: buildCapabilityGroups() }, null, 2));
+    console.log(JSON.stringify({ areas, groups: buildCapabilityGroups(), registry }, null, 2));
+    return;
+  }
+
+  if (action === "surface") {
+    const report = buildCapabilitySurfaceReport(registry);
+    writeCapabilitySurfaceReport(report);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(`Capability CLI surface: ${report.coverage.complete_capabilities}/${report.coverage.total_capabilities} capabilities mapped`);
+    return;
+  }
+
+  if (action === "matrix") {
+    const report = buildCapabilityDocMatrix(registry);
+    writeCapabilityDocMatrixReport(report);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(`Capability documentation matrix: ${report.coverage.complete_capabilities}/${report.coverage.total_capabilities} capabilities mapped`);
+    return;
+  }
+
+  if (action === "search") {
+    const query = [value, flags.q, flags.query].find((item) => typeof item === "string" && item.trim()) || "";
+    const report = buildCapabilitySearchReport(registry, query, flags);
+    writeCapabilitySearchReport(report);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderCapabilitySearchReport(report, table));
+    return;
+  }
+
+  if (action === "registry") {
+    const subaction = String(value || "").trim().toLowerCase();
+    if (!subaction || subaction === "list") {
+      if (flags.json) {
+        console.log(JSON.stringify(registry, null, 2));
+      } else {
+        console.log(table(["ID", "Capability", "Owner", "Source"], registry.map((item) => [
+          item.id,
+          item.name,
+          item.owner,
+          item.source_reference.join(", ")
+        ])));
+      }
+      return;
+    }
+
+    if (subaction === "map") {
+      console.log(JSON.stringify(buildCapabilityRegistryMap(registry), null, 2));
+      return;
+    }
+
+    const key = String(flags.id || flags.key || flags.name || value || "").trim().toLowerCase();
+    if (!key) throw new Error("Missing capability registry id or key.");
+    if (subaction === "show") {
+      const item = registry.find((entry) => String(entry.id) === key || entry.key === key || entry.name.toLowerCase() === key);
+      if (!item) throw new Error(`Capability registry entry not found: ${value || key}`);
+      console.log(JSON.stringify(item, null, 2));
+      return;
+    }
+    const item = registry.find((entry) => String(entry.id) === key || entry.key === key || entry.name.toLowerCase() === key);
+    if (!item) throw new Error(`Capability registry entry not found: ${value || key}`);
+    console.log(JSON.stringify(item, null, 2));
     return;
   }
 
@@ -58,6 +127,455 @@ function buildCapabilityGroups() {
     "I. Operations and Release": ["Deployment", "Production vs publish", "Backup/recovery", "Monitoring", "Maintenance mode", "Import/export", "Scheduling/automation", "Versioning"],
     "J. Kabeeri Control Layer": ["Delivery mode", "Intake mode", "Task creation rules", "Task provenance", "AI token usage", "Owner verify", "Locks", "Prompt runs", "Cost calculator", "Dashboard state"]
   };
+}
+
+function buildCapabilityRegistry(areas = getSystemAreas()) {
+  const sourceReferences = ["knowledge/standard_systems/SYSTEM_AREAS_INDEX.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"];
+  return areas.map((area) => ({
+    id: area.id,
+    key: area.key,
+    name: area.name,
+    group: area.group,
+    owner: mapAreaToWorkstream(area.key),
+    activation_states: area.activation_states,
+    question_group: area.question_group,
+    source_reference: sourceReferences,
+    source_type: "system_area",
+    traceability: {
+      capability_map: "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+      system_areas_index: "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md"
+    }
+  }));
+}
+
+function buildCapabilityRegistryMap(registry) {
+  const byGroup = {};
+  const byOwner = {};
+  for (const item of registry) {
+    byGroup[item.group] = byGroup[item.group] || [];
+    byGroup[item.group].push(item.key);
+    byOwner[item.owner] = byOwner[item.owner] || [];
+    byOwner[item.owner].push(item.key);
+  }
+  return {
+    report_type: "kvdf_capability_registry",
+    generated_at: new Date().toISOString(),
+    total_capabilities: registry.length,
+    registry,
+    by_group: byGroup,
+    by_owner: byOwner,
+    source: "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md"
+  };
+}
+
+function buildCapabilitySurfaceReport(registry) {
+  const commandFamilies = {
+    "A. Product & Business": ["kvdf project route", "kvdf questionnaire plan", "kvdf blueprint"],
+    "B. Users, Access, and Journeys": ["kvdf owner", "kvdf developer", "kvdf task assessment"],
+    "C. Frontend Experience": ["kvdf design", "kvdf vibe", "kvdf prompt-pack"],
+    "D. Backend, Data, and APIs": ["kvdf data-design", "kvdf migration", "kvdf release"],
+    "E. Admin, Settings, and Customization": ["kvdf dashboard", "kvdf task", "kvdf policy"],
+    "F. Engagement, Content, and Growth": ["kvdf docs", "kvdf prompt-pack", "kvdf example"],
+    "G. Commerce and Integrations": ["kvdf github", "kvdf sync", "kvdf release"],
+    "H. Quality, Security, and Compliance": ["kvdf validate", "kvdf security", "kvdf policy"],
+    "I. Operations and Release": ["kvdf release", "kvdf dashboard", "kvdf handoff"],
+    "J. Kabeeri Control Layer": ["kvdf task", "kvdf change report", "kvdf trace report"]
+  };
+  const docsSurface = [
+    "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+    "docs/site/pages/en/capabilities.html",
+    "docs/site/pages/ar/capabilities.html",
+    "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json"
+  ];
+  const capabilities = registry.map((item) => ({
+    id: item.id,
+    key: item.key,
+    name: item.name,
+    group: item.group,
+    owner: item.owner,
+    cli_surface: commandFamilies[item.group] || ["kvdf capability"],
+    docs_surface: docsSurface,
+    source_reference: item.source_reference
+  }));
+  return {
+    report_type: "kvdf_capability_cli_surface",
+    generated_at: new Date().toISOString(),
+    total_capabilities: registry.length,
+    coverage: {
+      total_capabilities: capabilities.length,
+      complete_capabilities: capabilities.length,
+      partial_capabilities: 0
+    },
+    capabilities
+  };
+}
+
+function buildCapabilityDocMatrix(registry) {
+  const rows = registry.map((item) => {
+    const links = buildCapabilityDocMatrixLinks(item);
+    return {
+      id: item.id,
+      key: item.key,
+      name: item.name,
+      group: item.group,
+      owner: item.owner,
+      docs_links: links.docs_links,
+      cli_links: links.cli_links,
+      runtime_links: links.runtime_links,
+      test_links: links.test_links,
+      report_links: links.report_links,
+      coverage: {
+        docs: links.docs_links.length > 0,
+        cli: links.cli_links.length > 0,
+        runtime: links.runtime_links.length > 0,
+        tests: links.test_links.length > 0,
+        reports: links.report_links.length > 0,
+        complete: links.docs_links.length > 0 && links.cli_links.length > 0 && links.runtime_links.length > 0 && links.test_links.length > 0 && links.report_links.length > 0
+      }
+    };
+  });
+
+  const byGroup = {};
+  const byOwner = {};
+  for (const row of rows) {
+    byGroup[row.group] = byGroup[row.group] || [];
+    byGroup[row.group].push(row.key);
+    byOwner[row.owner] = byOwner[row.owner] || [];
+    byOwner[row.owner].push(row.key);
+  }
+
+  const completeCapabilities = rows.filter((row) => row.coverage.complete).length;
+  return {
+    report_type: "kvdf_capability_doc_matrix",
+    generated_at: new Date().toISOString(),
+    report_path: CAPABILITY_DOC_MATRIX_REPORT,
+    source: "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+    source_reference: ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md"],
+    total_capabilities: rows.length,
+    coverage: {
+      total_capabilities: rows.length,
+      complete_capabilities: completeCapabilities,
+      partial_capabilities: rows.length - completeCapabilities
+    },
+    required_surfaces: ["docs", "cli", "runtime", "tests", "reports"],
+    rows,
+    by_group: byGroup,
+    by_owner: byOwner
+  };
+}
+
+function buildCapabilityDocMatrixLinks(item) {
+  const docsByGroup = {
+    "A. Product & Business": ["knowledge/standard_systems/PRODUCT_BLUEPRINT_CATALOG.json", "knowledge/project_intake/README.md"],
+    "B. Users, Access, and Journeys": ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "knowledge/task_tracking/TASK_GOVERNANCE.md"],
+    "C. Frontend Experience": ["knowledge/design_system/ui_ux_reference/", "docs/site/"],
+    "D. Backend, Data, and APIs": ["knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json", "knowledge/delivery_modes/"],
+    "E. Admin, Settings, and Customization": ["knowledge/governance/APP_BOUNDARY_GOVERNANCE.md", "knowledge/governance/WORKSTREAM_GOVERNANCE.md"],
+    "F. Engagement, Content, and Growth": ["knowledge/questionnaires/", "docs/site/"],
+    "G. Commerce and Integrations": ["integrations/github_sync/", "knowledge/governance/MULTI_AI_GOVERNANCE.md"],
+    "H. Quality, Security, and Compliance": ["knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md", "knowledge/task_tracking/TRACEABILITY.md"],
+    "I. Operations and Release": ["docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md", "docs/reports/DOCS_SITE_SYNC_REPORT.json"],
+    "J. Kabeeri Control Layer": ["knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md"]
+  };
+
+  const cliByGroup = {
+    "A. Product & Business": ["kvdf project route", "kvdf questionnaire plan", "kvdf blueprint"],
+    "B. Users, Access, and Journeys": ["kvdf resume", "kvdf track status", "kvdf owner"],
+    "C. Frontend Experience": ["kvdf design", "kvdf vibe", "kvdf prompt-pack"],
+    "D. Backend, Data, and APIs": ["kvdf data-design", "kvdf structured", "kvdf agile"],
+    "E. Admin, Settings, and Customization": ["kvdf dashboard", "kvdf policy", "kvdf task"],
+    "F. Engagement, Content, and Growth": ["kvdf docs", "kvdf capture", "kvdf questionnaire"],
+    "G. Commerce and Integrations": ["kvdf github", "kvdf sync", "kvdf multi-ai"],
+    "H. Quality, Security, and Compliance": ["kvdf validate", "kvdf security", "kvdf policy"],
+    "I. Operations and Release": ["kvdf release", "kvdf handoff", "kvdf reports"],
+    "J. Kabeeri Control Layer": ["kvdf evolution", "kvdf capability", "kvdf trace"]
+  };
+
+  const runtimeByGroup = {
+    "A. Product & Business": [".kabeeri/questionnaires/adaptive_intake_plan.json", ".kabeeri/project_profile.json"],
+    "B. Users, Access, and Journeys": [".kabeeri/session_track.json", ".kabeeri/tasks.json"],
+    "C. Frontend Experience": [".kabeeri/design_sources/", ".kabeeri/dashboard/ux_audits.json"],
+    "D. Backend, Data, and APIs": [".kabeeri/data_design.json", ".kabeeri/structured.json", ".kabeeri/agile.json"],
+    "E. Admin, Settings, and Customization": [".kabeeri/dashboard/", ".kabeeri/workstreams.json"],
+    "F. Engagement, Content, and Growth": [".kabeeri/questionnaires/answers.json", ".kabeeri/interactions/post_work_captures.json"],
+    "G. Commerce and Integrations": [".kabeeri/multi_ai_governance.json", ".kabeeri/github/team_feedback.json"],
+    "H. Quality, Security, and Compliance": [".kabeeri/policies/policy_results.json", ".kabeeri/access_tokens/", ".kabeeri/locks.json"],
+    "I. Operations and Release": [".kabeeri/reports/", ".kabeeri/handoff/", ".kabeeri/migrations/"],
+    "J. Kabeeri Control Layer": [".kabeeri/evolution.json", ".kabeeri/reports/live_reports_state.json", ".kabeeri/task_assessments.json"]
+  };
+
+  const testLinks = [
+    "tests/cli.integration.test.js",
+    "tests/service.unit.test.js",
+    "npm test"
+  ];
+
+  const reportLinks = [
+    CAPABILITY_DOC_MATRIX_REPORT,
+    "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+    "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+  ];
+
+  const docsLinks = uniqueStrings([
+    "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+    ...(docsByGroup[item.group] || [])
+  ]);
+  const cliLinks = uniqueStrings(cliByGroup[item.group] || ["kvdf capability"]);
+  const runtimeLinks = uniqueStrings(runtimeByGroup[item.group] || [".kabeeri/"]);
+
+  return {
+    docs_links: docsLinks,
+    cli_links: cliLinks,
+    runtime_links: runtimeLinks,
+    test_links: uniqueStrings(testLinks),
+    report_links: uniqueStrings(reportLinks)
+  };
+}
+
+function buildCapabilitySearchReport(registry, query = "", flags = {}) {
+  const surface = buildCapabilitySurfaceReport(registry);
+  const matrix = buildCapabilityDocMatrix(registry);
+  const roadmap = buildKVDFFeatureRestructureRoadmap({ appMode: false });
+  const entries = buildCapabilitySearchEntries(registry, surface, matrix, roadmap);
+  const filters = normalizeCapabilitySearchFilters(flags);
+  const queryText = normalizeSearchText(query);
+  const matches = entries.filter((entry) => capabilitySearchEntryMatches(entry, queryText, filters));
+  const facets = summarizeCapabilitySearchFacets(matches);
+  return {
+    report_type: "kvdf_capability_search_index",
+    generated_at: new Date().toISOString(),
+    query: queryText,
+    filters,
+    sources: {
+      capability_registry: "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md",
+      capability_surface: CAPABILITY_SURFACE_REPORT,
+      capability_doc_matrix: CAPABILITY_DOC_MATRIX_REPORT,
+      evolution_roadmap: "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md"
+    },
+    total_entries: entries.length,
+    total_matches: matches.length,
+    index: {
+      total_entries: entries.length,
+      facets: summarizeCapabilitySearchFacets(entries),
+      entries
+    },
+    facets,
+    results: matches
+  };
+}
+
+function buildCapabilitySearchEntries(registry, surface, matrix, roadmap) {
+  const surfaceByKey = new Map(surface.capabilities.map((item) => [item.key, item]));
+  const matrixByKey = new Map(matrix.rows.map((item) => [item.key, item]));
+  const entries = [];
+
+  for (const item of registry) {
+    const surfaceRow = surfaceByKey.get(item.key) || null;
+    const matrixRow = matrixByKey.get(item.key) || null;
+    const cliSurface = surfaceRow ? surfaceRow.cli_surface : [];
+    const cliLinks = matrixRow ? matrixRow.cli_links : [];
+    entries.push({
+      kind: "capability",
+      report_type: "kvdf_capability_registry",
+      track: deriveCapabilitySearchTrack(cliSurface.length ? cliSurface : cliLinks),
+      phase: item.group,
+      capability: item.key,
+      capability_name: item.name,
+      command: uniqueStrings([...(cliSurface || []), ...(cliLinks || [])]).join(", "),
+      summary: `Capability registry entry for ${item.name}`,
+      owner: item.owner,
+      source: item.source_reference.join(", "),
+      search_text: normalizeSearchText([
+        item.key,
+        item.name,
+        item.group,
+        item.owner,
+        ...(cliSurface || []),
+        ...(cliLinks || []),
+        "kvdf capability registry"
+      ].join(" "))
+    });
+  }
+
+  for (const item of surface.capabilities) {
+    entries.push({
+      kind: "surface",
+      report_type: "kvdf_capability_cli_surface",
+      track: deriveCapabilitySearchTrack(item.cli_surface),
+      phase: item.group,
+      capability: item.key,
+      capability_name: item.name,
+      command: uniqueStrings(item.cli_surface || []).join(", "),
+      summary: `Capability CLI surface for ${item.name}`,
+      owner: item.owner,
+      source: item.source_reference.join(", "),
+      search_text: normalizeSearchText([
+        item.key,
+        item.name,
+        item.group,
+        item.owner,
+        ...(item.cli_surface || []),
+        ...(item.docs_surface || []),
+        "kvdf capability surface"
+      ].join(" "))
+    });
+  }
+
+  for (const item of matrix.rows) {
+    entries.push({
+      kind: "matrix",
+      report_type: "kvdf_capability_doc_matrix",
+      track: deriveCapabilitySearchTrack(item.cli_links),
+      phase: item.coverage.complete ? "complete" : "partial",
+      capability: item.key,
+      capability_name: item.name,
+      command: uniqueStrings(item.cli_links || []).join(", "),
+      summary: `Capability documentation matrix for ${item.name}`,
+      owner: item.owner,
+      source: uniqueStrings([...(item.docs_links || []), ...(item.report_links || [])]).join(", "),
+      search_text: normalizeSearchText([
+        item.key,
+        item.name,
+        item.group,
+        item.owner,
+        ...(item.docs_links || []),
+        ...(item.cli_links || []),
+        ...(item.runtime_links || []),
+        ...(item.test_links || []),
+        ...(item.report_links || []),
+        item.coverage.complete ? "complete" : "partial",
+        "kvdf capability matrix"
+      ].join(" "))
+    });
+  }
+
+  for (const item of roadmap.roadmap || []) {
+    entries.push({
+      kind: "roadmap",
+      report_type: "kvdf_feature_restructure_roadmap",
+      track: "framework_owner",
+      phase: `phase-${item.order}`,
+      capability: item.id,
+      capability_name: item.title,
+      command: uniqueStrings(item.cli_surface || []).join(", "),
+      summary: item.purpose,
+      owner: "framework_owner",
+      source: uniqueStrings(item.docs_surface || []).join(", "),
+      search_text: normalizeSearchText([
+        item.id,
+        item.title,
+        item.purpose,
+        item.done_definition,
+        ...(item.cli_surface || []),
+        ...(item.docs_surface || []),
+        `phase-${item.order}`,
+        "kvdf evolution roadmap"
+      ].join(" "))
+    });
+  }
+
+  return entries;
+}
+
+function capabilitySearchEntryMatches(entry, queryText, filters = {}) {
+  if (filters.track && !normalizeSearchText(entry.track).includes(filters.track)) return false;
+  if (filters.capability && !entry.search_text.includes(filters.capability)) return false;
+  if (filters.command && !entry.search_text.includes(filters.command)) return false;
+  if (filters.phase && !normalizeSearchText(entry.phase).includes(filters.phase)) return false;
+  if (filters.report_type && !normalizeSearchText(entry.report_type).includes(filters.report_type)) return false;
+  if (queryText && !entry.search_text.includes(queryText)) return false;
+  return true;
+}
+
+function normalizeCapabilitySearchFilters(flags = {}) {
+  return {
+    track: normalizeSearchText(flags.track || flags.surface || ""),
+    capability: normalizeSearchText(flags.capability || flags.key || flags.name || ""),
+    command: normalizeSearchText(flags.command || flags.cli || ""),
+    phase: normalizeSearchText(flags.phase || ""),
+    report_type: normalizeSearchText(flags["report-type"] || flags.reportType || flags.report || "")
+  };
+}
+
+function summarizeCapabilitySearchFacets(entries) {
+  return {
+    track: summarizeBy(entries, "track"),
+    phase: summarizeBy(entries, "phase"),
+    report_type: summarizeBy(entries, "report_type"),
+    kind: summarizeBy(entries, "kind")
+  };
+}
+
+function renderCapabilitySearchReport(report, tableRenderer) {
+  const lines = [
+    "Capability Search Index",
+    "",
+    `Query: ${report.query || "(none)"}`,
+    `Filters: ${Object.entries(report.filters).filter(([, value]) => value).map(([key, value]) => `${key}=${value}`).join(", ") || "none"}`,
+    `Matches: ${report.total_matches}/${report.total_entries}`,
+    ""
+  ];
+
+  if (report.total_matches === 0) {
+    lines.push("No matching capability records found.");
+    return lines.join("\n");
+  }
+
+  lines.push("Top matches:");
+  const rows = report.results.slice(0, 20).map((item, index) => [
+    String(index + 1),
+    item.kind,
+    item.track,
+    item.capability,
+    item.phase,
+    item.report_type,
+    item.command || item.summary
+  ]);
+  lines.push(tableRenderer(["#", "Kind", "Track", "Capability", "Phase", "Report Type", "Command / Summary"], rows));
+  lines.push("");
+  lines.push(`Track facets: ${Object.entries(report.facets.track || {}).map(([key, value]) => `${key}:${value}`).join(", ") || "none"}`);
+  lines.push(`Phase facets: ${Object.entries(report.facets.phase || {}).map(([key, value]) => `${key}:${value}`).join(", ") || "none"}`);
+  lines.push(`Report type facets: ${Object.entries(report.facets.report_type || {}).map(([key, value]) => `${key}:${value}`).join(", ") || "none"}`);
+  return lines.join("\n");
+}
+
+function writeCapabilitySearchReport(report) {
+  fs.mkdirSync(path.dirname(path.join(repoRoot(), CAPABILITY_SEARCH_INDEX_REPORT)), { recursive: true });
+  fs.writeFileSync(path.join(repoRoot(), CAPABILITY_SEARCH_INDEX_REPORT), `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+function normalizeSearchText(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function deriveCapabilitySearchTrack(commands = []) {
+  const commandList = (Array.isArray(commands) ? commands : [commands]).map((item) => normalizeSearchText(item));
+  if (commandList.some((item) => item.includes("kvdf evolution") || item.includes("kvdf owner") || item.includes("kvdf plugins"))) return "framework_owner";
+  if (commandList.some((item) => item.includes("kvdf vibe") || item.includes("kvdf questionnaire") || item.includes("kvdf blueprint") || item.includes("kvdf data design") || item.includes("kvdf design") || item.includes("kvdf prompt pack"))) return "app_developer";
+  if (commandList.some((item) => item.includes("kvdf resume") || item.includes("kvdf validate") || item.includes("kvdf sync") || item.includes("kvdf dashboard") || item.includes("kvdf capability"))) return "shared";
+  return "shared";
+}
+
+function uniqueStrings(values) {
+  return [...new Set((values || []).map((item) => String(item).trim()).filter(Boolean))];
+}
+
+function summarizeBy(items, key) {
+  return (items || []).reduce((summary, item) => {
+    const value = item && item[key] ? item[key] : "unknown";
+    summary[value] = (summary[value] || 0) + 1;
+    return summary;
+  }, {});
+}
+
+function writeCapabilitySurfaceReport(report) {
+  fs.mkdirSync(path.dirname(path.join(repoRoot(), CAPABILITY_SURFACE_REPORT)), { recursive: true });
+  fs.writeFileSync(path.join(repoRoot(), CAPABILITY_SURFACE_REPORT), `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+function writeCapabilityDocMatrixReport(report) {
+  fs.mkdirSync(path.dirname(path.join(repoRoot(), CAPABILITY_DOC_MATRIX_REPORT)), { recursive: true });
+  fs.writeFileSync(path.join(repoRoot(), CAPABILITY_DOC_MATRIX_REPORT), `${JSON.stringify(report, null, 2)}\n`, "utf8");
 }
 
 function getSystemAreas() {
@@ -131,5 +649,8 @@ module.exports = {
   getSuggestedQuestionsForArea,
   mapAreaToWorkstream,
   buildCapabilityGroups,
+  buildCapabilityRegistry,
+  buildCapabilityDocMatrix,
+  buildCapabilitySearchReport,
   getSystemAreas
 };

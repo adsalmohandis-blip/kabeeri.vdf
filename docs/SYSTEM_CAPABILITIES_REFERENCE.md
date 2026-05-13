@@ -10,53 +10,111 @@ state are involved.
 > frameworks. It governs how ideas become scoped tasks, prompts, code work,
 > reviews, dashboards, handoffs, releases, and AI cost records.
 
+## Operating Model
+
+Kabeeri now presents itself through two primary tracks plus a shared platform
+layer. This keeps framework development and application development distinct
+without duplicating the core engine.
+
+| Track | Who It Serves | Core Cycle | What It Owns |
+| --- | --- | --- | --- |
+| Framework Owner Track | Maintain and extend Kabeeri itself. | `resume -> evolution priorities -> evolution temp -> implement -> sync -> validate -> verify` | Evolution Steward, framework governance, release readiness, dependency mapping, and follow-up tasks for Kabeeri internals. |
+| Vibe App Developer Track | Build real user applications with Kabeeri as the engine. | `resume -> vibe/ask -> blueprint/questionnaire -> temp -> tasks/capture -> validate -> handoff` | Vibe-first intake, app task execution, capture records, app blueprints, prompt packs, and app-facing task governance. |
+| Shared Platform Layer | Both tracks. | `resume -> guard -> conflict scan -> validate -> dashboard/reports` | CLI engine, workspace state, task tracker, dashboard, sync preflight, security, tokens, locks, and runtime schemas. |
+
+The tracks share the same CLI and workspace engine, but they do not share the
+same purpose:
+
+- Framework Owner Track changes Kabeeri.
+- Vibe App Developer Track uses Kabeeri to build an app.
+- Shared Platform Layer keeps both safe, visible, and resumable.
+
+The same structure is summarized in `docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md`.
+
 ## Quick Map
 
 | Area | What It Does | Main Runtime / Docs |
 | --- | --- | --- |
 | CLI Engine | Runs local workspace operations and governance commands. | `bin/kvdf.js`, `src/cli/`, `cli/CLI_COMMAND_REFERENCE.md` |
+| Runtime Services Layer | Holds reusable orchestration logic extracted from command facades so command handlers stay thin and shared behavior can be reused by dashboard, relay, and internal helpers. | `src/cli/services/`, `src/cli/commands/` |
+| Session Entry Router | Auto-routes a new session into the framework-owner track or vibe app-developer track without asking the human to choose first, then persists the selected track for later resume. | `kvdf entry`, `kvdf start`, `kvdf track route`, `src/cli/commands/resume.js`, `src/cli/commands/track.js`, `.kabeeri/session_track.json`, `knowledge/governance/TRACK_ROUTING_GOVERNANCE.md` |
 | Repository Foldering System | Defines a Laravel-like root architecture so maintainers and AI tools know where runtime, knowledge, packs, integrations, schemas, docs, tests, and local state belong. | `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`, `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, `kvdf structure` |
 | Workspace State | Stores the project truth under `.kabeeri/`. | `.kabeeri/`, `src/cli/workspace.js` |
-| Session Resume Guard | Detects whether a new session is framework-owner development, a user app workspace, or an uninitialized app folder, and separates app npm roots from the Kabeeri engine root. | `kvdf resume`, `kvdf start` |
+| Session Resume Guard | Detects whether a new session belongs to the framework-owner track, the vibe app-developer track, or an uninitialized app folder, and separates app npm roots from the Kabeeri engine root. | `kvdf resume`, `kvdf start`, `kvdf track status` |
+| Developer Onboarding Flow | Gives new developers a guided first-session path with enter, route, and resume steps, then persists the onboarding report so the safe opening path can be recalled later without chat history. | `kvdf onboarding`, `kvdf onboarding report`, `.kabeeri/reports/session_onboarding.json` |
+| Session Track Status | Shows the active session track, the persisted route decision, and the recommended next command for the current workspace. | `kvdf track status`, `src/cli/commands/track.js`, `.kabeeri/session_track.json` |
 | Framework Boundary Guard | Blocks accidental edits to Kabeeri framework internals from user workspaces unless an explicit framework-edit override is used, including capture and session file scopes. | `kvdf guard`, `kvdf capture`, `kvdf session` |
 | Conflict Scan | Checks command/help alignment, guard wiring, core/runtime schema validation, and workspace task/capture/session/lock drift before new framework development. | `kvdf conflict scan` |
-| Vibe-first UX | Converts natural language into governed suggestions, plans, captures, briefs, and next actions. | `knowledge/vibe_ux/`, `.kabeeri/interactions/` |
+| Vibe App Developer Track | Converts natural language into governed suggestions, plans, captures, briefs, and next actions for application work. | `knowledge/vibe_ux/`, `.kabeeri/interactions/` |
 | Delivery Mode Advisor | Recommends Agile or Structured from the requested application context and records the developer's final choice. | `knowledge/delivery_modes/`, `.kabeeri/delivery_decisions.json`, `kvdf delivery` |
 | Product Blueprint Catalog | Maps real market systems to channels, backend modules, frontend pages, database entities, workstreams, and risk flags for compact AI planning. | `knowledge/standard_systems/PRODUCT_BLUEPRINT_CATALOG.json`, `.kabeeri/product_blueprints.json`, `kvdf blueprint` |
 | Data Design Blueprint | Guides AI database modeling from business workflow to modules, entities, constraints, snapshots, indexes, audit, transactions, idempotency, and migration safety. | `knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json`, `.kabeeri/data_design.json`, `kvdf data-design` |
 | Agile Templates Runtime | Turns backlog, epic, story, sprint planning, impediments, retrospectives, velocity, forecast, and sprint reviews into executable workspace records. | `knowledge/agile_delivery/`, `.kabeeri/agile.json`, `.kabeeri/dashboard/agile_state.json` |
 | Structured Delivery Runtime | Turns Waterfall-style requirements, phases, deliverables, risks, change requests, phase gates, and traceability into executable workspace records. | `knowledge/delivery_modes/`, `.kabeeri/structured.json`, `.kabeeri/dashboard/structured_state.json` |
-| Project Intake | Starts new or existing projects with profile, user-language behavior, and delivery structure. | `knowledge/project_intake/`, `packs/generators/`, `packs/templates/` |
+| Project Intake | Starts new or existing projects with profile, user-language behavior, and delivery structure. | `knowledge/project_intake/`, `packs/generators/`, `packs/templates/`, `kvdf init` |
+| Project Profile Router | Turns a project goal or current codebase signals into a durable Lite, Standard, or Enterprise profile, recommended prompt packs, scale packs, intake groups, and a resumable report before the workspace is created. | `.kabeeri/project_profile.json`, `.kabeeri/reports/project_profile_report.json`, `kvdf project profile`, `kvdf project route`, `kvdf project profile report`, `kvdf prompt-pack scale` |
+| Source Package Intake | Treats `KVDF_New_Features_Docs/` as a dual-purpose source package containing the Software Design System reference library and the project documentation generator system, then exposes its study, inventory, destination map, source-capability map, normalization map, duplicate analysis, migration state, relocation manifest, cleanup plan, verification state, and redistribution targets through CLI. The source folder itself has now been decommissioned; the permanent reference folders and historical reports are the canonical record. | `KVDF_New_Features_Docs/` (historical), `knowledge/design_system/software_design_reference/`, `knowledge/documentation_generator/`, `docs/reports/KVDF_NEW_FEATURES_DOCS_STUDY.md`, `docs/reports/KVDF_NEW_FEATURES_DOCS_INVENTORY.md`, `docs/reports/KVDF_NEW_FEATURES_DOCS_DESTINATION_MAP.md`, `docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md`, `docs/reports/KVDF_NEW_FEATURES_DOCS_NORMALIZATION_MAP.md`, `docs/reports/KVDF_NEW_FEATURES_DOCS_MIGRATION_STATE.md`, `docs/reports/KVDF_NEW_FEATURES_DOCS_RELOCATION_MANIFEST.json`, `docs/reports/KVDF_NEW_FEATURES_DOCS_CLEANUP_PLAN.md`, `kvdf source-package` |
+| Source Folder Normalization | Preserves lowercase aliases and safe path mappings for the imported source package so every root and section can be normalized without losing the original relationship to the canonical content. | `kvdf source-package normalize`, `docs/reports/KVDF_NEW_FEATURES_DOCS_NORMALIZATION_MAP.md` |
+| Software Design System Reference Library | Stores the analyzed software-design knowledge imported from source packages as permanent reusable system design guidance and duplicate-guardrails for avoiding capability-name collisions. | `knowledge/design_system/software_design_reference/`, `knowledge/design_system/software_design_reference/SOFTWARE_DESIGN_DUPLICATE_ANALYSIS.md`, `docs/reports/KVDF_NEW_FEATURES_DOCS_DUPLICATE_ANALYSIS.md`, `kvdf source-package compare`, `kvdf software-design compare` |
+| Project Documentation Generator | Stores the reusable documentation lifecycle rules imported from source packages so every future app can generate the same docs flow through Kabeeri, with duplicate-analysis guardrails to avoid inventing a second docs lifecycle vocabulary. | `knowledge/documentation_generator/`, `knowledge/documentation_generator/DOCS_GENERATION_DUPLICATE_ANALYSIS.md`, `knowledge/task_tracking/`, `docs/reports/`, `kvdf source-package map`, `kvdf docs-generator compare` |
+| Documentation Generation Workflow | Treats docs generation as a first-class workflow with a template catalog, generated site manifest, page contracts, coverage reporting, and sync validation so docs are not treated as loose files. | `docs/site/page-templates.json`, `docs/site/site-manifest.json`, `docs/site/page-contracts.json`, `docs/reports/DOCS_SITE_GENERATION_WORKFLOW.json`, `kvdf docs workflow` |
+| Software Design Reference CLI | Lets developers inspect the permanent software design reference folder from CLI after the source package is migrated. | `kvdf software-design`, `knowledge/design_system/software_design_reference/` |
+| Docs Generator Reference CLI | Lets developers inspect the permanent documentation generator reference folder from CLI after the source package is migrated. | `kvdf docs-generator`, `knowledge/documentation_generator/` |
+| Docs Site Deep Publishing | Publishes a coverage report that groups the generated docs site pages into major framework families so the site stays traceable to capability, governance, intake, operations, example, and support coverage. | `docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json`, `kvdf docs coverage`, `kvdf docs generate` |
 | Generators | Creates Lite, Standard, and Enterprise project skeletons and proposed governance tasks when a `.kabeeri` workspace is active. | `packs/generators/*.json`, `kvdf create`, `kvdf generate` |
 | Examples Library | Shows Lite, Standard, and Enterprise reference examples. | `packs/examples/`, `kvdf example` |
 | Questionnaires | Collects structured product and technical answers; adaptive intake planning now uses blueprints, framework prompt packs, data design, UI/UX, delivery mode context, and detected user language before asking. | `knowledge/questionnaires/`, `knowledge/questionnaire_engine/`, `.kabeeri/questionnaires/adaptive_intake_plan.json`, `kvdf questionnaire plan` |
 | Capability Map | Maps project type to required, optional, deferred, or unknown system areas. | `knowledge/standard_systems/`, `kvdf capability`, `kvdf questionnaire coverage` |
-| Prompt Packs And Common Prompt Layer | Provides stack-specific AI coding prompts plus shared scope, review, and AI-run rules. | `packs/prompt_packs/`, `packs/prompt_packs/common/`, `.kabeeri/prompt_layer/`, `kvdf prompt-pack` |
-| Task Tracking And Governance | Manages approved work from intake to verification, keeps task governance policy, and exposes a focused live task tracker JSON for dashboards and VS Code-style surfaces. | `knowledge/task_tracking/`, `knowledge/task_tracking/TASK_GOVERNANCE.md`, `.kabeeri/dashboard/task_tracker_state.json`, `kvdf task` |
+| Prompt Packs And Common Prompt Layer | Provides stack-specific AI coding prompts plus shared scope, review, and AI-run rules. The scale pack router adds large-system bundles for enterprise or high-risk projects so prompts do not stay overly generic. | `packs/prompt_packs/`, `packs/prompt_packs/common/`, `.kabeeri/prompt_layer/`, `.kabeeri/reports/scale_specific_packs_report.json`, `kvdf prompt-pack` |
+| Task Assessment System | Generates a structured pre-build assessment so scope, blockers, dependencies, allowed files, checks, and readiness gates are visible before large work starts. | `.kabeeri/task_assessments.json`, `kvdf task assessment`, `knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md` |
+| Task Coverage Report | Breaks a task into the full temporary execution path, records the materialized queue, and shows whether any slice remains open so the active task has no uncovered remainder. | `.kabeeri/reports/task_coverage_*.json`, `kvdf task coverage`, `src/cli/commands/task_coverage.js` |
+| Task Lifecycle Engine | Tracks tasks through intake, ready, execution, validation, closure, blocked, and archived stages with visible next-action guidance, trash-aware status lookups, and full-task coverage reporting. | `.kabeeri/tasks.json`, `.kabeeri/task_trash.json`, `kvdf task lifecycle`, `kvdf task status`, `kvdf task coverage` |
+| Traceability Layer | Links tasks, assessments, ADRs, AI runs, docs source-of-truth checks, verification commands, and derived trace edges so every change can be traced end to end. | `.kabeeri/reports/traceability_report.json`, `kvdf trace report`, `kvdf trace status`, `knowledge/task_tracking/TASK_ASSESSMENT.md` |
+| Change Control Layer | Consolidates structured change requests, Evolution changes, and risk register entries into one visible control report so large improvements can be reviewed before release or handoff. | `.kabeeri/reports/change_control_report.json`, `kvdf change report`, `kvdf risk report`, `knowledge/task_tracking/TRACEABILITY.md` |
+| Task Tracking And Governance | Manages approved app work from intake to verification, keeps task governance policy, exposes a visible lifecycle board from intake to ready, execution, validation, closure, and archived states, stores durable execution fields and task memory for resumable sessions, breaks active work into full-task-coverage queues, archives completed tasks into a 30-day trash bucket with restore and sweep support, and exposes a focused live task tracker JSON for dashboards and VS Code-style surfaces. | `knowledge/task_tracking/`, `knowledge/task_tracking/TASK_GOVERNANCE.md`, `.kabeeri/dashboard/task_tracker_state.json`, `.kabeeri/task_trash.json`, `kvdf task`, `kvdf task lifecycle`, `kvdf task coverage`, `kvdf task memory`, `kvdf task trash` |
+| Task Scheduler System | Orchestrates route decisions across active tasks, temporary queues, trash, deferred routing, and AI agent handoffs while preserving route history for later sessions. | `knowledge/task_tracking/TASK_SCHEDULER_GOVERNANCE.md`, `.kabeeri/task_scheduler.json`, `kvdf schedule` |
+| Plugin Loader | Reads plugin manifests from `plugins/`, stores enable/disable state in `.kabeeri/plugins.json`, and reports which removable bundles are active and how they are packaged. | `.kabeeri/plugins.json`, `plugins/*/plugin.json`, `kvdf plugins` |
 | Workstream Governance | Separates backend, frontend, mobile, admin, QA, security, docs, and integration work. | `knowledge/governance/WORKSTREAM_GOVERNANCE.md`, `kvdf workstream` |
 | App Boundary Governance | Allows same-product multi-app workspaces while blocking unrelated products in one folder. | `knowledge/governance/APP_BOUNDARY_GOVERNANCE.md`, `kvdf app` |
+| Developer App Workspace Layout | Scaffolds isolated developer apps under `workspaces/apps/<app-slug>/` with local `.kabeeri` state, tests, docs, and package metadata. | `.kabeeri/app_workspaces.json`, `workspaces/apps/`, `kvdf app workspace` |
 | Execution Scope Governance | Derives allowed files, apps, and workstreams for task access tokens. | `knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md`, `kvdf token` |
-| Multi-AI Governance | Controls Evolution-led session leadership, per-AI queues, sync/distribution of the active Evolution temporary queue, semantic merge bundles with surface planning, locks, tokens, audit, and Owner verification. | `knowledge/governance/`, `knowledge/governance/MULTI_AI_GOVERNANCE.md`, `.kabeeri/multi_ai_governance.json` |
+| Multi-AI Governance | Controls Evolution-led session leadership, agent hub entries, leader leases, per-AI queues, sync/distribution of the active Evolution temporary queue, semantic merge bundles with surface planning, locks, tokens, audit, and Owner verification. | `knowledge/governance/`, `knowledge/governance/MULTI_AI_GOVERNANCE.md`, `.kabeeri/multi_ai_governance.json` |
 | Policy Gates | Blocks unsafe verification, release, handoff, security, migration, and GitHub write operations. | `kvdf policy`, `schemas/policy*.json` |
 | Runtime Schema Registry | Maps `.kabeeri/` JSON and JSONL runtime files to schemas for drift checks. | `schemas/runtime/`, `kvdf validate runtime-schemas` |
-| Evolution Steward | Acts as the single framework-development backlog by recording requested framework changes, ordered priorities, temporary execution queues for the active priority, duplicate-capability signals, impacted areas, follow-up tasks, and unfinished dependent work for dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution` |
+| Framework Owner Track / Evolution Steward | Acts as the single framework-development backlog by recording requested framework changes, ordered priorities, a canonical KVDF restructure roadmap, temporary execution queues for the active priority, resumable execution reports, duplicate-capability signals, impacted areas, follow-up tasks, and unfinished dependent work for dashboard/live reports. | `knowledge/governance/EVOLUTION_STEWARD.md`, `.kabeeri/evolution.json`, `kvdf evolution`, `kvdf evolution roadmap`, `kvdf evolution report` |
+
+The current runtime-services migration focuses on keeping `src/cli/services/evolution.js`,
+`src/cli/services/ai_planner.js`, and `src/cli/services/multi_ai_relay.js` as the
+shared logic layer behind the owner and Multi-AI command facades.
+| Owner docs token gate | Issues a fresh 50-character mixed token when the owner opens the owner docs surface, keeps it valid for one minute, and revokes it when the session closes. | `knowledge/governance/OWNER_DOCS_TOKEN_GATE.md`, `docs/reports/KVDF_OWNER_DOCS_TOKEN_GATE_REPORT.md`, `kvdf owner docs` |
+| Owner session auto-close | Ends the owner session explicitly or through expiry, and revokes any active owner docs token so the next session starts fresh. | `knowledge/governance/OWNER_SESSION_AUTO_CLOSE.md`, `docs/reports/KVDF_OWNER_SESSION_AUTO_CLOSE_REPORT.md`, `kvdf owner session|logout` |
+| Capability Partition Matrix | Classifies the complete KVDF capability catalog into `kabeeri-core`, `plugins/owner-track`, and `workspaces/apps/<app-slug>` ownership buckets, then publishes the authoritative split and boundary rules. | `docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md`, `kvdf evolution partition` |
 | Design Governance | Converts design sources into approved text specs before frontend implementation. | `knowledge/design_sources/`, `knowledge/design_system/`, `knowledge/frontend_specs/`, `kvdf design` |
 | UI/UX Advisor | Recommends frontend experience pattern, component groups, page templates, stacks, SEO/GEO rules, dashboard/mobile UX rules, theme presets, screen compositions, framework adapters, UI decisions, playbooks, and creative variants from the product blueprint. | `knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json`, `knowledge/design_system/`, `.kabeeri/design_sources/ui_advisor.json`, `kvdf design recommend` |
 | UI/UX Reference Library | Stores approved UI/UX rules and reference patterns, then generates design questions and governed frontend/design tasks from them. | `knowledge/design_system/ui_ux_reference/`, `.kabeeri/design_sources/ui_ux_reference.json`, `kvdf design reference-*` |
 | ADR And AI Run History | Records formal architecture decisions and accepted/rejected AI prompt runs. | `knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`, `kvdf adr`, `kvdf ai-run` |
 | AI Cost Control | Tracks usage, budgets, context packs, preflight estimates, and model routing. | `knowledge/ai_cost_control/`, `kvdf usage`, `kvdf preflight` |
 | Live Dashboard | Shows live state for tasks, governance, apps, costs, policies, linked workspaces, and dashboard UX audits. | `integrations/dashboard/`, `kvdf dashboard` |
-| VS Code Integration | Scaffolds workspace tasks and command helpers. | `integrations/vscode_extension/`, `kvdf vscode` |
-| GitHub Sync | Plans and optionally confirms labels, milestones, issues, and releases through `gh`. | `integrations/github_sync/`, `integrations/github/`, `kvdf github` |
+| VS Code Integration | Scaffolds workspace tasks and command helpers, and reports the editor bridge state without becoming the source of truth. | `integrations/vscode_extension/`, `kvdf vscode`, `kvdf vscode report` |
+| GitHub Sync | Plans and optionally confirms labels, milestones, issues, and releases through `gh`, with a local trace report for the sync adapter. | `integrations/github_sync/`, `integrations/github/`, `kvdf github`, `kvdf github report` |
 | GitHub Team Sync Preflight | Reports branch, remote, upstream, ahead/behind, local changes, dry-run pull/push commands, and whether sync is optional for solo work or recommended for team work. | `kvdf sync` |
 | Security Governance | Scans local files for common secret patterns and blocks high-risk readiness gates. | `kvdf security`, `.kabeeri/security/` |
 | Migration Safety | Records migration plans, rollback plans, checks, reports, and approval state. | `kvdf migration`, `.kabeeri/migrations/` |
 | Handoff Packages | Generates Owner/client reports from local state. | `kvdf handoff`, `.kabeeri/handoff/` |
-| Independent Reports | Exports standalone readiness/governance reports and a compact live JSON report state for Codex, dashboard, VS Code, and automation. | `kvdf readiness report`, `kvdf governance report`, `kvdf reports live`, `.kabeeri/reports/live_reports_state.json` |
+| Independent Reports | Exports standalone readiness/governance reports, a blocked-scenarios summary, and a compact live JSON report state for Codex, dashboard, VS Code, and automation, with governance coverage for trust, safety, privacy, compliance, and extensibility. | `kvdf readiness report`, `kvdf governance report`, `kvdf reports live`, `kvdf reports blocked`, `.kabeeri/reports/live_reports_state.json`, `.kabeeri/reports/blocked_scenarios_report.json` |
+| Blocked Scenarios Report | Collects the current blocked and warning-level scenarios into one concise report so developers can see what cannot proceed, why, and what governed action should happen next. | `.kabeeri/reports/blocked_scenarios_report.json`, `kvdf reports blocked` |
 | Release Readiness | Checks validation, policy, notes, checklist, and publish gates. | `kvdf release`, `docs/production/` |
+| Command Lifecycle Ledger | Tracks active canonical command families, migrated surfaces, compatibility aliases, deprecated entries, and still-duplicating older entry points so CLI-first migration stays visible. | `cli/CLI_COMMAND_REFERENCE.md`, `docs/reports/KVDF_COMMAND_DEPRECATION_LEDGER.md` |
+| Folder Ownership Ledger | Tracks the important command, service, owner-track, app-track, and bridge folders plus remaining migration gaps so folder ownership stays visible during CLI migration. | `cli/CLI_COMMAND_REFERENCE.md`, `src/cli/index.js`, `src/cli/commands/`, `src/cli/services/`, `plugins/owner-track/`, `workspaces/apps/<app-slug>/`, `docs/reports/` |
 | Product Packaging And Upgrade | Checks npm packaging readiness and workspace upgrade compatibility. | `kvdf package`, `kvdf upgrade`, `docs/production/` |
-| Validation And Doctor | Checks repository health, JSON/state integrity, and scoped governance rules. | `kvdf doctor`, `kvdf validate` |
-| Roadmap And Plan Inspection | Reads packaged v3/v4 milestone plans and source roadmap material. | `integrations/platform_integration/`, `integrations/multi_ai_governance/`, `docs/codex_context/`, `kvdf plan` |
+| Validation And Doctor | Checks repository health, JSON/state integrity, scoped governance rules, docs source-of-truth, and historical source clarity. | `kvdf doctor`, `kvdf validate`, `kvdf validate historical-source-clarity` |
+| Capability Registry | Exposes the 53 imported system areas as named, traceable units with owner/workstream and source mapping. | `kvdf capability registry`, `knowledge/standard_systems/CAPABILITY_REGISTRY.md`, `knowledge/standard_systems/SYSTEM_AREAS_INDEX.md` |
+| Capability CLI Surface | Maps each imported capability area to a discoverable CLI command family and docs reference so the operational entry point is obvious before a developer starts work. | `kvdf capability surface`, `docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json` |
+| Capability-to-Documentation Matrix | Requires every capability to carry docs, CLI, runtime, tests, and report links in one traceable matrix so capability coverage stays complete. | `kvdf capability matrix`, `docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json` |
+| Capability Search Surface | Builds a searchable index across the registry, CLI surface, documentation matrix, and roadmap views so developers can filter by track, capability, command, phase, and report type. | `kvdf capability search`, `docs/reports/KVDF_CAPABILITY_SEARCH_INDEX.json` |
+| Source-To-Capability Mapping | Connects the imported source study branches to capability surfaces, runtime targets, docs pages, and CLI commands. | `kvdf source-package source-map`, `docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md` |
+| Docs Site Synchronization | Regenerates, validates, and publishes the docs site while keeping CLI help, runtime behavior, and documentation in sync through a single report. | `kvdf docs build`, `kvdf docs preview`, `kvdf docs sync`, `docs/reports/DOCS_SITE_SYNC_REPORT.json` |
+| Roadmap And Plan Inspection | Reads packaged v3/v4 milestone plans and source roadmap material as historical input, not current implementation truth. | `integrations/platform_integration/`, `integrations/multi_ai_governance/`, `docs/codex_context/`, `kvdf plan` |
 | Reports And Traceability | Keeps audit, gap, implementation, requirement, and validation reports. | `docs/reports/` |
 | Repository Governance | Defines contribution, security, license, and project governance rules. | `CONTRIBUTING.md`, `SECURITY.md`, `GOVERNANCE.md`, `LICENSE` |
 
@@ -74,7 +132,7 @@ maintainers, AI agents, packaging, and documentation.
 | `knowledge/` | Governance, product intelligence, delivery systems, questionnaires, data design, UI/UX design, Vibe UX, and reusable operating rules. |
 | `packs/` | Prompt packs, generators, templates, and examples that can be exported into customer projects. |
 | `integrations/` | Dashboard, GitHub, VS Code, platform integration, and multi-AI integration material. |
-| `docs/` | Human documentation, reports, architecture docs, bilingual docs, docs site, and Codex context. |
+| `docs/` | Human documentation, reports, architecture docs, bilingual docs, docs site, deep publishing coverage reports, and Codex context. |
 | `schemas/` | JSON schemas and runtime contracts. |
 | `tests/` | Automated tests and integration coverage. |
 | `.kabeeri/` | Live workspace state, task records, dashboard JSON, reports, audit, policies, and local runtime data. |
@@ -631,10 +689,15 @@ Main reference:
 
 This layer makes AI-assisted work traceable and safer across one developer,
 many developers, one AI agent, or multiple AI agents. Evolution is the global
-priority governor, the first AI to enter a development session becomes the
-Leader for that session, workers execute only inside temporary queues, and the
-Merger layer combines workspace copies or patch bundles back into the original
-files under validation.
+priority governor, the first leader-eligible AI to enter a development
+session becomes the Leader for that session, workers execute only inside
+temporary queues, the communications relay layer lets agents exchange durable
+topic-based messages without relying on chat history, and the Merger layer
+combines workspace copies or patch bundles back into the original files under
+validation.
+
+Worker-only tools such as Gemini can still join the hub for collaboration, but
+they remain non-leader participants unless leadership is explicitly allowed.
 
 It covers:
 
@@ -646,6 +709,7 @@ It covers:
 - role permissions
 - session leadership and leader transfer
 - per-AI temporary queues
+- durable agent-to-agent conversation relay threads and inboxes
 - Evolution sync and worker distribution
 - semantic merge bundles, semantic surface plans, and provenance
 - locks
@@ -663,6 +727,9 @@ kvdf owner transfer issue --to owner-002 --name "New Owner"
 kvdf developer add --id dev-001 --name "Backend Dev" --role Developer
 kvdf developer solo --id dev-main --name "Main Developer"
 kvdf agent add --id agent-001 --name "AI Backend Agent" --role "AI Developer" --workstreams backend
+kvdf multi-ai agent register --ai gemini-001 --provider gemini --name "Gemini" --worker-only
+kvdf multi-ai conversation start --from agent-001 --to agent-002 --topic "Scope" --message "Please review the scope"
+kvdf multi-ai conversation reply --agent agent-002 --message-id multi-ai-message-001 --reply "Reviewed"
 kvdf lock create --type folder --scope src/api --task task-001 --owner agent-001
 kvdf session start --task task-001 --developer agent-001 --provider openai --model gpt
 kvdf multi-ai status
@@ -970,6 +1037,9 @@ confirmed. Confirmed writes are protected by policy gates.
 Main commands:
 
 ```bash
+kvdf github status
+kvdf github feedback list
+kvdf github feedback record --type status --subject task-001 --message "Ready for review"
 kvdf github plan --version v4.0.0 --dry-run
 kvdf github label sync --version v4.0.0 --dry-run
 kvdf github milestone sync --version v4.0.0 --dry-run
@@ -984,6 +1054,8 @@ Main references:
 
 - `integrations/github_sync/`
 - `integrations/github/`
+
+`kvdf github status` and `kvdf github feedback` stay local but summarize issue/PR/status/comment feedback records when the workspace is in team mode.
 
 ## 21. Security Governance
 
@@ -1161,6 +1233,7 @@ They cover:
 - app routes
 - workstream governance
 - local workspace JSON/JSONL state
+- blocked and invalid scenario reporting
 
 Main commands:
 
@@ -1179,6 +1252,7 @@ kvdf validate routes
 kvdf validate workstream
 kvdf validate adr
 kvdf validate ai-run
+kvdf validate blocked-scenarios
 ```
 
 Main references:
@@ -1240,7 +1314,8 @@ Main references:
 ## 31. Documentation Site
 
 The repository includes a static documentation site with Arabic and English
-pages.
+pages, plus generated site manifest, page contract artifacts, and deep
+publishing coverage artifacts.
 
 Main references:
 
@@ -1248,6 +1323,9 @@ Main references:
 - `docs/site/pages/en/`
 - `docs/site/pages/ar/`
 - `docs/site/generate-pages.js`
+- `docs/site/site-manifest.json`
+- `docs/site/page-contracts.json`
+- `docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json`
 
 ## 32. Where To Start By Goal
 
@@ -1284,3 +1362,4 @@ Main references:
 - Owner verification is the final authority for task completion.
 - GitHub confirmed writes require explicit confirmation and policy gates.
 - Separate products should use separate KVDF folders.
+| Scale-Specific Packs | Recommends large-system prompt bundle combinations for enterprise, regulated, and high-risk projects so Kabeeri can scale beyond a single stack prompt pack. | `.kabeeri/reports/scale_specific_packs_report.json`, `kvdf prompt-pack scale` |

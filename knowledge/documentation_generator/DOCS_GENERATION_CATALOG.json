@@ -1,0 +1,62 @@
+{
+  "catalog_type": "documentation_generation_reference_catalog",
+  "title": "Documentation Generation Reference Catalog",
+  "source_package": "KVDF_New_Features_Docs",
+  "sections": [
+    {
+      "section_id": "lifecycle-stages",
+      "title": "Lifecycle Stages",
+      "items": [
+        "Idea",
+        "Strategy",
+        "Requirements",
+        "Domain",
+        "UX/UI",
+        "Architecture",
+        "Data Design",
+        "API / Integration",
+        "Implementation",
+        "QA / Security",
+        "Release",
+        "Documentation",
+        "Maintenance"
+      ]
+    },
+    {
+      "section_id": "reusable-surfaces",
+      "title": "Reusable Documentation Surfaces",
+      "items": [
+        "project overview",
+        "scope and assumptions",
+        "system architecture",
+        "task decomposition",
+        "acceptance criteria",
+        "validation evidence",
+        "release and handoff records",
+        "traceability reports",
+        "maintenance and archive notes"
+      ]
+    },
+    {
+      "section_id": "permanent-homes",
+      "title": "Permanent Homes",
+      "items": [
+        "knowledge/documentation_generator/",
+        "knowledge/task_tracking/",
+        "knowledge/governance/",
+        "docs/site/",
+        "docs/reports/"
+      ]
+    },
+    {
+      "section_id": "duplicate-analysis-guardrails",
+      "title": "Duplicate Analysis Guardrails",
+      "items": [
+        "compare the reference against the central capability map",
+        "reuse the existing Kabeeri capability names",
+        "keep the source package temporary until redistribution is complete",
+        "move only missing lifecycle gaps into permanent folders"
+      ]
+    }
+  ]
+}

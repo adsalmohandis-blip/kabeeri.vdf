@@ -1,0 +1,73 @@
+{
+  "report_type": "docs_site_generation_workflow",
+  "generated_at": "2026-05-13T12:22:56.857Z",
+  "site_name": "Kabeeri VDF Docs",
+  "report_path": "docs/reports/DOCS_SITE_GENERATION_WORKFLOW.json",
+  "template_count": 2,
+  "page_count": 39,
+  "contract_count": 78,
+  "workflow_steps": [
+    "Load the docs site template catalog.",
+    "Render the site manifest from the generated pages.",
+    "Render localized page contracts for English and Arabic.",
+    "Write the localized HTML pages from the shared site shell.",
+    "Validate manifest, contracts, and templates for alignment.",
+    "Publish deep coverage so each family stays visible."
+  ],
+  "templates": [
+    {
+      "template_id": "docs-site-index",
+      "title": "Docs Site Index Template",
+      "purpose": "Render the landing shell for the documentation site.",
+      "output_paths": [
+        "index.html"
+      ],
+      "languages": [
+        "en"
+      ],
+      "surface": "docs/site",
+      "source": "docs/site/generate-pages.js"
+    },
+    {
+      "template_id": "docs-site-page",
+      "title": "Docs Site Page Template",
+      "purpose": "Render each localized docs page shell under pages/en and pages/ar.",
+      "output_paths": [
+        "pages/en/*.html",
+        "pages/ar/*.html"
+      ],
+      "languages": [
+        "en",
+        "ar"
+      ],
+      "surface": "docs/site/pages",
+      "source": "docs/site/generate-pages.js"
+    }
+  ],
+  "manifest": {
+    "manifest_version": 1,
+    "path": "docs/site/site-manifest.json",
+    "page_count": 39
+  },
+  "page_contracts": {
+    "contract_version": 1,
+    "path": "docs/site/page-contracts.json",
+    "page_count": 78
+  },
+  "coverage": {
+    "report_path": "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json",
+    "complete_families": 8,
+    "total_families": 8
+  },
+  "source_of_truth": {
+    "template_catalog": true,
+    "manifest": true,
+    "contracts": true,
+    "coverage": true
+  },
+  "next_actions": [
+    "Run `kvdf docs generate` to refresh all docs-site artifacts.",
+    "Run `kvdf docs sync` to generate the sync report after validation.",
+    "Use `kvdf docs coverage` to inspect family coverage without opening the browser."
+  ]
+}

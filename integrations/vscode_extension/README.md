@@ -25,3 +25,5 @@ VS Code command/webview
 - Extension does not bypass Owner verification.
 - Extension does not write GitHub without CLI confirmation rules.
 - Extension should be reusable as a model for other editors later.
+- Use `kvdf vscode report` to inspect the generated editor bridge before adding more commands.
+- Use `kvdf github report` to inspect the GitHub sync adapter before adding more commands.

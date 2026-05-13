@@ -5,17 +5,34 @@ function init(flags = {}, deps = {}) {
     refreshDashboardArtifacts,
     readJsonFile,
     writeJsonFile,
-    table
+    table,
+    buildProjectProfileRecommendation,
+    persistProjectProfileRecommendation
   } = deps;
 
-  const profile = flags.profile || "standard";
-  const mode = flags.mode || "structured";
   const lang = flags.lang || flags.language || "user";
+  const goal = flags.goal || flags.app || flags.description || flags.project || flags.text || promptForInitialProjectGoal(flags);
+  const profileRecommendation = typeof buildProjectProfileRecommendation === "function"
+    ? buildProjectProfileRecommendation(goal, { ...flags, description: goal, path: flags.path || ".", profile: flags.profile, mode: flags.mode, lang }, deps)
+    : null;
+  const profile = flags.profile || (profileRecommendation && profileRecommendation.selected_profile) || "standard";
+  const mode = flags.mode || (profileRecommendation && profileRecommendation.delivery_mode_recommendation ? profileRecommendation.delivery_mode_recommendation.recommended_mode : "structured");
   const created = createWorkspace({ profile, mode, lang });
 
   console.log("Initialized Kabeeri workspace state.");
   console.log(table(["File", "Status"], created.map((item) => [item.path, item.status])));
-  const intake = runInitIntake(flags, { questionnaireIntakePlan, readJsonFile, writeJsonFile, table });
+  if (profileRecommendation && typeof persistProjectProfileRecommendation === "function") {
+    persistProjectProfileRecommendation(profileRecommendation, deps);
+    console.log("");
+    console.log("Project profile routing:");
+    console.log(table(["Field", "Value"], [
+      ["Profile", profileRecommendation.selected_profile],
+      ["Delivery", profileRecommendation.delivery_mode_recommendation.recommended_mode],
+      ["Prompt packs", (profileRecommendation.pack_router && profileRecommendation.pack_router.selected_prompt_packs || []).join(", ") || "none"],
+      ["Intake groups", (profileRecommendation.intake_groups || []).join(", ") || "none"]
+    ]));
+  }
+  const intake = runInitIntake({ ...flags, goal }, { questionnaireIntakePlan, readJsonFile, writeJsonFile, table });
   refreshDashboardArtifacts();
   if (!intake) {
     console.log("");

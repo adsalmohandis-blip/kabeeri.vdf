@@ -48,6 +48,8 @@ The first executable slice is implemented as optional CLI commands:
 kvdf vibe "Add admin dashboard settings page for owner"
 kvdf vibe suggest "Add checkout API"
 kvdf ask "Improve the dashboard"
+kvdf questionnaire plan "Build an ecommerce store"
+kvdf prompt-pack compose react --task task-001
 kvdf capture --summary "Updated dashboard filters" --files src/cli/index.js
 kvdf capture list
 kvdf capture convert capture-001
@@ -56,5 +58,7 @@ kvdf vibe next
 ```
 
 These commands write interaction records under `.kabeeri/interactions/`. They do not replace the normal CLI engine; projects can keep using `kvdf task`, `kvdf token`, `kvdf dashboard`, and `kvdf validate` directly.
+
+Questionnaire intake and prompt-pack composition keep the AI start short and task-specific: questionnaire generates the missing decisions, then prompt-pack compose turns the selected stack into one reviewable prompt with compact guidance.
 
 Post-work capture supports a full lifecycle: record changed work, review it, link it to a task, convert it into a governed task, or resolve it after evidence is reviewed.

@@ -1,30 +1,56 @@
-# Governance Model
+# Kabeeri Governance Report
 
-## Purpose
+Report ID: governance-workspace-20260513015025
+Generated at: 2026-05-13T01:50:25.080Z
+Target: workspace
+Status: warning
+Standalone: yes
+Dashboard required: no
+Source of truth: .kabeeri
+Strict: no
+Interpretation: workspace governance has warnings but no hard blockers.
 
-Kabeeri Vibe Developer Framework should evolve like a serious open-source framework, not like a random prompt collection.
+## Summary
 
-## Maintainer roles
+- owners_active: 0
+- developers: 0
+- agents: 0
+- workstreams: 10
+- tasks: 116
+- active_locks: 1
+- lock_conflicts: 0
+- active_tokens: 1
+- expired_active_tokens: 0
+- policy_blockers: 0
+- missing_assignee_tasks: 0
+- unknown_workstream_tasks: 0
 
-- **Framework Lead:** approves vision, roadmap, and releases.
-- **Documentation Maintainers:** review docs and translations.
-- **Questionnaire Maintainers:** review folder-specific questions.
-- **Prompt Pack Maintainers:** review framework-specific AI prompts.
-- **Tooling Maintainers:** maintain CLI, VS Code extension, schemas, and validation tools.
-- **Security Maintainer:** reviews security-related templates and guidance.
+## Governance Coverage
 
-## Decision levels
+- trust: needs_owner — No active Owner identity is configured yet.
+- safety: covered — Locks and execution scopes keep safety boundaries visible.
+- privacy: covered — Latest security scan is pass.
+- compliance: covered — Policy and migration checks are clear enough for current governance review.
+- extensibility: covered — Plugin and capability surfaces are discoverable for extension work.
 
-1. **Patch:** wording fixes, typos, small clarifications.
-2. **Minor:** new questionnaire, new prompt pack, new example.
-3. **Major:** lifecycle changes, folder structure changes, generator schema changes.
+## Blockers
 
-## Release approvals
+No governance blockers detected.
 
-- Patch releases require one maintainer.
-- Minor releases require two maintainers.
-- Major releases require the Framework Lead plus at least two maintainers.
+## Warnings
 
-## Compatibility rule
+- No active Owner identity is configured.
 
-The framework must preserve backward compatibility for existing project skeletons where possible. Breaking changes must be documented in `CHANGELOG.md` and migration notes.
+## Lock Conflicts
+
+None.
+
+## Policy Blockers
+
+None.
+
+## Next Actions
+
+- Review warnings before scaling work to more developers or AI agents.
+- For release or publish targets, rerun with `--strict` if governance warnings should block.
+- Keep Owner, workstream, token, and lock state current.

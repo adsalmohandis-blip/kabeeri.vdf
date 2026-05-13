@@ -194,6 +194,10 @@ kvdf task assign
 kvdf task start
 kvdf task review
 kvdf task verify
+kvdf task assessment
+kvdf task lifecycle
+kvdf trace report
+kvdf change report
 kvdf task tracker
 kvdf dashboard task-tracker
 kvdf validate task

@@ -9,9 +9,11 @@ function release(action, value, flags = {}, deps = {}) {
     validateRepository,
     countIssues,
     outputLines,
+    buildReadinessReport,
     buildReleaseChecklist,
     buildReleaseNotes,
     buildScenarioReview,
+    previewPolicyGate,
     runPolicyGate,
     runReleasePublishGates,
     publishGithubRelease
@@ -21,19 +23,52 @@ function release(action, value, flags = {}, deps = {}) {
 
   if (!action || action === "check") {
     const validation = validateRepository("all");
+    const readiness = buildReadinessReport ? buildReadinessReport({ target: "release", strict: true }) : null;
+    const releaseGate = previewPolicyGate("release", { version: plan.version, confirm: true }, flags);
+    const releaseBlocked = releaseGate.status === "blocked";
+    const validationBlocked = !validation.ok;
+    const validationWarnings = validation.lines.some((line) => line.startsWith("WARN"));
+    const releaseWarnings = releaseGate.status === "warning";
+    const readinessBlocked = readiness ? readiness.status === "blocked" : false;
+    const readinessWarnings = readiness ? readiness.status === "warning" : false;
+    const needsAttention = validationWarnings || releaseWarnings || readinessWarnings;
     const lines = [
       `Release check for ${plan.version}`,
       `Source: ${plan.file}`,
       `Milestones: ${plan.data.milestones.length}/${plan.data.totals.milestones}`,
       `Issues: ${countIssues(plan.data)}/${plan.data.totals.issues}`,
       `Validation: ${validation.ok ? "OK" : "FAILED"}`,
+      `Readiness: ${readiness ? readiness.status.toUpperCase() : "UNAVAILABLE"}`,
+      `Release gate: ${releaseGate.status.toUpperCase()}`,
+      "",
+      "## Readiness",
+      ...(readiness ? [
+        `Status: ${readiness.status}`,
+        ...(readiness.blockers.length
+          ? ["", "### Blockers", ...readiness.blockers.map((item) => `- ${item}`)]
+          : []),
+        ...(readiness.warnings.length
+          ? ["", "### Warnings", ...readiness.warnings.map((item) => `- ${item}`)]
+          : [])
+      ] : ["Readiness report unavailable."]),
       "",
       "## Validation",
       ...validation.lines,
       "",
-      `Status: ${validation.ok ? "ready for release review" : "blocked by validation failures"}`
+      "## Release Gate",
+      `Policy: ${releaseGate.policy_id}`,
+      `Subject: ${releaseGate.subject_id}`,
+      `Status: ${releaseGate.status}`,
+      ...(releaseGate.blockers.length
+        ? ["", "### Blockers", ...releaseGate.blockers.map((item) => `- ${formatPolicyGateFinding(item)}`)]
+        : []),
+      ...(releaseGate.warnings.length
+        ? ["", "### Warnings", ...releaseGate.warnings.map((item) => `- ${formatPolicyGateFinding(item)}`)]
+        : []),
+      "",
+      `Status: ${validationBlocked || readinessBlocked || releaseBlocked ? "blocked by validation, readiness, or release policy failures" : needsAttention ? "needs attention before release" : "ready for release review"}`
     ];
-    if (flags.strict && !validation.ok) process.exitCode = 1;
+    if (flags.strict && (validationBlocked || readinessBlocked || releaseBlocked || needsAttention)) process.exitCode = 1;
     return outputLines(lines, flags.output);
   }
 
@@ -77,6 +112,11 @@ function release(action, value, flags = {}, deps = {}) {
   throw new Error(`Unknown release action: ${action}`);
 }
 
+function formatPolicyGateFinding(item) {
+  const detail = item.evidence || item.description || item.result || "";
+  return detail ? `${item.check_id}: ${detail}` : item.check_id;
+}
+
 function buildReleaseChecklist(plan) {
   const lines = [
     `# ${plan.version} Release Checklist`,
@@ -93,7 +133,7 @@ function buildReleaseChecklist(plan) {
     }
   }
 
-  lines.push("", "## Final Gate", "", "- [ ] Owner verified release readiness", "- [ ] GitHub dry-run reviewed", "- [ ] Release notes reviewed", "- [ ] Tag and release approved");
+  lines.push("", "## Final Gate", "", "- [ ] Owner verified release readiness", "- [ ] Release readiness report is clear", "- [ ] Release policy gate passes without blockers", "- [ ] Security and migration blockers are clear", "- [ ] GitHub dry-run reviewed", "- [ ] Release notes reviewed", "- [ ] Tag and release approved");
   return lines;
 }
 

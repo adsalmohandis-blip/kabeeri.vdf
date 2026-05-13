@@ -24,7 +24,16 @@ function audit(action, value, flags = {}, deps = {}) {
 
   if (action === "report") {
     const entityId = flags.task || flags.entity || value || null;
-    const filtered = entityId ? events.filter((event) => event.entity_id === entityId || event.metadata && event.metadata.task_id === entityId) : events;
+    const filtered = entityId ? events.filter((event) => {
+      if (event.entity_id === entityId) return true;
+      const metadata = event.metadata || {};
+      return metadata.task_id === entityId
+        || metadata.capture_id === entityId
+        || metadata.ai_run_id === entityId
+        || metadata.run_id === entityId
+        || (Array.isArray(metadata.capture_ids) && metadata.capture_ids.includes(entityId))
+        || (Array.isArray(metadata.ai_run_ids) && metadata.ai_run_ids.includes(entityId));
+    }) : events;
     const lines = buildAuditReport(filtered, entityId);
     return outputLines(lines, flags.output);
   }
@@ -55,12 +64,14 @@ function buildAuditReport(events, entityId) {
     return lines;
   }
   for (const event of events) {
+    const metadataEntries = Object.entries(event.metadata || {}).filter(([, value]) => value !== undefined && value !== null && !(Array.isArray(value) && value.length === 0));
     lines.push(
       "",
       `- ${event.timestamp || ""} ${event.event_type || ""}`,
       `  Entity: ${event.entity_type || ""}/${event.entity_id || ""}`,
       `  Actor: ${event.actor_id || ""} (${event.actor_role || ""})`,
-      `  Summary: ${event.summary || ""}`
+      `  Summary: ${event.summary || ""}`,
+      ...(metadataEntries.length ? [`  Metadata: ${metadataEntries.map(([key, value]) => `${key}=${Array.isArray(value) ? value.join(",") : value}`).join(" | ")}`] : [])
     );
   }
   return lines;

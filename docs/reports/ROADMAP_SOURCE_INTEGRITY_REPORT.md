@@ -2,6 +2,9 @@
 
 Generated for Phase 1 only. This is an ingestion report; it does not implement roadmap requirements.
 
+Historical source classification: this file belongs to the archived roadmap
+ingestion set, not the current runtime truth layer.
+
 ## Integrity Summary
 
 | Version | Expected Source | Repository Source | Present | Requirement Count | Integrity Status | Required Action |
@@ -31,4 +34,3 @@ No source-ingestion blockers were found.
 - The source files are Markdown exports of the roadmap pack, while `01_ROADMAP_SOURCE_INGESTION.md` refers to `.docx` names. The Markdown files are the available local canonical source pack for this repository.
 - Some Arabic text displays with mojibake in terminal output, but file structure, headings, issue titles, and roadmap intent remain indexable.
 - This report does not assert that requirements are implemented. It only confirms source pack availability and ingestion completeness.
-

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Task Trash State",
+  "type": "object",
+  "required": ["trash", "retention_days", "last_sweep_at"],
+  "properties": {
+    "trash": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "status", "trashed_at", "trash_expires_at", "source_collection"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "trashed_at": { "type": "string" },
+          "trash_expires_at": { "type": "string" },
+          "trashed_reason": { "type": ["string", "null"] },
+          "trashed_by": { "type": ["string", "null"] },
+          "original_position": { "type": ["number", "null"] },
+          "original_status": { "type": ["string", "null"] },
+          "source_collection": { "type": "string" },
+          "trash_retention_days": { "type": "number" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "retention_days": { "type": "number" },
+    "last_sweep_at": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

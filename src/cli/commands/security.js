@@ -4,6 +4,7 @@ const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { table } = require("../ui");
+const { readStateArray, summarizeBy } = require("../services/state_utils");
 
 function security(action, value, flags = {}, deps = {}) {
   ensureWorkspace();
@@ -237,24 +238,10 @@ function getLatestSecurityScan() {
   return scans.length ? scans[scans.length - 1] : null;
 }
 
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  const data = readJsonFile(file);
-  return Array.isArray(data[key]) ? data[key] : [];
-}
-
 function parseCsv(value) {
   if (!value) return [];
   if (Array.isArray(value)) return value.flatMap(parseCsv);
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
-}
-
-function summarizeBy(items, key) {
-  return (items || []).reduce((acc, item) => {
-    const value = item[key] || "unknown";
-    acc[value] = (acc[value] || 0) + 1;
-    return acc;
-  }, {});
 }
 
 module.exports = {

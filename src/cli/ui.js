@@ -1,3 +1,21 @@
+const fs = require("fs");
+const path = require("path");
+const { readJsonFile, repoRoot } = require("./fs_utils");
+
+function getActiveTrackSurface() {
+  const file = path.join(repoRoot(), ".kabeeri", "session_track.json");
+  if (!fs.existsSync(file)) return null;
+  try {
+    const state = JSON.parse(fs.readFileSync(file, "utf8"));
+    if (!state || !state.active) return null;
+    if (state.active_track === "framework_owner") return "owner";
+    if (state.active_track === "vibe_app_developer") return "developer";
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 function parseArgs(argv) {
   const flags = {};
   const positionals = [];
@@ -35,8 +53,8 @@ function normalizeFlagName(key) {
 function normalizeCommandName(command) {
   const aliases = {
     tasks: "task",
-    start: "resume",
-    "start-here": "resume",
+    start: "entry",
+    "start-here": "entry",
     resume: "resume",
     boundary: "guard",
     conflicts: "conflict",
@@ -57,6 +75,16 @@ function normalizeCommandName(command) {
     locks: "lock",
     code: "vscode",
     vs: "vscode",
+    "source-package": "source-package",
+    source_package: "source-package",
+    sourcepackage: "source-package",
+    "software-design": "software-design",
+    "software_design": "software-design",
+    "software-design-reference": "software-design",
+    softwaredesign: "software-design",
+    "docs-generator": "docs-generator",
+    docs_generator: "docs-generator",
+    docsgenerator: "docs-generator",
     plans: "plan",
     prompts: "prompt-pack",
     promptpack: "prompt-pack",
@@ -109,6 +137,8 @@ function normalizeCommandName(command) {
     "design-sources": "design",
     policies: "policy",
     gates: "policy",
+    "cost-control": "cost-control",
+    cost_control: "cost-control",
     context: "context-pack",
     contexts: "context-pack",
     "context-packs": "context-pack",
@@ -126,14 +156,43 @@ function normalizeCommandName(command) {
 
 function printCommandHelp(command) {
   const help = {
-    resume: `Usage:
+  resume: `Usage:
   kvdf resume
   kvdf resume --json
   kvdf resume --scan
   kvdf start
+  kvdf entry
+  kvdf track status
+  kvdf track route
+  kvdf onboarding
+
+  Notes:
+  Resume is the safe first command for a new AI/developer session. It detects whether the current folder is Kabeeri framework source, a user application workspace, or an application folder without .kabeeri state. It also separates the app npm root from the Kabeeri engine root to avoid Next.js/npm confusion and shows the primary track for the session. Use entry/start when you want Kabeeri to auto-route the session into the correct track without asking you to choose.
+`,
+    entry: `Usage:
+  kvdf entry
+  kvdf entry --json
+  kvdf start
 
 Notes:
-  Resume is the safe first command for a new AI/developer session. It detects whether the current folder is Kabeeri framework source, a user application workspace, or an application folder without .kabeeri state. It also separates the app npm root from the Kabeeri engine root to avoid Next.js/npm confusion.
+  Entry is the automatic session routing command. It detects the active track and returns the framework-owner or vibe app-developer path immediately without asking the human to choose first.
+`,
+    track: `Usage:
+  kvdf track status
+  kvdf track status --json
+  kvdf track route
+  kvdf track route --json
+
+Notes:
+  Track shows the current session track and the route that would be activated for the current workspace. Use route to persist the current entry decision into .kabeeri/session_track.json.
+`,
+    onboarding: `Usage:
+  kvdf onboarding
+  kvdf onboarding report
+  kvdf onboarding --json
+
+Notes:
+  Onboarding shows the guided first-session route for the current workspace. It summarizes the safe opening steps, the enter/route/resume sequence, commands, guardrails, and a persisted session onboarding report for framework-owner or app-developer work.
 `,
     guard: `Usage:
   kvdf guard
@@ -171,11 +230,27 @@ Notes:
   kvdf task tracker
   kvdf task tracker --json
   kvdf task status task-001
+    kvdf task assessment task-001
+    kvdf task assessment --goal "Build checkout API"
+    kvdf task coverage task-001
+    kvdf task coverage
+    kvdf task lifecycle task-001
+    kvdf task lifecycle
+    kvdf trace report --json
+    kvdf trace status
+    kvdf change report --json
+    kvdf risk report
+    kvdf task memory task-001
   kvdf task approve task-001
   kvdf task assign task-001 --assignee agent-001
   kvdf task start task-001 --actor agent-001
   kvdf task review task-001 --actor reviewer-001
   kvdf task verify task-001 --owner owner-001
+  kvdf task complete task-001 --owner owner-001
+  kvdf task trash list
+  kvdf task trash show task-001
+  kvdf task trash restore task-001
+  kvdf task trash purge
 `,
     vibe: `Usage:
   kvdf vibe "Add admin theme settings"
@@ -251,18 +326,20 @@ Notes:
   kvdf governance report --output .kabeeri/reports/governance_report.md
 
 Notes:
-  Governance reports are standalone snapshots from .kabeeri. They summarize Owner identity, workstreams, assignment health, lock conflicts, active task tokens, policy blockers, and workspace governance validation.
+  Governance reports are standalone snapshots from .kabeeri. They summarize Owner identity, workstreams, assignment health, lock conflicts, active task tokens, policy blockers, workspace governance validation, and a governance coverage view for trust, safety, privacy, compliance, and extensibility.
 `,
     reports: `Usage:
   kvdf reports live
   kvdf reports live --json
+  kvdf reports blocked
+  kvdf reports blocked --json
   kvdf reports state
   kvdf reports show readiness
   kvdf reports show governance
   kvdf reports show task_tracker
 
 Notes:
-  Live reports write .kabeeri/reports/live_reports_state.json as a small derived JSON state for Codex, dashboard widgets, VS Code views, and automation. Markdown reports remain human-readable snapshots; live JSON is the fast-changing operational surface.
+  Live reports write .kabeeri/reports/live_reports_state.json as a small derived JSON state for Codex, dashboard widgets, VS Code views, and automation. \`reports blocked\` writes .kabeeri/reports/blocked_scenarios_report.json so blocked or invalid scenarios can be read in one place. Markdown reports remain human-readable snapshots; live JSON is the fast-changing operational surface.
 `,
     agile: `Usage:
   kvdf agile summary
@@ -307,6 +384,12 @@ Notes:
   kvdf evolution status
   kvdf evolution priorities
   kvdf evolution next
+  kvdf evolution roadmap
+  kvdf evolution partition
+  kvdf evolution report
+  kvdf plugins status
+  kvdf plugins enable owner-track
+  kvdf plugins disable owner-track
   kvdf evolution defer "Future idea"
   kvdf evolution deferred
   kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
@@ -317,13 +400,26 @@ Notes:
   kvdf evolution verify evo-001
 
 Notes:
-  Evolution Steward is the single framework-development backlog. It records requested framework changes, keeps ordered development priorities, stores deferred development ideas as one final bucket, checks for possible duplicate capabilities, creates follow-up tasks for runtime, CLI, docs, schemas, tests, dashboards, reports, and capabilities, and exposes the update state to dashboard/live reports.
+  Evolution Steward is the single framework-development backlog. It records requested framework changes, keeps ordered development priorities, exposes the seven-step KVDF restructure roadmap and the capability partition matrix, emits resumable execution reports for each priority, stores deferred development ideas as one final bucket, checks for possible duplicate capabilities, creates follow-up tasks for runtime, CLI, docs, schemas, tests, dashboards, reports, and capabilities, and exposes the update state to dashboard/live reports.
+  The plugin loader exposes removable bundles such as owner-track and keeps enable/disable state under .kabeeri/plugins.json.
+  Framework-owner sessions use this track to move from resume to priorities, placement confirmation, temp slices, sync, validation, and verification.
 `,
     "multi-ai": `Usage:
   kvdf multi-ai status
   kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
   kvdf multi-ai leader transfer --ai agent-002
   kvdf multi-ai leader end
+  kvdf multi-ai agent register --ai agent-001 --name "Claude Sonnet"
+  kvdf multi-ai agent heartbeat --ai agent-001
+  kvdf multi-ai agent next --ai agent-001 --count 3
+  kvdf multi-ai agent call --ai agent-002 --request "Please align the leader lease"
+  kvdf multi-ai agent respond --call multi-ai-call-001
+  kvdf multi-ai agent leave --ai agent-001
+  kvdf multi-ai conversation start --from agent-001 --to agent-002 --topic "Scope" --message "Please review the scope"
+  kvdf multi-ai conversation send --from agent-001 --to agent-002 --conversation multi-ai-conversation-001 --message "Please review the scope"
+  kvdf multi-ai conversation inbox --agent agent-002
+  kvdf multi-ai conversation reply --agent agent-002 --message-id multi-ai-message-001 --reply "Reviewed"
+  kvdf multi-ai conversation close --conversation multi-ai-conversation-001
   kvdf multi-ai sync
   kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
   kvdf multi-ai queue add --ai agent-001 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
@@ -335,9 +431,28 @@ Notes:
   kvdf multi-ai merge preview multi-ai-merge-001
   kvdf multi-ai merge validate multi-ai-merge-001
   kvdf multi-ai merge commit multi-ai-merge-001
+  kvdf schedule status
+  kvdf schedule route task-001 --to temp
+  kvdf schedule route task-001 --to trash
+  kvdf schedule route task-001 --to agent --agent agent-001
+  kvdf schedule route task-001 --to deferred
 
 Notes:
-  Multi-AI Governance keeps Evolution as the global priority governor, gives the first AI in a session Leader orchestration status, stores temporary queues per AI, can sync and distribute the active Evolution temporary queue across workers, advances queue slices through a durable lifecycle, and records semantic merge bundles with semantic surface plans so several AI tools can work from the same repo without trampling each other. The Leader does not execute by default; execution requires explicit Owner delegation for a scoped slice.
+Multi-AI Governance keeps Evolution as the global priority governor, gives the first active AI entry Leader orchestration status, stores agent hub entries and leader leases with heartbeat and call tracking, can sync and distribute the active Evolution temporary queue across workers, advances queue slices through a durable lifecycle, and records semantic merge bundles with semantic surface plans so several AI tools can work from the same repo without trampling each other. The Leader does not execute by default; execution requires explicit Owner delegation for a scoped slice. If the Leader disappears or stops answering calls, the hub promotes the next active agent after the lease rules are exceeded.
+  kvdf multi-ai agent next --ai <agent-id> --count <n> lets a worker claim the next available Evolution priorities in order, so AI tools can pull from the live priority list instead of waiting for a manual task handoff.
+The conversation relay layer is separate from leader calls: use it for durable agent-to-agent messages, inboxes, replies, and closing threads without relying on chat history.
+`,
+    schedule: `Usage:
+  kvdf schedule status
+  kvdf schedule route task-001 --to temp
+  kvdf schedule route task-001 --to trash
+  kvdf schedule route task-001 --to restore
+  kvdf schedule route task-001 --to agent --agent agent-001
+  kvdf schedule route task-001 --to deferred
+  kvdf schedule history
+
+Notes:
+  Task Scheduler is the orchestration layer for task movement across tasks, temp queues, trash, deferred routes, and agent handoffs. It records every route decision, reuses the temp queue and trash systems for actual moves, and keeps a durable route history so the next session can resume the same movement state without reconstructing intent from chat.
 `,
     delivery: `Usage:
   kvdf delivery recommend "Build hospital management system with billing compliance roles and audit"
@@ -391,11 +506,17 @@ Notes:
   kvdf app show storefront
   kvdf app status storefront --status ready_to_publish --workstreams public_frontend
 
+Developer app workspaces:
+  kvdf app workspace create --slug storefront-web --name "Storefront Web" --type frontend
+  kvdf app workspace list
+  kvdf app workspace show storefront-web
+
 Public routes always use username:
   /customer/apps/storefront
 
 Notes:
   App Boundary Governance allows multiple apps inside one KVDF workspace only when they belong to the same product.
+  Developer app workspaces live under workspaces/apps/<app-slug>/ with local .kabeeri state and tests.
   Use separate KVDF workspaces for unrelated products, clients, or release lifecycles.
 `,
     journey: `Usage:
@@ -417,12 +538,24 @@ Notes:
   kvdf questionnaire generate-tasks
 
 Notes:
-  Questionnaire planning uses Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor to generate focused developer questions before task generation.
+  Questionnaire planning uses Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor to generate focused developer questions before task generation. It also recommends a short prompt-pack path and compact guidance so the next AI step stays small and task-specific.
 `,
     capability: `Usage:
   kvdf capability list
   kvdf capability show payments_billing
   kvdf capability map
+  kvdf capability registry
+  kvdf capability registry payments_billing
+  kvdf capability registry map
+  kvdf capability surface
+  kvdf capability matrix
+  kvdf capability search
+
+Notes:
+  Capability mapping turns project answers into the 53 standard system areas and their activation states. Capability registry exposes the same areas as named, traceable units with owner/workstream and source mapping.
+  Capability surface maps those same areas to discoverable CLI command families and docs references.
+  Capability matrix adds the docs, CLI, runtime, tests, and report links for every capability in one traceable table.
+  Capability search lets you filter the registry, surface, matrix, and roadmap views by track, capability, command, phase, and report type.
 `,
     structure: `Usage:
   kvdf structure map
@@ -491,21 +624,40 @@ Notes:
   kvdf adr report --output adr-report.md
   kvdf adr trace --json
 
-Notes:
-  ADRs are for durable architecture, security, migration, release, or integration decisions. Lightweight notes belong in kvdf memory.
-`,
-    "ai-run": `Usage:
-  kvdf ai-run record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500 --summary "Implemented endpoint"
+  Notes:
+    ADRs are for durable architecture, security, migration, release, or integration decisions. Lightweight notes belong in kvdf memory.
+  `,
+      traceability: `Usage:
+    kvdf trace report
+    kvdf trace status
+    kvdf trace show
+    kvdf trace list
+
+  Notes:
+    Traceability ties tasks, assessments, ADRs, AI runs, docs, and test evidence together so every change can be traced end to end.
+  `,
+      "change-control": `Usage:
+    kvdf change report
+    kvdf change status
+    kvdf risk report
+    kvdf risk status
+
+  Notes:
+    Change control consolidates structured change requests, evolution changes, and risk register entries so high-risk work can be reviewed before release or handoff.
+  `,
+      "ai-run": `Usage:
+    kvdf ai-run record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500 --summary "Implemented endpoint"
   kvdf ai-run list
   kvdf ai-run show ai-run-001
   kvdf ai-run accept ai-run-001 --reviewer reviewer-001 --evidence tests-pass
   kvdf ai-run reject ai-run-001 --reason "Wrong scope"
   kvdf ai-run link ai-run-001 --adr adr-001
+  kvdf ai-run provenance --json
   kvdf ai-run report
   kvdf ai-run report --json
 
 Notes:
-  AI run history records prompt quality and accepted/rejected outputs. Usage remains the cost ledger, and sessions remain execution boundary records. Link important runs to ADRs so durable decisions keep their AI evidence.
+  AI run history records prompt quality and accepted/rejected outputs. Provenance links AI runs to usage events, post-work captures, and audit events. Usage remains the cost ledger, and sessions remain execution boundary records. Link important runs to ADRs so durable decisions keep their AI evidence.
 `,
     "prompt-pack": `Usage:
   kvdf prompt-pack list
@@ -515,12 +667,14 @@ Notes:
   kvdf prompt-pack use vue --output my-project/07_AI_CODE_PROMPTS/vue
   kvdf prompt-pack compose react --task task-001
   kvdf prompt-pack compose react --task task-001 --context ctx-001 --output .kabeeri/prompt_layer/task-001.react.md
+  kvdf prompt-pack scale --profile enterprise --goal "Build a hospital ERP"
   kvdf prompt-pack compositions
   kvdf prompt-pack composition-show prompt-composition-001
   kvdf prompt-pack validate react
 
 Notes:
-  compose merges prompt_packs/common, the selected stack prompt, task scope, acceptance criteria, and an optional context pack into one reviewable prompt.
+  compose merges prompt_packs/common, the selected stack prompt, task scope, acceptance criteria, compact guidance, and an optional context pack into one reviewable prompt.
+  scale recommends large-system prompt bundles for enterprise, regulated, and high-risk projects so Kabeeri can route a richer context pack before implementation.
 `,
     token: `Usage:
   kvdf token issue --task task-001 --assignee agent-001
@@ -572,6 +726,17 @@ Notes:
 
 Notes:
   Usage records are stored in .kabeeri/ai_usage/usage_events.jsonl and rolled into task, sprint, and developer cost summaries.
+`,
+    "cost-control": `Usage:
+  kvdf cost-control --help
+  kvdf cost-control summary
+  kvdf cost-control report --output usage-report.md
+  kvdf cost-control context-pack create --task task-001 --allowed-files src/api/
+  kvdf cost-control preflight estimate --task task-001
+  kvdf cost-control model-route recommend --kind implementation --risk medium
+
+Notes:
+  Cost-control is the umbrella surface for usage accounting, budget guardrails, context packs, preflight estimation, and model routing. Use it to see token pressure, budget approvals, and routing advice from one place.
 `,
     policy: `Usage:
   kvdf policy list
@@ -676,17 +841,86 @@ Notes:
   kvdf docs serve --port 4188
   kvdf docs serve --port auto --open
   kvdf docs generate
+  kvdf docs build
+  kvdf docs preview
+  kvdf docs sync
+  kvdf docs workflow
+  kvdf docs manifest
+  kvdf docs contracts
+  kvdf docs coverage
+  kvdf docs validate
   kvdf docs path
   kvdf docs code
 
 Notes:
   The docs site is served from docs/site and regenerated before open/serve/generate.
   Use docs open for reading the live documentation in the browser.
+  Use docs build, preview, and sync as CLI-first aliases for the docs publishing lifecycle.
+  Use docs workflow to inspect the template catalog, manifest, page contracts, and validation steps as one resumable report.
+  Use docs manifest and docs contracts to inspect the generated site manifest and page contracts.
+  Use docs coverage to inspect deep publishing coverage for the site families.
+  Use docs validate to check that the generated artifacts stay in sync.
   Use docs code when you want to edit the docs site source in VS Code.
+`,
+    project: `Usage:
+  kvdf project analyze --path <folder>
+  kvdf project route --goal "Build a SaaS product"
+  kvdf project profile route --goal "Build a SaaS product"
+  kvdf project profile status
+  kvdf project profile report
+  kvdf adopt analyze --path <folder>
+
+Notes:
+  Project analyze inspects an existing application for Kabeeri adoption. Project profile routing turns a project goal or current codebase signals into a durable Lite, Standard, or Enterprise profile, recommends delivery mode, and suggests prompt packs plus intake groups before the workspace is created.
+`,
+    "software-design": `Usage:
+  kvdf software-design list
+  kvdf software-design index
+  kvdf software-design map
+  kvdf software-design compare
+  kvdf software-design show SOFTWARE_DESIGN_SYSTEM_PATTERNS.md
+  kvdf software-design path
+  kvdf software-design --json
+
+Notes:
+  Software Design System Reference is the permanent Kabeeri home for analyzed software design knowledge imported from source packages. Use it to inspect the durable reference library that future sessions should reuse instead of re-analyzing the source folder.
+`,
+    "docs-generator": `Usage:
+  kvdf docs-generator list
+  kvdf docs-generator index
+  kvdf docs-generator map
+  kvdf docs-generator compare
+  kvdf docs-generator show DOCS_GENERATION_REFERENCE.md
+  kvdf docs-generator path
+  kvdf docs-generator --json
+
+Notes:
+  Documentation Generator Reference is the permanent Kabeeri home for reusable project documentation lifecycle knowledge imported from source packages. Use it to inspect the durable lifecycle rules that future Kabeeri projects should reuse.
+`,
+    "source-package": `Usage:
+  kvdf source-package
+  kvdf source-package study
+  kvdf source-package inventory
+  kvdf source-package map
+  kvdf source-package source-map
+  kvdf source-package placement
+  kvdf source-package normalize
+  kvdf source-package compare
+  kvdf source-package verify
+  kvdf source-package migration
+  kvdf source-package manifest
+  kvdf source-package cleanup
+  kvdf source-package decommission
+  kvdf source-package decommission --confirm-remove
+  kvdf source-package --json
+
+Notes:
+  KVDF_New_Features_Docs is treated as a dual-purpose source package: a Software Design System reference library and a project documentation generator system. The CLI surface exposes its study, inventory, destination map, source-capability map, normalization map, and verification state so the package can be redistributed into permanent Kabeeri folders before the source folder is removed. \`cleanup\` previews the decommission path, while \`decommission\` only requests removal approval unless \`--confirm-remove\` is explicitly passed.
 `,
     vscode: `Usage:
   kvdf vscode scaffold
   kvdf vscode status
+  kvdf vscode report
 `,
     owner: `Usage:
   kvdf owner init --id owner-001 --name "Project Owner"
@@ -762,6 +996,10 @@ Notes:
   Raw design links, images, PDFs, and reference websites are inputs only. Frontend implementation is blocked until a source has a snapshot and an approved text spec. UI/UX references are approved learning/spec patterns used to ask better questions and generate governed design tasks, not to copy third-party assets. Frontend verification should also have a passing visual review. Design governance reports summarize sources, specs, tokens, page specs, components, visual evidence, UI advisor context, and next actions.
 `,
     github: `Usage:
+  kvdf github status
+  kvdf github report
+  kvdf github feedback list
+  kvdf github feedback record --type status --subject task-001 --message "Ready for review"
   kvdf github issue sync --version v4.0.0 --dry-run
   kvdf github issue sync --version v4.0.0 --confirm
   kvdf github label sync --version v4.0.0 --confirm
@@ -777,7 +1015,7 @@ Notes:
   kvdf sync push --confirm
 
 Notes:
-  Sync is the GitHub/team coordination preflight. Status is read-only by default. Pull and push are dry-runs unless --confirm is provided, so Kabeeri can warn about stale remote work, local changes, and app/team drift before touching git remotes.
+  Sync is the GitHub/team coordination preflight. Status is read-only by default. Pull and push are dry-runs unless --confirm is provided, so Kabeeri can warn about stale remote work, local changes, app/team drift, and GitHub feedback counts before touching git remotes.
 `,
     wordpress: `Usage:
   kvdf wordpress analyze --path . --staging --backup
@@ -814,153 +1052,116 @@ function table(headers, rows) {
 }
 
 function printHelp() {
-  console.log(`Kabeeri VDF CLI
-
-Usage:
-  kvdf <command> [action] [options]
-
-Commands:
-  init                         Create local .kabeeri workspace state
-  doctor                       Show environment and repository status
-  resume                       Detect session mode and safe next actions
-  guard                        Check framework boundary before edits
-  conflict scan                Scan for command, schema, and workspace logic drift
-  validate [scope]             Validate repo JSON, plans, and workspace state
-  generator list|show|create   List, show, or scaffold generator profiles
-  create --profile <name>      Shortcut for generator create
-  prompt-pack list|show|export List, show, export, or compose prompt packs
-  wordpress analyze|plan|scaffold
-                               Build or adopt WordPress sites safely
-  example list|show <profile>  List or show example profiles
-  questionnaire list|status    Inspect questionnaire files
-  vibe suggest|ask|capture     Convert natural language into governed suggestions
-  capability list|show|map     Inspect v5 system capability map
-  structure map|validate       Inspect and validate repository foldering
-  blueprint list|recommend     Map product type to modules, pages, data, and risks
-  data-design context|checklist Guide database modeling and review
-  evolution plan|status        Govern Kabeeri framework updates and dependent tasks
-  multi-ai status|leader|queue|merge|sync
-                              Orchestrate multi-AI governance, leader sessions, queues, and merges
-  plan list|show <version>     Inspect v3/v4 milestone plans
-  project analyze              Analyze an existing app for KVDF adoption
-  release check|notes|checklist Generate release review artifacts
-  delivery recommend|choose    Recommend Agile or Structured delivery mode
-  structured health|phase      Manage Structured/Waterfall delivery runtime
-  agile backlog|epic|story|sprint
-                               Manage Agile templates as runtime records
-  sprint create|list|summary    Manage agile sprints and sprint cost summaries
-  session start|end|list|show   Track AI Developer sessions and handoffs
-  task list|create|status      Manage local .kabeeri tasks
-  workstream list|show|add     Manage workstream runtime boundaries
-  app list|create|status       Manage customer app usernames and public routes
-  feature list|create|status   Manage business feature readiness
-  journey list|create|status   Manage business user journeys
-  acceptance list|create       Manage local acceptance records
-  audit list|report            Inspect and export audit events
-  memory add|list|summary      Manage v5 project memory records
-  adr create|list|report       Track architecture decision records
-  ai-run record|accept|report  Track AI prompt run quality and waste
-  owner init|login|status|logout
-                               Configure and use local Owner sessions
-  owner transfer issue|accept|list|revoke
-                               Transfer single Owner authority with one-use tokens
-  developer list|add           Manage human developer identities
-  agent list|add               Manage AI Developer identities
-  lock list|create|release     Manage local locks
-  vscode scaffold|status       Generate VS Code workspace task helpers
-  docs open|serve|code         Open or serve the documentation site
-  dashboard generate|export|serve
-                               Generate or view local dashboard
-  reports live                 Refresh derived live report JSON state
-  package check|guide          Validate product packaging readiness
-  upgrade check|guide          Inspect workspace upgrade compatibility
-  readiness report             Export independent readiness status reports
-  governance report            Export independent governance status reports
-  token list|issue|revoke      Manage local task access token records
-  budget approve|list|revoke   Manage over-budget usage approvals
-  pricing set|list|show        Manage AI pricing rules
-  usage record|admin|inquiry   Track task and non-task AI token usage and cost
-  policy list|show|evaluate    Evaluate governance policies and approval gates
-  context-pack create|list      Generate focused task context packs
-  preflight estimate|list       Estimate AI cost and approval needs before execution
-  model-route list|recommend    Recommend AI model class by task kind and risk
-  handoff package|list          Generate client and Owner handoff report packages
-  security scan|report|gate     Scan for secrets and enforce security readiness
-  migration plan|check|report   Govern migration safety and rollback readiness
-  github plan|label|milestone|issue
-                               Dry-run by default; use --confirm to write through gh
-  sync status|pull|push         Coordinate local Kabeeri state with git/GitHub
-  design list|add|snapshot|approve|audit
-                               Govern design sources before frontend implementation
-
-Examples:
-  kvdf init --profile standard --mode structured
-  kvdf resume
-  kvdf guard
-  kvdf conflict scan
-  kvdf init --profile standard --goal "Build ecommerce store with Laravel backend and Next.js frontend"
-  kvdf validate
-  kvdf validate runtime-schemas
-  kvdf reports live --json
-  kvdf readiness report --output .kabeeri/reports/readiness_report.md
-  kvdf governance report --output .kabeeri/reports/governance_report.md
-  kvdf prompt-pack list
-  kvdf wordpress plan "Build a WordPress company website"
-  kvdf wordpress plugin plan "Create a WooCommerce checkout add-on" --name "Checkout Addon"
-  kvdf wordpress analyze --path existing-wordpress --staging --backup
-  kvdf wordpress scaffold plugin --name "Business Features"
-  kvdf docs open
-  kvdf docs serve --port auto --open
-  kvdf create --profile lite --output my-project
-  kvdf generate --profile standard --output my-project
-  kvdf prompt-pack export react --output my-project/07_AI_CODE_PROMPTS/react
-  kvdf prompt-pack compose react --task task-001 --output .kabeeri/prompt_layer/task-001.react.md
-  kvdf sprint create --id sprint-001 --name "Sprint 1"
-  kvdf session start --task task-001 --developer agent-001 --provider openai --model gpt-4
-  kvdf task create --title "Define checkout flow" --workstream backend
-  kvdf app create --username acme --name "ACME Portal"
-  kvdf feature create --title "Public signup" --readiness needs_review
-  kvdf journey create --name "Signup journey" --steps Landing,Signup,Welcome
-  kvdf questionnaire answer entry.project_type --value saas
-  kvdf questionnaire coverage
-  kvdf capability list
-  kvdf structure map
-  kvdf structure validate
-  kvdf blueprint recommend "Build ecommerce store with payments shipping and mobile app"
-  kvdf data-design context ecommerce --json
-  kvdf evolution plan "Add a new Kabeeri capability"
-  kvdf multi-ai status
-  kvdf project analyze --path existing-app
-  kvdf task start task-001 --actor agent-001
-  kvdf owner init --id owner-001 --name "Project Owner"
-  kvdf owner transfer issue --to owner-002 --name "New Owner"
-  kvdf token issue --task task-001 --assignee agent-001
-  kvdf pricing set --provider openai --model gpt-4 --unit 1M --input 5 --output 15 --cached 1
-  kvdf usage record --task task-001 --developer agent-001 --input-tokens 1000 --output-tokens 500 --cost 0.25
-  kvdf usage report --output usage-report.md
-  kvdf usage efficiency
-  kvdf memory add --type decision --text "Use PostgreSQL"
-  kvdf adr create --title "Use PostgreSQL" --context "Relational data" --decision "Use PostgreSQL for v1"
-  kvdf ai-run record --task task-001 --developer agent-001 --provider openai --model gpt-4 --input-tokens 1000 --output-tokens 500
-  kvdf design add --type figma --location "https://figma.com/file/..." --use "Checkout"
-  kvdf design recommend ecommerce --json
-  kvdf design framework-adapters
-  kvdf design framework-plan bootstrap --blueprint erp --composition crud_table_workspace --json
-  kvdf design ui-questions ecommerce --json
-  kvdf design ui-decisions ecommerce --page checkout --json
-  kvdf design playbooks
-  kvdf design playbook erp --json
-  kvdf design variant-archetypes
-  kvdf design variants ecommerce --page checkout --count 3 --json
-  kvdf design ui-checklist
-  kvdf design ui-review "news article page with semantic HTML structured data responsive accessibility loading empty error"
-  kvdf design audit
-  kvdf github issue sync --version v4.0.0 --dry-run
-  kvdf sync status
-  kvdf vscode scaffold
-  kvdf github issue sync --version v4.0.0 --confirm
-  kvdf release notes --version v4.0.0 --output RELEASE_NOTES.md
-`);
+  const trackSurface = getActiveTrackSurface();
+  const sharedCommands = [
+    "  init                         Create local .kabeeri workspace state",
+    "  doctor                       Show environment and repository status",
+    "  resume                       Detect session mode and safe next actions",
+    "  start|entry                  Auto-route to the correct track",
+    "  track status|route           Inspect or persist the current session track",
+    "  onboarding                   Show the guided first-session route and report",
+    "  guard                        Check framework boundary before edits",
+    "  conflict scan                Scan for command, schema, and workspace logic drift",
+    "  validate [scope]             Validate repo JSON, plans, workspace state, docs source-of-truth, historical source clarity, and blocked scenarios",
+    "  generator list|show|create   List, show, or scaffold generator profiles",
+    "  create --profile <name>      Shortcut for generator create",
+    "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
+    "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
+    "  plan list|show <version>     Inspect v3/v4 milestone plans",
+  "  source-package study|inventory|map|source-map|placement|normalize|compare|verify Inspect the KVDF_New_Features_Docs source package",
+    "  docs generate|workflow|manifest|contracts|coverage|validate Manage the docs site generation workflow artifacts",
+    "  software-design list|show|index|compare Inspect the permanent software design reference",
+    "  docs-generator list|show|index|compare Inspect the permanent docs generator reference",
+    "  project analyze|profile|route|report Analyze adoption or route a project profile, prompt packs, and scale packs",
+    "  release check|notes|checklist Generate release review artifacts",
+    "  delivery recommend|choose    Recommend Agile or Structured delivery mode",
+    "  structured health|phase      Manage Structured/Waterfall delivery runtime",
+    "  agile backlog|epic|story|sprint Manage Agile templates as runtime records",
+    "  sprint create|list|summary    Manage agile sprints and sprint cost summaries",
+    "  session start|end|list|show   Track AI Developer sessions and handoffs",
+    "  task list|create|status|assessment|coverage|lifecycle|complete|trash Manage local .kabeeri tasks, assessments, coverage, and trash",
+    "  trace report|status|show|list          Build the end-to-end traceability report for tasks, assessments, ADRs, AI runs, docs, and tests",
+    "  change report|status|show|list          Build the change-control report for risks, change requests, and mitigation notes",
+    "  workstream list|show|add     Manage workstream runtime boundaries",
+    "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
+    "  memory add|list|summary      Manage v5 project memory records",
+    "  adr create|list|report       Track architecture decision records",
+    "  ai-run record|accept|report  Track AI prompt run quality and waste",
+    "  developer list|add           Manage human developer identities",
+    "  agent list|add               Manage AI Developer identities",
+    "  lock list|create|release     Manage local locks",
+    "  dashboard generate|export|serve Generate or view local dashboard",
+    "  reports live|blocked         Refresh derived live report JSON state or summarize blockers",
+    "  package check|guide          Validate product packaging readiness",
+    "  upgrade check|guide          Inspect workspace upgrade compatibility",
+    "  readiness report             Export independent readiness status reports",
+    "  governance report            Export independent governance status reports",
+    "  token list|issue|revoke      Manage local task access token records",
+    "  budget approve|list|revoke   Manage over-budget usage approvals",
+    "  pricing set|list|show        Manage AI pricing rules",
+    "  usage record|admin|inquiry   Track task and non-task AI token usage and cost",
+    "  policy list|show|evaluate    Evaluate governance policies and approval gates",
+    "  context-pack create|list      Generate focused task context packs",
+    "  preflight estimate|list       Estimate AI cost and approval needs before execution",
+    "  model-route list|recommend    Recommend AI model class by task kind and risk",
+    "  handoff package|list          Generate client and Owner handoff report packages",
+    "  security scan|report|gate     Scan for secrets and enforce security readiness",
+    "  migration plan|check|report   Govern migration safety and rollback readiness",
+    "  github status|report|feedback|plan|label|milestone|issue Dry-run by default; use --confirm to write through gh",
+    "  sync status|pull|push         Coordinate local Kabeeri state with git/GitHub and feedback counts",
+    "  design list|add|snapshot|approve|audit Govern design sources before frontend implementation"
+  ];
+  const ownerCommands = [
+    "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
+    "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
+    "  owner init|login|status|logout Configure and use local Owner sessions",
+    "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",
+    "  owner docs open|status|close  Issue or revoke the owner docs token gate",
+    "  owner transfer issue|accept|list|revoke Transfer single Owner authority with one-use tokens"
+  ];
+  const developerCommands = [
+    "  questionnaire list|status    Inspect questionnaire files",
+    "  vibe suggest|ask|capture     Convert natural language into governed suggestions",
+    "  capability list|show|map|registry|search Inspect v5 system capability map and registry",
+    "  structure map|validate       Inspect and validate repository foldering",
+    "  blueprint list|recommend     Map product type to modules, pages, data, and risks",
+    "  data-design context|checklist Guide database modeling and review",
+    "  wordpress analyze|plan|scaffold Build or adopt WordPress sites safely",
+    "  example list|show <profile>  List or show example profiles",
+    "  app list|create|status|workspace Manage customer app usernames and developer app workspaces",
+    "  feature list|create|status   Manage business feature readiness",
+    "  journey list|create|status   Manage business user journeys",
+    "  acceptance list|create       Manage local acceptance records",
+    "  audit list|report            Inspect and export audit events",
+    "  vscode scaffold|status|report Generate VS Code workspace task helpers"
+  ];
+  const lines = [
+    "Kabeeri VDF CLI",
+    "",
+    "Usage:",
+    "  kvdf <command> [action] [options]",
+    "",
+    "Commands:",
+    ...sharedCommands,
+    "",
+    ...(trackSurface === "developer" ? [] : ["Owner Track Commands:", ...ownerCommands, ""]),
+    ...(trackSurface === "owner" ? [] : ["Developer Track Commands:", ...developerCommands, ""]),
+    "",
+    "Track Surface:",
+    trackSurface ? `  ${trackSurface} session active` : "  Run kvdf entry or kvdf start to activate a track and hide the opposite surface.",
+    "",
+    "Examples:",
+    "  kvdf init --profile standard --mode structured",
+    "  kvdf resume",
+    "  kvdf guard",
+    "  kvdf conflict scan",
+    "  kvdf task create --title \"Define checkout flow\" --workstream backend",
+    "  kvdf app workspace create --slug storefront-web --name \"Storefront Web\" --type frontend",
+    "  kvdf evolution plan \"Add a new Kabeeri capability\"",
+    "  kvdf multi-ai status",
+    "  kvdf sync status"
+  ];
+  console.log(lines.join("\n"));
 }
 
 module.exports = { parseArgs, table, printHelp, printCommandHelp, normalizeCommandName };

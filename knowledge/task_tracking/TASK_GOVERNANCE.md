@@ -57,6 +57,8 @@ Runtime task state lives in:
 ```text
 .kabeeri/tasks.json
 .kabeeri/dashboard/task_tracker_state.json
+.kabeeri/task_trash.json
+.kabeeri/task_scheduler.json
 ```
 
 The live task tracker is exposed through:
@@ -66,7 +68,31 @@ kvdf task tracker
 kvdf task tracker --json
 kvdf dashboard task-tracker
 kvdf dashboard serve
+kvdf schedule status
+kvdf schedule route <task-id> --to temp|trash|restore|agent|deferred
 ```
+
+Completed tasks are not deleted immediately. When a task reaches its final
+completion step, KVDF moves the full record into `.kabeeri/task_trash.json`
+with:
+
+- `trashed_at`
+- `trash_expires_at`
+- `trashed_reason`
+- `trashed_by`
+- `original_position`
+- `original_status`
+- `trash_retention_days`
+
+Trash is retained for 30 days by default. On `kvdf resume` and `kvdf entry`,
+KVDF sweeps expired trash records before reporting the current session state.
+`kvdf task trash restore <task-id>` can move a record back into the active task
+list when recovery is needed.
+
+Task movement itself is recorded by the Task Scheduler. It keeps a durable
+route history in `.kabeeri/task_scheduler.json` for routes into temp, trash,
+restore, agent handoffs, and deferred scheduling decisions so a later session
+can resume the movement trail without chat memory.
 
 When the local dashboard is running, the focused task API is:
 
@@ -125,6 +151,7 @@ Good scope:
 - says what must not be changed
 - separates integration work from single-area work
 - avoids mixing unrelated features
+- preserves `KVDF_New_Features_Docs` as a protected source package that must not be moved, renamed, deleted, or recreated by task execution until its contents have been redistributed into the correct Kabeeri folders
 
 Bad scope:
 
@@ -132,6 +159,19 @@ Bad scope:
 - "build the whole app"
 - "fix dashboard and auth and payments"
 - "clean the project" without a target and acceptance criteria
+- "move the new features docs folder" or any task that changes the location of `KVDF_New_Features_Docs` before its contents have been redistributed
+
+## Protected Intake Folder
+
+The folder `KVDF_New_Features_Docs/` is a protected source package. It contains
+two sub-systems: a reference software-design library and a project-documentation
+generator library. Tasks may analyze it, import knowledge from it, or convert
+its ideas into formal Evolution priorities, but task execution must not move,
+rename, delete, or recreate the folder itself until the selected content has
+been redistributed into the correct Kabeeri folders.
+
+If a task touches repository folder structure, it must keep this folder in its
+original location and add an explicit `do_not_change` rule for it.
 
 ## Definition Of Ready
 
@@ -249,6 +289,56 @@ Some tasks require extra governance:
 Do not hide these gates inside generic acceptance text. Make them explicit in
 the task fields or review checklist.
 
+## Task Assessment System
+
+Before large work starts, produce a structured assessment that records the
+goal, workstream, allowed files, dependencies, acceptance criteria, expected
+checks, and policy gates. An assessment should make scope and blockers visible
+before implementation moves into the ready or execution stages.
+
+## Durable Task Memory
+
+Tasks that must survive interrupted sessions should keep execution-grade
+memory in the task record itself.
+
+Store these fields when they help the next session resume safely:
+
+- `execution_summary`
+- `memory`
+- `resume_steps`
+- `required_inputs`
+- `expected_outputs`
+- `do_not_change`
+- `verification_commands`
+
+When a task is generated from Evolution, keep the source change id and the
+impacted area visible so the follow-up task chain remains traceable.
+
+If a task creates additional follow-up tasks, link them in the source change or
+task tracker record instead of relying on chat memory to remember the chain.
+
+## Traceability Layer
+
+Traceability links the evidence chain around a task: source, assessment,
+verification commands, ADRs, AI runs, docs source-of-truth checks, and the
+resulting trace edges. Use `kvdf trace report` to inspect the chain and identify
+gaps before handoff or archive.
+
+## Change Control Layer
+
+Change control records larger decisions that can affect the runtime, docs, or
+release path. It combines structured change requests, Evolution changes, and
+risk register entries so high-risk work can be reviewed before it reaches
+release or handoff. Use `kvdf change report` or `kvdf risk report` to inspect
+the current control state.
+
+## Lifecycle Engine
+
+The visible task lifecycle groups status values into intake, ready, execution,
+validation, closure, blocked, and archived stages. Use `kvdf task lifecycle`
+when you need to see the next governed step for a task, the current stage in
+the flow, and whether a task is still active or already archived in trash.
+
 ## Main Runtime Commands
 
 ```bash
@@ -257,6 +347,10 @@ kvdf task assign
 kvdf task start
 kvdf task review
 kvdf task verify
+kvdf task assessment
+kvdf task lifecycle
+kvdf trace report
+kvdf change report
 kvdf task tracker
 kvdf workstream validate
 kvdf token issue

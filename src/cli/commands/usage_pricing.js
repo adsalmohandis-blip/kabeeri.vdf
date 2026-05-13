@@ -1,8 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
-const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
+const { fileExists, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
+const { isExpired } = require("../services/collections");
+const { appendJsonLine, readJsonLines } = require("../services/jsonl");
+const { outputLines } = require("../services/report_output");
+const { readStateArray } = require("../services/state_utils");
 
 function getPricingCurrency() {
   if (!fileExists(".kabeeri/ai_usage/pricing_rules.json")) return "USD";
@@ -21,7 +25,8 @@ function usage(action, value, flags = {}, deps = {}) {
       by_developer: summary.by_developer,
       by_workstream: summary.by_workstream,
       by_provider: summary.by_provider,
-      by_sprint: summary.by_sprint
+      by_sprint: summary.by_sprint,
+      budget_pressure: summary.budget_pressure
     });
     refreshDashboardArtifacts();
     console.log(JSON.stringify(summary, null, 2));
@@ -251,7 +256,8 @@ function summarizeUsage() {
     tracked_vs_untracked: {
       tracked: { events: 0, tokens: 0, cost: 0 },
       untracked: { events: 0, tokens: 0, cost: 0 }
-    }
+    },
+    budget_pressure: null
   };
 
   for (const event of events) {
@@ -273,6 +279,7 @@ function summarizeUsage() {
     summary.tracked_vs_untracked[trackedKey].cost += cost;
   }
 
+  summary.budget_pressure = buildBudgetPressure(summary);
   return summary;
 }
 
@@ -300,6 +307,9 @@ function buildUsageReport() {
     "",
     "## Tracked vs Untracked",
     ...usageMarkdownRows(summary.tracked_vs_untracked, "Type"),
+    "",
+    "## Budget Pressure",
+    ...budgetPressureRows(summary.budget_pressure),
     "",
     "## Developer Efficiency",
     ...developerEfficiencyRows(buildDeveloperEfficiency().by_developer)
@@ -392,6 +402,113 @@ function addUsageBucket(target, key, tokens, cost) {
   target[key].cost += cost;
 }
 
+function budgetPressureRows(pressure) {
+  const rows = ["| Task | Severity | Tokens | Token Limit | Cost | Cost Limit | Approval |", "| --- | --- | ---: | ---: | ---: | ---: | --- |"];
+  const tasks = pressure && Array.isArray(pressure.tasks) ? pressure.tasks : [];
+  for (const item of tasks) {
+    rows.push(`| ${item.task_id} | ${item.severity} | ${item.tokens} | ${item.max_tokens || ""} | ${item.cost} | ${item.max_cost || ""} | ${item.approval_id || item.approval_status || "-"} |`);
+  }
+  if (rows.length === 2) rows.push("| none | clear | 0 |  | 0 |  | - |");
+  return rows;
+}
+
+function buildBudgetPressure(summary) {
+  const tokens = fileExists(".kabeeri/tokens.json") ? readJsonFile(".kabeeri/tokens.json").tokens || [] : [];
+  const approvals = readBudgetApprovals();
+  const activeApprovals = approvals.filter((approval) => approval.status === "active" && !isExpired(approval.expires_at));
+  const approvalsByTask = Object.fromEntries(activeApprovals.map((approval) => [approval.task_id, approval]));
+  const tasks = [];
+
+  for (const token of tokens) {
+    if (token.status !== "active") continue;
+    const usage = summary.by_task[token.task_id] || { tokens: 0, cost: 0 };
+    const tokenPressure = buildPressureMetric(usage.tokens, token.max_usage_tokens);
+    const costPressure = buildPressureMetric(usage.cost, token.max_cost);
+    const severity = highestPressureSeverity(tokenPressure.ratio, costPressure.ratio);
+    if (!severity) continue;
+    const approval = approvalsByTask[token.task_id] || null;
+    tasks.push({
+      task_id: token.task_id,
+      token_id: token.token_id,
+      severity,
+      tokens: usage.tokens,
+      max_tokens: token.max_usage_tokens || null,
+      token_ratio: tokenPressure.ratio,
+      cost: usage.cost,
+      max_cost: token.max_cost || null,
+      cost_ratio: costPressure.ratio,
+      approval_id: approval ? approval.approval_id : null,
+      approval_status: approval ? approval.status : null,
+      approval_expires_at: approval ? approval.expires_at || null : null,
+      approval_covers_token_overrun: approval ? approval.extra_tokens === null || approval.extra_tokens === undefined || (tokenPressure.excess > 0 && tokenPressure.excess <= Number(approval.extra_tokens || 0)) : false,
+      approval_covers_cost_overrun: approval ? approval.extra_cost === null || approval.extra_cost === undefined || (costPressure.excess > 0 && costPressure.excess <= Number(approval.extra_cost || 0)) : false
+    });
+  }
+
+  tasks.sort((a, b) => {
+    const severityOrder = { over_budget: 0, needs_attention: 1, watching: 2 };
+    const severityDelta = severityOrder[a.severity] - severityOrder[b.severity];
+    if (severityDelta !== 0) return severityDelta;
+    const ratioA = Math.max(a.token_ratio || 0, a.cost_ratio || 0);
+    const ratioB = Math.max(b.token_ratio || 0, b.cost_ratio || 0);
+    return ratioB - ratioA;
+  });
+
+  return {
+    generated_at: new Date().toISOString(),
+    counts: {
+      active_approvals: activeApprovals.length,
+      watching: tasks.filter((item) => item.severity === "watching").length,
+      needs_attention: tasks.filter((item) => item.severity === "needs_attention").length,
+      over_budget: tasks.filter((item) => item.severity === "over_budget").length
+    },
+    active_approvals: activeApprovals.map((approval) => ({
+      approval_id: approval.approval_id,
+      task_id: approval.task_id,
+      extra_tokens: approval.extra_tokens ?? null,
+      extra_cost: approval.extra_cost ?? null,
+      expires_at: approval.expires_at || null
+    })),
+    tasks
+  };
+}
+
+function readBudgetApprovals() {
+  if (!fileExists(".kabeeri/ai_usage/budget_approvals.json")) return [];
+  return readJsonFile(".kabeeri/ai_usage/budget_approvals.json").approvals || [];
+}
+
+function buildPressureMetric(used, max) {
+  const limit = Number(max || 0);
+  if (!limit) return { ratio: null, excess: 0 };
+  const usage = Number(used || 0);
+  return {
+    ratio: usage / limit,
+    excess: Math.max(0, usage - limit)
+  };
+}
+
+function highestPressureSeverity(tokenRatio, costRatio) {
+  const tokenSeverity = pressureSeverity(tokenRatio);
+  const costSeverity = pressureSeverity(costRatio);
+  return mostSevere(tokenSeverity, costSeverity);
+}
+
+function pressureSeverity(ratio) {
+  if (ratio === null || ratio === undefined) return null;
+  if (ratio >= 1) return "over_budget";
+  if (ratio >= 0.9) return "needs_attention";
+  if (ratio >= 0.75) return "watching";
+  return null;
+}
+
+function mostSevere(first, second) {
+  const order = { over_budget: 3, needs_attention: 2, watching: 1 };
+  if (!first) return second;
+  if (!second) return first;
+  return order[first] >= order[second] ? first : second;
+}
+
 function getBudgetWarning(taskId, summary) {
   const tokens = readJsonFile(".kabeeri/tokens.json").tokens || [];
   const active = tokens.find((token) => token.task_id === taskId && token.status === "active");
@@ -408,6 +525,12 @@ function getBudgetWarning(taskId, summary) {
   }
   if (active.max_cost && taskUsage.cost >= active.max_cost * 0.9) {
     return `Task ${taskId} is above 90% cost budget (${taskUsage.cost}/${active.max_cost}).`;
+  }
+  if (active.max_usage_tokens && taskUsage.tokens >= active.max_usage_tokens * 0.75) {
+    return `Task ${taskId} is above 75% token budget (${taskUsage.tokens}/${active.max_usage_tokens}).`;
+  }
+  if (active.max_cost && taskUsage.cost >= active.max_cost * 0.75) {
+    return `Task ${taskId} is above 75% cost budget (${taskUsage.cost}/${active.max_cost}).`;
   }
   return null;
 }
@@ -443,31 +566,6 @@ function findActiveBudgetApproval(taskId, required) {
     if (approval.extra_cost !== null && approval.extra_cost !== undefined && required.extraCost > Number(approval.extra_cost)) return false;
     return true;
   }) || null;
-}
-
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  return readJsonFile(file)[key] || [];
-}
-
-function appendJsonLine(relativePath, value) {
-  const fullPath = path.join(repoRoot(), relativePath);
-  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
-  fs.appendFileSync(fullPath, `${JSON.stringify(value)}\n`, "utf8");
-}
-
-function outputLines(lines, outputPath) {
-  const content = `${lines.join("\n")}\n`;
-  if (outputPath && outputPath !== true) {
-    writeTextFile(outputPath, content);
-    console.log(`Wrote ${outputPath}`);
-    return;
-  }
-  console.log(content.trimEnd());
-}
-
-function isExpired(value) {
-  return Boolean(value && Date.parse(value) <= Date.now());
 }
 
 module.exports = {

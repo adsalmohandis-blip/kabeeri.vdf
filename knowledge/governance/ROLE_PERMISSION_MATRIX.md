@@ -24,6 +24,8 @@
 | Final verify | Yes | No | No | No | No | No | No | No | No |
 | Issue task access token | Yes | Yes | No | No | No | No | No | No | No |
 | Revoke task access token | Yes | Yes | No | No | No | No | No | No | No |
+| Issue owner transfer token | Yes | No | No | No | No | No | No | No | No |
+| Accept owner transfer token | Yes | No | No | No | No | No | No | No | No |
 | Create lock | Yes | Yes | No | Yes | Yes | Yes | No | Yes | No |
 | Override lock | Yes | Yes | No | No | No | No | No | No | No |
 | Transfer ownership | Yes | No | No | No | No | No | No | No | No |
@@ -32,4 +34,3 @@
 ## Reviewer Independence
 
 The executor of a task cannot be the final verifier. A reviewer can recommend acceptance, but Owner verification is the only final close action.
-

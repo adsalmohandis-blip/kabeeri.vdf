@@ -50,6 +50,20 @@
       "laravel_analogy": "stubs/, starter kits, resources/views"
     },
     {
+      "group": "plugins",
+      "target_path": "plugins/",
+      "description": "Optional removable bundles that extend KVDF behavior without becoming part of the core runtime.",
+      "current_paths": ["plugins/"],
+      "laravel_analogy": "packages/ or optional service providers"
+    },
+    {
+      "group": "workspaces",
+      "target_path": "workspaces/",
+      "description": "Developer application workspaces that keep customer projects isolated from kvdf-core and owner bundles.",
+      "current_paths": ["workspaces/"],
+      "laravel_analogy": "tenant workspaces or project sandboxes"
+    },
+    {
       "group": "integrations",
       "target_path": "integrations/",
       "description": "External tool integrations and platform connectors such as GitHub, VS Code, dashboards, and multi-AI adapters.",
@@ -98,6 +112,8 @@
     { "path": "cli/", "target_group": "core", "role": "CLI documentation", "migration_status": "physical_root" },
     { "path": "knowledge/", "target_group": "knowledge", "role": "knowledge super-folder", "migration_status": "physical_root" },
     { "path": "packs/", "target_group": "packs", "role": "exportable packs super-folder", "migration_status": "physical_root" },
+    { "path": "plugins/", "target_group": "plugins", "role": "optional removable bundles", "migration_status": "physical_root" },
+    { "path": "workspaces/", "target_group": "workspaces", "role": "developer app workspaces", "migration_status": "physical_root" },
     { "path": "integrations/", "target_group": "integrations", "role": "integration super-folder", "migration_status": "physical_root" },
     { "path": "schemas/", "target_group": "contracts", "role": "schemas and runtime contracts", "migration_status": "physical_root" },
     { "path": "docs/", "target_group": "documentation", "role": "human documentation and docs site", "migration_status": "physical_root" },
@@ -132,6 +148,7 @@
     "platform_integration/": "integrations/platform_integration/",
     "multi_ai_governance/": "integrations/multi_ai_governance/",
     "dashboard/": "integrations/dashboard/",
+    "workspaces/": "workspaces/",
     "docs_site/": "docs/site/",
     "codex_context/": "docs/codex_context/"
   },
@@ -154,6 +171,8 @@
     "cli",
     "knowledge",
     "packs",
+    "plugins",
+    "workspaces",
     "integrations",
     "docs",
     "schemas",
@@ -167,6 +186,7 @@
       "new human docs": "docs/",
       "new schema": "schemas/",
       "new reusable prompt or template": "packs/prompt_packs/ or packs/templates/",
+      "new optional bundle or plugin": "plugins/",
       "new integration": "integrations/"
     }
   },

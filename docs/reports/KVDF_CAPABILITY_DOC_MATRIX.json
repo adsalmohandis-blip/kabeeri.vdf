@@ -1,0 +1,2252 @@
+{
+  "report_type": "kvdf_capability_doc_matrix",
+  "generated_at": "2026-05-13T12:23:00.152Z",
+  "report_path": "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+  "source": "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+  "source_reference": [
+    "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+    "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md"
+  ],
+  "total_capabilities": 53,
+  "coverage": {
+    "total_capabilities": 53,
+    "complete_capabilities": 53,
+    "partial_capabilities": 0
+  },
+  "required_surfaces": [
+    "docs",
+    "cli",
+    "runtime",
+    "tests",
+    "reports"
+  ],
+  "rows": [
+    {
+      "id": 1,
+      "key": "product_business",
+      "name": "Product & Business",
+      "group": "A. Product & Business",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/standard_systems/PRODUCT_BLUEPRINT_CATALOG.json",
+        "knowledge/project_intake/README.md"
+      ],
+      "cli_links": [
+        "kvdf project route",
+        "kvdf questionnaire plan",
+        "kvdf blueprint"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/adaptive_intake_plan.json",
+        ".kabeeri/project_profile.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 2,
+      "key": "users_roles",
+      "name": "Users & Roles",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 3,
+      "key": "permissions",
+      "name": "Permissions",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 4,
+      "key": "user_journeys",
+      "name": "User Journeys",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 5,
+      "key": "onboarding",
+      "name": "Onboarding",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 6,
+      "key": "offboarding",
+      "name": "Offboarding",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 7,
+      "key": "public_frontend",
+      "name": "Public Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/design_system/ui_ux_reference/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "runtime_links": [
+        ".kabeeri/design_sources/",
+        ".kabeeri/dashboard/ux_audits.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 8,
+      "key": "user_frontend",
+      "name": "User Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/design_system/ui_ux_reference/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "runtime_links": [
+        ".kabeeri/design_sources/",
+        ".kabeeri/dashboard/ux_audits.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 9,
+      "key": "admin_frontend",
+      "name": "Admin Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/design_system/ui_ux_reference/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "runtime_links": [
+        ".kabeeri/design_sources/",
+        ".kabeeri/dashboard/ux_audits.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 10,
+      "key": "internal_operations_frontend",
+      "name": "Internal Operations Frontend",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/design_system/ui_ux_reference/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "runtime_links": [
+        ".kabeeri/design_sources/",
+        ".kabeeri/dashboard/ux_audits.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 11,
+      "key": "backend_apis",
+      "name": "Backend APIs",
+      "group": "D. Backend, Data, and APIs",
+      "owner": "backend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json",
+        "knowledge/delivery_modes/"
+      ],
+      "cli_links": [
+        "kvdf data-design",
+        "kvdf structured",
+        "kvdf agile"
+      ],
+      "runtime_links": [
+        ".kabeeri/data_design.json",
+        ".kabeeri/structured.json",
+        ".kabeeri/agile.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 12,
+      "key": "business_logic",
+      "name": "Business Logic",
+      "group": "D. Backend, Data, and APIs",
+      "owner": "backend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json",
+        "knowledge/delivery_modes/"
+      ],
+      "cli_links": [
+        "kvdf data-design",
+        "kvdf structured",
+        "kvdf agile"
+      ],
+      "runtime_links": [
+        ".kabeeri/data_design.json",
+        ".kabeeri/structured.json",
+        ".kabeeri/agile.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 13,
+      "key": "database",
+      "name": "Database",
+      "group": "D. Backend, Data, and APIs",
+      "owner": "backend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json",
+        "knowledge/delivery_modes/"
+      ],
+      "cli_links": [
+        "kvdf data-design",
+        "kvdf structured",
+        "kvdf agile"
+      ],
+      "runtime_links": [
+        ".kabeeri/data_design.json",
+        ".kabeeri/structured.json",
+        ".kabeeri/agile.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 14,
+      "key": "authentication",
+      "name": "Authentication",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 15,
+      "key": "authorization",
+      "name": "Authorization",
+      "group": "B. Users, Access, and Journeys",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf resume",
+        "kvdf track status",
+        "kvdf owner"
+      ],
+      "runtime_links": [
+        ".kabeeri/session_track.json",
+        ".kabeeri/tasks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 16,
+      "key": "admin_panel",
+      "name": "Admin Panel",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "admin_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 17,
+      "key": "settings_system",
+      "name": "Settings System",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "admin_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 18,
+      "key": "theme_branding",
+      "name": "Theme / Colors / Branding / Design Tokens",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 19,
+      "key": "dashboard_customization",
+      "name": "Dashboard Customization",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 20,
+      "key": "notifications",
+      "name": "Notifications",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 21,
+      "key": "search_filtering",
+      "name": "Search & Filtering",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 22,
+      "key": "files_media",
+      "name": "Files & Media",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 23,
+      "key": "reports_analytics",
+      "name": "Reports & Analytics",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 24,
+      "key": "audit_logs",
+      "name": "Audit Logs",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 25,
+      "key": "security",
+      "name": "Security",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "qa",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 26,
+      "key": "integrations",
+      "name": "Integrations",
+      "group": "G. Commerce and Integrations",
+      "owner": "backend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "integrations/github_sync/",
+        "knowledge/governance/MULTI_AI_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf github",
+        "kvdf sync",
+        "kvdf multi-ai"
+      ],
+      "runtime_links": [
+        ".kabeeri/multi_ai_governance.json",
+        ".kabeeri/github/team_feedback.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 27,
+      "key": "payments_billing",
+      "name": "Payments / Billing",
+      "group": "G. Commerce and Integrations",
+      "owner": "backend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "integrations/github_sync/",
+        "knowledge/governance/MULTI_AI_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf github",
+        "kvdf sync",
+        "kvdf multi-ai"
+      ],
+      "runtime_links": [
+        ".kabeeri/multi_ai_governance.json",
+        ".kabeeri/github/team_feedback.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 28,
+      "key": "seo",
+      "name": "SEO",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 29,
+      "key": "localization_languages",
+      "name": "Localization / Languages",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 30,
+      "key": "accessibility",
+      "name": "Accessibility",
+      "group": "C. Frontend Experience",
+      "owner": "public_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/design_system/ui_ux_reference/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf design",
+        "kvdf vibe",
+        "kvdf prompt-pack"
+      ],
+      "runtime_links": [
+        ".kabeeri/design_sources/",
+        ".kabeeri/dashboard/ux_audits.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 31,
+      "key": "performance",
+      "name": "Performance",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "qa",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 32,
+      "key": "error_handling",
+      "name": "Error Handling",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 33,
+      "key": "testing_qa",
+      "name": "Testing / QA",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "qa",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 34,
+      "key": "deployment",
+      "name": "Deployment",
+      "group": "I. Operations and Release",
+      "owner": "qa",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 35,
+      "key": "production_publish",
+      "name": "Production vs Publish",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 36,
+      "key": "backup_recovery",
+      "name": "Backup / Recovery",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 37,
+      "key": "monitoring",
+      "name": "Monitoring",
+      "group": "I. Operations and Release",
+      "owner": "qa",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 38,
+      "key": "documentation",
+      "name": "Documentation",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 39,
+      "key": "support_help_center",
+      "name": "Support / Help Center",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 40,
+      "key": "legal_compliance",
+      "name": "Legal / Compliance",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 41,
+      "key": "content_management",
+      "name": "Content Management",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 42,
+      "key": "workflows_approvals",
+      "name": "Workflows / Approvals",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 43,
+      "key": "multi_tenancy",
+      "name": "Multi-Tenancy",
+      "group": "G. Commerce and Integrations",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "integrations/github_sync/",
+        "knowledge/governance/MULTI_AI_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf github",
+        "kvdf sync",
+        "kvdf multi-ai"
+      ],
+      "runtime_links": [
+        ".kabeeri/multi_ai_governance.json",
+        ".kabeeri/github/team_feedback.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 44,
+      "key": "feature_flags",
+      "name": "Feature Flags",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 45,
+      "key": "data_import_export",
+      "name": "Data Import / Export",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 46,
+      "key": "scheduling_automation",
+      "name": "Scheduling / Automation",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 47,
+      "key": "ai_product_features",
+      "name": "AI Product Features",
+      "group": "F. Engagement, Content, and Growth",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/questionnaires/",
+        "docs/site/"
+      ],
+      "cli_links": [
+        "kvdf docs",
+        "kvdf capture",
+        "kvdf questionnaire"
+      ],
+      "runtime_links": [
+        ".kabeeri/questionnaires/answers.json",
+        ".kabeeri/interactions/post_work_captures.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 48,
+      "key": "data_governance",
+      "name": "Data Governance",
+      "group": "H. Quality, Security, and Compliance",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md",
+        "knowledge/task_tracking/TRACEABILITY.md"
+      ],
+      "cli_links": [
+        "kvdf validate",
+        "kvdf security",
+        "kvdf policy"
+      ],
+      "runtime_links": [
+        ".kabeeri/policies/policy_results.json",
+        ".kabeeri/access_tokens/",
+        ".kabeeri/locks.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 49,
+      "key": "tenant_admin_customization",
+      "name": "Tenant / Admin Customization",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "admin_frontend",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 50,
+      "key": "email_notification_templates",
+      "name": "Email / Notification Templates",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 51,
+      "key": "dynamic_forms_custom_fields",
+      "name": "Dynamic Forms / Custom Fields",
+      "group": "E. Admin, Settings, and Customization",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/APP_BOUNDARY_GOVERNANCE.md",
+        "knowledge/governance/WORKSTREAM_GOVERNANCE.md"
+      ],
+      "cli_links": [
+        "kvdf dashboard",
+        "kvdf policy",
+        "kvdf task"
+      ],
+      "runtime_links": [
+        ".kabeeri/dashboard/",
+        ".kabeeri/workstreams.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 52,
+      "key": "versioning_api_versioning",
+      "name": "Versioning / API Versioning",
+      "group": "I. Operations and Release",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md",
+        "docs/reports/DOCS_SITE_SYNC_REPORT.json"
+      ],
+      "cli_links": [
+        "kvdf release",
+        "kvdf handoff",
+        "kvdf reports"
+      ],
+      "runtime_links": [
+        ".kabeeri/reports/",
+        ".kabeeri/handoff/",
+        ".kabeeri/migrations/"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    },
+    {
+      "id": 53,
+      "key": "kabeeri_control_layer",
+      "name": "Kabeeri Development Control Layer",
+      "group": "J. Kabeeri Control Layer",
+      "owner": "docs",
+      "docs_links": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "knowledge/governance/EVOLUTION_STEWARD.md",
+        "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md"
+      ],
+      "cli_links": [
+        "kvdf evolution",
+        "kvdf capability",
+        "kvdf trace"
+      ],
+      "runtime_links": [
+        ".kabeeri/evolution.json",
+        ".kabeeri/reports/live_reports_state.json",
+        ".kabeeri/task_assessments.json"
+      ],
+      "test_links": [
+        "tests/cli.integration.test.js",
+        "tests/service.unit.test.js",
+        "npm test"
+      ],
+      "report_links": [
+        "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
+        "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json",
+        "docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md"
+      ],
+      "coverage": {
+        "docs": true,
+        "cli": true,
+        "runtime": true,
+        "tests": true,
+        "reports": true,
+        "complete": true
+      }
+    }
+  ],
+  "by_group": {
+    "A. Product & Business": [
+      "product_business"
+    ],
+    "B. Users, Access, and Journeys": [
+      "users_roles",
+      "permissions",
+      "user_journeys",
+      "onboarding",
+      "offboarding",
+      "authentication",
+      "authorization"
+    ],
+    "C. Frontend Experience": [
+      "public_frontend",
+      "user_frontend",
+      "admin_frontend",
+      "internal_operations_frontend",
+      "accessibility"
+    ],
+    "D. Backend, Data, and APIs": [
+      "backend_apis",
+      "business_logic",
+      "database"
+    ],
+    "E. Admin, Settings, and Customization": [
+      "admin_panel",
+      "settings_system",
+      "theme_branding",
+      "dashboard_customization",
+      "feature_flags",
+      "tenant_admin_customization",
+      "email_notification_templates",
+      "dynamic_forms_custom_fields"
+    ],
+    "F. Engagement, Content, and Growth": [
+      "notifications",
+      "search_filtering",
+      "files_media",
+      "reports_analytics",
+      "seo",
+      "localization_languages",
+      "support_help_center",
+      "content_management",
+      "ai_product_features"
+    ],
+    "H. Quality, Security, and Compliance": [
+      "audit_logs",
+      "security",
+      "performance",
+      "error_handling",
+      "testing_qa",
+      "legal_compliance",
+      "data_governance"
+    ],
+    "G. Commerce and Integrations": [
+      "integrations",
+      "payments_billing",
+      "multi_tenancy"
+    ],
+    "I. Operations and Release": [
+      "deployment",
+      "production_publish",
+      "backup_recovery",
+      "monitoring",
+      "documentation",
+      "workflows_approvals",
+      "data_import_export",
+      "scheduling_automation",
+      "versioning_api_versioning"
+    ],
+    "J. Kabeeri Control Layer": [
+      "kabeeri_control_layer"
+    ]
+  },
+  "by_owner": {
+    "docs": [
+      "product_business",
+      "users_roles",
+      "permissions",
+      "user_journeys",
+      "onboarding",
+      "offboarding",
+      "authentication",
+      "authorization",
+      "dashboard_customization",
+      "notifications",
+      "search_filtering",
+      "files_media",
+      "reports_analytics",
+      "audit_logs",
+      "localization_languages",
+      "error_handling",
+      "production_publish",
+      "backup_recovery",
+      "documentation",
+      "support_help_center",
+      "legal_compliance",
+      "content_management",
+      "workflows_approvals",
+      "multi_tenancy",
+      "feature_flags",
+      "data_import_export",
+      "scheduling_automation",
+      "ai_product_features",
+      "data_governance",
+      "email_notification_templates",
+      "dynamic_forms_custom_fields",
+      "versioning_api_versioning",
+      "kabeeri_control_layer"
+    ],
+    "public_frontend": [
+      "public_frontend",
+      "user_frontend",
+      "admin_frontend",
+      "internal_operations_frontend",
+      "theme_branding",
+      "seo",
+      "accessibility"
+    ],
+    "backend": [
+      "backend_apis",
+      "business_logic",
+      "database",
+      "integrations",
+      "payments_billing"
+    ],
+    "admin_frontend": [
+      "admin_panel",
+      "settings_system",
+      "tenant_admin_customization"
+    ],
+    "qa": [
+      "security",
+      "performance",
+      "testing_qa",
+      "deployment",
+      "monitoring"
+    ]
+  }
+}

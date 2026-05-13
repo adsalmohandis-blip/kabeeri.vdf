@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Owner Docs Token State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "tokens", "updated_at"],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["token_id", "owner_id", "status", "token_hash", "token_last4", "created_at", "expires_at"],
+        "properties": {
+          "token_id": { "type": "string" },
+          "owner_id": { "type": ["string", "null"] },
+          "session_started_at": { "type": ["string", "null"] },
+          "status": {
+            "type": "string",
+            "enum": ["active", "superseded", "closed", "expired"]
+          },
+          "token_hash": { "type": "string" },
+          "token_last4": { "type": "string" },
+          "created_at": { "type": "string" },
+          "expires_at": { "type": "string" },
+          "closed_at": { "type": ["string", "null"] },
+          "closed_reason": { "type": ["string", "null"] },
+          "expired_at": { "type": ["string", "null"] },
+          "superseded_at": { "type": ["string", "null"] },
+          "superseded_reason": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

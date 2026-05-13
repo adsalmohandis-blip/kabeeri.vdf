@@ -1,0 +1,443 @@
+{
+  "manifest_version": 1,
+  "generated_by": "docs/site/generate-pages.js",
+  "site_name": "Kabeeri VDF Docs",
+  "default_language": "en",
+  "languages": [
+    "en",
+    "ar"
+  ],
+  "template_count": 2,
+  "page_count": 39,
+  "pages": [
+    {
+      "slug": "what-is",
+      "titles": {
+        "en": "Overview",
+        "ar": "نظرة عامة"
+      },
+      "paths": {
+        "en": "pages/en/what-is.html",
+        "ar": "pages/ar/what-is.html"
+      }
+    },
+    {
+      "slug": "start-here",
+      "titles": {
+        "en": "Start Here",
+        "ar": "ابدأ من هنا"
+      },
+      "paths": {
+        "en": "pages/en/start-here.html",
+        "ar": "pages/ar/start-here.html"
+      }
+    },
+    {
+      "slug": "install-profiles",
+      "titles": {
+        "en": "Install and Profiles",
+        "ar": "التثبيت والبروفايلات"
+      },
+      "paths": {
+        "en": "pages/en/install-profiles.html",
+        "ar": "pages/ar/install-profiles.html"
+      }
+    },
+    {
+      "slug": "ai-with-kabeeri",
+      "titles": {
+        "en": "AI Works Inside Kabeeri",
+        "ar": "كيف يعمل AI داخل كبيري"
+      },
+      "paths": {
+        "en": "pages/en/ai-with-kabeeri.html",
+        "ar": "pages/ar/ai-with-kabeeri.html"
+      }
+    },
+    {
+      "slug": "developer-onboarding",
+      "titles": {
+        "en": "Developer Onboarding",
+        "ar": "تأهيل المطور"
+      },
+      "paths": {
+        "en": "pages/en/developer-onboarding.html",
+        "ar": "pages/ar/developer-onboarding.html"
+      }
+    },
+    {
+      "slug": "capabilities",
+      "titles": {
+        "en": "System Capabilities",
+        "ar": "قدرات النظام"
+      },
+      "paths": {
+        "en": "pages/en/capabilities.html",
+        "ar": "pages/ar/capabilities.html"
+      }
+    },
+    {
+      "slug": "repository-layout",
+      "titles": {
+        "en": "Repository Layout",
+        "ar": "تنظيم المستودع"
+      },
+      "paths": {
+        "en": "pages/en/repository-layout.html",
+        "ar": "pages/ar/repository-layout.html"
+      }
+    },
+    {
+      "slug": "new-project",
+      "titles": {
+        "en": "Start a New Application",
+        "ar": "بدء تطبيق جديد"
+      },
+      "paths": {
+        "en": "pages/en/new-project.html",
+        "ar": "pages/ar/new-project.html"
+      }
+    },
+    {
+      "slug": "existing-kabeeri-project",
+      "titles": {
+        "en": "Continue a Kabeeri Project",
+        "ar": "استكمال مشروع كبيري"
+      },
+      "paths": {
+        "en": "pages/en/existing-kabeeri-project.html",
+        "ar": "pages/ar/existing-kabeeri-project.html"
+      }
+    },
+    {
+      "slug": "existing-non-kabeeri-project",
+      "titles": {
+        "en": "Adopt an Existing App",
+        "ar": "اعتماد تطبيق قائم"
+      },
+      "paths": {
+        "en": "pages/en/existing-non-kabeeri-project.html",
+        "ar": "pages/ar/existing-non-kabeeri-project.html"
+      }
+    },
+    {
+      "slug": "delivery-mode",
+      "titles": {
+        "en": "Choose Agile or Structured",
+        "ar": "اختيار Agile أو Structured"
+      },
+      "paths": {
+        "en": "pages/en/delivery-mode.html",
+        "ar": "pages/ar/delivery-mode.html"
+      }
+    },
+    {
+      "slug": "agile-delivery",
+      "titles": {
+        "en": "Agile Delivery",
+        "ar": "التسليم الأجايل"
+      },
+      "paths": {
+        "en": "pages/en/agile-delivery.html",
+        "ar": "pages/ar/agile-delivery.html"
+      }
+    },
+    {
+      "slug": "structured-delivery",
+      "titles": {
+        "en": "Structured Delivery",
+        "ar": "التسليم المنظم"
+      },
+      "paths": {
+        "en": "pages/en/structured-delivery.html",
+        "ar": "pages/ar/structured-delivery.html"
+      }
+    },
+    {
+      "slug": "questionnaire-engine",
+      "titles": {
+        "en": "Questionnaire Engine",
+        "ar": "محرك الأسئلة"
+      },
+      "paths": {
+        "en": "pages/en/questionnaire-engine.html",
+        "ar": "pages/ar/questionnaire-engine.html"
+      }
+    },
+    {
+      "slug": "product-blueprints",
+      "titles": {
+        "en": "Product Blueprints",
+        "ar": "خرائط المنتجات"
+      },
+      "paths": {
+        "en": "pages/en/product-blueprints.html",
+        "ar": "pages/ar/product-blueprints.html"
+      }
+    },
+    {
+      "slug": "data-design",
+      "titles": {
+        "en": "Data Design",
+        "ar": "تصميم البيانات"
+      },
+      "paths": {
+        "en": "pages/en/data-design.html",
+        "ar": "pages/ar/data-design.html"
+      }
+    },
+    {
+      "slug": "ui-ux-advisor",
+      "titles": {
+        "en": "UI/UX Advisor",
+        "ar": "مساعد تصميم الواجهات"
+      },
+      "paths": {
+        "en": "pages/en/ui-ux-advisor.html",
+        "ar": "pages/ar/ui-ux-advisor.html"
+      }
+    },
+    {
+      "slug": "ui-ux-reference-library",
+      "titles": {
+        "en": "UI/UX Reference Library",
+        "ar": "مكتبة مراجع UI/UX"
+      },
+      "paths": {
+        "en": "pages/en/ui-ux-reference-library.html",
+        "ar": "pages/ar/ui-ux-reference-library.html"
+      }
+    },
+    {
+      "slug": "vibe-first",
+      "titles": {
+        "en": "Vibe-first Workflow",
+        "ar": "مسار Vibe-first"
+      },
+      "paths": {
+        "en": "pages/en/vibe-first.html",
+        "ar": "pages/ar/vibe-first.html"
+      }
+    },
+    {
+      "slug": "task-governance",
+      "titles": {
+        "en": "Task Governance",
+        "ar": "حوكمة التاسكات"
+      },
+      "paths": {
+        "en": "pages/en/task-governance.html",
+        "ar": "pages/ar/task-governance.html"
+      }
+    },
+    {
+      "slug": "app-boundary",
+      "titles": {
+        "en": "App Boundary Governance",
+        "ar": "حوكمة حدود التطبيقات"
+      },
+      "paths": {
+        "en": "pages/en/app-boundary.html",
+        "ar": "pages/ar/app-boundary.html"
+      }
+    },
+    {
+      "slug": "workstreams-scope",
+      "titles": {
+        "en": "Workstreams and Scope",
+        "ar": "مسارات العمل والنطاق"
+      },
+      "paths": {
+        "en": "pages/en/workstreams-scope.html",
+        "ar": "pages/ar/workstreams-scope.html"
+      }
+    },
+    {
+      "slug": "prompt-packs",
+      "titles": {
+        "en": "Prompt Packs",
+        "ar": "حزم البرومبت"
+      },
+      "paths": {
+        "en": "pages/en/prompt-packs.html",
+        "ar": "pages/ar/prompt-packs.html"
+      }
+    },
+    {
+      "slug": "wordpress-development",
+      "titles": {
+        "en": "WordPress Development",
+        "ar": "تطوير WordPress"
+      },
+      "paths": {
+        "en": "pages/en/wordpress-development.html",
+        "ar": "pages/ar/wordpress-development.html"
+      }
+    },
+    {
+      "slug": "wordpress-plugins",
+      "titles": {
+        "en": "WordPress Plugin Development",
+        "ar": "تطوير إضافات WordPress"
+      },
+      "paths": {
+        "en": "pages/en/wordpress-plugins.html",
+        "ar": "pages/ar/wordpress-plugins.html"
+      }
+    },
+    {
+      "slug": "dashboard-monitoring",
+      "titles": {
+        "en": "Live Dashboard",
+        "ar": "الداشبورد الحي"
+      },
+      "paths": {
+        "en": "pages/en/dashboard-monitoring.html",
+        "ar": "pages/ar/dashboard-monitoring.html"
+      }
+    },
+    {
+      "slug": "ai-cost-control",
+      "titles": {
+        "en": "AI Cost Control",
+        "ar": "التحكم في تكلفة AI"
+      },
+      "paths": {
+        "en": "pages/en/ai-cost-control.html",
+        "ar": "pages/ar/ai-cost-control.html"
+      }
+    },
+    {
+      "slug": "multi-ai-governance",
+      "titles": {
+        "en": "Multi-AI Governance",
+        "ar": "حوكمة تعدد وكلاء AI"
+      },
+      "paths": {
+        "en": "pages/en/multi-ai-governance.html",
+        "ar": "pages/ar/multi-ai-governance.html"
+      }
+    },
+    {
+      "slug": "github-release",
+      "titles": {
+        "en": "GitHub and Release Gates",
+        "ar": "GitHub وبوابات الإصدار"
+      },
+      "paths": {
+        "en": "pages/en/github-release.html",
+        "ar": "pages/ar/github-release.html"
+      }
+    },
+    {
+      "slug": "practical-examples",
+      "titles": {
+        "en": "Seven Practical Builds",
+        "ar": "سبعة تطبيقات عملية"
+      },
+      "paths": {
+        "en": "pages/en/practical-examples.html",
+        "ar": "pages/ar/practical-examples.html"
+      }
+    },
+    {
+      "slug": "example-ecommerce",
+      "titles": {
+        "en": "Example: Ecommerce Website",
+        "ar": "مثال: متجر إلكتروني"
+      },
+      "paths": {
+        "en": "pages/en/example-ecommerce.html",
+        "ar": "pages/ar/example-ecommerce.html"
+      }
+    },
+    {
+      "slug": "example-ai-team-ecommerce",
+      "titles": {
+        "en": "Example: 3 AI Developers Build Ecommerce",
+        "ar": "مثال: 3 مطوري AI لبناء متجر"
+      },
+      "paths": {
+        "en": "pages/en/example-ai-team-ecommerce.html",
+        "ar": "pages/ar/example-ai-team-ecommerce.html"
+      }
+    },
+    {
+      "slug": "example-blog",
+      "titles": {
+        "en": "Example: Personal Blog",
+        "ar": "مثال: مدونة شخصية"
+      },
+      "paths": {
+        "en": "pages/en/example-blog.html",
+        "ar": "pages/ar/example-blog.html"
+      }
+    },
+    {
+      "slug": "example-wordpress-digital-agency",
+      "titles": {
+        "en": "Example: WordPress Digital Agency",
+        "ar": "مثال: WordPress لشركة تسويق رقمي"
+      },
+      "paths": {
+        "en": "pages/en/example-wordpress-digital-agency.html",
+        "ar": "pages/ar/example-wordpress-digital-agency.html"
+      }
+    },
+    {
+      "slug": "example-dental-clinic",
+      "titles": {
+        "en": "Example: Dental Clinic Booking",
+        "ar": "مثال: عيادة أسنان وحجوزات"
+      },
+      "paths": {
+        "en": "pages/en/example-dental-clinic.html",
+        "ar": "pages/ar/example-dental-clinic.html"
+      }
+    },
+    {
+      "slug": "example-crm",
+      "titles": {
+        "en": "Example: Professional CRM",
+        "ar": "مثال: CRM احترافي"
+      },
+      "paths": {
+        "en": "pages/en/example-crm.html",
+        "ar": "pages/ar/example-crm.html"
+      }
+    },
+    {
+      "slug": "example-mobile-commerce",
+      "titles": {
+        "en": "Example: Ecommerce Mobile App",
+        "ar": "مثال: تطبيق موبايل للمتجر"
+      },
+      "paths": {
+        "en": "pages/en/example-mobile-commerce.html",
+        "ar": "pages/ar/example-mobile-commerce.html"
+      }
+    },
+    {
+      "slug": "example-pos",
+      "titles": {
+        "en": "Example: Supermarket POS",
+        "ar": "مثال: POS سوبرماركت"
+      },
+      "paths": {
+        "en": "pages/en/example-pos.html",
+        "ar": "pages/ar/example-pos.html"
+      }
+    },
+    {
+      "slug": "troubleshooting",
+      "titles": {
+        "en": "Troubleshooting",
+        "ar": "حل المشكلات"
+      },
+      "paths": {
+        "en": "pages/en/troubleshooting.html",
+        "ar": "pages/ar/troubleshooting.html"
+      }
+    }
+  ]
+}

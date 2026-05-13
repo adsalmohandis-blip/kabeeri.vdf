@@ -1,6 +1,6 @@
 # App Boundary Governance
 
-App Boundary Governance defines when multiple applications can live inside one Kabeeri VDF workspace and when they must be split into separate KVDF folders.
+App Boundary Governance defines when multiple applications can live inside one Kabeeri VDF workspace and when they must be split into separate KVDF folders. Developer app workspaces are scaffolded under `workspaces/apps/<app-slug>/` so the app root stays isolated from `kabeeri-core` and removable owner bundles.
 
 ## Core Rule
 
@@ -25,10 +25,11 @@ Example:
 ```text
 store-platform/
   .kabeeri/
-  apps/
-    api-laravel/
-    storefront-react/
-    admin-vue/
+  workspaces/
+    apps/
+      api-laravel/
+      storefront-react/
+      admin-vue/
 ```
 
 ## Not Allowed In One Workspace
@@ -44,11 +45,11 @@ Examples:
 
 ## Runtime Commands
 
-Register each app with an explicit type, path, and product:
+Register each app with an explicit type, path, and product. The first app in a workspace establishes the product boundary for that workspace:
 
 ```bash
-kvdf app create --username backend-api --name "Laravel API" --type backend --path apps/api-laravel --product "Store"
-kvdf app create --username storefront --name "React Storefront" --type frontend --path apps/storefront-react --product "Store"
+kvdf app workspace create --slug backend-api --name "Laravel API" --type backend
+kvdf app workspace create --slug storefront --name "React Storefront" --type frontend
 ```
 
 Create app-scoped tasks:
@@ -64,6 +65,8 @@ Cross-app tasks must be explicit integration tasks:
 kvdf task create --title "Wire product API to storefront" --type integration --apps backend-api,storefront --workstreams backend,public_frontend
 ```
 
+Tasks that span multiple apps from different products are rejected even when `--type integration` is set.
+
 ## Enforcement
 
 KVDF enforces boundaries in three places:
@@ -71,6 +74,7 @@ KVDF enforces boundaries in three places:
 - `kvdf app create` blocks apps that declare a different product in the same workspace.
 - `kvdf task create` blocks tasks that touch multiple apps unless the task type is `integration`.
 - `kvdf session end` blocks changed files outside the task's registered app path.
+- `kvdf task create` also blocks multi-app tasks when the selected apps resolve to different products.
 
 ## Validation
 
@@ -87,4 +91,4 @@ Validation checks app route safety, app path uniqueness, app path overlap, missi
 
 Kabeeri should let one product have multiple technical apps without mixing unrelated products.
 
-The app registry is not just navigation metadata. It is a safety boundary used by tasks, locks, sessions, dashboards, policy gates, and future VS Code views.
+The app registry is not just navigation metadata. It is a safety boundary used by tasks, locks, sessions, dashboards, policy gates, and future VS Code views. Task locks and task tokens should derive their narrowest safe scope from this registry instead of widening the boundary by hand.

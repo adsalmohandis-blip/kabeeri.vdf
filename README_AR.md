@@ -383,7 +383,13 @@ tests/               اختبارات CLI
 ```bash
 kvdf docs open
 kvdf docs serve --port 4180
+kvdf docs validate --json
 ```
+
+`kvdf docs validate --json` يتأكد أن موقع الوثائق والصفحات المولدة والإرشادات
+المحلية ما زالت متطابقة مع سطح الأوامر الحالي قبل النشر.
+`kvdf ai-run provenance --json` يعرض مسار provenance لتنفيذات AI المرتبط
+بالتاسكات والجلسات والقبول والسجلات الدائمة.
 
 ## التطوير
 

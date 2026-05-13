@@ -1,0 +1,24 @@
+{
+  "report_type": "docs_site_sync_report",
+  "generated_at": "2026-05-13T12:22:31.037Z",
+  "site_name": "Kabeeri VDF Docs",
+  "report_path": "docs/reports/DOCS_SITE_SYNC_REPORT.json",
+  "page_count": 39,
+  "contract_count": 78,
+  "coverage": {
+    "total_families": 8,
+    "complete_families": 8,
+    "partial_families": 0
+  },
+  "workflow_report_path": "docs/reports/DOCS_SITE_GENERATION_WORKFLOW.json",
+  "source_of_truth": {
+    "manifest": true,
+    "contracts": true,
+    "templates": true,
+    "coverage": true,
+    "workflow": true
+  },
+  "next_actions": [
+    "docs site deep publishing is synchronized"
+  ]
+}

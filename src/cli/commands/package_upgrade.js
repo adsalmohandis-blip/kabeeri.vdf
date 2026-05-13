@@ -1,4 +1,5 @@
-const { fileExists, readJsonFile, readTextFile, writeTextFile } = require("../fs_utils");
+const { fileExists, readJsonFile, readTextFile } = require("../fs_utils");
+const { outputLines, recordLines } = require("../services/report_output");
 
 const VERSION = require("../../../package.json").version;
 
@@ -219,20 +220,6 @@ function compareSemver(left, right) {
     if (diff !== 0) return diff > 0 ? 1 : -1;
   }
   return 0;
-}
-
-function recordLines(records, formatter) {
-  return records.length ? records.map((item) => `- ${formatter(item)}`) : ["None."];
-}
-
-function outputLines(lines, outputPath) {
-  const content = `${lines.join("\n")}\n`;
-  if (outputPath && outputPath !== true) {
-    writeTextFile(outputPath, content);
-    console.log(`Wrote ${outputPath}`);
-    return;
-  }
-  console.log(content.trimEnd());
 }
 
 module.exports = {

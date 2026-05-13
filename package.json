@@ -24,7 +24,8 @@
   },
   "scripts": {
     "kvdf": "node bin/kvdf.js",
-    "test": "node tests/cli.integration.test.js",
+    "test": "node tests/service.unit.test.js && node tests/cli.integration.test.js",
+    "test:unit": "node tests/service.unit.test.js",
     "test:smoke": "node bin/kvdf.js --version && node bin/kvdf.js doctor && node bin/kvdf.js validate && node bin/kvdf.js prompt-pack list && node bin/kvdf.js plan list",
     "ui:check": "node knowledge/design_system/ui_execution_kit/scripts/check-ui.js",
     "pack:check": "node bin/kvdf.js package check",

@@ -379,7 +379,13 @@ Open the docs site:
 ```bash
 kvdf docs open
 kvdf docs serve --port 4180
+kvdf docs validate --json
 ```
+
+`kvdf docs validate --json` checks that the docs site, generated pages, and
+localized guidance still match the current command surface before publishing.
+`kvdf ai-run provenance --json` shows the AI-run provenance trail tied to
+tasks, sessions, acceptance, and durable records.
 
 ## Development
 

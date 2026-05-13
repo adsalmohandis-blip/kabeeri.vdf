@@ -17,8 +17,17 @@ function doctor() {
   console.log(table(["Check", "Value"], checks));
 }
 
-function validateCommand(scope) {
+function validateCommand(scope, flags = {}) {
   const result = validateRepository(scope || "all");
+  if (flags.json) {
+    console.log(JSON.stringify({
+      ok: result.ok,
+      scope: scope || "all",
+      lines: result.lines
+    }, null, 2));
+    if (!result.ok) process.exitCode = 1;
+    return;
+  }
   for (const line of result.lines) console.log(line);
   if (!result.ok) process.exitCode = 1;
 }

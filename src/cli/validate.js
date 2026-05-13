@@ -1,5 +1,7 @@
 const { fileExists, listDirectories, listFiles, readJsonFile, readTextFile } = require("./fs_utils");
+const { isManualFeatureDocsInbox } = require("./services/manual_feature_docs");
 const { defaultWorkstreams } = require("./workspace");
+const { buildResumeReport } = require("./commands/resume");
 
 function validateRepository(scope) {
   scope = normalizeScope(scope || "all");
@@ -13,6 +15,10 @@ function validateRepository(scope) {
   function fail(message) {
     ok = false;
     lines.push(`FAIL ${message}`);
+  }
+
+  function warn(message) {
+    lines.push(`WARN ${message}`);
   }
 
   function checkFile(path) {
@@ -49,6 +55,17 @@ function validateRepository(scope) {
 
   if (scope === "all" || scope === "runtime-schemas") {
     validateRuntimeSchemas(pass, fail);
+  }
+
+  if (scope === "docs-source-truth" || scope === "docs-truth" || scope === "docs-sync" || scope === "documentation") {
+    validateDocsSourceTruth(pass, fail);
+  }
+  if (scope === "all" || scope === "historical-source-clarity" || scope === "historical-clarity" || scope === "archive-clarity") {
+    validateHistoricalSourceClarity(pass, fail);
+  }
+
+  if (scope === "blocked-scenarios" || scope === "blocked-scenario") {
+    validateBlockedScenarios(pass, fail, warn);
   }
 
   if (scope === "all" || scope === "generators") {
@@ -171,6 +188,12 @@ function normalizeScope(scope) {
     "runtime-schema": "runtime-schemas",
     "runtime-schemas": "runtime-schemas",
     runtime: "runtime-schemas",
+    "docs-source-truth": "docs-source-truth",
+    "docs-truth": "docs-source-truth",
+    "docs-sync": "docs-source-truth",
+    documentation: "docs-source-truth",
+    "blocked-scenarios": "blocked-scenarios",
+    "blocked-scenario": "blocked-scenarios",
     coverage: "coverage",
     questionnaire: "questionnaire",
     questionnaires: "questionnaire",
@@ -453,7 +476,7 @@ function validateRepositoryFoldering(pass, fail) {
 }
 
 function isIgnoredTopLevelFolder(name) {
-  return ["node_modules", ".next", "dist", "coverage", "KVDF_New_Features_Docs"].includes(name) || /^tmp[-_]/.test(name);
+  return ["node_modules", ".next", "dist", "coverage"].includes(name) || isManualFeatureDocsInbox(name) || /^tmp[-_]/.test(name);
 }
 
 function checkProductBlueprintFile(file, pass, fail) {
@@ -501,8 +524,10 @@ function validateRuntimeSchemas(pass, fail) {
   const registry = readJsonFile(registryFile);
   const stateFiles = registry.state_files || [];
   const jsonlFiles = registry.jsonl_files || [];
+  const coverageExemptions = getRuntimeSchemaCoverageExemptions(registry);
   let checkedJson = 0;
   let checkedJsonl = 0;
+  let exemptCount = 0;
 
   for (const entry of [...stateFiles, ...jsonlFiles]) {
     if (!entry.schema) fail(`runtime registry entry missing schema: ${entry.path || "unknown"}`);
@@ -512,10 +537,17 @@ function validateRuntimeSchemas(pass, fail) {
   }
 
   if (fileExists(".kabeeri")) {
-    const mappedJson = new Set(stateFiles.map((entry) => entry.path));
-    for (const file of listFiles(".kabeeri", ".json", true)) {
-      if (isRuntimeSchemaCoverageExempt(file)) continue;
-      if (!mappedJson.has(file)) fail(`runtime JSON state has no schema mapping: ${file}`);
+    const mapped = new Set([...stateFiles.map((entry) => entry.path), ...jsonlFiles.map((entry) => entry.path)]);
+    const runtimeFiles = [
+      ...listFiles(".kabeeri", ".json", true),
+      ...listFiles(".kabeeri", ".jsonl", true)
+    ];
+    for (const file of runtimeFiles) {
+      if (isRuntimeSchemaCoverageExempt(file, coverageExemptions)) {
+        exemptCount += 1;
+        continue;
+      }
+      if (!mapped.has(file)) fail(`runtime state has no schema mapping: ${file}`);
     }
   }
 
@@ -538,11 +570,320 @@ function validateRuntimeSchemas(pass, fail) {
   }
 
   pass(`runtime schema registry checked (${stateFiles.length} JSON mappings, ${jsonlFiles.length} JSONL mappings)`);
-  pass(`runtime schema validation checked (${checkedJson} JSON files, ${checkedJsonl} JSONL files)`);
+  pass(`runtime schema validation checked (${checkedJson} JSON files, ${checkedJsonl} JSONL files, ${exemptCount} exempt files)`);
 }
 
-function isRuntimeSchemaCoverageExempt(file) {
-  return file.endsWith(".example.json") || file.includes("/site/") || file.includes("\\site\\");
+function validateDocsSourceTruth(pass, fail) {
+  const commandReference = "cli/CLI_COMMAND_REFERENCE.md";
+  const capabilityReference = "docs/SYSTEM_CAPABILITIES_REFERENCE.md";
+  const commandTokens = [
+    "kvdf init",
+    "kvdf doctor",
+    "kvdf resume",
+    "kvdf start",
+    "kvdf entry",
+    "kvdf track",
+    "kvdf track status",
+    "kvdf track route",
+    "kvdf onboarding",
+    "kvdf onboarding report",
+    "kvdf guard",
+    "kvdf conflict scan",
+    "kvdf validate",
+    "kvdf generator",
+    "kvdf prompt-pack",
+    "kvdf prompt-pack scale",
+    "kvdf schedule",
+    "kvdf plan",
+    "kvdf source-package",
+    "kvdf source-package normalize",
+    "kvdf project analyze",
+    "kvdf project profile",
+    "kvdf project profile report",
+    "kvdf project route",
+    "kvdf software-design",
+    "kvdf docs-generator",
+    "kvdf docs build",
+    "kvdf docs preview",
+    "kvdf docs sync",
+    "kvdf docs workflow",
+    "kvdf release",
+    "kvdf delivery",
+    "kvdf structured",
+    "kvdf agile",
+    "kvdf sprint",
+    "kvdf session",
+    "kvdf task",
+    "kvdf task assessment",
+        "kvdf task coverage",
+        "kvdf task lifecycle",
+        "kvdf trace report",
+        "kvdf change report",
+        "kvdf docs coverage",
+        "kvdf validate blocked-scenarios",
+        "kvdf workstream",
+    "kvdf multi-ai",
+    "kvdf memory",
+    "kvdf adr",
+    "kvdf ai-run",
+    "kvdf developer",
+    "kvdf agent",
+    "kvdf lock",
+    "kvdf vscode",
+    "kvdf vscode report",
+    "kvdf dashboard",
+    "kvdf reports",
+    "kvdf reports blocked",
+    "kvdf package",
+    "kvdf upgrade",
+    "kvdf token",
+    "kvdf budget",
+    "kvdf pricing",
+    "kvdf usage",
+    "kvdf policy",
+    "kvdf context-pack",
+    "kvdf preflight",
+    "kvdf model-route",
+    "kvdf handoff",
+    "kvdf security",
+    "kvdf migration",
+    "kvdf github",
+    "kvdf github report",
+    "kvdf sync",
+    "kvdf design",
+    "kvdf capability",
+    "kvdf capability registry",
+    "kvdf capability surface",
+    "kvdf capability matrix",
+    "kvdf capability search",
+    "kvdf source-package source-map",
+    "kvdf evolution",
+    "kvdf evolution report",
+    "kvdf plugins",
+    "kvdf owner"
+  ];
+  const capabilityTokens = [
+    "Source Package Intake",
+    "Source Folder Normalization",
+    "Software Design System Reference Library",
+    "Project Documentation Generator",
+      "Task Assessment System",
+      "Task Coverage Report",
+      "Project Profile Router",
+      "Questionnaires",
+    "Prompt Packs And Common Prompt Layer",
+    "Scale-Specific Packs",
+      "Multi-AI Governance",
+      "Task Lifecycle Engine",
+      "Traceability Layer",
+      "Change Control Layer",
+    "Docs Site Deep Publishing",
+    "Documentation Generation Workflow",
+    "Developer Onboarding Flow",
+    "Capability CLI Surface",
+      "Docs Site Synchronization",
+      "Framework Owner Track / Evolution Steward",
+    "Session Track Status",
+    "AI Cost Control",
+    "Delivery Mode Advisor",
+    "Capability Registry",
+    "Source-To-Capability Mapping",
+    "Blocked Scenarios Report",
+    "Capability-to-Documentation Matrix"
+  ];
+  validateMarkdownSourceTruth(commandReference, commandTokens, "command reference", pass, fail);
+  validateMarkdownSourceTruth(capabilityReference, capabilityTokens, "capability reference", pass, fail);
+}
+
+function validateHistoricalSourceClarity(pass, fail) {
+  const historicalDocs = [
+    {
+      file: "cli/CLI_ROADMAP.md",
+      tokens: [
+        "historical/staged planning",
+        "current command surface"
+      ]
+    },
+    {
+      file: "cli/CLI_USER_FLOWS.md",
+      tokens: [
+        "current and future",
+        "Confirm current behavior"
+      ]
+    },
+    {
+      file: "docs/reports/ROADMAP_SOURCE_INDEX.md",
+      tokens: [
+        "historical ingestion index",
+        "not the current implementation status"
+      ]
+    },
+    {
+      file: "docs/reports/ROADMAP_SOURCE_INTEGRITY_REPORT.md",
+      tokens: [
+        "This is an ingestion report; it does not implement roadmap requirements",
+        "Historical"
+      ]
+    },
+    {
+      file: "docs/reports/V1_STABILIZATION_REPORT.md",
+      tokens: [
+        "historical Phase 04 report",
+        "current CLI MVP"
+      ]
+    },
+    {
+      file: "docs/reports/V2_FOUNDATIONS_IMPLEMENTATION_REPORT.md",
+      tokens: [
+        "historical implementation report",
+        "current runtime"
+      ]
+    },
+    {
+      file: "docs/reports/V3_PLATFORM_INTEGRATION_IMPLEMENTATION_REPORT.md",
+      tokens: [
+        "historical implementation report",
+        "current runtime"
+      ]
+    },
+    {
+      file: "docs/reports/V4_MULTI_AI_GOVERNANCE_IMPLEMENTATION_REPORT.md",
+      tokens: [
+        "historical implementation report",
+        "current runtime"
+      ]
+    },
+    {
+      file: "docs/reports/V5_INTELLIGENCE_TRUST_LAYER_IMPLEMENTATION_REPORT.md",
+      tokens: [
+        "historical implementation report",
+        "current runtime"
+      ]
+    },
+    {
+      file: "docs/reports/V6_VIBE_UX_IMPLEMENTATION_REPORT.md",
+      tokens: [
+        "historical implementation report",
+        "current runtime"
+      ]
+    },
+    {
+      file: "docs/reports/V7_DESIGN_SOURCE_GOVERNANCE_IMPLEMENTATION_REPORT.md",
+      tokens: [
+        "historical implementation report",
+        "current runtime"
+      ]
+    }
+  ];
+  for (const item of historicalDocs) {
+    validateMarkdownSourceTruth(item.file, item.tokens, "historical source archive", pass, fail);
+  }
+  pass(`historical source clarity checked: ${historicalDocs.length} files`);
+}
+
+function validateBlockedScenarios(pass, fail, warn) {
+  const liveReportsFile = ".kabeeri/reports/live_reports_state.json";
+  const blockedReportFile = ".kabeeri/reports/blocked_scenarios_report.json";
+  if (!fileExists(liveReportsFile)) {
+    fail(`${liveReportsFile} is missing. Run \`kvdf reports live\` first.`);
+    return;
+  }
+
+  const liveReports = readJsonFile(liveReportsFile);
+  const blockedReport = liveReports.blocked_scenarios || (fileExists(blockedReportFile) ? readJsonFile(blockedReportFile) : null);
+  if (!blockedReport) {
+    fail(`Blocked scenarios report is missing. Run \`kvdf reports blocked\` first.`);
+    return;
+  }
+
+  const resumeReport = buildResumeReport({ scan: false });
+  pass(`Blocked scenarios report found (${blockedReport.summary.status}, ${blockedReport.summary.blockers || 0} blocker(s), ${blockedReport.summary.warnings || 0} warning(s)).`);
+
+  if (resumeReport.track_context && resumeReport.track_context.mismatch) {
+    warn("Session track differs from current workspace context; workspace context wins. Run `kvdf track route` or `kvdf resume`.");
+  }
+
+  if (blockedReport.summary.status === "blocked") {
+    for (const item of blockedReport.blockers || []) {
+      fail(`[${item.area}] ${item.message} Next: ${item.next_action || "resolve the blocker"}`);
+    }
+    return;
+  }
+
+  if (blockedReport.summary.status === "warning") {
+    for (const item of blockedReport.warnings || []) {
+      warn(`[${item.area}] ${item.message} Next: ${item.next_action || "review the warning"}`);
+    }
+    return;
+  }
+
+  pass("No blocked scenarios recorded.");
+}
+
+function validateMarkdownSourceTruth(file, tokens, label, pass, fail) {
+  if (!fileExists(file)) {
+    fail(`${file} is missing`);
+    return;
+  }
+  const text = readTextFile(file).toLowerCase();
+  const missing = tokens.filter((token) => !text.includes(token.toLowerCase()));
+  if (missing.length) {
+    fail(`${label} is missing ${missing.length} required surface(s): ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? ", ..." : ""}`);
+    return;
+  }
+  pass(`${label} source-of-truth checked (${tokens.length} surfaces)`);
+}
+
+function getRuntimeSchemaCoverageExemptions(registry = {}) {
+  const defaults = [
+    { pattern: ".kabeeri/**/*.example.json", reason: "Example JSON state files are documentation fixtures." },
+    { pattern: ".kabeeri/**/*.example.jsonl", reason: "Example JSONL state files are documentation fixtures." },
+    { pattern: ".kabeeri/**/site/**", reason: "Generated docs site assets are not runtime state." }
+  ];
+  return [
+    ...defaults,
+    ...normalizeRuntimeCoverageExemptions(registry.coverage_exemptions || [])
+  ];
+}
+
+function normalizeRuntimeCoverageExemptions(items) {
+  return items.map((item) => {
+    if (typeof item === "string") return { pattern: item, reason: "Explicit runtime schema exemption." };
+    return { pattern: item.pattern || item.path || "", reason: item.reason || "Explicit runtime schema exemption." };
+  }).filter((item) => item.pattern);
+}
+
+function isRuntimeSchemaCoverageExempt(file, exemptions = []) {
+  return exemptions.some((exemption) => matchRuntimeCoveragePattern(file, exemption.pattern));
+}
+
+function matchRuntimeCoveragePattern(file, pattern) {
+  const normalizedFile = String(file || "").replace(/\\/g, "/");
+  const normalizedPattern = String(pattern || "").replace(/\\/g, "/");
+  let source = "^";
+  for (let index = 0; index < normalizedPattern.length; index += 1) {
+    const current = normalizedPattern[index];
+    const next = normalizedPattern[index + 1];
+    const afterNext = normalizedPattern[index + 2];
+    if (current === "*" && next === "*" && afterNext === "/") {
+      source += "(?:.*/)?";
+      index += 2;
+      continue;
+    }
+    if (current === "*" && next === "*") {
+      source += ".*";
+      index += 1;
+      continue;
+    }
+    if (current === "*") {
+      source += "[^/]*";
+      continue;
+    }
+    if (/[.+^${}()|[\]\\]/.test(current)) source += `\\${current}`;
+    else source += current;
+  }
+  source += "$";
+  return new RegExp(source).test(normalizedFile);
 }
 
 function validateDataAgainstSchema(data, schema, label, pass, fail) {

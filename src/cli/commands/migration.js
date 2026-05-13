@@ -4,6 +4,7 @@ const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { table } = require("../ui");
+const { readStateArray } = require("../services/state_utils");
 
 const VERSION = require("../../../package.json").version;
 
@@ -325,12 +326,6 @@ function latestMigrationChecks() {
   const latest = new Map();
   for (const item of checks) latest.set(item.plan_id, item);
   return [...latest.values()];
-}
-
-function readStateArray(file, key) {
-  if (!fileExists(file)) return [];
-  const data = readJsonFile(file);
-  return Array.isArray(data[key]) ? data[key] : [];
 }
 
 function parseCsv(value) {
