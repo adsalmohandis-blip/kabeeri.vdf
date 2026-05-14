@@ -140,6 +140,16 @@ Explain why this task helps the framework, the developer, or the AI assistant.
 
 Use an empty list if there are no dependencies.
 
+## Follow-up tasks
+
+```text
+- T120
+- T121
+```
+
+Use this when the task generates or links explicit Evolution follow-up tasks.
+If there are no follow-up tasks yet, leave the list empty.
+
 ## Execution summary
 
 ```text

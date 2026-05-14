@@ -6,9 +6,9 @@ Prepare a safe, non-destructive decommission path for `KVDF_New_Features_Docs` a
 
 ## Status
 
-- Redistribution ready: yes
-- Source folder exists: yes
-- Verification status: migration_in_progress
+- Redistribution ready: no
+- Source folder exists: no
+- Verification status: fail
 
 ## Permanent Targets
 
@@ -19,6 +19,6 @@ Prepare a safe, non-destructive decommission path for `KVDF_New_Features_Docs` a
 
 ## Next Actions
 
-- Confirm the final removal of KVDF_New_Features_Docs after a last human review.
-- Archive or back up the cleanup report if you need historical traceability.
-- Only delete the source folder after the owner explicitly approves decommissioning.
+- Finish the missing permanent targets first.
+- Keep the source package until every reusable item is represented in the permanent folders.
+- Run source-package verify again before scheduling removal.

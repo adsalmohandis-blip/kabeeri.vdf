@@ -10,6 +10,8 @@ AI coding task:
 
 - use one governed task at a time
 - respect app, workstream, token, and file scope
+- keep owner-track work separate from app-track work
+- treat plugins as independently addable or removable feature units
 - avoid broad repository context
 - produce reviewable output
 - record accepted or rejected AI run history
@@ -32,3 +34,10 @@ override Owner approval by itself.
 When `kvdf prompt-pack compose` renders a task-specific prompt, it also includes
 compact guidance so the AI can focus on one stack prompt, one task scope, and
 the smallest useful next step.
+
+The best prompt uses:
+
+- a single task
+- the narrowest command surface
+- the smallest set of changed files
+- the current owner/app track only

@@ -317,6 +317,10 @@ impacted area visible so the follow-up task chain remains traceable.
 If a task creates additional follow-up tasks, link them in the source change or
 task tracker record instead of relying on chat memory to remember the chain.
 
+Prefer a concrete `follow_up_tasks` array in the task record when the follow-up
+chain is known. Keep the source change id, impacted area, and acceptance
+criteria on the source task so the framework change remains identifiable.
+
 ## Traceability Layer
 
 Traceability links the evidence chain around a task: source, assessment,

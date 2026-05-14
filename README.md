@@ -19,8 +19,13 @@ Kabeeri helps turn a product idea into:
 - readiness and release gates
 - Evolution Steward records for Kabeeri framework updates
 - handoff reports
+- a separate owner track for Kabeeri system work
+- a separate app-developer track for client application work
+- optional plugins so each feature can be added, removed, or disabled cleanly
 
 The goal is simple: the developer speaks naturally, the AI assistant uses Kabeeri as the project operating layer, and the project remains understandable when sessions stop and resume.
+
+The AI assistant should use the CLI directly whenever the project state, task scope, or report already exists.
 
 ## Vibe-First By Design
 
@@ -51,6 +56,12 @@ Kabeeri includes a working Node.js CLI named `kvdf`, but `kvdf` is the engine, n
 
 The CLI exists so AI assistants, automation, and advanced developers can reliably update the project state. It can initialize `.kabeeri/`, create project skeletons, generate governed tasks, run validation, track AI usage, manage task access tokens, serve the live dashboard, enforce policy gates, and export readiness/governance reports.
 
+The main direct AI lanes are:
+
+- `owner` for framework/system work
+- `app` for application-building work
+- `plugin` for independent feature modules that can be added, removed, or disabled cleanly
+
 Source of truth:
 
 - `.kabeeri/` is the runtime state folder for a project.
@@ -59,6 +70,16 @@ Source of truth:
 - AI assistants should work through tasks, scopes, captures, and reports instead of editing randomly.
 
 For most vibe coders, the important idea is: talk to your AI assistant normally, and let it use `kvdf` only when the project needs traceability, dashboard updates, task records, usage logs, or governance checks.
+
+## Keep AI Context Small
+
+When the AI already has the state, prefer the shortest direct command over a long chat.
+
+- Use CLI output instead of repeating the same context.
+- Prefer `--json` and derived reports for repeatable work.
+- Use prompt packs and questionnaires to fill missing decisions, not to restate everything.
+- Keep owner-track changes separate from app-track changes.
+- Treat plugins as independently addable or removable feature units.
 
 For the complete capability map, read:
 

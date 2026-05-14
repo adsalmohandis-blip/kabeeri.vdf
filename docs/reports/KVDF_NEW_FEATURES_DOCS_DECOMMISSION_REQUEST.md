@@ -8,7 +8,7 @@ Request human approval before the source folder is actually removed.
 
 - Confirmation required: yes
 - Confirmed: yes
-- Cleanup ready: yes
+- Cleanup ready: no
 
 ## Permanent Targets
 

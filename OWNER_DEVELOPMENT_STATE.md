@@ -17,7 +17,7 @@ When starting a new development session:
 
 ## Current State
 
-- Date: 2026-05-13
+- Date: 2026-05-14
 - Branch: `main`
 - Latest known commit: `8b652d9 Finalize temp queue and CLI refactor`
 - Package: `kabeeri-vdf`
@@ -25,8 +25,8 @@ When starting a new development session:
 - Test command: `npm test`
 - Smoke command: `npm run test:smoke`
 - Full local check: `npm run check`
-- Latest session focus: The migration ledger now names the key command and folder ownership surfaces, including the remaining bridge gaps, so CLI-first migration stays visible.
-- Latest session update: `kabeeri-075` is now verified in the task tracker after confirming the command reference and capability reference already show the folder ownership map alongside the command lifecycle ledger.
+- Latest session focus: All tracked tasks were moved from `done` into the trash archive after closure, and the task tracker now has no active tasks.
+- Latest session update: All 126 tasks are now archived in `.kabeeri/task_trash.json`, `.kabeeri/tasks.json` is empty, and `src/cli/validate.js` now accepts `closed` as a valid task status before archiving.
 
 ## Active Focus
 
@@ -41,7 +41,20 @@ Build Kabeeri VDF as a practical framework and CLI engine for:
 
 ## Last Session Notes
 
-- 2026-05-13: Verified `kabeeri-075` by confirming the command reference and capability reference already document the important folder ownership map and the remaining migration gaps alongside the command lifecycle ledger. The task tracker now marks it owner_verified and the next approved task is `kabeeri-077`.
+- 2026-05-14: Archived all closed tasks into `.kabeeri/task_trash.json` after closure, leaving `.kabeeri/tasks.json` empty and the tracker with no active tasks.
+- 2026-05-13: Verified `task-119` by linking the evo-005 follow-up task chain in the task record and task-tracking governance docs so the next task in sequence can be resumed without chat memory. The task tracker now marks it owner_verified and the next approved task is `task-120`.
+- 2026-05-13: Verified `task-120` by extending runtime schema coverage for task memory follow-up chains and validating the runtime schema registry so the next approved task is `task-121`.
+- 2026-05-13: Verified `task-121` by refreshing live readiness/governance reports so update state and unfinished dependent work remain visible in the derived JSON surface. The task tracker now marks it owner_verified and the next approved task is `task-122`.
+- 2026-05-13: Verified `task-122` by tightening README, README_AR, vibe UX, and prompt pack guidance so AI assistants see shorter direct commands, clearer owner/app/plugin lanes, and less repeated context. The task tracker now marks it owner_verified and the next approved task is `task-123`.
+- 2026-05-13: Verified `task-123` by updating the human documentation and site surfaces so the capability, purpose, workflow, and source of truth are explained consistently in English and Arabic. The task tracker now marks it owner_verified and the next approved task is `task-124`.
+- 2026-05-13: Verified `task-124`, `task-125`, and `task-126` by updating the capabilities reference, docs site, integration tests, changelog, and owner state so the evo-005 follow-up chain can continue from a consistent plugin-first CLI entry map. The next approved task is `kabeeri-077`.
+- 2026-05-13: Verified `task-118` by confirming the CLI surface and help already document the capability and explain when to use it. The task tracker now marks it owner_verified and the next approved task is `task-119`.
+- 2026-05-13: Verified `task-117` by tightening runtime resume, plugin loader, and token budget state so the first Evolution implementation slice now runs against live state and stays fully validated. The task tracker now marks it owner_verified and the next approved task is `task-118`.
+- 2026-05-13: Verified `task-116` by publishing the intake implementation backlog with ordered implementation slices so the docs-first gate is complete and execution can begin from a clear plan. The task tracker now marks it owner_verified and the next approved task is `task-117`.
+- 2026-05-13: Verified `task-115` by publishing the intake UI/UX direction document with journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations so the docs-first gate can progress to backlog planning. The task tracker now marks it owner_verified and the next docs-first task is `task-116`.
+- 2026-05-13: Verified `task-114` by publishing the intake data design document with core entities, relationships, snapshots, indexes, constraints, audit, and migration safety rules so the docs-first gate can progress to UI direction. The task tracker now marks it owner_verified and the next docs-first task is `task-115`.
+- 2026-05-13: Verified `task-113` by publishing the intake architecture and stack decision report with backend, frontend, mobile, database, integrations, and delivery mode decisions so the docs-first gate can progress to data design. The task tracker now marks it owner_verified and the next docs-first task is `task-114`.
+- 2026-05-13: Verified `task-112` by publishing the intake product scope statement with ecommerce goal, boundaries, users, modules, and exclusions so the docs-first gate can progress to stack decisions. The task tracker now marks it owner_verified and the next docs-first task is `task-113`.
 - 2026-05-13: Added read-only GitHub and VS Code integration reports, wired them into the CLI help and source-truth docs, expanded the VS Code scaffold tasks and command palette with report actions, and kept the integration surfaces traceable without hidden writes.
 - 2026-05-13: Verified `kabeeri-060` by confirming ADR create/list/show/approve/reject/supersede/report/trace flows already persist durable decision records. The task tracker now marks it owner_verified and the next approved task is `kabeeri-061`.
 - 2026-05-13: Verified `kabeeri-059` by confirming owner login/logout, session state, and privileged command gates already enforce local session boundaries. The task tracker now marks it owner_verified and the next approved task is `kabeeri-060`.
@@ -247,7 +260,7 @@ npm test
 
 ## Next Actions
 
-0. Continue with the next approved task after `kabeeri-075`, starting with `kabeeri-077` if no higher-priority owner instruction appears first.
+0. Continue with the first approved implementation task `kabeeri-077` now that the evo-005 follow-up chain is closed and the migration can move to redistribution verification.
 1. Keep the shared AI planner and relay surfaces under test while preserving the current green suite.
 2. Continue safe `src/cli/index.js` modularization only after the active priority is stable.
 3. Analyze `KVDF_New_Features_Docs/` only when explicitly requested, starting with duplicate review against `docs/SYSTEM_CAPABILITIES_REFERENCE.md` and then mapping the extracted content to the correct Kabeeri folders.
@@ -526,3 +539,4 @@ node bin/kvdf.js task list
 node bin/kvdf.js memory summary
 node bin/kvdf.js dashboard state
 ```
+

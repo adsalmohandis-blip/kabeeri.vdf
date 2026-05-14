@@ -4,6 +4,36 @@
 
 ### Added
 
+- Archived all closed tasks into `.kabeeri/task_trash.json` after closure, leaving the active task list empty.
+
+- Moved every `owner_verified` task to `done` and updated task validation so `done` is accepted as a valid terminal task status.
+
+- Verified `task-126` by updating the changelog and owner state so the evo-005 follow-up chain closes with a consistent plugin-first CLI entry, owner/app split, and next approved task handoff.
+
+- Verified `task-123` by updating the human documentation and site surfaces so the capability, purpose, workflow, and source of truth are explained consistently in English and Arabic.
+
+- Verified `task-122` by tightening README, README_AR, vibe UX, and prompt pack guidance so AI assistants use shorter direct commands and respect owner/app/plugin lanes.
+
+- Verified `task-121` by refreshing live readiness/governance reports so update state and unfinished dependent work remain visible in the derived JSON surface.
+
+- Verified `task-120` by extending runtime schema coverage for task memory follow-up chains and validating the runtime schema registry.
+
+- Verified `task-119` by linking the evo-005 follow-up task chain in the task record and task-tracking governance docs.
+
+- Verified `task-118` by confirming the CLI surface and help already document the capability and explain when and why to use it.
+
+- Verified `task-117` by tightening runtime resume, plugin loader, and token budget state so the first Evolution implementation slice now runs against live state and stays fully validated.
+
+- Verified `task-116` by publishing the intake implementation backlog with ordered implementation slices so the docs-first gate is complete and execution can begin from a clear plan.
+
+- Verified `task-115` by publishing the intake UI/UX direction document with journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations so the docs-first gate can advance toward backlog planning.
+
+- Verified `task-114` by publishing the intake data design document with core entities, relationships, snapshots, indexes, constraints, audit, and migration safety rules so the docs-first gate can advance toward UI direction.
+
+- Verified `task-113` by publishing the intake architecture and stack decision report with backend, frontend, mobile, database, integrations, and delivery mode decisions so the docs-first gate can advance toward data design.
+
+- Verified `task-112` by publishing the intake product scope statement with ecommerce goal, boundaries, users, modules, and exclusions so the docs-first gate can advance toward stack decisions.
+
 - Verified `kabeeri-075` by confirming the command reference and capability reference already document the command lifecycle ledger plus the important folder ownership map and remaining migration gaps.
 
 - Verified `kabeeri-074` by confirming docs and site surfaces already direct readers to the correct owner-track and app-track entry points.
@@ -594,3 +624,4 @@
 - Updated the CLI command reference so the UI/UX Advisor section now documents theme presets, composition recommendations, framework adapter plans, UI decision intake, project playbooks, and creative variants alongside UI/UX references.
 - Expanded the UI design advisor integration test so it asserts the deeper `validate ui-design` checks for theme presets, screen compositions, framework adapters, creative variants, project playbooks, and business UI references.
 - Updated the main system capabilities reference so UI/UX Advisor now lists theme token intelligence, component composition intelligence, framework adapters, UI decision intake, project playbooks, creative variants, and business UI pattern references as first-class design-system capabilities.
+

@@ -185,20 +185,21 @@ const docs = {
         commands: ["node bin/kvdf.js vibe \"Build an ecommerce store\"", "node bin/kvdf.js dashboard serve --port auto", "node bin/kvdf.js context-pack create --task task-001", "node bin/kvdf.js prompt-pack compose react --task task-001"]
       },
       "capabilities": {
-        lead: "This page is the web version of the Kabeeri capabilities reference. It explains what each capability owns, why it exists, and where a developer should look.",
-        beginner: "When you are lost, this is the map. Pick the capability that matches your problem, then follow its source files and commands.",
+        lead: "This page is the web version of the Kabeeri capabilities reference. It explains what each capability owns, why it exists, where a developer should look, and how AI should stay inside the correct owner/app/plugin lane while using the CLI directly.",
+        beginner: "When you are lost, this is the map. Pick the capability that matches your problem, then follow its source files and commands. If the work already has state, let the AI use the CLI directly instead of rebuilding the context in chat.",
         capabilityTable: true,
         sections: [
           ["How to read the table", "Each row is a system capability. The middle column explains the practical job. The source column tells the developer where to inspect or extend it."],
+          ["AI entry lanes", "Kabeeri expects one direct CLI entry path for the AI, then a clear split between framework-owner work, app-developer work, and plugin-feature modules. That separation keeps prompts shorter and feature boundaries easier to remove or extend."],
           ["What makes capabilities useful", "A capability is useful only if it has documentation, runtime state or executable checks, and a clear relationship to tasks, dashboards, or AI context."],
           ["How capabilities connect", "Product Blueprints feed Questionnaires. Questionnaires feed Tasks. Data Design and UI/UX Advisor improve those tasks. Prompt Packs guide AI implementation. Dashboard, policies, cost, and final verification close the loop."]
         ],
         steps: ["Find capability", "Open source", "Check runtime state", "Run command", "Update docs and tests", "Validate"],
         details: [
-          ["Developer usage", ["Use this page before creating new folders or new systems. If a feature belongs to an existing capability, extend that capability instead of creating a new scattered document.", "For AI work, paste or summarize the relevant capability row and source path into the task context."]],
-          ["Maintenance rule", ["When a capability changes, update the source docs, runtime implementation, schema if any, tests, and this docs site.", "The capabilities reference should remain the executive index of the whole framework."]]
+          ["Developer usage", ["Use this page before creating new folders or new systems. If a feature belongs to an existing capability, extend that capability instead of creating a new scattered document.", "For AI work, paste or summarize the relevant capability row and source path into the task context, then keep the prompt focused on one task, one track, and one plugin boundary at a time. Use the CLI directly when the state already exists."]],
+          ["Maintenance rule", ["When a capability changes, update the source docs, runtime implementation, schema if any, tests, and this docs site.", "The capabilities reference should remain the executive index of the whole framework, including the owner/app split, plugin-first guidance, and the ability to add or remove feature bundles cleanly."]]
         ],
-        checklist: ["Capability exists in docs.", "Implementation or runtime state exists when needed.", "CLI or validation path exists when needed.", "Dashboard or reports can expose important state.", "The capability is reflected in this site."]
+        checklist: ["Capability exists in docs.", "Implementation or runtime state exists when needed.", "CLI or validation path exists when needed.", "Dashboard or reports can expose important state.", "The capability is reflected in this site.", "The owner/app/plugin lane is clear for AI and humans.", "Feature bundles can be added or removed without ambiguity."]
       },
       "repository-layout": {
         lead: "Kabeeri now uses a physical Laravel-like repository layout with a small set of top-level folders. This makes the framework easier to learn, faster for AI tools to scan, and safer to extend.",
@@ -208,7 +209,7 @@ const docs = {
           ["`knowledge/`", "Reusable operating knowledge: governance, product intelligence, delivery modes, questionnaires, task tracking, data design, UI/UX, Vibe UX, and design governance."],
           ["`packs/`", "Exportable assets: prompt packs, generators, templates, and examples used to start or guide customer projects."],
           ["`integrations/`", "External-facing adapters and surfaces: dashboard, GitHub, VS Code, platform integration, and multi-AI coordination material."],
-          ["`plugins/`", "Optional removable bundles such as the owner track plugin that extend Kabeeri without becoming part of core runtime."],
+          ["`plugins/`", "Optional removable bundles such as the owner track plugin and other independent feature modules that extend Kabeeri without becoming part of core runtime."],
           ["`workspaces/`", "Developer app workspaces that live under `workspaces/apps/<app-slug>/` with local app `.kabeeri` state, tests, docs, and package metadata."],
           ["`docs/`", "Human documentation, architecture notes, production guides, reports, bilingual docs, docs site, and AI context."],
           ["`.kabeeri/`", "Live local workspace state. This is the source of truth for current project work, not a documentation folder."]

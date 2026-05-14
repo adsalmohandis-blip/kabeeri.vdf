@@ -8,8 +8,7 @@ Normalize the imported source package into safe lowercase aliases while preservi
 
 | Source Root | Normalized Root | Files |
 | --- | --- | ---: |
-| software design system to follow | software-design-system-to-follow | 1036 |
-| software project docs sys to generate | software-project-docs-sys-to-generate | 259 |
+| None | none | 0 |
 
 ## Normalized Sections
 
@@ -20,5 +19,5 @@ Normalize the imported source package into safe lowercase aliases while preservi
 
 ## Preserved Mappings
 
-- Root aliases: 2
-- Total mappings: 12
+- Root aliases: 0
+- Total mappings: 10

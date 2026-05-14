@@ -154,7 +154,8 @@ test("root commands validate repository assets", () => {
   assert.ok(fs.existsSync(path.join(repoRoot, sourcePackagePlacement.report_path)));
   const sourcePackageNormalization = JSON.parse(runKvdf(["source-package", "normalize", "--json"]).stdout);
   assert.strictEqual(sourcePackageNormalization.report_type, "kvdf_source_package_normalization_map");
-  assert.ok(sourcePackageNormalization.normalized_roots.some((item) => item.normalized_root === "software-design-system-to-follow"));
+  assert.strictEqual(sourcePackageNormalization.source_folder_exists, false);
+  assert.strictEqual(sourcePackageNormalization.normalized_roots.length, 0);
   assert.ok(sourcePackageNormalization.sections.some((item) => item.normalized_source_root === "software-design-system-to-follow"));
   assert.ok(fs.existsSync(path.join(repoRoot, sourcePackageNormalization.report_path)));
   const sourcePackageCompare = JSON.parse(runKvdf(["source-package", "compare", "--json"]).stdout);
@@ -3452,6 +3453,7 @@ test("command deprecation ledger documents active migrated alias and duplicated 
   const ledger = fs.readFileSync(path.join(repoRoot, "docs/reports/KVDF_COMMAND_DEPRECATION_LEDGER.md"), "utf8");
   const commandReference = fs.readFileSync(path.join(repoRoot, "cli/CLI_COMMAND_REFERENCE.md"), "utf8");
   const capabilitiesReference = fs.readFileSync(path.join(repoRoot, "docs/SYSTEM_CAPABILITIES_REFERENCE.md"), "utf8");
+  const docsSite = fs.readFileSync(path.join(repoRoot, "docs/site/assets/js/app.js"), "utf8");
   assert.match(ledger, /Active Canonical Surfaces/);
   assert.match(ledger, /Migrated Surfaces/);
   assert.match(ledger, /Compatibility Aliases/);
@@ -3466,6 +3468,10 @@ test("command deprecation ledger documents active migrated alias and duplicated 
   assert.match(capabilitiesReference, /Folder Ownership Ledger/);
   assert.match(capabilitiesReference, /plugins\/owner-track/);
   assert.match(capabilitiesReference, /workspaces\/apps\/<app-slug>/);
+  assert.match(capabilitiesReference, /AI Entry And Track Split/);
+  assert.match(capabilitiesReference, /Plugin lanes stay optional and removable/);
+  assert.match(docsSite, /owner\/app\/plugin lane/);
+  assert.match(docsSite, /Feature bundles can be added or removed without ambiguity/);
 });
 
 test("multi-ai queue scoring relies on roles and capabilities rather than provider bias", () => withTempDir((dir) => {

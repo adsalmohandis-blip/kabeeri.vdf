@@ -1419,7 +1419,7 @@ function normalizeAppPath(value) {
 }
 
 function validateTaskRecords(tasks, pass, fail) {
-  const allowed = new Set(["proposed", "approved", "ready", "assigned", "in_progress", "review", "owner_verified", "rejected"]);
+  const allowed = new Set(["proposed", "approved", "ready", "assigned", "in_progress", "review", "owner_verified", "done", "closed", "rejected"]);
   const ids = new Set();
   const knownWorkstreams = new Set(readWorkstreamRegistry().map((item) => normalizeWorkstreamId(item.id)).filter(Boolean));
   for (const task of tasks) {

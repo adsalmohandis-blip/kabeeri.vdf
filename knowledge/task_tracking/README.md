@@ -95,6 +95,10 @@ Evolution-linked follow-up tasks should keep the source change, impacted area,
 and acceptance criteria visible in the task record so the next task in the
 chain can be created or resumed without guessing.
 
+When a source task creates a follow-up chain, record the linked task IDs in a
+`follow_up_tasks` field so the chain stays visible in both task memory and the
+task tracker record.
+
 ## Runtime State
 
 Runtime task state lives in:

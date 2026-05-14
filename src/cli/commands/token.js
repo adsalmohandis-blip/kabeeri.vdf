@@ -60,8 +60,8 @@ function token(action, value, flags = {}, deps = {}) {
       scope_mode: scope.scope_mode,
       scope_source: scope.scope_source,
       scope_warnings: scope.scope_warnings,
-      max_usage_tokens: flags["max-usage-tokens"] ? Number(flags["max-usage-tokens"]) : null,
-      max_cost: flags["max-cost"] ? Number(flags["max-cost"]) : null,
+      max_usage_tokens: flags["max-usage-tokens"] !== undefined ? Number(flags["max-usage-tokens"]) : 0,
+      max_cost: flags["max-cost"] !== undefined ? Number(flags["max-cost"]) : 0,
       budget_approval_required: Boolean(flags["budget-approval-required"])
     };
     data.tokens.push(issuedToken);
@@ -114,8 +114,8 @@ function token(action, value, flags = {}, deps = {}) {
       scope_mode: scope.scope_mode,
       scope_source: scope.scope_source,
       scope_warnings: scope.scope_warnings,
-      max_usage_tokens: flags["max-usage-tokens"] ? Number(flags["max-usage-tokens"]) : previous.max_usage_tokens || null,
-      max_cost: flags["max-cost"] ? Number(flags["max-cost"]) : previous.max_cost || null,
+      max_usage_tokens: flags["max-usage-tokens"] !== undefined ? Number(flags["max-usage-tokens"]) : (typeof previous.max_usage_tokens === "number" ? previous.max_usage_tokens : 0),
+      max_cost: flags["max-cost"] !== undefined ? Number(flags["max-cost"]) : (typeof previous.max_cost === "number" ? previous.max_cost : 0),
       budget_approval_required: flags["budget-approval-required"] !== undefined ? Boolean(flags["budget-approval-required"]) : Boolean(previous.budget_approval_required),
       reissued_from: previous.token_id,
       reissue_reason: flags.reason || previous.revocation_reason || "",

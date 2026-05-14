@@ -18,6 +18,12 @@ Traditional frameworks help developers write code.
 
 Kabeeri VDF prompt packs help AI-powered builders tell AI what to build, where to build it, what files it may edit, what files it must not touch, how to control scope, and how to review the result.
 
+Prompt packs should also respect the Kabeeri track split:
+
+- `owner` prompts for framework and system work
+- `app` prompts for application-building work
+- `plugin` prompts for feature modules that can be added, removed, or disabled independently
+
 ```text
 Planning documents
 → choose implementation stack
@@ -70,6 +76,8 @@ Do not modify unrelated files.
 Do not commit real secrets.
 Do not skip review.
 Do not skip checks/tests when available.
+Do not bypass owner/app governance.
+Do not blur plugin boundaries.
 ```
 
 ## Common Prompt Layer
@@ -818,6 +826,7 @@ Explain what you changed.
 List files changed.
 List checks/tests to run.
 Stop after completing this task.
+Respect the owner/app track split and any plugin boundaries.
 ```
 
 ---

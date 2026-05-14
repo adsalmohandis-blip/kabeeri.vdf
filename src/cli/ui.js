@@ -78,6 +78,7 @@ function normalizeCommandName(command) {
     "source-package": "source-package",
     source_package: "source-package",
     sourcepackage: "source-package",
+    generate: "generator",
     "software-design": "software-design",
     "software_design": "software-design",
     "software-design-reference": "software-design",
@@ -210,6 +211,15 @@ Notes:
 
 Notes:
   Conflict scan is the pre-development drift check. It verifies CLI router/help alignment, framework guard wiring, core/runtime schema validation, and local workspace task/capture/session/lock conflicts before new framework work starts.
+`,
+    generator: `Usage:
+  kvdf generate --profile lite --output my-project
+  kvdf generate --profile standard --output my-project
+  kvdf generate --profile enterprise --output my-project
+  kvdf generator create lite --output my-project
+
+Notes:
+  Generators create governed project scaffolds and intake artifacts. Use generate for the short entry path and generator for the full command surface.
 `,
     create: `Usage:
   kvdf create --profile lite --output my-project

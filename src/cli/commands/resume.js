@@ -6,6 +6,7 @@ const { packageRoot, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 const { purgeExpiredTaskTrash } = require("../services/task_trash");
 const { readGitStatus: readGitStatusService } = require("../services/git_snapshot");
+const { buildPluginLoaderReport } = require("../services/plugin_loader");
 const ONBOARDING_REPORT_FILE = ".kabeeri/reports/session_onboarding.json";
 
 function resume(action, value, flags = {}) {
@@ -80,6 +81,7 @@ function buildResumeReport(options = {}) {
   const engineRoot = packageRoot();
   const localPackage = readLocalJson(path.join(cwd, "package.json"));
   const workspaceProject = readLocalJson(path.join(cwd, ".kabeeri", "project.json"));
+  const pluginLoader = buildPluginLoaderReport();
   const hasWorkspace = fs.existsSync(path.join(cwd, ".kabeeri"));
   const taskTrashSweep = hasWorkspace ? purgeExpiredTaskTrash() : null;
   const hasOwnerState = fs.existsSync(path.join(cwd, "OWNER_DEVELOPMENT_STATE.md"));
@@ -92,23 +94,24 @@ function buildResumeReport(options = {}) {
   const appStack = detectAppStack(localPackage);
   const git = readGitStatusService(cwd);
   const mode = detectSessionMode({ isFrameworkSource, hasOwnerState, hasWorkspace, appStack });
-  const primaryTrack = buildPrimaryTrack({ mode, hasWorkspace, appStack });
+  const primaryTrack = buildPrimaryTrack({ mode, hasWorkspace, appStack, pluginLoader });
   const trackContext = buildTrackContext({
     cwd,
     mode,
     hasWorkspace,
     appStack,
-    hasOwnerState
+    hasOwnerState,
+    pluginLoader
   });
   const rootRoles = buildRootRoles({ cwd, engineRoot, mode, appStack });
-  const warnings = buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, git });
+  const warnings = buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, git, pluginLoader });
   const checks = options.scan ? buildResumeScan({ cwd, mode, hasWorkspace }) : [];
   const evolution = mode === "framework_owner_development" ? readEvolutionSnapshot(cwd) : null;
   const ownerCheckpoint = mode === "framework_owner_development" ? readOwnerCheckpoint(cwd) : null;
   const questionnaireUiDecisions = readQuestionnaireUiDecisionSummary(cwd);
   const sessionTrack = readSessionTrack(cwd);
   const gitSummary = summarizeGitStatus(git);
-  const nextExactAction = buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git });
+  const nextExactAction = buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git, pluginLoader });
 
   return {
     report_type: "session_resume",
@@ -128,6 +131,7 @@ function buildResumeReport(options = {}) {
     } : null,
     git,
     git_summary: gitSummary,
+    plugin_loader: pluginLoader,
     primary_track: primaryTrack,
     track_context: trackContext,
     session_track: sessionTrack,
@@ -138,8 +142,8 @@ function buildResumeReport(options = {}) {
     owner_checkpoint: ownerCheckpoint,
     questionnaire_ui_decisions: questionnaireUiDecisions,
     next_exact_action: nextExactAction,
-    next_actions: buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnaireUiDecisions }),
-    recommended_commands: buildResumeCommands({ mode, hasWorkspace, appStack }),
+    next_actions: buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnaireUiDecisions, pluginLoader }),
+    recommended_commands: buildResumeCommands({ mode, hasWorkspace, appStack, pluginLoader }),
     scan: checks
   };
 }
@@ -182,11 +186,14 @@ function buildSessionEntryRoute(report) {
   };
 }
 
-function buildTrackContext({ cwd, mode, hasWorkspace, appStack, hasOwnerState }) {
+function buildTrackContext({ cwd, mode, hasWorkspace, appStack, hasOwnerState, pluginLoader }) {
   const sessionTrack = readSessionTrack(cwd);
   const sessionTrackSurface = getSessionTrackSurface(sessionTrack);
   const derivedTrackSurface = deriveTrackSurfaceFromContext({ mode, hasWorkspace, appStack, hasOwnerState });
   const effectiveTrackSurface = derivedTrackSurface || sessionTrackSurface || null;
+  const ownerTrackPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
+    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+    : null;
   const mismatch = Boolean(
     derivedTrackSurface &&
     sessionTrackSurface &&
@@ -203,7 +210,10 @@ function buildTrackContext({ cwd, mode, hasWorkspace, appStack, hasOwnerState })
     lock_source: derivedTrackSurface ? "workspace_context" : (sessionTrackSurface ? "session_track" : "none"),
     mismatch,
     session_track_label: sessionTrack && sessionTrack.track_label ? sessionTrack.track_label : null,
-    session_role_gate: sessionTrack && sessionTrack.role_gate ? sessionTrack.role_gate : null
+    session_role_gate: sessionTrack && sessionTrack.role_gate ? sessionTrack.role_gate : null,
+    plugin_loader_active: pluginLoader ? pluginLoader.active_plugins : 0,
+    owner_track_plugin_enabled: ownerTrackPlugin ? Boolean(ownerTrackPlugin.enabled) : null,
+    owner_track_plugin_status: ownerTrackPlugin ? ownerTrackPlugin.status : null
   };
 }
 
@@ -340,10 +350,16 @@ function buildRootRoles({ cwd, engineRoot, mode, appStack }) {
   return roles;
 }
 
-function buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, git }) {
+function buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, git, pluginLoader }) {
   const warnings = [];
   if (mode === "framework_owner_development") {
     warnings.push("This is Kabeeri framework source. Natural phrases like 'start development' should mean framework development only after reading OWNER_DEVELOPMENT_STATE.md.");
+    const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      : null;
+    if (ownerPlugin && !ownerPlugin.enabled) {
+      warnings.push("Owner-track plugin is disabled. Run `kvdf plugins enable owner-track` before owner-track work.");
+    }
   }
   if (mode === "kabeeri_user_app_workspace" || mode === "kabeeri_user_workspace") {
     warnings.push("This is a user workspace. Do not edit Kabeeri framework internals unless the owner explicitly says this is framework development.");
@@ -360,7 +376,7 @@ function buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, 
   return warnings;
 }
 
-function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnaireUiDecisions }) {
+function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnaireUiDecisions, pluginLoader }) {
   if (mode === "framework_owner_development") {
     const actions = [
       "Read OWNER_DEVELOPMENT_STATE.md.",
@@ -368,6 +384,12 @@ function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnai
       "Run npm test before behavior changes.",
       "Continue the first relevant item in Next Actions or record a new framework development task."
     ];
+    const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      : null;
+    if (ownerPlugin && !ownerPlugin.enabled) {
+      actions.unshift("Run kvdf plugins enable owner-track to restore the owner-track bundle before continuing.");
+    }
     if (questionnaireUiDecisions && questionnaireUiDecisions.pending_count > 0) {
       actions.push(`Resolve ${questionnaireUiDecisions.pending_count} pending UI/UX decision(s) from the questionnaire if they affect frontend work.`);
     }
@@ -393,9 +415,14 @@ function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnai
   ];
 }
 
-function buildResumeCommands({ mode, hasWorkspace, appStack }) {
+function buildResumeCommands({ mode, hasWorkspace, appStack, pluginLoader }) {
   if (mode === "framework_owner_development") {
-    return ["git status --short", "npm test", "npm run test:smoke", "kvdf validate", "kvdf reports live --json"];
+    const commands = ["git status --short", "kvdf plugins status", "npm test", "npm run test:smoke", "kvdf validate", "kvdf reports live --json"];
+    const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      : null;
+    if (ownerPlugin && !ownerPlugin.enabled) commands.unshift("kvdf plugins enable owner-track");
+    return commands;
   }
   if (hasWorkspace) {
     const commands = ["kvdf reports live --json", "kvdf task tracker", "kvdf vibe brief", "kvdf vibe next", "kvdf validate workspace"];
@@ -514,8 +541,14 @@ function summarizeGitStatus(git) {
   return summary;
 }
 
-function buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git }) {
+function buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git, pluginLoader }) {
   if (mode === "framework_owner_development") {
+    const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      : null;
+    if (ownerPlugin && !ownerPlugin.enabled) {
+      return "Run kvdf plugins enable owner-track to restore the owner-track bundle before continuing.";
+    }
     if (evolution && evolution.next_priority) {
       return `Continue ${evolution.next_priority.id}: ${evolution.next_priority.title}.`;
     }
@@ -691,6 +724,15 @@ function renderResumeReport(report) {
     ["App stack", report.detected_app_stack.length ? report.detected_app_stack.join(", ") : "none"],
     ["Git changed files", report.git.changed_files]
   ]));
+  if (report.plugin_loader) {
+    console.log("");
+    console.log("Plugin loader:");
+    console.log(table(["Field", "Value"], [
+      ["State file", report.plugin_loader.state_file || ""],
+      ["Active plugins", String(report.plugin_loader.active_plugins || 0)],
+      ["Disabled plugins", String(report.plugin_loader.disabled_plugins || 0)]
+    ]));
+  }
   if (report.primary_track) {
     console.log("");
     console.log("Primary track:");
@@ -726,7 +768,8 @@ function renderResumeReport(report) {
       ["Derived surface", report.track_context.derived_track_surface || "none"],
       ["Session surface", report.track_context.session_track_surface || "none"],
       ["Lock source", report.track_context.lock_source || "none"],
-      ["Mismatch", report.track_context.mismatch ? "yes" : "no"]
+      ["Mismatch", report.track_context.mismatch ? "yes" : "no"],
+      ["Owner plugin enabled", report.track_context.owner_track_plugin_enabled === null ? "unknown" : (report.track_context.owner_track_plugin_enabled ? "yes" : "no")]
     ]));
   }
   if (report.task_trash_sweep && typeof report.task_trash_sweep.purged_count === "number") {

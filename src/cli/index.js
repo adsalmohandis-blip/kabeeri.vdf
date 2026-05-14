@@ -5,6 +5,7 @@ const { listFiles, readTextFile, writeTextFile, fileExists, repoRoot, resolveAss
 const { validateRepository } = require("./validate");
 const { parseArgs, printHelp, printCommandHelp, table, normalizeCommandName } = require("./ui");
 const { productPackage, upgrade, buildPackageCheck, buildUpgradeCheck } = require("./commands/package_upgrade");
+const { buildPluginLoaderReport } = require("./services/plugin_loader");
 const { repositoryStructure } = require("./commands/repository_structure");
 const { plan, findPlan } = require("./commands/plan");
 const { example } = require("./commands/example");
@@ -307,6 +308,18 @@ function run(argv) {
 
   const [rawGroup, action, value, ...rest] = args.positionals;
   const group = normalizeCommandName(rawGroup);
+
+  if (group === "help") {
+    if (action) {
+      const requestedCommand = normalizeCommandName(action);
+      assertTrackSurfaceAllowed(requestedCommand, null, getActiveTrackSurface());
+      printCommandHelp(requestedCommand);
+    } else {
+      printHelp();
+    }
+    return;
+  }
+
   assertTrackSurfaceAllowed(group, action, getActiveTrackSurface());
 
   if (group === "doctor") return doctor();
@@ -11559,7 +11572,11 @@ function buildGovernanceNextActions(target, blockers, warnings) {
 }
 
 function buildGovernanceCoverage({ state, validation, activeOwners, activeLocks, activeTokens, expiredActiveTokens, lockConflicts, policyBlockers, securityScan, migrationChecks }) {
-  const pluginLoaderConfigured = fileExists(".kabeeri/plugins.json") || fileExists("plugins/owner-track/plugin.json");
+  const pluginLoader = buildPluginLoaderReport();
+  const ownerTrackPlugin = Array.isArray(pluginLoader.plugins)
+    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+    : null;
+  const pluginLoaderConfigured = pluginLoader.total_plugins > 0 && pluginLoader.active_plugins > 0;
   const dimensions = [
     {
       dimension: "trust",
@@ -11611,9 +11628,13 @@ function buildGovernanceCoverage({ state, validation, activeOwners, activeLocks,
       summary: pluginLoaderConfigured ? "Plugin and capability surfaces are discoverable for extension work." : "Plugin loader or extension metadata is not fully configured.",
       signals: {
         plugin_loader_configured: pluginLoaderConfigured,
+        plugin_loader_active: pluginLoader.active_plugins,
+        owner_track_plugin_enabled: ownerTrackPlugin ? Boolean(ownerTrackPlugin.enabled) : null,
         workstreams_configured: state.records.workstreams.length > 0
       },
-      next_action: pluginLoaderConfigured ? "Keep capability, plugin, and workstream metadata in sync for future extensions." : "Initialize plugin and capability extension metadata before broadening the surface."
+      next_action: pluginLoaderConfigured
+        ? "Keep capability, plugin, and workstream metadata in sync for future extensions."
+        : "Initialize plugin and capability extension metadata before broadening the surface."
     }
   ];
   return {

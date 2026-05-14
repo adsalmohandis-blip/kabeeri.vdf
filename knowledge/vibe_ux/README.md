@@ -6,6 +6,12 @@ Vibe UX is Kabeeri's human-first interaction layer. It keeps `.kabeeri/` as sour
 
 Files are the source of truth. CLI is the engine. VS Code, dashboard, and chat are the main human experience.
 
+The interaction model also keeps three lanes clear:
+
+- owner track for framework/system work
+- app track for application-building work
+- plugin modules for independently addable or removable features
+
 ## Goals
 
 - Let users describe intent in natural language.
@@ -59,6 +65,6 @@ kvdf vibe next
 
 These commands write interaction records under `.kabeeri/interactions/`. They do not replace the normal CLI engine; projects can keep using `kvdf task`, `kvdf token`, `kvdf dashboard`, and `kvdf validate` directly.
 
-Questionnaire intake and prompt-pack composition keep the AI start short and task-specific: questionnaire generates the missing decisions, then prompt-pack compose turns the selected stack into one reviewable prompt with compact guidance.
+Questionnaire intake and prompt-pack composition keep the AI start short and task-specific: questionnaire generates the missing decisions, then prompt-pack compose turns the selected stack into one reviewable prompt with compact guidance. This reduces repeated context and helps AI stay on the current track only.
 
 Post-work capture supports a full lifecycle: record changed work, review it, link it to a task, convert it into a governed task, or resolve it after evidence is reviewed.
