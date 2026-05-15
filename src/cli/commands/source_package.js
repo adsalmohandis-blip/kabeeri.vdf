@@ -259,7 +259,7 @@ function buildSourcePackageDestinationMap() {
         destinations: [
           "knowledge/documentation_generator/",
           "docs/site/",
-          "cli/CLI_COMMAND_REFERENCE.md",
+          "docs/cli/CLI_COMMAND_REFERENCE.md",
           "knowledge/task_tracking/",
           "knowledge/governance/",
           "docs/reports/"
@@ -316,7 +316,7 @@ function buildSourcePackageCapabilityMapping() {
         "knowledge/documentation_generator/",
         "knowledge/task_tracking/",
         "knowledge/governance/",
-        "cli/CLI_COMMAND_REFERENCE.md",
+        "docs/cli/CLI_COMMAND_REFERENCE.md",
         "docs/site/"
       ],
       docs_page: [

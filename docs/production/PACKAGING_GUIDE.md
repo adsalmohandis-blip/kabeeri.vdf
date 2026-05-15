@@ -27,7 +27,7 @@ Required package surface:
 - `src/cli/`
 - `knowledge/`
 - `packs/`
-- `integrations/`
+- `plugins/`
 - `schemas/`
 - `docs/`
 - `cli/`
@@ -111,7 +111,7 @@ Do not package if:
 - `package.json` is missing required fields
 - `bin.kvdf` is not `bin/kvdf.js`
 - required runtime files are missing
-- `package.json.files` excludes `bin/`, `src/`, `knowledge/`, `packs/`, `integrations/`, `schemas/`, `docs/`, or `cli/`
+- `package.json.files` excludes `bin/`, `src/`, `knowledge/`, `packs/`, `plugins/`, `schemas/`, `docs/`, or `cli/`
 - validation fails
 - readiness/governance strict reports are blocked for the release target
 

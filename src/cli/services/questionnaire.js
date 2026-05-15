@@ -4,6 +4,7 @@ const { fileExists, repoRoot, resolveAsset, assertSafeName, readTextFile } = req
 const { table } = require("../ui");
 const { getSuggestedQuestionsForArea, mapAreaToWorkstream, getSystemAreas } = require("../commands/capability");
 const { getPromptPackCatalog, recommendFrameworkPacksForBlueprint } = require("./prompt_pack");
+const { buildPipelineState } = require("./pipeline_guard");
 
 const UI_DECISION_AREA_KEYS = new Set([
   "ui_ux_design",
@@ -138,6 +139,10 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
   const inferQuestionnaireBlueprint = deps.inferQuestionnaireBlueprint || defaultInferQuestionnaireBlueprint;
   const blueprintKey = flags.blueprint || getCurrentBlueprintKey() || inferQuestionnaireBlueprint(description, flags, deps);
   if (!blueprintKey) throw new Error("Missing project description or selected blueprint. Use `kvdf questionnaire plan \"Build ecommerce store...\"` or `--blueprint ecommerce`.");
+  const pipelineState = buildPipelineState({ fileExists, readJsonFile });
+  if (!pipelineState.current_delivery_mode) {
+    throw new Error("Questionnaire planning blocked: choose a delivery mode first with `kvdf delivery choose agile` or `kvdf delivery choose structured`.");
+  }
   const buildQuestionnaireFlowFn = deps.buildQuestionnaireFlow || buildQuestionnaireFlow;
   const buildQuestionnaireFrameworkContextFn = deps.buildQuestionnaireFrameworkContext || defaultBuildQuestionnaireFrameworkContext;
   const buildQuestionnaireIntakePlanFn = deps.buildQuestionnaireIntakePlan || defaultBuildQuestionnaireIntakePlan;
@@ -146,6 +151,9 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
     buildQuestionnaireFlow: buildQuestionnaireFlowFn,
     ...deps
   });
+  if (plan && plan.task_generation_contract) {
+    plan.task_generation_contract.source_plan_id = plan.plan_id;
+  }
   const file = ".kabeeri/questionnaires/adaptive_intake_plan.json";
   if (!fileExists(file)) writeJsonFile(file, { plans: [], current_plan_id: null });
   const state = readJsonFile(file);
@@ -204,6 +212,24 @@ function defaultBuildQuestionnaireIntakePlan(description, blueprintKey, flags = 
     flags
   }, deps);
   const uiDecisionChecklist = buildUiDecisionChecklist(uiContext, blueprint, flags);
+  const modulePlan = buildQuestionnaireModulePlan({
+    blueprint,
+    blueprintContext,
+    dataContext,
+    uiContext,
+    delivery,
+    frameworks,
+    flags
+  });
+  const deliveryMap = buildQuestionnaireDeliveryMap({
+    blueprint,
+    blueprintContext,
+    dataContext,
+    uiContext,
+    delivery,
+    modulePlan,
+    flags
+  });
   const compactGuidance = buildQuestionnaireCompactGuidance(description, blueprint, frameworks, uiContext, delivery, outputLanguage);
 
   return {
@@ -248,6 +274,16 @@ function defaultBuildQuestionnaireIntakePlan(description, blueprintKey, flags = 
       required_decisions: uiDecisionChecklist.required_decisions
     },
     ui_decision_context: uiDecisionChecklist,
+    module_plan: modulePlan,
+    delivery_map: deliveryMap,
+    task_generation_contract: {
+      source_plan_id: null,
+      module_plan_id: modulePlan.module_plan_id,
+      delivery_map_id: deliveryMap.delivery_map_id,
+      active_delivery_mode: deliveryMap.active_mode,
+      task_generation_mode: deliveryMap.task_generation_mode,
+      source_of_truth: "questionnaire_intake_plan"
+    },
     prompt_pack_guidance: {
       selected_packs: compactGuidance.selected_prompt_packs,
       prompt_pack_commands: compactGuidance.prompt_pack_commands
@@ -338,6 +374,244 @@ function buildUiDecisionChecklist(uiContext = {}, blueprint = {}, flags = {}) {
     required_decisions: decisions,
     unresolved_decision_ids: decisions.map((item) => item.decision_id)
   };
+}
+
+function buildQuestionnaireModulePlan(context = {}) {
+  const {
+    blueprint = {},
+    blueprintContext = {},
+    dataContext = {},
+    uiContext = {},
+    delivery = {},
+    frameworks = {},
+    flags = {}
+  } = context;
+  const blueprintModules = uniqueList(blueprint.backend_modules || []);
+  const dataModules = uniqueList(dataContext.modules || []);
+  const uiPages = uniqueList(uiContext.page_templates || []);
+  const implementationModules = blueprintModules.map((moduleKey, index) => {
+    const title = titleizeModuleKey(moduleKey);
+    const focusEntities = inferModuleEntities(moduleKey, dataContext.entities || [], blueprint.database_entities || []);
+    const focusPages = inferModulePages(moduleKey, uiPages, blueprint.frontend_pages || []);
+    const boundary = inferModuleBoundary(moduleKey, blueprint, dataContext, uiContext);
+    const dependencies = inferModuleDependencies(moduleKey, blueprintModules, dataModules);
+    return {
+      module_id: `module-${String(index + 1).padStart(3, "0")}-${slugifyModuleKey(moduleKey)}`,
+      module_key: moduleKey,
+      title,
+      boundary,
+      scope: inferModuleScope(moduleKey, blueprint, focusPages),
+      owner_surface: inferModuleOwnerSurface(moduleKey, blueprint, uiContext),
+      entities: focusEntities,
+      pages: focusPages,
+      dependencies,
+      implementation_notes: inferModuleImplementationNotes(moduleKey, blueprint, dataContext, uiContext, delivery, frameworks, flags)
+    };
+  });
+  const backboneModules = dataModules.map((moduleKey, index) => ({
+    module_id: `backbone-${String(index + 1).padStart(2, "0")}-${slugifyModuleKey(moduleKey)}`,
+    module_key: moduleKey,
+    title: titleizeModuleKey(moduleKey),
+    boundary: inferBackboneBoundary(moduleKey),
+    entities: uniqueList((dataContext.entities || []).filter((entity) => entityMatchesModule(entity, moduleKey))),
+    indexes: uniqueList((dataContext.indexes || []).filter((indexName) => indexMatchesModule(indexName, moduleKey))),
+    must_have: uniqueList((dataContext.must_have || []).filter((rule) => ruleMatchesModule(rule, moduleKey))),
+    dependencies: inferBackboneDependencies(moduleKey, dataModules)
+  }));
+  return {
+    module_plan_id: `module-plan-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: blueprint.key,
+    blueprint_name: blueprint.name,
+    delivery_mode_recommendation: delivery.recommended_mode || "structured",
+    delivery_confidence: delivery.confidence || "low",
+    source_context: {
+      blueprint_context_id: blueprintContext.blueprint ? blueprintContext.blueprint.key : blueprint.key || null,
+      data_context_id: dataContext.context_id || null,
+      ui_pattern: uiContext.experience_pattern || null
+    },
+    backbone_modules: backboneModules,
+    implementation_modules: implementationModules,
+    module_order: implementationModules.map((item) => item.module_key),
+    module_boundaries: implementationModules.map((item) => ({
+      module_key: item.module_key,
+      boundary: item.boundary,
+      owner_surface: item.owner_surface
+    })),
+    module_dependencies: implementationModules.map((item) => ({
+      module_key: item.module_key,
+      dependencies: item.dependencies
+    })),
+    task_generation_inputs: {
+      module_keys: implementationModules.map((item) => item.module_key),
+      backbone_module_keys: backboneModules.map((item) => item.module_key),
+      data_entities: uniqueList(dataContext.entities || []),
+      ui_pages: uiPages,
+      decision_ids: (uiContext.required_decisions || []).map((item) => item.decision_id)
+    }
+  };
+}
+
+function buildQuestionnaireDeliveryMap(context = {}) {
+  const {
+    blueprint = {},
+    dataContext = {},
+    uiContext = {},
+    delivery = {},
+    modulePlan = {},
+    flags = {}
+  } = context;
+  const recommendedMode = normalizeDeliveryModeLabel(delivery.recommended_mode || "structured");
+  const selectedMode = flags.delivery_mode ? normalizeDeliveryModeLabel(flags.delivery_mode) : null;
+  const activeMode = selectedMode || recommendedMode;
+  const implementationModules = modulePlan.implementation_modules || [];
+  const backboneModules = modulePlan.backbone_modules || [];
+  const moduleKeys = uniqueList([
+    ...implementationModules.map((item) => item.module_key),
+    ...backboneModules.map((item) => item.module_key)
+  ]);
+  const batches = buildDeliveryModuleBatches(activeMode, moduleKeys, implementationModules, backboneModules);
+  const map = {
+    delivery_map_id: `delivery-map-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    blueprint_key: blueprint.key,
+    blueprint_name: blueprint.name,
+    recommended_mode: recommendedMode,
+    selected_mode: selectedMode,
+    active_mode: activeMode,
+    confidence: delivery.confidence || "low",
+    mode_explanation: activeMode === "structured"
+      ? "Structured delivery is compiled into named phases with explicit gates and handoff rules."
+      : "Agile delivery is compiled into small iteration batches with review and adaptation gates.",
+    delivery_shape: activeMode === "structured" ? "phase_gated" : "iteration_batches",
+    phases: activeMode === "structured" ? buildStructuredDeliveryPhases(modulePlan, dataContext, uiContext) : [],
+    sprints: activeMode === "agile" ? buildAgileDeliverySprints(modulePlan, dataContext, uiContext) : [],
+    module_batches: batches,
+    handoff_rules: activeMode === "structured"
+      ? [
+          "Do not start the next phase until the current phase reaches approval-ready status.",
+          "Keep module boundaries explicit in task titles and acceptance criteria.",
+          "Re-run the delivery map if the blueprint or intake answers change."
+        ]
+      : [
+          "Keep each sprint batch small and reviewable.",
+          "Re-plan after each review if the intake answers change.",
+          "Avoid mixing module ownership across batches."
+        ],
+    task_generation_mode: activeMode === "structured" ? "phase_gated" : "iteration_batches",
+    feed_forward_contract: {
+      module_plan_id: modulePlan.module_plan_id || null,
+      module_keys: modulePlan.task_generation_inputs ? modulePlan.task_generation_inputs.module_keys : [],
+      source_of_truth: "questionnaire_intake_plan"
+    }
+  };
+  return map;
+}
+
+function buildQuestionnaireTaskSynthesis(matrix, latestPlan, flags = {}, deps = {}) {
+  const getWorkstreamPathRules = deps.getWorkstreamPathRules || (() => []);
+  const areas = (matrix.areas || []).filter((area) => ["required", "needs_follow_up"].includes(area.status));
+  const moduleOrder = latestPlan && latestPlan.module_plan ? latestPlan.module_plan.module_order || [] : [];
+  const phaseOrder = latestPlan && latestPlan.delivery_map ? [
+    ...(latestPlan.delivery_map.phases || []),
+    ...(latestPlan.delivery_map.sprints || []),
+    ...(latestPlan.delivery_map.module_batches || [])
+  ] : [];
+  const synthesis = {
+    synthesis_id: `questionnaire-task-synthesis-${Date.now()}`,
+    created_at: new Date().toISOString(),
+    questionnaire_plan_id: latestPlan ? latestPlan.plan_id : null,
+    module_plan_id: latestPlan && latestPlan.module_plan ? latestPlan.module_plan.module_plan_id : null,
+    delivery_map_id: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.delivery_map_id : null,
+    delivery_mode: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.active_mode : null,
+    task_generation_mode: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.task_generation_mode : "coverage",
+    task_count: areas.length,
+    order_hints: {},
+    dependencies: {},
+    allowed_files: {},
+    task_blueprints: []
+  };
+  for (const [index, area] of areas.entries()) {
+    const workstream = mapAreaToWorkstream(area.area_key);
+    const taskId = `task-${String(index + 1).padStart(3, "0")}`;
+    const moduleKey = moduleOrder[index % Math.max(moduleOrder.length, 1)] || null;
+    const phase = phaseOrder[index % Math.max(phaseOrder.length, 1)] || null;
+    const dependencyIds = [];
+    if (index > 0) dependencyIds.push(`task-${String(index).padStart(3, "0")}`);
+    if (phase && Array.isArray(phase.modules) && phase.modules.length > 1) {
+      const previous = phase.modules.slice(0, -1);
+      for (let i = 0; i < previous.length; i += 1) {
+        dependencyIds.push(`task-${String(Math.max(1, index - i - 1)).padStart(3, "0")}`);
+      }
+    }
+    const allowedFiles = uniqueList([
+      ...getWorkstreamPathRules(workstream),
+      ...inferAllowedFilesForArea(area.area_key, moduleKey, latestPlan)
+    ]);
+    synthesis.order_hints[area.area_key] = phase ? (phase.phase_id || phase.sprint_id || phase.batch_id || null) : null;
+    synthesis.dependencies[area.area_key] = uniqueList(dependencyIds);
+    synthesis.allowed_files[area.area_key] = allowedFiles;
+    synthesis.task_blueprints.push({
+      task_id: taskId,
+      area_key: area.area_key,
+      workstream,
+      title: area.area,
+      status: area.status,
+      order_hint: synthesis.order_hints[area.area_key],
+      dependencies: synthesis.dependencies[area.area_key],
+      allowed_files: allowedFiles,
+      acceptance_criteria: area.status === "needs_follow_up"
+        ? [
+            `${area.area} is clarified with a concrete answer or explicit deferral.`,
+            "Coverage updates after the follow-up answer.",
+            "Provenance ties the task to the module plan and delivery map."
+          ]
+        : [
+            `${area.area} is explicitly handled in the intake plan.`,
+            "Dependencies and allowed files are visible to the executor packet.",
+            "The task can be executed without rereading raw chat."
+          ]
+    });
+  }
+  return synthesis;
+}
+
+function writeQuestionnaireTaskSynthesis(synthesis) {
+  writeJsonFile(".kabeeri/reports/questionnaire_task_synthesis.json", synthesis);
+}
+
+function inferAllowedFilesForArea(areaKey, moduleKey, latestPlan) {
+  const areaFileMap = {
+    product_business: ["docs/", "knowledge/", "src/cli/commands/blueprint.js"],
+    mvp_scope: ["docs/", "knowledge/"],
+    backend: ["src/cli/", "plugins/kvdf-dev/runtime/", "src/cli/commands/"],
+    api_layer: ["src/cli/", "plugins/kvdf-dev/runtime/"],
+    technology_governance: ["knowledge/", "docs/"],
+    public_frontend: ["src/cli/", "docs/site/", "docs/cli/"],
+    admin_frontend: ["src/cli/", "docs/site/", "docs/cli/"],
+    mobile: ["src/cli/", "docs/"],
+    database: ["src/cli/commands/blueprint.js", "knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json", "docs/"],
+    multi_tenancy: ["knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json", "docs/"],
+    ui_ux_design: ["src/cli/commands/blueprint.js", "knowledge/design_system/", "docs/"],
+    design_governance: ["knowledge/design_system/", "docs/"],
+    accessibility: ["knowledge/design_system/", "docs/site/"],
+    qa: ["tests/", "docs/"],
+    security: ["src/cli/", "docs/"],
+    product_design: ["docs/", "knowledge/"],
+    kabeeri_control_layer: ["src/cli/", "plugins/kvdf-dev/runtime/", ".kabeeri/"]
+  };
+  const base = areaFileMap[areaKey] ? [...areaFileMap[areaKey]] : [];
+  if (moduleKey && latestPlan && latestPlan.module_plan) {
+    const moduleMatch = (latestPlan.module_plan.implementation_modules || []).find((item) => item.module_key === moduleKey)
+      || (latestPlan.module_plan.backbone_modules || []).find((item) => item.module_key === moduleKey);
+    if (moduleMatch) {
+      if (Array.isArray(moduleMatch.pages) && moduleMatch.pages.length) base.push("src/cli/commands/blueprint.js", "docs/site/");
+      if (Array.isArray(moduleMatch.entities) && moduleMatch.entities.length) base.push("knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json");
+      if (Array.isArray(moduleMatch.must_have) && moduleMatch.must_have.length) base.push("knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json");
+      if (Array.isArray(moduleMatch.dependencies) && moduleMatch.dependencies.includes("core")) base.push("src/cli/index.js");
+    }
+  }
+  return uniqueList(base);
 }
 
 function defaultBuildQuestionnaireFrameworkContext(description, blueprint, flags = {}, deps = {}) {
@@ -543,9 +817,37 @@ function renderQuestionnaireIntakePlan(plan) {
     ["Prompt pack picks", (plan.prompt_pack_guidance.selected_packs || []).join(", ") || "needs decision"],
     ["Data modules", plan.data_design_context.modules.join(", ")],
     ["UI pattern", plan.ui_ux_context.experience_pattern],
+    ["Implementation modules", (plan.module_plan.implementation_modules || []).map((item) => item.title).join(", ") || "none"],
+    ["Delivery map", `${plan.delivery_map.active_mode} (${plan.delivery_map.delivery_shape})`],
     ["Questions", plan.generated_questions.length]
   ]));
   console.log("");
+  console.log("Module Plan:");
+  console.log(table(["Module", "Boundary", "Pages"], (plan.module_plan.implementation_modules || []).map((module) => [
+    module.title,
+    module.boundary,
+    (module.pages || []).slice(0, 4).join(", ") || "—"
+  ])));
+  console.log("");
+  console.log("Delivery Map:");
+  const deliveryRows = [];
+  for (const phase of plan.delivery_map.phases || []) deliveryRows.push([phase.phase_id || phase.sprint_id || phase.batch_id, phase.title, (phase.modules || []).join(", ") || "—"]);
+  for (const sprint of plan.delivery_map.sprints || []) deliveryRows.push([sprint.sprint_id || sprint.phase_id || sprint.batch_id, sprint.title, (sprint.modules || []).join(", ") || "—"]);
+  for (const batch of plan.delivery_map.module_batches || []) deliveryRows.push([batch.batch_id, batch.title, (batch.modules || []).join(", ") || "—"]);
+  if (deliveryRows.length) console.log(table(["Unit", "Title", "Modules"], deliveryRows));
+  else console.log("No delivery map rows generated.");
+  console.log("");
+  if (plan.task_generation_contract) {
+    console.log("Task Generation Contract:");
+    console.log(table(["Field", "Value"], [
+      ["Source plan", plan.task_generation_contract.source_plan_id || "n/a"],
+      ["Module plan", plan.task_generation_contract.module_plan_id || "n/a"],
+      ["Delivery map", plan.task_generation_contract.delivery_map_id || "n/a"],
+      ["Mode", plan.task_generation_contract.task_generation_mode || "n/a"],
+      ["Source of truth", plan.task_generation_contract.source_of_truth || "n/a"]
+    ]));
+    console.log("");
+  }
   console.log("Compact Guidance:");
   console.log(table(["Field", "Value"], [
     ["Task kind", plan.compact_guidance.task_kind],
@@ -645,6 +947,9 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
   requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "generate questionnaire tasks");
   const matrix = buildCoverageMatrix(deps);
   writeQuestionnaireReports(matrix);
+  const latestPlan = readLatestQuestionnairePlan();
+  const synthesis = buildQuestionnaireTaskSynthesis(matrix, latestPlan, flags, deps);
+  writeQuestionnaireTaskSynthesis(synthesis);
   const tasksFile = ".kabeeri/tasks.json";
   const tasksData = readJsonFile(tasksFile);
   tasksData.tasks = tasksData.tasks || [];
@@ -688,6 +993,10 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
       source_reference: sourceReference,
       source_mode: area.status === "needs_follow_up" ? "required" : "derived",
       provenance: {
+        questionnaire_plan_id: latestPlan ? latestPlan.plan_id : null,
+        module_plan_id: latestPlan && latestPlan.module_plan ? latestPlan.module_plan.module_plan_id : null,
+        delivery_map_id: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.delivery_map_id : null,
+        delivery_mode: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.active_mode : null,
         system_area_id: area.area_id,
         system_area_key: area.area_key,
         question_ids: (area.answers || []).map((answer) => answer.question_id),
@@ -701,6 +1010,9 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
         "Coverage matrix is regenerated after the answer is recorded.",
         "Task provenance includes system area, question_id, answer_id, and source_mode when available."
       ],
+      dependencies: synthesis.dependencies[area.area_key] || [],
+      order_hint: synthesis.order_hints[area.area_key] || null,
+      allowed_files: synthesis.allowed_files[area.area_key] || [],
       created_at: new Date().toISOString()
     };
     tasksData.tasks.push(taskItem);
@@ -714,6 +1026,13 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
   }
   console.log(`Generated ${created.length} questionnaire coverage tasks.`);
   return created;
+}
+
+function readLatestQuestionnairePlan() {
+  if (!fileExists(".kabeeri/questionnaires/adaptive_intake_plan.json")) return null;
+  const state = readJsonFile(".kabeeri/questionnaires/adaptive_intake_plan.json");
+  const plans = state.plans || [];
+  return plans.length ? plans[plans.length - 1] : null;
 }
 
 function buildQuestionnaireFlow() {
@@ -922,6 +1241,256 @@ function summarizeBy(items, key) {
 
 function uniqueList(items) {
   return Array.from(new Set((items || []).filter(Boolean)));
+}
+
+function slugifyModuleKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function titleizeModuleKey(value) {
+  return String(value || "")
+    .split(/[_\-\s]+/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function inferModuleBoundary(moduleKey, blueprint, dataContext, uiContext) {
+  const boundaryMap = {
+    catalog: "Owns product discovery, listing, browsing, and product detail presentation.",
+    cart: "Owns cart state, item edits, and pre-checkout calculations.",
+    checkout: "Owns checkout flow, address capture, review, and order submission.",
+    orders: "Owns order lifecycle, status transitions, and customer order history.",
+    payments: "Owns payment intent, provider handoff, payment status, and reconciliation hooks.",
+    shipping: "Owns shipping methods, delivery estimation, shipment status, and tracking hooks.",
+    coupons: "Owns discount rules, coupon eligibility, redemption, and campaign linkage.",
+    reviews: "Owns ratings, reviews, moderation, and product feedback presentation.",
+    customers: "Owns customer profile data, addresses, loyalty tie-ins, and account surfaces.",
+    services: "Owns service catalog definitions, scheduling input, and service availability rules.",
+    staff: "Owns staff records, assignments, and staff-facing schedules.",
+    availability: "Owns time slots, availability rules, blackout periods, and booking windows.",
+    appointments: "Owns appointment lifecycle, booking creation, rescheduling, and cancellation state.",
+    reminders: "Owns reminders, notifications, and follow-up timing for booked items.",
+    cancellation_policy: "Owns cancellation windows, fees, reschedule rules, and approval constraints."
+  };
+  if (boundaryMap[moduleKey]) return boundaryMap[moduleKey];
+  const display = titleizeModuleKey(moduleKey);
+  const pages = (uiContext.page_templates || []).slice(0, 4).join(", ");
+  const entities = (dataContext.entities || []).slice(0, 6).join(", ");
+  return `Owns the ${display.toLowerCase()} scope, including related entities (${entities || "n/a"}) and UI surfaces (${pages || "n/a"}).`;
+}
+
+function inferModuleScope(moduleKey, blueprint, pages = []) {
+  const scope = new Set(["backend"]);
+  const frontendPages = new Set(blueprint.frontend_pages || []);
+  if (["catalog", "cart", "checkout", "orders", "payments", "shipping", "coupons", "reviews", "customers", "services", "staff", "availability", "appointments", "reminders"].includes(moduleKey)) {
+    if (pages.some((page) => frontendPages.has(page))) scope.add("public_frontend");
+    if ((blueprint.channels || []).some((channel) => String(channel).includes("admin"))) scope.add("admin_frontend");
+  }
+  if (["customers", "orders", "payments", "appointments"].includes(moduleKey)) scope.add("database");
+  return Array.from(scope);
+}
+
+function inferModuleOwnerSurface(moduleKey, blueprint, uiContext) {
+  if ((uiContext.experience_pattern || "").includes("admin") || (blueprint.channels || []).some((channel) => String(channel).includes("admin"))) return "admin";
+  if ((blueprint.channels || []).some((channel) => String(channel).includes("customer"))) return "customer";
+  return "shared";
+}
+
+function inferModuleEntities(moduleKey, dataEntities = [], blueprintEntities = []) {
+  const combined = uniqueList([...dataEntities, ...blueprintEntities]);
+  const keywords = String(moduleKey || "").split(/[_\-\s]+/g).filter(Boolean);
+  if (!keywords.length) return [];
+  return combined.filter((entity) => keywords.some((keyword) => String(entity).toLowerCase().includes(keyword.toLowerCase())));
+}
+
+function inferModulePages(moduleKey, uiPages = [], blueprintPages = []) {
+  const combined = uniqueList([...uiPages, ...blueprintPages]);
+  const modulePageMap = {
+    catalog: ["home", "category", "product_details"],
+    cart: ["cart"],
+    checkout: ["checkout"],
+    orders: ["order_tracking", "customer_account", "admin_orders"],
+    payments: ["checkout", "admin_orders"],
+    shipping: ["order_tracking", "admin_orders"],
+    coupons: ["checkout", "admin_products"],
+    reviews: ["product_details"],
+    customers: ["customer_account"],
+    services: ["service_list", "admin_calendar"],
+    staff: ["admin_calendar", "staff_schedule"],
+    availability: ["booking_calendar", "time_slots"],
+    appointments: ["booking_calendar", "appointment_details", "customer_bookings"],
+    reminders: ["customer_bookings", "appointment_details"],
+    cancellation_policy: ["appointment_details", "customer_bookings"]
+  };
+  const desired = modulePageMap[moduleKey] || [];
+  return combined.filter((page) => desired.includes(page));
+}
+
+function inferModuleDependencies(moduleKey, blueprintModules = [], dataModules = []) {
+  const dataSet = new Set(dataModules);
+  const depsMap = {
+    catalog: ["core"],
+    cart: ["core", "catalog"],
+    checkout: ["core", "cart", "catalog"],
+    orders: ["core", "cart", "checkout"],
+    payments: ["core", "checkout", "orders"],
+    shipping: ["core", "orders", "payments"],
+    coupons: ["core", "catalog", "checkout"],
+    reviews: ["core", "customers", "catalog"],
+    customers: ["core"],
+    services: ["core"],
+    staff: ["core", "services"],
+    availability: ["core", "staff", "services"],
+    appointments: ["core", "services", "availability", "customers"],
+    reminders: ["core", "appointments", "customers"],
+    cancellation_policy: ["core", "appointments"]
+  };
+  return uniqueList([...(depsMap[moduleKey] || []), ...(blueprintModules.includes(moduleKey) ? [] : []), ...(dataSet.has("core") ? [] : ["core"])]);
+}
+
+function inferModuleImplementationNotes(moduleKey, blueprint, dataContext, uiContext, delivery, frameworks, flags) {
+  const notes = [];
+  if ((frameworks.selected_packs || []).length) notes.push(`Framework packs: ${(frameworks.selected_packs || []).slice(0, 4).join(", ")}`);
+  if ((delivery.recommended_mode || "").toLowerCase() === "structured") notes.push("Treat this module as a phase-gated build slice.");
+  else notes.push("Treat this module as a short iterative batch slice.");
+  if (uiContext.experience_pattern) notes.push(`UI pattern: ${uiContext.experience_pattern}`);
+  if (flags.enterprise || /enterprise|compliance|audit/i.test(String(blueprint.name || ""))) notes.push("Preserve traceability and approval boundaries.");
+  return uniqueList(notes);
+}
+
+function inferBackboneBoundary(moduleKey) {
+  const map = {
+    core: "Owns identity, authorization, settings, audit, and platform controls.",
+    commerce: "Owns commerce-wide money, pricing, order lifecycle, and checkout rules.",
+    inventory: "Owns stock movement, balance snapshots, reservations, and warehouse controls.",
+    analytics: "Owns summary tables, dashboards, exports, and reporting read models.",
+    integration: "Owns external provider bridges, webhooks, outbox events, and idempotency."
+  };
+  return map[moduleKey] || `Owns the ${titleizeModuleKey(moduleKey)} backbone module.`;
+}
+
+function inferBackboneDependencies(moduleKey, dataModules = []) {
+  const depsMap = {
+    commerce: ["core"],
+    inventory: ["core", "commerce"],
+    analytics: ["core", "commerce", "inventory"],
+    integration: ["core"]
+  };
+  return uniqueList(depsMap[moduleKey] || ["core"]);
+}
+
+function entityMatchesModule(entity, moduleKey) {
+  const key = String(moduleKey || "").toLowerCase();
+  const value = String(entity || "").toLowerCase();
+  return value.includes(key) || (key === "commerce" && ["products", "orders", "payments", "customers", "carts", "shipments", "coupons", "reviews"].some((fragment) => value.includes(fragment)));
+}
+
+function indexMatchesModule(indexName, moduleKey) {
+  const key = String(moduleKey || "").toLowerCase();
+  const value = String(indexName || "").toLowerCase();
+  return value.includes(key);
+}
+
+function ruleMatchesModule(rule, moduleKey) {
+  const key = String(moduleKey || "").toLowerCase();
+  const value = String(rule || "").toLowerCase();
+  return value.includes(key);
+}
+
+function normalizeDeliveryModeLabel(mode) {
+  const normalized = String(mode || "").toLowerCase();
+  if (["structured", "waterfall"].includes(normalized)) return "structured";
+  if (["agile", "scrum"].includes(normalized)) return "agile";
+  return "structured";
+}
+
+function buildDeliveryModuleBatches(activeMode, moduleKeys, implementationModules, backboneModules) {
+  const sliceModules = (keys) => keys.map((key) => {
+    const implementation = implementationModules.find((item) => item.module_key === key);
+    const backbone = backboneModules.find((item) => item.module_key === key);
+    return implementation || backbone || { module_key: key, title: titleizeModuleKey(key) };
+  });
+  const keys = moduleKeys.length ? moduleKeys : ["core"];
+  if (activeMode === "agile") {
+    return keys.slice(0, 6).map((key, index) => ({
+      batch_id: `sprint-batch-${String(index + 1).padStart(2, "0")}`,
+      title: `${titleizeModuleKey(key)} sprint batch`,
+      modules: sliceModules([key]).map((item) => item.module_key),
+      purpose: "Iterate on one small implementation slice."
+    }));
+  }
+  const phaseSize = Math.max(1, Math.ceil(keys.length / 4));
+  const batches = [];
+  for (let index = 0; index < keys.length; index += phaseSize) {
+    const chunk = keys.slice(index, index + phaseSize);
+    batches.push({
+      batch_id: `phase-batch-${String(batches.length + 1).padStart(2, "0")}`,
+      title: `Phase batch ${batches.length + 1}`,
+      modules: sliceModules(chunk).map((item) => item.module_key),
+      purpose: "Deliver a gated phase slice."
+    });
+  }
+  return batches;
+}
+
+function buildStructuredDeliveryPhases(modulePlan, dataContext, uiContext) {
+  const modules = modulePlan.implementation_modules || [];
+  const phases = [
+    {
+      phase_id: "phase-01-foundation",
+      title: "Foundation",
+      modules: modules.filter((module) => module.module_key === "catalog" || module.module_key === "services" || module.module_key === "core").map((module) => module.module_key)
+    },
+    {
+      phase_id: "phase-02-transactions",
+      title: "Transactions",
+      modules: modules.filter((module) => ["cart", "checkout", "orders", "payments", "appointments"].includes(module.module_key)).map((module) => module.module_key)
+    },
+    {
+      phase_id: "phase-03-operations",
+      title: "Operations",
+      modules: modules.filter((module) => ["shipping", "staff", "availability", "customers", "coupons", "reviews", "reminders", "cancellation_policy"].includes(module.module_key)).map((module) => module.module_key)
+    },
+    {
+      phase_id: "phase-04-hardening",
+      title: "Hardening",
+      modules: uniqueList([...(modulePlan.backbone_modules || []).map((item) => item.module_key), "analytics", "integration"]).filter((key) => modules.some((module) => module.module_key === key) || ["analytics", "integration"].includes(key))
+    }
+  ];
+  return phases.map((phase) => ({
+    ...phase,
+    checks: [
+      "Source brief exists.",
+      "Module boundaries are explicit.",
+      "Tasks can be generated from this phase without rereading raw chat."
+    ]
+  }));
+}
+
+function buildAgileDeliverySprints(modulePlan, dataContext, uiContext) {
+  const modules = modulePlan.implementation_modules || [];
+  const sprints = [];
+  const batchSize = Math.max(1, Math.ceil(modules.length / 4));
+  for (let index = 0; index < modules.length; index += batchSize) {
+    const chunk = modules.slice(index, index + batchSize);
+    sprints.push({
+      sprint_id: `sprint-${String(sprints.length + 1).padStart(2, "0")}`,
+      title: `Sprint ${sprints.length + 1}`,
+      modules: chunk.map((module) => module.module_key),
+      goal: `Deliver ${chunk.map((module) => module.title).join(", ")}`,
+      checks: [
+        "Module boundaries remain explicit.",
+        "Review output can feed task generation.",
+        "No raw chat context is needed to explain the sprint scope."
+      ]
+    });
+  }
+  return sprints;
 }
 
 module.exports = {

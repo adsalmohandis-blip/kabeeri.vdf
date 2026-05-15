@@ -55,12 +55,12 @@ Compare the Software Design System source package against the current Kabeeri ca
 | Dashboard Customization | medium | 3 |
 | Email / Notification Templates | medium | 3 |
 | Feature Flags | medium | 3 |
-| Integrations | medium | 3 |
 | Monitoring | medium | 3 |
 | Offboarding | medium | 3 |
 | Onboarding | medium | 3 |
 | Payments / Billing | medium | 3 |
 | Permissions | medium | 3 |
+| Plugins | medium | 3 |
 | Production vs Publish | medium | 3 |
 | Scheduling / Automation | medium | 3 |
 | Settings System | medium | 3 |

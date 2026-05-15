@@ -64,7 +64,7 @@ function buildTraceabilityReport(deps = {}) {
   const unlinkedAdrs = adrs.filter((item) => !(Array.isArray(item.related_tasks) && item.related_tasks.length) && !(Array.isArray(item.related_ai_runs) && item.related_ai_runs.length));
   const unlinkedAiRuns = (aiRuns || []).filter((item) => !(Array.isArray(item.related_adrs) && item.related_adrs.length));
   const docsState = {
-    command_reference: fileExists("cli/CLI_COMMAND_REFERENCE.md"),
+    command_reference: fileExists("docs/cli/CLI_COMMAND_REFERENCE.md"),
     capability_reference: fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md"),
     task_governance: fileExists("knowledge/task_tracking/TASK_GOVERNANCE.md"),
     task_assessment: fileExists("knowledge/task_tracking/TASK_ASSESSMENT.md"),

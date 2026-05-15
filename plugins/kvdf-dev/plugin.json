@@ -1,0 +1,56 @@
+{
+  "plugin_id": "kvdf-dev",
+  "name": "KVDF Dev System Bundle",
+  "plugin_version": "1.0.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "framework_owner",
+  "plugin_family": "framework_plugin",
+  "plugin_type": "kvdf_core",
+  "enabled_by_default": true,
+  "description": "Removable framework-development bundle that keeps KVDF itself separate from app-building plugins and app-track workflows.",
+  "required_folders": [
+    "commands",
+    "docs",
+    "prompts",
+    "schemas",
+    "templates",
+    "tests"
+  ],
+  "optional_folders": [
+    "references",
+    "examples",
+    "assets",
+    "dashboard"
+  ],
+  "domain_folders": [
+    "governance",
+    "evolution",
+    "capabilities",
+    "runtime",
+    "plugin-control",
+    "tracks",
+    "reports"
+  ],
+  "command_surface": [
+    "kvdf evolution",
+    "kvdf evolution roadmap",
+    "kvdf evolution priorities",
+    "kvdf evolution partition",
+    "kvdf evolution batch-exe",
+    "kvdf batch-exe",
+    "kvdf task packet",
+    "kvdf task executor-contract",
+    "kvdf task batch-run",
+    "kvdf plugins install kvdf-dev",
+    "kvdf plugins enable kvdf-dev",
+    "kvdf plugins uninstall kvdf-dev",
+    "kvdf plugins disable kvdf-dev"
+  ],
+  "docs_surface": [
+    "plugins/kvdf-dev/docs/index.md",
+    "knowledge/governance/EVOLUTION_STEWARD.md",
+    "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"
+  ]
+}

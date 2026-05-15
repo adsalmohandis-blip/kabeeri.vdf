@@ -1,0 +1,51 @@
+{
+  "plugin_id": "ecommerce-builder",
+  "name": "Ecommerce Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "ecommerce",
+  "enabled_by_default": false,
+  "description": "Build ecommerce systems from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": [
+    "commands",
+    "docs",
+    "prompts",
+    "schemas",
+    "templates",
+    "tests"
+  ],
+  "optional_folders": [
+    "references",
+    "examples",
+    "assets",
+    "dashboard"
+  ],
+  "domain_folders": [
+    "business-type",
+    "references",
+    "examples",
+    "assets",
+    "dashboard"
+  ],
+  "command_surface": [
+    "kvdf ecommerce status",
+    "kvdf ecommerce init",
+    "kvdf ecommerce questionnaire",
+    "kvdf ecommerce brief",
+    "kvdf ecommerce design",
+    "kvdf ecommerce modules",
+    "kvdf ecommerce tasks",
+    "kvdf ecommerce approve",
+    "kvdf ecommerce report",
+    "kvdf plugin install ecommerce-builder",
+    "kvdf plugin uninstall ecommerce-builder"
+  ],
+  "docs_surface": [
+    "plugins/ecommerce-builder/docs/index.md",
+    "plugins/ecommerce-builder/docs/cli.md"
+  ]
+}

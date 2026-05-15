@@ -4,14 +4,15 @@ function plugin(action, value, flags = {}, rest = [], deps = {}) {
   const { table = () => "", ensureWorkspace = () => {}, writeJsonFile = () => {}, readJsonFile = () => ({}) } = deps;
   ensureWorkspace();
   const report = buildPluginLoaderReport();
+  const normalizedAction = normalizePluginAction(action);
 
-  if (!action || ["status", "list"].includes(action)) {
+  if (!normalizedAction || ["status", "list"].includes(normalizedAction)) {
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(renderPluginLoaderReport(report, table));
     return;
   }
 
-  if (action === "show") {
+  if (normalizedAction === "show") {
     const pluginId = value || flags.id || rest[0];
     if (!pluginId) throw new Error("Missing plugin id.");
     const pluginItem = findPluginById(pluginId);
@@ -20,16 +21,20 @@ function plugin(action, value, flags = {}, rest = [], deps = {}) {
     return;
   }
 
-  if (action === "enable" || action === "disable") {
+  if (["enable", "disable", "install", "uninstall"].includes(normalizedAction)) {
     const pluginId = value || flags.id || rest[0];
     if (!pluginId) throw new Error("Missing plugin id.");
-    const updated = setPluginEnabled(pluginId, action === "enable");
+    const enabled = normalizedAction === "enable" || normalizedAction === "install";
+    const updated = setPluginEnabled(pluginId, enabled);
     if (flags.json) console.log(JSON.stringify(updated, null, 2));
-    else console.log(`${action === "enable" ? "Enabled" : "Disabled"} plugin: ${pluginId}`);
+    else {
+      const verb = enabled ? (normalizedAction === "install" ? "Installed" : "Enabled") : (normalizedAction === "uninstall" ? "Uninstalled" : "Disabled");
+      console.log(`${verb} plugin: ${pluginId}`);
+    }
     return;
   }
 
-  if (action === "reload") {
+  if (normalizedAction === "reload") {
     const refreshed = buildPluginLoaderReport();
     if (flags.json) console.log(JSON.stringify(refreshed, null, 2));
     else console.log(renderPluginLoaderReport(refreshed, table));
@@ -37,6 +42,13 @@ function plugin(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   throw new Error(`Unknown plugin action: ${action}`);
+}
+
+function normalizePluginAction(action) {
+  const value = String(action || "").trim().toLowerCase();
+  if (value === "add") return "install";
+  if (value === "remove") return "uninstall";
+  return value;
 }
 
 module.exports = {

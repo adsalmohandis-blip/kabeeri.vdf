@@ -1,0 +1,51 @@
+{
+  "plugin_id": "booking-builder",
+  "name": "Booking Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "booking",
+  "enabled_by_default": false,
+  "description": "Build booking websites and reservation platforms from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": [
+    "commands",
+    "docs",
+    "prompts",
+    "schemas",
+    "templates",
+    "tests"
+  ],
+  "optional_folders": [
+    "references",
+    "examples",
+    "assets",
+    "dashboard"
+  ],
+  "domain_folders": [
+    "business-type",
+    "references",
+    "examples",
+    "assets",
+    "dashboard"
+  ],
+  "command_surface": [
+    "kvdf booking status",
+    "kvdf booking init",
+    "kvdf booking questionnaire",
+    "kvdf booking brief",
+    "kvdf booking design",
+    "kvdf booking modules",
+    "kvdf booking tasks",
+    "kvdf booking approve",
+    "kvdf booking report",
+    "kvdf plugin install booking-builder",
+    "kvdf plugin uninstall booking-builder"
+  ],
+  "docs_surface": [
+    "plugins/booking-builder/docs/index.md",
+    "plugins/booking-builder/docs/cli.md"
+  ]
+}

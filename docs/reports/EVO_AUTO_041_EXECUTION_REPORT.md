@@ -10,7 +10,7 @@ Field              Value
 Execution summary  Execute priority evo-auto-041-execution-reports: Generate clear execution reports for each improvement so the next session can resume quickly.
 Resume command     kvdf evolution priority evo-auto-041-execution-reports --status in_progress                                                                   
 Next exact action  Review evo-auto-041-execution-reports and update its status as needed.                                                                        
-Current change     evo-005                                                                                                                                       
+Current change     evo-006                                                                                                                                       
 Linked tasks       none                                                                                                                                          
 Open priorities    0/48                                                                                                                                          
 

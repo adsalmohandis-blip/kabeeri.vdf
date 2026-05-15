@@ -69,7 +69,7 @@ function buildSiteManifest() {
     manifest_version: 1,
     generated_by: "docs/site/generate-pages.js",
     site_name: "Kabeeri VDF Docs",
-    default_language: "en",
+    default_language: "ar", // Arabic-first, bilingual site
     languages: ["en", "ar"],
     template_count: templates.length,
     page_count: pages.length,
@@ -171,7 +171,7 @@ function writeJson(filePath, data) {
   write(filePath, `${JSON.stringify(data, null, 2)}\n`);
 }
 
-write("index.html", html({ lang: "en", dir: "ltr", title: "Overview", slug: "what-is", rootPath: "" }));
+write("index.html", html({ lang: "ar", dir: "rtl", title: "نظرة عامة", slug: "what-is", rootPath: "" }));
 writeJson("page-templates.json", {
   template_version: 1,
   generated_by: "docs/site/generate-pages.js",

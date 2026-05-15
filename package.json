@@ -9,7 +9,7 @@
     "src/",
     "knowledge/",
     "packs/",
-    "integrations/",
+    "plugins/",
     "schemas/",
     "docs/",
     "cli/",

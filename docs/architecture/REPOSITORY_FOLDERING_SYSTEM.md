@@ -15,7 +15,8 @@ knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json
 | `core` | Runtime code, CLI handlers, command entrypoints | `src/`, `bin/`, `cli/` |
 | `knowledge` | Product intelligence, governance, delivery systems, design guidance | `knowledge/standard_systems/`, `knowledge/project_intelligence/`, `knowledge/questionnaires/`, `knowledge/delivery_modes/`, `knowledge/agile_delivery/`, `knowledge/governance/`, `knowledge/task_tracking/`, `knowledge/vibe_ux/`, `knowledge/design_system/`, `knowledge/design_system/ui_ux_reference/` |
 | `packs` | Exportable templates, generators, examples, prompt packs | `packs/generators/`, `packs/templates/`, `packs/examples/`, `packs/prompt_packs/` |
-| `integrations` | GitHub, VS Code, dashboard, platform and multi-AI integrations | `integrations/github_sync/`, `integrations/github/`, `integrations/vscode_extension/`, `integrations/platform_integration/`, `integrations/multi_ai_governance/`, `integrations/dashboard/` |
+| `plugins` | GitHub, VS Code, and multi-AI plugin bundles | `plugins/github_sync/`, `plugins/github/`, `plugins/vscode_extension/`, `plugins/multi_ai_governance/` |
+| `docs/reports` | Historical reports, dashboard runtime docs, platform plan archives, and enforcement matrices | `docs/reports/dashboard/`, `docs/reports/platform_integration/` |
 | `contracts` | JSON schemas and runtime contracts | `schemas/` |
 | `documentation` | Human docs and references | `docs/`, `docs/site/`, `docs/codex_context/`, root readmes |
 | `quality` | Tests and validation fixtures | `tests/` |
@@ -33,7 +34,7 @@ src/
 cli/
 knowledge/
 packs/
-integrations/
+plugins/
 docs/
 schemas/
 tests/
@@ -55,6 +56,30 @@ kvdf validate foldering
 
 `kvdf structure validate` checks whether the current repository root contains folders outside the allowed foldering contract.
 
+## Versioning Contract
+
+The foldering system is versioned in two places:
+
+| Layer | Field | Purpose |
+| --- | --- | --- |
+| Foldering map | `schema_version` | Declares the contract shape used by the repository foldering map itself. |
+| Foldering map | `map_version` | Tracks the current foldering plan version. |
+| Foldering migration phases | `schema_version` and `migration_version` | Show which contract version and migration line each phase belongs to. |
+| Runtime schema registry | `registry_version` | Marks the version of the runtime schema mapping registry. |
+| Plugin loader state | `schema_version` and `plugin_loader_version` | Distinguish the loader contract from the active plugin loader behavior. |
+| Workspace project state | `schema_version` and `version` | Separate the workspace schema contract from the project/content version. |
+
+This separation matters because folder layout changes, plugin packaging changes, and workspace state changes do not always move together. When the schema version changes, KVDF should be able to say whether the change is a validation-only update, a migration update, or a compatibility bump that needs follow-up documentation.
+
+Practical rules:
+
+- Keep `schema_version` explicit in every contract file that is expected to evolve.
+- Keep `map_version` or `plugin_loader_version` for the runtime behavior line.
+- Add a migration note whenever the foldering contract changes in a way that affects root classification or top-level routing.
+- Treat version fields as machine-readable signals, not as documentation-only text.
+
+If the version fields disagree, validation should surface the mismatch with a next action rather than leaving the maintainer to infer it from chat history.
+
 ## New Folder Rule
 
 Before adding a new top-level folder, document:
@@ -74,7 +99,7 @@ Most new features should use one of these existing homes:
 | New human docs | `docs/` |
 | New schema | `schemas/` |
 | New reusable prompt/template | `packs/prompt_packs/` or `packs/templates/` |
-| New integration | `integrations/` |
+| New integration | `plugins/` |
 
 ## AI Usage
 

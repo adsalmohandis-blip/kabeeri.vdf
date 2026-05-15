@@ -17,7 +17,7 @@ reports.
 - Runtime state: `.kabeeri/evolution.json`
 - Follow-up work: `.kabeeri/tasks.json`
 - Central capability reference: `docs/SYSTEM_CAPABILITIES_REFERENCE.md`
-- CLI reference: `cli/CLI_COMMAND_REFERENCE.md`
+- CLI reference: `docs/cli/CLI_COMMAND_REFERENCE.md`
 - Dashboard/live reports: `.kabeeri/dashboard/*.json` and `.kabeeri/reports/live_reports_state.json`
 - Multi-AI governance runtime: `.kabeeri/multi_ai_governance.json`
 - Schema: `schemas/runtime/evolution-state.schema.json`

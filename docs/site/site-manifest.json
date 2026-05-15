@@ -2,7 +2,7 @@
   "manifest_version": 1,
   "generated_by": "docs/site/generate-pages.js",
   "site_name": "Kabeeri VDF Docs",
-  "default_language": "en",
+  "default_language": "ar",
   "languages": [
     "en",
     "ar"

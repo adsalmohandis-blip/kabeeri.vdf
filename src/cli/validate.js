@@ -2,6 +2,7 @@ const { fileExists, listDirectories, listFiles, readJsonFile, readTextFile } = r
 const { isManualFeatureDocsInbox } = require("./services/manual_feature_docs");
 const { defaultWorkstreams } = require("./workspace");
 const { buildResumeReport } = require("./commands/resume");
+const { buildTaskVerificationCoverage } = require("./services/task_verification");
 
 function validateRepository(scope) {
   scope = normalizeScope(scope || "all");
@@ -30,7 +31,7 @@ function validateRepository(scope) {
     checkFile("README.md");
     checkFile("ROADMAP.md");
     checkFile("CHANGELOG.md");
-    checkFile("cli/CLI_COMMAND_REFERENCE.md");
+    checkFile("docs/cli/CLI_COMMAND_REFERENCE.md");
   }
 
   if (scope === "all" || scope === "schemas") {
@@ -80,7 +81,7 @@ function validateRepository(scope) {
 
   if (scope === "all" || scope === "plans") {
     for (const file of [
-      "platform_integration/milestones_and_issues.v3.0.0.json",
+      "docs/reports/platform_integration/milestones_and_issues.v3.0.0.json",
       "multi_ai_governance/milestones_and_issues.v4.0.0.json",
       "project_intelligence/milestones_and_issues.v5.0.0.json"
     ]) {
@@ -456,6 +457,10 @@ function validateRepositoryFoldering(pass, fail) {
   }
   validateJson(file, pass, fail);
   const data = readJsonFile(file);
+  if (!data.schema_version) fail("foldering map missing schema_version");
+  else if (typeof data.schema_version !== "string") fail("foldering schema version must be a string");
+  if (!data.map_version) fail("foldering map missing map_version");
+  else if (typeof data.map_version !== "string") fail("foldering map version must be a string");
   const groups = data.target_root_groups || [];
   const mappings = data.current_to_target || [];
   const groupKeys = new Set(groups.map((item) => item.group));
@@ -472,7 +477,11 @@ function validateRepositoryFoldering(pass, fail) {
   const unknown = rootFolders.filter((name) => !allowed.has(name));
   if (unknown.length) fail(`foldering has unclassified top-level folders: ${unknown.join(", ")}`);
   else pass(`foldering root checked: ${rootFolders.length} folders classified`);
+  const migrationPhases = Array.isArray(data.migration_phases) ? data.migration_phases : [];
+  const versionedPhases = migrationPhases.filter((phase) => phase && phase.schema_version && phase.migration_version);
+  pass(`foldering schema version checked: schema ${data.schema_version || "n/a"}, map ${data.map_version || "n/a"}`);
   pass(`foldering map checked: ${groups.length} groups, ${mappings.length} mapped paths`);
+  pass(`foldering migration phases checked: ${migrationPhases.length} phases, ${versionedPhases.length} versioned`);
 }
 
 function isIgnoredTopLevelFolder(name) {
@@ -522,6 +531,8 @@ function validateRuntimeSchemas(pass, fail) {
   validateJson(registryFile, pass, fail);
   if (!fileExists(registryFile)) return;
   const registry = readJsonFile(registryFile);
+  if (!registry.registry_version) fail("runtime schema registry missing registry_version");
+  else if (typeof registry.registry_version !== "string") fail("runtime schema registry version must be a string");
   const stateFiles = registry.state_files || [];
   const jsonlFiles = registry.jsonl_files || [];
   const coverageExemptions = getRuntimeSchemaCoverageExemptions(registry);
@@ -570,11 +581,12 @@ function validateRuntimeSchemas(pass, fail) {
   }
 
   pass(`runtime schema registry checked (${stateFiles.length} JSON mappings, ${jsonlFiles.length} JSONL mappings)`);
+  pass(`runtime schema registry version checked: ${registry.registry_version || "n/a"}`);
   pass(`runtime schema validation checked (${checkedJson} JSON files, ${checkedJsonl} JSONL files, ${exemptCount} exempt files)`);
 }
 
 function validateDocsSourceTruth(pass, fail) {
-  const commandReference = "cli/CLI_COMMAND_REFERENCE.md";
+  const commandReference = "docs/cli/CLI_COMMAND_REFERENCE.md";
   const capabilityReference = "docs/SYSTEM_CAPABILITIES_REFERENCE.md";
   const commandTokens = [
     "kvdf init",
@@ -698,14 +710,14 @@ function validateDocsSourceTruth(pass, fail) {
 function validateHistoricalSourceClarity(pass, fail) {
   const historicalDocs = [
     {
-      file: "cli/CLI_ROADMAP.md",
+      file: "docs/cli/CLI_ROADMAP.md",
       tokens: [
         "historical/staged planning",
         "current command surface"
       ]
     },
     {
-      file: "cli/CLI_USER_FLOWS.md",
+      file: "docs/cli/CLI_USER_FLOWS.md",
       tokens: [
         "current and future",
         "Confirm current behavior"
@@ -1439,6 +1451,16 @@ function validateTaskRecords(tasks, pass, fail) {
     if (["assigned", "in_progress", "review", "owner_verified"].includes(task.status) && !task.assignee_id) {
       fail(`task missing assignee for status ${task.status}: ${task.id}`);
     }
+    if (task.status === "owner_verified") {
+      if (!task.verified_by) fail(`task missing verified_by for owner_verified status: ${task.id}`);
+      if ((task.acceptance_criteria || []).length > 0) {
+        const acceptanceState = fileExists(".kabeeri/acceptance.json") ? readJsonFile(".kabeeri/acceptance.json") : { records: [] };
+        const coverage = buildTaskVerificationCoverage(task, acceptanceState);
+        if (coverage.status !== "pass") {
+          fail(`task ${task.id} lacks strict acceptance coverage: ${coverage.blockers.join("; ")}`);
+        }
+      }
+    }
   }
   pass(`task records checked (${tasks.length})`);
 }
@@ -1624,7 +1646,7 @@ function validateWorkspaceGovernance(pass, fail) {
   const developers = safeRead(".kabeeri/developers.json", "developers");
   const agents = safeRead(".kabeeri/agents.json", "agents");
   const identities = [...developers, ...agents];
-  const owners = identities.filter((item) => item.role === "Owner" && item.status !== "inactive");
+  const owners = identities.filter((item) => ["Owner", "Owner-Developer"].includes(item.role) && item.status !== "inactive");
   if (owners.length <= 1) pass("single Owner rule valid");
   else fail(`single Owner rule violated (${owners.length} active Owners)`);
 

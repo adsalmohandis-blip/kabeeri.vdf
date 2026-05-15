@@ -1,0 +1,153 @@
+{
+  "report_id": "intake-answers-questionnaire-intake-1778790943730",
+  "report_type": "intake_answers",
+  "generated_at": "2026-05-14",
+  "task_id": "task-077",
+  "task_title": "Project intake answers",
+  "status": "recorded",
+  "source": "init_intake:questionnaire-intake-1778790943730",
+  "intake_plan_id": "questionnaire-intake-1778790943730",
+  "blueprint": {
+    "key": "ecommerce",
+    "name": "eCommerce",
+    "category": "commerce"
+  },
+  "delivery_mode": "structured",
+  "summary": {
+    "total_answers": 25,
+    "generated_question_answers": 16,
+    "intake_entry_answers": 9,
+    "source_files": [
+      ".kabeeri/questionnaires/answers.json",
+      ".kabeeri/questionnaires/answer_sources.json",
+      ".kabeeri/questionnaires/adaptive_intake_plan.json"
+    ]
+  },
+  "answers": [
+    {
+      "question_id": "adaptive.product.blueprint_confirmation",
+      "value": "ecommerce",
+      "area_ids": ["product_business", "mvp_scope"]
+    },
+    {
+      "question_id": "adaptive.delivery.mode_confirmation",
+      "value": "structured",
+      "area_ids": ["kabeeri_control_layer", "mvp_scope"]
+    },
+    {
+      "question_id": "adaptive.framework.backend",
+      "value": "laravel",
+      "area_ids": ["backend", "api_layer", "technology_governance"]
+    },
+    {
+      "question_id": "adaptive.framework.frontend",
+      "value": "react",
+      "area_ids": ["public_frontend", "admin_frontend", "technology_governance"]
+    },
+    {
+      "question_id": "adaptive.framework.mobile",
+      "value": "react-native-expo",
+      "area_ids": ["mobile", "technology_governance"]
+    },
+    {
+      "question_id": "adaptive.database.engine",
+      "value": "mysql",
+      "area_ids": ["database", "multi_tenancy"]
+    },
+    {
+      "question_id": "adaptive.database.workflow_entities",
+      "value": "confirm",
+      "area_ids": ["database", "product_business"]
+    },
+    {
+      "question_id": "adaptive.ui.experience_pattern",
+      "value": "commerce_storefront",
+      "area_ids": ["ui_ux_design", "public_frontend", "admin_frontend"]
+    },
+    {
+      "question_id": "adaptive.ui.design_source",
+      "value": "kabeeri_suggests",
+      "area_ids": ["ui_ux_design", "design_governance"]
+    },
+    {
+      "question_id": "adaptive.ui.public_admin_split",
+      "value": "separate_flows",
+      "area_ids": ["public_frontend", "admin_frontend", "ui_ux_design"]
+    },
+    {
+      "question_id": "adaptive.ui.responsive_priority",
+      "value": "mobile_first",
+      "area_ids": ["public_frontend", "admin_frontend", "accessibility"]
+    },
+    {
+      "question_id": "adaptive.ui.accessibility_target",
+      "value": "wcag_minded",
+      "area_ids": ["accessibility", "ui_ux_design"]
+    },
+    {
+      "question_id": "adaptive.risk.payment_security",
+      "value": "Use secure payment flows, idempotency, logging, and gateway tokenization.",
+      "area_ids": ["security", "qa", "product_business"]
+    },
+    {
+      "question_id": "adaptive.risk.inventory_consistency",
+      "value": "Use transaction-safe stock movements and reservation rules as the source of truth.",
+      "area_ids": ["database", "product_business"]
+    },
+    {
+      "question_id": "adaptive.risk.seo",
+      "value": "Require SEO-friendly category/product pages, canonical URLs, schemas, and image rules.",
+      "area_ids": ["public_frontend", "seo", "content"]
+    },
+    {
+      "question_id": "adaptive.risk.checkout_conversion",
+      "value": "Keep checkout fast, minimal, and trust-focused with clear steps and recovery paths.",
+      "area_ids": ["checkout", "ui_ux_design", "conversion"]
+    },
+    {
+      "question_id": "entry.project_type",
+      "value": "ecommerce",
+      "area_ids": ["product_business"]
+    },
+    {
+      "question_id": "entry.complexity",
+      "value": "large",
+      "area_ids": ["delivery_scope"]
+    },
+    {
+      "question_id": "entry.has_users",
+      "value": "yes",
+      "area_ids": ["product_business"]
+    },
+    {
+      "question_id": "entry.has_admin",
+      "value": "yes",
+      "area_ids": ["admin_frontend", "product_business"]
+    },
+    {
+      "question_id": "entry.has_payments",
+      "value": "yes",
+      "area_ids": ["payments", "security"]
+    },
+    {
+      "question_id": "entry.has_multi_tenancy",
+      "value": "no",
+      "area_ids": ["database", "product_business"]
+    },
+    {
+      "question_id": "entry.has_public_frontend",
+      "value": "yes",
+      "area_ids": ["public_frontend", "ui_ux_design"]
+    },
+    {
+      "question_id": "entry.needs_integrations",
+      "value": "yes",
+      "area_ids": ["integration", "platform_integration"]
+    },
+    {
+      "question_id": "entry.needs_ai_features",
+      "value": "no",
+      "area_ids": ["ai_governance"]
+    }
+  ]
+}

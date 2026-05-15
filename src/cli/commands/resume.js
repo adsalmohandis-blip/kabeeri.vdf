@@ -5,13 +5,17 @@ const { spawnSync } = require("child_process");
 const { packageRoot, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 const { purgeExpiredTaskTrash } = require("../services/task_trash");
+const { buildTaskMemory } = require("../services/task_memory");
 const { readGitStatus: readGitStatusService } = require("../services/git_snapshot");
 const { buildPluginLoaderReport } = require("../services/plugin_loader");
 const ONBOARDING_REPORT_FILE = ".kabeeri/reports/session_onboarding.json";
+const SESSION_TRACE_REPORT_FILE = ".kabeeri/reports/session_trace.json";
 
 function resume(action, value, flags = {}) {
   const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
-  persistSessionTrack(buildSessionEntryRoute(report), report, "resume");
+  const route = buildSessionEntryRoute(report);
+  persistSessionTrack(route, report, "resume");
+  writeSessionTrace(report, route, "resume");
   if (flags.json) {
     console.log(JSON.stringify(report, null, 2));
     return;
@@ -23,6 +27,7 @@ function entry(action, value, flags = {}) {
   const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
   const route = buildSessionEntryRoute(report);
   persistSessionTrack(route, report, "entry");
+  writeSessionTrace(report, route, "entry");
   const payload = {
     ...report,
     report_type: "session_entry_route",
@@ -52,6 +57,7 @@ function onboarding(action, value, flags = {}) {
     return;
   }
   persistSessionTrack(route, report, "onboarding");
+  writeSessionTrace(report, route, "onboarding", payload);
   writeOnboardingReport(payload);
   if (flags.json) {
     console.log(JSON.stringify(payload, null, 2));
@@ -81,6 +87,8 @@ function buildResumeReport(options = {}) {
   const engineRoot = packageRoot();
   const localPackage = readLocalJson(path.join(cwd, "package.json"));
   const workspaceProject = readLocalJson(path.join(cwd, ".kabeeri", "project.json"));
+  const taskState = readLocalJson(path.join(cwd, ".kabeeri", "tasks.json")) || { tasks: [] };
+  const taskTrashState = readLocalJson(path.join(cwd, ".kabeeri", "task_trash.json")) || { trash: [] };
   const pluginLoader = buildPluginLoaderReport();
   const hasWorkspace = fs.existsSync(path.join(cwd, ".kabeeri"));
   const taskTrashSweep = hasWorkspace ? purgeExpiredTaskTrash() : null;
@@ -112,6 +120,15 @@ function buildResumeReport(options = {}) {
   const sessionTrack = readSessionTrack(cwd);
   const gitSummary = summarizeGitStatus(git);
   const nextExactAction = buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git, pluginLoader });
+  const taskTrackerMemory = buildTaskTrackerMemorySnapshot(taskState, taskTrashState, sessionTrack, mode, evolution);
+  const archiveState = buildArchiveState(taskTrashState, taskTrashSweep);
+  const sessionTrace = buildSessionTraceSnapshot({
+    mode,
+    sessionTrack,
+    taskTrackerMemory,
+    archiveState,
+    nextExactAction
+  });
 
   return {
     report_type: "session_resume",
@@ -135,12 +152,15 @@ function buildResumeReport(options = {}) {
     primary_track: primaryTrack,
     track_context: trackContext,
     session_track: sessionTrack,
+    task_tracker_memory: taskTrackerMemory,
     task_trash_sweep: taskTrashSweep,
+    archive_state: archiveState,
     root_roles: rootRoles,
     warnings,
     evolution,
     owner_checkpoint: ownerCheckpoint,
     questionnaire_ui_decisions: questionnaireUiDecisions,
+    session_trace: sessionTrace,
     next_exact_action: nextExactAction,
     next_actions: buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnaireUiDecisions, pluginLoader }),
     recommended_commands: buildResumeCommands({ mode, hasWorkspace, appStack, pluginLoader }),
@@ -192,7 +212,7 @@ function buildTrackContext({ cwd, mode, hasWorkspace, appStack, hasOwnerState, p
   const derivedTrackSurface = deriveTrackSurfaceFromContext({ mode, hasWorkspace, appStack, hasOwnerState });
   const effectiveTrackSurface = derivedTrackSurface || sessionTrackSurface || null;
   const ownerTrackPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
-    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
     : null;
   const mismatch = Boolean(
     derivedTrackSurface &&
@@ -236,6 +256,7 @@ function persistSessionTrack(route, report, source = "entry") {
   const now = new Date().toISOString();
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const payload = {
+    version: "v1",
     active: route.track_id !== "unclassified",
     active_track: route.track_id !== "unclassified" ? route.track_id : null,
     track_label: route.track_label,
@@ -251,6 +272,30 @@ function persistSessionTrack(route, report, source = "entry") {
     updated_at: now
   };
   fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+}
+
+function writeSessionTrace(report, route, source = "resume", onboardingPayload = null) {
+  const cwd = repoRoot();
+  const filePath = path.join(cwd, SESSION_TRACE_REPORT_FILE);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  const taskState = readLocalJson(path.join(cwd, ".kabeeri", "tasks.json")) || { tasks: [] };
+  const taskTrashState = readLocalJson(path.join(cwd, ".kabeeri", "task_trash.json")) || { trash: [] };
+  const sessionTrack = readSessionTrack(cwd);
+  const payload = buildSessionTraceSnapshot({
+    mode: report.mode,
+    sessionTrack,
+    taskTrackerMemory: buildTaskTrackerMemorySnapshot(taskState, taskTrashState, sessionTrack, report.mode, report.evolution || null),
+    archiveState: buildArchiveState(taskTrashState, report.task_trash_sweep || null),
+    nextExactAction: report.next_exact_action || null,
+    route,
+    source,
+    onboarding: onboardingPayload ? {
+      report_path: onboardingPayload.report_path || ONBOARDING_REPORT_FILE,
+      title: onboardingPayload.guide ? onboardingPayload.guide.title : null
+    } : null
+  });
+  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+  return payload;
 }
 
 function readSessionTrack(cwd) {
@@ -355,10 +400,10 @@ function buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, 
   if (mode === "framework_owner_development") {
     warnings.push("This is Kabeeri framework source. Natural phrases like 'start development' should mean framework development only after reading OWNER_DEVELOPMENT_STATE.md.");
     const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
-      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
       : null;
     if (ownerPlugin && !ownerPlugin.enabled) {
-      warnings.push("Owner-track plugin is disabled. Run `kvdf plugins enable owner-track` before owner-track work.");
+      warnings.push("KVDF dev plugin is disabled. Run `kvdf plugins install kvdf-dev` or `kvdf plugins enable kvdf-dev` before framework-development work.");
     }
   }
   if (mode === "kabeeri_user_app_workspace" || mode === "kabeeri_user_workspace") {
@@ -385,10 +430,10 @@ function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnai
       "Continue the first relevant item in Next Actions or record a new framework development task."
     ];
     const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
-      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
       : null;
     if (ownerPlugin && !ownerPlugin.enabled) {
-      actions.unshift("Run kvdf plugins enable owner-track to restore the owner-track bundle before continuing.");
+      actions.unshift("Run kvdf plugins install kvdf-dev or kvdf plugins enable kvdf-dev to restore the KVDF dev bundle before continuing.");
     }
     if (questionnaireUiDecisions && questionnaireUiDecisions.pending_count > 0) {
       actions.push(`Resolve ${questionnaireUiDecisions.pending_count} pending UI/UX decision(s) from the questionnaire if they affect frontend work.`);
@@ -419,9 +464,9 @@ function buildResumeCommands({ mode, hasWorkspace, appStack, pluginLoader }) {
   if (mode === "framework_owner_development") {
     const commands = ["git status --short", "kvdf plugins status", "npm test", "npm run test:smoke", "kvdf validate", "kvdf reports live --json"];
     const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
-      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
       : null;
-    if (ownerPlugin && !ownerPlugin.enabled) commands.unshift("kvdf plugins enable owner-track");
+    if (ownerPlugin && !ownerPlugin.enabled) commands.unshift("kvdf plugins install kvdf-dev");
     return commands;
   }
   if (hasWorkspace) {
@@ -445,6 +490,99 @@ function buildResumeScan({ cwd, mode, hasWorkspace }) {
     checks.push(runCheck("kvdf reports live --json", [process.execPath, path.join(packageRoot(), "bin", "kvdf.js"), "reports", "live", "--json"], cwd));
   }
   return checks;
+}
+
+function buildTaskTrackerMemorySnapshot(taskState, taskTrashState, sessionTrack, mode, evolution) {
+  const tasks = Array.isArray(taskState.tasks) ? taskState.tasks : [];
+  const statuses = tasks.reduce((acc, task) => {
+    const status = String(task.status || "unknown").toLowerCase();
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+  const focusTask = tasks.find((task) => ["in_progress", "approved", "ready", "assigned"].includes(String(task.status || "").toLowerCase()))
+    || tasks.find((task) => ["proposed", "blocked"].includes(String(task.status || "").toLowerCase()))
+    || tasks[0]
+    || null;
+  const focusTaskMemory = focusTask ? buildTaskMemory(focusTask, {
+    purpose: focusTask.execution_summary || focusTask.title,
+    summary: focusTask.execution_summary || focusTask.title,
+    source: focusTask.source || "resume",
+    workstreams: Array.isArray(focusTask.workstreams) ? focusTask.workstreams : focusTask.workstream ? [focusTask.workstream] : [],
+    app_usernames: Array.isArray(focusTask.app_usernames) ? focusTask.app_usernames : focusTask.app_username ? [focusTask.app_username] : [],
+    app_paths: Array.isArray(focusTask.app_paths) ? focusTask.app_paths : [],
+    allowed_files: Array.isArray(focusTask.allowed_files) ? focusTask.allowed_files : [],
+    acceptance_criteria: Array.isArray(focusTask.acceptance_criteria) ? focusTask.acceptance_criteria : [],
+    required_inputs: Array.isArray(focusTask.required_inputs) ? focusTask.required_inputs : [],
+    expected_outputs: Array.isArray(focusTask.expected_outputs) ? focusTask.expected_outputs : [],
+    do_not_change: Array.isArray(focusTask.do_not_change) ? focusTask.do_not_change : [],
+    resume_steps: Array.isArray(focusTask.resume_steps) ? focusTask.resume_steps : [],
+    verification_commands: Array.isArray(focusTask.verification_commands) ? focusTask.verification_commands : []
+  }) : null;
+  return {
+    report_type: "task_tracker_memory",
+    generated_at: new Date().toISOString(),
+    mode,
+    session_track_active: Boolean(sessionTrack && sessionTrack.active),
+    active_track: sessionTrack && sessionTrack.active_track ? sessionTrack.active_track : null,
+    current_change_id: evolution && evolution.current_change_id ? evolution.current_change_id : null,
+    summary: {
+      total: tasks.length,
+      open: tasks.filter((task) => !["owner_verified", "done", "closed", "rejected"].includes(String(task.status || "").toLowerCase())).length,
+      owner_verified: statuses.owner_verified || 0,
+      approved: statuses.approved || 0,
+      in_progress: statuses.in_progress || 0,
+      blocked: statuses.blocked || 0,
+      trashed: Array.isArray(taskTrashState.trash) ? taskTrashState.trash.length : 0
+    },
+    focus_task: focusTask ? {
+      id: focusTask.id,
+      title: focusTask.title,
+      status: focusTask.status,
+      assignee_id: focusTask.assignee_id || null,
+      memory: focusTaskMemory
+    } : null,
+    current_task_memory: focusTaskMemory,
+    task_memory_path: focusTaskMemory ? `.kabeeri/tasks.json#${focusTaskMemory.task_id}` : null
+  };
+}
+
+function buildArchiveState(taskTrashState, taskTrashSweep) {
+  const trash = Array.isArray(taskTrashState && taskTrashState.trash) ? taskTrashState.trash : [];
+  const latest = trash.slice().sort((left, right) => String(right.trashed_at || "").localeCompare(String(left.trashed_at || "")))[0] || null;
+  return {
+    report_type: "task_archive_state",
+    generated_at: new Date().toISOString(),
+    total: trash.length,
+    retention_days: Number(taskTrashState && taskTrashState.retention_days ? taskTrashState.retention_days : 30) || 30,
+    last_sweep_at: taskTrashState && taskTrashState.last_sweep_at ? taskTrashState.last_sweep_at : null,
+    latest_trashed_task: latest ? {
+      id: latest.id || null,
+      title: latest.title || "",
+      status: latest.status || "unknown",
+      trashed_at: latest.trashed_at || null,
+      trash_expires_at: latest.trash_expires_at || null,
+      trashed_reason: latest.trashed_reason || null
+    } : null,
+    sweep_status: taskTrashSweep ? taskTrashSweep.status || null : null,
+    purged_count: taskTrashSweep ? taskTrashSweep.purged_count || 0 : 0,
+    remaining_count: taskTrashSweep ? taskTrashSweep.remaining_count || trash.length : trash.length
+  };
+}
+
+function buildSessionTraceSnapshot({ mode, sessionTrack, taskTrackerMemory, archiveState, nextExactAction, route = null, source = "resume", onboarding = null }) {
+  return {
+    report_type: "session_trace",
+    generated_at: new Date().toISOString(),
+    mode,
+    source,
+    route,
+    session_track: sessionTrack,
+    task_tracker_memory: taskTrackerMemory,
+    archive_state: archiveState,
+    next_exact_action: nextExactAction || null,
+    onboarding,
+    trace_path: SESSION_TRACE_REPORT_FILE
+  };
 }
 
 function readEvolutionSnapshot(cwd) {
@@ -544,10 +682,10 @@ function summarizeGitStatus(git) {
 function buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git, pluginLoader }) {
   if (mode === "framework_owner_development") {
     const ownerPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
-      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
       : null;
     if (ownerPlugin && !ownerPlugin.enabled) {
-      return "Run kvdf plugins enable owner-track to restore the owner-track bundle before continuing.";
+      return "Run kvdf plugins install kvdf-dev or kvdf plugins enable kvdf-dev to restore the KVDF dev bundle before continuing.";
     }
     if (evolution && evolution.next_priority) {
       return `Continue ${evolution.next_priority.id}: ${evolution.next_priority.title}.`;
@@ -760,6 +898,18 @@ function renderResumeReport(report) {
       ["Follow-up", report.session_track.follow_up_command || ""]
     ]));
   }
+  if (report.task_tracker_memory) {
+    console.log("");
+    console.log("Task memory snapshot:");
+    console.log(table(["Field", "Value"], [
+      ["Focus task", report.task_tracker_memory.focus_task ? `${report.task_tracker_memory.focus_task.id} - ${report.task_tracker_memory.focus_task.title}` : "none"],
+      ["Focus status", report.task_tracker_memory.focus_task ? report.task_tracker_memory.focus_task.status : "none"],
+      ["Current change", report.task_tracker_memory.current_change_id || "none"],
+      ["Open tasks", String(report.task_tracker_memory.summary.open || 0)],
+      ["Trash items", String(report.task_tracker_memory.summary.trashed || 0)],
+      ["Memory path", report.task_tracker_memory.task_memory_path || "none"]
+    ]));
+  }
   if (report.track_context) {
     console.log("");
     console.log("Track lock:");
@@ -780,6 +930,18 @@ function renderResumeReport(report) {
       ["Purged", String(report.task_trash_sweep.purged_count)],
       ["Remaining", String(report.task_trash_sweep.remaining_count)],
       ["Retention days", String(report.task_trash_sweep.retention_days || 0)]
+    ]));
+  }
+  if (report.archive_state) {
+    console.log("");
+    console.log("Archive state:");
+    console.log(table(["Field", "Value"], [
+      ["Total trashed", String(report.archive_state.total || 0)],
+      ["Retention days", String(report.archive_state.retention_days || 0)],
+      ["Last sweep", report.archive_state.last_sweep_at || "none"],
+      ["Latest trashed", report.archive_state.latest_trashed_task ? `${report.archive_state.latest_trashed_task.id} - ${report.archive_state.latest_trashed_task.title}` : "none"],
+      ["Sweep status", report.archive_state.sweep_status || "none"],
+      ["Remaining", String(report.archive_state.remaining_count || 0)]
     ]));
   }
   console.log("");
@@ -836,6 +998,15 @@ function renderResumeReport(report) {
         item.title
       ])));
     }
+  }
+  if (report.session_trace) {
+    console.log("");
+    console.log("Session trace:");
+    console.log(table(["Field", "Value"], [
+      ["Source", report.session_trace.source || "resume"],
+      ["Trace path", report.session_trace.trace_path || SESSION_TRACE_REPORT_FILE],
+      ["Next exact action", report.session_trace.next_exact_action || "none"]
+    ]));
   }
   console.log("");
   console.log("Recommended commands:");

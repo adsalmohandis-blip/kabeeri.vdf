@@ -26,7 +26,7 @@ function plan(action, name) {
 
 function getPlanRegistry() {
   return [
-    ["v3.0.0", "platform_integration/milestones_and_issues.v3.0.0.json"],
+    ["v3.0.0", "docs/reports/platform_integration/milestones_and_issues.v3.0.0.json"],
     ["v4.0.0", "multi_ai_governance/milestones_and_issues.v4.0.0.json"],
     ["v5.0.0", "project_intelligence/milestones_and_issues.v5.0.0.json"]
   ].filter(([, file]) => fileExists(file));

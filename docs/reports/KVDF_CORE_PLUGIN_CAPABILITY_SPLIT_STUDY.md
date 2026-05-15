@@ -5,7 +5,7 @@
 This study defines how KVDF capabilities should be separated into:
 
 - `kabeeri-core`
-- `plugins/owner-track`
+- `plugins/kvdf-dev`
 - `workspaces/apps/<app-slug>/`
 
 The goal is to make the system fully controllable, removable, and
@@ -40,7 +40,7 @@ The current architecture already suggests a three-way split:
 ```text
 kabeeri-core/
 plugins/
-  owner-track/
+  kvdf-dev/
 workspaces/
   apps/
     <app-slug>/
@@ -89,7 +89,7 @@ Core must not contain:
 - hard-coded mixed routing tables
 - plugin-specific business logic
 
-### 2. plugins/owner-track
+### 2. plugins/kvdf-dev
 
 The owner bundle owns the Kabeeri platform-development surface.
 
@@ -257,7 +257,7 @@ The authoritative machine-readable matrix is exposed through:
 The matrix keeps three buckets aligned with the target structure:
 
 - `kabeeri-core`
-- `plugins/owner-track`
+- `plugins/kvdf-dev`
 - `workspaces/apps/<app-slug>`
 
 The matrix is considered authoritative when:
@@ -287,7 +287,7 @@ Loader behavior:
 - report plugin state through `kvdf plugins status`
 - enable or disable a bundle through `kvdf plugins enable|disable <plugin-id>`
 
-The `owner-track` bundle is the first removable bundle modeled by the loader.
+The `kvdf-dev` bundle is the first removable bundle modeled by the loader.
 Core must keep working if the bundle is disabled, and owner-only surfaces must
 fail closed in that state.
 

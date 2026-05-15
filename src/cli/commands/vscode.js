@@ -189,8 +189,8 @@ function buildVscodeIntegrationReport(flags = {}) {
     ".vscode/kvdf.commands.json",
     ".vscode/kvdf-extension/package.json",
     ".vscode/kvdf-extension/extension.js",
-    "integrations/vscode_extension/README.md",
-    "integrations/vscode_extension/COMMAND_PALETTE_PLAN.md"
+    "plugins/vscode_extension/README.md",
+    "plugins/vscode_extension/COMMAND_PALETTE_PLAN.md"
   ];
   const fileState = files.map((file) => ({
     file,

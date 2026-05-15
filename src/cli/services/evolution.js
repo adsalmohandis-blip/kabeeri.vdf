@@ -1,4 +1,4 @@
-const { fileExists } = require("../fs_utils");
+﻿const { fileExists } = require("../fs_utils");
 const { readJsonFile } = require("../workspace");
 const { readStateArray, summarizeBy } = require("./state_utils");
 
@@ -475,7 +475,7 @@ function defaultEvolutionDevelopmentPriorities() {
       status: "planned",
       tree_view: [
         "kabeeri-core/ - shared runtime, guards, task engine, session routing, and loader",
-        "plugins/owner-track/ - removable owner bundle with owner-only commands and docs",
+        "plugins/kvdf-dev/ - removable framework-development bundle with owner-only commands and docs",
         "workspaces/apps/<app-slug>/ - isolated developer applications with local state"
       ],
       included_surfaces: [
@@ -570,7 +570,7 @@ function defaultEvolutionDevelopmentPriorities() {
       status: "planned",
       tree_view: [
         "kabeeri-core/ - shared runtime, guards, task engine, session routing, and loader",
-        "plugins/owner-track/ - removable owner bundle with owner-only commands, docs, and governance",
+        "plugins/kvdf-dev/ - removable framework-development bundle with owner-only commands, docs, and governance",
         "workspaces/apps/<app-slug>/ - isolated developer applications with local state and app-only commands",
         "docs/reports/ - the study and decision reports that record the split",
         "docs/site/ - developer-facing capability documentation that mirrors the split"
@@ -604,7 +604,7 @@ function defaultEvolutionDevelopmentPriorities() {
       ],
       partition_rules: [
         "Shared runtime, session routing, validation, guard, task engine, trash, scheduler, and telemetry belong to kabeeri-core.",
-        "Owner-only governance, owner docs, owner routing, owner tokens, and removable owner commands belong to plugins/owner-track/.",
+        "Framework-development governance, dev docs, dev routing, owner tokens, and removable owner commands belong to plugins/kvdf-dev/.",
         "Developer-facing app workflows, blueprints, questionnaire flows, and app-local state belong to workspaces/apps/<app-slug>/.",
         "If a capability touches more than one boundary, split it into a core primitive plus a plugin or app wrapper instead of keeping it mixed."
       ]
@@ -952,7 +952,7 @@ function buildKVDFFeatureRestructureRoadmap(options = {}) {
       title: "Entry / Track / Role Enforcement",
       purpose: "Lock the session into the correct owner or vibe track from the first command and block accidental cross-track work.",
       cli_surface: ["kvdf start", "kvdf entry", "kvdf resume", "kvdf track status"],
-      docs_surface: ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "cli/CLI_COMMAND_REFERENCE.md"],
+      docs_surface: ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "docs/cli/CLI_COMMAND_REFERENCE.md"],
       deliverables: [
         "Track detection from workspace context.",
         "Blocked cross-track access rules.",
@@ -1049,12 +1049,12 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
   const studySource = "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md";
 
   const coreCapabilities = [
-    ["cli-engine", "CLI Engine", "The command dispatcher must exist before track detection, so it stays in shared bootstrap code.", ["bin/kvdf.js", "src/cli/index.js"], ["cli/CLI_COMMAND_REFERENCE.md", "src/cli/ui.js"]],
-    ["workspace-state", "Workspace State", "Both tracks read and write .kabeeri state, so the storage format must remain shared.", ["src/cli/workspace.js", ".kabeeri/"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "cli/CLI_COMMAND_REFERENCE.md"]],
+    ["cli-engine", "CLI Engine", "The command dispatcher must exist before track detection, so it stays in shared bootstrap code.", ["bin/kvdf.js", "src/cli/index.js"], ["docs/cli/CLI_COMMAND_REFERENCE.md", "src/cli/ui.js"]],
+    ["workspace-state", "Workspace State", "Both tracks read and write .kabeeri state, so the storage format must remain shared.", ["src/cli/workspace.js", ".kabeeri/"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "docs/cli/CLI_COMMAND_REFERENCE.md"]],
     ["session-entry-router", "Session Entry Router", "Track routing must happen before optional bundles load.", ["kvdf start", "kvdf entry", "src/cli/commands/resume.js"], ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["session-resume-guard", "Session Resume Guard", "Resume needs safe context detection regardless of track.", ["kvdf resume"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "cli/CLI_COMMAND_REFERENCE.md"]],
+    ["session-resume-guard", "Session Resume Guard", "Resume needs safe context detection regardless of track.", ["kvdf resume"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "docs/cli/CLI_COMMAND_REFERENCE.md"]],
     ["framework-boundary-guard", "Framework Boundary Guard", "Boundary enforcement must be shared so it can block mixed-track drift.", ["kvdf guard", "kvdf boundary"], ["knowledge/governance/APP_BOUNDARY_GOVERNANCE.md", "knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md"]],
-    ["conflict-scan", "Conflict Scan", "Conflict checking is a platform safety check for every track.", ["kvdf conflict scan"], ["cli/CLI_COMMAND_REFERENCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["conflict-scan", "Conflict Scan", "Conflict checking is a platform safety check for every track.", ["kvdf conflict scan"], ["docs/cli/CLI_COMMAND_REFERENCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["task-tracking-and-governance", "Task Tracking And Governance", "Task storage, durable memory, trash, and lifecycle rules are shared execution primitives.", ["kvdf task", "kvdf task memory", "kvdf task trash"], ["knowledge/task_tracking/TASK_GOVERNANCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["task-scheduler-system", "Task Scheduler System", "Movement across temp, trash, deferred, and agents is shared orchestration.", ["kvdf schedule"], ["knowledge/task_tracking/TASK_SCHEDULER_GOVERNANCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["workstream-governance", "Workstream Governance", "Workstreams are common file and capability boundaries.", ["kvdf workstream"], ["knowledge/governance/WORKSTREAM_GOVERNANCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
@@ -1063,11 +1063,11 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
     ["multi-ai-governance", "Multi-AI Governance", "Agent entry, leader leases, and queue coordination are shared collaboration primitives.", ["kvdf multi-ai"], ["knowledge/governance/MULTI_AI_GOVERNANCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["policy-gates", "Policy Gates", "Safety gates for verification and writing operations must be available to the shared runtime.", ["kvdf policy"], ["schemas/policy*.json", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["runtime-schema-registry", "Runtime Schema Registry", "Schema coverage is a platform contract and belongs in core.", ["kvdf validate runtime-schemas"], ["schemas/runtime/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["live-dashboard", "Live Dashboard", "Dashboard state is shared output for both tracks.", ["kvdf dashboard"], ["integrations/dashboard/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["github-team-sync-preflight", "GitHub Team Sync Preflight", "Sync readiness is a shared release safety check.", ["kvdf sync"], ["integrations/github_sync/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["live-dashboard", "Live Dashboard", "Dashboard state is shared output for both tracks.", ["kvdf dashboard"], ["docs/reports/dashboard/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["github-team-sync-preflight", "GitHub Team Sync Preflight", "Sync readiness is a shared release safety check.", ["kvdf sync"], ["plugins/github_sync/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["security-governance", "Security Governance", "Secret scanning and secure release checks guard every track.", ["kvdf security"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", ".kabeeri/security/"]],
     ["migration-safety", "Migration Safety", "Migration and rollback records are shared runtime safety behavior.", ["kvdf migration"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", ".kabeeri/migrations/"]],
-    ["validation-and-doctor", "Validation And Doctor", "Repository health and runtime integrity checks belong in the shared core.", ["kvdf doctor", "kvdf validate"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "cli/CLI_COMMAND_REFERENCE.md"]],
+    ["validation-and-doctor", "Validation And Doctor", "Repository health and runtime integrity checks belong in the shared core.", ["kvdf doctor", "kvdf validate"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "docs/cli/CLI_COMMAND_REFERENCE.md"]],
     ["independent-reports", "Independent Reports", "Readiness and governance reports are shared observability outputs.", ["kvdf readiness report", "kvdf governance report", "kvdf reports live"], ["docs/reports/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["reports-and-traceability", "Reports And Traceability", "Traceability records are shared evidence, not track-specific product logic.", ["docs/reports/"], ["docs/reports/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["repository-governance", "Repository Governance", "Contribution, security, and license rules live at repository level for everyone.", ["GOVERNANCE.md", "CONTRIBUTING.md", "SECURITY.md"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
@@ -1077,9 +1077,9 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
   ];
 
   const ownerPluginCapabilities = [
-    ["framework-owner-track", "Framework Owner Track / Evolution Steward", "This capability changes Kabeeri itself and must remain removable as an owner bundle.", ["kvdf evolution", "kvdf evolution roadmap", "kvdf evolution priorities"], ["knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"]],
-    ["owner-cli-separation", "Owner and Developer CLI Separation", "Track-specific command visibility belongs to the owner/developer split.", ["kvdf evolution app", "owner-only command surfaces"], ["cli/CLI_COMMAND_REFERENCE.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
-    ["owner-plugin-packaging", "Owner Plugin Packaging and Load Control", "The owner surface must be installable and removable as a bundle.", ["plugins/owner-track/"], ["docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
+    ["kvdf-dev-system", "KVDF Dev System / Evolution Steward", "This capability changes Kabeeri itself and must remain removable as a framework-development bundle.", ["kvdf evolution", "kvdf evolution roadmap", "kvdf evolution priorities"], ["knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"]],
+    ["owner-cli-separation", "Owner and Developer CLI Separation", "Track-specific command visibility belongs to the owner/developer split.", ["kvdf evolution app", "owner-only command surfaces"], ["docs/cli/CLI_COMMAND_REFERENCE.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
+    ["owner-plugin-packaging", "KVDF Dev Plugin Packaging and Load Control", "The framework-development surface must be installable and removable as a bundle.", ["plugins/kvdf-dev/"], ["docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
     ["owner-docs-token-gate", "Owner docs token gate", "The owner docs gate is a framework-maintenance control and should not live in core.", ["owner docs entry flow"], ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "docs/reports/"]],
     ["owner-session-auto-close", "Owner session auto-close", "Owner-session lifecycle is a framework-development policy.", ["owner session lifecycle"], ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "docs/reports/"]],
     ["capability-partition-matrix", "Capability Partition Matrix", "The split contract itself belongs with the owner stewardship layer because it defines how bundles load.", ["kvdf evolution partition"], ["docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
@@ -1105,9 +1105,9 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
     ["ui-ux-reference-library", "UI/UX Reference Library", "Reference rules for frontend patterns belong with app delivery workflows.", ["kvdf design reference-*"], ["knowledge/design_system/ui_ux_reference/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["adr-ai-run-history", "ADR And AI Run History", "Architecture decisions and AI runs support app/project delivery.", ["kvdf adr", "kvdf ai-run"], ["knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["ai-cost-control", "AI Cost Control", "Model routing and budgets are app/project execution controls.", ["kvdf usage", "kvdf preflight"], ["knowledge/ai_cost_control/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["vscode-integration", "VS Code Integration", "Workspace scaffolding and command helpers are app developer conveniences.", ["kvdf vscode"], ["integrations/vscode_extension/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["github-sync", "GitHub Sync", "Issue and release syncing supports application delivery workflows.", ["kvdf github"], ["integrations/github_sync/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["roadmap-plan-inspection", "Roadmap And Plan Inspection", "Plan inspection helps app delivery sessions understand imported milestones.", ["kvdf plan"], ["integrations/platform_integration/", "docs/codex_context/"]]
+    ["vscode-integration", "VS Code Integration", "Workspace scaffolding and command helpers are app developer conveniences.", ["kvdf vscode"], ["plugins/vscode_extension/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["github-sync", "GitHub Sync", "Issue and release syncing supports application delivery workflows.", ["kvdf github"], ["plugins/github_sync/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["roadmap-plan-inspection", "Roadmap And Plan Inspection", "Plan inspection helps app delivery sessions understand imported milestones.", ["kvdf plan"], ["docs/reports/platform_integration/", "docs/codex_context/"]]
   ];
 
   const bucketDefs = [
@@ -1118,9 +1118,9 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
       capabilities: coreCapabilities.map(([id, title, reason, cli_surface, docs_surface]) => ({ id, title, reason, cli_surface, docs_surface }))
     },
     {
-      bucket_id: "plugins/owner-track",
-      bucket_name: "plugins/owner-track",
-      load_rule: "Load only when the framework-owner track is active and the owner bundle is enabled.",
+      bucket_id: "plugins/kvdf-dev",
+      bucket_name: "plugins/kvdf-dev",
+      load_rule: "Load only when the framework-owner track is active and the kvdf-dev bundle is enabled.",
       capabilities: ownerPluginCapabilities.map(([id, title, reason, cli_surface, docs_surface]) => ({ id, title, reason, cli_surface, docs_surface }))
     },
     {
@@ -1133,7 +1133,7 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
 
   const boundary_rules = [
     "Shared runtime, session routing, validation, guard, task engine, trash, scheduler, and telemetry belong in kabeeri-core.",
-    "Owner-only governance, owner docs, owner routing, owner tokens, and removable owner commands belong in plugins/owner-track.",
+    "Framework-development governance, dev docs, dev routing, owner tokens, and removable owner commands belong in plugins/kvdf-dev.",
     "Developer-facing app workflows, blueprints, questionnaire flows, and app-local state belong in workspaces/apps/<app-slug>.",
     "If a capability crosses a boundary, split it into a core primitive plus a plugin or workspace wrapper instead of keeping it mixed.",
     "Developer docs may explain the split, but the docs site and runtime behavior must remain track-safe."
@@ -1206,3 +1206,4 @@ module.exports = {
   handleEvolutionTemporaryPriorities,
   renderEvolutionTemporaryPrioritiesReport
 };
+

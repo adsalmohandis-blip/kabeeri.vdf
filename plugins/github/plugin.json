@@ -1,0 +1,28 @@
+{
+  "plugin_id": "github",
+  "name": "GitHub Integration Bundle",
+  "plugin_version": "1.0.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "platform_plugin",
+  "plugin_type": "integration_bundle",
+  "enabled_by_default": true,
+  "description": "GitHub labels, milestones, backlog notes, import guidance, and sync references packaged as a removable bundle.",
+  "command_surface": [
+    "kvdf github",
+    "kvdf github report",
+    "kvdf plugins install github",
+    "kvdf plugins enable github",
+    "kvdf plugins uninstall github",
+    "kvdf plugins disable github"
+  ],
+  "docs_surface": [
+    "plugins/github/README.md",
+    "plugins/github/import_instructions.md",
+    "plugins/github/issues_backlog.md",
+    "plugins/github/labels.json",
+    "plugins/github/milestones.md"
+  ]
+}

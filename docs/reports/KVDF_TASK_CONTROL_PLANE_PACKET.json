@@ -1,0 +1,807 @@
+{
+  "report_type": "task_control_plane_packet",
+  "generated_at": "2026-05-14T20:36:55.452Z",
+  "audience": "framework_owner",
+  "command_prefix": "kvdf task",
+  "surface_role": "control_plane",
+  "packet_id": "task-packet-1778791015443",
+  "packet_state_path": "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
+  "packet_preview_command": "kvdf task packet --json",
+  "current_change_id": "evo-006",
+  "control_plane_mode": "packet_preview",
+  "statuses_requested": [
+    "approved",
+    "ready"
+  ],
+  "recommended_assignee_id": "codex",
+  "source_snapshot": {
+    "vibe_intent": {
+      "intent_id": "intent-004",
+      "language": "ar",
+      "text": "ابدأ تطوير",
+      "intent_type": "create_task",
+      "confidence": 0.62,
+      "risk_level": "low",
+      "missing_details": [
+        "clear target surface",
+        "target user or actor",
+        "acceptance criteria"
+      ],
+      "suggested_next_action": "ask_clarifying_question"
+    },
+    "questionnaire": {
+      "total_answers": 25,
+      "confirmed_answers": 25,
+      "latest_answers": [
+        {
+          "answer_id": "answer-016",
+          "question_id": "adaptive.risk.checkout_conversion",
+          "value": "Keep checkout fast, minimal, and trust-focused with clear steps and recovery paths.",
+          "area_ids": [
+            "security",
+            "qa",
+            "product_business"
+          ],
+          "answered_at": "2026-05-13T20:14:10.480Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-017",
+          "question_id": "entry.project_type",
+          "value": "ecommerce",
+          "area_ids": [
+            "product_business"
+          ],
+          "answered_at": "2026-05-13T20:14:10.614Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-018",
+          "question_id": "entry.complexity",
+          "value": "large",
+          "area_ids": [
+            "product_business"
+          ],
+          "answered_at": "2026-05-13T20:14:10.751Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-019",
+          "question_id": "entry.has_users",
+          "value": "yes",
+          "area_ids": [
+            "users_roles",
+            "authentication"
+          ],
+          "answered_at": "2026-05-13T20:14:10.886Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-020",
+          "question_id": "entry.has_admin",
+          "value": "yes",
+          "area_ids": [
+            "admin_frontend",
+            "admin_panel"
+          ],
+          "answered_at": "2026-05-13T20:14:11.027Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-021",
+          "question_id": "entry.has_payments",
+          "value": "yes",
+          "area_ids": [
+            "payments_billing"
+          ],
+          "answered_at": "2026-05-13T20:14:11.176Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-022",
+          "question_id": "entry.has_multi_tenancy",
+          "value": "no",
+          "area_ids": [
+            "multi_tenancy"
+          ],
+          "answered_at": "2026-05-13T20:14:11.300Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-023",
+          "question_id": "entry.has_public_frontend",
+          "value": "yes",
+          "area_ids": [
+            "public_frontend"
+          ],
+          "answered_at": "2026-05-13T20:14:11.447Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-024",
+          "question_id": "entry.needs_integrations",
+          "value": "yes",
+          "area_ids": [
+            "integrations"
+          ],
+          "answered_at": "2026-05-13T20:14:11.614Z",
+          "confidence": "confirmed"
+        },
+        {
+          "answer_id": "answer-025",
+          "question_id": "entry.needs_ai_features",
+          "value": "no",
+          "area_ids": [
+            "ai_product_features"
+          ],
+          "answered_at": "2026-05-13T20:14:11.765Z",
+          "confidence": "confirmed"
+        }
+      ]
+    },
+    "brief": {
+      "brief_id": "brief-1778788879920",
+      "current_vibe_session": null,
+      "latest_intent_id": "intent-004",
+      "open_suggestions_total": 6,
+      "open_tasks_total": 10,
+      "recent_captures_total": 0
+    },
+    "task_synthesis": null,
+    "blueprints": {
+      "selected_blueprints_total": 0,
+      "recommendations_total": 1,
+      "current_blueprint": {
+        "blueprint_key": null,
+        "blueprint_name": null,
+        "backend_modules": [],
+        "frontend_pages": [],
+        "database_entities": []
+      }
+    },
+    "data_design": {
+      "current_context_id": null,
+      "modules_total": 0,
+      "entities_total": 0,
+      "modules": [],
+      "entities": []
+    },
+    "delivery": {
+      "current_mode": null,
+      "decisions_total": 0,
+      "recommendations_total": 2,
+      "current_delivery": {
+        "delivery_id": null,
+        "mode": null,
+        "title": null,
+        "status": null
+      }
+    },
+    "traceability": {
+      "brief_id": "brief-1778788879920",
+      "questionnaire_plan_id": null,
+      "module_plan_id": null,
+      "delivery_map_id": null,
+      "task_synthesis_id": null,
+      "chain": [
+        "vibe_brief",
+        "questionnaire_answers"
+      ],
+      "readable_summary": "brief:brief-1778788879920 -> blueprint:current -> data:current -> mode:current"
+    },
+    "execution_candidates": [],
+    "proposed_tasks": [
+      {
+        "suggestion_id": "suggestion-001",
+        "title": "Design ecommerce data model for products carts and orders",
+        "workstream": "database",
+        "task_type": "foundation",
+        "status": "suggested",
+        "risk_level": "medium",
+        "approval_required": false,
+        "dependencies": [],
+        "allowed_files": [
+          "database/",
+          "migrations/",
+          "prisma/",
+          "schema/",
+          "db/"
+        ],
+        "order_hint": null
+      },
+      {
+        "suggestion_id": "suggestion-002",
+        "title": "Build product catalog API",
+        "workstream": "backend",
+        "task_type": "feature",
+        "status": "suggested",
+        "risk_level": "medium",
+        "approval_required": false,
+        "dependencies": [],
+        "allowed_files": [
+          "app/Http/",
+          "app/Models/",
+          "app/Services/",
+          "routes/api.php",
+          "src/api/",
+          "src/server/",
+          "server/",
+          "backend/",
+          "api/"
+        ],
+        "order_hint": null
+      },
+      {
+        "suggestion_id": "suggestion-003",
+        "title": "Build public storefront product browsing",
+        "workstream": "public_frontend",
+        "task_type": "feature",
+        "status": "suggested",
+        "risk_level": "medium",
+        "approval_required": false,
+        "dependencies": [],
+        "allowed_files": [
+          "src/",
+          "resources/js/",
+          "resources/views/",
+          "frontend/",
+          "web/",
+          "client/",
+          "apps/storefront",
+          "apps/public"
+        ],
+        "order_hint": null
+      },
+      {
+        "suggestion_id": "suggestion-004",
+        "title": "Build cart and checkout workflow",
+        "workstream": "backend",
+        "task_type": "feature",
+        "status": "suggested",
+        "risk_level": "high",
+        "approval_required": true,
+        "dependencies": [],
+        "allowed_files": [
+          "app/Http/",
+          "app/Models/",
+          "app/Services/",
+          "routes/api.php",
+          "src/api/",
+          "src/server/",
+          "server/",
+          "backend/",
+          "api/"
+        ],
+        "order_hint": null
+      },
+      {
+        "suggestion_id": "suggestion-005",
+        "title": "Build admin product management screen",
+        "workstream": "admin_frontend",
+        "task_type": "feature",
+        "status": "suggested",
+        "risk_level": "medium",
+        "approval_required": false,
+        "dependencies": [],
+        "allowed_files": [
+          "admin/",
+          "dashboard/",
+          "resources/admin/",
+          "apps/admin",
+          "src/admin/"
+        ],
+        "order_hint": null
+      },
+      {
+        "suggestion_id": "suggestion-006",
+        "title": "Add ecommerce acceptance tests",
+        "workstream": "qa",
+        "task_type": "qa",
+        "status": "suggested",
+        "risk_level": "medium",
+        "approval_required": false,
+        "dependencies": [],
+        "allowed_files": [
+          "tests/",
+          "test/",
+          "spec/",
+          "cypress/",
+          "playwright/",
+          "qa/"
+        ],
+        "order_hint": null
+      }
+    ],
+    "task_tracker": {
+      "total_tasks": 82,
+      "approved_total": 0,
+      "ready_total": 0,
+      "in_progress_total": 0,
+      "proposed_total": 6,
+      "active_tasks": [
+        {
+          "id": "task-039",
+          "title": "Evolution Steward: finish the single boot path and reversible plugin loader hard split",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T16:51:54.800Z"
+        },
+        {
+          "id": "task-040",
+          "title": "Evolution Steward: finish track-aware help, report, and next-action separation",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T18:26:55.823Z"
+        },
+        {
+          "id": "task-041",
+          "title": "Evolution Steward: finish resumable task memory, session replay, and archive state",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T18:32:21.805Z"
+        },
+        {
+          "id": "task-042",
+          "title": "Evolution Steward: finish plugin, workspace, and folder-layout schema versioning",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T18:34:55.958Z"
+        },
+        {
+          "id": "task-043",
+          "title": "Evolution Steward: finish readiness and governance reports with actionable blockers",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T19:56:11.650Z"
+        },
+        {
+          "id": "task-044",
+          "title": "Evolution Steward: finish vibe request and questionnaire to detailed brief compilation",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:02:24.518Z"
+        },
+        {
+          "id": "task-045",
+          "title": "Evolution Steward: finish UI/UX and software-design reference selection with screen and module plans",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:26:52.199Z"
+        },
+        {
+          "id": "task-046",
+          "title": "Evolution Steward: finish brief-to-module and delivery-mode compilation",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-048",
+          "title": "Evolution Steward: finish approval-ready batch packaging and traceability checks",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-049",
+          "title": "Evolution Steward: finish legacy docs and command-reference migration out of the root",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-050",
+          "title": "Evolution Steward: finish plugin registry toggles and removal safety",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-051",
+          "title": "Evolution Steward: finish docs-home split into owner, app, cli, and plugin surfaces",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-052",
+          "title": "Evolution Steward: finish knowledge-home split into governance, track, and prompt surfaces",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-053",
+          "title": "Evolution Steward: finish plugin-loading reports and registry visibility",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-054",
+          "title": "Evolution Steward: finish layout-migration reports and cleanup progress",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-055",
+          "title": "Evolution Steward: finish direct AI entry guidance and credit-saving packet usage",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-056",
+          "title": "Evolution Steward: finish Arabic-first docs navigation and localized developer entry pages",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-057",
+          "title": "Evolution Steward: finish plugin-loading and routing integration tests",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-058",
+          "title": "Evolution Steward: finish folder-layout and docs-migration tests",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-059",
+          "title": "Evolution Steward: finish deprecation ledgers for legacy folders and command surfaces",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-060",
+          "title": "Evolution Steward: finish plugin-registry toggle rules and feature-removal validations",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-061",
+          "title": "Evolution Steward: finish AI session replay, chronology, and audit trail summaries",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-062",
+          "title": "Evolution Steward: finish machine-readable error intelligence and next-action hints",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-063",
+          "title": "Evolution Steward: finish workspace snapshot, backup, export, and restore commands",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-064",
+          "title": "Evolution Steward: finish first-run onboarding and example recipes for the vibe-to-task pipeline",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-065",
+          "title": "Evolution Steward: finish generation-to-approval trail persistence in changelog, owner state, and reports",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-066",
+          "title": "Evolution Steward: finish assignment-ready execution queues with token and lock handoff",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-067",
+          "title": "Evolution Steward: finish ecommerce-builder runtime compiler for store and commerce archetypes",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-068",
+          "title": "Evolution Steward: finish booking-builder runtime compiler for appointment and reservation archetypes",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-069",
+          "title": "Evolution Steward: finish the batch-exe CLI command for governed priority execution",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-070",
+          "title": "Evolution Steward: finish hard-removing owner-track and keep KVDF dev only as kvdf-dev",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-071",
+          "title": "Evolution Steward: finish extracting the actual kvdf-dev implementation into the kvdf-dev plugin bundle",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-072",
+          "title": "Evolution Steward: finish kvdf task batch-run in the kvdf-dev plugin bundle",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-073",
+          "title": "Evolution Steward: finish compiling CLI control-plane packets from vibe intake to approved tasks",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-074",
+          "title": "Evolution Steward: finish the AI executor packet-only plugin boundary",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-075",
+          "title": "Evolution Steward: finish splitting CLI help, reports, and next-action surfaces between control plane and executor flows",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-076",
+          "title": "Evolution Steward: finish dry-run, review, and fallback modes for packet execution",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:35:27.033Z"
+        },
+        {
+          "id": "task-047",
+          "title": "Evolution Steward: finish proposed-task synthesis with dependencies and allowed files",
+          "status": "owner_verified",
+          "assignee_id": "codex",
+          "lifecycle_stage": "owner_verified",
+          "next_action": "",
+          "updated_at": "2026-05-14T20:36:18.411Z"
+        }
+      ],
+      "tracker_open": 6,
+      "tracker_blocked": 0
+    },
+    "current_active_tasks": [
+      {
+        "id": "task-039",
+        "title": "Evolution Steward: finish the single boot path and reversible plugin loader hard split",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T16:51:54.800Z"
+      },
+      {
+        "id": "task-040",
+        "title": "Evolution Steward: finish track-aware help, report, and next-action separation",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T18:26:55.823Z"
+      },
+      {
+        "id": "task-041",
+        "title": "Evolution Steward: finish resumable task memory, session replay, and archive state",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T18:32:21.805Z"
+      },
+      {
+        "id": "task-042",
+        "title": "Evolution Steward: finish plugin, workspace, and folder-layout schema versioning",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T18:34:55.958Z"
+      },
+      {
+        "id": "task-043",
+        "title": "Evolution Steward: finish readiness and governance reports with actionable blockers",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T19:56:11.650Z"
+      },
+      {
+        "id": "task-044",
+        "title": "Evolution Steward: finish vibe request and questionnaire to detailed brief compilation",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:02:24.518Z"
+      },
+      {
+        "id": "task-045",
+        "title": "Evolution Steward: finish UI/UX and software-design reference selection with screen and module plans",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:26:52.199Z"
+      },
+      {
+        "id": "task-046",
+        "title": "Evolution Steward: finish brief-to-module and delivery-mode compilation",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:35:27.033Z"
+      },
+      {
+        "id": "task-048",
+        "title": "Evolution Steward: finish approval-ready batch packaging and traceability checks",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:35:27.033Z"
+      },
+      {
+        "id": "task-049",
+        "title": "Evolution Steward: finish legacy docs and command-reference migration out of the root",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:35:27.033Z"
+      },
+      {
+        "id": "task-050",
+        "title": "Evolution Steward: finish plugin registry toggles and removal safety",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:35:27.033Z"
+      },
+      {
+        "id": "task-051",
+        "title": "Evolution Steward: finish docs-home split into owner, app, cli, and plugin surfaces",
+        "status": "owner_verified",
+        "assignee_id": "codex",
+        "lifecycle_stage": "owner_verified",
+        "next_action": "",
+        "updated_at": "2026-05-14T20:35:27.033Z"
+      }
+    ]
+  },
+  "assumptions": [
+    "The CLI owns planning and packet compilation.",
+    "The AI executor should consume the packet instead of inventing the work plan.",
+    "Approved or ready tasks are the execution candidates for the packet.",
+    "Latest vibe intent is: ابدأ تطوير.",
+    "There are 0 execution-ready task(s) in the tracker."
+  ],
+  "expected_outputs": [
+    "One durable packet artifact exists for every execution-ready request.",
+    "The packet records the source state, assumptions, expected outputs, and the next exact action.",
+    "The packet can be inspected later without replaying chat history.",
+    "The packet stays in the CLI/control-plane layer and does not plan work inside the executor."
+  ],
+  "next_action": "kvdf task tracker --json",
+  "next_command": "kvdf task tracker --json",
+  "execution_queue": [],
+  "summary": {
+    "total_tasks": 82,
+    "approved_total": 0,
+    "ready_total": 0,
+    "in_progress_total": 0,
+    "proposed_total": 6,
+    "candidate_total": 0,
+    "first_candidate_id": null,
+    "first_candidate_status": null
+  },
+  "status": "empty",
+  "message": "No approved or ready tasks were available for packet compilation."
+}

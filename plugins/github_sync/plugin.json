@@ -1,0 +1,26 @@
+{
+  "plugin_id": "github_sync",
+  "name": "GitHub Sync Rules Bundle",
+  "plugin_version": "1.0.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "platform_plugin",
+  "plugin_type": "integration_bundle",
+  "enabled_by_default": true,
+  "description": "GitHub sync rules, issue mapping guidance, and plugin lifecycle notes packaged as a removable bundle.",
+  "command_surface": [
+    "kvdf github",
+    "kvdf github report",
+    "kvdf plugins install github_sync",
+    "kvdf plugins enable github_sync",
+    "kvdf plugins uninstall github_sync",
+    "kvdf plugins disable github_sync"
+  ],
+  "docs_surface": [
+    "plugins/github_sync/README.md",
+    "plugins/github_sync/GITHUB_SYNC_RULES.md",
+    "plugins/github_sync/GITHUB_ISSUE_MAPPING.md"
+  ]
+}

@@ -3,6 +3,8 @@
 This is a static local documentation site for developers and app builders only.
 It keeps the existing visual style and renders detailed Arabic and English
 documentation from `assets/js/app.js`.
+Arabic is the default entry language for the site, while English pages remain
+available as a secondary view.
 
 ## Open Locally
 

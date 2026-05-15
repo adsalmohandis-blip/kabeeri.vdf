@@ -38,8 +38,8 @@ function createWorkspace({ profile, mode, lang }) {
   fs.mkdirSync(path.join(stateDir, "metadata"), { recursive: true });
   fs.mkdirSync(path.join(root, "workspaces"), { recursive: true });
   fs.mkdirSync(path.join(root, "workspaces", "apps"), { recursive: true });
-  fs.mkdirSync(path.join(root, "plugins", "owner-track"), { recursive: true });
-  fs.mkdirSync(path.join(root, "plugins", "owner-track", "docs"), { recursive: true });
+  fs.mkdirSync(path.join(root, "plugins", "kvdf-dev"), { recursive: true });
+  fs.mkdirSync(path.join(root, "plugins", "kvdf-dev", "docs"), { recursive: true });
 
   const files = [
     ["project.json", {
@@ -93,7 +93,7 @@ function createWorkspace({ profile, mode, lang }) {
     ["owner_docs_tokens.json", { version: "v1", tokens: [], updated_at: null }],
     ["owner_transfer_tokens.json", { tokens: [] }],
     ["session.json", { active: false }],
-    ["session_track.json", { active: false, active_track: null, role_gate: "setup_required", activated_features: [], blocked_features: [], activated_at: null, updated_at: null }],
+    ["session_track.json", { version: "v1", active: false, active_track: null, role_gate: "setup_required", activated_features: [], blocked_features: [], activated_at: null, updated_at: null }],
     ["multi_ai_communications.json", { version: "v1", relay_policy: { response_deadline_seconds: 300, ack_required: true, visible_to_owner: false }, conversations: [], audit_trail: [], updated_at: null }],
     ["locks.json", { locks: [] }],
     ["acceptance.json", { records: [] }],
@@ -104,7 +104,7 @@ function createWorkspace({ profile, mode, lang }) {
     ["questionnaires/adaptive_intake_plan.json", { plans: [], current_plan_id: null }],
     ["questionnaires/coverage_matrix.json", { generated_at: null, areas: [] }],
     ["questionnaires/missing_answers_report.json", { generated_at: null, missing: [] }],
-    ["plugins.json", { plugin_loader_version: 1, enabled_plugins: ["owner-track"], disabled_plugins: [], updated_at: null }],
+    ["plugins.json", { plugin_loader_version: 1, enabled_plugins: ["kvdf-dev"], disabled_plugins: [], updated_at: null }],
     ["app_workspaces.json", { version: "v1", workspaces: [], updated_at: null }],
     ["metadata/milestones.json", { milestones: [] }],
     ["metadata/team.json", { team_members: [] }],
@@ -346,37 +346,37 @@ Owner approval is required before final delivery, release, publish, or scope clo
     created.push({ path: ".kabeeri/interactions/user_intents.jsonl", status: "created" });
   }
 
-  const ownerPluginManifest = path.join(root, "plugins", "owner-track", "plugin.json");
-  if (!fs.existsSync(ownerPluginManifest)) {
-    fs.writeFileSync(ownerPluginManifest, JSON.stringify({
-      plugin_id: "owner-track",
-      name: "Owner Track Bundle",
+  const kvdfDevPluginManifest = path.join(root, "plugins", "kvdf-dev", "plugin.json");
+  if (!fs.existsSync(kvdfDevPluginManifest)) {
+    fs.writeFileSync(kvdfDevPluginManifest, JSON.stringify({
+      plugin_id: "kvdf-dev",
+      name: "KVDF Dev System Bundle",
       track: "framework_owner",
       enabled_by_default: true,
-      description: "Removable owner-track bundle that exposes framework stewardship surfaces.",
-      command_surface: ["kvdf evolution", "kvdf evolution roadmap", "kvdf evolution priorities", "kvdf evolution partition"],
-      docs_surface: ["plugins/owner-track/docs/index.md", "knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"]
+      description: "Removable KVDF dev bundle that exposes framework stewardship surfaces.",
+      command_surface: ["kvdf evolution", "kvdf evolution roadmap", "kvdf evolution priorities", "kvdf evolution partition", "kvdf evolution batch-exe", "kvdf batch-exe"],
+      docs_surface: ["plugins/kvdf-dev/docs/index.md", "knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"]
     }, null, 2) + "\n", "utf8");
-    created.push({ path: "plugins/owner-track/plugin.json", status: "created" });
+    created.push({ path: "plugins/kvdf-dev/plugin.json", status: "created" });
   } else {
-    created.push({ path: "plugins/owner-track/plugin.json", status: "exists" });
+    created.push({ path: "plugins/kvdf-dev/plugin.json", status: "exists" });
   }
 
-  const ownerDocsIndex = path.join(root, "plugins", "owner-track", "docs", "index.md");
-  if (!fs.existsSync(ownerDocsIndex)) {
-    fs.writeFileSync(ownerDocsIndex, [
-      "# Owner Docs",
+  const kvdfDevDocsIndex = path.join(root, "plugins", "kvdf-dev", "docs", "index.md");
+  if (!fs.existsSync(kvdfDevDocsIndex)) {
+    fs.writeFileSync(kvdfDevDocsIndex, [
+      "# KVDF Dev System",
       "",
-      "This bundle is protected by an owner docs token gate.",
+      "This bundle packages the framework-development side of KVDF as a removable plugin.",
       "",
-      "- Open with `kvdf owner docs open`.",
-      "- Tokens expire after one minute.",
-      "- Closing the owner session revokes the active token.",
+      "- Open with `kvdf evolution`.",
+      "- Use `kvdf batch-exe` to run governed ready-task batches.",
+      "- Install with `kvdf plugins install kvdf-dev` or uninstall with `kvdf plugins uninstall kvdf-dev` when framework work needs to be toggled.",
       ""
     ].join("\n"), "utf8");
-    created.push({ path: "plugins/owner-track/docs/index.md", status: "created" });
+    created.push({ path: "plugins/kvdf-dev/docs/index.md", status: "created" });
   } else {
-    created.push({ path: "plugins/owner-track/docs/index.md", status: "exists" });
+    created.push({ path: "plugins/kvdf-dev/docs/index.md", status: "exists" });
   }
 
   const workspacesRoot = path.join(root, "workspaces", "apps");
@@ -425,7 +425,7 @@ function seedDeveloperAppWorkspace(workspaceSlug, options = {}) {
     [".kabeeri/tasks.json", { tasks: [] }],
     [".kabeeri/task_trash.json", { trash: [], retention_days: DEFAULT_RETENTION_DAYS, last_sweep_at: null }],
     [".kabeeri/session.json", { active: false }],
-    [".kabeeri/session_track.json", { active: false, active_track: "vibe_app_developer", role_gate: "app_workspace", activated_features: [], blocked_features: [], activated_at: null, updated_at: null }],
+    [".kabeeri/session_track.json", { version: "v1", active: false, active_track: "vibe_app_developer", role_gate: "app_workspace", activated_features: [], blocked_features: [], activated_at: null, updated_at: null }],
     [".kabeeri/workspace.json", {
       workspace_kind: "developer_app",
       app_slug: slug,
@@ -478,7 +478,7 @@ function defaultWorkstreams() {
     { id: "devops", name: "DevOps", description: "Deployment, CI, infrastructure, containers, and runtime configuration.", path_rules: [".github/", "Dockerfile", "docker-compose.yml", "deploy/", "infra/", "k8s/", "terraform/"], required_review: ["deployment_safety"] },
     { id: "qa", name: "QA", description: "Automated tests, QA plans, fixtures, and verification artifacts.", path_rules: ["tests/", "test/", "spec/", "cypress/", "playwright/", "qa/"], required_review: ["test_coverage"] },
     { id: "docs", name: "Documentation", description: "Project documentation, handoff notes, and operating guides.", path_rules: ["docs/", "README.md", "CHANGELOG.md", "governance/", "cli/", "dashboard/"], required_review: ["clarity"] },
-    { id: "integrations", name: "Integrations", description: "Third-party integrations, webhooks, provider adapters, and external APIs.", path_rules: ["integrations/", "webhooks/", "providers/", "src/integrations/", "app/Integrations/"], required_review: ["contract_safety"] },
+    { id: "integrations", name: "Integrations / Plugins", description: "Third-party plugin bundles, webhooks, provider adapters, and external APIs.", path_rules: ["plugins/", "webhooks/", "providers/", "src/plugins/", "app/Plugins/"], required_review: ["contract_safety"] },
     { id: "security", name: "Security", description: "Security scans, auth-sensitive code, secrets rules, and hardening work.", path_rules: ["security/", ".kabeeri/security/", "auth/", "src/auth/", "app/Auth/"], required_review: ["security_review"] }
   ];
 }

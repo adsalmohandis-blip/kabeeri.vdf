@@ -321,6 +321,15 @@ Prefer a concrete `follow_up_tasks` array in the task record when the follow-up
 chain is known. Keep the source change id, impacted area, and acceptance
 criteria on the source task so the framework change remains identifiable.
 
+`kvdf resume` and `kvdf entry` also persist a session trace snapshot in
+`.kabeeri/reports/session_trace.json`. The trace should point at the current
+track, the active task memory snapshot, and the current archive/trash state so
+a later session can resume without reconstructing the story from chat logs.
+
+`kvdf session start` and `kvdf session end` should keep the same trace concept
+in the session record and write a durable per-session trace file when a session
+completes. The trace is part of the resumption path, not a separate ad hoc log.
+
 ## Traceability Layer
 
 Traceability links the evidence chain around a task: source, assessment,

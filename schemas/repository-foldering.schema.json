@@ -5,6 +5,7 @@
   "type": "object",
   "required": ["map_version", "name", "purpose", "target_root_groups", "current_to_target", "allowed_top_level", "migration_phases"],
   "properties": {
+    "schema_version": { "type": "string" },
     "map_version": { "type": "string" },
     "name": { "type": "string" },
     "purpose": { "type": "string" },
@@ -58,7 +59,9 @@
         "properties": {
           "phase": { "type": "string" },
           "status": { "type": "string" },
-          "goal": { "type": "string" }
+          "goal": { "type": "string" },
+          "schema_version": { "type": "string" },
+          "migration_version": { "type": "string" }
         },
         "additionalProperties": false
       }

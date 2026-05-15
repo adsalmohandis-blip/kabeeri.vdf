@@ -1,5 +1,6 @@
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { table } = require("../ui");
+const { parseCsv } = require("../services/collections");
 
 function acceptance(action, value, flags = {}, deps = {}) {
   const { requireAnyRole, appendAudit } = deps;
@@ -90,6 +91,9 @@ function acceptance(action, value, flags = {}, deps = {}) {
     const issueId = flags.issue || null;
     if (!taskId && !issueId && type !== "release") throw new Error("Missing task id.");
     if (type === "release" && !flags.version) throw new Error("Missing --version for release acceptance.");
+    const task = taskId ? (readJsonFile(".kabeeri/tasks.json").tasks || []).find((item) => item.id === taskId) : null;
+    const criteria = parseCsv(flags.criteria || flags.acceptance || (task && task.acceptance_criteria) || []);
+    const evidence = parseCsv(flags.evidence || flags.review_evidence || []);
     const id = `acceptance-${String(data.records.length + 1).padStart(3, "0")}`;
     data.records.push({
       id,
@@ -99,7 +103,8 @@ function acceptance(action, value, flags = {}, deps = {}) {
       version: flags.version || null,
       subject_id: taskId || issueId || flags.version || null,
       status: "draft",
-      criteria: flags.criteria ? [flags.criteria] : [],
+      criteria,
+      evidence,
       created_at: new Date().toISOString()
     });
     writeJsonFile(file, data);
@@ -114,10 +119,12 @@ function acceptance(action, value, flags = {}, deps = {}) {
     if (!id) throw new Error("Missing acceptance id.");
     const record = data.records.find((item) => item.id === id || item.task_id === id);
     if (!record) throw new Error(`Acceptance record not found: ${id}`);
+    const evidence = parseCsv(flags.evidence || flags.review_evidence || []);
     record.status = flags.status || (flags.reject ? "rejected" : "reviewed");
     record.result = flags.result || (flags.reject ? "fail" : "pass");
     record.reviewer_id = flags.reviewer || flags.actor || "local-cli";
     record.review_notes = flags.notes || flags.reason || "";
+    if (evidence.length) record.evidence = evidence;
     record.reviewed_at = new Date().toISOString();
     writeJsonFile(file, data);
     appendAudit("acceptance.reviewed", "acceptance", record.id, `Acceptance reviewed for ${record.task_id || record.version || record.id}`);

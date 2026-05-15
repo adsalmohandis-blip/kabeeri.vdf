@@ -14,7 +14,7 @@
           "title": { "type": "string" },
           "status": {
             "type": "string",
-            "enum": ["proposed", "approved", "ready", "assigned", "in_progress", "review", "owner_verified", "rejected"]
+            "enum": ["proposed", "approved", "ready", "assigned", "in_progress", "review", "owner_verified", "done", "closed", "rejected"]
           },
           "type": { "type": "string" },
           "workstream": { "type": "string" },

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-const { run } = require("../src/cli");
+const { createCliRunner } = require("../src/core/bootstrap");
 
 try {
+  const { run } = createCliRunner();
   const result = run(process.argv.slice(2));
   if (result && typeof result.then === "function") {
     result.catch((error) => {

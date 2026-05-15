@@ -1,0 +1,50 @@
+{
+  "plugin_id": "multi_ai_governance",
+  "name": "Multi-AI Governance Bundle",
+  "plugin_version": "1.0.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "framework_plugin",
+  "plugin_type": "multi_ai_governance",
+  "enabled_by_default": true,
+  "description": "Multi-AI governance plans, milestones, and operational rules packaged as a removable framework plugin.",
+  "required_folders": [
+    "commands",
+    "docs",
+    "prompts",
+    "schemas",
+    "templates",
+    "tests"
+  ],
+  "optional_folders": [
+    "references",
+    "examples",
+    "assets",
+    "dashboard"
+  ],
+  "domain_folders": [
+    "governance",
+    "runtime",
+    "plugin-control",
+    "tracks",
+    "reports"
+  ],
+  "command_surface": [
+    "kvdf multi-ai status",
+    "kvdf multi-ai queue",
+    "kvdf multi-ai relay",
+    "kvdf multi-ai sync",
+    "kvdf plugins install multi_ai_governance",
+    "kvdf plugins enable multi_ai_governance",
+    "kvdf plugins uninstall multi_ai_governance",
+    "kvdf plugins disable multi_ai_governance"
+  ],
+  "docs_surface": [
+    "plugins/multi_ai_governance/README.md",
+    "plugins/multi_ai_governance/docs/index.md",
+    "plugins/multi_ai_governance/V4_0_UPDATED_PLAN.md",
+    "plugins/multi_ai_governance/milestones_and_issues.v4.0.0.json"
+  ]
+}

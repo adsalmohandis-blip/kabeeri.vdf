@@ -32,11 +32,16 @@ const { projectProfile, buildProjectProfileRecommendation, persistProjectProfile
 const { buildTaskLifecycleState, buildTaskLifecycleBoard, renderTaskLifecycleState, renderTaskLifecycleBoard, readTaskLifecycleTrash } = require("./commands/task_lifecycle");
 const { taskAssessment, buildTaskAssessment, readTaskAssessmentsState, renderTaskAssessment, renderTaskAssessmentList } = require("./commands/task_assessment");
 const { taskCoverage } = require("./commands/task_coverage");
+const { buildTaskVerificationCoverage, renderTaskVerificationCoverage } = require("./services/task_verification");
 const { softwareDesignReference, documentationGenerator } = require("./commands/reference_folders");
 const { changeControl } = require("./commands/change_control");
 const { init: initCommand } = require("./commands/init");
 const { temp: tempCommand } = require("./commands/temp");
+const { compileTaskControlPlanePacket, renderTaskControlPlanePacket } = require("../../plugins/kvdf-dev/runtime/task_packet");
+const { compileTaskExecutorContract, renderTaskExecutorContract } = require("../../plugins/kvdf-dev/runtime/executor_contract");
 const { taskScheduler, buildTaskSchedulerReport, recordTaskSchedulerRoute } = require("./commands/task_scheduler");
+const { pipeline: pipelineCommand } = require("./commands/pipeline");
+const { buildPipelineState, assertStrictPipeline } = require("./services/pipeline_guard");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
 const { questionnaire: questionnaireCommand } = require("./commands/questionnaire");
 const { blueprint: blueprintCommand, dataDesign: dataDesignCommand } = require("./commands/blueprint");
@@ -197,6 +202,7 @@ function getQuestionnaireRuntimeDeps() {
     inferAnswerConfidence: questionnaireService.inferAnswerConfidence,
     activateSystemArea: questionnaireService.activateSystemArea,
     getCoverageAction: questionnaireService.getCoverageAction,
+    getWorkstreamPathRules,
     buildBlueprintRecommendation,
     buildBlueprintContext,
     getProductBlueprintCatalog,
@@ -337,6 +343,7 @@ function run(argv) {
     appendAudit,
     readJsonFile,
     writeJsonFile,
+    writeTextFile,
     table,
     buildProjectProfileRecommendation: (value, flags) => buildProjectProfileRecommendation(value, flags, {
       buildBlueprintRecommendation,
@@ -355,6 +362,7 @@ function run(argv) {
   if (group === "prompt-pack") return promptPack(action, value, args.flags, { composePromptPack: composePromptPackService });
   if (group === "temp") return tempCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, fileExists, table, appendAudit });
   if (group === "schedule" || group === "scheduler") return taskScheduler(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, fileExists, table, appendAudit });
+  if (group === "pipeline") return pipelineCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table });
   if (group === "wordpress" || group === "wp") return wordpress(action, value, args.flags, rest);
   if (group === "example") return example(action, value);
   if (group === "questionnaire") return questionnaireCommand(action, value, args.flags, {
@@ -395,6 +403,21 @@ function run(argv) {
     buildDataDesignContext,
     buildDataDesignReview,
     findProductBlueprint
+  });
+  if (group === "batch-exe") return evolutionCommand("batch-exe", value, args.flags, rest, {
+    ensureWorkspace,
+    fileExists,
+    readJsonFile,
+    writeJsonFile,
+    readTextFile,
+    table,
+    appendAudit,
+    refreshDashboardArtifacts,
+    requireAnyRole,
+    readStateArray,
+    compactTitle,
+    nextRecordId,
+    parseCsv
   });
   if (group === "evolution") return evolutionCommand(action, value, args.flags, rest, {
     ensureWorkspace,
@@ -4094,7 +4117,7 @@ function evolutionAreaDefinition(area, required = true) {
     cli: {
       label: "CLI surface and help",
       workstream: "docs",
-      files: ["src/cli/index.js", "src/cli/ui.js", "cli/CLI_COMMAND_REFERENCE.md"],
+      files: ["src/cli/index.js", "src/cli/ui.js", "docs/cli/CLI_COMMAND_REFERENCE.md"],
       acceptance: ["The kvdf command surface is documented.", "Command help explains when and why to use the capability."]
     },
     tasks: {
@@ -4112,7 +4135,7 @@ function evolutionAreaDefinition(area, required = true) {
     dashboard: {
       label: "dashboard and live JSON surfaces",
       workstream: "admin_frontend",
-      files: ["integrations/dashboard/", "src/cli/index.js", ".kabeeri/dashboard/"],
+      files: ["docs/reports/dashboard/", "src/cli/index.js", ".kabeeri/dashboard/"],
       acceptance: ["Dashboard state includes the update where operationally useful.", "The state can be refreshed after the change."]
     },
     reports: {
@@ -4999,6 +5022,7 @@ function task(action, id, flags, rest = []) {
   const file = ".kabeeri/tasks.json";
   const data = readJsonFile(file);
   data.tasks = data.tasks || [];
+  const evolutionState = fileExists(".kabeeri/evolution.json") ? readJsonFile(".kabeeri/evolution.json") : { current_change_id: null };
 
   if (!action || action === "list") {
     const rows = data.tasks.map((item) => {
@@ -5013,6 +5037,163 @@ function task(action, id, flags, rest = []) {
     const tracker = refreshTaskTrackerState();
     if (flags.json || action === "live-json") console.log(JSON.stringify(tracker, null, 2));
     else console.log(renderTaskTrackerSummary(tracker));
+    return;
+  }
+
+  if (action === "batch-run") {
+    const pluginLoader = buildPluginLoaderReport();
+    const kvdfDevPlugin = Array.isArray(pluginLoader.plugins)
+      ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
+      : null;
+    if (kvdfDevPlugin && !kvdfDevPlugin.enabled) {
+      throw new Error("kvdf-dev plugin is disabled. Run `kvdf plugins install kvdf-dev` or `kvdf plugins enable kvdf-dev` first.");
+    }
+    const batchMode = String(flags.mode || flags["task-mode"] || (flags.review ? "review" : flags.dryRun || flags["dry-run"] ? "dry-run" : "execute")).toLowerCase();
+    const pipelineState = buildPipelineState({ readJsonFile, fileExists });
+    if (batchMode === "dry-run" || batchMode === "review") {
+      assertStrictPipeline("task-packet", pipelineState, { table });
+      const packet = compileTaskControlPlanePacket({
+        statuses: flags.statuses || flags.status || "approved,ready",
+        evolutionChangeId: flags.evolution || flags.change || evolutionState.current_change_id || null
+      }, {
+        readJsonFile,
+        writeJsonFile,
+        writeTextFile,
+        readJsonLines,
+        fileExists,
+        appendAudit,
+        refreshDashboardArtifacts,
+        buildTaskLifecycleState
+      });
+      const contract = batchMode === "review"
+        ? compileTaskExecutorContract({
+          packetPath: "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
+          taskId: packet.execution_queue && packet.execution_queue[0] ? packet.execution_queue[0].id : null
+        }, {
+          readJsonFile,
+          writeJsonFile,
+          writeTextFile,
+          fileExists,
+          appendAudit,
+          refreshDashboardArtifacts,
+        renderTaskControlPlanePacket
+      })
+        : null;
+      const report = {
+        report_type: "task_batch_run",
+        generated_at: new Date().toISOString(),
+        audience: "framework_owner",
+        command_prefix: "kvdf task",
+        batch_id: `task-batch-${Date.now()}`,
+        mode: batchMode,
+        current_change_id: flags.evolution || flags.change || evolutionState.current_change_id || null,
+        auto_assignee_id: packet.recommended_assignee_id || null,
+        auto_assigned_task_ids: [],
+        summary: {
+          total_candidates: packet.summary.candidate_total || 0,
+          started_total: 0,
+          blocked_total: 0,
+          skipped_total: 0,
+          next_task_id: packet.summary.first_candidate_id || null,
+          next_command: packet.next_action || null,
+          stop_conditions: ["blocker", "scope_conflict", "STOP"]
+        },
+        started_tasks: [],
+        blocked_tasks: [],
+        skipped_tasks: [],
+        execution_steps: [],
+        batch_state_path: ".kabeeri/reports/task_batch_run.json",
+        status: "preview",
+        message: batchMode === "review"
+          ? "Batch review compiled a control-plane packet and executor contract without starting tasks."
+          : "Batch dry-run compiled a control-plane packet without starting tasks.",
+        next_actions: batchMode === "review"
+          ? [
+            "kvdf task executor-contract --json",
+            packet.next_action || "kvdf task tracker --json"
+          ].filter(Boolean)
+          : [
+            packet.next_action || "kvdf task tracker --json"
+          ].filter(Boolean),
+        artifacts: {
+          packet_path: "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
+          packet_contract_path: batchMode === "review" ? "docs/reports/KVDF_TASK_EXECUTOR_CONTRACT.json" : null
+        },
+        packet: packet,
+        executor_contract: contract
+      };
+      writeJsonFile(".kabeeri/reports/task_batch_run.json", report);
+      if (flags.json) console.log(JSON.stringify(report, null, 2));
+      else console.log(renderTaskBatchRunReport(report, table));
+      return;
+    }
+    assertStrictPipeline("task-batch-run", pipelineState, { table });
+    const { runTaskBatch, renderTaskBatchRunReport } = require(path.join(repoRoot(), "plugins", "kvdf-dev", "runtime", "task_batch_run"));
+    const report = runTaskBatch({
+      statuses: flags.statuses || flags.status || "approved,ready",
+      limit: flags.limit || null,
+      autoAssigneeId: flags.assignee || flags["auto-assignee"] || process.env.KVDF_TASK_BATCH_ASSIGNEE || null,
+      evolutionChangeId: flags.evolution || flags.change || evolutionState.current_change_id || null,
+      assignment_source: "task_batch_run_auto_assignee"
+    }, {
+      readJsonFile,
+      writeJsonFile,
+      fileExists,
+      appendAudit,
+      refreshDashboardArtifacts,
+      requireTaskExecutor,
+      assertTaskCanStart,
+      assertDocsFirstGateAllowsTaskStart,
+      buildTaskLifecycleState
+    });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderTaskBatchRunReport(report, table));
+    return;
+  }
+
+  if (action === "packet" || action === "packet-preview") {
+    const pipelineState = buildPipelineState({ readJsonFile, fileExists });
+    assertStrictPipeline("task-packet", pipelineState, { table });
+    const packet = compileTaskControlPlanePacket({
+      statuses: flags.statuses || flags.status || "approved,ready",
+      evolutionChangeId: flags.evolution || flags.change || evolutionState.current_change_id || null
+    }, {
+      readJsonFile,
+      writeJsonFile,
+      writeTextFile,
+      readJsonLines,
+      fileExists,
+      appendAudit,
+      refreshDashboardArtifacts,
+      buildTaskLifecycleState
+    });
+    if (flags.json) console.log(JSON.stringify(packet, null, 2));
+    else console.log(renderTaskControlPlanePacket(packet));
+    return;
+  }
+
+  if (action === "executor-contract" || action === "contract") {
+    const pipelineState = buildPipelineState({ readJsonFile, fileExists });
+    assertStrictPipeline("task-executor-contract", pipelineState, { table });
+    const contract = compileTaskExecutorContract({
+      packetPath: flags.packet || flags["packet-path"] || "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
+      taskId: flags.id || id || null
+    }, {
+      readJsonFile,
+      writeJsonFile,
+      writeTextFile,
+      fileExists,
+      appendAudit,
+      refreshDashboardArtifacts,
+      renderTaskControlPlanePacket
+    });
+    if (flags.json) console.log(JSON.stringify(contract, null, 2));
+    else {
+      const packet = fileExists("docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json")
+        ? readJsonFile("docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json")
+        : null;
+      console.log(renderTaskExecutorContract(contract, renderTaskControlPlanePacket, packet));
+    }
     return;
   }
 
@@ -5186,6 +5367,16 @@ function task(action, id, flags, rest = []) {
     if (!["owner_verified", "done", "closed"].includes(found.status) && !flags.force) {
       throw new Error("Task must be owner_verified before completion. Use --force to archive it manually.");
     }
+    const verificationPath = path.join(repoRoot(), ".kabeeri", "reports", `${taskId}.verification.md`);
+    if (!fs.existsSync(verificationPath) && !flags.force) {
+      throw new Error(`Task completion blocked: missing verification report for ${taskId}. Run owner verification first.`);
+    }
+    if (fs.existsSync(verificationPath)) {
+      const verificationText = fs.readFileSync(verificationPath, "utf8");
+      if (!verificationText.includes(`# Final Verification Report - ${taskId}`) || !verificationText.includes(`Task: ${found.title || ""}`)) {
+        throw new Error(`Task completion blocked: verification report does not match ${taskId}.`);
+      }
+    }
     const finishedAt = new Date().toISOString();
     found.status = "done";
     found.completed_at = finishedAt;
@@ -5197,7 +5388,7 @@ function task(action, id, flags, rest = []) {
       actor: getOwnerActor(flags)
     });
     const schedulerReport = buildTaskSchedulerReport(readJsonFile, fileExists);
-    recordTaskSchedulerRoute(readJsonFile, writeJsonFile, fileExists, {
+    const schedulerRoute = recordTaskSchedulerRoute(readJsonFile, writeJsonFile, fileExists, {
       route_id: `task-route-${String((schedulerReport.routes || []).length + 1).padStart(3, "0")}`,
       task_id: taskId,
       from: "tasks",
@@ -5207,16 +5398,40 @@ function task(action, id, flags, rest = []) {
       created_by: getOwnerActor(flags),
       reason: flags.reason || "completed"
     });
+    const archiveTrail = showTaskTrash(taskId);
+    if (!archiveTrail || !archiveTrail.item || archiveTrail.item.id !== taskId) {
+      throw new Error(`Task completion blocked: trash archive trail was not written for ${taskId}.`);
+    }
+    if (!schedulerRoute || schedulerRoute.task_id !== taskId || String(schedulerRoute.to || "").toLowerCase() !== "trash") {
+      throw new Error(`Task completion blocked: scheduler route trail was not written for ${taskId}.`);
+    }
+    const completionReport = generateCompletionReport(found, {
+      completed_at: finishedAt,
+      completed_by: getOwnerActor(flags),
+      verification_report_path: `.kabeeri/reports/${taskId}.verification.md`,
+      verification_report: {
+        path: verificationPath,
+        matches_task: true
+      },
+      archive_trail: archiveTrail,
+      scheduler_route: schedulerRoute,
+      trash_task: result.trashed_task || archiveTrail.item || null,
+      reason: flags.reason || "completed"
+    });
     refreshDashboardArtifacts();
-    appendAudit("task.completed", "task", taskId, `Task completed and moved to trash: ${found.title}`);
+    appendAudit("task.completed", "task", taskId, `Task completed and moved to trash: ${found.title}`, {
+      completion_report_path: completionReport.path
+    });
     console.log(JSON.stringify({
       ...result,
+      completion_report_path: completionReport.path,
       completed_task: {
         id: taskId,
         status: "done",
         completed_at: finishedAt,
         completed_by: getOwnerActor(flags)
-      }
+      },
+      completion_report: completionReport.report
     }, null, 2));
     return;
   }
@@ -5336,13 +5551,14 @@ function task(action, id, flags, rest = []) {
       found.reviewer_id = flags.reviewer || flags.actor || null;
     } else if (action === "verify") {
       requireOwnerAuthority(flags);
-      requireAcceptanceForVerify(found);
+      const verification = requireAcceptanceForVerify(found);
       found.status = "owner_verified";
       found.verified_by = getOwnerActor(flags);
       found.verified_at = new Date().toISOString();
+      found.verification_coverage = verification;
       revokeTaskTokens(taskId, "owner verify");
       releaseTaskLocks(taskId, "owner verify");
-      generateVerificationReport(found);
+      generateVerificationReport(found, verification);
     } else if (action === "reject") {
       requireAnyRole(flags, ["Owner"], "reject task");
       if (!flags.reason) throw new Error("Missing --reason.");
@@ -6484,6 +6700,22 @@ function design(action, value, flags) {
         match.score,
         match.reasons.join(", ")
       ])));
+      console.log("");
+      console.log(`Screen plan: ${recommendation.screen_plan.primary_flow}`);
+      console.log(table(["Screen", "Purpose", "Modules"], recommendation.screen_plan.screens.map((screen) => [
+        screen.id,
+        screen.purpose,
+        (screen.modules || []).join(", ")
+      ])));
+      console.log("");
+      console.log(`Module plan: ${recommendation.module_plan.module_sequence.join(", ")}`);
+      console.log(table(["Module", "Purpose", "Owners"], recommendation.module_plan.modules.map((module) => [
+        module.id,
+        module.purpose,
+        (module.owners || []).join(", ")
+      ])));
+      console.log("");
+      console.log(`Software design references: ${recommendation.software_design_references.join(", ")}`);
     }
     return;
   }
@@ -7542,6 +7774,121 @@ function renderUiUxReferencePattern(item) {
   ]));
 }
 
+function inferScreenPlanFromBrief(brief, matches = []) {
+  const text = String(brief || "").toLowerCase();
+  const matchCodes = uniqueList((matches || []).map((item) => item.code).filter(Boolean));
+  const screens = [];
+  const addScreen = (id, purpose, modules = [], references = []) => {
+    screens.push({ id, purpose, modules, references });
+  };
+
+  if (/ecommerce|commerce|store|shop|cart|checkout|product/.test(text)) {
+    addScreen("home", "Entry and product discovery", ["catalog", "search", "featured_products"]);
+    addScreen("category", "Category browsing and filtering", ["catalog", "filters", "breadcrumbs"]);
+    addScreen("product_details", "Product detail and trust surface", ["catalog", "reviews", "pricing"]);
+    addScreen("cart", "Cart review and order preparation", ["cart", "pricing", "discounts"]);
+    addScreen("checkout", "Checkout, payments, and confirmation", ["checkout", "payments", "validation"]);
+    addScreen("order_tracking", "Order status and post-purchase experience", ["orders", "notifications", "tracking"]);
+    addScreen("customer_account", "Customer account and order history", ["customers", "orders", "profile"]);
+    addScreen("admin_products", "Admin product management", ["admin_shell", "catalog", "inventory"]);
+    addScreen("admin_orders", "Admin order management", ["admin_shell", "orders", "payments"]);
+  } else if (/booking|reservation|appointment|schedule|calendar|slot/.test(text)) {
+    addScreen("landing", "Service or booking entry", ["discovery", "trust", "cta"]);
+    addScreen("availability", "Availability and slot selection", ["calendar", "availability", "rules"]);
+    addScreen("booking_details", "Booking form and customer data capture", ["form", "validation", "customer_profile"]);
+    addScreen("confirmation", "Booking confirmation and reminders", ["notifications", "status", "calendar"]);
+    addScreen("customer_account", "Customer bookings and rescheduling", ["profile", "bookings", "history"]);
+    addScreen("admin_schedule", "Provider schedule and capacity management", ["admin_shell", "calendar", "resources"]);
+  } else if (/dashboard|admin|admin panel|crm|erp|back office/.test(text)) {
+    addScreen("dashboard_home", "Overview, KPIs, and alerts", ["summary_cards", "status", "navigation"]);
+    addScreen("records_table", "Data table and filtering surface", ["filters", "pagination", "sorting"]);
+    addScreen("detail_drawer", "Record details and side actions", ["details", "audit", "actions"]);
+    addScreen("settings", "Configuration and permissions", ["settings", "roles", "preferences"]);
+  } else {
+    addScreen("overview", "Top-level overview and primary action", ["summary", "navigation"]);
+    addScreen("details", "Primary entity details", ["details", "actions"]);
+    addScreen("list", "List and search surface", ["search", "filters", "pagination"]);
+    addScreen("admin", "Administration surface", ["admin_shell", "settings"]);
+  }
+
+  return {
+    screen_plan_id: `screen-plan-${Date.now()}`,
+    selected_reference_codes: matchCodes.slice(0, 3),
+    primary_flow: screens[0] ? screens[0].id : "overview",
+    screens,
+    reusable_notes: [
+      "Use the selected reference matches as inspiration only.",
+      "Keep the screen plan stable across task generation so the AI does not re-scan the catalog.",
+      "Expand the screen plan before implementation tasks are generated."
+    ]
+  };
+}
+
+function inferModulePlanFromBrief(brief, matches = []) {
+  const text = String(brief || "").toLowerCase();
+  const matchCodes = uniqueList((matches || []).map((item) => item.code).filter(Boolean));
+  const modules = [];
+  const addModule = (id, purpose, owners = [], dependencies = []) => {
+    modules.push({ id, purpose, owners, dependencies });
+  };
+
+  if (/ecommerce|commerce|store|shop|cart|checkout|product/.test(text)) {
+    addModule("catalog", "Product discovery and product data", ["public_frontend", "backend"], []);
+    addModule("cart", "Cart persistence and totals", ["backend", "public_frontend"], ["catalog"]);
+    addModule("checkout", "Checkout validation and payment orchestration", ["backend", "qa"], ["cart", "payments"]);
+    addModule("orders", "Order records, status, and history", ["backend", "admin_frontend"], ["checkout"]);
+    addModule("payments", "Gateway integration and idempotency", ["backend", "security"], ["checkout"]);
+    addModule("shipping", "Shipping rates, fulfillment, and tracking", ["backend", "admin_frontend"], ["orders"]);
+    addModule("customers", "Customer account and profile management", ["public_frontend", "backend"], ["orders"]);
+    addModule("admin_shell", "Admin experience shell and permissions", ["admin_frontend", "backend"], []);
+  } else if (/booking|reservation|appointment|schedule|calendar|slot/.test(text)) {
+    addModule("availability", "Slot and resource availability", ["backend", "admin_frontend"], []);
+    addModule("booking", "Reservation creation and validation", ["backend", "public_frontend"], ["availability"]);
+    addModule("reminders", "Confirmation and reminder notifications", ["backend", "integration"], ["booking"]);
+    addModule("reschedule", "Reschedule and cancellation flow", ["backend", "public_frontend"], ["booking"]);
+    addModule("admin_schedule", "Provider calendar and capacity management", ["admin_frontend", "backend"], ["availability"]);
+    addModule("customer_account", "Customer booking history and self-service", ["public_frontend", "backend"], ["booking"]);
+  } else if (/dashboard|admin|admin panel|crm|erp|back office/.test(text)) {
+    addModule("dashboard_shell", "Overview shell and navigation", ["frontend", "backend"], []);
+    addModule("records", "Record browsing and detail flows", ["frontend", "backend"], ["dashboard_shell"]);
+    addModule("filters", "Search, filters, and saved views", ["frontend"], ["records"]);
+    addModule("roles", "Permission and role handling", ["backend", "security"], []);
+    addModule("settings", "Admin configuration and preferences", ["frontend", "backend"], ["roles"]);
+  } else {
+    addModule("core", "Core application shell", ["frontend", "backend"], []);
+    addModule("flow", "Primary user flow", ["frontend", "backend"], ["core"]);
+    addModule("data", "Persistent data model", ["backend"], []);
+    addModule("admin", "Administrative controls", ["frontend", "backend"], ["core"]);
+  }
+
+  return {
+    module_plan_id: `module-plan-${Date.now()}`,
+    selected_reference_codes: matchCodes.slice(0, 3),
+    module_sequence: modules.map((module) => module.id),
+    modules,
+    reusable_notes: [
+      "Keep module ownership visible so the AI can split work without re-reading the whole repository.",
+      "Use the module plan to seed task generation and approval batches.",
+      "Preserve dependency order from this plan when moving to implementation."
+    ]
+  };
+}
+
+function buildSoftwareDesignReferenceBundle(brief) {
+  const text = String(brief || "").toLowerCase();
+  const base = [
+    "knowledge/design_system/software_design_reference/README.md",
+    "knowledge/design_system/software_design_reference/SOFTWARE_DESIGN_REFERENCE_INDEX.md",
+    "knowledge/design_system/software_design_reference/SOFTWARE_DESIGN_SYSTEM_PATTERNS.md",
+    "knowledge/design_system/software_design_reference/SOFTWARE_DESIGN_SYSTEM_CATALOG.json"
+  ];
+  const extras = [];
+  if (/ecommerce|commerce|store|shop|cart|checkout|product/.test(text)) extras.push("knowledge/design_system/business_ui_patterns/ecommerce/PATTERN.md");
+  if (/booking|reservation|appointment|schedule|calendar|slot/.test(text)) extras.push("knowledge/design_system/business_ui_patterns/booking/PATTERN.md");
+  if (/dashboard|admin|admin panel|crm|erp|back office/.test(text)) extras.push("knowledge/design_system/business_ui_patterns/dashboard/PATTERN.md");
+  return uniqueList([...base, ...extras]);
+}
+
 function recommendUiUxReferences(brief) {
   const catalog = getUiUxReferenceCatalog();
   const text = String(brief || "").toLowerCase();
@@ -7559,14 +7906,27 @@ function recommendUiUxReferences(brief) {
     const score = reasons.length + ((item.best_for || []).some((entry) => text.includes(String(entry).toLowerCase())) ? 2 : 0);
     return { code: item.code, name: item.name, score, reasons: reasons.length ? reasons : ["fallback candidate"] };
   }).sort((a, b) => b.score - a.score || a.code.localeCompare(b.code)).slice(0, 3);
+  const screenPlan = inferScreenPlanFromBrief(brief, matches);
+  const modulePlan = inferModulePlanFromBrief(brief, matches);
+  const softwareDesignReferences = buildSoftwareDesignReferenceBundle(brief);
   return {
     selection_id: `uiux-reference-${Date.now()}`,
     brief,
     matches,
+    screen_plan: screenPlan,
+    module_plan: modulePlan,
+    software_design_references: softwareDesignReferences,
+    reference_bundle: {
+      ui_ux_reference_codes: matches.map((item) => item.code),
+      software_design_reference_paths: softwareDesignReferences,
+      screen_plan_id: screenPlan.screen_plan_id,
+      module_plan_id: modulePlan.module_plan_id
+    },
     guidance: [
       "Use the winning reference as inspiration only; implementation must come from approved text specs and design tokens.",
       "Generate questions before tasks when client/developer intent is incomplete.",
-      "Create page specs and component contracts before frontend implementation tasks."
+      "Create page specs, screen plans, and component contracts before frontend implementation tasks.",
+      "Use the software design reference bundle to keep module boundaries stable before writing code."
     ],
     created_at: new Date().toISOString()
   };
@@ -10656,22 +11016,20 @@ function assertTaskCanStart(task) {
 }
 
 function requireAcceptanceForVerify(task) {
-  const criteria = task.acceptance_criteria || [];
-  if (criteria.length > 0) return;
-  if (!fileExists(".kabeeri/acceptance.json")) throw new Error(`Task ${task.id} cannot be verified without acceptance criteria or reviewed acceptance record.`);
+  if (!fileExists(".kabeeri/acceptance.json")) throw new Error(`Task ${task.id} cannot be verified without acceptance evidence.`);
   const acceptanceState = readJsonFile(".kabeeri/acceptance.json");
   const checklist = (acceptanceState.checklists || []).find((item) => item.task_id === task.id);
   if (checklist && (checklist.items || []).some((item) => !item.checked)) {
     throw new Error(`Checklist incomplete for task ${task.id}. Please complete all checklist items first.`);
   }
-  const records = acceptanceState.records || [];
-  const accepted = records.some((record) => {
-    const sameTask = record.task_id === task.id || record.subject_id === task.id;
-    const reviewed = ["reviewed", "accepted"].includes(record.status);
-    const passed = !record.result || record.result === "pass";
-    return sameTask && reviewed && passed;
-  });
-  if (!accepted) throw new Error(`Task ${task.id} cannot be verified without acceptance criteria or reviewed acceptance record.`);
+  const coverage = buildTaskVerificationCoverage(task, acceptanceState);
+  if (coverage.required && coverage.status !== "pass") {
+    throw new Error(`Task ${task.id} cannot be verified until every acceptance criterion has explicit evidence: ${coverage.blockers.join("; ")}`);
+  }
+  if (!coverage.required && coverage.status !== "pass") {
+    throw new Error(`Task ${task.id} cannot be verified without reviewed acceptance evidence.`);
+  }
+  return coverage;
 }
 
 function findAgileRelease(data, releaseId) {
@@ -11234,6 +11592,23 @@ function buildReadinessReport(flags = {}) {
   if (strict && warnings.length) blockers.push(`Strict ${target} readiness treats warnings as release blockers.`);
 
   const meta = buildIndependentReportMeta("readiness", target, flags);
+  const actionItems = buildReadinessActionItems({
+    target,
+    blockers,
+    warnings,
+    validation,
+    policyBlockers,
+    securityScan,
+    migrationBlockers,
+    openTasks,
+    reviewTasks,
+    unreadyFeatures,
+    unreadyJourneys,
+    unresolvedCaptures,
+    ungovernedCaptures,
+    activeUngovernedCaptures,
+    strict
+  });
   return {
     ...meta,
     generated_at: new Date().toISOString(),
@@ -11271,6 +11646,7 @@ function buildReadinessReport(flags = {}) {
       latest_security_scan: securityScan ? { scan_id: securityScan.scan_id, status: securityScan.status, findings_total: securityScan.findings_total || 0 } : null,
       ungoverned_captures: ungovernedCaptures.map((item) => ({ capture_id: item.capture_id, classification: item.classification, files_changed: item.files_changed || [], status: item.status }))
     },
+    action_items: actionItems,
     next_actions: buildReadinessNextActions(target, blockers, warnings)
   };
 }
@@ -11415,6 +11791,23 @@ function buildGovernanceReport(flags = {}) {
   });
 
   const meta = buildIndependentReportMeta("governance", target, flags);
+  const actionItems = buildGovernanceActionItems({
+    target,
+    blockers,
+    warnings,
+    validation,
+    activeOwners,
+    activeLocks,
+    activeTokens,
+    expiredActiveTokens,
+    lockConflicts,
+    policyBlockers,
+    securityScan,
+    migrationChecks,
+    missingAssigneeTasks,
+    unknownWorkstreamTasks,
+    strict
+  });
   return {
     ...meta,
     generated_at: new Date().toISOString(),
@@ -11449,6 +11842,7 @@ function buildGovernanceReport(flags = {}) {
       missing_assignee_tasks: missingAssigneeTasks.map(taskReportItem),
       policy_blockers: policyBlockers.map(policyReportItem)
     },
+    action_items: actionItems,
     next_actions: buildGovernanceNextActions(target, blockers, warnings)
   };
 }
@@ -11474,6 +11868,10 @@ function renderReadinessReport(report) {
     "## Blockers",
     "",
     ...(report.blockers.length ? report.blockers.map((item) => `- ${item}`) : ["No readiness blockers detected."]),
+    "",
+    "## Action Items",
+    "",
+    ...(report.action_items && report.action_items.length ? report.action_items.map((item) => `- ${item.severity}: ${item.area} - ${item.message} Next: ${item.next_action}`) : ["No readiness action items recorded."]),
     "",
     "## Warnings",
     "",
@@ -11519,6 +11917,10 @@ function renderGovernanceReport(report) {
     "",
     ...(report.blockers.length ? report.blockers.map((item) => `- ${item}`) : ["No governance blockers detected."]),
     "",
+    "## Action Items",
+    "",
+    ...(report.action_items && report.action_items.length ? report.action_items.map((item) => `- ${item.severity}: ${item.area} - ${item.message} Next: ${item.next_action}`) : ["No governance action items recorded."]),
+    "",
     "## Warnings",
     "",
     ...(report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["No governance warnings detected."]),
@@ -11554,6 +11956,35 @@ function buildReadinessNextActions(target, blockers, warnings) {
   ];
 }
 
+function buildReadinessActionItems({ target, blockers, warnings, validation, policyBlockers, securityScan, migrationBlockers, openTasks, reviewTasks, unreadyFeatures, unreadyJourneys, unresolvedCaptures, ungovernedCaptures, activeUngovernedCaptures, strict }) {
+  const items = [];
+  const push = (severity, area, message, nextAction) => items.push({ severity, area, message, next_action: nextAction });
+  if (!validation.ok) push("blocker", "validation", "Repository validation has failures.", "Run `kvdf validate` and fix the failing workspace or schema checks.");
+  for (const blocker of policyBlockers || []) {
+    push("blocker", "policy", `${blocker.policy_id}: ${blocker.subject_id} is blocked.`, "Run `kvdf policy status` and resolve the policy checks or record an Owner override.");
+  }
+  if (securityScan && securityScan.status === "blocked") {
+    push("blocker", "security", `Latest security scan ${securityScan.scan_id} is blocked.`, "Run `kvdf security scan` and remove critical or high findings.");
+  } else if (!securityScan) {
+    push("warning", "security", "No security scan has been recorded.", "Run `kvdf security scan` before release or handoff.");
+  }
+  for (const blocker of migrationBlockers || []) {
+    push("blocker", "migration", `${blocker.check_id}: ${blocker.status}`, "Run `kvdf migration audit` and fix the blocked migration checks.");
+  }
+  if (activeUngovernedCaptures.length) {
+    push("blocker", "captures", `${activeUngovernedCaptures.length} post-work capture(s) changed files without a linked task.`, "Link each capture to a task or convert it to a governed task before release.");
+  }
+  if (ungovernedCaptures.length && !activeUngovernedCaptures.length) {
+    push("warning", "captures", `${ungovernedCaptures.length} post-work capture(s) are not linked to tasks.`, "Link or resolve post-work captures before the next release review.");
+  }
+  if (openTasks.length) push("warning", "tasks", `${openTasks.length} task(s) are still open.`, "Run `kvdf task tracker` and resolve or re-scope the open tasks.");
+  if (reviewTasks.length) push("warning", "tasks", `${reviewTasks.length} task(s) are waiting for review.`, "Review the pending tasks or reduce the open review queue.");
+  if (unreadyFeatures.length) push("warning", "features", `${unreadyFeatures.length} feature(s) are not demo/publish ready.`, "Update feature readiness states and linked evidence.");
+  if (unreadyJourneys.length) push("warning", "journeys", `${unreadyJourneys.length} journey record(s) are not ready to show.`, "Mark journey records ready or record their missing evidence.");
+  if (strict && warnings.length) push("blocker", "strict-mode", `Strict ${target} readiness treats warnings as blockers.`, "Re-run without strict mode only after confirming the target can tolerate the warnings.");
+  return dedupeActionItems(items);
+}
+
 function buildGovernanceNextActions(target, blockers, warnings) {
   if (blockers.length) return [
     "Fix governance blockers before assigning new sensitive work.",
@@ -11571,10 +12002,47 @@ function buildGovernanceNextActions(target, blockers, warnings) {
   ];
 }
 
+function buildGovernanceActionItems({ target, blockers, warnings, validation, activeOwners, activeLocks, activeTokens, expiredActiveTokens, lockConflicts, policyBlockers, securityScan, migrationChecks, missingAssigneeTasks, unknownWorkstreamTasks, strict }) {
+  const items = [];
+  const push = (severity, area, message, nextAction) => items.push({ severity, area, message, next_action: nextAction });
+  if (!validation.ok) push("blocker", "validation", "Workspace governance validation has failures.", "Run `kvdf validate` and fix the reported workspace or policy issues.");
+  if (activeOwners.length > 1) push("blocker", "owner", `Multiple active Owners detected: ${activeOwners.length}.`, "Close or deactivate extra Owner sessions so only one Owner remains active.");
+  if (lockConflicts.length) push("blocker", "locks", `${lockConflicts.length} active lock conflict(s) detected.`, "Resolve overlapping locks before assigning more work.");
+  if (expiredActiveTokens.length) push("blocker", "tokens", `${expiredActiveTokens.length} active token(s) are expired.`, "Revoke or reissue the expired tokens before continuing execution.");
+  if (unknownWorkstreamTasks.length) push("blocker", "workstreams", `${unknownWorkstreamTasks.length} task(s) reference unknown workstreams.`, "Add the missing workstreams or reclassify the tasks.");
+  for (const blocker of policyBlockers || []) {
+    push("blocker", "policy", `${blocker.policy_id}: ${blocker.subject_id} is blocked.`, "Run `kvdf policy status` and resolve the policy checks or record an Owner override.");
+  }
+  if (securityScan && securityScan.status === "blocked") {
+    push("blocker", "security", `Latest security scan ${securityScan.scan_id} is blocked.`, "Run `kvdf security scan` and remove critical or high findings.");
+  } else if (!securityScan) {
+    push("warning", "security", "No security scan has been recorded.", "Run `kvdf security scan` before release or handoff.");
+  }
+  if (activeOwners.length === 0) push("warning", "owner", "No active Owner identity is configured.", "Open an Owner session before making governance changes.");
+  if (missingAssigneeTasks.length) push("warning", "tasks", `${missingAssigneeTasks.length} active task(s) have no assignee.`, "Assign the affected tasks or return them to proposed state.");
+  if (!activeTokens.length) push("warning", "tokens", "No active task tokens are recorded.", "Issue task tokens before starting governed execution.");
+  if (!activeLocks.length) push("warning", "locks", "No active locks are recorded.", "Create task locks for governed file scopes before execution.");
+  if (migrationChecks.some((item) => item.status === "blocked")) push("warning", "migration", `${migrationChecks.filter((item) => item.status === "blocked").length} migration check(s) are blocked.`, "Run `kvdf migration audit` and clear blocked migration checks.");
+  if (strict && warnings.length) push("blocker", "strict-mode", `Strict ${target} governance treats warnings as blockers.`, "Re-run without strict mode only after confirming the target can tolerate the warnings.");
+  return dedupeActionItems(items);
+}
+
+function dedupeActionItems(items) {
+  const seen = new Set();
+  const output = [];
+  for (const item of items || []) {
+    const key = JSON.stringify([item.severity || "", item.area || "", item.message || "", item.next_action || ""]);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(item);
+  }
+  return output;
+}
+
 function buildGovernanceCoverage({ state, validation, activeOwners, activeLocks, activeTokens, expiredActiveTokens, lockConflicts, policyBlockers, securityScan, migrationChecks }) {
   const pluginLoader = buildPluginLoaderReport();
   const ownerTrackPlugin = Array.isArray(pluginLoader.plugins)
-    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "owner-track")
+    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
     : null;
   const pluginLoaderConfigured = pluginLoader.total_plugins > 0 && pluginLoader.active_plugins > 0;
   const dimensions = [
@@ -11690,6 +12158,16 @@ function getOwnerActor(flags) {
 
 function getIdentity(actorId) {
   if (!actorId || !fileExists(".kabeeri")) return null;
+  if (String(actorId).trim().toLowerCase() === "codex") {
+    return {
+      id: "codex",
+      name: "Codex",
+      role: "AI Developer",
+      status: "active",
+      workstreams: [],
+      source: "root_ai_tool"
+    };
+  }
   const developers = fileExists(".kabeeri/developers.json") ? readJsonFile(".kabeeri/developers.json").developers || [] : [];
   const agents = fileExists(".kabeeri/agents.json") ? readJsonFile(".kabeeri/agents.json").agents || [] : [];
   return [...developers, ...agents].find((item) => item.id === actorId && item.status !== "inactive") || null;
@@ -11741,10 +12219,12 @@ function requireTaskExecutor(flags, task) {
   }
 }
 
-function generateVerificationReport(task) {
+function generateVerificationReport(task, coverage = null) {
   const tokens = (readJsonFile(".kabeeri/tokens.json").tokens || []).filter((token) => token.task_id === task.id);
   const locks = (readJsonFile(".kabeeri/locks.json").locks || []).filter((lockItem) => lockItem.task_id === task.id);
   const usage = summarizeUsage().by_task[task.id] || { events: 0, tokens: 0, cost: 0 };
+  const acceptanceState = readJsonFile(".kabeeri/acceptance.json");
+  const resolvedCoverage = coverage || buildTaskVerificationCoverage(task, acceptanceState);
   const lines = [
     `# Final Verification Report - ${task.id}`,
     "",
@@ -11758,6 +12238,8 @@ function generateVerificationReport(task) {
     "## Acceptance Criteria",
     ...(task.acceptance_criteria || []).map((item) => `- ${item}`),
     "",
+    renderTaskVerificationCoverage(resolvedCoverage),
+    "",
     "## Tokens",
     ...tokens.map((token) => `- ${token.token_id}: ${token.status}`),
     "",
@@ -11770,6 +12252,30 @@ function generateVerificationReport(task) {
     `Cost: ${usage.cost}`
   ];
   writeTextFile(`.kabeeri/reports/${task.id}.verification.md`, `${lines.join("\n")}\n`);
+}
+
+function generateCompletionReport(task, details = {}) {
+  const reportPath = `.kabeeri/reports/${task.id}.completion.json`;
+  const report = {
+    report_type: "task_completion_report",
+    generated_at: details.completed_at || new Date().toISOString(),
+    task_id: task.id,
+    title: task.title || "",
+    status: task.status || "",
+    completed_at: details.completed_at || task.completed_at || null,
+    completed_by: details.completed_by || task.completed_by || null,
+    verification_report_path: details.verification_report_path || null,
+    verification_report: details.verification_report || null,
+    archive_trail_path: ".kabeeri/task_trash.json",
+    archive_trail: details.archive_trail && typeof details.archive_trail === "object" ? details.archive_trail : null,
+    scheduler_route_path: ".kabeeri/task_scheduler.json",
+    scheduler_route: details.scheduler_route && typeof details.scheduler_route === "object" ? details.scheduler_route : null,
+    trash_task: details.trash_task && typeof details.trash_task === "object" ? details.trash_task : null,
+    reason: details.reason || null,
+    summary: `Task ${task.id} completed and archived to trash.`
+  };
+  writeJsonFile(reportPath, report);
+  return { path: reportPath, report };
 }
 
 function revokeTaskTokens(taskId, reason) {

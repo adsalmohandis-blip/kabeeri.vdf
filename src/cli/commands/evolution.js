@@ -12,6 +12,7 @@ const {
   handleEvolutionTemporaryPriorities,
   renderEvolutionTemporaryPrioritiesReport
 } = require("../services/evolution");
+const { buildTaskLifecycleState } = require("./task_lifecycle");
 const { readStateArray } = require("../services/state_utils");
 
 function localFilePath(relativePath) {
@@ -161,6 +162,24 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(renderEvolutionExecutionReport(report, table));
+    return;
+  }
+
+  if (["batch-exe", "batch-execute", "batch-exec", "batch"].includes(action)) {
+    if (!appMode) requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst", "Owner-Developer"], "run evolution batch execution");
+    const report = buildEvolutionBatchExecutionReport(state, readJsonFile, writeJsonFile, fileExists, {
+      appMode,
+      commandPrefix: buildEvolutionCommandPrefix(mode),
+      autoAssigneeId: flags.assignee || flags["auto-assignee"] || process.env.KVDF_BATCH_ASSIGNEE || null,
+      statuses: flags.statuses || flags.status || value || "approved,ready",
+      limit: flags.limit || null
+    });
+    writeJsonFile(file, state);
+    const batchFile = ".kabeeri/reports/evolution_batch_execution.json";
+    writeJsonFile(batchFile, report);
+    if (appendAudit) appendAudit("evolution.batch_exe", "evolution", report.batch_id, `Evolution batch execution planned: ${report.batch_id}`);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderEvolutionBatchExecutionReport(report, table));
     return;
   }
 
@@ -914,6 +933,192 @@ function renderEvolutionExecutionReport(report, tableRenderer = () => "") {
   ].join("\n");
 }
 
+function buildEvolutionBatchExecutionReport(state, readJsonFile, writeJsonFile, fileExists, options = {}) {
+  ensureEvolutionDevelopmentPriorities(state);
+  const appMode = Boolean(options.appMode);
+  const commandPrefix = options.commandPrefix || (appMode ? "kvdf evolution app" : "kvdf evolution");
+  const autoAssigneeId = resolveEvolutionBatchAutoAssignee(readJsonFile, fileExists, options);
+  const taskStatuses = new Set(
+    String(options.statuses || "approved,ready")
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+  );
+  const tasksFile = ".kabeeri/tasks.json";
+  const tasksState = fileExists(tasksFile) ? readJsonFile(tasksFile) : { tasks: [] };
+  tasksState.tasks = Array.isArray(tasksState.tasks) ? tasksState.tasks : [];
+  const autoAssignedTaskIds = [];
+  const now = new Date().toISOString();
+  for (const taskItem of tasksState.tasks) {
+    if (!taskStatuses.has(String(taskItem.status || "").toLowerCase())) continue;
+    if (taskItem.assignee_id) continue;
+    taskItem.assignee_id = autoAssigneeId;
+    taskItem.assigned_at = taskItem.assigned_at || now;
+    taskItem.assignment_source = taskItem.assignment_source || "evolution_batch_auto_assignee";
+    taskItem.updated_at = now;
+    autoAssignedTaskIds.push(taskItem.id);
+  }
+  if (autoAssignedTaskIds.length > 0) {
+    writeJsonFile(tasksFile, tasksState);
+  }
+  const tasks = tasksState.tasks;
+  const candidates = tasks
+    .filter((taskItem) => taskStatuses.has(String(taskItem.status || "").toLowerCase()))
+    .map((taskItem, index) => {
+      const lifecycle = buildTaskLifecycleState(taskItem);
+      const blockers = [];
+      if (lifecycle.current_stage === "blocked") blockers.push("blocked_stage");
+      if (String(taskItem.status || "").toLowerCase() === "approved" && !taskItem.assignee_id) blockers.push("missing_assignee");
+      if (Array.isArray(taskItem.allowed_files) && taskItem.allowed_files.length === 0) blockers.push("missing_allowed_files");
+      return {
+        order_index: index,
+        id: taskItem.id,
+        title: taskItem.title || "",
+        status: taskItem.status || "unknown",
+        workstream: taskItem.workstream || (Array.isArray(taskItem.workstreams) ? taskItem.workstreams[0] : null) || null,
+        evolution_change_id: taskItem.evolution_change_id || null,
+        assignee_id: taskItem.assignee_id || null,
+        created_at: taskItem.created_at || null,
+        lifecycle_stage: lifecycle.current_stage,
+        lifecycle_next_action: lifecycle.next_action,
+        lifecycle_statuses: lifecycle.next_statuses || [],
+        blockers,
+        next_command: taskItem.assignee_id
+          ? `kvdf task start ${taskItem.id} --actor ${taskItem.assignee_id}`
+          : `kvdf task assign ${taskItem.id} --assignee <id>`,
+        resume_command: `kvdf task status ${taskItem.id}`
+      };
+    })
+    .sort((left, right) => {
+      const leftCreated = left.created_at || "";
+      const rightCreated = right.created_at || "";
+      if (leftCreated && rightCreated && leftCreated !== rightCreated) return String(leftCreated).localeCompare(String(rightCreated));
+      if (leftCreated && !rightCreated) return -1;
+      if (!leftCreated && rightCreated) return 1;
+      if (left.order_index !== right.order_index) return Number(left.order_index || 0) - Number(right.order_index || 0);
+      return String(left.id || "").localeCompare(String(right.id || ""));
+    });
+
+  const blockedTasks = candidates.filter((item) => item.blockers.length > 0);
+  const readyTasks = candidates.filter((item) => item.blockers.length === 0);
+  const batchId = `evo-batch-${Date.now()}`;
+  const report = {
+    report_type: "evolution_batch_execution",
+    generated_at: new Date().toISOString(),
+    audience: appMode ? "app_developer" : "framework_owner",
+    command_prefix: commandPrefix,
+    batch_id: batchId,
+    mode: "continue_until_blocked",
+    requested_statuses: Array.from(taskStatuses),
+    current_change_id: state.current_change_id || null,
+    auto_assignee_id: autoAssignedTaskIds.length > 0 ? autoAssigneeId : null,
+    auto_assigned_task_ids: autoAssignedTaskIds,
+    summary: {
+      total_candidates: candidates.length,
+      ready_total: readyTasks.length,
+      blocked_total: blockedTasks.length,
+      next_task_id: readyTasks[0] ? readyTasks[0].id : null,
+      next_command: readyTasks[0] ? readyTasks[0].next_command : null,
+      stop_conditions: ["blocker", "scope_conflict", "STOP"]
+    },
+    ready_tasks: readyTasks,
+    blocked_tasks: blockedTasks,
+    execution_steps: readyTasks.map((taskItem, index) => ({
+      order: index + 1,
+      task_id: taskItem.id,
+      title: taskItem.title,
+      status: taskItem.status,
+      workstream: taskItem.workstream,
+      next_command: taskItem.next_command,
+      resume_command: taskItem.resume_command
+    })),
+    next_actions: readyTasks.slice(0, 8).map((taskItem) => taskItem.next_command),
+    batch_state_path: ".kabeeri/reports/evolution_batch_execution.json"
+  };
+
+  if (blockedTasks.length > 0) {
+    report.status = "blocked";
+    report.message = `Batch execution paused because ${blockedTasks.length} task(s) still have blockers before execution can continue.`;
+  } else if (readyTasks.length > 0) {
+    report.status = "ready";
+    report.message = `Batch execution can continue through ${readyTasks.length} ready task(s) in priority order without stopping after each task.`;
+  } else {
+    report.status = "empty";
+    report.message = "No approved or ready tasks are available for batch execution.";
+  }
+
+  return report;
+}
+
+function resolveEvolutionBatchAutoAssignee(readJsonFile, fileExists, options = {}) {
+  const explicit = String(options.autoAssigneeId || options.assignee || options["auto-assignee"] || "").trim();
+  if (explicit) return explicit;
+  const multiAiFile = ".kabeeri/multi_ai_governance.json";
+  if (fileExists(multiAiFile)) {
+    try {
+      const state = readJsonFile(multiAiFile);
+      const activeSessionId = state.active_leader_session_id || null;
+      const sessions = Array.isArray(state.leader_sessions) ? state.leader_sessions : [];
+      const activeSession = sessions.find((item) => item.session_id === activeSessionId && item.status === "active")
+        || sessions.find((item) => item.status === "active")
+        || null;
+      const leaderId = activeSession ? String(activeSession.leader_ai_id || "").trim() : "";
+      if (leaderId) return leaderId;
+    } catch (error) {
+      return "codex";
+    }
+  }
+  return "codex";
+}
+
+function renderEvolutionBatchExecutionReport(report, tableRenderer = () => "") {
+  const readyRows = (report.ready_tasks || []).map((item) => [
+    item.id,
+    item.status,
+    item.workstream || "",
+    item.next_command || ""
+  ]);
+  const blockedRows = (report.blocked_tasks || []).map((item) => [
+    item.id,
+    item.status,
+    (item.blockers || []).join(", "),
+    item.next_command || ""
+  ]);
+  return [
+    report.audience === "app_developer" ? "Kabeeri App Batch Execution" : "Evolution Batch Execution",
+    "",
+    `Batch ID: ${report.batch_id}`,
+    `Current change: ${report.current_change_id || "none"}`,
+    `Mode: ${report.mode}`,
+    `Status: ${report.status}`,
+    `Message: ${report.message}`,
+    `Batch state path: ${report.batch_state_path}`,
+    `Auto assignee: ${report.auto_assignee_id || "none"}`,
+    "",
+    tableRenderer(["Field", "Value"], [
+      ["Ready tasks", String(report.summary.ready_total || 0)],
+      ["Blocked tasks", String(report.summary.blocked_total || 0)],
+      ["Total candidates", String(report.summary.total_candidates || 0)],
+      ["Next task", report.summary.next_task_id || "none"],
+      ["Next command", report.summary.next_command || "none"]
+    ]),
+    "",
+    "Ready tasks:",
+    readyRows.length ? tableRenderer(["Task", "Status", "Workstream", "Next command"], readyRows) : "No ready tasks.",
+    "",
+    "Blocked tasks:",
+    blockedRows.length ? tableRenderer(["Task", "Status", "Blockers", "Next command"], blockedRows) : "No blocked tasks.",
+    "",
+    "Execution steps:",
+    ...(report.execution_steps && report.execution_steps.length
+      ? report.execution_steps.map((step) => `${step.order}. ${step.task_id} -> ${step.next_command}`)
+      : ["- none"]),
+    "",
+    "Stop conditions:",
+    ...(report.summary.stop_conditions || []).map((item) => `- ${item}`)
+  ].join("\n");
+}
+
 function renderEvolutionRoadmap(report, table) {
   const rows = (report.roadmap || []).map((step) => [
     step.order,
@@ -991,7 +1196,7 @@ function evolutionAreaDefinition(area, required = true) {
     cli: {
       label: "CLI surface and help",
       workstream: "docs",
-      files: ["src/cli/index.js", "src/cli/ui.js", "cli/CLI_COMMAND_REFERENCE.md"],
+      files: ["src/cli/index.js", "src/cli/ui.js", "docs/cli/CLI_COMMAND_REFERENCE.md"],
       acceptance: ["The kvdf command surface is documented.", "Command help explains when and why to use the capability."]
     },
     tasks: {
@@ -1009,7 +1214,7 @@ function evolutionAreaDefinition(area, required = true) {
     dashboard: {
       label: "dashboard and live JSON surfaces",
       workstream: "admin_frontend",
-      files: ["integrations/dashboard/", "src/cli/index.js", ".kabeeri/dashboard/"],
+      files: ["docs/reports/dashboard/", "src/cli/index.js", ".kabeeri/dashboard/"],
       acceptance: ["Dashboard state includes the update where operationally useful.", "The state can be refreshed after the change."]
     },
     reports: {

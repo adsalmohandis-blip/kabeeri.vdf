@@ -11,7 +11,7 @@ This report documents the owner-docs token gate added to the removable owner bun
 - `kvdf owner docs close`
 - `.kabeeri/owner_docs_tokens.json`
 - `schemas/runtime/owner-docs-token-state.schema.json`
-- `plugins/owner-track/docs/index.md`
+- `plugins/kvdf-dev/docs/index.md`
 
 ## Operational Rules
 

@@ -4,6 +4,8 @@
 
 ### Added
 
+- `kvdf batch-exe` now resolves the active Multi-AI leader as the automatic assignee for missing EVO tasks, with `codex` as fallback when no active leader exists.
+
 - Archived all closed tasks into `.kabeeri/task_trash.json` after closure, leaving the active task list empty.
 
 - Moved every `owner_verified` task to `done` and updated task validation so `done` is accepted as a valid terminal task status.

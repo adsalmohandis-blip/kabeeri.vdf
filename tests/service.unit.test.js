@@ -14,6 +14,7 @@ const { appendJsonLine, readJsonLines, writeJsonLines } = require("../src/cli/se
 const { readStateArray, summarizeBy } = require("../src/cli/services/state_utils");
 const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../src/cli/services/local_server");
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
+const { buildBootContext } = require("../src/core/bootstrap");
 const { serveSite } = require("../src/cli/commands/site");
 const {
   getGitChangedFileDetails,
@@ -83,6 +84,27 @@ test("dashboard contracts reject missing core sections", () => {
   assert.strictEqual(validation.ok, false);
   assert.ok(validation.failures.includes("dashboard contract failed"));
   assert.ok(validation.failures.includes("task tracker contract failed"));
+});
+
+test("bootstrap context exposes a deterministic boot path and reversible plugin loader", () => {
+  const boot = buildBootContext();
+  assert.strictEqual(boot.report_type, "kvdf_bootstrap_context");
+  assert.deepStrictEqual(boot.boot_path, [
+    "bin/kvdf.js",
+    "src/core/bootstrap.js",
+    "src/cli/index.js"
+  ]);
+  assert.strictEqual(boot.single_boot_entry, "bin/kvdf.js");
+  assert.strictEqual(boot.loader_strategy, "manifest_driven_reversible_plugins");
+  assert.strictEqual(boot.runtime_split.boot_entry, "bin/kvdf.js");
+  assert.strictEqual(boot.runtime_split.shared_runtime_entry, "src/cli/index.js");
+  assert.strictEqual(boot.runtime_split.track_boundaries.control_plane, "bin/kvdf.js");
+  assert.strictEqual(boot.runtime_split.track_boundaries.shared_runtime, "src/cli/index.js");
+  assert.strictEqual(boot.runtime_split.track_boundaries.plugin_runtime_root, "plugins/kvdf-dev/");
+  assert.strictEqual(boot.shared_runtime.status, "ready");
+  assert.ok(Array.isArray(boot.plugin_loader.plugins));
+  assert.ok(boot.plugin_loader.plugins.some((item) => item.plugin_id === "kvdf-dev"));
+  assert.ok(boot.reversible_plugins.includes("kvdf-dev"));
 });
 
 test("questionnaire helpers normalize answers and confidence", () => {

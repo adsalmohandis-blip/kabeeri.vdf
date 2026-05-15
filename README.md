@@ -84,7 +84,7 @@ When the AI already has the state, prefer the shortest direct command over a lon
 For the complete capability map, read:
 
 - [System Capabilities Reference](docs/SYSTEM_CAPABILITIES_REFERENCE.md)
-- [CLI Command Reference](cli/CLI_COMMAND_REFERENCE.md)
+- [CLI Command Reference](docs/cli/CLI_COMMAND_REFERENCE.md)
 - [Documentation Site](docs/site/index.html)
 
 ## Who Is Kabeeri For?
@@ -373,7 +373,7 @@ src/                 CLI source code
 bin/                 executable kvdf entrypoint
 knowledge/           governance, task, design, agile, data, and workflow knowledge
 packs/               generators, templates, prompt packs, examples
-integrations/        dashboard, GitHub, VS Code, multi-AI integration knowledge
+plugins/             dashboard, GitHub, VS Code, multi-AI plugin knowledge
 schemas/             runtime and contract schemas
 docs/                documentation, reports, docs site, production guides
 cli/                 command reference
@@ -391,7 +391,7 @@ Runtime project state is stored in:
 Start here:
 
 - [System Capabilities Reference](docs/SYSTEM_CAPABILITIES_REFERENCE.md)
-- [CLI Command Reference](cli/CLI_COMMAND_REFERENCE.md)
+- [CLI Command Reference](docs/cli/CLI_COMMAND_REFERENCE.md)
 - [Production State](docs/production/V1_CURRENT_STATE.md)
 - [Docs Site](docs/site/index.html)
 

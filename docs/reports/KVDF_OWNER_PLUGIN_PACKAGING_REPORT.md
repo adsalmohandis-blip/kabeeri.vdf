@@ -3,14 +3,14 @@
 ## Summary
 
 The owner track is now packaged as a removable plugin bundle under
-`plugins/owner-track/`. The shared loader can discover the bundle, enable or
+`plugins/kvdf-dev/`. The shared loader can discover the bundle, enable or
 disable it, and report its metadata without hard-coding the owner surface into
 the core CLI registry.
 
 ## What Exists
 
-- `plugins/owner-track/plugin.json`
-- `plugins/owner-track/` as the owner bundle root
+- `plugins/kvdf-dev/plugin.json`
+- `plugins/kvdf-dev/` as the framework-development bundle root
 - `src/cli/services/plugin_loader.js`
 - `src/cli/commands/plugin.js`
 - `.kabeeri/plugins.json`
@@ -39,7 +39,7 @@ an embedded core feature.
 1. The loader scans `plugins/*/plugin.json`.
 2. It merges enable/disable state from `.kabeeri/plugins.json`.
 3. It reports active plugins through `kvdf plugins status`.
-4. It exposes a direct manifest view through `kvdf plugins show owner-track`.
+4. It exposes a direct manifest view through `kvdf plugins show kvdf-dev`.
 5. It allows explicit enable/disable control without touching shared runtime
    state files.
 
@@ -60,4 +60,3 @@ Packaging is considered successful when:
 - the bundle metadata is visible
 - developer mode still works if the bundle is disabled
 - `npm test` and `kvdf conflict scan` both pass
-

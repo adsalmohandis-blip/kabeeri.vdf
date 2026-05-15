@@ -240,6 +240,14 @@ Notes:
   kvdf task tracker
   kvdf task tracker --json
   kvdf task status task-001
+  kvdf task packet
+  kvdf task packet --json
+  kvdf task executor-contract
+  kvdf task executor-contract --json
+  kvdf task batch-run
+  kvdf task batch-run --mode dry-run
+  kvdf task batch-run --mode review
+  kvdf task batch-run --mode execute
     kvdf task assessment task-001
     kvdf task assessment --goal "Build checkout API"
     kvdf task coverage task-001
@@ -397,9 +405,13 @@ Notes:
   kvdf evolution roadmap
   kvdf evolution partition
   kvdf evolution report
+  kvdf evolution batch-exe
+  kvdf batch-exe
   kvdf plugins status
-  kvdf plugins enable owner-track
-  kvdf plugins disable owner-track
+  kvdf plugins install kvdf-dev
+  kvdf plugins enable kvdf-dev
+  kvdf plugins uninstall kvdf-dev
+  kvdf plugins disable kvdf-dev
   kvdf evolution defer "Future idea"
   kvdf evolution deferred
   kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
@@ -411,8 +423,18 @@ Notes:
 
 Notes:
   Evolution Steward is the single framework-development backlog. It records requested framework changes, keeps ordered development priorities, exposes the seven-step KVDF restructure roadmap and the capability partition matrix, emits resumable execution reports for each priority, stores deferred development ideas as one final bucket, checks for possible duplicate capabilities, creates follow-up tasks for runtime, CLI, docs, schemas, tests, dashboards, reports, and capabilities, and exposes the update state to dashboard/live reports.
-  The plugin loader exposes removable bundles such as owner-track and keeps enable/disable state under .kabeeri/plugins.json.
+  Use batch-exe to print the next governed execution queue for approved and ready tasks in priority order without losing track of blockers or stop conditions.
+  The plugin loader exposes removable bundles such as kvdf-dev and keeps install/enable/uninstall/disable state under .kabeeri/plugins.json.
   Framework-owner sessions use this track to move from resume to priorities, placement confirmation, temp slices, sync, validation, and verification.
+`,
+    "batch-exe": `Usage:
+  kvdf batch-exe
+  kvdf batch-exe --json
+  kvdf batch-exe --statuses approved,ready
+  kvdf evolution batch-exe
+
+Notes:
+  Batch execution prints a governed execution queue for ready or approved tasks in priority order, auto-assigns missing EVO assignees to the active Multi-AI leader or codex fallback, and stops at blockers, scope conflicts, or explicit STOP instructions. It stores a durable batch report under .kabeeri/reports/evolution_batch_execution.json so the AI can resume without rereading chat.
 `,
     "multi-ai": `Usage:
   kvdf multi-ai status
@@ -474,6 +496,14 @@ Notes:
 Notes:
   Delivery advisor compares Agile and Structured using the requested app context. It records recommendations and developer decisions in .kabeeri/delivery_decisions.json. The recommendation is advisory; the developer/Owner chooses the final mode.
 `,
+  pipeline: `Usage:
+  kvdf pipeline matrix
+  kvdf pipeline strict [--task task-001]
+  kvdf pipeline check task-packet --task task-001
+
+Notes:
+  Pipeline enforcement renders the exact guard condition, state file, and failure message for each stage from delivery selection through task packet, executor contract, batch execution, verification, and completion. Pass --task to inspect a specific task path for token, lock, traceability, verification, or archive readiness.
+`,
     workstream: `Usage:
   kvdf workstream list
   kvdf workstream show backend
@@ -499,9 +529,11 @@ Notes:
   kvdf session end session-001 --input-tokens 1000 --output-tokens 500 --files src/api/users.ts --summary "Implemented endpoint"
   kvdf session list
   kvdf session show session-001
+  kvdf session replay session-001
+  kvdf session replay --json
 
 Notes:
-  Governed AI sessions require task assignment, an active task token, and lock coverage for edited files.
+  Governed AI sessions require task assignment, an active task token, and lock coverage for edited files. Replay loads the saved session trace, task memory, and archive state so you can continue the last line of work without rereading chat.
 `,
     feature: `Usage:
   kvdf feature create --title "Public signup" --readiness needs_review --tasks task-001
@@ -843,6 +875,14 @@ Notes:
 Notes:
   The live dashboard shows multiple customer apps from the current .kabeeri workspace.
   Task tracker JSON is written to .kabeeri/dashboard/task_tracker_state.json and served live at /__kvdf/api/tasks.
+  Control-plane commands:
+  - Use task packet to compile a durable packet from vibe intake, questionnaire answers, briefs, modules, and task state before any executor starts work.
+  - Use task batch-run with --mode dry-run or --mode review when you want packet-only or packet-plus-contract previews.
+
+  Executor commands:
+  - Use task executor-contract to show the packet-only AI boundary, allowed files, and forbidden actions before implementation starts.
+  - Use task batch-run --mode execute to start approved or ready tasks in governed priority order, auto-assign missing tasks to the active Multi-AI leader or codex fallback, and stop on blockers without losing the queue.
+
   Dashboard UX audit checks action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, empty states, responsive tables, governance visibility, and common secret leakage.
   Use dashboard workspace add or --workspaces to add summary rows for other KVDF folders that also contain .kabeeri state.
 `,
@@ -1069,6 +1109,7 @@ function printHelp() {
     "  resume                       Detect session mode and safe next actions",
     "  start|entry                  Auto-route to the correct track",
     "  track status|route           Inspect or persist the current session track",
+    "  pipeline matrix|strict       Show or enforce the strict build pipeline",
     "  onboarding                   Show the guided first-session route and report",
     "  guard                        Check framework boundary before edits",
     "  conflict scan                Scan for command, schema, and workspace logic drift",
@@ -1088,7 +1129,7 @@ function printHelp() {
     "  structured health|phase      Manage Structured/Waterfall delivery runtime",
     "  agile backlog|epic|story|sprint Manage Agile templates as runtime records",
     "  sprint create|list|summary    Manage agile sprints and sprint cost summaries",
-    "  session start|end|list|show   Track AI Developer sessions and handoffs",
+    "  session start|end|list|show|replay Track AI Developer sessions, replay traces, and handoffs",
     "  task list|create|status|assessment|coverage|lifecycle|complete|trash Manage local .kabeeri tasks, assessments, coverage, and trash",
     "  trace report|status|show|list          Build the end-to-end traceability report for tasks, assessments, ADRs, AI runs, docs, and tests",
     "  change report|status|show|list          Build the change-control report for risks, change requests, and mitigation notes",
@@ -1145,17 +1186,25 @@ function printHelp() {
     "  audit list|report            Inspect and export audit events",
     "  vscode scaffold|status|report Generate VS Code workspace task helpers"
   ];
+  const blockedCommands = [
+    "  blocked commands are surfaced by help, task status, and validation output",
+    "  when a command is blocked, the CLI should explain whether the missing piece is track, plugin, or permission related",
+    "  next-command hints should point to the shortest unblocking step"
+  ];
   const lines = [
     "Kabeeri VDF CLI",
     "",
     "Usage:",
     "  kvdf <command> [action] [options]",
     "",
-    "Commands:",
+    "Shared Commands:",
     ...sharedCommands,
     "",
     ...(trackSurface === "developer" ? [] : ["Owner Track Commands:", ...ownerCommands, ""]),
     ...(trackSurface === "owner" ? [] : ["Developer Track Commands:", ...developerCommands, ""]),
+    "",
+    "Blocked Command Guidance:",
+    ...blockedCommands,
     "",
     "Track Surface:",
     trackSurface ? `  ${trackSurface} session active` : "  Run kvdf entry or kvdf start to activate a track and hide the opposite surface.",
@@ -1168,6 +1217,7 @@ function printHelp() {
     "  kvdf task create --title \"Define checkout flow\" --workstream backend",
     "  kvdf app workspace create --slug storefront-web --name \"Storefront Web\" --type frontend",
     "  kvdf evolution plan \"Add a new Kabeeri capability\"",
+    "  kvdf batch-exe",
     "  kvdf multi-ai status",
     "  kvdf sync status"
   ];

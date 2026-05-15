@@ -23,7 +23,12 @@ do not hand-edit the derived report unless debugging.
 ```
 
 It summarizes readiness, governance, package, upgrade, task tracker, dashboard
-UX, security, migration, and next action items.
+UX, security, migration, and next action items. Readiness and governance
+snapshots now include explicit actionable blocker lists so the next command is
+visible without rereading the raw state files. Vibe context briefs are also
+compiled as reusable artifacts with product, UI/UX, system, and data sections
+so the next session can resume from one structured brief instead of re-reading
+the whole history.
 
 ## Commands
 
@@ -53,6 +58,7 @@ Use live JSON for frequently changing state:
 - dashboard UX status
 - package/upgrade state
 - action items
+- actionable blockers and next-command hints
 
 Use Markdown for stable human artifacts:
 

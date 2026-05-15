@@ -25,8 +25,8 @@ When starting a new development session:
 - Test command: `npm test`
 - Smoke command: `npm run test:smoke`
 - Full local check: `npm run check`
-- Latest session focus: All tracked tasks were moved from `done` into the trash archive after closure, and the task tracker now has no active tasks.
-- Latest session update: All 126 tasks are now archived in `.kabeeri/task_trash.json`, `.kabeeri/tasks.json` is empty, and `src/cli/validate.js` now accepts `closed` as a valid task status before archiving.
+- Latest session focus: The EVO batch execution queue now auto-assigns missing approved tasks to the active Multi-AI leader first, with `codex` as the fallback root AI tool.
+- Latest session update: `kvdf batch-exe` now resolves the active leader from `.kabeeri/multi_ai_governance.json`, auto-fills missing EVO assignees with that leader or `codex`, persists the assignment into `.kabeeri/tasks.json`, and reports the batch as ready when no other blockers remain.
 
 ## Active Focus
 

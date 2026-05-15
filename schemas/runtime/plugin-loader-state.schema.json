@@ -6,6 +6,9 @@
   "additionalProperties": true,
   "required": ["plugin_loader_version", "enabled_plugins", "disabled_plugins", "updated_at"],
   "properties": {
+    "schema_version": {
+      "type": "string"
+    },
     "plugin_loader_version": {
       "type": "integer",
       "minimum": 1

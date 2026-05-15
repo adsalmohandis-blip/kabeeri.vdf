@@ -26,7 +26,8 @@ kvdf readiness report --target publish --strict --output .kabeeri/reports/readin
 It checks repository validation, task state, feature and journey readiness,
 policy blockers, security scan state, migration blockers, handoff packages,
 unreviewed AI runs, unresolved post-work captures, and changed files captured
-without a linked task.
+without a linked task. The report now emits explicit action items for each
+blocker or warning so the next safe command is visible in the report itself.
 
 ## Governance Report
 
@@ -46,7 +47,9 @@ kvdf governance report --target publish --strict --output .kabeeri/reports/gover
 
 It checks Owner identity, developers, AI agents, workstreams, active task
 tokens, expired tokens, active locks, lock conflicts, missing assignees, unknown
-task workstreams, policy blockers, and workspace governance validation.
+task workstreams, policy blockers, and workspace governance validation. The
+report also surfaces actionable items that point at the specific follow-up
+command or fix for each blocker class.
 
 ## Targets
 

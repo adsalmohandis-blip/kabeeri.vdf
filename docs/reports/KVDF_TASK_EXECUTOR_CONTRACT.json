@@ -1,0 +1,46 @@
+{
+  "report_type": "task_executor_contract",
+  "generated_at": "2026-05-14T04:55:18.322Z",
+  "audience": "framework_owner",
+  "command_prefix": "kvdf task",
+  "surface_role": "executor",
+  "contract_id": "task-executor-contract-1778734518322",
+  "packet_id": "task-packet-1778734518200",
+  "packet_state_path": "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
+  "current_task_id": null,
+  "current_task_title": null,
+  "executor_role": "implementation_worker",
+  "planner_role": "control_plane",
+  "assignment_rule": "The executor may only act on tasks supplied by the control plane packet or current task state.",
+  "allowed_files": [],
+  "allowed_actions": [
+    "read packet",
+    "inspect allowed files",
+    "edit allowed files",
+    "record evidence",
+    "return next action"
+  ],
+  "forbidden_actions": [
+    "change task priority",
+    "invent new task scopes",
+    "edit files outside the allowed list",
+    "bypass tokens or locks",
+    "replan the workflow"
+  ],
+  "packet_hints": {
+    "packet_id": "task-packet-1778734518200",
+    "packet_state_path": "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
+    "next_action": "kvdf task tracker --json",
+    "next_command": "kvdf task tracker --json",
+    "recommended_assignee_id": "codex"
+  },
+  "execution_queue": [],
+  "contract_points": [
+    "The AI executor is a worker that consumes a packet.",
+    "The control plane owns planning, packet creation, and task ordering.",
+    "The executor only acts inside approved task boundaries and allowed files.",
+    "The executor returns evidence and the next action instead of inventing new scope."
+  ],
+  "status": "empty",
+  "message": "No packet was found to bind to an executor contract."
+}

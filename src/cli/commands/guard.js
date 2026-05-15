@@ -10,7 +10,7 @@ const FRAMEWORK_PROTECTED_PATHS = [
   "knowledge/",
   "packs/",
   "schemas/",
-  "cli/CLI_COMMAND_REFERENCE.md",
+  "docs/cli/CLI_COMMAND_REFERENCE.md",
   "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
   "OWNER_DEVELOPMENT_STATE.md"
 ];

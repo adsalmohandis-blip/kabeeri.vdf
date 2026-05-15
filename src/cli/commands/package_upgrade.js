@@ -59,7 +59,7 @@ function buildPackageCheck() {
   add("pack_check_script", packageData.scripts && packageData.scripts["pack:check"], "npm run pack:check should exist");
   for (const file of requiredFiles) add(`file_${file.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`, fileExists(file), `${file} ${fileExists(file) ? "present" : "missing"}`);
   const fileList = packageData.files || [];
-  for (const folder of ["bin/", "src/", "knowledge/", "packs/", "integrations/", "schemas/", "docs/", "cli/"]) {
+  for (const folder of ["bin/", "src/", "knowledge/", "packs/", "plugins/", "schemas/", "docs/", "cli/"]) {
     add(`package_files_${folder.replace(/[^a-z0-9]+/gi, "_").toLowerCase()}`, fileList.includes(folder), `${folder} ${fileList.includes(folder) ? "included" : "missing from package files"}`);
   }
   for (const forbidden of [".kabeeri/", "node_modules/", ".env"]) {

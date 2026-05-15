@@ -5,6 +5,7 @@ function init(flags = {}, deps = {}) {
     refreshDashboardArtifacts,
     readJsonFile,
     writeJsonFile,
+    writeTextFile,
     table,
     buildProjectProfileRecommendation,
     persistProjectProfileRecommendation
@@ -32,7 +33,7 @@ function init(flags = {}, deps = {}) {
       ["Intake groups", (profileRecommendation.intake_groups || []).join(", ") || "none"]
     ]));
   }
-  const intake = runInitIntake({ ...flags, goal }, { questionnaireIntakePlan, readJsonFile, writeJsonFile, table });
+  const intake = runInitIntake({ ...flags, goal }, { questionnaireIntakePlan, readJsonFile, writeJsonFile, writeTextFile, table });
   refreshDashboardArtifacts();
   if (!intake) {
     console.log("");
@@ -42,7 +43,7 @@ function init(flags = {}, deps = {}) {
 }
 
 function runInitIntake(flags = {}, deps = {}) {
-  const { questionnaireIntakePlan, readJsonFile, writeJsonFile, table, appendAudit } = deps;
+  const { questionnaireIntakePlan, readJsonFile, writeJsonFile, writeTextFile, table, appendAudit } = deps;
   if (flags["no-intake"] || flags.skipIntake) return null;
   const goal = flags.goal || flags.app || flags.description || flags.project || flags.text || promptForInitialProjectGoal(flags);
   if (!goal) return null;
@@ -56,6 +57,7 @@ function runInitIntake(flags = {}, deps = {}) {
   const docsTasks = createDocsFirstTasksFromIntakePlan(plan, {
     readJsonFile,
     writeJsonFile,
+    writeTextFile,
     appendAudit,
     noDocTasks: Boolean(flags["no-doc-tasks"])
   });
@@ -79,13 +81,21 @@ function promptForInitialProjectGoal(flags = {}) {
 }
 
 function createDocsFirstTasksFromIntakePlan(plan, deps = {}) {
-  const { readJsonFile, writeJsonFile, appendAudit = () => {} } = deps;
+  const { readJsonFile, writeJsonFile, writeTextFile, appendAudit = () => {} } = deps;
   if (!plan || !plan.plan_id) return [];
-  if (deps.noDocTasks) return [];
   const file = ".kabeeri/tasks.json";
   const data = readJsonFile(file);
   data.tasks = data.tasks || [];
   const alreadyCreated = data.tasks.some((taskItem) => taskItem.source === `init_intake:${plan.plan_id}`);
+  if (typeof writeTextFile === "function") {
+    writeIntakeAnswersReport(plan, {
+      readJsonFile,
+      writeJsonFile,
+      writeTextFile,
+      appendAudit
+    });
+  }
+  if (deps.noDocTasks) return [];
   if (alreadyCreated) return [];
   const existing = new Set(data.tasks.map((item) => item.id));
   const nextId = () => {
@@ -128,6 +138,107 @@ function createDocsFirstTasksFromIntakePlan(plan, deps = {}) {
     appendAudit("task.created", "task", taskItem.id, `Docs-first task created: ${taskItem.title}`);
   }
   return tasks;
+}
+
+function writeIntakeAnswersReport(plan, deps = {}) {
+  const { readJsonFile, writeJsonFile, writeTextFile, appendAudit = () => {} } = deps;
+  if (!plan || !plan.plan_id || typeof writeTextFile !== "function") return null;
+  const answersState = readJsonFile(".kabeeri/questionnaires/answers.json");
+  const sourcesState = readJsonFile(".kabeeri/questionnaires/answer_sources.json");
+  const questionMap = new Map((Array.isArray(plan.generated_questions) ? plan.generated_questions : []).map((question) => [question.question_id, question]));
+  const answers = Array.isArray(answersState.answers) ? answersState.answers : [];
+  const recordedAt = new Date().toISOString();
+  const generatedQuestionAnswers = answers.filter((answer) => String(answer.question_id || "").startsWith("adaptive."));
+  const intakeEntryAnswers = answers.filter((answer) => String(answer.question_id || "").startsWith("entry."));
+  const unansweredQuestions = (Array.isArray(plan.generated_questions) ? plan.generated_questions : [])
+    .filter((question) => !answers.some((answer) => answer.question_id === question.question_id));
+  const artifact = {
+    report_id: `intake-answers-${plan.plan_id}`,
+    report_type: "intake_answers",
+    generated_at: recordedAt,
+    task_id: "task-077",
+    task_title: "Project intake answers",
+    status: "recorded",
+    source: `init_intake:${plan.plan_id}`,
+    intake_plan_id: plan.plan_id,
+    blueprint: plan.blueprint ? {
+      key: plan.blueprint.key,
+      name: plan.blueprint.name,
+      category: plan.blueprint.category
+    } : null,
+    delivery_mode: plan.delivery_mode_recommendation ? plan.delivery_mode_recommendation.recommended_mode : null,
+    summary: {
+      total_questions: Array.isArray(plan.generated_questions) ? plan.generated_questions.length : 0,
+      total_answers: answers.length,
+      generated_question_answers: generatedQuestionAnswers.length,
+      intake_entry_answers: intakeEntryAnswers.length,
+      unanswered_questions: unansweredQuestions.length
+    },
+    answers: answers.map((answer) => ({
+      answer_id: answer.answer_id,
+      question_id: answer.question_id,
+      question_text: questionMap.has(answer.question_id) ? questionMap.get(answer.question_id).text : null,
+      value: answer.value,
+      area_ids: answer.area_ids || [],
+      confidence: answer.confidence || null,
+      answered_by: answer.answered_by || null,
+      answered_at: answer.answered_at || null,
+      source: answer.source || null,
+      source_mode: answer.source_mode || null,
+      intake_mode: answer.intake_mode || null
+    })),
+    unanswered_questions: unansweredQuestions.map((question) => ({
+      question_id: question.question_id,
+      text: question.text,
+      why: question.why,
+      area_ids: question.area_ids || [],
+      priority: question.priority || null
+    })),
+    answer_sources: Array.isArray(sourcesState.sources) ? sourcesState.sources : []
+  };
+  const jsonPath = "docs/reports/INTAKE_PROJECT_INTAKE_ANSWERS.json";
+  const mdPath = "docs/reports/INTAKE_PROJECT_INTAKE_ANSWERS.md";
+  writeJsonFile(jsonPath, artifact);
+  writeTextFile(mdPath, renderIntakeAnswersReportMarkdown(artifact));
+  appendAudit("intake.answers.recorded", "questionnaire", plan.plan_id, `Recorded intake answers for ${plan.plan_id}`);
+  return artifact;
+}
+
+function renderIntakeAnswersReportMarkdown(report) {
+  const answerLines = report.answers.map((answer) => `- \`${answer.question_id}\` => \`${answer.value}\` (${(answer.area_ids || []).join(", ")})`);
+  const unansweredLines = report.unanswered_questions.map((question) => `- \`${question.question_id}\` - ${question.text}`);
+  return [
+    "# Intake Project Answers",
+    "",
+    `**Task ID:** \`${report.task_id}\`  `,
+    `**Task Title:** ${report.task_title}  `,
+    `**Intake Plan:** \`${report.intake_plan_id}\`  `,
+    `**Status:** \`${report.status}\`  `,
+    `**Date:** ${report.generated_at.slice(0, 10)}`,
+    "",
+    "## Summary",
+    "",
+    `- Total questions: ${report.summary.total_questions}`,
+    `- Total answers: ${report.summary.total_answers}`,
+    `- Generated question answers: ${report.summary.generated_question_answers}`,
+    `- Intake entry answers: ${report.summary.intake_entry_answers}`,
+    `- Unanswered questions: ${report.summary.unanswered_questions}`,
+    "",
+    "## Recorded Answers",
+    "",
+    answerLines.length ? answerLines.join("\n") : "- No answers recorded.",
+    "",
+    "## Unanswered Questions",
+    "",
+    unansweredLines.length ? unansweredLines.join("\n") : "- No unanswered questions.",
+    "",
+    "## Source Trail",
+    "",
+    `- Source: ${report.source}`,
+    `- Blueprint: ${report.blueprint ? `${report.blueprint.name} (${report.blueprint.key})` : "n/a"}`,
+    `- Delivery mode: ${report.delivery_mode || "n/a"}`,
+    `- Answer sources recorded: ${Array.isArray(report.answer_sources) ? report.answer_sources.length : 0}`
+  ].join("\n");
 }
 
 module.exports = {

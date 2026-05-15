@@ -2,7 +2,7 @@
 
 This folder is the canonical v4 governance specification for safe multi-developer and multi-AI work in Kabeeri projects.
 
-The older `multi_ai_governance/` folder remains the planning source and milestone package. This folder turns that plan into operational rules that project workspaces, dashboards, VS Code surfaces, and CLI commands can enforce.
+The multi-AI governance bundle now lives in `plugins/multi_ai_governance/` as a removable framework plugin. This folder turns that plan into operational rules that project workspaces, dashboards, VS Code surfaces, and CLI commands can enforce.
 
 ## Core Rules
 
@@ -38,3 +38,4 @@ The `.kabeeri/` workspace remains source of truth. Governance examples live besi
 - `TOKEN_BUDGET_RULES.md`
 - `OWNER_VERIFY_TOKEN_REVOCATION_AUDIT.md`
 - `MULTI_AI_GOVERNANCE.md`
+- `PLUGIN_FOLDER_CONTRACT.md`

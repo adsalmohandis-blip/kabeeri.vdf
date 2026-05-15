@@ -1,6 +1,6 @@
 {
   "report_type": "kvdf_capability_doc_matrix",
-  "generated_at": "2026-05-13T21:33:31.435Z",
+  "generated_at": "2026-05-15T00:22:54.660Z",
   "report_path": "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
   "source": "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
   "source_reference": [
@@ -1004,12 +1004,12 @@
     {
       "id": 26,
       "key": "integrations",
-      "name": "Integrations",
-      "group": "G. Commerce and Integrations",
+      "name": "Plugins",
+      "group": "G. Commerce and Plugins",
       "owner": "backend",
       "docs_links": [
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "integrations/github_sync/",
+        "plugins/github_sync/",
         "knowledge/governance/MULTI_AI_GOVERNANCE.md"
       ],
       "cli_links": [
@@ -1044,11 +1044,11 @@
       "id": 27,
       "key": "payments_billing",
       "name": "Payments / Billing",
-      "group": "G. Commerce and Integrations",
+      "group": "G. Commerce and Plugins",
       "owner": "backend",
       "docs_links": [
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "integrations/github_sync/",
+        "plugins/github_sync/",
         "knowledge/governance/MULTI_AI_GOVERNANCE.md"
       ],
       "cli_links": [
@@ -1678,11 +1678,11 @@
       "id": 43,
       "key": "multi_tenancy",
       "name": "Multi-Tenancy",
-      "group": "G. Commerce and Integrations",
+      "group": "G. Commerce and Plugins",
       "owner": "docs",
       "docs_links": [
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "integrations/github_sync/",
+        "plugins/github_sync/",
         "knowledge/governance/MULTI_AI_GOVERNANCE.md"
       ],
       "cli_links": [
@@ -2164,7 +2164,7 @@
       "legal_compliance",
       "data_governance"
     ],
-    "G. Commerce and Integrations": [
+    "G. Commerce and Plugins": [
       "integrations",
       "payments_billing",
       "multi_tenancy"

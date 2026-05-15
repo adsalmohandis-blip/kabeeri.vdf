@@ -14,7 +14,7 @@ const assetAliases = {
   agile_delivery: "knowledge/agile_delivery",
   ai_cost_control: "knowledge/ai_cost_control",
   codex_context: "docs/codex_context",
-  dashboard: "integrations/dashboard",
+  dashboard: "docs/reports/dashboard",
   delivery_modes: "knowledge/delivery_modes",
   design_sources: "knowledge/design_sources",
   design_system: "knowledge/design_system",
@@ -22,11 +22,11 @@ const assetAliases = {
   examples: "packs/examples",
   frontend_specs: "knowledge/frontend_specs",
   generators: "packs/generators",
-  github: "integrations/github",
-  github_sync: "integrations/github_sync",
+  github: "plugins/github",
+  github_sync: "plugins/github_sync",
   governance: "knowledge/governance",
-  multi_ai_governance: "integrations/multi_ai_governance",
-  platform_integration: "integrations/platform_integration",
+  multi_ai_governance: "plugins/multi_ai_governance",
+  platform_integration: "docs/reports/platform_integration",
   project_intake: "knowledge/project_intake",
   project_intelligence: "knowledge/project_intelligence",
   prompt_packs: "packs/prompt_packs",
@@ -36,7 +36,7 @@ const assetAliases = {
   task_tracking: "knowledge/task_tracking",
   templates: "packs/templates",
   vibe_ux: "knowledge/vibe_ux",
-  vscode_extension: "integrations/vscode_extension"
+  vscode_extension: "plugins/vscode_extension"
 };
 
 function resolveRepo(relativePath = "") {
@@ -46,6 +46,10 @@ function resolveRepo(relativePath = "") {
 function aliasPath(relativePath = "") {
   const normalized = relativePath.replace(/\\/g, "/").replace(/^\/+/, "");
   const [first, ...rest] = normalized.split("/");
+  if (first === "integrations") {
+    if (rest[0] === "dashboard") return ["docs/reports/dashboard", ...rest.slice(1)].join("/");
+    return ["plugins", ...rest].join("/");
+  }
   if (!assetAliases[first]) return null;
   return [assetAliases[first], ...rest].join("/");
 }

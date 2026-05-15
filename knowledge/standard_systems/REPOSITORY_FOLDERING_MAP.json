@@ -1,11 +1,12 @@
 {
+  "schema_version": "v1",
   "map_version": "2.0.0",
   "name": "Kabeeri Repository Foldering System",
   "purpose": "Define the physical, Laravel-like repository taxonomy for Kabeeri VDF after reducing root folder noise.",
   "status": "physical_reorganized",
   "principles": [
     "The repository root should expose only major architectural groups.",
-    "Runtime code, knowledge, packs, integrations, contracts, docs, tests, and local runtime state stay separated.",
+    "Runtime code, knowledge, packs, plugins, contracts, docs, tests, and local runtime state stay separated.",
     "Legacy paths remain readable through CLI asset aliases while docs and package publishing move to the new physical structure.",
     "New capabilities must live inside an existing top-level group unless a documented exception is approved.",
     "AI tools should read this map before broad filesystem scans."
@@ -53,7 +54,7 @@
       "group": "plugins",
       "target_path": "plugins/",
       "description": "Optional removable bundles that extend KVDF behavior without becoming part of the core runtime.",
-      "current_paths": ["plugins/"],
+      "current_paths": ["plugins/", "plugins/kvdf-dev/", "plugins/github/", "plugins/github_sync/", "plugins/vscode_extension/", "plugins/multi_ai_governance/"],
       "laravel_analogy": "packages/ or optional service providers"
     },
     {
@@ -62,20 +63,6 @@
       "description": "Developer application workspaces that keep customer projects isolated from kvdf-core and owner bundles.",
       "current_paths": ["workspaces/"],
       "laravel_analogy": "tenant workspaces or project sandboxes"
-    },
-    {
-      "group": "integrations",
-      "target_path": "integrations/",
-      "description": "External tool integrations and platform connectors such as GitHub, VS Code, dashboards, and multi-AI adapters.",
-      "current_paths": [
-        "integrations/github_sync/",
-        "integrations/github/",
-        "integrations/vscode_extension/",
-        "integrations/platform_integration/",
-        "integrations/multi_ai_governance/",
-        "integrations/dashboard/"
-      ],
-      "laravel_analogy": "services/, notifications/, packages"
     },
     {
       "group": "contracts",
@@ -88,7 +75,7 @@
       "group": "documentation",
       "target_path": "docs/",
       "description": "Human documentation, architecture notes, reports, bilingual guides, static docs site, and roadmap source context.",
-      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
+      "current_paths": ["docs/", "docs/site/", "docs/codex_context/", "docs/reports/platform_integration/", "README.md", "README_AR.md", "ROADMAP.md", "CHANGELOG.md"],
       "laravel_analogy": "docs/, README, changelog"
     },
     {
@@ -114,7 +101,6 @@
     { "path": "packs/", "target_group": "packs", "role": "exportable packs super-folder", "migration_status": "physical_root" },
     { "path": "plugins/", "target_group": "plugins", "role": "optional removable bundles", "migration_status": "physical_root" },
     { "path": "workspaces/", "target_group": "workspaces", "role": "developer app workspaces", "migration_status": "physical_root" },
-    { "path": "integrations/", "target_group": "integrations", "role": "integration super-folder", "migration_status": "physical_root" },
     { "path": "schemas/", "target_group": "contracts", "role": "schemas and runtime contracts", "migration_status": "physical_root" },
     { "path": "docs/", "target_group": "documentation", "role": "human documentation and docs site", "migration_status": "physical_root" },
     { "path": "tests/", "target_group": "quality", "role": "integration tests", "migration_status": "physical_root" },
@@ -142,12 +128,12 @@
     "templates/": "packs/templates/",
     "examples/": "packs/examples/",
     "prompt_packs/": "packs/prompt_packs/",
-    "github_sync/": "integrations/github_sync/",
-    "github/": "integrations/github/",
-    "vscode_extension/": "integrations/vscode_extension/",
-    "platform_integration/": "integrations/platform_integration/",
-    "multi_ai_governance/": "integrations/multi_ai_governance/",
-    "dashboard/": "integrations/dashboard/",
+    "github_sync/": "plugins/github_sync/",
+    "github/": "plugins/github/",
+    "vscode_extension/": "plugins/vscode_extension/",
+    "platform_integration/": "docs/reports/platform_integration/",
+    "multi_ai_governance/": "plugins/multi_ai_governance/",
+    "dashboard/": "docs/reports/dashboard/",
     "workspaces/": "workspaces/",
     "docs_site/": "docs/site/",
     "codex_context/": "docs/codex_context/"
@@ -187,28 +173,34 @@
       "new schema": "schemas/",
       "new reusable prompt or template": "packs/prompt_packs/ or packs/templates/",
       "new optional bundle or plugin": "plugins/",
-      "new integration": "integrations/"
+      "new integration": "plugins/"
     }
   },
   "migration_phases": [
     {
       "phase": "phase_1_map_and_validate",
       "status": "completed",
-      "goal": "Document target foldering and validate the repository root."
+      "goal": "Document target foldering and validate the repository root.",
+      "schema_version": "v1",
+      "migration_version": "2.0.0"
     },
     {
       "phase": "phase_2_physical_reorganization",
       "status": "completed",
-      "goal": "Move noisy top-level folders into knowledge, packs, integrations, docs/site, and docs/codex_context."
+      "goal": "Move noisy top-level folders into knowledge, packs, plugins, docs/site, and docs/codex_context.",
+      "schema_version": "v1",
+      "migration_version": "2.0.0"
     },
     {
       "phase": "phase_3_deep_reference_cleanup",
       "status": "active",
-      "goal": "Gradually update old documentation references from legacy aliases to physical paths."
+      "goal": "Gradually update old documentation references from legacy aliases to physical paths.",
+      "schema_version": "v1",
+      "migration_version": "2.0.0"
     }
   ],
   "ai_usage": {
-    "context_summary": "Start from src/ for runtime, knowledge/ for system knowledge and governance, packs/ for generators/prompts/templates, integrations/ for dashboard/GitHub/VS Code/platform work, docs/ for human references, schemas/ for contracts, .kabeeri/ for live state.",
+    "context_summary": "Start from src/ for runtime, knowledge/ for system knowledge and governance, packs/ for generators/prompts/templates, plugins/ for dashboard/GitHub/VS Code/platform work, docs/ for human references, schemas/ for contracts, .kabeeri/ for live state.",
     "token_saving_rule": "Prefer this map before broad filesystem exploration. Use legacy aliases only for compatibility."
   }
 }

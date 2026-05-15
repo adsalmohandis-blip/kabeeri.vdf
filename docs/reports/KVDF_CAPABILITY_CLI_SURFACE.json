@@ -1,6 +1,6 @@
 {
   "report_type": "kvdf_capability_cli_surface",
-  "generated_at": "2026-05-13T21:33:31.429Z",
+  "generated_at": "2026-05-15T00:22:54.658Z",
   "total_capabilities": 53,
   "coverage": {
     "total_capabilities": 53,
@@ -561,8 +561,8 @@
     {
       "id": 26,
       "key": "integrations",
-      "name": "Integrations",
-      "group": "G. Commerce and Integrations",
+      "name": "Plugins",
+      "group": "G. Commerce and Plugins",
       "owner": "backend",
       "cli_surface": [
         "kvdf github",
@@ -584,7 +584,7 @@
       "id": 27,
       "key": "payments_billing",
       "name": "Payments / Billing",
-      "group": "G. Commerce and Integrations",
+      "group": "G. Commerce and Plugins",
       "owner": "backend",
       "cli_surface": [
         "kvdf github",
@@ -936,7 +936,7 @@
       "id": 43,
       "key": "multi_tenancy",
       "name": "Multi-Tenancy",
-      "group": "G. Commerce and Integrations",
+      "group": "G. Commerce and Plugins",
       "owner": "docs",
       "cli_surface": [
         "kvdf github",
