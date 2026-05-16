@@ -6,9 +6,10 @@ Prepare a safe, non-destructive decommission path for `KVDF_New_Features_Docs` a
 
 ## Status
 
-- Redistribution ready: no
+- Redistribution ready: yes
 - Source folder exists: no
-- Verification status: fail
+- Decommission record exists: yes
+- Verification status: decommissioned
 
 ## Permanent Targets
 
@@ -19,6 +20,6 @@ Prepare a safe, non-destructive decommission path for `KVDF_New_Features_Docs` a
 
 ## Next Actions
 
-- Finish the missing permanent targets first.
-- Keep the source package until every reusable item is represented in the permanent folders.
-- Run source-package verify again before scheduling removal.
+- No additional cleanup is required because the source folder has already been decommissioned.
+- Keep the decommission record and redistribution reports as the permanent audit trail.
+- Treat the permanent Kabeeri folders as the new source of truth.

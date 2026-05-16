@@ -232,5 +232,4 @@ This document satisfies the required data design elements:
 
 1. Confirm this data model against product scope and architecture decisions.
 2. Move to the UI/UX direction document.
-3. Continue the docs-first gate before implementation planning.
-
+3. Continue the planning gate before implementation planning.

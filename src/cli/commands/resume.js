@@ -4,6 +4,7 @@ const { spawnSync } = require("child_process");
 
 const { packageRoot, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
+const { formatNextExactAction } = require("../services/command_registry");
 const { purgeExpiredTaskTrash } = require("../services/task_trash");
 const { buildTaskMemory } = require("../services/task_memory");
 const { readGitStatus: readGitStatusService } = require("../services/git_snapshot");
@@ -853,6 +854,8 @@ function readLocalJson(filePath) {
 
 function renderResumeReport(report) {
   console.log("Kabeeri Session Resume");
+  console.log(formatNextExactAction(report.next_exact_action));
+  console.log("");
   console.log(table(["Field", "Value"], [
     ["Mode", report.mode],
     ["Current root", report.current_root],

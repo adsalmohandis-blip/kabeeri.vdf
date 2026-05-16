@@ -1,5 +1,19 @@
 const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../services/local_server");
 
+function resolveDashboardScope(pathname) {
+  const normalized = String(pathname || "").replace(/\/$/, "") || "/";
+  if (normalized === "/__kvdf/dashboard/framework" || normalized === "/__kvdf/dashboard/framework/index.html") {
+    return "framework_owner";
+  }
+  if (normalized === "/__kvdf/dashboard/vibe" || normalized === "/__kvdf/dashboard/vibe/index.html") {
+    return "vibe_app_developer";
+  }
+  if (normalized === "/__kvdf/dashboard" || normalized === "/__kvdf/dashboard/index.html") {
+    return "current";
+  }
+  return null;
+}
+
 function serveSite(port, options = {}, deps = {}) {
   const http = require("http");
   const fs = require("fs");
@@ -8,7 +22,7 @@ function serveSite(port, options = {}, deps = {}) {
     repoRoot,
     collectDashboardState,
     writeDashboardStateFiles,
-    buildDashboardHtml,
+      buildDashboardHtml,
     refreshLiveReportsState,
     refreshAgileDashboardState,
     refreshStructuredDashboardState,
@@ -35,20 +49,25 @@ function serveSite(port, options = {}, deps = {}) {
       let file = null;
       if (pathname === "/" || pathname === "/index.html") {
         file = homeFile;
-      } else if (pathname === "/__kvdf/dashboard" || pathname === "/__kvdf/dashboard/index.html") {
+      } else {
+        const dashboardScope = resolveDashboardScope(pathname);
+        if (dashboardScope) {
+          const state = collectDashboardState(options);
+          writeDashboardStateFiles(state);
+          response.writeHead(200, {
+            "content-type": "text/html; charset=utf-8",
+            "cache-control": "no-store"
+          });
+          const dashboardOptions = dashboardScope === "current" ? options : { ...options, scope: dashboardScope };
+          response.end(buildDashboardHtml(dashboardOptions));
+          return;
+        }
+      }
+      if (pathname === "/__kvdf/api/state") {
         const state = collectDashboardState(options);
         writeDashboardStateFiles(state);
         response.writeHead(200, {
           "content-type": "text/html; charset=utf-8",
-          "cache-control": "no-store"
-        });
-        response.end(buildDashboardHtml());
-        return;
-      } else if (pathname === "/__kvdf/api/state") {
-        const state = collectDashboardState(options);
-        writeDashboardStateFiles(state);
-        response.writeHead(200, {
-          "content-type": "application/json; charset=utf-8",
           "cache-control": "no-store"
         });
         response.end(JSON.stringify(state, null, 2));
@@ -126,5 +145,6 @@ function serveSite(port, options = {}, deps = {}) {
 }
 
 module.exports = {
-  serveSite
+  serveSite,
+  resolveDashboardScope
 };

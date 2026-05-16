@@ -145,7 +145,7 @@ function buildProjectProfileRecommendation(input, flags = {}, deps = {}) {
     },
     next_actions: [
       "Use this profile when creating the initial Kabeeri workspace.",
-      "Use `kvdf questionnaire plan` to generate focused intake questions for the selected blueprint.",
+      "Use `kvdf questionnaire plan` to generate focused intake questions for the selected blueprint, then review and approve the planning pack before task generation.",
       "Use `kvdf prompt-pack compose` to bind the recommended pack to a governed task.",
       "If the selection looks wrong, rerun `kvdf project profile route --profile <lite|standard|enterprise>`."
     ]

@@ -1,10 +1,10 @@
 {
   "report_type": "docs_site_sync_report",
-  "generated_at": "2026-05-15T00:22:37.904Z",
+  "generated_at": "2026-05-16T14:18:09.397Z",
   "site_name": "Kabeeri VDF Docs",
   "report_path": "docs/reports/DOCS_SITE_SYNC_REPORT.json",
-  "page_count": 39,
-  "contract_count": 78,
+  "page_count": 44,
+  "contract_count": 88,
   "coverage": {
     "total_families": 8,
     "complete_families": 8,

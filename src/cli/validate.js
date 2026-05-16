@@ -1,6 +1,8 @@
+const path = require("path");
 const { fileExists, listDirectories, listFiles, readJsonFile, readTextFile } = require("./fs_utils");
 const { isManualFeatureDocsInbox } = require("./services/manual_feature_docs");
 const { defaultWorkstreams } = require("./workspace");
+const { validateDeveloperAppWorkspace } = require("./services/app_workspace_contract");
 const { buildResumeReport } = require("./commands/resume");
 const { buildTaskVerificationCoverage } = require("./services/task_verification");
 
@@ -94,6 +96,7 @@ function validateRepository(scope) {
       for (const file of listFiles(".kabeeri", ".json", true)) validateJson(file, pass, fail);
       validateWorkspaceGovernance(pass, fail);
       pass(".kabeeri workspace present");
+      validateAppWorkspaceContracts(pass, fail);
     } else {
       lines.push("WARN .kabeeri workspace missing; run `kvdf init` when starting a real project");
     }
@@ -535,54 +538,77 @@ function validateRuntimeSchemas(pass, fail) {
   else if (typeof registry.registry_version !== "string") fail("runtime schema registry version must be a string");
   const stateFiles = registry.state_files || [];
   const jsonlFiles = registry.jsonl_files || [];
+  const runtimeEntries = [...stateFiles, ...jsonlFiles];
   const coverageExemptions = getRuntimeSchemaCoverageExemptions(registry);
   let checkedJson = 0;
   let checkedJsonl = 0;
   let exemptCount = 0;
 
-  for (const entry of [...stateFiles, ...jsonlFiles]) {
-    if (!entry.schema) fail(`runtime registry entry missing schema: ${entry.path || "unknown"}`);
+  for (const entry of runtimeEntries) {
+    if (!entry.schema) fail(`runtime registry entry missing schema: ${entry.path || entry.pattern || "unknown"}`);
     else if (!fileExists(entry.schema)) fail(`runtime schema missing: ${entry.schema}`);
     else validateJson(entry.schema, pass, fail);
-    if (!entry.path) fail(`runtime registry entry missing path for schema: ${entry.schema || "unknown"}`);
+    if (!entry.path && !entry.pattern) fail(`runtime registry entry missing path or pattern for schema: ${entry.schema || "unknown"}`);
   }
 
+  const runtimeFiles = fileExists(".kabeeri")
+    ? [
+        ...listFiles(".kabeeri", ".json", true),
+        ...listFiles(".kabeeri", ".jsonl", true)
+      ]
+    : [];
+
   if (fileExists(".kabeeri")) {
-    const mapped = new Set([...stateFiles.map((entry) => entry.path), ...jsonlFiles.map((entry) => entry.path)]);
-    const runtimeFiles = [
-      ...listFiles(".kabeeri", ".json", true),
-      ...listFiles(".kabeeri", ".jsonl", true)
-    ];
     for (const file of runtimeFiles) {
       if (isRuntimeSchemaCoverageExempt(file, coverageExemptions)) {
         exemptCount += 1;
         continue;
       }
-      if (!mapped.has(file)) fail(`runtime state has no schema mapping: ${file}`);
+      if (!runtimeEntries.some((entry) => matchesRuntimeSchemaEntry(file, entry))) fail(`runtime state has no schema mapping: ${file}`);
     }
   }
 
   for (const entry of stateFiles) {
-    if (!entry.path || !entry.schema || !fileExists(entry.path)) continue;
+    const files = getRuntimeSchemaEntryFiles(entry, runtimeFiles);
+    if (!files.length || !entry.schema) continue;
     const schema = fileExists(entry.schema) ? readJsonFile(entry.schema) : null;
-    const data = readJsonFile(entry.path);
-    if (schema) validateDataAgainstSchema(data, schema, entry.path, pass, fail);
-    checkedJson += 1;
+    for (const file of files) {
+      const data = readJsonFile(file);
+      if (schema) validateDataAgainstSchema(data, schema, file, pass, fail);
+      checkedJson += 1;
+    }
   }
 
   for (const entry of jsonlFiles) {
-    if (!entry.path || !entry.schema || !fileExists(entry.path)) continue;
+    const files = getRuntimeSchemaEntryFiles(entry, runtimeFiles);
+    if (!files.length || !entry.schema) continue;
     const schema = fileExists(entry.schema) ? readJsonFile(entry.schema) : null;
-    const records = readJsonLines(entry.path, fail);
-    if (schema) {
-      records.forEach((record, index) => validateDataAgainstSchema(record, schema, `${entry.path}:${index + 1}`, pass, fail));
+    for (const file of files) {
+      const records = readJsonLines(file, fail);
+      if (schema) {
+        records.forEach((record, index) => validateDataAgainstSchema(record, schema, `${file}:${index + 1}`, pass, fail));
+      }
+      checkedJsonl += 1;
     }
-    checkedJsonl += 1;
   }
 
   pass(`runtime schema registry checked (${stateFiles.length} JSON mappings, ${jsonlFiles.length} JSONL mappings)`);
   pass(`runtime schema registry version checked: ${registry.registry_version || "n/a"}`);
   pass(`runtime schema validation checked (${checkedJson} JSON files, ${checkedJsonl} JSONL files, ${exemptCount} exempt files)`);
+}
+
+function matchesRuntimeSchemaEntry(file, entry = {}) {
+  if (!file || !entry) return false;
+  if (entry.path && file === entry.path) return true;
+  if (entry.pattern && matchRuntimeCoveragePattern(file, entry.pattern)) return true;
+  return false;
+}
+
+function getRuntimeSchemaEntryFiles(entry = {}, runtimeFiles = []) {
+  if (!entry) return [];
+  if (entry.path) return fileExists(entry.path) ? [entry.path] : [];
+  if (entry.pattern) return runtimeFiles.filter((file) => matchRuntimeCoveragePattern(file, entry.pattern));
+  return [];
 }
 
 function validateDocsSourceTruth(pass, fail) {
@@ -1759,6 +1785,40 @@ function validateAppBoundaryGovernance(pass, fail) {
   pass("app boundary governance checked");
 }
 
+function validateAppWorkspaceContracts(pass, fail) {
+  const registryFile = ".kabeeri/app_workspaces.json";
+  if (!fileExists(registryFile)) {
+    pass("developer app workspace registry not configured");
+    return;
+  }
+  const registry = safeRead(registryFile, "workspaces");
+  if (!registry.length) {
+    pass("developer app workspace registry empty");
+    return;
+  }
+  let checked = 0;
+  for (const workspace of registry) {
+    const root = workspace.root || workspace.path || workspace.workspace_root || "";
+    if (!root) {
+      fail(`app workspace registry entry missing root: ${workspace.slug || workspace.name || "unknown"}`);
+      continue;
+    }
+    if (!fileExists(path.join(root, ".kabeeri", "workspace.json"))) {
+      pass(`legacy developer app workspace skipped: ${workspace.slug || path.basename(root)}`);
+      continue;
+    }
+    const validation = validateDeveloperAppWorkspace(root);
+    checked += 1;
+    if (!validation.ok) {
+      for (const item of validation.checks || []) {
+        if (!item.passed) fail(`developer app workspace ${workspace.slug || path.basename(root)}: ${item.message}`);
+      }
+      continue;
+    }
+  }
+  pass(`developer app workspace contracts checked: ${checked}`);
+}
+
 function validateWorkstreamGovernance(pass, fail) {
   const workstreams = readWorkstreamRegistry();
   if (workstreams.length === 0) {
@@ -1789,11 +1849,13 @@ function validateWorkstreamGovernance(pass, fail) {
 
 function validateExecutionScopeTokens(tokens, pass, fail) {
   const tasks = safeRead(".kabeeri/tasks.json", "tasks");
+  const trashedTasks = new Set((safeRead(".kabeeri/task_trash.json", "trash") || []).map((item) => item && item.id).filter(Boolean));
   for (const token of tokens) {
     if (!token.task_id) fail(`token missing task_id: ${token.token_id || "unknown"}`);
     if (!token.assignee_id) fail(`token missing assignee_id: ${token.token_id || "unknown"}`);
     const task = tasks.find((item) => item.id === token.task_id);
     if (!task) {
+      if (trashedTasks.has(token.task_id)) continue;
       fail(`token references missing task: ${token.token_id || "unknown"} -> ${token.task_id || "unknown"}`);
       continue;
     }

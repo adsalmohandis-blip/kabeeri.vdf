@@ -1,0 +1,47 @@
+{
+  "plugin_id": "crm",
+  "smoke_cases": [
+    {
+      "name": "sales crm launch path",
+      "mode": "sales",
+      "steps": [
+        "kvdf plugins install crm",
+        "kvdf crm init --mode sales --name \"Sales CRM\"",
+        "kvdf crm questionnaire",
+        "kvdf crm brief",
+        "kvdf crm design",
+        "kvdf crm modules",
+        "kvdf crm tasks",
+        "kvdf crm approve --confirm",
+        "kvdf crm report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/crm.json"
+    },
+    {
+      "name": "support crm launch path",
+      "mode": "support",
+      "project_name": "Support Desk CRM",
+      "steps": [
+        "kvdf plugins install crm",
+        "kvdf crm init --mode support --name \"Support Desk CRM\"",
+        "kvdf crm questionnaire",
+        "kvdf crm brief",
+        "kvdf crm design",
+        "kvdf crm modules",
+        "kvdf crm tasks",
+        "kvdf crm approve --confirm",
+        "kvdf crm report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/crm.json"
+    },
+    {
+      "name": "brief requires questionnaire",
+      "kind": "blocked",
+      "blocked_action": "brief",
+      "project_name": "Guarded CRM",
+      "state_file": ".kabeeri/crm.json"
+    }
+  ]
+}

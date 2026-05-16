@@ -1,0 +1,47 @@
+{
+  "plugin_id": "news-website",
+  "smoke_cases": [
+    {
+      "name": "editorial launch path",
+      "mode": "editorial",
+      "steps": [
+        "kvdf plugins install news-website",
+        "kvdf news-website init --mode editorial --name \"Daily Pulse\"",
+        "kvdf news-website questionnaire",
+        "kvdf news-website brief",
+        "kvdf news-website design",
+        "kvdf news-website modules",
+        "kvdf news-website tasks",
+        "kvdf news-website approve --confirm",
+        "kvdf news-website report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/news_website.json"
+    },
+    {
+      "name": "newsletter launch path",
+      "mode": "newsletter",
+      "project_name": "Inbox Daily",
+      "steps": [
+        "kvdf plugins install news-website",
+        "kvdf news-website init --mode newsletter --name \"Inbox Daily\"",
+        "kvdf news-website questionnaire",
+        "kvdf news-website brief",
+        "kvdf news-website design",
+        "kvdf news-website modules",
+        "kvdf news-website tasks",
+        "kvdf news-website approve --confirm",
+        "kvdf news-website report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/news_website.json"
+    },
+    {
+      "name": "brief requires questionnaire",
+      "kind": "blocked",
+      "blocked_action": "brief",
+      "project_name": "Guarded News",
+      "state_file": ".kabeeri/news_website.json"
+    }
+  ]
+}

@@ -2,6 +2,8 @@
 
 This folder is the reference brain for v5 adaptive questionnaires. It lists the system areas Kabeeri uses to avoid missing important parts of a software project.
 
+The machine-readable source of truth for repository layout is `REPOSITORY_FOLDERING_MAP.json` in this folder. When a capability or document needs a home, use that map first, then the human guide in `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, and only then add or edit files inside the owning root.
+
 Runtime support:
 
 ```bash
@@ -31,6 +33,12 @@ The catalog complements the capability map. Capability areas say which broad
 system areas are required; product blueprints give a compact starting structure
 for common systems like eCommerce, POS, ERP, CRM, news websites, booking,
 delivery/logistics, and mobile apps.
+
+Business-type packs for booking and ecommerce should stay in parity. The
+booking pack covers appointments, services, classes, hotels, and events, while
+the ecommerce pack covers store, marketplace, digital products, subscription,
+and services. Both packs should keep matching intake, module, and acceptance
+structure so the docs read as one shared archetype family.
 
 This reduces AI token usage because Codex can read one compact blueprint context
 instead of rediscovering the same application anatomy across disconnected

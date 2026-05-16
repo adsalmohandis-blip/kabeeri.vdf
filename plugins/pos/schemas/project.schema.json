@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "POS Builder Project Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project_id", "slug", "name", "mode", "stage", "status", "created_at", "updated_at", "intake", "blockers", "next_action", "artifacts"],
+  "properties": {
+    "project_id": { "type": "string" },
+    "slug": { "type": "string" },
+    "name": { "type": "string" },
+    "mode": { "enum": ["retail", "restaurant", "cafe", "service"] },
+    "stage": { "enum": ["intake", "questionnaire", "brief", "design", "modules", "tasks", "approval", "execution"] },
+    "status": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "intake": { "type": "object" },
+    "brief": { "type": ["object", "null"] },
+    "design": { "type": ["object", "null"] },
+    "modules": { "type": ["object", "null"] },
+    "tasks": { "type": ["object", "null"] },
+    "approvals": { "type": "array" },
+    "blockers": { "type": "array" },
+    "next_action": { "type": "string" },
+    "artifacts": { "type": "object" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "retail" } }, "title": "Retail POS mode" },
+    { "properties": { "mode": { "const": "restaurant" } }, "title": "Restaurant POS mode" },
+    { "properties": { "mode": { "const": "cafe" } }, "title": "Cafe POS mode" },
+    { "properties": { "mode": { "const": "service" } }, "title": "Service POS mode" }
+  ]
+}

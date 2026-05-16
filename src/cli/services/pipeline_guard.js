@@ -1,3 +1,5 @@
+const { formatNextExactAction } = require("./command_registry");
+
 const PIPELINE_REPORT_PATH = ".kabeeri/reports/pipeline_enforcement.json";
 const PIPELINE_MATRIX_DOC_PATH = "docs/reports/KVDF_PIPELINE_ENFORCEMENT_MATRIX.md";
 
@@ -229,6 +231,7 @@ function assertStrictPipeline(commandKey, state, options = {}) {
 }
 
 function renderPipelineEnforcementMatrix(matrix) {
+  const nextExactAction = getPipelineNextExactAction(matrix);
   const rows = matrix.map((item) => [
     item.id,
     item.status,
@@ -240,8 +243,15 @@ function renderPipelineEnforcementMatrix(matrix) {
   return [
     "# KVDF Pipeline Enforcement Matrix",
     "",
+    formatNextExactAction(nextExactAction),
+    "",
     table(["Stage", "Status", "File", "Command", "Guard Condition", "Failure Message"], rows)
   ].join("\n");
+}
+
+function getPipelineNextExactAction(matrix = []) {
+  const failingEntry = Array.isArray(matrix) ? matrix.find((item) => item.status !== "pass") : null;
+  return failingEntry ? failingEntry.next_action : "All pipeline stages currently pass.";
 }
 
 function createEntry({ id, command, guard_condition, file, failure_message, passed, evidence }) {
@@ -476,6 +486,7 @@ module.exports = {
   buildPipelineEnforcementMatrix,
   buildPipelineState,
   findCurrentQuestionnairePlan,
+  getPipelineNextExactAction,
   normalizeMode,
   renderPipelineEnforcementMatrix
 };

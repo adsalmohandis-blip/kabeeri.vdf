@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>System Development - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="system-development">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        
+        <a class="language-link is-active" data-lang-target="en" href="system-development.html">English</a>
+        <a class="language-link" data-lang-target="ar" href="../ar/system-development.html">Arabic</a>
+      
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">Filter</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="Search docs">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link is-active" href="system-development.html">System Development</a>
+<a class="nav-link" href="methodology.html">Methodology</a>
+<a class="nav-link" href="kabeeri-4-parts.html">Kabeeri in 4 Pillars</a>
+<a class="nav-link" href="modules.html">Modules</a>
+<a class="nav-link" href="modules-relationship.html">Modules Relationship</a>
+<a class="nav-link" href="modules-relationship-patterns.html">Flows and Patterns</a>
+<a class="nav-link" href="framework-dashboard.html">Framework Dashboard</a>
+<a class="nav-link" href="framework-development.html">Framework Development</a>
+<a class="nav-link" href="framework-development-pipeline.html">Framework Development Pipeline</a>
+<a class="nav-link" href="plugin-development.html">Plugin Development</a>
+<a class="nav-link" href="scorecards-evo.html">Scorecards and Evolution</a>
+<a class="nav-link" href="cli-engine.html">CLI Engine</a>
+<a class="nav-link" href="ai-cli-contract.html">AI/CLI Operating Contract</a>
+<a class="nav-link" href="workspace-state.html">Workspace State</a>
+<a class="nav-link" href="session-track-router.html">Session Track Router</a>
+<a class="nav-link" href="project-intake-profile.html">Project Intake and Profile Router</a>
+<a class="nav-link" href="delivery-mode-advisor.html">Delivery Mode Advisor</a>
+<a class="nav-link" href="blueprint-data-design.html">Blueprint and Data Design</a>
+<a class="nav-link" href="questionnaires.html">Questionnaires</a>
+<a class="nav-link" href="prompt-packs.html">Prompt Packs</a>
+<a class="nav-link" href="task-governance.html">Task Governance</a>
+<a class="nav-link" href="task-packet.html">Task Packet</a>
+<a class="nav-link" href="executor-contract.html">Executor Contract</a>
+<a class="nav-link" href="batch-execution.html">Batch Execution</a>
+<a class="nav-link" href="plugin-system.html">Plugin System</a>
+<a class="nav-link" href="app-builder-plugins.html">App Builder Plugins</a>
+<a class="nav-link" href="multi-ai-governance.html">Multi-AI Governance</a>
+<a class="nav-link" href="evolution-steward.html">Evolution Steward</a>
+<a class="nav-link" href="dashboard.html">Dashboard</a>
+<a class="nav-link" href="reports-traceability.html">Reports and Traceability</a>
+<a class="nav-link" href="validation-schemas.html">Validation and Schemas</a>
+<a class="nav-link" href="policy-gates.html">Policy Gates</a>
+<a class="nav-link" href="design-governance.html">Design Governance</a>
+<a class="nav-link" href="ai-cost-control.html">AI Cost Control</a>
+<a class="nav-link" href="handoff-release.html">Handoff and Release</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>System Development</h1>
+        <p class="lead">This site explains how Kabeeri itself is developed: the methodology, the four pillars, framework development, plugin development, and how scorecards become tracked Evolution work.</p>
+        <aside class="beginner-note">
+          <strong>Beginner note</strong>
+          <p>Start here when you want the shortest route into System Development.</p>
+        </aside>
+        
+        <section class="wide-section">
+          <h2>Table of Contents</h2>
+          <div class="detail-block">
+            <ol><li><a href="#who-this-site-is-for">Who this site is for</a></li><li><a href="#what-kvdf-is">What KVDF is</a></li><li><a href="#how-to-read-it">How to read it</a></li><li><a href="#methodology">Methodology</a></li><li><a href="#what-this-site-covers">What this site covers</a></li><li><a href="#what-does-not-belong-here">What does not belong here</a></li><li><a href="#the-working-rule">The working rule</a></li><li><a href="#canonical-links">Canonical links</a></li></ol>
+          </div>
+        </section>
+        
+        <section class="wide-section">
+          <h2>Topic Details</h2>
+          <div class="detail-stack"><article class="detail-block" id="who-this-site-is-for"><h3>Who this site is for</h3><p>This site is for framework contributors, maintainers, and plugin authors who are changing Kabeeri itself. If you are working on the engine, the contract, or the developer method, this is the starting point.</p></article><article class="detail-block" id="what-kvdf-is"><h3>What KVDF is</h3><p>KVDF is the operating framework around Kabeeri. It defines how planning, approval, runtime state, validation, dashboards, plugins, and evolution stay in sync so the system remains strict instead of becoming a loose collection of tools.</p></article><article class="detail-block" id="how-to-read-it"><h3>How to read it</h3><p>Start with Methodology, then read the four pillars, then move into framework development, plugin development, and scorecards. The site is arranged so each page builds on the previous one rather than repeating the same idea in a different form.</p></article><article class="detail-block" id="methodology"><h3>Methodology</h3><p>The method is strict: plan first, define scope, slice the work, approve before execution, then stop after each slice and verify. That rule is the backbone of every framework change, because it keeps the runtime, the docs, and the evidence aligned.</p></article><article class="detail-block" id="what-this-site-covers"><h3>What this site covers</h3><p>The flow chains of the system, the main modules, module relationships, relationship patterns, framework development, plugin development, and the evolution loop all belong here. These are the pieces that explain the framework as a whole and how it changes safely over time.</p></article><article class="detail-block" id="what-does-not-belong-here"><h3>What does not belong here</h3><p>App-building guidance, workspace delivery, vibe developer instructions, and app scorecards belong in the vibe docs site. If the change is about a customer app rather than the framework itself, it should live elsewhere.</p></article><article class="detail-block" id="the-working-rule"><h3>The working rule</h3><p>If a change affects the framework contract, the runtime, or the developer workflow, it belongs in this site and must be reviewed as a framework change. That rule helps prevent accidental drift between what the framework promises and what it actually does.</p></article><article class="detail-block" id="canonical-links"><h3>Canonical links</h3><p>Use the workflow instructions, governance readme, scorecard index, and implementation plan as the canonical references when you need the formal policy behind the site.</p></article></div>
+        </section>
+        <section class="wide-section">
+          <h2>Related Pages</h2>
+          <div class="callout links"><a href="./methodology.html">Methodology</a><a href="./kabeeri-4-parts.html">Kabeeri in 4 Pillars</a><a href="./framework-development.html">Framework Development</a><a href="./framework-development-pipeline.html">Framework Development Pipeline</a><a href="./plugin-development.html">Plugin Development</a><a href="./scorecards-evo.html">Scorecards and Evolution</a></div>
+        </section>
+        <section class="wide-section">
+          <h2>Commands</h2>
+          <div class="detail-block"><ul><li><code>knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md</code></li><li><code>docs/reports/KVDF_SCORECARDS_INDEX.md</code></li><li><code>docs/reports/IMPLEMENTATION_PLAN.md</code></li></ul></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

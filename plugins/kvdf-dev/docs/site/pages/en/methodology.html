@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Methodology - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="methodology">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        
+        <a class="language-link is-active" data-lang-target="en" href="methodology.html">English</a>
+        <a class="language-link" data-lang-target="ar" href="../ar/methodology.html">Arabic</a>
+      
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">Filter</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="Search docs">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">System Development</a>
+<a class="nav-link is-active" href="methodology.html">Methodology</a>
+<a class="nav-link" href="kabeeri-4-parts.html">Kabeeri in 4 Pillars</a>
+<a class="nav-link" href="modules.html">Modules</a>
+<a class="nav-link" href="modules-relationship.html">Modules Relationship</a>
+<a class="nav-link" href="modules-relationship-patterns.html">Flows and Patterns</a>
+<a class="nav-link" href="framework-dashboard.html">Framework Dashboard</a>
+<a class="nav-link" href="framework-development.html">Framework Development</a>
+<a class="nav-link" href="plugin-development.html">Plugin Development</a>
+<a class="nav-link" href="scorecards-evo.html">Scorecards and Evolution</a>
+<a class="nav-link" href="cli-engine.html">CLI Engine</a>
+<a class="nav-link" href="ai-cli-contract.html">AI/CLI Operating Contract</a>
+<a class="nav-link" href="workspace-state.html">Workspace State</a>
+<a class="nav-link" href="session-track-router.html">Session Track Router</a>
+<a class="nav-link" href="project-intake-profile.html">Project Intake and Profile Router</a>
+<a class="nav-link" href="delivery-mode-advisor.html">Delivery Mode Advisor</a>
+<a class="nav-link" href="blueprint-data-design.html">Blueprint and Data Design</a>
+<a class="nav-link" href="questionnaires.html">Questionnaires</a>
+<a class="nav-link" href="prompt-packs.html">Prompt Packs</a>
+<a class="nav-link" href="task-governance.html">Task Governance</a>
+<a class="nav-link" href="task-packet.html">Task Packet</a>
+<a class="nav-link" href="executor-contract.html">Executor Contract</a>
+<a class="nav-link" href="batch-execution.html">Batch Execution</a>
+<a class="nav-link" href="plugin-system.html">Plugin System</a>
+<a class="nav-link" href="app-builder-plugins.html">App Builder Plugins</a>
+<a class="nav-link" href="multi-ai-governance.html">Multi-AI Governance</a>
+<a class="nav-link" href="evolution-steward.html">Evolution Steward</a>
+<a class="nav-link" href="dashboard.html">Dashboard</a>
+<a class="nav-link" href="reports-traceability.html">Reports and Traceability</a>
+<a class="nav-link" href="validation-schemas.html">Validation and Schemas</a>
+<a class="nav-link" href="policy-gates.html">Policy Gates</a>
+<a class="nav-link" href="design-governance.html">Design Governance</a>
+<a class="nav-link" href="ai-cost-control.html">AI Cost Control</a>
+<a class="nav-link" href="handoff-release.html">Handoff and Release</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>Methodology</h1>
+        <p class="lead">KVDF development starts with a planning gate: define the change, check the boundary, slice the work, approve before execution, and verify after every slice. The method keeps the runtime, the docs, and the evidence aligned so framework change stays controlled instead of improvised.</p>
+        <aside class="beginner-note">
+          <strong>Beginner note</strong>
+          <p>Start here when you want the shortest route into Methodology.</p>
+        </aside>
+        
+        <section class="wide-section">
+          <h2>Table of Contents</h2>
+          <div class="detail-block">
+            <ol><li><a href="#steps">Steps</a></li><li><a href="#planning-gate">Planning gate</a></li><li><a href="#plan-first">Plan first</a></li><li><a href="#define-scope">Define scope</a></li><li><a href="#boundary-rules">Boundary rules</a></li><li><a href="#name-the-contract">Name the contract</a></li><li><a href="#slice-the-work">Slice the work</a></li><li><a href="#approve-before-execution">Approve before execution</a></li><li><a href="#one-slice-at-a-time">One slice at a time</a></li><li><a href="#verify">Verify</a></li><li><a href="#re-review-on-change">Re-review on change</a></li><li><a href="#stop-rules">Stop rules</a></li><li><a href="#escalation-rules">Escalation rules</a></li><li><a href="#no-hidden-cleanup">No hidden cleanup</a></li><li><a href="#no-memory-based-changes">No memory-based changes</a></li></ol>
+          </div>
+        </section>
+        
+        <section class="wide-section">
+          <h2>Topic Details</h2>
+          <div class="detail-stack"><article class="detail-block" id="steps"><h3>Steps</h3><div class="section-grid"><article class="info-card"><p>Describe the change</p></article><article class="info-card"><p>Define scope</p></article><article class="info-card"><p>Split into slices</p></article><article class="info-card"><p>Approve the slice list</p></article><article class="info-card"><p>Implement one slice</p></article><article class="info-card"><p>Verify</p></article><article class="info-card"><p>Return to planning if scope changes</p></article></div></article><article class="detail-block" id="planning-gate"><h3>Planning gate</h3><p>The planning gate is the formal checkpoint that turns an idea into controlled framework work. It collects the scope, the boundary, the slice list, the approval state, and the next exact action so the framework can move only when the work is actually ready.</p></article><article class="detail-block" id="plan-first"><h3>Plan first</h3><p>Start by defining the change, the problem, and the result you want. Planning removes uncertainty before code changes begin and gives every later step a clear reason to exist. It also gives the reviewer a stable reference point instead of forcing them to infer the intent from code later.</p></article><article class="detail-block" id="define-scope"><h3>Define scope</h3><p>State exactly what is included and what is excluded before touching code. Clear scope prevents the request from silently growing beyond the approval that was granted, and it keeps the slice small enough to review honestly.</p></article><article class="detail-block" id="boundary-rules"><h3>Boundary rules</h3><p>Every framework change must stay inside the approved boundary unless the boundary is deliberately reopened. If a change crosses into another product, workspace, or surface scope, the work stops and returns to planning instead of widening silently.</p></article><article class="detail-block" id="name-the-contract"><h3>Name the contract</h3><p>List the commands, services, pages, schemas, or plugins the slice may touch. That keeps the work attached to concrete runtime surfaces instead of vague implementation talk, and it makes the review focused instead of speculative.</p></article><article class="detail-block" id="slice-the-work"><h3>Slice the work</h3><p>Break the change into small tasks that can be reviewed and finished one at a time. Slicing makes the work measurable, reviewable, and easier to stop if something drifts, especially when the change touches more than one framework layer.</p></article><article class="detail-block" id="approve-before-execution"><h3>Approve before execution</h3><p>Nothing should move into implementation until the slice list is approved. Approval is the point where the plan becomes an execution path instead of a draft idea, and it is the moment when the team can hold the slice against the agreement.</p></article><article class="detail-block" id="one-slice-at-a-time"><h3>One slice at a time</h3><p>Implement only the current slice and stop before moving to the next one. Single-slice work preserves focus and prevents one task from silently swallowing another task?s scope, which keeps the change readable and traceable.</p></article><article class="detail-block" id="verify"><h3>Verify</h3><p>Confirm the slice with tests, checks, or acceptance criteria. Verification turns &#39;it looks done&#39; into &#39;it is safe to continue&#39; and protects the next slice from uncertain foundations. Without it, the work is only assumed, not proven.</p></article><article class="detail-block" id="re-review-on-change"><h3>Re-review on change</h3><p>If scope changes, return to planning and approve the new slice list again. The old approval no longer describes the real work, so the change must re-enter the gate before it continues. Re-review keeps the approval trail honest when reality moves.</p></article><article class="detail-block" id="stop-rules"><h3>Stop rules</h3><p>Stop immediately when the plan is incomplete, the boundary is unclear, or the slice is larger than the approved work. Stopping is the correct move when safety is missing, because continuing without a clean gate hides risk instead of resolving it.</p></article><article class="detail-block" id="escalation-rules"><h3>Escalation rules</h3><p>Escalate back to planning when the slice touches a new surface, changes scorecard meaning, or affects another framework boundary. Escalation prevents small local decisions from becoming hidden framework-wide changes and gives the owner a chance to re-evaluate the risk.</p></article><article class="detail-block" id="no-hidden-cleanup"><h3>No hidden cleanup</h3><p>Only work on the approved slice. Refactors and side fixes should wait for a later slice so the review trail stays honest and easy to follow. Hidden cleanup makes reviews blurry because it mixes the approved change with extra work nobody signed up for.</p></article><article class="detail-block" id="no-memory-based-changes"><h3>No memory-based changes</h3><p>If the change is not in the approved plan, treat it as a new request. The system should obey the written plan, not the memory of the conversation or an assumption about what might be useful. This rule stops the project from becoming a loose chat-driven pile of opportunistic edits.</p></article></div>
+        </section>
+        <section class="wide-section">
+          <h2>Related Pages</h2>
+          <div class="callout links"><a href="./system-development.html">System Development</a><a href="./kabeeri-4-parts.html">Kabeeri in 4 Pillars</a><a href="./framework-development.html">Framework Development</a></div>
+        </section>
+        <section class="wide-section">
+          <h2>Commands</h2>
+          <div class="detail-block"><ul><li><code>knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md</code></li><li><code>src/cli/services/evolution.js</code></li><li><code>src/cli/commands/evolution.js</code></li><li><code>docs/reports/IMPLEMENTATION_PLAN.md</code></li></ul></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

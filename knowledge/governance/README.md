@@ -36,6 +36,7 @@ The `.kabeeri/` workspace remains source of truth. Governance examples live besi
 - `ASSIGNMENT_EXECUTION_GOVERNANCE.md`
 - `AI_DEVELOPER_OUTPUT_CONTRACT.md`
 - `TOKEN_BUDGET_RULES.md`
+- `KVDF_WORKFLOW_INSTRUCTIONS.md`
 - `OWNER_VERIFY_TOKEN_REVOCATION_AUDIT.md`
 - `MULTI_AI_GOVERNANCE.md`
 - `PLUGIN_FOLDER_CONTRACT.md`

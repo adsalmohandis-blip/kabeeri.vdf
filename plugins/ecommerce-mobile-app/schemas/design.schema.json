@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ecommerce Mobile App Builder Design Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mode", "ui_patterns", "system_patterns", "page_map", "module_hints", "design_summary"],
+  "properties": {
+    "mode": { "enum": ["shopping", "marketplace", "subscription", "loyalty"] },
+    "ui_patterns": { "type": "array", "items": { "type": "string" } },
+    "system_patterns": { "type": "array", "items": { "type": "string" } },
+    "page_map": { "type": "array" },
+    "module_hints": { "type": "array" },
+    "design_summary": { "type": "object" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "shopping" } } },
+    { "properties": { "mode": { "const": "marketplace" } } },
+    { "properties": { "mode": { "const": "subscription" } } },
+    { "properties": { "mode": { "const": "loyalty" } } }
+  ]
+}

@@ -14,10 +14,10 @@ kvdf booking modules [--json]
 kvdf booking tasks [--json]
 kvdf booking approve [--batch <id>] [--json]
 kvdf booking report [--json]
-kvdf plugin install booking-builder
-kvdf plugin uninstall booking-builder
-kvdf plugin enable booking-builder
-kvdf plugin disable booking-builder
+kvdf plugins install booking-builder
+kvdf plugins uninstall booking-builder
+kvdf plugins enable booking-builder
+kvdf plugins disable booking-builder
 ```
 
 ## Expected outputs
@@ -154,4 +154,3 @@ Shows the full booking build status and missing pieces.
   "artifacts": []
 }
 ```
-

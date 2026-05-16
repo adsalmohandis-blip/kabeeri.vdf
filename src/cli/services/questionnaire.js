@@ -5,6 +5,7 @@ const { table } = require("../ui");
 const { getSuggestedQuestionsForArea, mapAreaToWorkstream, getSystemAreas } = require("../commands/capability");
 const { getPromptPackCatalog, recommendFrameworkPacksForBlueprint } = require("./prompt_pack");
 const { buildPipelineState } = require("./pipeline_guard");
+const { refreshAppScorecards } = require("./app_scorecards");
 
 const UI_DECISION_AREA_KEYS = new Set([
   "ui_ux_design",
@@ -55,6 +56,14 @@ function questionnaire(action, value, flags = {}, deps = {}) {
   if (action === "flow") {
     console.log(JSON.stringify(buildQuestionnaireFlow(), null, 2));
     return;
+  }
+
+  if (action === "review") {
+    return questionnaireReviewPlan(flags, deps);
+  }
+
+  if (action === "approve") {
+    return questionnaireApprovePlan(flags, deps);
   }
 
   if (action === "plan" || action === "intake-plan" || action === "recommend") {
@@ -154,6 +163,13 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
   if (plan && plan.task_generation_contract) {
     plan.task_generation_contract.source_plan_id = plan.plan_id;
   }
+  plan.approval_status = plan.approval_status || "pending";
+  plan.review_status = plan.review_status || "pending";
+  plan.reviewed_at = plan.reviewed_at || null;
+  plan.reviewed_by = plan.reviewed_by || null;
+  plan.approved_at = plan.approved_at || null;
+  plan.approved_by = plan.approved_by || null;
+  plan.approval_notes = Array.isArray(plan.approval_notes) ? plan.approval_notes : [];
   const file = ".kabeeri/questionnaires/adaptive_intake_plan.json";
   if (!fileExists(file)) writeJsonFile(file, { plans: [], current_plan_id: null });
   const state = readJsonFile(file);
@@ -161,6 +177,7 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
   state.plans.push(plan);
   state.current_plan_id = plan.plan_id;
   writeJsonFile(file, state);
+  refreshDeveloperAppScorecardsIfNeeded();
   const appendAudit = deps.appendAudit || (() => {});
   appendAudit("questionnaire.intake_plan_created", "questionnaire", plan.plan_id, `Questionnaire intake plan created for ${blueprintKey}`);
   if (!flags.silent) {
@@ -168,6 +185,61 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
     else renderQuestionnaireIntakePlan(plan);
   }
   return plan;
+}
+
+function questionnaireReviewPlan(flags = {}, deps = {}) {
+  ensureWorkspace();
+  const plan = readLatestQuestionnairePlan();
+  if (!plan) {
+    throw new Error("Questionnaire review blocked: create a planning pack first with `kvdf questionnaire plan`.");
+  }
+  const state = readQuestionnairePlanState();
+  const updatedPlan = {
+    ...plan,
+    approval_status: plan.approval_status || "pending",
+    review_status: "reviewed",
+    reviewed_at: new Date().toISOString(),
+    reviewed_by: flags.by || flags.actor || "local-user",
+    reviewed_summary: flags.note || flags.summary || "Planning pack reviewed for approval readiness."
+  };
+  updateQuestionnairePlanState(state, updatedPlan);
+  refreshDeveloperAppScorecardsIfNeeded();
+  const appendAudit = deps.appendAudit || (() => {});
+  appendAudit("questionnaire.plan_reviewed", "questionnaire", updatedPlan.plan_id, `Questionnaire intake plan reviewed for ${updatedPlan.blueprint && updatedPlan.blueprint.key ? updatedPlan.blueprint.key : "project"}`);
+  if (flags.json) console.log(JSON.stringify(updatedPlan, null, 2));
+  else renderQuestionnairePlanReview(updatedPlan);
+  return updatedPlan;
+}
+
+function questionnaireApprovePlan(flags = {}, deps = {}) {
+  ensureWorkspace();
+  const requireAnyRole = deps.requireAnyRole || (() => {});
+  requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst"], "approve questionnaire planning");
+  const plan = readLatestQuestionnairePlan();
+  if (!plan) {
+    throw new Error("Questionnaire approval blocked: create a planning pack first with `kvdf questionnaire plan`.");
+  }
+  if (plan.review_status !== "reviewed") {
+    throw new Error("Questionnaire approval blocked: review the planning pack first with `kvdf questionnaire review`.");
+  }
+  if (!(flags.confirm || flags.approve || flags.yes)) {
+    throw new Error("Questionnaire approval blocked: pass `--confirm` to approve the reviewed planning pack.");
+  }
+  const state = readQuestionnairePlanState();
+  const updatedPlan = {
+    ...plan,
+    approval_status: "approved",
+    approved_at: new Date().toISOString(),
+    approved_by: flags.by || flags.actor || "local-user",
+    approval_notes: uniqueList([...(Array.isArray(plan.approval_notes) ? plan.approval_notes : []), flags.note || flags.summary || "Approved for task generation."])
+  };
+  updateQuestionnairePlanState(state, updatedPlan);
+  refreshDeveloperAppScorecardsIfNeeded();
+  const appendAudit = deps.appendAudit || (() => {});
+  appendAudit("questionnaire.plan_approved", "questionnaire", updatedPlan.plan_id, `Questionnaire intake plan approved for ${updatedPlan.blueprint && updatedPlan.blueprint.key ? updatedPlan.blueprint.key : "project"}`);
+  if (flags.json) console.log(JSON.stringify(updatedPlan, null, 2));
+  else renderQuestionnairePlanApproval(updatedPlan);
+  return updatedPlan;
 }
 
 function buildQuestionnaireIntakePlan(description, blueprintKey, flags = {}, deps = {}) {
@@ -284,6 +356,13 @@ function defaultBuildQuestionnaireIntakePlan(description, blueprintKey, flags = 
       task_generation_mode: deliveryMap.task_generation_mode,
       source_of_truth: "questionnaire_intake_plan"
     },
+    approval_status: "pending",
+    review_status: "pending",
+    reviewed_at: null,
+    reviewed_by: null,
+    approved_at: null,
+    approved_by: null,
+    approval_notes: [],
     prompt_pack_guidance: {
       selected_packs: compactGuidance.selected_prompt_packs,
       prompt_pack_commands: compactGuidance.prompt_pack_commands
@@ -296,6 +375,7 @@ function defaultBuildQuestionnaireIntakePlan(description, blueprintKey, flags = 
       "Ask only the generated questions that are not already known from the developer's natural-language request.",
       "Record confirmed answers with `kvdf questionnaire answer` so coverage and missing-answer reports update.",
       "Use `kvdf delivery choose` after the developer approves Agile or Structured.",
+      "Review the planning pack with `kvdf questionnaire review` and approve it with `kvdf questionnaire approve --confirm` before generating tasks.",
       "Use Product Blueprint, Data Design, UI/UX Advisor, and one prompt pack at a time before generating tasks."
     ]
   };
@@ -521,6 +601,7 @@ function buildQuestionnaireTaskSynthesis(matrix, latestPlan, flags = {}, deps = 
     synthesis_id: `questionnaire-task-synthesis-${Date.now()}`,
     created_at: new Date().toISOString(),
     questionnaire_plan_id: latestPlan ? latestPlan.plan_id : null,
+    questionnaire_plan_approval_status: latestPlan ? latestPlan.approval_status || "pending" : null,
     module_plan_id: latestPlan && latestPlan.module_plan ? latestPlan.module_plan.module_plan_id : null,
     delivery_map_id: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.delivery_map_id : null,
     delivery_mode: latestPlan && latestPlan.delivery_map ? latestPlan.delivery_map.active_mode : null,
@@ -813,6 +894,7 @@ function renderQuestionnaireIntakePlan(plan) {
   console.log(table(["Surface", "Value"], [
     ["Blueprint", `${plan.blueprint.name} (${plan.blueprint.key})`],
     ["Delivery", `${plan.delivery_mode_recommendation.recommended_mode} (${plan.delivery_mode_recommendation.confidence})`],
+    ["Approval", `${plan.review_status || "pending"} / ${plan.approval_status || "pending"}`],
     ["Framework packs", plan.framework_context.selected_packs.join(", ") || "needs decision"],
     ["Prompt pack picks", (plan.prompt_pack_guidance.selected_packs || []).join(", ") || "needs decision"],
     ["Data modules", plan.data_design_context.modules.join(", ")],
@@ -862,6 +944,29 @@ function renderQuestionnaireIntakePlan(plan) {
     item.question_id,
     item.text
   ])));
+}
+
+function renderQuestionnairePlanReview(plan) {
+  console.log(`Questionnaire planning pack reviewed: ${plan.plan_id}`);
+  console.log(table(["Field", "Value"], [
+    ["Blueprint", `${plan.blueprint.name} (${plan.blueprint.key})`],
+    ["Review status", plan.review_status || "reviewed"],
+    ["Reviewed by", plan.reviewed_by || "local-user"],
+    ["Reviewed at", plan.reviewed_at || "n/a"],
+    ["Approval status", plan.approval_status || "pending"],
+    ["Next action", "kvdf questionnaire approve --confirm"]
+  ]));
+}
+
+function renderQuestionnairePlanApproval(plan) {
+  console.log(`Questionnaire planning pack approved: ${plan.plan_id}`);
+  console.log(table(["Field", "Value"], [
+    ["Blueprint", `${plan.blueprint.name} (${plan.blueprint.key})`],
+    ["Approval status", plan.approval_status || "approved"],
+    ["Approved by", plan.approved_by || "local-user"],
+    ["Approved at", plan.approved_at || "n/a"],
+    ["Next action", "kvdf questionnaire generate-tasks"]
+  ]));
 }
 
 function buildCoverageMatrix(deps = {}) {
@@ -948,6 +1053,15 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
   const matrix = buildCoverageMatrix(deps);
   writeQuestionnaireReports(matrix);
   const latestPlan = readLatestQuestionnairePlan();
+  if (!latestPlan) {
+    throw new Error("Questionnaire task generation blocked: create a planning pack first with `kvdf questionnaire plan`.");
+  }
+  if (latestPlan.approval_status !== "approved") {
+    const nextAction = latestPlan.review_status === "reviewed"
+      ? "kvdf questionnaire approve --confirm"
+      : "kvdf questionnaire review";
+    throw new Error(`Questionnaire task generation blocked: review and approve the planning pack first with \`${nextAction}\`.`);
+  }
   const synthesis = buildQuestionnaireTaskSynthesis(matrix, latestPlan, flags, deps);
   writeQuestionnaireTaskSynthesis(synthesis);
   const tasksFile = ".kabeeri/tasks.json";
@@ -1020,6 +1134,7 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
     created.push(taskItem);
   }
   writeJsonFile(tasksFile, tasksData);
+  refreshDeveloperAppScorecardsIfNeeded();
   const appendAudit = deps.appendAudit || (() => {});
   for (const taskItem of created) {
     appendAudit("task.generated_from_questionnaire", "task", taskItem.id, `Generated from ${taskItem.source_reference}`);
@@ -1029,10 +1144,48 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
 }
 
 function readLatestQuestionnairePlan() {
-  if (!fileExists(".kabeeri/questionnaires/adaptive_intake_plan.json")) return null;
-  const state = readJsonFile(".kabeeri/questionnaires/adaptive_intake_plan.json");
+  const state = readQuestionnairePlanState();
   const plans = state.plans || [];
-  return plans.length ? plans[plans.length - 1] : null;
+  if (!plans.length) return null;
+  if (state.current_plan_id) {
+    const current = plans.find((item) => item.plan_id === state.current_plan_id);
+    if (current) return current;
+  }
+  return plans[plans.length - 1] || null;
+}
+
+function readQuestionnairePlanState() {
+  if (!fileExists(".kabeeri/questionnaires/adaptive_intake_plan.json")) return { plans: [], current_plan_id: null };
+  const state = readJsonFile(".kabeeri/questionnaires/adaptive_intake_plan.json");
+  state.plans = Array.isArray(state.plans) ? state.plans : [];
+  state.current_plan_id = state.current_plan_id || null;
+  return state;
+}
+
+function updateQuestionnairePlanState(state, updatedPlan) {
+  const plans = Array.isArray(state.plans) ? state.plans : [];
+  const nextPlans = plans.map((item) => item.plan_id === updatedPlan.plan_id ? updatedPlan : item);
+  if (!nextPlans.some((item) => item.plan_id === updatedPlan.plan_id)) {
+    nextPlans.push(updatedPlan);
+  }
+  const nextState = {
+    ...state,
+    plans: nextPlans,
+    current_plan_id: updatedPlan.plan_id
+  };
+  writeJsonFile(".kabeeri/questionnaires/adaptive_intake_plan.json", nextState);
+  return nextState;
+}
+
+function refreshDeveloperAppScorecardsIfNeeded() {
+  try {
+    if (!fileExists(".kabeeri/project.json")) return null;
+    const project = readJsonFile(".kabeeri/project.json");
+    if (project.workspace_kind !== "developer_app") return null;
+    return refreshAppScorecards(process.cwd());
+  } catch (_) {
+    return null;
+  }
 }
 
 function buildQuestionnaireFlow() {
@@ -1497,6 +1650,8 @@ module.exports = {
   questionnaire,
   questionnaireAnswer,
   questionnaireIntakePlan,
+  questionnaireReviewPlan,
+  questionnaireApprovePlan,
   buildQuestionnaireIntakePlan,
   buildQuestionnaireFlow,
   buildCoverageMatrix,

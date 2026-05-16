@@ -42,7 +42,17 @@ const { compileTaskExecutorContract, renderTaskExecutorContract } = require("../
 const { taskScheduler, buildTaskSchedulerReport, recordTaskSchedulerRoute } = require("./commands/task_scheduler");
 const { pipeline: pipelineCommand } = require("./commands/pipeline");
 const { buildPipelineState, assertStrictPipeline } = require("./services/pipeline_guard");
+const { contract: contractCommand } = require("./commands/contract");
+const { maintainability: maintainabilityCommand } = require("./commands/maintainability");
+const { companyProfile } = require("./commands/company_profile");
+const { newsWebsite } = require("./commands/news_website");
+const { blog } = require("./commands/blog");
+const { ecommerceMobileApp } = require("./commands/ecommerce_mobile_app");
+const { crm } = require("./commands/crm");
+const { pos } = require("./commands/pos");
+const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
+const { booking: bookingCommand } = require("./commands/booking");
 const { questionnaire: questionnaireCommand } = require("./commands/questionnaire");
 const { blueprint: blueprintCommand, dataDesign: dataDesignCommand } = require("./commands/blueprint");
 const { evolution: evolutionCommand } = require("./commands/evolution");
@@ -363,7 +373,17 @@ function run(argv) {
   if (group === "temp") return tempCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, fileExists, table, appendAudit });
   if (group === "schedule" || group === "scheduler") return taskScheduler(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, fileExists, table, appendAudit });
   if (group === "pipeline") return pipelineCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table });
+  if (group === "contract" || group === "operator" || group === "ai-contract") return contractCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table });
+  if (group === "maintainability") return maintainabilityCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table });
+  if (group === "company-profile" || group === "company_profile") return companyProfile(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
+  if (group === "news-website" || group === "news_website") return newsWebsite(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
+  if (group === "blog") return blog(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
+  if (group === "ecommerce-mobile-app" || group === "ecommerce_mobile_app") return ecommerceMobileApp(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
+  if (group === "crm") return crm(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
+  if (group === "pos") return pos(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
+  if (group === "ecommerce") return ecommerceCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
   if (group === "wordpress" || group === "wp") return wordpress(action, value, args.flags, rest);
+  if (group === "booking") return bookingCommand(action, value, args.flags, rest, { ensureWorkspace, readJsonFile, writeJsonFile, writeTextFile, fileExists, table, appendAudit });
   if (group === "example") return example(action, value);
   if (group === "questionnaire") return questionnaireCommand(action, value, args.flags, {
     ...getQuestionnaireRuntimeDeps()
@@ -3932,6 +3952,7 @@ function evolution(action, value, flags = {}, rest = []) {
     fileExists,
     readJsonFile,
     writeJsonFile,
+    writeTextFile,
     readTextFile,
     table,
     appendAudit,

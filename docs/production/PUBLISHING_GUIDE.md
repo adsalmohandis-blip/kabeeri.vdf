@@ -6,6 +6,7 @@ Publishing means making the project public, tagged, released, distributed, or av
 
 - Complete the final release preparation checklist.
 - Run validation and tests.
+- Run `kvdf release check` and confirm validation is `OK`, readiness is `READY`, and the release gate is `PASS`.
 - Review open blockers.
 - Confirm no secrets are committed.
 - Confirm Owner approval.
@@ -23,7 +24,7 @@ Recommended sequence after approval:
 3. Review validation and test output.
 4. Merge through the approved repository process.
 5. Create tag only after Owner release approval.
-6. Publish GitHub release only after Owner publish approval.
+6. Publish GitHub release only after Owner publish approval and after validation has passed.
 
 ## Documentation Publishing
 
@@ -37,4 +38,3 @@ The docs site is static and local-first. Before publishing it publicly:
 ## Rollback
 
 Record rollback steps before public publish. If a release is published incorrectly, document the corrective action, owner approval, and audit trail.
-

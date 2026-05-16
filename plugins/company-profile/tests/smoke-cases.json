@@ -1,0 +1,47 @@
+{
+  "plugin_id": "company-profile",
+  "smoke_cases": [
+    {
+      "name": "install and initialize",
+      "mode": "corporate",
+      "steps": [
+        "kvdf plugins install company-profile",
+        "kvdf company-profile init --mode corporate --name \"Acme Holdings\"",
+        "kvdf company-profile questionnaire",
+        "kvdf company-profile brief",
+        "kvdf company-profile design",
+        "kvdf company-profile modules",
+        "kvdf company-profile tasks",
+        "kvdf company-profile approve --confirm",
+        "kvdf company-profile report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/company_profile.json"
+    },
+    {
+      "name": "agency launch path",
+      "mode": "agency",
+      "project_name": "Agency Showcase",
+      "steps": [
+        "kvdf plugins install company-profile",
+        "kvdf company-profile init --mode agency --name \"Agency Showcase\"",
+        "kvdf company-profile questionnaire",
+        "kvdf company-profile brief",
+        "kvdf company-profile design",
+        "kvdf company-profile modules",
+        "kvdf company-profile tasks",
+        "kvdf company-profile approve --confirm",
+        "kvdf company-profile report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/company_profile.json"
+    },
+    {
+      "name": "brief requires questionnaire",
+      "kind": "blocked",
+      "blocked_action": "brief",
+      "project_name": "Guarded Company",
+      "state_file": ".kabeeri/company_profile.json"
+    }
+  ]
+}

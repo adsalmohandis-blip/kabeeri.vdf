@@ -6,6 +6,7 @@ function buildEvolutionSummary(state) {
   ensureEvolutionDevelopmentPriorities(state);
   ensureEvolutionTemporaryPriorities(state);
   const changes = state.changes || [];
+  const scorecards = Array.isArray(state.scorecards) ? state.scorecards : [];
   const deferredIdeas = getOpenDeferredIdeas(state);
   const tasks = readStateArray(".kabeeri/tasks.json", "tasks").filter((taskItem) => taskItem.evolution_change_id);
   const openTasks = tasks.filter((taskItem) => !["owner_verified", "done", "closed", "rejected"].includes(taskItem.status));
@@ -40,6 +41,8 @@ function buildEvolutionSummary(state) {
     open_priorities: openPriorities.length,
     deferred_ideas_total: Array.isArray(state.deferred_ideas) ? state.deferred_ideas.length : 0,
     open_deferred_ideas: deferredIdeas.length,
+    scorecards_total: scorecards.length,
+    scorecards_open: scorecards.filter((item) => !["done", "closed"].includes(String(item.status || "").toLowerCase())).length,
     temporary_priority_queue: temporary ? {
       queue_id: temporary.queue_id,
       source_priority_id: temporary.source_priority_id,
@@ -82,6 +85,175 @@ function buildEvolutionSummary(state) {
     by_status: summarizeBy(changes, "status"),
     latest_change: changes.length ? changes[changes.length - 1] : null
   };
+}
+
+function buildEvolutionScorecards(state, options = {}) {
+  ensureEvolutionDevelopmentPriorities(state);
+  ensureEvolutionTemporaryPriorities(state);
+  state.scorecards = Array.isArray(state.scorecards) ? state.scorecards : [];
+  const generatedAt = new Date().toISOString();
+  const scorecards = [
+    {
+      card_id: "architecture",
+      title: "Architecture and track boundaries",
+      score: 4.6,
+      strength: "The two-track model, foldering contract, pipeline guards, and task-control surfaces already make Kabeeri structurally strong.",
+      weakness: "Compatibility aliases, legacy paths, and many report surfaces still make the architecture harder to read than it should be.",
+      risk: "medium",
+      evidence: [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md documents the track split and shared platform layer.",
+        "docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md defines the repository foldering contract.",
+        "src/cli/services/pipeline_guard.js enforces the fail-closed pipeline."
+      ],
+      impacted_areas: ["cli", "docs", "schemas", "tests"],
+      evolution_plan_title: "Tighten Kabeeri architecture and reduce track drift",
+      evolution_plan_summary: "Reduce alias drift, keep the command registry authoritative, and make the track boundaries more obvious for AI and maintainers.",
+      next_action: "Create a follow-up plan that trims legacy aliases and keeps the contract layer as the source of truth."
+    },
+    {
+      card_id: "ai_usability",
+      title: "AI usability and next-action clarity",
+      score: 4.4,
+      strength: "The CLI already gives the AI a command contract, `next_exact_action` fields, and JSON outputs that are easy to consume.",
+      weakness: "Some commands still expose different phrasing or multiple aliases, which makes the AI loop less uniform than it could be.",
+      risk: "medium",
+      evidence: [
+        "src/cli/services/command_registry.js defines the shared operating contract.",
+        "src/cli/commands/contract.js and src/cli/commands/resume.js already publish next action guidance.",
+        "src/cli/services/pipeline_guard.js renders fail-closed blockers."
+      ],
+      impacted_areas: ["cli", "reports", "ai_context"],
+      evolution_plan_title: "Make the AI/CLI operating contract more explicit and uniform",
+      evolution_plan_summary: "Standardize the next-action vocabulary, keep JSON outputs consistent, and reduce command drift so AI tools stay inside the governed loop.",
+      next_action: "Expand machine-readable next-action fields and keep the contract registry aligned with command behavior."
+    },
+    {
+      card_id: "plugin_system",
+      title: "Standalone plugin system",
+      score: 4.5,
+      strength: "The plugin loader can install, enable, disable, and uninstall removable bundles while keeping plugin state persisted.",
+      weakness: "The app-builder plugins still need occasional parity work so every bundle feels equally mature and contract-complete.",
+      risk: "low",
+      evidence: [
+        "src/cli/services/plugin_loader.js owns the canonical reversible plugin state.",
+        "plugins/booking-builder/ and plugins/ecommerce-builder/ provide mature domain packs.",
+        "The newer app-builder plugins now have mode packs, schemas, and smoke tests."
+      ],
+      impacted_areas: ["implementation", "docs", "tests"],
+      evolution_plan_title: "Keep all standalone plugins on the same bundle contract",
+      evolution_plan_summary: "Keep install/uninstall semantics stable while tightening the bundle folder contract, business-type packs, and plugin-specific runtime parity.",
+      next_action: "Review plugin bundles for any missing business-type, schema, or test coverage."
+    },
+    {
+      card_id: "task_governance",
+      title: "Task governance and execution control",
+      score: 4.7,
+      strength: "Task packet, executor contract, coverage, lifecycle, and batch execution give Kabeeri a strong governed execution path.",
+      weakness: "The task model is rich enough that the system must keep state, verification, and archive trails perfectly synchronized to avoid drift.",
+      risk: "low",
+      evidence: [
+        "plugins/kvdf-dev/runtime/task_packet.js compiles the control-plane packet.",
+        "src/cli/services/pipeline_guard.js blocks packet and execution paths when prerequisites are missing.",
+        "src/cli/services/task_coverage.js and src/cli/commands/task_lifecycle.js keep task state visible."
+      ],
+      impacted_areas: ["tasks", "schemas", "reports", "tests"],
+      evolution_plan_title: "Keep task packet, executor contract, and coverage strictly aligned",
+      evolution_plan_summary: "Preserve the fail-closed task pipeline by keeping packet compilation, execution boundaries, verification, and archive trails synchronized.",
+      next_action: "Re-check packet, contract, coverage, and completion reports after any task-system change."
+    },
+    {
+      card_id: "docs_consistency",
+      title: "Documentation consistency and source-of-truth alignment",
+      score: 3.6,
+      strength: "The docs system is broad, and the CLI/docs split is now visible in reports, command reference pages, and capability maps.",
+      weakness: "The large number of docs layers, historical reports, and compatibility aliases can still drift if they are not generated from shared metadata.",
+      risk: "medium",
+      evidence: [
+        "docs/cli/CLI_COMMAND_REFERENCE.md documents the command surface.",
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md acts as the high-level capability map.",
+        "docs/reports/ holds historical and execution reports."
+      ],
+      impacted_areas: ["docs", "capabilities", "reports"],
+      evolution_plan_title: "Generate docs from command metadata and reduce CLI/docs drift",
+      evolution_plan_summary: "Keep the documentation surface aligned with runtime behavior by driving help, references, and reports from one shared command registry.",
+      next_action: "Treat docs generation as a governed output of the CLI contract rather than a separate copy-paste surface."
+    },
+    {
+      card_id: "maintainability",
+      title: "Maintainability and shared service extraction",
+      score: 3.8,
+      strength: "A lot of reusable behavior has already been pushed into services, which makes the CLI less monolithic than it used to be.",
+      weakness: "The command layer is still fairly large, and some ownership boundaries are spread across multiple helper files and reports.",
+      risk: "medium",
+      evidence: [
+        "src/cli/services/ contains shared orchestration logic.",
+        "src/cli/commands/ still holds a large command surface.",
+        "src/core/bootstrap.js and the plugin loader keep the runtime split explicit."
+      ],
+      impacted_areas: ["implementation", "tests", "docs"],
+      evolution_plan_title: "Extract remaining command helpers into smaller shared services",
+      evolution_plan_summary: "Keep shrinking the command layer by moving repeated logic into shared services and keeping command files focused on orchestration.",
+      next_action: "Continue extracting repeated command logic into service modules before adding more surface area."
+    }
+  ].map((card, index) => {
+    const band = scorecardBand(card.score);
+    const existing = state.scorecards.find((item) => item.card_id === card.card_id) || null;
+    return {
+      ...card,
+      order: index + 1,
+      band,
+      status: existing ? existing.status || "planned" : "planned",
+      created_at: existing ? existing.created_at || generatedAt : generatedAt,
+      updated_at: generatedAt,
+      evolution_change_id: existing && existing.evolution_change_id ? existing.evolution_change_id : `evo-scorecard-${card.card_id}`,
+      evolution_plan_status: existing ? existing.evolution_plan_status || null : null
+    };
+  });
+
+  const summary = summarizeScorecards(scorecards);
+  state.scorecards = scorecards;
+  return {
+    report_type: "kabeeri_scorecards",
+    generated_at: generatedAt,
+    report_path: "docs/reports/KVDF_SCORECARDS.md",
+    status: summary.needs_attention > 0 ? "needs_attention" : "ready",
+    summary,
+    scorecards,
+    scorecard_plans: [],
+    scorecard_tasks: [],
+    next_actions: [
+      "Review each scorecard as a standalone evaluation artifact.",
+      "Use `kvdf contract` or `kvdf pipeline strict` to inspect the current operating state.",
+      "Re-run `kvdf evolution scorecards` after a major system change to refresh the assessment.",
+      "If you later want to materialize Evolution work from these cards, rerun with `--materialize`."
+    ]
+  };
+}
+
+function summarizeScorecards(scorecards) {
+  const summary = {
+    total: scorecards.length,
+    strong: 0,
+    watch: 0,
+    needs_attention: 0,
+    average_score: 0
+  };
+  let total = 0;
+  for (const card of scorecards) {
+    total += Number(card.score || 0);
+    if (card.band === "strong") summary.strong += 1;
+    else if (card.band === "watch") summary.watch += 1;
+    else summary.needs_attention += 1;
+  }
+  summary.average_score = scorecards.length ? Number((total / scorecards.length).toFixed(2)) : 0;
+  return summary;
+}
+
+function scorecardBand(score) {
+  const value = Number(score || 0);
+  if (value >= 4.5) return "strong";
+  if (value >= 3.5) return "watch";
+  return "needs_attention";
 }
 
 function buildEvolutionTemporaryPrioritiesReport(state) {
@@ -381,6 +553,61 @@ function buildEvolutionPriorityExecutionDetails(priority, options = {}) {
   if (Array.isArray(priority.implementation_notes) && priority.implementation_notes.length) extraDetails.implementation_notes = priority.implementation_notes;
   if (priority.tree_view) extraDetails.tree_view = priority.tree_view;
   if (Array.isArray(priority.partition_rules) && priority.partition_rules.length) extraDetails.partition_rules = priority.partition_rules;
+  if (priority.id === "evo-auto-008") {
+    Object.assign(extraDetails, {
+      execution_context:
+        "This priority finishes the manual source-package migration only after the design-system and project-documentation-generator material has been copied into permanent Kabeeri homes, represented in Evolution Steward, and verified with the source-package tooling. It exists to make cleanup safe, explicit, and resumable instead of turning deletion into an implicit side effect.",
+      source_package: "KVDF_New_Features_Docs",
+      source_package_roles: [
+        "Software Design System reference library",
+        "Project documentation generator system"
+      ],
+      cleanup_prerequisites: [
+        "evo-auto-006 has analyzed overlap and duplicate risk.",
+        "evo-auto-007 has imported the reusable documentation generator flow, templates, and catalog entries.",
+        "The destination map lists the permanent Kabeeri folders for every meaningful asset.",
+        "The source-package verify command passes before any removal request is made.",
+        "The owner explicitly approves the final decommission request."
+      ],
+      cleanup_checklist: [
+        "Confirm the current workspace is framework_owner_development and the source package is the active manual migration target.",
+        "Review the destination map and make sure every meaningful asset has a named permanent home.",
+        "Check that copied content is represented in Evolution Steward, documentation, and the correct Kabeeri folders.",
+        "Run the cleanup preview to confirm the removal plan is safe and no uncovered material remains.",
+        "Record any unresolved duplicates or missing destinations as blockers instead of forcing cleanup.",
+        "Request owner approval for the folder removal step only after verification passes.",
+        "Remove the source folder only after the approval trail, destination map, and verification evidence all agree."
+      ],
+      guardrails: [
+        "Do not delete the source folder while any meaningful asset still lacks a destination.",
+        "Do not treat a preview or dry-run as actual decommission approval.",
+        "Do not skip the overlap analysis or the destination-map verification step.",
+        "Do not close the priority if tests, source-package verification, or conflict scan fail.",
+        "Do not rely on chat memory as the migration record; keep the state file and reports updated."
+      ],
+      validation_flow: [
+        "kvdf source-package map",
+        "kvdf source-package verify",
+        "kvdf source-package cleanup",
+        "npm test",
+        "kvdf conflict scan"
+      ],
+      rollback_plan: [
+        "If verification fails, stop before removal and repair the missing destination, duplicate mapping, or documentation gap.",
+        "If the owner does not approve decommissioning, keep the source folder intact and continue using the cleanup preview only.",
+        "If a file is missing after a partial move, restore it from the source package backup or the generated destination report before retrying cleanup."
+      ],
+      expected_artifacts: [
+        "A complete destination map for the source package.",
+        "Updated Evolution Steward entries for the imported design and docs systems.",
+        "A cleanup preview report showing the safe removal plan.",
+        "A decommission request trail with explicit owner approval.",
+        "A final report or note confirming that the source folder was retired only after verification."
+      ],
+      explanation:
+        "The priority is not just about deleting a folder. It is about proving that the temporary import source has been fully decomposed into permanent Kabeeri surfaces, then using explicit verification and approval to make the final cleanup safe."
+    });
+  }
   return {
     execution_summary: `Execute priority ${priority.id}: ${priority.summary}`,
     resume_steps: [
@@ -1191,6 +1418,7 @@ function renderKVDFFeaturePartitionMatrix(report, table) {
 
 module.exports = {
   buildEvolutionSummary,
+  buildEvolutionScorecards,
   ensureEvolutionDevelopmentPriorities,
   ensureEvolutionTemporaryPriorities,
   getCurrentTemporaryPriorities,

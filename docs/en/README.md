@@ -53,3 +53,40 @@ When adding or changing a canonical document:
 2. Update `docs/ar/README.md` and `docs/en/README.md`.
 3. Update `docs/BILINGUAL_DOCUMENTATION_PARITY.md` if the parity rule changes.
 4. Update `docs/reports/BILINGUAL_DOCS_PARITY_REPORT.md` after a new parity review.
+
+## Workflow Instructions
+
+The shared workflow contract for the AI Tool and Vibe developer lives in:
+
+- `knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`
+- `docs/site/pages/en/ai-tool-hub.html`
+- `docs/site/pages/en/vibe-developer-hub.html`
+
+## Canonical Paths
+
+The repository layout source of truth lives in
+`knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`. When you need to
+decide where a file belongs, read that map first, use
+`docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md` as the human workflow guide,
+and then place the file inside the existing owning root instead of creating a
+new top-level folder.
+- `docs/site/pages/en/ai-tool.html`
+- `docs/site/pages/en/vibe-developer.html`
+- `docs/site/pages/en/ai-tool-hub.html`
+- `docs/site/pages/en/vibe-developer-hub.html`
+
+## Report And Command Rule
+
+Live JSON reports are the execution view, and historical reports are the
+explanation layer. If they disagree, fix the source state and regenerate the
+derived report. The CLI reference should stay compact enough to scan quickly
+while still pointing to the exact source of truth for the current command
+state.
+
+## Hand-Written Guidance Rule
+
+These numbered English files are hand-written guidance, not generated page
+shells. Keep them readable on their own, keep their Arabic counterparts in
+sync, and update the docs site surface only after the human guidance is clear.
+When a capability changes, update the human explanation here before relying on
+the generated docs site to mirror it.

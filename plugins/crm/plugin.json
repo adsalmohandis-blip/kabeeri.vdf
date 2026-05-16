@@ -1,0 +1,34 @@
+{
+  "plugin_id": "crm",
+  "name": "CRM Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "crm",
+  "enabled_by_default": false,
+  "description": "Build CRM systems from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": ["commands", "docs", "prompts", "schemas", "templates", "tests"],
+  "optional_folders": ["references", "examples", "assets", "dashboard", "business-type"],
+  "domain_folders": ["business-type", "references", "examples", "assets", "dashboard"],
+  "command_surface": [
+    "kvdf crm status",
+    "kvdf crm init",
+    "kvdf crm questionnaire",
+    "kvdf crm brief",
+    "kvdf crm design",
+    "kvdf crm modules",
+    "kvdf crm tasks",
+    "kvdf crm approve",
+    "kvdf crm report",
+    "kvdf plugins install crm",
+    "kvdf plugins uninstall crm"
+  ],
+  "docs_surface": [
+    "plugins/crm/README.md",
+    "plugins/crm/docs/index.md",
+    "plugins/crm/docs/cli.md"
+  ]
+}

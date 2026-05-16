@@ -14,6 +14,7 @@ Use this checklist before a release or public publish decision.
 
 - `node bin/kvdf.js validate` passes.
 - `npm test` passes.
+- `kvdf release check` reports validation `OK`, readiness `READY`, and release gate `PASS`.
 - Docs site inventory check passes.
 - JSON and JSONL examples validate.
 
@@ -43,6 +44,6 @@ Use this checklist before a release or public publish decision.
 
 - Owner approval recorded.
 - Production-ready and published states are distinguished.
+- No release or publish step runs before validation passes.
 - Remaining blockers are listed.
 - Release notes and publishing guide are ready.
-

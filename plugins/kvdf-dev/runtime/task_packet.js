@@ -1,3 +1,5 @@
+const { formatNextExactAction } = require("../../../src/cli/services/command_registry");
+
 function compileTaskControlPlanePacket(options = {}, deps = {}) {
   const {
     readJsonFile = () => ({}),
@@ -107,6 +109,7 @@ function compileTaskControlPlanePacket(options = {}, deps = {}) {
     assumptions,
     expected_outputs: expectedOutputs,
     next_action: nextAction,
+    next_exact_action: nextAction,
     next_command: nextAction,
     execution_queue: executionCandidates,
     summary: {
@@ -141,6 +144,8 @@ function compileTaskControlPlanePacket(options = {}, deps = {}) {
 function renderTaskControlPlanePacket(packet) {
   const lines = [
     "# Task Control Plane Packet",
+    "",
+    formatNextExactAction(packet.next_action),
     "",
     `Packet ID: ${packet.packet_id || "n/a"}`,
     `Generated at: ${packet.generated_at || "n/a"}`,

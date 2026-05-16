@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blog Builder State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plugin_id", "updated_at", "current_project_id", "projects", "events"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "plugin_id": { "const": "blog" },
+    "updated_at": { "type": ["string", "null"] },
+    "current_project_id": { "type": ["string", "null"] },
+    "projects": { "type": "array" },
+    "events": { "type": "array" }
+  }
+}

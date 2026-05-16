@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const {
   buildEvolutionSummary,
+  buildEvolutionScorecards,
   buildEvolutionTemporaryPrioritiesReport,
   buildEvolutionPriorityExecutionDetails,
   ensureEvolutionDevelopmentPriorities,
@@ -14,6 +15,10 @@ const {
 } = require("../services/evolution");
 const { buildTaskLifecycleState } = require("./task_lifecycle");
 const { readStateArray } = require("../services/state_utils");
+const { writeTextFile: writeLocalTextFile } = require("../fs_utils");
+
+const SCORECARDS_REPORT_PATH = "docs/reports/KVDF_SCORECARDS.md";
+const SCORECARDS_STATE_PATH = ".kabeeri/reports/kabeeri_scorecards.json";
 
 function localFilePath(relativePath) {
   return path.join(process.cwd(), relativePath);
@@ -64,6 +69,7 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
     fileExists = () => false,
     readJsonFile = () => ({}),
     writeJsonFile = () => {},
+    writeTextFile = () => {},
     readTextFile = () => "",
     table = () => "",
     appendAudit = () => {},
@@ -84,6 +90,7 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
   state.changes = state.changes || [];
   state.impact_plans = state.impact_plans || [];
   state.deferred_ideas = state.deferred_ideas || [];
+  state.scorecards = state.scorecards || [];
   const baseSummary = buildEvolutionSummary(state);
 
   if (!action || action === "status" || action === "summary") {
@@ -165,6 +172,48 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
     return;
   }
 
+  if (["scorecard", "scorecards", "cards"].includes(action)) {
+    if (appMode) throw new Error("Evolution scorecards are framework-owner only. Use `kvdf evolution scorecards`.");
+    requireAnyRole(flags, ["Owner", "Owner-Developer", "Maintainer", "Business Analyst"], "create evolution scorecards");
+    const report = buildEvolutionScorecards(state, { appMode: false });
+    const shouldMaterialize = Boolean(flags.materialize || flags["with-evo"] || flags.link_evo || flags["link-evo"]);
+    if (shouldMaterialize) {
+      const materialized = materializeEvolutionScorecardPlans(state, report.scorecards, {
+        readJsonFile,
+        writeJsonFile,
+        fileExists,
+        appendAudit,
+        compactTitle,
+        nextRecordId,
+        parseCsv,
+        appMode: false
+      });
+      report.scorecards = materialized.scorecards;
+      report.scorecard_plans = materialized.plans;
+      report.scorecard_tasks = materialized.tasks;
+      report.summary.scorecard_plans_created = materialized.plans.length;
+      report.summary.scorecards_materialized = true;
+      state.scorecards = report.scorecards;
+    } else {
+      report.scorecard_plans = [];
+      report.scorecard_tasks = [];
+      report.summary.scorecard_plans_created = 0;
+      report.summary.scorecards_materialized = false;
+      state.scorecards = report.scorecards;
+    }
+    writeJsonFile(file, state);
+    writeJsonFile(SCORECARDS_STATE_PATH, report);
+    writeLocalTextFile(SCORECARDS_REPORT_PATH, renderEvolutionScorecardsReport(report, table));
+    refreshDashboardArtifacts();
+    appendAudit("evolution.scorecards", "evolution", "scorecards", `Evolution scorecards generated: ${report.summary.total}`);
+    if (flags.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    console.log(renderEvolutionScorecardsReport(report, table));
+    return;
+  }
+
   if (["batch-exe", "batch-execute", "batch-exec", "batch"].includes(action)) {
     if (!appMode) requireAnyRole(flags, ["Owner", "Maintainer", "Business Analyst", "Owner-Developer"], "run evolution batch execution");
     const report = buildEvolutionBatchExecutionReport(state, readJsonFile, writeJsonFile, fileExists, {
@@ -202,13 +251,28 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (action === "list") {
-    const rows = state.changes.map((item) => [
+    const activeChanges = state.changes.filter((item) => !item.archived);
+    const archivedChanges = state.changes.filter((item) => item.archived);
+    const rows = activeChanges.map((item) => [
       item.change_id,
       item.title,
       item.status,
       (item.impacted_areas || []).join(",")
     ]);
-    console.log(table(["Change", "Title", "Status", "Impacted Areas"], rows));
+    const output = [
+      table(["Change", "Title", "Status", "Impacted Areas"], rows)
+    ];
+    if (archivedChanges.length) {
+      output.push("");
+      output.push("Archived changes:");
+      output.push(table(["Change", "Title", "Status", "Impacted Areas"], archivedChanges.map((item) => [
+        item.change_id,
+        item.title,
+        item.status,
+        (item.impacted_areas || []).join(",")
+      ])));
+    }
+    console.log(output.join("\n"));
     return;
   }
 
@@ -497,6 +561,118 @@ function buildEvolutionImpactPlan(change, tasks) {
       verification_commands: taskItem.verification_commands
     }))
   };
+}
+
+function materializeEvolutionScorecardPlans(state, scorecards, deps = {}) {
+  const { readJsonFile = () => ({}), writeJsonFile = () => {}, fileExists = () => false, appendAudit = () => {}, compactTitle = (input) => String(input || "").trim(), nextRecordId = () => "evo-001", parseCsv = (value) => String(value || "").split(",").map((item) => item.trim()).filter(Boolean), appMode = false } = deps;
+  const tasksState = fileExists(".kabeeri/tasks.json") ? readJsonFile(".kabeeri/tasks.json") : {};
+  const existingTasks = Array.isArray(tasksState.tasks) ? tasksState.tasks : [];
+  const createdChanges = [];
+  const createdPlans = [];
+  const createdTasks = [];
+  const createdScorecards = [];
+  state.impact_plans = state.impact_plans || [];
+  state.changes = state.changes || [];
+
+  for (const card of scorecards) {
+    const changeId = card.evolution_change_id || `evo-scorecard-${card.card_id}`;
+    let change = state.changes.find((item) => item.change_id === changeId) || null;
+    if (!change) {
+      change = createEvolutionChange(state, card.evolution_plan_summary, {
+        id: changeId,
+        title: card.evolution_plan_title,
+        areas: card.impacted_areas.join(","),
+        source: "scorecard_auto",
+        requestedBy: appMode ? "local-developer" : "local-owner"
+      }, { compactTitle, nextRecordId, parseCsv, appMode });
+    } else {
+      change.title = card.evolution_plan_title;
+      change.description = card.evolution_plan_summary;
+      change.impacted_areas = card.impacted_areas;
+      change.required_updates = card.impacted_areas.map((area) => evolutionAreaDefinition(area));
+      change.source = "scorecard_auto";
+      change.updated_at = new Date().toISOString();
+    }
+    change.scorecard_id = card.card_id;
+    change.scorecard_score = card.score;
+    change.scorecard_band = card.band;
+    change.scorecard_strength = card.strength;
+    change.scorecard_weakness = card.weakness;
+    change.scorecard_evidence = card.evidence;
+
+    let tasks = existingTasks.filter((taskItem) => taskItem.evolution_change_id === change.change_id);
+    if (!tasks.length) {
+      tasks = createEvolutionTasks(change, {}, { readJsonFile, writeJsonFile, appendAudit, nextRecordId });
+    }
+    change.task_ids = tasks.map((item) => item.id);
+
+    let plan = state.impact_plans.find((item) => item.change_id === change.change_id) || null;
+    if (!plan) {
+      plan = buildEvolutionImpactPlan(change, tasks);
+      state.impact_plans.push(plan);
+    } else {
+      plan.title = change.title;
+      plan.impacted_areas = change.impacted_areas;
+      plan.tasks = tasks.map((taskItem) => ({
+        task_id: taskItem.id,
+        area: taskItem.evolution_area,
+        title: taskItem.title,
+        workstream: taskItem.workstream,
+        allowed_files: taskItem.allowed_files,
+        execution_summary: taskItem.execution_summary,
+        resume_steps: taskItem.resume_steps,
+        expected_outputs: taskItem.expected_outputs,
+        verification_commands: taskItem.verification_commands
+      }));
+      plan.updated_at = new Date().toISOString();
+    }
+    change.impact_plan_id = plan.plan_id;
+    createdChanges.push(change);
+    createdPlans.push(plan);
+    createdTasks.push(...tasks);
+    createdScorecards.push(card);
+  }
+
+  state.current_change_id = createdChanges[0] ? createdChanges[0].change_id : state.current_change_id;
+  return {
+    scorecards: createdScorecards,
+    changes: createdChanges,
+    plans: createdPlans,
+    tasks: createdTasks
+  };
+}
+
+function renderEvolutionScorecardsReport(report, table) {
+  const rows = (report.scorecards || []).map((card) => [
+    card.card_id,
+    String(card.score),
+    card.band,
+    card.risk,
+    card.evolution_change_id,
+    card.next_action
+  ]);
+  return [
+    "Kabeeri Scorecards",
+    "",
+    `Generated at: ${report.generated_at || "unknown"}`,
+    `Status: ${report.status || "ready"}`,
+    `Average score: ${report.summary ? report.summary.average_score : "n/a"}`,
+    `Strong: ${report.summary ? report.summary.strong : 0} | Watch: ${report.summary ? report.summary.watch : 0} | Needs attention: ${report.summary ? report.summary.needs_attention : 0}`,
+    `Evolution plans materialized: ${report.summary && typeof report.summary.scorecard_plans_created === "number" ? report.summary.scorecard_plans_created : (report.scorecard_plans || []).length}`,
+    `Scorecards are review-only by default: ${report.summary && report.summary.scorecards_materialized ? "no" : "yes"}`,
+    "",
+    table(["Card", "Score", "Band", "Risk", "Suggested Evolution ID", "Next action"], rows.length ? rows : [["", "", "", "", "", "No scorecards available."]]),
+    "",
+    "Evidence and notes:",
+    ...(report.scorecards || []).flatMap((card) => [
+      `- ${card.card_id}: ${card.strength}`,
+      `  Weakness: ${card.weakness}`,
+      `  Evidence: ${(card.evidence || []).join(" | ")}`
+    ]),
+    "",
+    "Next actions:",
+    ...(report.next_actions && report.next_actions.length ? report.next_actions.map((item) => `- ${item}`) : ["- none"])
+  ].join("\n");
 }
 
 function buildEvolutionTaskExecutionDetails(change, area, definition) {
@@ -905,6 +1081,11 @@ function renderEvolutionExecutionReport(report, tableRenderer = () => "") {
 
   const priority = report.target_priority;
   const executionDetails = report.target_priority_execution_details || {};
+  const renderList = (label, values) => {
+    if (!Array.isArray(values) || values.length === 0) return [];
+    return [label, ...values.map((item) => `- ${item}`), ""];
+  };
+  const renderText = (label, value) => value ? [label, value, ""] : [];
   return [
     report.audience === "app_developer" ? "Kabeeri App Execution Report" : "Kabeeri Evolution Execution Report",
     "",
@@ -928,6 +1109,15 @@ function renderEvolutionExecutionReport(report, tableRenderer = () => "") {
     "Verification commands:",
     ...((report.verification_commands || executionDetails.verification_commands || []).map((command) => `- ${command}`)),
     "",
+    ...renderText("Context:", executionDetails.execution_context),
+    ...renderText("Explanation:", executionDetails.explanation),
+    ...renderText("Source package:", executionDetails.source_package ? `${executionDetails.source_package}${Array.isArray(executionDetails.source_package_roles) && executionDetails.source_package_roles.length ? ` (${executionDetails.source_package_roles.join(", ")})` : ""}` : null),
+    ...renderList("Cleanup prerequisites:", executionDetails.cleanup_prerequisites),
+    ...renderList("Cleanup checklist:", executionDetails.cleanup_checklist),
+    ...renderList("Guardrails:", executionDetails.guardrails),
+    ...renderList("Validation flow:", executionDetails.validation_flow),
+    ...renderList("Rollback plan:", executionDetails.rollback_plan),
+    ...renderList("Expected artifacts:", executionDetails.expected_artifacts),
     report.current_temp_queue ? `Temporary queue: ${report.current_temp_queue.source_priority_id} (${report.current_temp_queue.status})` : "Temporary queue: none",
     report.next_priority ? `Next priority: ${report.next_priority.id} - ${report.next_priority.title}` : "Next priority: none"
   ].join("\n");
@@ -1372,6 +1562,7 @@ function renderEvolutionSummary(summary) {
     `Open follow-up tasks: ${summary.open_follow_up_tasks}`,
     `Development priorities: ${summary.open_priorities}/${summary.priorities_total} open`,
     `Deferred ideas: ${summary.open_deferred_ideas}/${summary.deferred_ideas_total} open`,
+    `Scorecards: ${summary.scorecards_total || 0} total (${summary.scorecards_open || 0} open)`,
     `Temporary priority queue: ${temp ? `${temp.queue_id} (${temp.open_slices}/${temp.total_slices} open)` : "none"}`,
     `Multi-AI orchestration: ${summary.multi_ai ? `${summary.multi_ai.status} (${summary.multi_ai.active_queues} active queues)` : "none"}`,
     `Restructure roadmap: ${summary.feature_restructure_work_order ? `${summary.feature_restructure_work_order.total_steps} steps` : "none"}`,

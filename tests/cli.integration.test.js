@@ -8,7 +8,9 @@ const { release } = require("../src/cli/commands/release");
 const evolutionService = require("../src/cli/services/evolution");
 const wordpressStateService = require("../src/cli/services/wordpress");
 const wordpressPlanService = require("../src/cli/services/wordpress_plans");
+const appPluginCatalog = require("../src/cli/services/app_plugin_catalog");
 const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/commands/multi_ai_communications");
+const { resolveDashboardScope } = require("../src/cli/commands/site");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -93,15 +95,117 @@ function withTempDir(fn) {
   }
 }
 
+function loadPluginSmokeCases(pluginId) {
+  const smokePath = path.join(repoRoot, "plugins", pluginId, "tests", "smoke-cases.json");
+  return JSON.parse(fs.readFileSync(smokePath, "utf8"));
+}
+
+function runAppPluginSmokeCase(dir, pluginId, spec, smokeCase) {
+  fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
+
+  const projectSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "project.schema.json"), "utf8"));
+  assert.strictEqual(projectSchema.oneOf.length, (spec.supported_modes || []).length);
+  assert.deepStrictEqual(
+    projectSchema.oneOf.map((item) => item.properties.mode.const),
+    spec.supported_modes || []
+  );
+  const briefSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "brief.schema.json"), "utf8"));
+  assert.deepStrictEqual(briefSchema.oneOf.map((item) => item.properties.mode.const), spec.supported_modes || []);
+  const tasksSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "tasks.schema.json"), "utf8"));
+  assert.ok(Array.isArray(tasksSchema.properties.proposed_tasks.items.required));
+  const designSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "design.schema.json"), "utf8"));
+  assert.deepStrictEqual(designSchema.oneOf.map((item) => item.properties.mode.const), spec.supported_modes || []);
+  const approvalSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "approval.schema.json"), "utf8"));
+  assert.deepStrictEqual(approvalSchema.oneOf.map((item) => item.properties.mode.const), spec.supported_modes || []);
+
+  const initialStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(initialStatus.plugin_enabled, false);
+  assert.strictEqual(initialStatus.next_action, `kvdf plugins install ${pluginId}`);
+
+  runKvdf(["plugins", "install", pluginId], { cwd: dir });
+
+  const enabledStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(enabledStatus.plugin_enabled, true);
+  assert.strictEqual(enabledStatus.next_action, `kvdf ${pluginId} init`);
+
+  const mode = smokeCase.mode || spec.default_mode;
+  runKvdf([pluginId, "init", "--mode", mode, "--name", smokeCase.project_name || spec.display_name, "--json"], { cwd: dir });
+
+  if (smokeCase.kind === "blocked") {
+    const blockedAction = smokeCase.blocked_action || "brief";
+    const expectedError = smokeCase.expected_error || `${spec.display_name} ${blockedAction} blocked`;
+    assert.match(runKvdf([pluginId, blockedAction, "--json"], { cwd: dir, expectFailure: true }).stderr, new RegExp(expectedError));
+    runKvdf(["plugins", "uninstall", pluginId], { cwd: dir });
+    const disabledStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(disabledStatus.plugin_enabled, false);
+    assert.strictEqual(disabledStatus.next_action, `kvdf plugins install ${pluginId}`);
+    return;
+  }
+
+  const questionIds = [
+    ...(spec.common_questions || []).map((_, index) => `${pluginId}.common.${String(index + 1).padStart(2, "0")}`),
+    ...((spec.mode_questions && spec.mode_questions[mode]) || []).map((_, index) => `${pluginId}.${mode}.${String(index + 1).padStart(2, "0")}`)
+  ];
+  const answers = questionIds.map((questionId) => `${questionId}:${questionId} answer`);
+
+  const questionnaire = JSON.parse(runKvdf([pluginId, "questionnaire", "--answer", answers.join(","), "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(questionnaire.current_project.stage, "questionnaire");
+  assert.strictEqual(questionnaire.current_project.blockers.length, 0);
+  assert.strictEqual(questionnaire.current_project.questions, questionIds.length);
+  assert.strictEqual(questionnaire.current_project.answers, questionIds.length);
+
+  const brief = JSON.parse(runKvdf([pluginId, "brief", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(brief.current_project.stage, "brief");
+  const briefState = JSON.parse(fs.readFileSync(path.join(dir, spec.state_file), "utf8"));
+  assert.ok(briefState.projects[0].brief);
+
+  const design = JSON.parse(runKvdf([pluginId, "design", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(design.current_project.stage, "design");
+  const designState = JSON.parse(fs.readFileSync(path.join(dir, spec.state_file), "utf8"));
+  assert.ok(designState.projects[0].design);
+
+  const modules = JSON.parse(runKvdf([pluginId, "modules", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(modules.current_project.stage, "modules");
+  assert.ok(modules.current_project.modules > 0);
+
+  const planningReview = JSON.parse(runKvdf([pluginId, "review", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(planningReview.current_project.stage, "review");
+  assert.strictEqual(planningReview.current_project.planning_review.status, "approved");
+
+  const tasks = JSON.parse(runKvdf([pluginId, "tasks", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(tasks.current_project.stage, "tasks");
+  assert.ok(tasks.current_project.tasks > 0);
+
+  const approval = JSON.parse(runKvdf([pluginId, "approve", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(approval.current_project.stage, "approval");
+  assert.strictEqual(approval.current_project.batches, 1);
+
+  const report = JSON.parse(runKvdf([pluginId, "report", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.stage, "approval");
+  assert.ok(report.next_actions.length > 0);
+
+  const state = JSON.parse(fs.readFileSync(path.join(dir, spec.state_file), "utf8"));
+  assert.strictEqual(state.current_project_id, approval.current_project.project_id);
+  assert.strictEqual(state.projects[0].stage, smokeCase.expected_final_stage || "approval");
+
+  runKvdf(["plugins", "uninstall", pluginId], { cwd: dir });
+  const disabledStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(disabledStatus.plugin_enabled, false);
+  assert.strictEqual(disabledStatus.next_action, `kvdf plugins install ${pluginId}`);
+  assert.match(runKvdf([pluginId, "brief"], { cwd: dir, expectFailure: true }).stderr, new RegExp(`${spec.display_name} plugin blocked`));
+}
+
 test("root commands validate repository assets", () => {
   assert.match(runKvdf(["--version"]).stdout, /kvdf 0\.2\.0/);
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
-  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "batch-exe", "pipeline", "wordpress", "docs", "source-package", "capability"]) {
+  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
     const help = runKvdf([command, "--help"]).stdout;
     assert.match(help, /Usage:/, `${command} help should include usage`);
     assert.doesNotMatch(help, /No detailed help/, `${command} should have detailed help`);
   }
+  assert.match(runKvdf(["evolution", "--help"]).stdout, /kvdf evolution scorecards/);
   assert.match(runKvdf(["validate"]).stdout, /plans.*valid|totals valid/s);
   assert.match(runKvdf(["validate", "runtime-schemas"]).stdout, /runtime schema registry checked/);
   assert.match(runKvdf(["validate", "foldering"]).stdout, /foldering map checked/);
@@ -167,15 +271,15 @@ test("root commands validate repository assets", () => {
   const sourcePackageCleanup = JSON.parse(runKvdf(["source-package", "cleanup", "--json"]).stdout);
   assert.strictEqual(sourcePackageCleanup.report_type, "kvdf_source_package_cleanup_plan");
   assert.ok(fs.existsSync(path.join(repoRoot, sourcePackageCleanup.report_path)));
-  assert.ok(["blocked", "ready_for_decommission"].includes(sourcePackageCleanup.status));
+  assert.ok(["completed", "decommissioned"].includes(sourcePackageCleanup.status));
   const sourcePackageDecommission = JSON.parse(runKvdf(["source-package", "decommission", "--json"]).stdout);
   assert.strictEqual(sourcePackageDecommission.report_type, "kvdf_source_package_decommission_request");
   assert.ok(fs.existsSync(path.join(repoRoot, sourcePackageDecommission.report_path)));
   assert.strictEqual(sourcePackageDecommission.confirmation_required, true);
-  assert.ok(["confirmation_required", "pending_manual_removal"].includes(sourcePackageDecommission.status));
+  assert.ok(["recorded", "pending_manual_removal"].includes(sourcePackageDecommission.status));
   const sourcePackageDecommissionConfirmed = JSON.parse(runKvdf(["source-package", "decommission", "--confirm-remove", "--json"]).stdout);
   assert.strictEqual(sourcePackageDecommissionConfirmed.confirmed, true);
-  assert.strictEqual(sourcePackageDecommissionConfirmed.status, "pending_manual_removal");
+  assert.strictEqual(sourcePackageDecommissionConfirmed.status, "recorded");
   assert.match(runKvdf(["software-design", "--help"]).stdout, /Software Design System Reference/);
   const softwareDesignReference = JSON.parse(runKvdf(["software-design", "index", "--json"]).stdout);
   assert.strictEqual(softwareDesignReference.reference_type, "software_design_reference");
@@ -238,7 +342,10 @@ test("root commands validate repository assets", () => {
 test("onboarding persists enter route and resume guidance", () => withTempDir((dir) => {
   const onboarding = JSON.parse(runKvdf(["onboarding", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(onboarding.report_type, "session_onboarding");
-  assert.strictEqual(onboarding.enter_command, "kvdf init --profile standard --goal \"Describe the application\"");
+  assert.ok(
+    ["kvdf init --profile standard --goal \"Describe the application\"", "kvdf resume --json"].includes(onboarding.enter_command),
+    "Onboarding should offer either the new-workspace or app-workspace enter command"
+  );
   assert.strictEqual(onboarding.route_command, "kvdf entry");
   assert.strictEqual(onboarding.resume_command, "kvdf resume");
   assert.ok(fs.existsSync(path.join(dir, onboarding.report_path)));
@@ -248,9 +355,9 @@ test("onboarding persists enter route and resume guidance", () => withTempDir((d
   assert.ok(saved.guide.first_steps.some((step) => /Enter with kvdf resume --json/.test(step) || /Use kvdf entry/.test(step)));
   const sessionTrack = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "session_track.json"), "utf8"));
   assert.strictEqual(sessionTrack.decision_source, "onboarding");
-  assert.strictEqual(sessionTrack.started_from_mode, "unknown_folder");
-  assert.strictEqual(sessionTrack.route_command, "kvdf init");
-  assert.strictEqual(sessionTrack.active, false);
+  assert.ok(["unknown_folder", "kabeeri_user_workspace"].includes(sessionTrack.started_from_mode));
+  assert.ok(["kvdf init", "kvdf vibe brief"].includes(sessionTrack.route_command));
+  assert.strictEqual(sessionTrack.active, true);
   const persisted = JSON.parse(runKvdf(["onboarding", "report", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(persisted.report_type, "session_onboarding");
   assert.strictEqual(persisted.report_path, onboarding.report_path);
@@ -261,6 +368,8 @@ test("resume persists a durable session track for workspace resumes", () => with
   runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
   const report = JSON.parse(runKvdf(["resume", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.mode, "kabeeri_user_workspace");
+  assert.ok(report.next_exact_action);
+  assert.match(runKvdf(["resume"], { cwd: dir }).stdout, /Next exact action:/);
   const sessionTrack = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "session_track.json"), "utf8"));
   assert.strictEqual(sessionTrack.decision_source, "resume");
   assert.strictEqual(sessionTrack.started_from_mode, "kabeeri_user_workspace");
@@ -744,7 +853,7 @@ test("init creates workspace state files", () => withTempDir((dir) => {
   assert.strictEqual(upgrade.current_cli_version, "0.2.0");
 }));
 
-test("init goal creates adaptive questions and docs-first tasks before implementation", () => withTempDir((dir) => {
+test("init goal creates adaptive questions and planning pack review before implementation", () => withTempDir((dir) => {
   runKvdf(["init", "--profile", "standard", "--goal", "Build ecommerce store with Laravel backend and Next.js frontend"], { cwd: dir });
   const plans = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json"), "utf8"));
   assert.strictEqual(plans.plans.length, 1);
@@ -1225,6 +1334,9 @@ test("v5 adaptive questionnaire creates coverage and provenance tasks", () => wi
   assert.ok(coverage.areas.some((area) => area.area_key === "payments_billing" && area.status === "needs_follow_up"));
   const missing = JSON.parse(runKvdf(["questionnaire", "missing"], { cwd: dir }).stdout);
   assert.ok(missing.follow_up.some((area) => area.area_key === "payments_billing"));
+  runKvdf(["questionnaire", "plan", "Build ecommerce store with Laravel backend React frontend payments shipping and customer mobile app", "--json"], { cwd: dir });
+  runKvdf(["questionnaire", "review"], { cwd: dir });
+  runKvdf(["questionnaire", "approve", "--confirm"], { cwd: dir });
   runKvdf(["questionnaire", "generate-tasks"], { cwd: dir });
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
   assert.ok(tasks.some((task) => task.source === "questionnaire_coverage"));
@@ -1333,8 +1445,63 @@ test("evolution steward creates impact plans and dependent follow-up tasks", () 
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /evolution\.json matches/);
 }));
 
+test("evolution scorecards build a review-only scorecard report", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["evolution", "scorecards", "--actor", "owner-001", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kabeeri_scorecards");
+  assert.strictEqual(report.scorecards.length, 6);
+  assert.ok(Array.isArray(report.scorecard_plans));
+  assert.strictEqual(report.scorecard_plans.length, 0);
+  assert.ok(Array.isArray(report.scorecard_tasks));
+  assert.strictEqual(report.scorecard_tasks.length, 0);
+  assert.strictEqual(report.summary.scorecards_materialized, false);
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "evolution.json"), "utf8"));
+  assert.strictEqual(state.scorecards.length, 6);
+  assert.strictEqual(state.changes.length, 0);
+  assert.ok(fs.existsSync(path.join(dir, "docs", "reports", "KVDF_SCORECARDS.md")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "kabeeri_scorecards.json")));
+  const summary = JSON.parse(runKvdf(["evolution", "status", "--json"], { cwd: dir }).stdout);
+  assert.ok(summary.scorecards_total >= 6);
+}));
+
+test("runtime schema validation accepts task completion and coverage report patterns", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  fs.mkdirSync(path.join(dir, ".kabeeri", "reports"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "reports", "task-501.completion.json"), JSON.stringify({
+    report_type: "task_completion_report",
+    task_id: "task-501",
+    status: "done"
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "reports", "task_coverage_task-501.json"), JSON.stringify({
+    report_type: "task_full_coverage_report",
+    task_id: "task-501",
+    coverage: {
+      state: "planned",
+      materialized: false,
+      planned_slices: 1,
+      completed_slices: 0,
+      open_slices: 1,
+      remainder_free: false
+    }
+  }, null, 2), "utf8");
+  const output = runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout;
+  assert.match(output, /runtime schema validation checked/);
+  assert.match(output, /task-501\.completion\.json matches KVDF Generic Report State/);
+}));
+
 test("evolution batch-exe reports ready and blocked tasks through both aliases", () => withTempDir((dir) => {
   fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "developers.json"), JSON.stringify({
+    developers: [
+      {
+        id: "owner-001",
+        display_name: "Test Owner",
+        role: "Owner",
+        status: "active",
+        workstreams: []
+      }
+    ]
+  }, null, 2), "utf8");
   fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
     tasks: [
       {
@@ -1367,7 +1534,7 @@ test("evolution batch-exe reports ready and blocked tasks through both aliases",
       }
     ]
   }, null, 2), "utf8");
-  const rootReport = JSON.parse(runKvdf(["batch-exe", "--json"], { cwd: dir }).stdout);
+  const rootReport = JSON.parse(runKvdf(["batch-exe", "--actor", "owner-001", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(rootReport.report_type, "evolution_batch_execution");
   assert.strictEqual(rootReport.summary.total_candidates, 3);
   assert.strictEqual(rootReport.summary.ready_total, 3);
@@ -1381,7 +1548,7 @@ test("evolution batch-exe reports ready and blocked tasks through both aliases",
   assert.strictEqual(rootReport.blocked_tasks.length, 0);
   const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
   assert.strictEqual(tasksState.tasks.find((item) => item.id === "task-blocked-001").assignee_id, "codex");
-  const evolutionReport = JSON.parse(runKvdf(["evolution", "batch-exe", "--json"], { cwd: dir }).stdout);
+  const evolutionReport = JSON.parse(runKvdf(["evolution", "batch-exe", "--actor", "owner-001", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(evolutionReport.report_type, "evolution_batch_execution");
   assert.strictEqual(evolutionReport.summary.ready_total, 3);
   assert.strictEqual(evolutionReport.auto_assignee_id, null);
@@ -1390,6 +1557,17 @@ test("evolution batch-exe reports ready and blocked tasks through both aliases",
 
 test("evolution batch-exe auto-assigns missing tasks to the active multi-ai leader when present", () => withTempDir((dir) => {
   fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "developers.json"), JSON.stringify({
+    developers: [
+      {
+        id: "owner-001",
+        display_name: "Test Owner",
+        role: "Owner",
+        status: "active",
+        workstreams: []
+      }
+    ]
+  }, null, 2), "utf8");
   fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
     tasks: [
       {
@@ -1418,7 +1596,7 @@ test("evolution batch-exe auto-assigns missing tasks to the active multi-ai lead
     call_inbox: [],
     merge_bundles: []
   }, null, 2), "utf8");
-  const report = JSON.parse(runKvdf(["batch-exe", "--json"], { cwd: dir }).stdout);
+  const report = JSON.parse(runKvdf(["batch-exe", "--actor", "owner-001", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.auto_assignee_id, "agent-leader-001");
   assert.deepStrictEqual(report.auto_assigned_task_ids, ["task-leader-001"]);
   const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
@@ -1651,6 +1829,8 @@ test("task packet compiles a durable control-plane packet from intake, briefs, a
   assert.strictEqual(report.summary.candidate_total, 2);
   assert.strictEqual(report.status, "ready");
   assert.strictEqual(report.next_action, "kvdf task assign task-packet-001 --assignee codex");
+  assert.strictEqual(report.next_exact_action, report.next_action);
+  assert.match(runKvdf(["task", "packet"], { cwd: dir }).stdout, /Next exact action:/);
   assert.strictEqual(report.source_snapshot.vibe_intent.text, "Build a booking website with onboarding, modules, and approval-ready tasks");
   assert.strictEqual(report.source_snapshot.questionnaire.total_answers, 1);
   assert.strictEqual(report.source_snapshot.brief.brief_id, "brief-001");
@@ -1909,6 +2089,8 @@ test("evolution roadmap exposes the canonical seven-step restructure order", () 
   assert.strictEqual(pluginsStatus.active_plugins, 1);
   assert.strictEqual(pluginsStatus.plugins[0].plugin_id, "kvdf-dev");
   assert.strictEqual(pluginsStatus.plugins[0].status, "enabled");
+  assert.strictEqual(pluginsStatus.plugins[0].bundle_contract.status, "ready");
+  assert.ok(pluginsStatus.plugins[0].bundle_contract.next_exact_action.length > 0);
   const pluginsShow = JSON.parse(runKvdf(["plugins", "show", "kvdf-dev", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(pluginsShow.plugin_id, "kvdf-dev");
   const pluginsDisabled = JSON.parse(runKvdf(["plugins", "disable", "kvdf-dev", "--json"], { cwd: dir }).stdout);
@@ -2386,9 +2568,19 @@ test("adaptive questionnaire planning uses blueprints frameworks data design and
   assert.ok(plan.generated_questions.some((question) => question.question_id === "adaptive.ui.responsive_priority"));
   assert.ok(plan.generated_questions.some((question) => question.question_id === "adaptive.ui.accessibility_target"));
   assert.ok(plan.generated_questions.some((question) => question.source_systems.includes("prompt_packs")));
+  assert.strictEqual(plan.approval_status, "pending");
   const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json"), "utf8"));
   assert.strictEqual(state.current_plan_id, plan.plan_id);
   assert.strictEqual(state.plans.length, 1);
+  assert.match(runKvdf(["questionnaire", "generate-tasks"], { cwd: dir, expectFailure: true }).stderr, /review and approve the planning pack/);
+  const reviewed = JSON.parse(runKvdf(["questionnaire", "review", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(reviewed.review_status, "reviewed");
+  assert.strictEqual(reviewed.approval_status, "pending");
+  const approved = JSON.parse(runKvdf(["questionnaire", "approve", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(approved.approval_status, "approved");
+  runKvdf(["questionnaire", "generate-tasks"], { cwd: dir });
+  const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8")).tasks;
+  assert.ok(tasks.some((task) => task.source === "questionnaire_coverage"));
 }));
 
 test("resume highlights pending UI decisions from questionnaire reports", () => withTempDir((dir) => {
@@ -2440,6 +2632,9 @@ test("questionnaire task generation emits explicit frontend UI decision tasks", 
       { answer_id: "answer-004", question_id: "entry.has_public_frontend", value: "yes", area_ids: ["public_frontend", "seo", "accessibility"] }
     ]
   }, null, 2));
+  runKvdf(["questionnaire", "plan", "Build ecommerce store with Laravel backend React frontend payments shipping and customer mobile app", "--json"], { cwd: dir });
+  runKvdf(["questionnaire", "review"], { cwd: dir });
+  runKvdf(["questionnaire", "approve", "--confirm"], { cwd: dir });
   runKvdf(["questionnaire", "generate-tasks"], { cwd: dir });
   const tasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8")).tasks;
   const uiTasks = tasks.filter((task) => task.type === "ui-decision-coverage");
@@ -2461,11 +2656,44 @@ test("questionnaire flow exposes a direct start path and operator notes", () => 
 test("pipeline matrix is rendered and persisted for strict enforcement", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const matrix = JSON.parse(runKvdf(["pipeline", "matrix", "--json"], { cwd: dir }).stdout);
+  assert.ok(matrix.next_exact_action);
   assert.ok(Array.isArray(matrix.matrix));
   assert.ok(matrix.matrix.some((item) => item.id === "task-packet"));
   assert.ok(matrix.matrix.some((item) => item.id === "questionnaire-plan"));
+  assert.match(runKvdf(["pipeline", "matrix"], { cwd: dir }).stdout, /Next exact action:/);
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "pipeline_enforcement.json")));
   assert.ok(fs.existsSync(path.join(dir, "docs", "reports", "KVDF_PIPELINE_ENFORCEMENT_MATRIX.md")));
+}));
+
+test("contract command exposes the ai cli operating contract and command registry", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["contract", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_ai_cli_operating_contract");
+  assert.ok(report.next_exact_action);
+  assert.ok(Array.isArray(report.command_registry));
+  assert.ok(report.command_registry.some((entry) => entry.key === "contract"));
+  assert.ok(report.command_registry.some((entry) => entry.key === "task-packet"));
+  assert.strictEqual(report.role_split.cli.includes("Validate prerequisites"), true);
+  assert.ok(fs.existsSync(path.join(dir, "docs", "reports", "KVDF_AI_CLI_OPERATING_CONTRACT.md")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "pipeline_enforcement.json")));
+  assert.match(runKvdf(["contract", "--help"], { cwd: dir }).stdout, /architecture or track boundary view/i);
+}));
+
+test("maintainability command exposes the shared-service scorecard and live state", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["maintainability", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_maintainability_report");
+  assert.ok(report.next_exact_action);
+  assert.ok(Array.isArray(report.shared_service_inventory));
+  assert.ok(report.shared_service_inventory.includes("src/cli/services/command_registry.js"));
+  assert.ok(Array.isArray(report.shared_command_inventory));
+  assert.ok(report.shared_command_inventory.some((entry) => entry.key === "maintainability"));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "maintainability.json")));
+  const persisted = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "reports", "maintainability.json"), "utf8"));
+  assert.strictEqual(persisted.report_type, "kvdf_maintainability_report");
+  assert.strictEqual(persisted.scorecard.change_id, "evo-scorecard-maintainability");
+  assert.ok(persisted.live_state);
+  assert.match(runKvdf(["maintainability"], { cwd: dir }).stdout, /KVDF Maintainability Report/);
 }));
 
 test("pipeline check task-start inspects a specific task token and lock trail", () => withTempDir((dir) => {
@@ -2781,6 +3009,219 @@ test("wordpress services modules persist state and build plans", () => {
   assert.ok(planTasks.every((item) => item.source === "wordpress_plan"));
   assert.ok(pluginTasks.every((item) => item.allowed_files.includes("wp-content/plugins/checkout-addon/**")));
 });
+
+test("booking builder plugin installs and runs a full runtime pipeline", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "booking-builder"), path.join(dir, "plugins", "booking-builder"), { recursive: true });
+
+  const initialStatus = JSON.parse(runKvdf(["booking", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(initialStatus.plugin_enabled, false);
+  assert.strictEqual(initialStatus.next_action, "kvdf plugins install booking-builder");
+  assert.strictEqual(initialStatus.bundle_contract_status, "ready");
+
+  runKvdf(["plugins", "install", "booking-builder"], { cwd: dir });
+
+  const enabledStatus = JSON.parse(runKvdf(["booking", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(enabledStatus.plugin_enabled, true);
+  assert.strictEqual(enabledStatus.next_action, "kvdf booking init");
+  assert.strictEqual(enabledStatus.bundle_contract_status, "ready");
+
+  runKvdf(["booking", "init", "--mode", "appointments", "--name", "Clinic Booking", "--json"], { cwd: dir });
+  const questionnaire = JSON.parse(runKvdf(["booking", "questionnaire", "--answer", "booking.goal:Clinic booking,booking.timezone:UTC,booking.payment:none,booking.reminders:yes,booking.reschedule:yes,booking.admin_roles:front desk,booking.appointment_duration:30m,booking.practitioner_schedule:yes", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(questionnaire.current_project.stage, "questionnaire");
+  assert.strictEqual(questionnaire.current_project.blockers.length, 0);
+
+  const brief = JSON.parse(runKvdf(["booking", "brief", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(brief.current_project.stage, "brief");
+
+  const design = JSON.parse(runKvdf(["booking", "design", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(design.current_project.stage, "design");
+
+  const modules = JSON.parse(runKvdf(["booking", "modules", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(modules.current_project.stage, "modules");
+  assert.ok(modules.current_project.modules > 0);
+
+  const review = JSON.parse(runKvdf(["booking", "review", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.current_project.stage, "review");
+  assert.strictEqual(review.current_project.planning_review.status, "approved");
+
+  const tasks = JSON.parse(runKvdf(["booking", "tasks", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(tasks.current_project.stage, "tasks");
+  assert.ok(tasks.current_project.tasks > 0);
+
+  const approval = JSON.parse(runKvdf(["booking", "approve", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(approval.current_project.stage, "approval");
+  assert.strictEqual(approval.current_project.batches, 1);
+
+  const report = JSON.parse(runKvdf(["booking", "report", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.stage, "approval");
+  assert.ok(report.next_actions.length > 0);
+  assert.strictEqual(report.bundle_contract_status, "ready");
+
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "booking.json"), "utf8"));
+  assert.strictEqual(state.current_project_id, approval.current_project.project_id);
+  assert.strictEqual(state.projects[0].stage, "approval");
+
+  runKvdf(["plugins", "uninstall", "booking-builder"], { cwd: dir });
+  const disabledStatus = JSON.parse(runKvdf(["booking", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(disabledStatus.plugin_enabled, false);
+  assert.strictEqual(disabledStatus.next_action, "kvdf plugins install booking-builder");
+  assert.match(runKvdf(["booking", "brief"], { cwd: dir, expectFailure: true }).stderr, /Booking plugin blocked/);
+}));
+
+test("ecommerce builder plugin installs and runs a full runtime pipeline", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "ecommerce-builder"), path.join(dir, "plugins", "ecommerce-builder"), { recursive: true });
+
+  const initialStatus = JSON.parse(runKvdf(["ecommerce", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(initialStatus.plugin_enabled, false);
+  assert.strictEqual(initialStatus.next_action, "kvdf plugins install ecommerce-builder");
+  assert.strictEqual(initialStatus.bundle_contract_status, "ready");
+
+  runKvdf(["plugins", "install", "ecommerce-builder"], { cwd: dir });
+
+  const enabledStatus = JSON.parse(runKvdf(["ecommerce", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(enabledStatus.plugin_enabled, true);
+  assert.strictEqual(enabledStatus.next_action, "kvdf ecommerce init");
+  assert.strictEqual(enabledStatus.bundle_contract_status, "ready");
+
+  runKvdf(["ecommerce", "init", "--mode", "store", "--name", "Shop Front", "--json"], { cwd: dir });
+  const questionnaire = JSON.parse(runKvdf(["ecommerce", "questionnaire", "--answer", "commerce.goal:Shop front,commerce.currency:USD,commerce.payments:stripe,commerce.tax:vat,commerce.fulfillment:shipments,commerce.admin_roles:ops,commerce.catalog_size:large,commerce.inventory:yes", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(questionnaire.current_project.stage, "questionnaire");
+  assert.strictEqual(questionnaire.current_project.blockers.length, 0);
+
+  const brief = JSON.parse(runKvdf(["ecommerce", "brief", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(brief.current_project.stage, "brief");
+
+  const design = JSON.parse(runKvdf(["ecommerce", "design", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(design.current_project.stage, "design");
+
+  const modules = JSON.parse(runKvdf(["ecommerce", "modules", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(modules.current_project.stage, "modules");
+  assert.ok(modules.current_project.modules > 0);
+
+  const review = JSON.parse(runKvdf(["ecommerce", "review", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.current_project.stage, "review");
+  assert.strictEqual(review.current_project.planning_review.status, "approved");
+
+  const tasks = JSON.parse(runKvdf(["ecommerce", "tasks", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(tasks.current_project.stage, "tasks");
+  assert.ok(tasks.current_project.tasks > 0);
+
+  const approval = JSON.parse(runKvdf(["ecommerce", "approve", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(approval.current_project.stage, "approval");
+  assert.strictEqual(approval.current_project.batches, 1);
+
+  const report = JSON.parse(runKvdf(["ecommerce", "report", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.stage, "approval");
+  assert.ok(report.next_actions.length > 0);
+  assert.strictEqual(report.bundle_contract_status, "ready");
+
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "ecommerce.json"), "utf8"));
+  assert.strictEqual(state.current_project_id, approval.current_project.project_id);
+  assert.strictEqual(state.projects[0].stage, "approval");
+
+  runKvdf(["plugins", "uninstall", "ecommerce-builder"], { cwd: dir });
+  const disabledStatus = JSON.parse(runKvdf(["ecommerce", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(disabledStatus.plugin_enabled, false);
+  assert.strictEqual(disabledStatus.next_action, "kvdf plugins install ecommerce-builder");
+  assert.match(runKvdf(["ecommerce", "brief"], { cwd: dir, expectFailure: true }).stderr, /Ecommerce plugin blocked/);
+}));
+
+test("app plugin suite installs and runs full runtime pipelines", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
+
+  const pluginIds = ["company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos"];
+
+  for (const pluginId of pluginIds) {
+    fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
+
+    const spec = appPluginCatalog[pluginId];
+    const initialStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(initialStatus.plugin_enabled, false);
+    assert.strictEqual(initialStatus.next_action, `kvdf plugins install ${pluginId}`);
+    assert.strictEqual(initialStatus.bundle_contract_status, "ready");
+
+    runKvdf(["plugins", "install", pluginId], { cwd: dir });
+
+    const enabledStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(enabledStatus.plugin_enabled, true);
+    assert.strictEqual(enabledStatus.next_action, `kvdf ${pluginId} init`);
+    assert.strictEqual(enabledStatus.bundle_contract_status, "ready");
+
+    runKvdf([pluginId, "init", "--mode", spec.default_mode, "--name", spec.display_name, "--json"], { cwd: dir });
+
+    const questions = [];
+    const allQuestions = [
+      ...(spec.common_questions || []).map((_, index) => `${pluginId}.common.${String(index + 1).padStart(2, "0")}`),
+      ...((spec.mode_questions && spec.mode_questions[spec.default_mode]) || []).map((_, index) => `${pluginId}.${spec.default_mode}.${String(index + 1).padStart(2, "0")}`)
+    ];
+    for (const questionId of allQuestions) {
+      questions.push(`${questionId}:${questionId} answer`);
+    }
+
+    const questionnaire = JSON.parse(runKvdf([pluginId, "questionnaire", "--answer", questions.join(","), "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(questionnaire.current_project.stage, "questionnaire");
+    assert.strictEqual(questionnaire.current_project.blockers.length, 0);
+    assert.strictEqual(questionnaire.current_project.questions, allQuestions.length);
+    assert.strictEqual(questionnaire.current_project.answers, allQuestions.length);
+    assert.match(questionnaire.next_action, new RegExp(`kvdf ${pluginId} brief`));
+
+    const brief = JSON.parse(runKvdf([pluginId, "brief", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(brief.current_project.stage, "brief");
+    const briefState = JSON.parse(fs.readFileSync(path.join(dir, spec.state_file), "utf8"));
+    assert.ok(briefState.projects[0].brief);
+
+    const design = JSON.parse(runKvdf([pluginId, "design", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(design.current_project.stage, "design");
+    const designState = JSON.parse(fs.readFileSync(path.join(dir, spec.state_file), "utf8"));
+    assert.ok(designState.projects[0].design);
+
+  const modules = JSON.parse(runKvdf([pluginId, "modules", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(modules.current_project.stage, "modules");
+  assert.ok(modules.current_project.modules > 0);
+
+  const planningReview = JSON.parse(runKvdf([pluginId, "review", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(planningReview.current_project.stage, "review");
+  assert.strictEqual(planningReview.current_project.planning_review.status, "approved");
+
+  const tasks = JSON.parse(runKvdf([pluginId, "tasks", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(tasks.current_project.stage, "tasks");
+  assert.ok(tasks.current_project.tasks > 0);
+
+    const approval = JSON.parse(runKvdf([pluginId, "approve", "--confirm", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(approval.current_project.stage, "approval");
+    assert.strictEqual(approval.current_project.batches, 1);
+
+    const report = JSON.parse(runKvdf([pluginId, "report", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(report.stage, "approval");
+    assert.ok(report.next_actions.length > 0);
+    assert.strictEqual(report.bundle_contract_status, "ready");
+
+    const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", spec.state_file.replace(".kabeeri/", "")), "utf8"));
+    assert.strictEqual(state.current_project_id, approval.current_project.project_id);
+    assert.strictEqual(state.projects[0].stage, "approval");
+
+    runKvdf(["plugins", "uninstall", pluginId], { cwd: dir });
+    const disabledStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(disabledStatus.plugin_enabled, false);
+    assert.strictEqual(disabledStatus.next_action, `kvdf plugins install ${pluginId}`);
+    assert.match(runKvdf([pluginId, "brief"], { cwd: dir, expectFailure: true }).stderr, new RegExp(`${spec.display_name} plugin blocked`));
+  }
+}));
+
+for (const pluginId of ["company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos"]) {
+  const smokeCases = loadPluginSmokeCases(pluginId);
+  const spec = appPluginCatalog[pluginId];
+  for (const smokeCase of smokeCases.smoke_cases || []) {
+    test(`plugin smoke case: ${pluginId} - ${smokeCase.name}`, () => withTempDir((dir) => {
+      runAppPluginSmokeCase(dir, pluginId, spec, smokeCase);
+    }));
+  }
+}
 
 test("vibe-first commands classify suggestions convert tasks and capture work", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
@@ -3500,7 +3941,7 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.strictEqual(state.workspaces[0].apps_total, 2);
   assert.strictEqual(state.business.customer_apps[0].public_url, "/customer/apps/acme");
   const html = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
-  assert.match(html, /Kabeeri VDF Dashboard/);
+  assert.match(html, /Kabeeri Development Dashboard/);
   assert.match(html, /\/__kvdf\/api\/state/);
   assert.match(html, /Applications/);
   assert.match(html, /Task Tracker Live Board/);
@@ -3509,6 +3950,7 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.match(html, /\/__kvdf\/api\/reports/);
   assert.match(html, /Action Center/);
   assert.match(html, /\.kabeeri is the source of truth/);
+  assert.match(html, /Framework-owner view:/);
   assert.match(html, /table-wrap/);
   assert.match(html, /KVDF Workspaces/);
   assert.match(html, /Dashboard UX Governance/);
@@ -3875,6 +4317,8 @@ test("developer app workspace layout scaffolds isolated app roots", () => withTe
   assert.strictEqual(created.report_type, "developer_app_workspace_scaffold");
   assert.strictEqual(created.workspace.slug, "storefront-web");
   assert.strictEqual(created.workspace.root, "workspaces/apps/storefront-web");
+  assert.strictEqual(created.validation.status, "compliant");
+  assert.ok(Array.isArray(created.workspace.surface_scopes));
   for (const relative of [
     "workspaces/apps/storefront-web/.kabeeri",
     "workspaces/apps/storefront-web/src",
@@ -3884,6 +4328,7 @@ test("developer app workspace layout scaffolds isolated app roots", () => withTe
     "workspaces/apps/storefront-web/.kabeeri/project.json",
     "workspaces/apps/storefront-web/.kabeeri/tasks.json",
     "workspaces/apps/storefront-web/.kabeeri/task_trash.json",
+    "workspaces/apps/storefront-web/.kabeeri/scorecards.json",
     "workspaces/apps/storefront-web/package.json"
   ]) {
     assert.ok(fs.existsSync(path.join(dir, relative)), `${relative} should exist`);
@@ -3894,9 +4339,53 @@ test("developer app workspace layout scaffolds isolated app roots", () => withTe
   const show = JSON.parse(runKvdf(["app", "workspace", "show", "storefront-web", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(show.report_type, "developer_app_workspace");
   assert.strictEqual(show.workspace.slug, "storefront-web");
+  assert.strictEqual(show.contract.status, "compliant");
+  const validation = JSON.parse(runKvdf(["app", "workspace", "validate", "storefront-web", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(validation.ok, true);
+  assert.strictEqual(validation.workspace_count, 1);
+  assert.strictEqual(validation.validations[0].status, "compliant");
+  const scorecards = JSON.parse(runKvdf(["app", "workspace", "scorecards", "storefront-web", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(scorecards.report_type, "developer_app_scorecards");
+  assert.strictEqual(scorecards.workspace_slug, "storefront-web");
+  assert.ok(Array.isArray(scorecards.cards));
+  assert.ok(scorecards.summary.total >= 8);
+  const reviewedScorecards = JSON.parse(runKvdf(["app", "workspace", "scorecards", "storefront-web", "--review", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(reviewedScorecards.review_state.status, "reviewed");
+  const lockedScorecards = JSON.parse(runKvdf(["app", "workspace", "scorecards", "storefront-web", "--lock", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(lockedScorecards.review_state.status, "locked");
+  fs.unlinkSync(path.join(dir, "workspaces", "apps", "storefront-web", ".kabeeri", "session_track.json"));
+  const brokenValidation = JSON.parse(runKvdf(["app", "workspace", "validate", "storefront-web", "--json"], { cwd: dir, expectFailure: true }).stdout);
+  assert.strictEqual(brokenValidation.ok, false);
+  assert.ok(brokenValidation.validations[0].missing_paths.some((item) => item.endsWith("session_track.json")));
   const registry = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/app_workspaces.json"), "utf8"));
   assert.ok(registry.workspaces.some((item) => item.slug === "storefront-web"));
 }));
+
+test("developer app workspace dashboard renders the vibe developer view", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  runKvdf(["app", "workspace", "create", "--slug", "storefront-web", "--name", "Storefront Web", "--type", "frontend"], { cwd: dir });
+  const appRoot = path.join(dir, "workspaces", "apps", "storefront-web");
+  runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: appRoot });
+  const html = fs.readFileSync(path.join(appRoot, "dashboard.html"), "utf8");
+  assert.match(html, /Vibe Developer Dashboard/);
+  assert.match(html, /App Workspace Contract/);
+  assert.match(html, /Boundary Items/);
+  assert.match(html, /Planning Pack/);
+  assert.match(html, /App Scorecards/);
+  assert.match(html, /Task Tracker Live Board/);
+  assert.match(html, /Scorecard Readiness/);
+  assert.doesNotMatch(html, /Kabeeri Development Dashboard/);
+}));
+
+test("dashboard route resolver distinguishes framework and vibe views", () => {
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard"), "current");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/index.html"), "current");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework"), "framework_owner");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework/index.html"), "framework_owner");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe"), "vibe_app_developer");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe/index.html"), "vibe_app_developer");
+  assert.strictEqual(resolveDashboardScope("/customer/apps/acme"), null);
+});
 
 test("owner and developer cli surfaces block the opposite track", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
@@ -4056,8 +4545,40 @@ test("docs generation workflow emits template catalog manifest and contracts", (
   assert.ok(manifest.pages.some((page) => page.slug === "multi-ai-governance"));
   assert.ok(manifest.pages.some((page) => page.slug === "ai-cost-control"));
   assert.ok(manifest.pages.some((page) => page.slug === "github-release"));
+  assert.ok(manifest.pages.some((page) => page.slug === "ai-tool-hub"));
+  assert.ok(manifest.pages.some((page) => page.slug === "vibe-developer-hub"));
+  assert.ok(!manifest.pages.some((page) => page.slug === "kabeeri-developer-hub"));
+  assert.ok(!manifest.pages.some((page) => page.slug === "framework-development"));
+  assert.ok(!manifest.pages.some((page) => page.slug === "plugin-development"));
+  assert.ok(!manifest.pages.some((page) => page.slug === "scorecards-evo"));
   assert.ok(fs.existsSync(path.join(repoRoot, "docs/site/pages/en/task-governance.html")));
   assert.ok(fs.existsSync(path.join(repoRoot, "docs/site/pages/ar/task-governance.html")));
+  assert.ok(fs.existsSync(path.join(repoRoot, "docs/site/pages/en/ai-tool-hub.html")));
+  assert.ok(fs.existsSync(path.join(repoRoot, "docs/site/pages/en/vibe-developer-hub.html")));
+  assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/kabeeri-developer-hub.html")));
+  assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/framework-development.html")));
+  assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/plugin-development.html")));
+  assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/scorecards-evo.html")));
+  const systemManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/site-manifest.json"), "utf8"));
+  assert.strictEqual(systemManifest.page_count, systemManifest.pages.length);
+  assert.ok(systemManifest.pages.some((page) => page.slug === "system-development"));
+  assert.ok(systemManifest.pages.some((page) => page.slug === "methodology"));
+  assert.ok(systemManifest.pages.some((page) => page.slug === "kabeeri-4-parts"));
+  assert.ok(systemManifest.pages.some((page) => page.slug === "framework-development"));
+  assert.ok(systemManifest.pages.some((page) => page.slug === "plugin-development"));
+  assert.ok(systemManifest.pages.some((page) => page.slug === "scorecards-evo"));
+  const systemIndex = fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/index.html"), "utf8");
+  const systemPageEn = fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/pages/en/system-development.html"), "utf8");
+  const systemPageAr = fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/pages/ar/system-development.html"), "utf8");
+  assert.match(systemIndex, /<header class="topbar">/);
+  assert.match(systemIndex, /<aside class="sidebar">/);
+  assert.match(systemIndex, /assets\/css\/style\.css/);
+  assert.match(systemPageEn, /<header class="topbar">/);
+  assert.match(systemPageEn, /<aside class="sidebar">/);
+  assert.match(systemPageEn, /assets\/css\/style\.css/);
+  assert.match(systemPageAr, /<header class="topbar">/);
+  assert.match(systemPageAr, /<aside class="sidebar">/);
+  assert.match(systemPageAr, /assets\/css\/style\.css/);
 });
 
 test("init auto routes project profile from goal", () => withTempDir((dir) => {
@@ -4170,7 +4691,8 @@ test("audit list and report expose workspace events", () => withTempDir((dir) =>
 test("github and release commands are dry-run without confirm", () => {
   assert.match(runKvdf(["github", "issue", "sync", "--version", "v4.0.0", "--dry-run"]).stdout, /No remote GitHub changes were made/);
   assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Validation: OK/);
-  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Readiness: BLOCKED/);
+  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Readiness: READY/);
+  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Release gate: PASS/);
   assert.match(runKvdf(["release", "publish", "--version", "v4.0.0"]).stdout, /No remote GitHub changes were made/);
 });
 

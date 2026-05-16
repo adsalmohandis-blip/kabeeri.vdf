@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Blog Builder Approval Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["batch_id", "mode", "approved", "blockers", "tasks", "next_action"],
+  "properties": {
+    "batch_id": { "type": "string" },
+    "mode": { "enum": ["personal", "multi-author", "business", "technical"] },
+    "approved": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "tasks": { "type": "array" },
+    "next_action": { "type": "string" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "personal" } } },
+    { "properties": { "mode": { "const": "multi-author" } } },
+    { "properties": { "mode": { "const": "business" } } },
+    { "properties": { "mode": { "const": "technical" } } }
+  ]
+}

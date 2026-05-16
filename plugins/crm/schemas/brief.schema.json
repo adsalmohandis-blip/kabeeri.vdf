@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CRM Builder Brief Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mode", "audience", "booking_rules", "ui", "system", "data"],
+  "properties": {
+    "mode": { "enum": ["sales", "support", "operations", "b2b"] },
+    "audience": { "type": "string" },
+    "booking_rules": { "type": "array", "items": { "type": "string" } },
+    "ui": { "type": "array", "items": { "type": "string" } },
+    "system": { "type": "array", "items": { "type": "string" } },
+    "data": { "type": "array", "items": { "type": "string" } }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "sales" } } },
+    { "properties": { "mode": { "const": "support" } } },
+    { "properties": { "mode": { "const": "operations" } } },
+    { "properties": { "mode": { "const": "b2b" } } }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Company Profile Builder Approval Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["batch_id", "mode", "approved", "blockers", "tasks", "next_action"],
+  "properties": {
+    "batch_id": { "type": "string" },
+    "mode": { "enum": ["startup", "corporate", "agency", "franchise"] },
+    "approved": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "tasks": { "type": "array" },
+    "next_action": { "type": "string" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "startup" } } },
+    { "properties": { "mode": { "const": "corporate" } } },
+    { "properties": { "mode": { "const": "agency" } } },
+    { "properties": { "mode": { "const": "franchise" } } }
+  ]
+}

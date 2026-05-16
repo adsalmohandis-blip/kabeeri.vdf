@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "POS Builder Brief Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["mode", "audience", "booking_rules", "ui", "system", "data"],
+  "properties": {
+    "mode": { "enum": ["retail", "restaurant", "cafe", "service"] },
+    "audience": { "type": "string" },
+    "booking_rules": { "type": "array", "items": { "type": "string" } },
+    "ui": { "type": "array", "items": { "type": "string" } },
+    "system": { "type": "array", "items": { "type": "string" } },
+    "data": { "type": "array", "items": { "type": "string" } }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "retail" } } },
+    { "properties": { "mode": { "const": "restaurant" } } },
+    { "properties": { "mode": { "const": "cafe" } } },
+    { "properties": { "mode": { "const": "service" } } }
+  ]
+}

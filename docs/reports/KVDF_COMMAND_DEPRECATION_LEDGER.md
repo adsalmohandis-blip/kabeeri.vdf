@@ -14,6 +14,15 @@ Source of truth:
 - `src/cli/index.js`
 - `docs/reports/`
 
+Alias-noise guidance:
+
+- Prefer the canonical command family when writing new docs or prompts.
+- Treat compatibility aliases as convenience routes, not the primary reference.
+- If a command has multiple names, document the canonical name first and list
+  the aliases only as a compatibility note.
+- When alias phrasing starts to hide the real command shape, update the ledger
+  and the command reference together so the canonical path stays obvious.
+
 ## Legend
 
 - `active`: canonical user-facing command family.
@@ -74,6 +83,15 @@ Source of truth:
 | `kvdf docs build` | `kvdf docs generate` | compat-alias | Docs publishing lifecycle alias. |
 | `kvdf docs preview` | `kvdf docs serve` | compat-alias | Local review alias. |
 | `kvdf docs sync` | `kvdf docs generate` + validation | compat-alias | Regenerates and validates the docs site. |
+
+## Alias Noise Controls
+
+The alias surface is intentionally small. When a new alias is added, it should:
+
+1. Reduce friction for an obvious legacy or convenience path.
+2. Map directly to one canonical command family.
+3. Appear in this ledger and in `docs/cli/CLI_COMMAND_REFERENCE.md`.
+4. Avoid creating a second documentation story for the same capability.
 
 ## Deprecated Surfaces
 

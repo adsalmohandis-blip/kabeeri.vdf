@@ -78,6 +78,9 @@ function normalizeCommandName(command) {
     "source-package": "source-package",
     source_package: "source-package",
     sourcepackage: "source-package",
+    company_profile: "company-profile",
+    news_website: "news-website",
+    ecommerce_mobile_app: "ecommerce-mobile-app",
     generate: "generator",
     "software-design": "software-design",
     "software_design": "software-design",
@@ -130,6 +133,9 @@ function normalizeCommandName(command) {
     cost: "usage",
     budgets: "budget",
     price: "pricing",
+    contract: "contract",
+    operator: "contract",
+    "ai-contract": "contract",
     designs: "design",
     adrs: "adr",
     airun: "ai-run",
@@ -263,12 +269,21 @@ Notes:
   kvdf task assign task-001 --assignee agent-001
   kvdf task start task-001 --actor agent-001
   kvdf task review task-001 --actor reviewer-001
-  kvdf task verify task-001 --owner owner-001
+    kvdf task verify task-001 --owner owner-001
   kvdf task complete task-001 --owner owner-001
   kvdf task trash list
   kvdf task trash show task-001
   kvdf task trash restore task-001
   kvdf task trash purge
+`,
+    contract: `Usage:
+  kvdf contract
+  kvdf contract --json
+  kvdf contract pipeline
+  kvdf contract task-packet
+
+Notes:
+  Contract shows the shared operating model for AI and CLI work: AI reasons over current state, CLI validates and writes state, and filesystem artifacts remain the source of truth. Use it when you want the current next exact action, the command registry, the pipeline contract, and the architecture or track boundary view in one place.
 `,
     vibe: `Usage:
   kvdf vibe "Add admin theme settings"
@@ -404,6 +419,7 @@ Notes:
   kvdf evolution next
   kvdf evolution roadmap
   kvdf evolution partition
+  kvdf evolution scorecards [--materialize]
   kvdf evolution report
   kvdf evolution batch-exe
   kvdf batch-exe
@@ -412,6 +428,14 @@ Notes:
   kvdf plugins enable kvdf-dev
   kvdf plugins uninstall kvdf-dev
   kvdf plugins disable kvdf-dev
+  kvdf company-profile status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf news-website status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf blog status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf ecommerce-mobile-app status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf crm status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf pos status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf ecommerce status|init|questionnaire|brief|design|modules|tasks|approve|report
+  kvdf booking status|init|questionnaire|brief|design|modules|tasks|approve|report
   kvdf evolution defer "Future idea"
   kvdf evolution deferred
   kvdf evolution deferred restore deferred-001 --confirm-placement --priority-position 8
@@ -552,13 +576,15 @@ Developer app workspaces:
   kvdf app workspace create --slug storefront-web --name "Storefront Web" --type frontend
   kvdf app workspace list
   kvdf app workspace show storefront-web
+  kvdf app workspace validate storefront-web
+  kvdf app workspace scorecards storefront-web
 
 Public routes always use username:
   /customer/apps/storefront
 
-Notes:
+  Notes:
   App Boundary Governance allows multiple apps inside one KVDF workspace only when they belong to the same product.
-  Developer app workspaces live under workspaces/apps/<app-slug>/ with local .kabeeri state and tests.
+  Developer app workspaces live under workspaces/apps/<app-slug>/ with local .kabeeri state, a strict workspace contract, tests/docs/package metadata, and workspace scorecards.
   Use separate KVDF workspaces for unrelated products, clients, or release lifecycles.
 `,
     journey: `Usage:
@@ -573,6 +599,8 @@ Notes:
   kvdf questionnaire plan "Build ecommerce store with Laravel backend React frontend payments and mobile app"
   kvdf questionnaire plan "Build ERP with inventory accounting and approvals" --json
   kvdf questionnaire plan --blueprint ecommerce --framework laravel --frontend react --database mysql
+  kvdf questionnaire review
+  kvdf questionnaire approve --confirm
   kvdf questionnaire answer entry.project_type --value saas
   kvdf questionnaire answer entry.has_users --value yes
   kvdf questionnaire coverage
@@ -580,7 +608,7 @@ Notes:
   kvdf questionnaire generate-tasks
 
 Notes:
-  Questionnaire planning uses Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor to generate focused developer questions before task generation. It also recommends a short prompt-pack path and compact guidance so the next AI step stays small and task-specific.
+  Questionnaire planning uses Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor to generate focused developer questions before task generation. The resulting planning pack is fail-closed until it is reviewed with \`kvdf questionnaire review\` and approved with \`kvdf questionnaire approve --confirm\`. It also recommends a short prompt-pack path and compact guidance so the next AI step stays small and task-specific.
 `,
     capability: `Usage:
   kvdf capability list
@@ -1083,6 +1111,134 @@ Notes:
 
 Notes:
   WordPress support is a governed capability for building from scratch or adopting an existing site. It uses the WordPress prompt pack, product blueprints, UI/Data Design guidance, security checks, and task governance. It never edits WordPress core paths such as wp-admin or wp-includes.
+`,
+    "company-profile": `Usage:
+  kvdf company-profile status
+  kvdf company-profile init --mode corporate
+  kvdf company-profile questionnaire
+  kvdf company-profile brief
+  kvdf company-profile design
+  kvdf company-profile modules
+  kvdf company-profile tasks
+  kvdf company-profile approve
+  kvdf company-profile report
+  kvdf plugins install company-profile
+  kvdf plugins uninstall company-profile
+
+Notes:
+  Company Profile Builder is a removable app-track plugin for company profile sites. Its live runtime state is stored in .kabeeri/company_profile.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    "news-website": `Usage:
+  kvdf news-website status
+  kvdf news-website init --mode editorial
+  kvdf news-website questionnaire
+  kvdf news-website brief
+  kvdf news-website design
+  kvdf news-website modules
+  kvdf news-website tasks
+  kvdf news-website approve
+  kvdf news-website report
+  kvdf plugins install news-website
+  kvdf plugins uninstall news-website
+
+Notes:
+  News Website Builder is a removable app-track plugin for news and editorial sites. Its live runtime state is stored in .kabeeri/news_website.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    blog: `Usage:
+  kvdf blog status
+  kvdf blog init --mode personal
+  kvdf blog questionnaire
+  kvdf blog brief
+  kvdf blog design
+  kvdf blog modules
+  kvdf blog tasks
+  kvdf blog approve
+  kvdf blog report
+  kvdf plugins install blog
+  kvdf plugins uninstall blog
+
+Notes:
+  Blog Builder is a removable app-track plugin for personal, business, and technical blogs. Its live runtime state is stored in .kabeeri/blog.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    "ecommerce-mobile-app": `Usage:
+  kvdf ecommerce-mobile-app status
+  kvdf ecommerce-mobile-app init --mode shopping
+  kvdf ecommerce-mobile-app questionnaire
+  kvdf ecommerce-mobile-app brief
+  kvdf ecommerce-mobile-app design
+  kvdf ecommerce-mobile-app modules
+  kvdf ecommerce-mobile-app tasks
+  kvdf ecommerce-mobile-app approve
+  kvdf ecommerce-mobile-app report
+  kvdf plugins install ecommerce-mobile-app
+  kvdf plugins uninstall ecommerce-mobile-app
+
+Notes:
+  Ecommerce Mobile App Builder is a removable app-track plugin for mobile commerce apps. Its live runtime state is stored in .kabeeri/ecommerce_mobile_app.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    crm: `Usage:
+  kvdf crm status
+  kvdf crm init --mode sales
+  kvdf crm questionnaire
+  kvdf crm brief
+  kvdf crm design
+  kvdf crm modules
+  kvdf crm tasks
+  kvdf crm approve
+  kvdf crm report
+  kvdf plugins install crm
+  kvdf plugins uninstall crm
+
+Notes:
+  CRM Builder is a removable app-track plugin for customer relationship management systems. Its live runtime state is stored in .kabeeri/crm.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    pos: `Usage:
+  kvdf pos status
+  kvdf pos init --mode retail
+  kvdf pos questionnaire
+  kvdf pos brief
+  kvdf pos design
+  kvdf pos modules
+  kvdf pos tasks
+  kvdf pos approve
+  kvdf pos report
+  kvdf plugins install pos
+  kvdf plugins uninstall pos
+
+Notes:
+  POS Builder is a removable app-track plugin for point-of-sale systems. Its live runtime state is stored in .kabeeri/pos.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    ecommerce: `Usage:
+  kvdf ecommerce status
+  kvdf ecommerce init --mode store
+  kvdf ecommerce questionnaire
+  kvdf ecommerce brief
+  kvdf ecommerce design
+  kvdf ecommerce modules
+  kvdf ecommerce tasks
+  kvdf ecommerce approve
+  kvdf ecommerce report
+  kvdf plugins install ecommerce-builder
+  kvdf plugins uninstall ecommerce-builder
+
+Notes:
+  Ecommerce Builder is a removable app-track plugin for commerce systems. Its live runtime state is stored in .kabeeri/ecommerce.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    booking: `Usage:
+  kvdf booking status
+  kvdf booking init --mode appointments
+  kvdf booking questionnaire
+  kvdf booking brief
+  kvdf booking design
+  kvdf booking modules
+  kvdf booking tasks
+  kvdf booking approve
+  kvdf booking report
+  kvdf plugins install booking-builder
+  kvdf plugins uninstall booking-builder
+
+Notes:
+  Booking Builder is a removable app-track plugin for reservation systems. Its live runtime state is stored in .kabeeri/booking.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
 `
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
@@ -1110,6 +1266,8 @@ function printHelp() {
     "  start|entry                  Auto-route to the correct track",
     "  track status|route           Inspect or persist the current session track",
     "  pipeline matrix|strict       Show or enforce the strict build pipeline",
+    "  contract                     Show the AI/CLI operating contract and command registry",
+    "  maintainability              Show the shared-service maintainability scorecard and live state",
     "  onboarding                   Show the guided first-session route and report",
     "  guard                        Check framework boundary before edits",
     "  conflict scan                Scan for command, schema, and workspace logic drift",
@@ -1160,6 +1318,8 @@ function printHelp() {
     "  migration plan|check|report   Govern migration safety and rollback readiness",
     "  github status|report|feedback|plan|label|milestone|issue Dry-run by default; use --confirm to write through gh",
     "  sync status|pull|push         Coordinate local Kabeeri state with git/GitHub and feedback counts",
+    "  ecommerce status|init|questionnaire|brief|design|modules|tasks|approve|report Build ecommerce/commerce app plugins",
+    "  booking status|init|questionnaire|brief|design|modules|tasks|approve|report Build booking/reservation app plugins",
     "  design list|add|snapshot|approve|audit Govern design sources before frontend implementation"
   ];
   const ownerCommands = [
@@ -1213,9 +1373,11 @@ function printHelp() {
     "  kvdf init --profile standard --mode structured",
     "  kvdf resume",
     "  kvdf guard",
+    "  kvdf maintainability",
     "  kvdf conflict scan",
     "  kvdf task create --title \"Define checkout flow\" --workstream backend",
     "  kvdf app workspace create --slug storefront-web --name \"Storefront Web\" --type frontend",
+    "  kvdf app workspace validate storefront-web",
     "  kvdf evolution plan \"Add a new Kabeeri capability\"",
     "  kvdf batch-exe",
     "  kvdf multi-ai status",

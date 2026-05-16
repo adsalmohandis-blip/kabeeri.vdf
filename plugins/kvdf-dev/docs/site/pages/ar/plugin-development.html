@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تطوير الإضافات - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="plugin-development">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        
+        <a class="language-link" data-lang-target="en" href="../en/plugin-development.html">English</a>
+        <a class="language-link is-active" data-lang-target="ar" href="plugin-development.html">العربية</a>
+      
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">تصفية</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="ابحث في الوثائق">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">تطوير النظام</a>
+<a class="nav-link" href="methodology.html">المنهجية</a>
+<a class="nav-link" href="kabeeri-4-parts.html">كبيري في 4 ركائز</a>
+<a class="nav-link" href="modules.html">الوحدات</a>
+<a class="nav-link" href="modules-relationship.html">علاقات الوحدات</a>
+<a class="nav-link" href="modules-relationship-patterns.html">التدفقات والأنماط</a>
+<a class="nav-link" href="framework-dashboard.html">لوحة تحكم الإطار</a>
+<a class="nav-link" href="framework-development.html">تطوير الإطار</a>
+<a class="nav-link is-active" href="plugin-development.html">تطوير الإضافات</a>
+<a class="nav-link" href="scorecards-evo.html">السكور كارد والتطور</a>
+<a class="nav-link" href="cli-engine.html">محرك CLI</a>
+<a class="nav-link" href="ai-cli-contract.html">عقد تشغيل AI/CLI</a>
+<a class="nav-link" href="workspace-state.html">حالة Workspace</a>
+<a class="nav-link" href="session-track-router.html">موجّه مسار الجلسة</a>
+<a class="nav-link" href="project-intake-profile.html">استقبال المشروع وموجّه الملف</a>
+<a class="nav-link" href="delivery-mode-advisor.html">مستشار نمط التسليم</a>
+<a class="nav-link" href="blueprint-data-design.html">المخطط وتصميم البيانات</a>
+<a class="nav-link" href="questionnaires.html">الاستبيانات</a>
+<a class="nav-link" href="prompt-packs.html">حزم الأوامر</a>
+<a class="nav-link" href="task-governance.html">حوكمة المهام</a>
+<a class="nav-link" href="task-packet.html">حزمة المهمة</a>
+<a class="nav-link" href="executor-contract.html">عقد المنفذ</a>
+<a class="nav-link" href="batch-execution.html">التنفيذ على دفعات</a>
+<a class="nav-link" href="plugin-system.html">نظام الإضافات</a>
+<a class="nav-link" href="app-builder-plugins.html">إضافات بناء التطبيقات</a>
+<a class="nav-link" href="multi-ai-governance.html">حوكمة تعدد الذكاءات</a>
+<a class="nav-link" href="evolution-steward.html">وصاية التطور</a>
+<a class="nav-link" href="dashboard.html">لوحة التحكم</a>
+<a class="nav-link" href="reports-traceability.html">التقارير وقابلية التتبع</a>
+<a class="nav-link" href="validation-schemas.html">التحقق والمخططات</a>
+<a class="nav-link" href="policy-gates.html">بوابات السياسة</a>
+<a class="nav-link" href="design-governance.html">حوكمة التصميم</a>
+<a class="nav-link" href="ai-cost-control.html">التحكم في تكلفة الذكاء</a>
+<a class="nav-link" href="handoff-release.html">التسليم والإصدار</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>تطوير الإضافات</h1>
+        <p class="lead">Ø¹Ù‚Ø¯Ø© Ø§Ù„Ø¥Ø¶Ø§ÙØ©,ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ù„Ù„Ø¥Ø¶Ø§ÙØ© Ø¹Ù‚Ø¯Ø© ÙˆØ§Ø¶Ø­Ø©ØŒ ÙˆÙ…Ø¯Ø®Ù„Ø§Øª runtime Ù…Ø­Ø¯Ø¯Ø©ØŒ ÙˆØºØ±Ø¶ Ù…ÙˆØ«Ù‚. Ø§Ù„Ø¹Ù‚Ø¯Ø© ØªØ¬Ø¹Ù„ Ø§Ù„Ø­Ø²Ù…Ø© Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„ÙÙ‡Ù… Ù‚Ø¨Ù„ Ø£Ù† ÙŠØªÙ… ØªØ«Ø¨ÙŠØªÙ‡Ø§ Ø£Ùˆ Ù…Ø±Ø§Ø¬Ø¹ØªÙ‡Ø§.,Ø§Ù„Ø¯ÙˆØ±Ø© Ø§Ù„Ø­ÙŠØ§ØªÙŠØ©,Ø§Ù„ØªØ«Ø¨ÙŠØªØŒ ÙˆØ§Ù„ØªÙ…ÙƒÙŠÙ†ØŒ ÙˆØ§Ù„ØªØ´ØºÙŠÙ„ØŒ ÙˆØ§Ù„ØªØ¹Ø·ÙŠÙ„ØŒ ÙˆØ§Ù„Ø¥Ø²Ø§Ù„Ø© ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† ÙƒÙ„Ù‡Ø§ ÙˆØ§Ø¶Ø­Ø© ÙˆÙ‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø¹ÙƒØ³. Ø§Ù„Ø¥Ø¶Ø§ÙØ© ØªÙƒÙˆÙ† Ø³Ù„ÙŠÙ…Ø© Ø¹Ù†Ø¯Ù…Ø§ ÙŠÙ…ÙƒÙ† ØªØªØ¨Ø¹ ÙƒØ§Ù…Ù„ Ø¯ÙˆØ±ØªÙ‡Ø§ Ø¨Ø¯ÙˆÙ† Ø§Ø®ØªØ¨Ø§Ø±Ø§Øª.,Ø§Ù„Ø³Ù„Ø§Ù…Ø©,ÙŠØ¬Ø¨ Ø£Ù† ØªØ¨Ù‚Ù‰ Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª Ø¯Ø§Ø®Ù„ Ø§Ù„Ù…Ø³Ø§Ø­Ø© Ø§Ù„Ù…Ø¹ØªÙ…Ø¯Ø© ÙˆØ£Ù„Ø§ ØªØªØ¬Ø§ÙˆØ² Ø§Ù„Ø¹Ù‚Ø¯ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ. Ù‡Ø°Ø§ ÙŠØ­Ø§ÙØ¸ Ø¹Ù„Ù‰ ÙØ§Ø¦Ø¯Ø© Ø§Ù„ØªÙˆØ³ÙŠØ¹ Ø¯ÙˆÙ† Ø£Ù† ØªØ¨Ø¯Ø£ Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø¨Ø§Ù„Ø³ÙŠØ·Ø±Ø© Ø¹Ù„Ù‰ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ.,Ø§Ù„ØµÙŠØ§Ù†Ø©,Ø¹Ù†Ø¯Ù…Ø§ ØªØªØºÙŠØ± Ø§Ù„Ø¥Ø¶Ø§ÙØ©ØŒ Ø­Ø¯Ù‘Ø« Ø­Ø§Ù„ØªÙ‡Ø§ runtime ÙˆÙˆØ«ÙŠÙ‚ØªÙ‡Ø§ ÙˆØ§Ø®ØªØ¨Ø§Ø±Ø§ØªÙ‡Ø§ Ù…Ø¹Ø§Ù‹. Ø§Ù„ØµÙŠØ§Ù†Ø© Ø§Ù„ØµØ­ÙŠØ­Ø© ØªØ¯ÙØ¹ Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ø«Ù„Ø§Ø«Ø© Ù„Ù„ØªØ­Ø¯Ø« Ù…Ø¹Ø§Ù‹ Ø¨Ø¯Ù„ ØªØ±Ùƒ Ø£Ø­Ø¯Ù‡Ø§ ÙŠÙ†Ø­Ø±Ù Ø¨Ù…ÙØ±Ø¯Ù‡.,Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„ØªÙˆØ³ÙŠØ¹,Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª ØªØ¶ÙŠÙ Ù‚Ø¯Ø±Ø§Øª Ø¨Ø§Ù„ØªØ¹Ø§ÙˆÙ† Ù…Ø¹ KVDF Ù„Ø§ Ø¨Ø§Ø³ØªØ¨Ø¯Ø§Ù„ Ù‚ÙˆØ§Ø¹Ø¯Ù‡Ø§. ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙ†ØªØ¬ Ø§Ù„Ø¥Ø¶Ø§Ù Ø¢Ù„ÙŠØ© ÙŠØ³Ø§Ù†Ø¯ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ ÙˆÙ„ÙŠØ³ Ø¨Ø¯ÙŠÙ„Ø§Ù‹ Ø¹Ù†Ù‡.,Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø­Ø¯ÙˆØ¯,Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø¬Ø¯ÙŠØ±Ø© Ø¨Ø£Ù† ØªÙƒÙˆÙ† ØªÙˆØ³ÙŠØ¹Ø§Ù‹ Ù„Ù„Ù†Ø¸Ø§Ù… Ø¯ÙˆÙ† Ø§Ù„Ø®Ù„Ø· Ø¨ÙŠÙ† Ø§Ù„Ù…Ù„ÙƒÙŠØ© Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±ÙƒÙŠØ© ÙˆØ§Ù„Ù…Ù„ÙƒÙŠØ© Ø§Ù„Ø®Ø§ØµØ© Ø¨Ø§Ù„Ø¥Ø¶Ø§ÙØ©.,Ø£Ù…Ø«Ù„Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª,Ù‚Ø¯ ØªØ¶ÙŠÙ Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø­Ø²Ù…Ø© Ù‚Ø¯Ø±Ø§Øª Ø¬Ø¯ÙŠØ¯Ø©ØŒ Ø£Ùˆ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø£ÙˆØ§Ù…Ø±ØŒ Ø£Ùˆ Ù…ÙˆÙ„Ø¯ Ø¨Ø­Ø³Ø¨ Ø§Ù„Ù…Ø¬Ø§Ù„ØŒ Ø£Ùˆ Ø£Ø¯Ø§Ø© ØªÙ…ÙƒÙ† Ù…Ø³Ø§Ø­Ø© Ø¹Ù…Ù„ Ø¬Ø¯ÙŠØ¯Ø©.,Ù…Ø§ Ø§Ù„Ø°ÙŠ ÙŠØ¬Ø¹Ù„ Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø¬ÙŠØ¯Ø©,Ø§Ù„Ø¥Ø¶Ø§ÙØ© Ø§Ù„Ø¬ÙŠØ¯Ø© Ù…Ø±Ø¯ÙˆØ¯Ø©ØŒ Ù‚Ø§Ø¨Ù„Ø© Ù„Ù„Ø§Ø®ØªØ¨Ø§Ø±ØŒ Ù…ÙˆØ«Ù‚Ø©ØŒ ÙˆÙŠØ³Ù‡Ù„ Ø±Ø¨Ø·Ù‡Ø§ Ø¨Ø§Ù„Ø¹Ù‚Ø¯ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±ÙƒÙŠ. Ø¥Ø°Ø§ Ø§Ø­ØªØ§Ø¬ Ø§Ù„ÙØ±ÙŠÙ‚ Ø£Ù† ÙŠØ¨Ø±Ù‡Ù† Ø§Ù„ØªØºÙŠÙŠØ± Ø£Ùˆ ÙŠØ²ÙŠÙ„Ù‡ Ø¨Ø³Ù‡ÙˆÙ„Ø©ØŒ ÙÙ‡ÙŠ Ø¥Ø¶Ø§ÙØ© Ù†Ø¸ÙŠÙØ©.</p>
+        <aside class="beginner-note">
+          <strong>ملاحظة للمبتدئ</strong>
+          <p>ابدأ هنا إذا كنت تريد أقصر طريق لفهم تطوير الإضافات.</p>
+        </aside>
+        
+        
+        <section class="wide-section">
+          <h2>الروابط</h2>
+          <div class="callout links"><a href="./system-development.html">ØªØ·ÙˆÙŠØ± Ø§Ù„Ù†Ø¸Ø§Ù…</a><a href="./framework-development.html">ØªØ·ÙˆÙŠØ± Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ</a><a href="./scorecards-evo.html">Ø§Ù„Ø³ÙƒÙˆØ± ÙƒØ§Ø±Ø¯ ÙˆEvo</a></div>
+        </section>
+        <section class="wide-section">
+          <h2>الأوامر</h2>
+          <div class="detail-block"><ul><li><code>knowledge/governance/PLUGIN_FOLDER_CONTRACT.md</code></li><li><code>plugins/&lt;plugin-slug&gt;/plugin.json</code></li><li><code>plugins/&lt;plugin-slug&gt;/docs/index.md</code></li></ul></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

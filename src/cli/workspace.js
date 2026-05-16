@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { repoRoot, fileExists, readJsonFile, writeJsonFile, assertSafeName } = require("./fs_utils");
 const { DEFAULT_RETENTION_DAYS } = require("./services/task_trash");
+const { normalizeSurfaceScopes } = require("./services/app_workspace_contract");
 
 function getStateDir() {
   return ".kabeeri";
@@ -40,6 +41,26 @@ function createWorkspace({ profile, mode, lang }) {
   fs.mkdirSync(path.join(root, "workspaces", "apps"), { recursive: true });
   fs.mkdirSync(path.join(root, "plugins", "kvdf-dev"), { recursive: true });
   fs.mkdirSync(path.join(root, "plugins", "kvdf-dev", "docs"), { recursive: true });
+  for (const folder of [
+    "commands",
+    "prompts",
+    "schemas",
+    "templates",
+    "tests",
+    "references",
+    "examples",
+    "assets",
+    "dashboard",
+    "governance",
+    "evolution",
+    "capabilities",
+    "runtime",
+    "plugin-control",
+    "tracks",
+    "reports"
+  ]) {
+    fs.mkdirSync(path.join(root, "plugins", "kvdf-dev", folder), { recursive: true });
+  }
 
   const files = [
     ["project.json", {
@@ -71,6 +92,23 @@ function createWorkspace({ profile, mode, lang }) {
     ["tasks.json", { tasks: [] }],
     ["task_assessments.json", { version: "v1", assessments: [], updated_at: null }],
     ["task_trash.json", { trash: [], retention_days: DEFAULT_RETENTION_DAYS, last_sweep_at: null }],
+    ["scorecards.json", {
+      version: "v1",
+      generated_at: null,
+      workspace_root: ".",
+      workspace_slug: "kabeeri-core",
+      workspace_kind: "framework_owner",
+      app_slug: "kabeeri-core",
+      app_name: "Kabeeri Development",
+      app_type: "framework",
+      surface_scopes: [],
+      linked_workspace_roots: [],
+      current_plan_id: null,
+      review_state: { status: "locked", reviewed_at: null, reviewed_by: null, locked_at: null, locked_by: null, notes: [] },
+      cards: [],
+      surface_cards: [],
+      summary: {}
+    }],
     ["customer_apps.json", { apps: [] }],
     ["features.json", { features: [] }],
     ["journeys.json", { journeys: [] }],
@@ -104,7 +142,21 @@ function createWorkspace({ profile, mode, lang }) {
     ["questionnaires/adaptive_intake_plan.json", { plans: [], current_plan_id: null }],
     ["questionnaires/coverage_matrix.json", { generated_at: null, areas: [] }],
     ["questionnaires/missing_answers_report.json", { generated_at: null, missing: [] }],
-    ["plugins.json", { plugin_loader_version: 1, enabled_plugins: ["kvdf-dev"], disabled_plugins: [], updated_at: null }],
+    ["plugins.json", {
+      plugin_loader_version: 1,
+      enabled_plugins: ["github", "github_sync", "kvdf-dev", "multi_ai_governance"],
+      disabled_plugins: [
+        "blog",
+        "booking-builder",
+        "company-profile",
+        "crm",
+        "ecommerce-builder",
+        "ecommerce-mobile-app",
+        "news-website",
+        "pos"
+      ],
+      updated_at: null
+    }],
     ["app_workspaces.json", { version: "v1", workspaces: [], updated_at: null }],
     ["metadata/milestones.json", { milestones: [] }],
     ["metadata/team.json", { team_members: [] }],
@@ -351,11 +403,66 @@ Owner approval is required before final delivery, release, publish, or scope clo
     fs.writeFileSync(kvdfDevPluginManifest, JSON.stringify({
       plugin_id: "kvdf-dev",
       name: "KVDF Dev System Bundle",
+      bundle_type: "removable",
+      load_strategy: "manifest_driven",
       track: "framework_owner",
+      plugin_family: "framework_plugin",
+      plugin_type: "kvdf_core",
+      removable: true,
       enabled_by_default: true,
       description: "Removable KVDF dev bundle that exposes framework stewardship surfaces.",
-      command_surface: ["kvdf evolution", "kvdf evolution roadmap", "kvdf evolution priorities", "kvdf evolution partition", "kvdf evolution batch-exe", "kvdf batch-exe"],
-      docs_surface: ["plugins/kvdf-dev/docs/index.md", "knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"]
+      required_folders: [
+        "commands",
+        "docs",
+        "prompts",
+        "schemas",
+        "templates",
+        "tests"
+      ],
+      optional_folders: [
+        "references",
+        "examples",
+        "assets",
+        "dashboard",
+        "plugin-control",
+        "runtime",
+        "tracks"
+      ],
+      domain_folders: [
+        "commands",
+        "docs",
+        "prompts",
+        "schemas",
+        "templates",
+        "tests",
+        "references",
+        "examples",
+        "assets",
+        "dashboard",
+        "plugin-control",
+        "runtime",
+        "tracks"
+      ],
+      command_surface: [
+        "kvdf evolution",
+        "kvdf evolution roadmap",
+        "kvdf evolution priorities",
+        "kvdf evolution partition",
+        "kvdf evolution batch-exe",
+        "kvdf batch-exe",
+        "kvdf task packet",
+        "kvdf task executor-contract",
+        "kvdf task batch-run",
+        "kvdf plugins install kvdf-dev",
+        "kvdf plugins enable kvdf-dev",
+        "kvdf plugins uninstall kvdf-dev",
+        "kvdf plugins disable kvdf-dev"
+      ],
+      docs_surface: [
+        "plugins/kvdf-dev/docs/index.md",
+        "knowledge/governance/EVOLUTION_STEWARD.md",
+        "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"
+      ]
     }, null, 2) + "\n", "utf8");
     created.push({ path: "plugins/kvdf-dev/plugin.json", status: "created" });
   } else {
@@ -399,6 +506,7 @@ function seedDeveloperAppWorkspace(workspaceSlug, options = {}) {
   const rootProject = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
   const productName = String(options.productName || rootProject.product_name || rootProject.name || "").trim();
   const forbidUnrelatedApps = rootProject.forbid_unrelated_apps !== false;
+  const surfaceScopes = normalizeSurfaceScopes(options.surfaceScopes || options.surface_scopes, options.appType || "application");
   fs.mkdirSync(workspaceRoot, { recursive: true });
   const created = [];
   for (const dir of [".kabeeri", "src", "tests", "docs"]) {
@@ -417,20 +525,27 @@ function seedDeveloperAppWorkspace(workspaceSlug, options = {}) {
       app_slug: slug,
       app_name: options.name || slug,
       app_type: options.appType || "application",
+      surface_scopes: surfaceScopes,
+      linked_workspace_roots: [],
       product_name: productName,
       forbid_unrelated_apps: forbidUnrelatedApps,
+      root: `workspaces/apps/${slug}`,
       version: "0.1.0",
       created_at: new Date().toISOString()
     }],
     [".kabeeri/tasks.json", { tasks: [] }],
     [".kabeeri/task_trash.json", { trash: [], retention_days: DEFAULT_RETENTION_DAYS, last_sweep_at: null }],
+    [".kabeeri/scorecards.json", { version: "v1", generated_at: null, workspace_root: `workspaces/apps/${slug}`, workspace_slug: slug, workspace_kind: "developer_app", app_slug: slug, app_name: options.name || slug, app_type: options.appType || "application", surface_scopes: surfaceScopes, linked_workspace_roots: [], current_plan_id: null, review_state: { status: "draft", reviewed_at: null, reviewed_by: null, locked_at: null, locked_by: null, notes: [] }, cards: [], surface_cards: [], summary: {} }],
     [".kabeeri/session.json", { active: false }],
     [".kabeeri/session_track.json", { version: "v1", active: false, active_track: "vibe_app_developer", role_gate: "app_workspace", activated_features: [], blocked_features: [], activated_at: null, updated_at: null }],
     [".kabeeri/workspace.json", {
+      workspace_contract_version: "v1",
       workspace_kind: "developer_app",
       app_slug: slug,
       app_name: options.name || slug,
       app_type: options.appType || "application",
+      surface_scopes: surfaceScopes,
+      linked_workspace_roots: [],
       product_name: productName,
       forbid_unrelated_apps: forbidUnrelatedApps,
       root: `workspaces/apps/${slug}`,

@@ -1,12 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 const { repoRoot, fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
+const { buildPluginBundleContract } = require("./plugin_bundle_contract");
 
 const PLUGIN_STATE_FILE = ".kabeeri/plugins.json";
 
 function ensurePluginLoaderState() {
   const state = fileExists(PLUGIN_STATE_FILE) ? readJsonFile(PLUGIN_STATE_FILE) : null;
   if (state && typeof state === "object") {
+    state.plugin_loader_version = state.plugin_loader_version || 1;
     state.enabled_plugins = Array.isArray(state.enabled_plugins) ? state.enabled_plugins : [];
     state.disabled_plugins = Array.isArray(state.disabled_plugins) ? state.disabled_plugins : [];
     state.updated_at = state.updated_at || null;
@@ -18,6 +20,34 @@ function ensurePluginLoaderState() {
     disabled_plugins: [],
     updated_at: null
   };
+}
+
+function buildCanonicalPluginLoaderState(manifests, state) {
+  const resolved = resolvePluginStates(manifests, state);
+  const enabledPlugins = resolved.filter((plugin) => plugin.enabled).map((plugin) => plugin.plugin_id).sort();
+  const disabledPlugins = resolved.filter((plugin) => !plugin.enabled).map((plugin) => plugin.plugin_id).sort();
+  return {
+    plugin_loader_version: state.plugin_loader_version || 1,
+    enabled_plugins: enabledPlugins,
+    disabled_plugins: disabledPlugins,
+    updated_at: state.updated_at || null
+  };
+}
+
+function pluginLoaderStateNeedsNormalization(current, next) {
+  if (!current || typeof current !== "object") return true;
+  if ((current.plugin_loader_version || 1) !== (next.plugin_loader_version || 1)) return true;
+  const currentEnabled = Array.isArray(current.enabled_plugins) ? current.enabled_plugins : [];
+  const currentDisabled = Array.isArray(current.disabled_plugins) ? current.disabled_plugins : [];
+  if (currentEnabled.length !== next.enabled_plugins.length) return true;
+  if (currentDisabled.length !== next.disabled_plugins.length) return true;
+  for (let index = 0; index < next.enabled_plugins.length; index += 1) {
+    if (currentEnabled[index] !== next.enabled_plugins[index]) return true;
+  }
+  for (let index = 0; index < next.disabled_plugins.length; index += 1) {
+    if (currentDisabled[index] !== next.disabled_plugins[index]) return true;
+  }
+  return false;
 }
 
 function scanPluginManifests() {
@@ -40,7 +70,12 @@ function scanPluginManifests() {
         load_strategy: manifest.load_strategy || "manifest_driven",
         removable: manifest.removable !== false,
         track: manifest.track || "shared",
+        plugin_family: manifest.plugin_family || null,
+        plugin_type: manifest.plugin_type || null,
         enabled_by_default: manifest.enabled_by_default !== false,
+        required_folders: Array.isArray(manifest.required_folders) ? manifest.required_folders : [],
+        optional_folders: Array.isArray(manifest.optional_folders) ? manifest.optional_folders : [],
+        domain_folders: Array.isArray(manifest.domain_folders) ? manifest.domain_folders : [],
         command_surface: Array.isArray(manifest.command_surface) ? manifest.command_surface : [],
         docs_surface: Array.isArray(manifest.docs_surface) ? manifest.docs_surface : [],
         bundle_path: path.relative(root, bundlePath).replace(/\\/g, "/"),
@@ -57,7 +92,12 @@ function scanPluginManifests() {
         load_strategy: "manifest_driven",
         removable: false,
         track: "shared",
+        plugin_family: null,
+        plugin_type: null,
         enabled_by_default: false,
+        required_folders: [],
+        optional_folders: [],
+        domain_folders: [],
         command_surface: [],
         docs_surface: [],
         bundle_path: path.relative(root, bundlePath).replace(/\\/g, "/"),
@@ -78,10 +118,16 @@ function resolvePluginStates(manifests, state) {
     const explicitEnabled = enabled.has(plugin.plugin_id);
     const explicitDisabled = disabled.has(plugin.plugin_id);
     const active = explicitDisabled ? false : (explicitEnabled || plugin.enabled_by_default);
+    const bundleContract = buildPluginBundleContract({ ...plugin, enabled: active }, {
+      ready_action: active
+        ? "Use the bundle command surface."
+        : (plugin.removable ? `kvdf plugins install ${plugin.plugin_id}` : "Use the bundle command surface.")
+    });
     return {
       ...plugin,
       enabled: active,
-      status: active ? "enabled" : "disabled"
+      status: active ? "enabled" : "disabled",
+      bundle_contract: bundleContract
     };
   });
 }
@@ -91,6 +137,11 @@ function buildPluginLoaderReport() {
   const manifests = scanPluginManifests();
   const plugins = resolvePluginStates(manifests, state);
   const active = plugins.filter((plugin) => plugin.enabled);
+  const canonicalState = buildCanonicalPluginLoaderState(manifests, state);
+  if (pluginLoaderStateNeedsNormalization(state, canonicalState)) {
+    canonicalState.updated_at = new Date().toISOString();
+    writeJsonFile(PLUGIN_STATE_FILE, canonicalState);
+  }
   return {
     report_type: "plugin_loader_status",
     generated_at: new Date().toISOString(),
@@ -126,14 +177,15 @@ function renderPluginLoaderReport(report, table) {
     plugin.plugin_id,
     plugin.status,
     plugin.track,
-    plugin.bundle_path
+    plugin.bundle_path,
+    plugin.bundle_contract ? plugin.bundle_contract.status : "n/a"
   ]);
   return [
     "Kabeeri Plugin Loader",
     `State file: ${report.state_file}`,
     `Active plugins: ${report.active_plugins}/${report.total_plugins}`,
     "",
-    table(["Plugin", "Status", "Track", "Bundle"], rows.length ? rows : [["", "", "No plugins discovered.", ""]])
+    table(["Plugin", "Status", "Track", "Bundle", "Contract"], rows.length ? rows : [["", "", "No plugins discovered.", "", ""]])
   ].join("\n");
 }
 
@@ -147,6 +199,7 @@ function findPluginById(pluginId) {
 module.exports = {
   PLUGIN_STATE_FILE,
   ensurePluginLoaderState,
+  buildCanonicalPluginLoaderState,
   scanPluginManifests,
   buildPluginLoaderReport,
   setPluginEnabled,

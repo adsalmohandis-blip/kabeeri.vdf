@@ -94,6 +94,11 @@ route history in `.kabeeri/task_scheduler.json` for routes into temp, trash,
 restore, agent handoffs, and deferred scheduling decisions so a later session
 can resume the movement trail without chat memory.
 
+The archive trail is part of task governance, not an afterthought. Completion,
+verification, trash routing, and restore history should remain visible in live
+reports and task records so operators can tell why a task left active state and
+what still depends on it.
+
 When the local dashboard is running, the focused task API is:
 
 ```text
@@ -116,6 +121,8 @@ Governance prevents common AI-development failures:
 - accepting work without tests, screenshots, review notes, or Owner verification
 - editing the wrong app inside a multi-app Kabeeri workspace
 - spending AI tokens on unclear or duplicated work
+- losing the archive trail that explains how active work moved into trash or
+  was restored back into the queue
 
 ## Source And Provenance
 
@@ -320,6 +327,34 @@ task tracker record instead of relying on chat memory to remember the chain.
 Prefer a concrete `follow_up_tasks` array in the task record when the follow-up
 chain is known. Keep the source change id, impacted area, and acceptance
 criteria on the source task so the framework change remains identifiable.
+
+## Evolution Follow-Up Task Linking
+
+When an Evolution scorecard turns into a task bundle, record the chain in both
+the source task and the task-tracking policy so later sessions can recover the
+full execution path without chat memory.
+
+For the task governance scorecard slice, the linked follow-up tasks are:
+
+- `task-096` - update task tracking integration
+- `task-097` - update runtime schemas and validation
+- `task-098` - update readiness/governance reports
+- `task-099` - update automated tests
+
+The source change id must stay visible as:
+
+```text
+evo-scorecard-task_governance
+```
+
+and the impacted area must stay visible as:
+
+```text
+tasks
+```
+
+This makes the framework change identifiable from the policy layer, the task
+record, and the Evolution trail at the same time.
 
 `kvdf resume` and `kvdf entry` also persist a session trace snapshot in
 `.kabeeri/reports/session_trace.json`. The trace should point at the current

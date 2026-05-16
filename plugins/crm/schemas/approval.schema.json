@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CRM Builder Approval Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["batch_id", "mode", "approved", "blockers", "tasks", "next_action"],
+  "properties": {
+    "batch_id": { "type": "string" },
+    "mode": { "enum": ["sales", "support", "operations", "b2b"] },
+    "approved": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "tasks": { "type": "array" },
+    "next_action": { "type": "string" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "sales" } } },
+    { "properties": { "mode": { "const": "support" } } },
+    { "properties": { "mode": { "const": "operations" } } },
+    { "properties": { "mode": { "const": "b2b" } } }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ecommerce Mobile App Builder Approval Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["batch_id", "mode", "approved", "blockers", "tasks", "next_action"],
+  "properties": {
+    "batch_id": { "type": "string" },
+    "mode": { "enum": ["shopping", "marketplace", "subscription", "loyalty"] },
+    "approved": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "tasks": { "type": "array" },
+    "next_action": { "type": "string" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "shopping" } } },
+    { "properties": { "mode": { "const": "marketplace" } } },
+    { "properties": { "mode": { "const": "subscription" } } },
+    { "properties": { "mode": { "const": "loyalty" } } }
+  ]
+}

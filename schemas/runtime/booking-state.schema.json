@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Booking Builder State",
+  "type": "object",
+  "required": ["schema_version", "plugin_id", "current_project_id", "projects", "events", "updated_at"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "current_project_id": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["project_id", "slug", "name", "mode", "stage", "status", "created_at", "updated_at", "intake", "approvals", "blockers", "next_action", "artifacts"],
+        "properties": {
+          "project_id": { "type": "string" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "mode": { "type": "string" },
+          "stage": { "type": "string" },
+          "status": { "type": "string" },
+          "description": { "type": "string" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "intake": {
+            "type": "object",
+            "required": ["questions", "answers", "missing_answers", "answered_fields"],
+            "properties": {
+              "questions": { "type": "array", "items": { "type": "object" } },
+              "answers": { "type": "array", "items": { "type": "object" } },
+              "missing_answers": { "type": "array", "items": { "type": "string" } },
+              "answered_fields": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": true
+          },
+          "brief": { "type": ["object", "null"] },
+          "design": { "type": ["object", "null"] },
+          "modules": { "type": ["object", "null"] },
+          "tasks": { "type": ["object", "null"] },
+          "approvals": { "type": "array", "items": { "type": "object" } },
+          "blockers": { "type": "array", "items": { "type": "string" } },
+          "next_action": { "type": "string" },
+          "artifacts": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["event_id", "event_type", "project_id", "mode", "stage", "generated_at"],
+        "properties": {
+          "event_id": { "type": "string" },
+          "event_type": { "type": "string" },
+          "project_id": { "type": "string" },
+          "mode": { "type": "string" },
+          "stage": { "type": "string" },
+          "generated_at": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

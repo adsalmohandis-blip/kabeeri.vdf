@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ecommerce Mobile App Builder Tasks Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["delivery_mode", "proposed_tasks", "task_count"],
+  "properties": {
+    "delivery_mode": { "enum": ["agile", "structured"] },
+    "task_count": { "type": "integer", "minimum": 0 },
+    "proposed_tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["task_id", "module_id", "title", "workstream", "delivery_mode", "acceptance_criteria", "file_boundaries"],
+        "properties": {
+          "task_id": { "type": "string" },
+          "module_id": { "type": "string" },
+          "title": { "type": "string" },
+          "workstream": { "type": "string" },
+          "delivery_mode": { "enum": ["agile", "structured"] },
+          "acceptance_criteria": { "type": "array", "items": { "type": "string" } },
+          "file_boundaries": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "properties": { "delivery_mode": { "const": "agile" } }, "required": ["delivery_mode"] },
+    { "properties": { "delivery_mode": { "const": "structured" } }, "required": ["delivery_mode"] }
+  ]
+}

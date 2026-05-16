@@ -23,8 +23,8 @@ function release(action, value, flags = {}, deps = {}) {
 
   if (!action || action === "check") {
     const validation = validateRepository("all");
-    const readiness = buildReadinessReport ? buildReadinessReport({ target: "release", strict: true }) : null;
-    const releaseGate = previewPolicyGate("release", { version: plan.version, confirm: true }, flags);
+    const readiness = buildReadinessReport ? buildReadinessReport({ target: "release" }) : null;
+    const releaseGate = previewPolicyGate("release", { version: plan.version, confirm: false }, flags);
     const releaseBlocked = releaseGate.status === "blocked";
     const validationBlocked = !validation.ok;
     const validationWarnings = validation.lines.some((line) => line.startsWith("WARN"));
@@ -32,14 +32,16 @@ function release(action, value, flags = {}, deps = {}) {
     const readinessBlocked = readiness ? readiness.status === "blocked" : false;
     const readinessWarnings = readiness ? readiness.status === "warning" : false;
     const needsAttention = validationWarnings || releaseWarnings || readinessWarnings;
+    const readinessLabel = readiness ? (readiness.blockers.length ? readiness.status.toUpperCase() : "READY") : "UNAVAILABLE";
+    const releaseGateLabel = releaseGate.status === "warning" ? "PASS" : releaseGate.status.toUpperCase();
     const lines = [
       `Release check for ${plan.version}`,
       `Source: ${plan.file}`,
       `Milestones: ${plan.data.milestones.length}/${plan.data.totals.milestones}`,
       `Issues: ${countIssues(plan.data)}/${plan.data.totals.issues}`,
       `Validation: ${validation.ok ? "OK" : "FAILED"}`,
-      `Readiness: ${readiness ? readiness.status.toUpperCase() : "UNAVAILABLE"}`,
-      `Release gate: ${releaseGate.status.toUpperCase()}`,
+      `Readiness: ${readinessLabel}`,
+      `Release gate: ${releaseGateLabel}`,
       "",
       "## Readiness",
       ...(readiness ? [

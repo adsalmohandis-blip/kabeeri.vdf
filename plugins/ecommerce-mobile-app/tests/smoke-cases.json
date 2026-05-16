@@ -1,0 +1,47 @@
+{
+  "plugin_id": "ecommerce-mobile-app",
+  "smoke_cases": [
+    {
+      "name": "shopping app launch path",
+      "mode": "shopping",
+      "steps": [
+        "kvdf plugins install ecommerce-mobile-app",
+        "kvdf ecommerce-mobile-app init --mode shopping --name \"Mobile Store\"",
+        "kvdf ecommerce-mobile-app questionnaire",
+        "kvdf ecommerce-mobile-app brief",
+        "kvdf ecommerce-mobile-app design",
+        "kvdf ecommerce-mobile-app modules",
+        "kvdf ecommerce-mobile-app tasks",
+        "kvdf ecommerce-mobile-app approve --confirm",
+        "kvdf ecommerce-mobile-app report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/ecommerce_mobile_app.json"
+    },
+    {
+      "name": "marketplace launch path",
+      "mode": "marketplace",
+      "project_name": "Vendor Mall",
+      "steps": [
+        "kvdf plugins install ecommerce-mobile-app",
+        "kvdf ecommerce-mobile-app init --mode marketplace --name \"Vendor Mall\"",
+        "kvdf ecommerce-mobile-app questionnaire",
+        "kvdf ecommerce-mobile-app brief",
+        "kvdf ecommerce-mobile-app design",
+        "kvdf ecommerce-mobile-app modules",
+        "kvdf ecommerce-mobile-app tasks",
+        "kvdf ecommerce-mobile-app approve --confirm",
+        "kvdf ecommerce-mobile-app report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/ecommerce_mobile_app.json"
+    },
+    {
+      "name": "brief requires questionnaire",
+      "kind": "blocked",
+      "blocked_action": "brief",
+      "project_name": "Guarded Commerce App",
+      "state_file": ".kabeeri/ecommerce_mobile_app.json"
+    }
+  ]
+}

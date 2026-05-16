@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Scorecards and Evolution - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="scorecards-evo">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        <a class="language-link is-active" data-lang-target="en" href="scorecards-evo.html">English</a>
+        <a class="language-link" data-lang-target="ar" href="../ar/scorecards-evo.html">Arabic</a>
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">Filter</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="Search docs">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">System Development</a>
+          <a class="nav-link" href="methodology.html">Methodology</a>
+          <a class="nav-link" href="kabeeri-4-parts.html">Kabeeri in 4 Pillars</a>
+          <a class="nav-link" href="modules.html">Modules</a>
+          <a class="nav-link" href="modules-relationship.html">Modules Relationship</a>
+          <a class="nav-link" href="modules-relationship-patterns.html">Flows and Patterns</a>
+          <a class="nav-link" href="framework-dashboard.html">Framework Dashboard</a>
+          <a class="nav-link" href="framework-development.html">Framework Development</a>
+          <a class="nav-link" href="framework-development-pipeline.html">Framework Development Pipeline</a>
+          <a class="nav-link" href="plugin-development.html">Plugin Development</a>
+          <a class="nav-link is-active" href="scorecards-evo.html">Scorecards and Evolution</a>
+          <a class="nav-link" href="cli-engine.html">CLI Engine</a>
+          <a class="nav-link" href="ai-cli-contract.html">AI/CLI Operating Contract</a>
+          <a class="nav-link" href="workspace-state.html">Workspace State</a>
+          <a class="nav-link" href="session-track-router.html">Session Track Router</a>
+          <a class="nav-link" href="project-intake-profile.html">Project Intake and Profile Router</a>
+          <a class="nav-link" href="delivery-mode-advisor.html">Delivery Mode Advisor</a>
+          <a class="nav-link" href="blueprint-data-design.html">Blueprint and Data Design</a>
+          <a class="nav-link" href="questionnaires.html">Questionnaires</a>
+          <a class="nav-link" href="prompt-packs.html">Prompt Packs</a>
+          <a class="nav-link" href="task-governance.html">Task Governance</a>
+          <a class="nav-link" href="task-packet.html">Task Packet</a>
+          <a class="nav-link" href="executor-contract.html">Executor Contract</a>
+          <a class="nav-link" href="batch-execution.html">Batch Execution</a>
+          <a class="nav-link" href="plugin-system.html">Plugin System</a>
+          <a class="nav-link" href="app-builder-plugins.html">App Builder Plugins</a>
+          <a class="nav-link" href="multi-ai-governance.html">Multi-AI Governance</a>
+          <a class="nav-link" href="evolution-steward.html">Evolution Steward</a>
+          <a class="nav-link" href="dashboard.html">Dashboard</a>
+          <a class="nav-link" href="reports-traceability.html">Reports and Traceability</a>
+          <a class="nav-link" href="validation-schemas.html">Validation and Schemas</a>
+          <a class="nav-link" href="policy-gates.html">Policy Gates</a>
+          <a class="nav-link" href="design-governance.html">Design Governance</a>
+          <a class="nav-link" href="ai-cost-control.html">AI Cost Control</a>
+          <a class="nav-link" href="handoff-release.html">Handoff and Release</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>Scorecards and Evolution</h1>
+        <p class="lead">Scorecards begin as review signals for a module, workflow, or capability. When they are locked, they become traceable Evolution slices with clear scope and acceptance.</p>
+        <aside class="beginner-note">
+          <strong>Beginner note</strong>
+          <p>Start here when you want the shortest route into scorecard review and controlled Evolution.</p>
+        </aside>
+
+        <section class="wide-section">
+          <h2>Table of Contents</h2>
+          <div class="detail-block">
+            <ol>
+              <li><a href="#scorecard-steps">Scorecard Preparation Steps</a></li>
+              <li><a href="#what-scorecards-are">What scorecards are</a></li>
+              <li><a href="#what-they-measure">What they measure</a></li>
+              <li><a href="#lock-before-execution">Lock before execution</a></li>
+              <li><a href="#convert-to-evolution">Convert to Evolution</a></li>
+              <li><a href="#keep-in-sync">Keep in sync</a></li>
+              <li><a href="#why-it-matters">Why it matters</a></li>
+              <li><a href="#how-it-helps-the-framework">How it helps the framework</a></li>
+              <li><a href="#how-it-helps-plugins">How it helps plugins</a></li>
+              <li><a href="#how-to-use-it">How to use it</a></li>
+              <li><a href="#what-to-avoid">What to avoid</a></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>Topic Details</h2>
+          <div class="detail-stack">
+            <article class="detail-block" id="scorecard-steps">
+              <h3>Scorecard Preparation Steps</h3>
+              <div class="section-grid">
+                <article class="info-card"><p>1. Identify the module, flow, or capability being reviewed.</p></article>
+                <article class="info-card"><p>2. Name the source and target surfaces if the work crosses boundaries.</p></article>
+                <article class="info-card"><p>3. Describe what changed, or what is expected to change, in plain language.</p></article>
+                <article class="info-card"><p>4. Check the current evidence and the current state before judging the slice.</p></article>
+                <article class="info-card"><p>5. Generate the tasks, assess them, cover them with the right checks, and approve them.</p></article>
+                <article class="info-card"><p>6. Build the task packet so execution has a concrete unit to work from.</p></article>
+                <article class="info-card"><p>7. Verify the validator, policy gate, and docs that protect the relation.</p></article>
+                <article class="info-card"><p>8. Run batch execution on the approved work.</p></article>
+                <article class="info-card"><p>9. Read the workspace state and dashboard after execution.</p></article>
+                <article class="info-card"><p>10. Trace the result back to the module, flow, or capability that produced it.</p></article>
+                <article class="info-card"><p>11. If drift appears, return to planning or update the relationship pattern.</p></article>
+              </div>
+            </article>
+
+            <article class="detail-block" id="what-scorecards-are">
+              <h3>What scorecards are</h3>
+              <p>Scorecards are the framework's review signal. They show readiness, risk, boundary fit, and confidence before a slice becomes implementation work. A scorecard is not a decorative note; it is the decision surface that tells the team whether the slice is actually ready to move.</p>
+            </article>
+
+            <article class="detail-block" id="what-they-measure">
+              <h3>What they measure</h3>
+              <p>A useful scorecard measures clarity, scope control, evidence quality, readiness, risk, and how much trust the team should place in the current slice. It should tell the team not only the score itself, but why that score is safe or unsafe.</p>
+            </article>
+
+            <article class="detail-block" id="lock-before-execution">
+              <h3>Lock before execution</h3>
+              <p>Once reviewed and locked, a scorecard becomes a reliable improvement target. Locking means the evaluation can be trusted while work moves forward, and it prevents the score from drifting while the slice is underway.</p>
+            </article>
+
+            <article class="detail-block" id="convert-to-evolution">
+              <h3>Convert to Evolution</h3>
+              <p>Locked scorecards can become tracked Evolution slices with explicit scope and acceptance. That is how review turns into a real implementation path instead of a loose note or a hidden backlog item.</p>
+            </article>
+
+            <article class="detail-block" id="keep-in-sync">
+              <h3>Keep in sync</h3>
+              <p>Scorecards, tasks, dashboard state, and Evolution state should agree. If those views disagree, the system is no longer describing the same reality, and the work should return to planning before it continues.</p>
+            </article>
+
+            <article class="detail-block" id="why-it-matters">
+              <h3>Why it matters</h3>
+              <p>This is how review becomes tracked implementation instead of a vague note. The scorecard gives the framework a measurable way to decide what should change next and what should wait.</p>
+            </article>
+
+            <article class="detail-block" id="how-it-helps-the-framework">
+              <h3>How it helps the framework</h3>
+              <p>Scorecards identify where the framework is strong, where it is drifting, and what should be improved next. They make the framework honest about its own quality and keep Evolution focused on the right slice.</p>
+            </article>
+
+            <article class="detail-block" id="how-it-helps-plugins">
+              <h3>How it helps plugins</h3>
+              <p>Plugin scorecards show whether a bundle is safe, consistent, reversible, and ready to extend the platform. That helps plugin development stay disciplined instead of ad hoc and keeps plugin work inside the right boundary.</p>
+            </article>
+
+            <article class="detail-block" id="how-to-use-it">
+              <h3>How to use it</h3>
+              <p>Read the scorecard, review the evidence, lock the slice when the assessment is stable, then turn the locked result into an Evolution task. That keeps review and implementation connected without mixing them.</p>
+            </article>
+
+            <article class="detail-block" id="what-to-avoid">
+              <h3>What to avoid</h3>
+              <p>Do not treat scorecards as decoration or as a second backlog. They are a decision surface, and they should only move forward when the evidence behind them is clear and the scope is still valid.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>Related Pages</h2>
+          <div class="callout links">
+            <a href="./system-development.html">System Development</a>
+            <a href="./framework-development.html">Framework Development</a>
+            <a href="./framework-development-pipeline.html">Framework Development Pipeline</a>
+            <a href="./plugin-development.html">Plugin Development</a>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>Commands</h2>
+          <div class="detail-block">
+            <ul><li><code>docs/reports/KVDF_SCORECARDS_INDEX.md</code></li><li><code>.kabeeri/evolution.json</code></li><li><code>src/cli/services/evolution.js</code></li></ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

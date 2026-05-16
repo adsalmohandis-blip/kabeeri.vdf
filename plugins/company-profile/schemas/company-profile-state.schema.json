@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Company Profile Builder State",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "plugin_id", "updated_at", "current_project_id", "projects", "events"],
+  "properties": {
+    "schema_version": { "type": "string" },
+    "plugin_id": { "const": "company-profile" },
+    "updated_at": { "type": ["string", "null"] },
+    "current_project_id": { "type": ["string", "null"] },
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["project_id", "slug", "name", "mode", "stage", "status", "created_at", "updated_at", "intake", "blockers", "next_action", "artifacts"],
+        "properties": {
+          "project_id": { "type": "string" },
+          "slug": { "type": "string" },
+          "name": { "type": "string" },
+          "mode": { "enum": ["startup", "corporate", "agency", "franchise"] },
+          "stage": { "enum": ["intake", "questionnaire", "brief", "design", "modules", "tasks", "approval", "execution"] },
+          "status": { "type": "string" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "intake": { "type": "object" },
+          "brief": { "type": ["object", "null"] },
+          "design": { "type": ["object", "null"] },
+          "modules": { "type": ["object", "null"] },
+          "tasks": { "type": ["object", "null"] },
+          "approvals": { "type": "array" },
+          "blockers": { "type": "array" },
+          "next_action": { "type": "string" },
+          "artifacts": { "type": "object" }
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": { "type": "object" }
+    }
+  }
+}

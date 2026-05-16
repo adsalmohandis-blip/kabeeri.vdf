@@ -38,6 +38,80 @@ development inside Kabeeri VDF.
 10. Keep every new major capability linked from
     `docs/SYSTEM_CAPABILITIES_REFERENCE.md`.
 
+## Docs Consistency Control Plane
+
+This workflow is the human guide for keeping Kabeeri documentation aligned
+with the live CLI contract.
+
+What it does:
+
+- keeps command metadata, human docs, capability pages, and live reports in
+  sync
+- explains why scorecards stay review-only by default until someone explicitly
+  asks for Evolution materialization
+- shows how the docs site should surface capability changes to developers
+- reduces CLI/docs drift by treating the reference docs and the site as one
+  coordinated surface
+
+Source of truth:
+
+- `docs/SYSTEM_CAPABILITIES_REFERENCE.md`
+- `docs/site/assets/js/app.js`
+- `.kabeeri/reports/kabeeri_scorecards.json`
+- `docs/cli/CLI_COMMAND_REFERENCE.md`
+- `docs/internal/LIVE_JSON_REPORTS.md`
+
+Workflow:
+
+1. Update the command metadata or capability row first.
+2. Update the human doc that explains the capability and workflow.
+3. Update the docs site capability page so developers see the same story.
+4. Refresh live reports when they summarize the capability or its next action.
+5. Re-run validation and tests to confirm the docs still match the runtime.
+
+Docs-site generation uses the same pattern. Update the human guidance, rebuild
+the generated site shell, and validate the resulting page contracts and
+localized content together so the English and Arabic surfaces stay in sync.
+`docs/site/generate-pages.js`, `docs/site/site-manifest.json`, and
+`docs/site/page-contracts.json` are generated artifacts that should reflect the
+current guidance, not replace it.
+
+## Hand-Written Guidance Rule
+
+The canonical numbered docs in `docs/en/` and `docs/ar/` are the human-authored
+guidance layer. They should explain the capability, the purpose, the workflow,
+and the source of truth in plain language before the docs site mirrors that
+story. If the generated site and the hand-written docs disagree, fix the human
+guidance first, then regenerate the site.
+
+## Maintainability Control Plane
+
+This workflow keeps the shared-service extraction story visible for the
+runtime hardening work.
+
+What it does:
+
+- explains how Kabeeri exposes the maintainability scorecard as a runtime
+  report
+- shows which CLI helpers were moved into shared services
+- makes the live JSON report part of the source-of-truth loop instead of a
+  chat-only summary
+
+Source of truth:
+
+- `src/cli/commands/maintainability.js`
+- `.kabeeri/reports/maintainability.json`
+- `.kabeeri/reports/kabeeri_scorecards.json`
+- `docs/SYSTEM_CAPABILITIES_REFERENCE.md`
+- `docs/site/assets/js/app.js`
+
+Workflow:
+
+1. Run `kvdf maintainability` to generate the current runtime snapshot.
+2. Use the scorecard to understand the shared-service extraction state.
+3. Update the human docs and the docs site capability page together.
+4. Re-run validation and tests when the runtime surface changes.
+
 ## Before Starting Work
 
 Run or inspect:

@@ -49,3 +49,7 @@ priority order.
 
 The app-building side remains in the app track and in app plugins such as
 `ecommerce-builder` and `booking-builder`.
+
+System-development docs site:
+
+- `plugins/kvdf-dev/docs/site/index.html`

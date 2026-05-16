@@ -6,6 +6,8 @@ const { summarizeUsage } = require("./usage_pricing");
 const { buildCustomerAppSummaries } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
 const { readStateArray } = require("../services/state_utils");
+const { summarizeWorkspaceContract, validateDeveloperAppWorkspace } = require("../services/app_workspace_contract");
+const { refreshAppScorecards, buildAppScorecardTableRows, buildAppScorecardSummaryLine } = require("../services/app_scorecards");
 
 function buildClientHomeHtml() {
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
@@ -122,8 +124,163 @@ function buildCustomerAppHtml(appItem) {
 `;
 }
 
-function buildDashboardHtml() {
+function buildDeveloperAppDashboardHtml(options = {}) {
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const contract = validateDeveloperAppWorkspace(repoRoot());
+  const summary = summarizeWorkspaceContract(contract);
+  const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
+  const taskTracker = fileExists(".kabeeri/dashboard/task_tracker_state.json")
+    ? readJsonFile(".kabeeri/dashboard/task_tracker_state.json")
+    : { generated_at: null, summary: {}, tasks: [] };
+  const questionnairePlan = fileExists(".kabeeri/questionnaires/adaptive_intake_plan.json")
+    ? readJsonFile(".kabeeri/questionnaires/adaptive_intake_plan.json")
+    : { plans: [], current_plan_id: null };
+  const coverage = fileExists(".kabeeri/questionnaires/coverage_matrix.json")
+    ? readJsonFile(".kabeeri/questionnaires/coverage_matrix.json")
+    : { areas: [] };
+  const missingAnswers = fileExists(".kabeeri/questionnaires/missing_answers_report.json")
+    ? readJsonFile(".kabeeri/questionnaires/missing_answers_report.json")
+    : { missing: [] };
+  const scorecards = refreshAppScorecards(repoRoot()) || {
+    summary: { total: 0, ready: 0, pending: 0, blocked: 0, not_applicable: 0, average_score: 0, baseline_ready: false, release_ready: false, next_exact_action: "kvdf questionnaire review" },
+    review_state: { status: "draft" },
+    cards: [],
+    surface_cards: []
+  };
+  const boundaries = (contract.boundary && contract.boundary.items) || [];
+  const nextAction = scorecards.summary.next_exact_action || summary.next_exact_action || "kvdf app workspace validate";
+  const title = project.app_name || project.name || summary.workspace_slug || "Vibe Developer Workspace";
+
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)} - Vibe Developer Dashboard</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #f6f7f9; }
+    header { background: linear-gradient(135deg, #0f766e, #134e4a); color: white; padding: 24px 28px; }
+    main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1, h2 { margin: 0 0 12px; }
+    p { margin: 0 0 14px; color: #dbe8e4; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 20px 0 26px; }
+    .card { background: white; border: 1px solid #d9dee7; border-radius: 10px; padding: 16px; }
+    .metric { display: block; font-size: 30px; font-weight: 700; margin-top: 6px; color: #0f172a; }
+    .status { display: inline-block; margin-top: 8px; font-size: 12px; color: #334e68; background: #e8f1f8; border-radius: 999px; padding: 4px 8px; }
+    .pill { display: inline-block; margin-right: 8px; margin-top: 10px; font-size: 12px; padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,0.16); color: #fff; }
+    .section { margin-bottom: 24px; }
+    .section-help { margin: -6px 0 12px; color: #5f6b7a; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #d9dee7; margin-bottom: 16px; }
+    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 10px; font-size: 14px; }
+    th { background: #eef2f7; }
+    code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
+    .muted { color: #5f6b7a; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(title)}</h1>
+    <p>Workspace scope: ${escapeHtml(project.workspace_kind || "developer_app")} · Contract status: ${escapeHtml(contract.status || "unknown")} · Next action: ${escapeHtml(nextAction)}</p>
+    <span class="pill">${escapeHtml(summary.boundary_status || "unknown")} boundary</span>
+    ${(summary.surface_scopes || []).map((scope) => `<span class="pill">${escapeHtml(scope)}</span>`).join("")}
+    <div class="muted">This dashboard is the vibe developer view for the current app workspace. It stays separate from the Kabeeri development dashboard.</div>
+  </header>
+  <main>
+    <section class="grid">
+      ${metricCard("Tasks", tasks.length)}
+      ${metricCard("Open Tasks", tasks.filter((item) => !["done", "closed", "archived", "owner_verified"].includes(String(item.status || "").toLowerCase())).length)}
+      ${metricCard("Planning Packs", Array.isArray(questionnairePlan.plans) ? questionnairePlan.plans.length : 0)}
+      ${metricCard("Scorecards", scorecards.summary.total || 0)}
+      ${metricCard("Scorecard Ready", scorecards.summary.ready || 0)}
+      ${metricCard("Boundary", summary.boundary_status || "unknown")}
+    </section>
+
+    <section class="section">
+      <h2>App Workspace Contract</h2>
+      <p class="section-help">The app workspace contract is the hard boundary for the vibe developer workspace. Anything outside it is blocked or must be explicitly linked.</p>
+      ${htmlTable(["Field", "Value"], [
+        ["Workspace", summary.workspace_root || ""],
+        ["Kind", summary.status || ""],
+        ["App Type", summary.app_type || ""],
+        ["Surfaces", (summary.surface_scopes || []).join(", ") || ""],
+        ["Linked Roots", (summary.linked_workspace_roots || []).join(", ") || "none"],
+        ["Boundary Status", summary.boundary_status || ""],
+        ["Missing Count", String(summary.missing_count || 0)],
+        ["Next Exact Action", summary.next_exact_action || ""]
+      ])}
+    </section>
+
+    <section class="section">
+      <h2>Boundary Items</h2>
+      <p class="section-help">Allowed, linked, and blocked items are classified by the runtime boundary helper.</p>
+      ${htmlTable(["Path", "Status", "Reason"], (boundaries.length ? boundaries : [{ path: "", status: "none", reason: "No boundary items available." }]).map((item) => [
+        item.path || "",
+        item.status || "",
+        item.reason || ""
+      ]))}
+    </section>
+
+    <section class="section">
+      <h2>Planning Pack</h2>
+      <p class="section-help">The planning pack must be reviewed and approved before tasks are allowed to proceed.</p>
+      ${htmlTable(["Plan", "Status", "Reviewed", "Approved"], (Array.isArray(questionnairePlan.plans) && questionnairePlan.plans.length ? questionnairePlan.plans : [{ plan_id: "none", status: "empty", reviewed_at: "", approved_at: "" }]).map((item) => [
+        item.plan_id || item.id || "",
+        item.status || "",
+        item.reviewed_at || "",
+        item.approved_at || ""
+      ]))}
+      </section>
+
+    <section class="section">
+      <h2>App Scorecards</h2>
+      <p class="section-help">${escapeHtml(buildAppScorecardSummaryLine(scorecards))}</p>
+      ${htmlTable(["Card", "Title", "Category", "Scope", "Status", "Score", "Next Action"], buildAppScorecardTableRows(scorecards))}
+    </section>
+
+    <section class="section">
+      <h2>Task Tracker Live Board</h2>
+      <p class="section-help">Task tracker state is derived from the local app workspace and is refreshed from the same source of truth before render.</p>
+      ${htmlTable(["Metric", "Value"], [
+        ["Generated At", taskTracker.generated_at || ""],
+        ["Tracked Tasks", Array.isArray(taskTracker.tasks) ? taskTracker.tasks.length : 0],
+        ["Open Tasks", taskTracker.summary && taskTracker.summary.open_tasks !== undefined ? taskTracker.summary.open_tasks : tasks.filter((item) => !["done", "closed", "archived", "owner_verified"].includes(String(item.status || "").toLowerCase())).length]
+      ])}
+      ${htmlTable(["Task", "Title", "Status"], tasks.map((item) => [
+        item.id,
+        item.title,
+        item.status || ""
+      ]))}
+    </section>
+
+    <section class="section">
+      <h2>Action Center</h2>
+      ${htmlTable(["Severity", "Area", "Message", "Next Action"], buildDashboardActionItems({ technical: {}, business: {}, records: {}}).map((item) => [item.severity, item.area, item.message, item.next_action]))}
+    </section>
+
+    <section class="section">
+      <h2>Scorecard Readiness</h2>
+      <p class="section-help">The scorecard set is now workspace-backed and updates when planning approval or task generation changes.</p>
+      ${htmlTable(["Readiness", "State"], [
+        ["Workspace Contract", contract.ok ? "ready" : "blocked"],
+        ["Planning Pack", (questionnairePlan.plans || []).some((item) => item.status === "approved") ? "ready" : "blocked"],
+        ["Boundary Classification", summary.boundary_status || "unknown"],
+        ["Scorecard Baseline", scorecards.summary.baseline_ready ? "ready" : "blocked"],
+        ["Release Readiness", scorecards.summary.release_ready ? "ready" : "blocked"]
+      ])}
+    </section>
+  </main>
+</body>
+</html>
+`;
+}
+
+function buildDashboardHtml(options = {}) {
+  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const dashboardScope = String(options.scope || project.workspace_kind || "framework_owner").trim().toLowerCase();
+  if (project.workspace_kind === "developer_app" && (dashboardScope === "developer_app" || dashboardScope === "vibe_app_developer" || dashboardScope === "vibe")) {
+    return buildDeveloperAppDashboardHtml(options);
+  }
+  const dashboardTitle = "Kabeeri Development Dashboard";
   const technical = readJsonFile(".kabeeri/dashboard/technical_state.json");
   const business = readJsonFile(".kabeeri/dashboard/business_state.json");
   const apps = readStateArray(".kabeeri/customer_apps.json", "apps");
@@ -171,7 +328,7 @@ function buildDashboardHtml() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kabeeri VDF Dashboard</title>
+  <title>${escapeHtml(dashboardTitle)}</title>
   <style>
     body { margin: 0; font-family: Arial, sans-serif; color: #202124; background: #f6f7f9; }
     header { background: #1f2937; color: white; padding: 20px 28px; }
@@ -210,11 +367,12 @@ function buildDashboardHtml() {
 </head>
 <body>
   <header>
-    <h1>Kabeeri VDF Dashboard</h1>
+    <h1>${escapeHtml(dashboardTitle)}</h1>
     <div>Generated at ${escapeHtml(technical.generated_at || new Date().toISOString())}</div>
     <div class="live">Live endpoint: <code>/__kvdf/api/state</code> · Task tracker: <code>/__kvdf/api/tasks</code> · Agile: <code>/__kvdf/api/agile</code> · Reports: <code>/__kvdf/api/reports</code> · <span id="live-status">checking...</span></div>
     <div class="source-note">Derived view; .kabeeri is the source of truth.</div>
     <div class="source-note">Stale data policy: poll the live API and keep static exports readable.</div>
+    <div class="source-note">Framework-owner view: platform health, governance, evolution, runtime contracts, plugins, and shared workspace state. App-workspace dashboards use the vibe developer route.</div>
     <div class="toolbar">
       <span class="muted"><strong>Dashboard Controls</strong></span>
       <label for="app-filter">App</label>

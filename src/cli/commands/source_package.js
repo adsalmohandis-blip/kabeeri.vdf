@@ -693,27 +693,38 @@ function buildSourcePackageVerification() {
   const inventory = buildSourcePackageInventory();
   const destinationMap = buildSourcePackageDestinationMap();
   const migration = buildSourcePackageMigrationState();
+  const decommissionRecordExists = fileExists("docs/reports/KVDF_NEW_FEATURES_DOCS_DECOMMISSION_RECORD.md");
   const studyExists = fileExists("docs/reports/KVDF_NEW_FEATURES_DOCS_STUDY.md");
   const inventoryExists = fileExists("docs/reports/KVDF_NEW_FEATURES_DOCS_INVENTORY.md");
   const destinationMapExists = fileExists("docs/reports/KVDF_NEW_FEATURES_DOCS_DESTINATION_MAP.md");
   const normalizationExists = fileExists("docs/reports/KVDF_NEW_FEATURES_DOCS_NORMALIZATION_MAP.md");
   const migrationExists = fileExists("docs/reports/KVDF_NEW_FEATURES_DOCS_MIGRATION_STATE.md");
-  const ready = studyExists && inventoryExists && destinationMapExists && normalizationExists && migrationExists && inventory.source_folder_exists;
+  const redistributionComplete = studyExists && inventoryExists && destinationMapExists && normalizationExists && migrationExists;
+  const ready = redistributionComplete && (inventory.source_folder_exists || decommissionRecordExists);
+  const decommissioned = redistributionComplete && decommissionRecordExists && !inventory.source_folder_exists;
   return {
     report_type: "kvdf_source_package_verification",
     generated_at: new Date().toISOString(),
     source_package: "KVDF_New_Features_Docs",
-    status: ready ? "migration_in_progress" : "fail",
+    status: decommissioned ? "decommissioned" : ready ? "migration_in_progress" : "fail",
     reports_present: {
       study: studyExists,
       inventory: inventoryExists,
       destination_map: destinationMapExists,
       normalization_map: normalizationExists,
-      migration_state: migrationExists
+      migration_state: migrationExists,
+      decommission_record: decommissionRecordExists
     },
     source_folder_exists: inventory.source_folder_exists,
+    decommission_record_exists: decommissionRecordExists,
     branch_totals: inventory.branch_totals,
-    next_actions: ready
+    next_actions: decommissioned
+      ? [
+        "No further source-package cleanup is required.",
+        "Keep the decommission record and redistributed reports as the permanent audit trail.",
+        "Continue using the permanent Kabeeri folders instead of the removed source package."
+      ]
+      : ready
       ? [
           "Continue extracting the Software Design System into permanent Kabeeri knowledge folders.",
           "Continue extracting the project documentation generator into docs, task-tracking, and governance surfaces.",
@@ -834,20 +845,26 @@ function buildSourcePackageCleanupPlan() {
   const verification = buildSourcePackageVerification();
   const migration = buildSourcePackageMigrationState();
   const manifest = buildSourcePackageRelocationManifest();
+  const alreadyDecommissioned = verification.status === "decommissioned";
   const ready = verification.status !== "fail"
     && migration.permanent_targets.every((item) => item.present)
-    && verification.source_folder_exists;
+    && (verification.source_folder_exists || alreadyDecommissioned);
   const report = {
     report_type: "kvdf_source_package_cleanup_plan",
     generated_at: new Date().toISOString(),
     source_package: "KVDF_New_Features_Docs",
-    status: ready ? "ready_for_decommission" : "blocked",
+    status: alreadyDecommissioned ? "completed" : ready ? "ready_for_decommission" : "blocked",
     source_folder_exists: verification.source_folder_exists,
+    decommission_record_exists: verification.decommission_record_exists,
     redistribution_ready: ready,
     permanent_targets: migration.permanent_targets,
     relocation_sections: manifest.sections.length,
     verification_status: verification.status,
-    next_actions: ready ? [
+    next_actions: alreadyDecommissioned ? [
+      "No additional cleanup is required because the source folder has already been decommissioned.",
+      "Keep the decommission record and redistribution reports as the permanent audit trail.",
+      "Treat the permanent Kabeeri folders as the new source of truth."
+    ] : ready ? [
       "Confirm the final removal of KVDF_New_Features_Docs after a last human review.",
       "Archive or back up the cleanup report if you need historical traceability.",
       "Only delete the source folder after the owner explicitly approves decommissioning."
@@ -869,16 +886,22 @@ function buildSourcePackageCleanupPlan() {
 
 function buildSourcePackageDecommissionRequest(cleanup, flags = {}) {
   const confirm = Boolean(flags["confirm-remove"] || flags["confirm-decommission"] || flags.confirm);
+  const alreadyDecommissioned = cleanup.decommission_record_exists || (!cleanup.source_folder_exists && cleanup.cleanup_ready);
   const report = {
     report_type: "kvdf_source_package_decommission_request",
     generated_at: new Date().toISOString(),
     source_package: "KVDF_New_Features_Docs",
-    cleanup_ready: cleanup.redistribution_ready,
+    cleanup_ready: cleanup.redistribution_ready || alreadyDecommissioned,
     confirmation_required: true,
     confirmed: confirm,
-    status: confirm ? "pending_manual_removal" : "confirmation_required",
+    status: alreadyDecommissioned ? "recorded" : confirm ? "pending_manual_removal" : "confirmation_required",
     source_folder_exists: cleanup.source_folder_exists,
-    next_actions: confirm
+    decommission_record_exists: cleanup.decommission_record_exists || alreadyDecommissioned,
+    next_actions: alreadyDecommissioned ? [
+      "The source package has already been decommissioned and recorded.",
+      "Keep the final record and redistribution reports as the permanent audit trail.",
+      "Do not recreate the source folder unless a new approved migration starts."
+    ] : confirm
       ? [
           "Proceed with the human-approved removal of KVDF_New_Features_Docs outside the safe preview flow.",
           "Take a backup if needed before deleting the folder.",
@@ -952,6 +975,7 @@ function renderSourcePackageCleanupPlanMarkdown(report) {
     "",
     `- Redistribution ready: ${report.redistribution_ready ? "yes" : "no"}`,
     `- Source folder exists: ${report.source_folder_exists ? "yes" : "no"}`,
+    `- Decommission record exists: ${report.decommission_record_exists ? "yes" : "no"}`,
     `- Verification status: ${report.verification_status}`,
     "",
     "## Permanent Targets",
@@ -993,6 +1017,7 @@ function renderSourcePackageDecommissionRequestMarkdown(report, cleanup) {
     `- Confirmation required: ${report.confirmation_required ? "yes" : "no"}`,
     `- Confirmed: ${report.confirmed ? "yes" : "no"}`,
     `- Cleanup ready: ${report.cleanup_ready ? "yes" : "no"}`,
+    `- Decommission record exists: ${report.decommission_record_exists ? "yes" : "no"}`,
     "",
     "## Permanent Targets",
     "",
@@ -1256,7 +1281,8 @@ function renderSourcePackageVerification(report) {
     ["Study report", report.reports_present.study ? "present" : "missing"],
     ["Inventory report", report.reports_present.inventory ? "present" : "missing"],
     ["Destination map", report.reports_present.destination_map ? "present" : "missing"],
-    ["Source folder exists", report.source_folder_exists ? "yes" : "no"]
+    ["Source folder exists", report.source_folder_exists ? "yes" : "no"],
+    ["Decommission record", report.decommission_record_exists ? "present" : "missing"]
   ]));
   if (report.next_actions && report.next_actions.length) {
     console.log("");

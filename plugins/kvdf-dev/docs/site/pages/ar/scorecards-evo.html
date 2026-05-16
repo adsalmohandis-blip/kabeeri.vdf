@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>السكور كارد والتطور - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="scorecards-evo">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        <a class="language-link" data-lang-target="en" href="../en/scorecards-evo.html">English</a>
+        <a class="language-link is-active" data-lang-target="ar" href="scorecards-evo.html">العربية</a>
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">تصفية</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="ابحث في الوثائق">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">تطوير النظام</a>
+          <a class="nav-link" href="methodology.html">المنهجية</a>
+          <a class="nav-link" href="kabeeri-4-parts.html">كبيري في 4 ركائز</a>
+          <a class="nav-link" href="modules.html">الوحدات</a>
+          <a class="nav-link" href="modules-relationship.html">علاقات الوحدات</a>
+          <a class="nav-link" href="modules-relationship-patterns.html">أنماط العلاقات والتدفقات</a>
+          <a class="nav-link" href="framework-dashboard.html">لوحة تحكم الإطار</a>
+          <a class="nav-link" href="framework-development.html">تطوير الإطار</a>
+          <a class="nav-link" href="framework-development-pipeline.html">مسار تطوير الفريمورك</a>
+          <a class="nav-link" href="plugin-development.html">تطوير الإضافات</a>
+          <a class="nav-link is-active" href="scorecards-evo.html">السكور كارد والتطور</a>
+          <a class="nav-link" href="cli-engine.html">محرك CLI</a>
+          <a class="nav-link" href="ai-cli-contract.html">عقد تشغيل AI/CLI</a>
+          <a class="nav-link" href="workspace-state.html">حالة Workspace</a>
+          <a class="nav-link" href="session-track-router.html">موجّه مسار الجلسة</a>
+          <a class="nav-link" href="project-intake-profile.html">استقبال المشروع وموجّه الملف</a>
+          <a class="nav-link" href="delivery-mode-advisor.html">مستشار نمط التسليم</a>
+          <a class="nav-link" href="blueprint-data-design.html">المخطط وتصميم البيانات</a>
+          <a class="nav-link" href="questionnaires.html">الاستبيانات</a>
+          <a class="nav-link" href="prompt-packs.html">حزم الأوامر</a>
+          <a class="nav-link" href="task-governance.html">حوكمة المهام</a>
+          <a class="nav-link" href="task-packet.html">حزمة المهمة</a>
+          <a class="nav-link" href="executor-contract.html">عقد المنفذ</a>
+          <a class="nav-link" href="batch-execution.html">التنفيذ على دفعات</a>
+          <a class="nav-link" href="plugin-system.html">نظام الإضافات</a>
+          <a class="nav-link" href="app-builder-plugins.html">إضافات بناء التطبيقات</a>
+          <a class="nav-link" href="multi-ai-governance.html">حوكمة تعدد الذكاءات</a>
+          <a class="nav-link" href="evolution-steward.html">وصاية التطور</a>
+          <a class="nav-link" href="dashboard.html">لوحة التحكم</a>
+          <a class="nav-link" href="reports-traceability.html">التقارير وقابلية التتبع</a>
+          <a class="nav-link" href="validation-schemas.html">التحقق والمخططات</a>
+          <a class="nav-link" href="policy-gates.html">بوابات السياسة</a>
+          <a class="nav-link" href="design-governance.html">حوكمة التصميم</a>
+          <a class="nav-link" href="ai-cost-control.html">التحكم في تكلفة الذكاء</a>
+          <a class="nav-link" href="handoff-release.html">التسليم والإصدار</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>السكور كارد والتطور</h1>
+        <p class="lead">تبدأ السكور كارد كإشارة مراجعة لوحدة أو تدفق أو قدرة. وعندما تُقفل تصبح شرائح Evolution قابلة للتتبع مع نطاق واعتماد واضحين.</p>
+        <aside class="beginner-note">
+          <strong>ملاحظة للمبتدئ</strong>
+          <p>ابدأ هنا عندما تريد أقصر طريق إلى مراجعة السكور كارد ثم تحويل النتيجة إلى Evolution محكوم.</p>
+        </aside>
+
+        <section class="wide-section">
+          <h2>جدول المحتويات</h2>
+          <div class="detail-block">
+            <ol>
+              <li><a href="#scorecard-steps">خطوات إعداد السكور كارد</a></li>
+              <li><a href="#what-scorecards-are">ما هي السكور كارد</a></li>
+              <li><a href="#what-they-measure">ماذا تقيس</a></li>
+              <li><a href="#lock-before-execution">القفل قبل التنفيذ</a></li>
+              <li><a href="#convert-to-evolution">التحويل إلى Evolution</a></li>
+              <li><a href="#keep-in-sync">التناسق</a></li>
+              <li><a href="#why-it-matters">لماذا هي مهمة</a></li>
+              <li><a href="#how-it-helps-the-framework">كيف تساعد الفريمورك</a></li>
+              <li><a href="#how-it-helps-plugins">كيف تساعد الإضافات</a></li>
+              <li><a href="#how-to-use-it">كيف تستخدمها</a></li>
+              <li><a href="#what-to-avoid">ما الذي يجب تجنبه</a></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>تفاصيل الموضوع</h2>
+          <div class="detail-stack">
+            <article class="detail-block" id="scorecard-steps">
+              <h3>خطوات إعداد السكور كارد</h3>
+              <div class="section-grid">
+                <article class="info-card"><p>1. حدّد الوحدة أو التدفق أو القدرة التي ستراجعها.</p></article>
+                <article class="info-card"><p>2. اذكر المصدر والهدف إذا كان العمل يعبر حدودًا.</p></article>
+                <article class="info-card"><p>3. صف ما الذي تغيّر أو ما المتوقع أن يتغير بلغة واضحة.</p></article>
+                <article class="info-card"><p>4. افحص الأدلة والحالة الحالية قبل الحكم على الشريحة.</p></article>
+                <article class="info-card"><p>5. ولّد التاسكات، وقيّمها، وغطِّها بالتحقق المناسب، ثم اعتمدها.</p></article>
+                <article class="info-card"><p>6. ابنِ حزمة المهمة حتى يكون للتنفيذ وحدة واضحة يعمل منها.</p></article>
+                <article class="info-card"><p>7. تحقّق من المتحقق وبوابة السياسة والوثائق التي تحمي العلاقة.</p></article>
+                <article class="info-card"><p>8. شغّل Batch Execution على الأعمال المعتمدة.</p></article>
+                <article class="info-card"><p>9. اقرأ حالة المساحة والداشبورد بعد التنفيذ.</p></article>
+                <article class="info-card"><p>10. تتبّع النتيجة إلى الوحدة أو التدفق أو القدرة التي أنتجتها.</p></article>
+                <article class="info-card"><p>11. إذا ظهر انحراف، ارجع إلى التخطيط أو حدّث نمط العلاقة.</p></article>
+              </div>
+            </article>
+
+            <article class="detail-block" id="what-scorecards-are">
+              <h3>ما هي السكور كارد</h3>
+              <p>السكور كارد هي إشارة المراجعة في الفريمورك. تُظهر الجاهزية والمخاطر وملاءمة الحدود ودرجة الثقة قبل أن تتحول الشريحة إلى تنفيذ. ليست ملاحظة زخرفية، بل سطح قرار يحدد هل الشريحة جاهزة للتحرك فعلًا.</p>
+            </article>
+
+            <article class="detail-block" id="what-they-measure">
+              <h3>ماذا تقيس</h3>
+              <p>السكور كارد المفيدة تقيس الوضوح والتحكم في النطاق وجودة الأدلة والجاهزية والمخاطر ومقدار الثقة الذي يجب منحه للشريحة الحالية. يجب أن تشرح لماذا هذه الدرجة آمنة أو غير آمنة، لا أن تذكر الرقم فقط.</p>
+            </article>
+
+            <article class="detail-block" id="lock-before-execution">
+              <h3>القفل قبل التنفيذ</h3>
+              <p>عندما تُراجع السكور كارد وتُقفل تصبح هدف تحسين موثوقًا. القفل يعني أن التقييم يمكن الاعتماد عليه أثناء تقدم العمل، ويمنع انحراف الدرجة بينما الشريحة قيد التنفيذ.</p>
+            </article>
+
+            <article class="detail-block" id="convert-to-evolution">
+              <h3>التحويل إلى Evolution</h3>
+              <p>السكور كارد المقفلة يمكن أن تتحول إلى شرائح Evolution قابلة للتتبع مع نطاق واعتماد واضحين. هكذا يتحول التقييم إلى مسار تنفيذ حقيقي بدل أن يبقى ملاحظة عامة أو بندًا مخفيًا في الباكلوج.</p>
+            </article>
+
+            <article class="detail-block" id="keep-in-sync">
+              <h3>التناسق</h3>
+              <p>يجب أن تتفق السكور كارد والتاسكات وحالة الداشبورد وحالة Evolution معًا. إذا اختلفت هذه الرؤى، فالنظام لم يعد يصف الواقع نفسه، ويجب أن يعود العمل إلى التخطيط قبل أن يستمر.</p>
+            </article>
+
+            <article class="detail-block" id="why-it-matters">
+              <h3>لماذا هي مهمة</h3>
+              <p>هكذا تتحول المراجعة إلى تنفيذ متتبع بدل ملاحظة غامضة. تمنح السكور كارد الفريمورك طريقة قابلة للقياس لتحديد ما الذي يجب أن يتغير لاحقًا وما الذي يجب أن ينتظر.</p>
+            </article>
+
+            <article class="detail-block" id="how-it-helps-the-framework">
+              <h3>كيف تساعد الفريمورك</h3>
+              <p>تحدد السكور كارد أين الفريمورك قوي، وأين ينحرف، وما الذي يجب تحسينه بعد ذلك. تجعل الفريمورك صادقًا مع جودة نفسه وتبقي Evolution مركزًا على الشريحة الصحيحة.</p>
+            </article>
+
+            <article class="detail-block" id="how-it-helps-plugins">
+              <h3>كيف تساعد الإضافات</h3>
+              <p>تُظهر سكور كارد الإضافات هل الحزمة آمنة ومتسقة وقابلة للعكس وجاهزة لتوسيع المنصة. هذا يساعد تطوير الإضافات على البقاء منضبطًا بدل أن يكون عشوائيًا، ويحافظ على العمل داخل الحد الصحيح.</p>
+            </article>
+
+            <article class="detail-block" id="how-to-use-it">
+              <h3>كيف تستخدمها</h3>
+              <p>اقرأ السكور كارد، راجع الأدلة، اقفل الشريحة عندما يكون التقييم مستقرًا، ثم حوّل النتيجة المقفلة إلى مهمة Evolution. هكذا تبقى المراجعة والتنفيذ مرتبطين دون خلط بينهما.</p>
+            </article>
+
+            <article class="detail-block" id="what-to-avoid">
+              <h3>ما الذي يجب تجنبه</h3>
+              <p>لا تتعامل مع السكور كارد كزينة أو كباكلوج ثانٍ. إنها سطح قرار، ويجب ألا تتحرك للأمام إلا عندما تكون الأدلة واضحة والنطاق ما زال صالحًا.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>الصفحات المرتبطة</h2>
+          <div class="callout links">
+            <a href="./system-development.html">تطوير النظام</a>
+            <a href="./framework-development.html">تطوير الإطار</a>
+            <a href="./framework-development-pipeline.html">مسار تطوير الفريمورك</a>
+            <a href="./plugin-development.html">تطوير الإضافات</a>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>الأوامر</h2>
+          <div class="detail-block">
+            <ul><li><code>docs/reports/KVDF_SCORECARDS_INDEX.md</code></li><li><code>.kabeeri/evolution.json</code></li><li><code>src/cli/services/evolution.js</code></li></ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

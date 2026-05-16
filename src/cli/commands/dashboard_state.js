@@ -61,6 +61,8 @@ function collectDashboardState(options = {}, deps = {}) {
   const developerEfficiency = buildDeveloperEfficiency();
   const generatedAt = new Date().toISOString();
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const dashboardScope = project.workspace_kind === "developer_app" ? "vibe_app_developer" : "framework_owner";
+  const dashboardTitle = project.workspace_kind === "developer_app" ? "Vibe Developer Dashboard" : "Kabeeri Development Dashboard";
   const appSummaries = buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary);
   const workstreamSummaries = buildWorkstreamSummaries(workstreams, tasks, sessions, usageSummary, { buildSprintSummary });
   const workspaceSummaries = collectWorkspaceDashboardSummaries(options);
@@ -97,6 +99,10 @@ function collectDashboardState(options = {}, deps = {}) {
       profile: project.profile || "",
       delivery_mode: project.delivery_mode || "",
       language: project.language || "",
+      workspace_kind: project.workspace_kind || "framework_owner",
+      surface_scopes: Array.isArray(project.surface_scopes) ? project.surface_scopes : [],
+      dashboard_scope: dashboardScope,
+      dashboard_title: dashboardTitle,
       app_count: apps.length,
       mode: apps.length > 1 ? "multi_app_workspace" : apps.length === 1 ? "single_app_workspace" : "project_workspace",
       live_dashboard: {

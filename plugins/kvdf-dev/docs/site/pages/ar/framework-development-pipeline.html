@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مسار تطوير الفريمورك - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="framework-development-pipeline">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        <a class="language-link is-active" data-lang-target="ar" href="framework-development-pipeline.html">العربية</a>
+        <a class="language-link" data-lang-target="en" href="../en/framework-development-pipeline.html">English</a>
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">تصفية</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="ابحث في الوثائق">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">تطوير النظام</a>
+          <a class="nav-link" href="methodology.html">المنهجية</a>
+          <a class="nav-link" href="kabeeri-4-parts.html">كبيري في 4 ركائز</a>
+          <a class="nav-link" href="modules.html">الوحدات</a>
+          <a class="nav-link" href="modules-relationship.html">علاقات الوحدات</a>
+          <a class="nav-link" href="modules-relationship-patterns.html">أنماط العلاقات والتدفقات</a>
+          <a class="nav-link" href="framework-dashboard.html">لوحة تحكم الإطار</a>
+          <a class="nav-link" href="framework-development.html">تطوير الإطار</a>
+          <a class="nav-link is-active" href="framework-development-pipeline.html">مسار تطوير الفريمورك</a>
+          <a class="nav-link" href="plugin-development.html">تطوير الإضافات</a>
+          <a class="nav-link" href="scorecards-evo.html">السكور كارد والتطور</a>
+          <a class="nav-link" href="cli-engine.html">محرك CLI</a>
+          <a class="nav-link" href="ai-cli-contract.html">عقد تشغيل AI/CLI</a>
+          <a class="nav-link" href="workspace-state.html">حالة Workspace</a>
+          <a class="nav-link" href="session-track-router.html">موجّه مسار الجلسة</a>
+          <a class="nav-link" href="project-intake-profile.html">استقبال المشروع وموجّه الملف</a>
+          <a class="nav-link" href="delivery-mode-advisor.html">مستشار نمط التسليم</a>
+          <a class="nav-link" href="blueprint-data-design.html">المخطط وتصميم البيانات</a>
+          <a class="nav-link" href="questionnaires.html">الاستبيانات</a>
+          <a class="nav-link" href="prompt-packs.html">حزم الأوامر</a>
+          <a class="nav-link" href="task-governance.html">حوكمة المهام</a>
+          <a class="nav-link" href="task-packet.html">حزمة المهمة</a>
+          <a class="nav-link" href="executor-contract.html">عقد المنفذ</a>
+          <a class="nav-link" href="batch-execution.html">التنفيذ على دفعات</a>
+          <a class="nav-link" href="plugin-system.html">نظام الإضافات</a>
+          <a class="nav-link" href="app-builder-plugins.html">إضافات بناء التطبيقات</a>
+          <a class="nav-link" href="multi-ai-governance.html">حوكمة تعدد الذكاءات</a>
+          <a class="nav-link" href="evolution-steward.html">وصاية التطور</a>
+          <a class="nav-link" href="dashboard.html">لوحة التحكم</a>
+          <a class="nav-link" href="reports-traceability.html">التقارير وقابلية التتبع</a>
+          <a class="nav-link" href="validation-schemas.html">التحقق والمخططات</a>
+          <a class="nav-link" href="policy-gates.html">بوابات السياسة</a>
+          <a class="nav-link" href="design-governance.html">حوكمة التصميم</a>
+          <a class="nav-link" href="ai-cost-control.html">التحكم في تكلفة الذكاء</a>
+          <a class="nav-link" href="handoff-release.html">التسليم والإصدار</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>مسار تطوير الفريمورك</h1>
+        <p class="lead">توضح هذه الصفحة المسار من فكرة الفريمورك إلى التنفيذ الصارم: الـ scorecards وEvolution وتقسيم التاسكات وتغييرات runtime والتحقق وبوابات الإصدار كلها تتحرك معاً.</p>
+        <aside class="beginner-note">
+          <strong>ملاحظة للمبتدئ</strong>
+          <p>استخدم هذه الصفحة عندما يتغير KVDF نفسه. تشرح كيف تتحول فكرة فريمورك إلى مسار تنفيذ آمن ومراجع ويمكن تتبعه.</p>
+        </aside>
+
+        <section class="wide-section">
+          <h2>الصفحات المرتبطة</h2>
+          <div class="callout links">
+            <a href="./system-development.html">تطوير النظام</a>
+            <a href="./framework-development.html">تطوير الإطار</a>
+            <a href="./modules-relationship.html">علاقات الوحدات</a>
+            <a href="./scorecards-evo.html">السكور كارد والتطور</a>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>جدول المحتويات</h2>
+          <div class="detail-block">
+            <ol>
+              <li><a href="#idea-intake">استقبال الفكرة</a></li>
+              <li><a href="#scorecard-preparation">إعداد السكور كارد</a></li>
+              <li><a href="#evolution-plan">خطة التطور</a></li>
+              <li><a href="#task-slicing">تقسيم التاسكات</a></li>
+              <li><a href="#hard-implementation">التنفيذ الصارم</a></li>
+              <li><a href="#validation-and-evidence">التحقق والأدلة</a></li>
+              <li><a href="#release-gate">بوابة الإصدار</a></li>
+              <li><a href="#common-mistakes">الأخطاء الشائعة</a></li>
+              <li><a href="#practical-example">مثال عملي</a></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>تفاصيل الموضوع</h2>
+          <div class="detail-stack">
+            <article class="detail-block" id="idea-intake">
+              <h3>استقبال الفكرة</h3>
+              <p>كل تغيير في الفريمورك يبدأ كفكرة، لكن الفكرة ليست تنفيذًا بعد. أول مهمة هي كتابة المشكلة والفائدة المتوقعة والحدود والسبب الذي يجعل التغيير مهمًا لكبيري نفسه.</p>
+            </article>
+            <article class="detail-block" id="scorecard-preparation">
+              <h3>إعداد السكور كارد</h3>
+              <p>قبل لمس الكود، يجب تقييم التغيير حسب العلاقة الحقيقية التي يؤثر فيها: أي وحدة تتغير، وأي تدفق يتغير، وأي لوحة أو سياسة تتغير، وما الدليل الذي يجب أن يطابق النتيجة بعد التغيير.</p>
+            </article>
+            <article class="detail-block" id="evolution-plan">
+              <h3>خطة التطور</h3>
+              <p>إذا كان التغيير واسعًا أو استراتيجيًا، فإن نتيجة السكور كارد المقفلة تصبح عنصر Evolution. هذا يسمح لمالك الفريمورك بالتعامل مع الفكرة كمسار تحسين محكوم بدل ملاحظة عابرة في الشات.</p>
+            </article>
+            <article class="detail-block" id="task-slicing">
+              <h3>تقسيم التاسكات</h3>
+              <p>يجب تقسيم عمل الفريمورك إلى أصغر شرائح آمنة ممكنة. قد تحدث شريحة لتحديث runtime، وأخرى لتحديث الوثائق، وثالثة لتحديث الاختبارات. الهدف هو جعل كل خطوة قابلة للمراجعة.</p>
+            </article>
+            <article class="detail-block" id="hard-implementation">
+              <h3>التنفيذ الصارم</h3>
+              <p>هنا تحدث تغييرات الكود الفعلية: الأوامر والخدمات والمخططات واللوحات والتقارير ومنطق التحقق تتحرك معًا. التنفيذ لا يكتمل إذا تغيرت طبقة واحدة فقط وبقيت الطبقات الأخرى خلفها.</p>
+            </article>
+            <article class="detail-block" id="validation-and-evidence">
+              <h3>التحقق والأدلة</h3>
+              <p>يجب أن يثبت تغيير الفريمورك نفسه عبر الاختبارات، ومخرجات التحقق، والأدلة القابلة للتتبع. إذا كان التغيير حقيقيًا، فيجب أن تقول الوثائق والتنفيذ والفحوصات الشيء نفسه.</p>
+            </article>
+            <article class="detail-block" id="release-gate">
+              <h3>بوابة الإصدار</h3>
+              <p>الإصدار هو البوابة الأخيرة وليس الأولى. يجب ألا يتحرك الفريمورك نحو الإصدار إلا عندما يكون السكور كارد مقفلاً، وتقسيم التاسكات مكتملًا، والأدلة متطابقة مع التغيير المقصود.</p>
+            </article>
+            <article class="detail-block" id="common-mistakes">
+              <h3>الأخطاء الشائعة</h3>
+              <p>أكبر خطأ هو تغيير ملف واحد واعتبار العمل منتهيًا. خطأ آخر هو ترك السكور كارد خلف التنفيذ أو تحديث الوثائق دون تحديث runtime. يجب أن يبقى عمل الفريمورك متماسكًا عبر الطبقات.</p>
+            </article>
+            <article class="detail-block" id="practical-example">
+              <h3>مثال عملي</h3>
+              <p>إضافة قاعدة جديدة في الداشبورد، أو إدخال schema جديد للتحقق، أو تغيير مسار التاسكات كلها أمثلة جيدة لهذا المسار: فكرة، سكور كارد، Evolution أو تاسك، تنفيذ، تحقق، ثم إصدار.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>الأوامر</h2>
+          <div class="detail-block">
+            <ul>
+              <li><code>src/cli/commands/evolution.js</code></li>
+              <li><code>src/cli/commands/dashboard.js</code></li>
+              <li><code>src/cli/validate.js</code></li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

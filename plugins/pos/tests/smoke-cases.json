@@ -1,0 +1,47 @@
+{
+  "plugin_id": "pos",
+  "smoke_cases": [
+    {
+      "name": "retail pos launch path",
+      "mode": "retail",
+      "steps": [
+        "kvdf plugins install pos",
+        "kvdf pos init --mode retail --name \"Retail POS\"",
+        "kvdf pos questionnaire",
+        "kvdf pos brief",
+        "kvdf pos design",
+        "kvdf pos modules",
+        "kvdf pos tasks",
+        "kvdf pos approve --confirm",
+        "kvdf pos report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/pos.json"
+    },
+    {
+      "name": "restaurant pos launch path",
+      "mode": "restaurant",
+      "project_name": "Table Service POS",
+      "steps": [
+        "kvdf plugins install pos",
+        "kvdf pos init --mode restaurant --name \"Table Service POS\"",
+        "kvdf pos questionnaire",
+        "kvdf pos brief",
+        "kvdf pos design",
+        "kvdf pos modules",
+        "kvdf pos tasks",
+        "kvdf pos approve --confirm",
+        "kvdf pos report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/pos.json"
+    },
+    {
+      "name": "brief requires questionnaire",
+      "kind": "blocked",
+      "blocked_action": "brief",
+      "project_name": "Guarded POS",
+      "state_file": ".kabeeri/pos.json"
+    }
+  ]
+}

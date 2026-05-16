@@ -19,7 +19,7 @@ implementation sequence. The scope is now grounded by:
 - UI/UX direction
 
 The backlog stays implementation-focused and should be used only after the
-docs-first gate is reviewed and accepted.
+planning pack is reviewed and approved.
 
 ---
 
@@ -280,4 +280,3 @@ gate was reviewed.
 1. Confirm the backlog order.
 2. Turn the first implementation slice into executable tasks.
 3. Start implementation only after the docs-first review is accepted.
-

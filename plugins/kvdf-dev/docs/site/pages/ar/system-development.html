@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>تطوير النظام - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="system-development">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        
+        <a class="language-link" data-lang-target="en" href="../en/system-development.html">English</a>
+        <a class="language-link is-active" data-lang-target="ar" href="system-development.html">العربية</a>
+      
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">تصفية</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="ابحث في الوثائق">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link is-active" href="system-development.html">تطوير النظام</a>
+<a class="nav-link" href="methodology.html">المنهجية</a>
+<a class="nav-link" href="kabeeri-4-parts.html">كبيري في 4 ركائز</a>
+<a class="nav-link" href="modules.html">الوحدات</a>
+<a class="nav-link" href="modules-relationship.html">علاقات الوحدات</a>
+<a class="nav-link" href="modules-relationship-patterns.html">التدفقات والأنماط</a>
+<a class="nav-link" href="framework-dashboard.html">لوحة تحكم الإطار</a>
+<a class="nav-link" href="framework-development.html">تطوير الإطار</a>
+<a class="nav-link" href="plugin-development.html">تطوير الإضافات</a>
+<a class="nav-link" href="scorecards-evo.html">السكور كارد والتطور</a>
+<a class="nav-link" href="cli-engine.html">محرك CLI</a>
+<a class="nav-link" href="ai-cli-contract.html">عقد تشغيل AI/CLI</a>
+<a class="nav-link" href="workspace-state.html">حالة Workspace</a>
+<a class="nav-link" href="session-track-router.html">موجّه مسار الجلسة</a>
+<a class="nav-link" href="project-intake-profile.html">استقبال المشروع وموجّه الملف</a>
+<a class="nav-link" href="delivery-mode-advisor.html">مستشار نمط التسليم</a>
+<a class="nav-link" href="blueprint-data-design.html">المخطط وتصميم البيانات</a>
+<a class="nav-link" href="questionnaires.html">الاستبيانات</a>
+<a class="nav-link" href="prompt-packs.html">حزم الأوامر</a>
+<a class="nav-link" href="task-governance.html">حوكمة المهام</a>
+<a class="nav-link" href="task-packet.html">حزمة المهمة</a>
+<a class="nav-link" href="executor-contract.html">عقد المنفذ</a>
+<a class="nav-link" href="batch-execution.html">التنفيذ على دفعات</a>
+<a class="nav-link" href="plugin-system.html">نظام الإضافات</a>
+<a class="nav-link" href="app-builder-plugins.html">إضافات بناء التطبيقات</a>
+<a class="nav-link" href="multi-ai-governance.html">حوكمة تعدد الذكاءات</a>
+<a class="nav-link" href="evolution-steward.html">وصاية التطور</a>
+<a class="nav-link" href="dashboard.html">لوحة التحكم</a>
+<a class="nav-link" href="reports-traceability.html">التقارير وقابلية التتبع</a>
+<a class="nav-link" href="validation-schemas.html">التحقق والمخططات</a>
+<a class="nav-link" href="policy-gates.html">بوابات السياسة</a>
+<a class="nav-link" href="design-governance.html">حوكمة التصميم</a>
+<a class="nav-link" href="ai-cost-control.html">التحكم في تكلفة الذكاء</a>
+<a class="nav-link" href="handoff-release.html">التسليم والإصدار</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>تطوير النظام</h1>
+        <p class="lead">هذا الموقع يشرح كيف نطوّر كبيري نفسه: المنهجية، والركائز الأربع، وتطوير الإطار، وتطوير الإضافات، وكيف تتحول بطاقات السكور كارد إلى عمل Evo متابع.</p>
+        <aside class="beginner-note">
+          <strong>ملاحظة للمبتدئ</strong>
+          <p>ابدأ هنا إذا كنت تريد أقصر طريق لفهم تطوير النظام.</p>
+        </aside>
+        
+        <section class="wide-section">
+          <h2>جدول المحتويات</h2>
+          <div class="detail-block">
+            <ol><li><a href="#">Ù„Ù…Ù† Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹</a></li><li><a href="#kvdf">Ù…Ø§ Ù‡Ùˆ KVDF</a></li><li><a href="#">ÙƒÙŠÙ ØªÙ‚Ø±Ø£Ù‡</a></li><li><a href="#">Ø§Ù„Ù…Ù†Ù‡Ø¬ÙŠØ©</a></li><li><a href="#">Ù…Ø§ Ø§Ù„Ø°ÙŠ ÙŠØºØ·ÙŠÙ‡ Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹</a></li><li><a href="#">Ù…Ø§ Ø§Ù„Ø°ÙŠ Ù„Ø§ ÙŠÙ†ØªÙ…ÙŠ Ù‡Ù†Ø§</a></li><li><a href="#">Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¹Ù…Ù„</a></li><li><a href="#">Ø±ÙˆØ§Ø¨Ø· ÙƒØ§Ù†ÙˆÙ†ÙŠØ©</a></li></ol>
+          </div>
+        </section>
+        
+        <section class="wide-section">
+          <h2>تفاصيل الموضوعات</h2>
+          <div class="detail-stack"><article class="detail-block" id=""><h3>Ù„Ù…Ù† Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹</h3><p>Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ù…Ø®ØµØµ Ù„Ù…Ø³Ø§Ù‡Ù…ÙŠ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ ÙˆØ§Ù„Ù…Ø´Ø±ÙÙŠÙ† ÙˆÙ…Ø·ÙˆØ±ÙŠ Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª Ø§Ù„Ø°ÙŠÙ† ÙŠØºÙŠØ±ÙˆÙ† ÙƒØ¨ÙŠØ±ÙŠ Ù†ÙØ³Ù‡. Ø¥Ø°Ø§ ÙƒÙ†Øª ØªØ¹Ù…Ù„ Ø¹Ù„Ù‰ Ø§Ù„Ù…Ø­Ø±Ùƒ Ø£Ùˆ Ø§Ù„Ø¹Ù‚Ø¯Ø© Ø£Ùˆ Ø·Ø±ÙŠÙ‚Ø© ØªØ·ÙˆÙŠØ± Ø§Ù„Ù†Ø¸Ø§Ù…ØŒ ÙÙ‡Ø°Ù‡ Ù‡ÙŠ Ù†Ù‚Ø·Ø© Ø§Ù„Ø¨Ø¯Ø§ÙŠØ©.</p></article><article class="detail-block" id="kvdf"><h3>Ù…Ø§ Ù‡Ùˆ KVDF</h3><p>KVDF Ù‡Ùˆ Ø§Ù„Ø¥Ø·Ø§Ø± Ø§Ù„ØªØ´ØºÙŠÙ„ÙŠ Ø­ÙˆÙ„ ÙƒØ¨ÙŠØ±ÙŠ. Ø¥Ù†Ù‡ ÙŠØ­Ø¯Ø¯ ÙƒÙŠÙ ØªØ¨Ù‚Ù‰ Ø§Ù„ØªØ®Ø·ÙŠØ· ÙˆØ§Ù„Ø§Ø¹ØªÙ…Ø§Ø¯ ÙˆØ­Ø§Ù„Ø© runtime ÙˆØ§Ù„ØªØ­Ù‚Ù‚ ÙˆÙ„ÙˆØ­Ø§Øª Ø§Ù„ØªØ­ÙƒÙ… ÙˆØ§Ù„Ø¥Ø¶Ø§ÙØ§Øª ÙˆØ§Ù„ØªØ·ÙˆØ± Ù…ØªØ²Ø§Ù…Ù†Ø© Ø­ØªÙ‰ ÙŠØ¨Ù‚Ù‰ Ø§Ù„Ù†Ø¸Ø§Ù… ØµØ§Ø±Ù…Ø§Ù‹ ÙˆÙ„Ø§ ÙŠØªØ­ÙˆÙ„ Ø¥Ù„Ù‰ Ù…Ø¬Ù…ÙˆØ¹Ø© Ø£Ø¯ÙˆØ§Øª Ù…Ù†ÙØµÙ„Ø©.</p></article><article class="detail-block" id=""><h3>ÙƒÙŠÙ ØªÙ‚Ø±Ø£Ù‡</h3><p>Ø§Ø¨Ø¯Ø£ Ø¨Ø§Ù„Ù…Ù†Ù‡Ø¬ÙŠØ©ØŒ Ø«Ù… Ø§Ù‚Ø±Ø£ Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø£Ø¬Ø²Ø§Ø¡ Ø§Ù„Ø£Ø±Ø¨Ø¹Ø©ØŒ Ø«Ù… Ø§Ù†ØªÙ‚Ù„ Ø¥Ù„Ù‰ ØªØ·ÙˆÙŠØ± Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±ÙƒØŒ Ø«Ù… Ø§Ù„Ø¥Ø¶Ø§ÙØ§ØªØŒ Ø«Ù… Ø§Ù„Ø³ÙƒÙˆØ± ÙƒØ§Ø±Ø¯. Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ù…Ø±ØªØ¨ Ø¨Ø­ÙŠØ« ÙŠØ¨Ù†ÙŠ ÙƒÙ„ Ù‚Ø³Ù… Ø¹Ù„Ù‰ Ø§Ù„Ø°ÙŠ Ù‚Ø¨Ù„Ù‡ Ø¨Ø¯Ù„ Ø£Ù† ÙŠÙƒØ±Ø± Ø§Ù„ÙÙƒØ±Ø© Ù†ÙØ³Ù‡Ø§ Ø¨ØµÙŠØ§ØºØ© Ù…Ø®ØªÙ„ÙØ©.</p></article><article class="detail-block" id=""><h3>Ø§Ù„Ù…Ù†Ù‡Ø¬ÙŠØ©</h3><p>Ø§Ù„Ø·Ø±ÙŠÙ‚Ø© ØµØ§Ø±Ù…Ø©: Ø®Ø·Ø· Ø£ÙˆÙ„Ø§Ù‹ØŒ Ø¹Ø±Ù‘Ù Ø§Ù„Ù†Ø·Ø§Ù‚ØŒ Ù‚Ø³Ù… Ø§Ù„Ø¹Ù…Ù„ØŒ Ø§Ø¹ØªÙ…Ø¯ Ù‚Ø¨Ù„ Ø§Ù„ØªÙ†ÙÙŠØ°ØŒ Ø«Ù… ØªÙˆÙ‚Ù Ø¨Ø¹Ø¯ ÙƒÙ„ Ø´Ø±ÙŠØ­Ø© ÙˆØªØ­Ù‚Ù‚. Ù‡Ø°Ù‡ Ø§Ù„Ù‚Ø§Ø¹Ø¯Ø© Ù‡ÙŠ Ø§Ù„Ø¹Ù…ÙˆØ¯ Ø§Ù„ÙÙ‚Ø±ÙŠ Ù„Ø£ÙŠ ØªØºÙŠÙŠØ± ÙÙŠ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ Ù„Ø£Ù†Ù‡Ø§ ØªØ­ÙØ¸ ØªÙˆØ§Ø²Ù† Ø§Ù„Ù€ runtime ÙˆØ§Ù„ÙˆØ«Ø§Ø¦Ù‚ ÙˆØ§Ù„Ø£Ø¯Ù„Ø©.</p></article><article class="detail-block" id=""><h3>Ù…Ø§ Ø§Ù„Ø°ÙŠ ÙŠØºØ·ÙŠÙ‡ Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹</h3><p>Ø§Ù„Ø£Ù†Ø¸Ù…Ø©ØŒ Ø§Ù„Ù…ÙˆØ¯ÙŠÙˆÙ„Ø§ØªØŒ Ø§Ù„Ø¹Ù„Ø§Ù‚Ø§ØªØŒ Ø§Ù„Ø³ÙƒÙˆØ± ÙƒØ§Ø±Ø¯ØŒ ØªØ·ÙˆÙŠØ± Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±ÙƒØŒ ØªØ·ÙˆÙŠØ± Ø§Ù„Ø¥Ø¶Ø§ÙØ§ØªØŒ ÙˆØ­Ù„Ù‚Ø© Ø§Ù„ØªØ·ÙˆØ± ÙƒÙ„Ù‡Ø§ ØªÙ†ØªÙ…ÙŠ Ù‡Ù†Ø§. Ù‡Ø°Ù‡ Ù‡ÙŠ Ø§Ù„Ø£Ø¬Ø²Ø§Ø¡ Ø§Ù„ØªÙŠ ØªØ´Ø±Ø­ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ ÙƒÙƒÙ„ ÙˆÙƒÙŠÙ ÙŠØªØºÙŠØ± Ø¨Ø£Ù…Ø§Ù† Ø¹Ø¨Ø± Ø§Ù„Ø²Ù…Ù†.</p></article><article class="detail-block" id=""><h3>Ù…Ø§ Ø§Ù„Ø°ÙŠ Ù„Ø§ ÙŠÙ†ØªÙ…ÙŠ Ù‡Ù†Ø§</h3><p>Ø¥Ø±Ø´Ø§Ø¯Ø§Øª Ø¨Ù†Ø§Ø¡ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§ØªØŒ ÙˆØªØ³Ù„ÙŠÙ… Ø§Ù„Ù…Ø³Ø§Ø­Ø§ØªØŒ ÙˆØªØ¹Ù„ÙŠÙ…Ø§Øª Ù…Ø·ÙˆØ± vibeØŒ Ùˆscorecards Ø§Ù„Ø®Ø§ØµØ© Ø¨Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª ØªÙ†ØªÙ…ÙŠ Ø¥Ù„Ù‰ Ù…ÙˆÙ‚Ø¹ vibe. Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„ØªØºÙŠÙŠØ± ÙŠØªØ¹Ù„Ù‚ Ø¨ØªØ·Ø¨ÙŠÙ‚ Ø¹Ù…ÙŠÙ„ Ø¨Ø¯Ù„ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ Ù†ÙØ³Ù‡ØŒ ÙÙ…ÙƒØ§Ù†Ù‡ Ù‡Ù†Ø§Ùƒ.</p></article><article class="detail-block" id=""><h3>Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¹Ù…Ù„</h3><p>Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„ØªØºÙŠÙŠØ± ÙŠÙ…Ø³ Ø¹Ù‚Ø¯Ø© Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ Ø£Ùˆ Ø³Ù„ÙˆÙƒ runtime Ø£Ùˆ Ø³ÙŠØ± Ø¹Ù…Ù„ Ø§Ù„Ù…Ø·ÙˆØ±ØŒ ÙÙ‡Ùˆ ÙŠÙ†ØªÙ…ÙŠ Ø¥Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙˆÙŠØ¬Ø¨ Ù…Ø±Ø§Ø¬Ø¹ØªÙ‡ ÙƒØªØºÙŠÙŠØ± ÙÙŠ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ. Ù‡Ø°Ù‡ Ø§Ù„Ù‚Ø§Ø¹Ø¯Ø© ØªÙ…Ù†Ø¹ Ø§Ù„Ø§Ù†Ø­Ø±Ø§Ù Ø¨ÙŠÙ† Ù…Ø§ ÙŠØ¹Ø¯ Ø¨Ù‡ Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ ÙˆÙ…Ø§ ÙŠÙØ¹Ù„Ù‡ ÙØ¹Ù„Ø§Ù‹.</p></article><article class="detail-block" id=""><h3>Ø±ÙˆØ§Ø¨Ø· ÙƒØ§Ù†ÙˆÙ†ÙŠØ©</h3><p>Ø§Ø³ØªØ®Ø¯Ù… ØªØ¹Ù„ÙŠÙ…Ø§Øª workflow ÙˆÙ…Ù„Ù governance Ùˆindex Ø§Ù„Ø³ÙƒÙˆØ± ÙƒØ§Ø±Ø¯ ÙˆØ®Ø·Ø© Ø§Ù„ØªÙ†ÙÙŠØ° ÙƒÙ…Ø±Ø§Ø¬Ø¹ Ø±Ø³Ù…ÙŠØ© Ø¹Ù†Ø¯Ù…Ø§ ØªØ­ØªØ§Ø¬ Ø¥Ù„Ù‰ Ø§Ù„Ø³ÙŠØ§Ø³Ø© Ø§Ù„ÙƒØ§Ù…Ù„Ø© ÙˆØ±Ø§Ø¡ Ù‡Ø°Ø§ Ø§Ù„Ù…ÙˆÙ‚Ø¹.</p></article></div>
+        </section>
+        <section class="wide-section">
+          <h2>الروابط</h2>
+          <div class="callout links"><a href="./methodology.html">Ø§Ù„Ù…Ù†Ù‡Ø¬ÙŠØ©</a><a href="./kabeeri-4-parts.html">ÙƒØ¨ÙŠØ±ÙŠ ÙÙŠ 4 Ø±ÙƒØ§Ø¦Ø²</a><a href="./framework-development.html">ØªØ·ÙˆÙŠØ± Ø§Ù„ÙØ±ÙŠÙ…ÙˆØ±Ùƒ</a><a href="./plugin-development.html">ØªØ·ÙˆÙŠØ± Ø§Ù„Ø¥Ø¶Ø§ÙØ§Øª</a><a href="./scorecards-evo.html">Ø§Ù„Ø³ÙƒÙˆØ± ÙƒØ§Ø±Ø¯ ÙˆEvo</a></div>
+        </section>
+        <section class="wide-section">
+          <h2>الأوامر</h2>
+          <div class="detail-block"><ul><li><code>knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md</code></li><li><code>docs/reports/KVDF_SCORECARDS_INDEX.md</code></li><li><code>docs/reports/IMPLEMENTATION_PLAN.md</code></li></ul></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

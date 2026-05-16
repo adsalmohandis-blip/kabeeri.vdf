@@ -29,6 +29,8 @@ Kabeeri VDF currently has:
 
 - `.kabeeri/` remains source of truth.
 - CLI remains the engine; dashboard, docs, VS Code, and chat are surfaces.
+- Workspace boundary rules are governed by the workspace boundary checklist:
+  `docs/reports/KVDF_WORKSPACE_BOUNDARY_IMPLEMENTATION_CHECKLIST.md`.
 - No GitHub mutation without explicit Owner approval and passing policy gates.
 - No release/publish without readiness and governance checks.
 - No raw-design frontend execution without approved design text specs.

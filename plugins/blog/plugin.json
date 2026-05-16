@@ -1,0 +1,34 @@
+{
+  "plugin_id": "blog",
+  "name": "Blog Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "blog",
+  "enabled_by_default": false,
+  "description": "Build blogs from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": ["commands", "docs", "prompts", "schemas", "templates", "tests"],
+  "optional_folders": ["references", "examples", "assets", "dashboard", "business-type"],
+  "domain_folders": ["business-type", "references", "examples", "assets", "dashboard"],
+  "command_surface": [
+    "kvdf blog status",
+    "kvdf blog init",
+    "kvdf blog questionnaire",
+    "kvdf blog brief",
+    "kvdf blog design",
+    "kvdf blog modules",
+    "kvdf blog tasks",
+    "kvdf blog approve",
+    "kvdf blog report",
+    "kvdf plugins install blog",
+    "kvdf plugins uninstall blog"
+  ],
+  "docs_surface": [
+    "plugins/blog/README.md",
+    "plugins/blog/docs/index.md",
+    "plugins/blog/docs/cli.md"
+  ]
+}

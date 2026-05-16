@@ -44,7 +44,7 @@ function dashboard(action, value, flags = {}, deps = {}) {
     const output = flags.output || ".kabeeri/site/index.html";
     const dashboardOutput = flags["dashboard-output"] || ".kabeeri/site/__kvdf/dashboard/index.html";
     writeTextFile(output, buildClientHomeHtml());
-    writeTextFile(dashboardOutput, buildDashboardHtml());
+    writeTextFile(dashboardOutput, buildDashboardHtml(flags));
     exportCustomerAppPages();
     console.log(`Wrote customer page: ${output}`);
     console.log(`Wrote private dashboard: ${dashboardOutput}`);

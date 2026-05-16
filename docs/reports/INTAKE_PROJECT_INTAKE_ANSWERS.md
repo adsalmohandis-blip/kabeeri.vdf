@@ -54,4 +54,4 @@
 
 ## Next Step
 
-Proceed to the product scope document and keep the docs-first gate intact.
+Proceed to the product scope document and keep the planning gate intact.

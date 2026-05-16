@@ -4,6 +4,7 @@ const {
   assertStrictPipeline,
   buildPipelineEnforcementMatrix,
   buildPipelineState,
+  getPipelineNextExactAction,
   renderPipelineEnforcementMatrix
 } = require("../services/pipeline_guard");
 const fs = require("fs");
@@ -42,11 +43,13 @@ function pipeline(action, value, flags = {}, rest = [], deps = {}) {
 
   if (verb === "strict" || verb === "enforce") {
     const blocked = matrix.filter((item) => item.status !== "pass");
+    const nextExactAction = getPipelineNextExactAction(matrix);
     writeJsonFile(PIPELINE_REPORT_PATH, {
       generated_at: new Date().toISOString(),
       status: blocked.length ? "blocked" : "pass",
       blocked_total: blocked.length,
-      matrix
+      matrix,
+      next_exact_action: nextExactAction
     });
     writeTextFile(PIPELINE_MATRIX_DOC_PATH, renderPipelineEnforcementMatrix(matrix));
     if (blocked.length) {
@@ -58,14 +61,16 @@ function pipeline(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (verb === "matrix" || verb === "status" || verb === "report" || !verb) {
+    const nextExactAction = getPipelineNextExactAction(matrix);
     writeJsonFile(PIPELINE_REPORT_PATH, {
       generated_at: new Date().toISOString(),
       status: matrix.every((item) => item.status === "pass") ? "pass" : "blocked",
       blocked_total: matrix.filter((item) => item.status !== "pass").length,
-      matrix
+      matrix,
+      next_exact_action: nextExactAction
     });
     writeTextFile(PIPELINE_MATRIX_DOC_PATH, renderPipelineEnforcementMatrix(matrix));
-    if (flags.json) console.log(JSON.stringify({ generated_at: new Date().toISOString(), matrix }, null, 2));
+    if (flags.json) console.log(JSON.stringify({ generated_at: new Date().toISOString(), next_exact_action: nextExactAction, matrix }, null, 2));
     else console.log(renderPipelineEnforcementMatrix(matrix));
     return;
   }
@@ -78,10 +83,11 @@ function pipeline(action, value, flags = {}, rest = [], deps = {}) {
       generated_at: new Date().toISOString(),
       status: "pass",
       command_key: commandKey,
-      matrix
+      matrix,
+      next_exact_action: result.entry.next_action
     });
     writeTextFile(PIPELINE_MATRIX_DOC_PATH, renderPipelineEnforcementMatrix(matrix));
-    console.log(JSON.stringify(result.entry, null, 2));
+    console.log(JSON.stringify({ ...result.entry, next_exact_action: result.entry.next_action }, null, 2));
     return;
   }
 

@@ -14,6 +14,44 @@ humans and for AI-driven tooling.
 - The AI should be able to discover structure from the manifest first, not by
   guessing from repository history.
 
+## Bundle Contract Shape
+
+Bundle contract shape is the combination of the manifest, the required folder
+set, and the command surface that explains the next exact action. The manifest
+is the first source of truth, and the folder contract proves the bundle can be
+loaded, enabled, disabled, or removed without ambiguity.
+
+Workflow:
+
+1. Read `plugin.json` to identify the bundle family and its declared surface.
+2. Check the required folders to confirm the bundle shape is complete.
+3. Use the command docs or plugin status output to decide the next exact
+   action.
+4. Keep the loader, docs, and status output aligned when the bundle contract
+   changes.
+
+Runtime completeness rule:
+
+- `status` and `show` must report the same live contract state that install,
+  enable, disable, and uninstall operate on.
+- The loader should never depend on chat memory for the current bundle shape.
+- If the contract shape changes, update the manifest, status output, and docs
+  together.
+
+## Business-Type Pack Parity
+
+Booking and ecommerce are paired business-type packs. They should expose the
+same documentation structure, the same kind of intake themes, the same module
+progression, and the same acceptance style so operators can swap between
+reservation and commerce archetypes without relearning the document shape.
+
+Shared parity rules:
+
+- Keep booking and ecommerce README sections in the same order.
+- Use matching intake, module, and acceptance headings across both packs.
+- Update both packs when a shared archetype concept changes.
+- Keep the bundle contract wording consistent between the two plugin families.
+
 ## Folder Classes
 
 ### 1. Required invariant folders
@@ -109,6 +147,10 @@ Inside the domain folder, use concrete product groupings such as:
 - `assets/` stores images, icons, screenshots, and mockups.
 - `dashboard/` stores plugin-specific dashboard views or summaries.
 - `business-type/` or equivalent stores archetype-specific guidance.
+- The plugin loader and plugin command `status` output should surface the
+  bundle contract for required folders, domain folders, and next exact action
+  so the runtime can prove the bundle is ready instead of assuming it from chat
+  memory.
 
 ### Not recommended
 
@@ -308,4 +350,3 @@ When in doubt:
 - put semantic meaning into the domain folder
 - let the AI learn the meaning from the manifest and this contract, not from
   folder coincidence
-

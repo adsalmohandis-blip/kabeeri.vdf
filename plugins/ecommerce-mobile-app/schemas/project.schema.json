@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Ecommerce Mobile App Builder Project Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project_id", "slug", "name", "mode", "stage", "status", "created_at", "updated_at", "intake", "blockers", "next_action", "artifacts"],
+  "properties": {
+    "project_id": { "type": "string" },
+    "slug": { "type": "string" },
+    "name": { "type": "string" },
+    "mode": { "enum": ["shopping", "marketplace", "subscription", "loyalty"] },
+    "stage": { "enum": ["intake", "questionnaire", "brief", "design", "modules", "tasks", "approval", "execution"] },
+    "status": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "intake": { "type": "object" },
+    "brief": { "type": ["object", "null"] },
+    "design": { "type": ["object", "null"] },
+    "modules": { "type": ["object", "null"] },
+    "tasks": { "type": ["object", "null"] },
+    "approvals": { "type": "array" },
+    "blockers": { "type": "array" },
+    "next_action": { "type": "string" },
+    "artifacts": { "type": "object" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "shopping" } }, "title": "Shopping app mode" },
+    { "properties": { "mode": { "const": "marketplace" } }, "title": "Marketplace app mode" },
+    { "properties": { "mode": { "const": "subscription" } }, "title": "Subscription app mode" },
+    { "properties": { "mode": { "const": "loyalty" } }, "title": "Loyalty app mode" }
+  ]
+}

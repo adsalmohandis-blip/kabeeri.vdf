@@ -80,6 +80,8 @@ Do not bypass owner/app governance.
 Do not blur plugin boundaries.
 ```
 
+When an AI assistant is unsure what to do next, it should read `kvdf contract` first, then `kvdf pipeline strict` if it needs the fail-closed stage view. Prompt packs should narrow the work after the governed boundary is clear, not replace that boundary.
+
 ## Common Prompt Layer
 
 The repository includes a shared common layer for rules repeated across all stacks:

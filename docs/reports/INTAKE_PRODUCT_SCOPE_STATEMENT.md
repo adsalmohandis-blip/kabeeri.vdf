@@ -13,7 +13,7 @@
 This document defines the initial product scope for the current intake:
 an ecommerce platform with a Laravel backend, React frontend, optional mobile
 delivery track, payments, shipping, customer accounts, and an admin
-back-office. The scope is intentionally narrow enough for the docs-first gate
+back-office. The scope is intentionally narrow enough for the planning gate
 to resolve product boundaries before implementation begins.
 
 The product is treated as a single commerce system with a public storefront,
@@ -142,7 +142,7 @@ The intake selected a **structured** delivery mode. That means:
 - scope is documented before implementation
 - product boundaries are established early
 - architecture and data design are explicit
-- implementation should wait until docs-first tasks are complete
+- implementation should wait until the planning pack is reviewed and approved
 
 This project is large, so the delivery should be phased. The initial phase must
 close the scope questions before code work begins.
@@ -172,8 +172,8 @@ close the scope questions before code work begins.
 
 ### Delivery Constraints
 
-- docs-first gate is active
-- implementation is blocked until documentation tasks are reviewed
+- planning gate is active
+- implementation is blocked until the planning pack is reviewed and approved
 - scope changes must stay within the approved product boundaries
 
 ---
@@ -211,4 +211,3 @@ stable boundary definition.
 2. Move to architecture and stack decisions.
 3. Continue the docs-first task sequence.
 4. Only then begin implementation planning.
-

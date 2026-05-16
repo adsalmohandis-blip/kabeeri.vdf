@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Task Completion Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "generated_at",
+    "task_id",
+    "title",
+    "status",
+    "completed_at",
+    "completed_by",
+    "verification_report_path",
+    "verification_report",
+    "archive_trail_path",
+    "archive_trail"
+  ],
+  "properties": {
+    "report_type": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "task_id": { "type": "string" },
+    "title": { "type": "string" },
+    "status": { "type": "string" },
+    "completed_at": { "type": "string" },
+    "completed_by": { "type": "string" },
+    "verification_report_path": { "type": "string" },
+    "verification_report": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["path", "matches_task"],
+      "properties": {
+        "path": { "type": "string" },
+        "matches_task": { "type": "boolean" }
+      }
+    },
+    "archive_trail_path": { "type": "string" },
+    "archive_trail": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["report_type", "generated_at", "item"],
+      "properties": {
+        "report_type": { "type": "string" },
+        "generated_at": { "type": "string" },
+        "item": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}

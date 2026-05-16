@@ -8,6 +8,8 @@ The machine-readable source of truth is:
 knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json
 ```
 
+The execution source of truth for AI and CLI work is the shared operating contract exposed by `kvdf contract`. Use that when you need the current next exact action, command registry, or architecture and track boundary view. Use the foldering map when you need to know which top-level root owns a file or folder.
+
 ## Target Model
 
 | Group | Target meaning | Current paths |
@@ -104,3 +106,15 @@ Most new features should use one of these existing homes:
 ## AI Usage
 
 AI agents should read `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json` before broad filesystem exploration. This reduces token use and prevents scanning old milestone folders unless the task is specifically about release history, migrations, or integrations.
+
+## Human Workflow
+
+Use this order when you are placing new files or reviewing where a feature belongs:
+
+1. Read `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`.
+2. Decide the owning root folder first.
+3. Add the file inside the existing group instead of creating a new top-level folder.
+4. Keep runtime state in `.kabeeri/` and human documentation in `docs/`.
+5. Re-run `kvdf structure validate` or `kvdf validate foldering` before treating the layout as finished.
+
+This workflow keeps the canonical paths visible to both humans and AI tools and prevents the repository from drifting back into ambiguous root-level sprawl.

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "POS Builder Approval Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["batch_id", "mode", "approved", "blockers", "tasks", "next_action"],
+  "properties": {
+    "batch_id": { "type": "string" },
+    "mode": { "enum": ["retail", "restaurant", "cafe", "service"] },
+    "approved": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "tasks": { "type": "array" },
+    "next_action": { "type": "string" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "retail" } } },
+    { "properties": { "mode": { "const": "restaurant" } } },
+    { "properties": { "mode": { "const": "cafe" } } },
+    { "properties": { "mode": { "const": "service" } } }
+  ]
+}

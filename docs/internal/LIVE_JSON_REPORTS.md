@@ -16,6 +16,23 @@ state file instead of scanning many Markdown reports.
 If there is a conflict, update the source state or rerun the runtime command;
 do not hand-edit the derived report unless debugging.
 
+The command registry follows the same rule: the registry code and command help
+describe the behavior, while the live JSON reports summarize the current state
+of that behavior. Use the command registry and the operating contract as the
+source of truth, then read live reports to see what is active right now.
+
+Historical Markdown reports stay useful for narrative context, but they are not
+the active execution state. Use them to explain why a decision happened, not to
+replace the live state that the CLI and dashboard should read.
+
+When a historical report and a live report disagree, the fix is to update the
+source state and regenerate the derived surface, not to treat the historical
+report as the runtime record.
+
+The live report family should also stay aligned with the capability map and
+command metadata. If a capability adds new live state, keep the report surface
+concise and let the human docs explain the workflow in full.
+
 ## Main File
 
 ```text
@@ -29,6 +46,28 @@ visible without rereading the raw state files. Vibe context briefs are also
 compiled as reusable artifacts with product, UI/UX, system, and data sections
 so the next session can resume from one structured brief instead of re-reading
 the whole history.
+
+Task archival state is part of the live report family too. When tasks complete,
+move into trash, or get restored, the live report surface should show the
+archive trail and the unfinished dependent work so the next operator can see
+both history and the next exact action in one place.
+
+For scorecard-linked Evolution work, the same live report family also carries
+the active readiness/governance slices and their unfinished dependent work so
+the next operator can resume the queue without reconstructing the backlog from
+chat history.
+
+For AI usability work, these live reports should make the update state and the
+remaining dependent work obvious in one glance, so an assistant can resume the
+governed loop from the report instead of rereading the whole history.
+
+Historical Markdown reports are still useful for narrative context, but they
+should not be treated as the active execution state. Live JSON should point to
+the next exact action; Markdown should explain how the state got there.
+
+That includes the docs-consistency slice, which keeps the live report surface
+aligned with the CLI command metadata and the source-of-truth documentation
+without forcing operators to cross-check multiple Markdown files by hand.
 
 ## Commands
 

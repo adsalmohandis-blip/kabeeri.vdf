@@ -4,10 +4,14 @@ const os = require("os");
 const path = require("path");
 
 const { buildDashboardContracts, validateDashboardContracts } = require("../src/cli/services/dashboard_contract");
+const { buildAiCliOperatingContractReport, findCommandContract, getCommandRegistry } = require("../src/cli/services/command_registry");
+const { buildPluginLoaderReport } = require("../src/cli/services/plugin_loader");
 const { suggestCommand } = require("../src/cli/services/command_suggestions");
 const { capitalize, isExpired, matchesAny, parseCsv, uniqueBy, uniqueList } = require("../src/cli/services/collections");
 const { getCoverageAction, normalizeAnswerValue, inferAnswerConfidence } = require("../src/cli/services/questionnaire");
+const { buildEvolutionScorecards } = require("../src/cli/services/evolution");
 const { buildSessionHandoff } = require("../src/cli/services/session_handoff");
+const { classifyWorkspaceBoundaryPath, summarizeWorkspaceBoundary, validateDeveloperAppWorkspace } = require("../src/cli/services/app_workspace_contract");
 const { objectLines, recordLines } = require("../src/cli/services/report_output");
 const { policyReportItem, taskReportItem } = require("../src/cli/services/report_items");
 const { appendJsonLine, readJsonLines, writeJsonLines } = require("../src/cli/services/jsonl");
@@ -86,6 +90,62 @@ test("dashboard contracts reject missing core sections", () => {
   assert.ok(validation.failures.includes("task tracker contract failed"));
 });
 
+test("command registry exposes the AI/CLI contract and core command stages", () => {
+  const registry = getCommandRegistry();
+  assert.ok(Array.isArray(registry));
+  assert.ok(registry.length >= 10);
+  const contract = findCommandContract("contract");
+  assert.ok(contract);
+  assert.strictEqual(contract.stage, "control-plane");
+  assert.ok(contract.next_commands.includes("kvdf resume"));
+  const scorecards = findCommandContract("scorecards");
+  assert.ok(scorecards);
+  assert.strictEqual(scorecards.stage, "assessment");
+  assert.ok(scorecards.next_commands.includes("kvdf contract"));
+  const maintainability = findCommandContract("maintainability");
+  assert.ok(maintainability);
+  assert.strictEqual(maintainability.stage, "assessment");
+  assert.ok(maintainability.next_commands.includes("kvdf pipeline strict"));
+  const report = buildAiCliOperatingContractReport({
+    workspace_exists: true,
+    current_delivery_mode: "agile",
+    current_blueprint: "ecommerce",
+    current_questionnaire_plan: { plan_id: "plan-001" },
+    approved_or_ready_total: 2,
+    packet_traceability_complete: true
+  }, {
+    commandKey: "task-packet",
+    pipelineMatrix: [
+      { status: "pass", next_action: "Proceed." },
+      { status: "pass", next_action: "Proceed." }
+    ]
+  });
+  assert.strictEqual(report.report_type, "kvdf_ai_cli_operating_contract");
+  assert.strictEqual(report.selected_command.key, "task-packet");
+  assert.strictEqual(report.next_exact_action, "All pipeline stages currently pass.");
+  assert.ok(report.next_exact_action.length > 0);
+});
+
+test("evolution scorecards build a review-only scorecard report", () => {
+  const state = {
+    changes: [],
+    impact_plans: [],
+    development_priorities: [],
+    deferred_ideas: [],
+    scorecards: []
+  };
+  const report = buildEvolutionScorecards(state);
+  assert.strictEqual(report.report_type, "kabeeri_scorecards");
+  assert.strictEqual(report.scorecards.length, 6);
+  assert.ok(report.scorecards.every((card) => Array.isArray(card.impacted_areas) && card.impacted_areas.length > 0));
+  assert.ok(report.summary.average_score > 0);
+  assert.ok(Array.isArray(report.scorecard_plans));
+  assert.strictEqual(report.scorecard_plans.length, 0);
+  assert.ok(Array.isArray(report.scorecard_tasks));
+  assert.strictEqual(report.scorecard_tasks.length, 0);
+  assert.ok(report.next_actions.some((item) => item.includes("standalone evaluation artifact")));
+});
+
 test("bootstrap context exposes a deterministic boot path and reversible plugin loader", () => {
   const boot = buildBootContext();
   assert.strictEqual(boot.report_type, "kvdf_bootstrap_context");
@@ -105,6 +165,17 @@ test("bootstrap context exposes a deterministic boot path and reversible plugin 
   assert.ok(Array.isArray(boot.plugin_loader.plugins));
   assert.ok(boot.plugin_loader.plugins.some((item) => item.plugin_id === "kvdf-dev"));
   assert.ok(boot.reversible_plugins.includes("kvdf-dev"));
+});
+
+test("plugin loader surfaces bundle contracts for installed plugin bundles", () => {
+  const report = buildPluginLoaderReport();
+  const ecommerce = report.plugins.find((item) => item.plugin_id === "ecommerce-builder");
+  assert.ok(ecommerce);
+  assert.ok(ecommerce.bundle_contract);
+  assert.strictEqual(ecommerce.bundle_contract.status, "ready");
+  assert.ok(Array.isArray(ecommerce.bundle_contract.required_folders));
+  assert.ok(ecommerce.bundle_contract.required_folders.includes("docs"));
+  assert.ok(ecommerce.bundle_contract.next_exact_action.length > 0);
 });
 
 test("questionnaire helpers normalize answers and confidence", () => {
@@ -247,6 +318,56 @@ test("report item helpers normalize task and policy records", () => {
     subject_id: "task-1",
     status: "blocked",
     evaluated_at: "2026-05-12"
+  });
+});
+
+test("workspace boundary classifier distinguishes allowed, linked, and blocked paths", () => {
+  withTempDir((dir) => {
+    const previousCwd = process.cwd();
+    process.chdir(dir);
+    try {
+      fs.mkdirSync(path.join(dir, "workspaces", "apps", "storefront-web", ".kabeeri"), { recursive: true });
+      fs.mkdirSync(path.join(dir, "workspaces", "apps", "storefront-web", "src"), { recursive: true });
+      fs.writeFileSync(path.join(dir, "workspaces", "apps", "storefront-web", ".kabeeri", "workspace.json"), JSON.stringify({
+        workspace_contract_version: "v1",
+        workspace_kind: "developer_app",
+        app_slug: "storefront-web",
+        app_name: "Storefront Web",
+        app_type: "frontend",
+        surface_scopes: ["website"],
+        linked_workspace_roots: [path.join(dir, "shared-design")],
+        root: "workspaces/apps/storefront-web"
+      }, null, 2), "utf8");
+      fs.writeFileSync(path.join(dir, "workspaces", "apps", "storefront-web", ".kabeeri", "project.json"), JSON.stringify({
+        workspace_kind: "developer_app",
+        app_slug: "storefront-web",
+        app_type: "frontend",
+        surface_scopes: ["website"],
+        linked_workspace_roots: [path.join(dir, "shared-design")],
+        root: "workspaces/apps/storefront-web"
+      }, null, 2), "utf8");
+      const allowed = classifyWorkspaceBoundaryPath("src/index.js", "workspaces/apps/storefront-web");
+      const linked = classifyWorkspaceBoundaryPath(path.join(dir, "shared-design", "spec.md"), "workspaces/apps/storefront-web", {
+        linked_workspace_roots: [path.join(dir, "shared-design")]
+      });
+      const blocked = classifyWorkspaceBoundaryPath(path.join(dir, "other-project", "notes.md"), "workspaces/apps/storefront-web");
+      assert.strictEqual(allowed.status, "allowed");
+      assert.strictEqual(linked.status, "linked");
+      assert.strictEqual(blocked.status, "blocked");
+
+      const summary = summarizeWorkspaceBoundary(["src/index.js", path.join(dir, "shared-design", "spec.md"), path.join(dir, "other-project", "notes.md")], "workspaces/apps/storefront-web", {
+        linked_workspace_roots: [path.join(dir, "shared-design")]
+      });
+      assert.strictEqual(summary.counts.allowed, 1);
+      assert.strictEqual(summary.counts.linked, 1);
+      assert.strictEqual(summary.counts.blocked, 1);
+
+      const validation = validateDeveloperAppWorkspace("workspaces/apps/storefront-web");
+      assert.ok(validation.boundary);
+      assert.strictEqual(validation.boundary.counts.linked, 1);
+    } finally {
+      process.chdir(previousCwd);
+    }
   });
 });
 

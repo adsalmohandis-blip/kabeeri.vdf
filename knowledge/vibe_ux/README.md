@@ -16,6 +16,7 @@ The interaction model also keeps three lanes clear:
 
 - Let users describe intent in natural language.
 - Turn intent into suggested tasks, not silent execution.
+- Make AI assistants start with `kvdf contract` or `kvdf resume` before they write, so the next exact action and the governed boundary stay visible.
 - Keep governance visible only when it matters.
 - Capture free coding after the work and connect it to tasks.
 - Make common CLI commands available as UI actions.

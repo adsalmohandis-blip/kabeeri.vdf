@@ -14,7 +14,7 @@ This document captures the initial stack and architecture decisions for the
 current ecommerce intake. The project is a large, structured delivery with a
 Laravel backend, a React web experience, optional React Native Expo mobile
 delivery, and a MySQL database. The architecture is intentionally explicit so
-the docs-first gate can move forward without ambiguity.
+the planning gate can move forward without ambiguity.
 
 The intake already confirmed the product is ecommerce, the delivery mode is
 structured, and the product needs public and admin flows, payments, shipping,

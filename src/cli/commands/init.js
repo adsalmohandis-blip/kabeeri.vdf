@@ -67,10 +67,10 @@ function runInitIntake(flags = {}, deps = {}) {
     ["Goal", goal],
     ["Blueprint", `${plan.blueprint.name} (${plan.blueprint.key})`],
     ["Questions", plan.generated_questions.length],
-    ["Docs-first tasks", docsTasks.length]
+    ["Planning pack tasks", docsTasks.length]
   ]));
   console.log("");
-  console.log("Ask the developer only these generated questions first. Do not start implementation until docs-first tasks are reviewed.");
+  console.log("Ask the developer only these generated questions first. Do not start implementation until the planning pack is reviewed and approved.");
   return { plan, docsTasks };
 }
 
@@ -115,7 +115,7 @@ function createDocsFirstTasksFromIntakePlan(plan, deps = {}) {
     ["Architecture and stack decision", "Document backend, frontend, mobile, database, integrations, and delivery mode decisions."],
     ["Data design document", "Document core entities, relationships, snapshots, indexes, constraints, audit, and migration safety."],
     ["UI/UX direction document", "Document user journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations."],
-    ["Implementation task backlog", "Convert approved documentation into implementation tasks only after the docs-first gate is reviewed."]
+    ["Implementation task backlog", "Convert approved documentation into implementation tasks only after the planning pack is reviewed and approved."]
   ];
   const tasks = seeds.map(([title, acceptance]) => ({
     id: nextId(),

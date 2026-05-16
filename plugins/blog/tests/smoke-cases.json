@@ -1,0 +1,47 @@
+{
+  "plugin_id": "blog",
+  "smoke_cases": [
+    {
+      "name": "technical blog launch path",
+      "mode": "technical",
+      "steps": [
+        "kvdf plugins install blog",
+        "kvdf blog init --mode technical --name \"Release Notes\"",
+        "kvdf blog questionnaire",
+        "kvdf blog brief",
+        "kvdf blog design",
+        "kvdf blog modules",
+        "kvdf blog tasks",
+        "kvdf blog approve --confirm",
+        "kvdf blog report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/blog.json"
+    },
+    {
+      "name": "multi-author launch path",
+      "mode": "multi-author",
+      "project_name": "Editorial Team Blog",
+      "steps": [
+        "kvdf plugins install blog",
+        "kvdf blog init --mode multi-author --name \"Editorial Team Blog\"",
+        "kvdf blog questionnaire",
+        "kvdf blog brief",
+        "kvdf blog design",
+        "kvdf blog modules",
+        "kvdf blog tasks",
+        "kvdf blog approve --confirm",
+        "kvdf blog report"
+      ],
+      "expected_final_stage": "approval",
+      "state_file": ".kabeeri/blog.json"
+    },
+    {
+      "name": "brief requires questionnaire",
+      "kind": "blocked",
+      "blocked_action": "brief",
+      "project_name": "Guarded Blog",
+      "state_file": ".kabeeri/blog.json"
+    }
+  ]
+}

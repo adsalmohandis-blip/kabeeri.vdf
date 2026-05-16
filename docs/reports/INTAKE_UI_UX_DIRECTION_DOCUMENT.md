@@ -204,5 +204,4 @@ This document satisfies the required UI/UX elements:
 
 1. Confirm this UI/UX direction.
 2. Move to release-ready documentation and task backlog planning.
-3. Continue the docs-first gate before implementation.
-
+3. Continue the planning gate before implementation.

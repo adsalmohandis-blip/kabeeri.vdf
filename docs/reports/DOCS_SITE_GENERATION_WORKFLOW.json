@@ -1,11 +1,11 @@
 {
   "report_type": "docs_site_generation_workflow",
-  "generated_at": "2026-05-15T00:22:51.885Z",
+  "generated_at": "2026-05-16T14:18:28.590Z",
   "site_name": "Kabeeri VDF Docs",
   "report_path": "docs/reports/DOCS_SITE_GENERATION_WORKFLOW.json",
   "template_count": 2,
-  "page_count": 39,
-  "contract_count": 78,
+  "page_count": 44,
+  "contract_count": 88,
   "workflow_steps": [
     "Load the docs site template catalog.",
     "Render the site manifest from the generated pages.",
@@ -47,12 +47,12 @@
   "manifest": {
     "manifest_version": 1,
     "path": "docs/site/site-manifest.json",
-    "page_count": 39
+    "page_count": 44
   },
   "page_contracts": {
     "contract_version": 1,
     "path": "docs/site/page-contracts.json",
-    "page_count": 78
+    "page_count": 88
   },
   "coverage": {
     "report_path": "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json",

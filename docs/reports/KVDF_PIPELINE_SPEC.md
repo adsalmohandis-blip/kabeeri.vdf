@@ -20,15 +20,17 @@ The pipeline is intentionally fail-closed:
 2. project profile route
 3. delivery choose
 4. questionnaire plan
-5. blueprint select
-6. data-design context
-7. task assessment
-8. task packet
-9. task executor-contract
-10. task batch-run
-11. task start
-12. task verify
-13. task complete
+5. questionnaire review
+6. questionnaire approve
+7. blueprint select
+8. data-design context
+9. task assessment
+10. task packet
+11. task executor-contract
+12. task batch-run
+13. task start
+14. task verify
+15. task complete
 ```
 
 ## Required State By Stage
@@ -39,6 +41,8 @@ The pipeline is intentionally fail-closed:
 | `project profile route` | `.kabeeri/project_profile.json` | A project profile can be routed and persisted. |
 | `delivery choose` | `.kabeeri/delivery_decisions.json` | A delivery mode is selected and stored. |
 | `questionnaire plan` | `.kabeeri/questionnaires/adaptive_intake_plan.json`, `.kabeeri/questionnaires/answers.json` | A delivery mode and blueprint context exist before planning. |
+| `questionnaire review` | `.kabeeri/questionnaires/adaptive_intake_plan.json` | A planning pack exists and can be reviewed. |
+| `questionnaire approve` | `.kabeeri/questionnaires/adaptive_intake_plan.json` | A reviewed planning pack exists and can be approved. |
 | `blueprint select` | `.kabeeri/product_blueprints.json` | A product blueprint can be selected. |
 | `data-design context` | `.kabeeri/data_design.json` | A selected blueprint exists so data design can be derived. |
 | `task assessment` | `.kabeeri/task_assessments.json` | Delivery mode and questionnaire plan are present. |
@@ -55,6 +59,8 @@ The pipeline is intentionally fail-closed:
 - `project profile route` may run after workspace context exists.
 - `delivery choose` may run after a profile exists.
 - `questionnaire plan` may run after delivery mode selection.
+- `questionnaire review` may run after a planning pack exists.
+- `questionnaire approve` may run only after review.
 - `blueprint select` may run after a catalog exists.
 - `data-design context` may run after blueprint selection.
 - `task assessment` may run after delivery and questionnaire context exist.
@@ -70,6 +76,7 @@ The pipeline is intentionally fail-closed:
 - No packet without traceability completeness.
 - No executor contract without a packet.
 - No batch execution without packet + contract.
+- No task generation without questionnaire review + approval.
 - No task start without assignee + active token + active lock.
 - No verification without acceptance evidence.
 - No completion without verification report, trash record, and scheduler route.

@@ -41,10 +41,11 @@
     "kvdf booking tasks",
     "kvdf booking approve",
     "kvdf booking report",
-    "kvdf plugin install booking-builder",
-    "kvdf plugin uninstall booking-builder"
+    "kvdf plugins install booking-builder",
+    "kvdf plugins uninstall booking-builder"
   ],
   "docs_surface": [
+    "plugins/booking-builder/README.md",
     "plugins/booking-builder/docs/index.md",
     "plugins/booking-builder/docs/cli.md"
   ]

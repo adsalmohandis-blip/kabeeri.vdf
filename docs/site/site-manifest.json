@@ -8,13 +8,13 @@
     "ar"
   ],
   "template_count": 2,
-  "page_count": 39,
+  "page_count": 44,
   "pages": [
     {
       "slug": "what-is",
       "titles": {
         "en": "Overview",
-        "ar": "نظرة عامة"
+        "ar": "Ù†Ø¸Ø±Ø© Ø¹Ø§Ù…Ø©"
       },
       "paths": {
         "en": "pages/en/what-is.html",
@@ -22,10 +22,21 @@
       }
     },
     {
+      "slug": "kabeeri-4-parts",
+      "titles": {
+        "en": "Kabeeri in 4 Parts",
+        "ar": "Ø§Ù„Ø´Ø±Ø­ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ Ù„ÙƒØ¨ÙŠØ±ÙŠ"
+      },
+      "paths": {
+        "en": "pages/en/kabeeri-4-parts.html",
+        "ar": "pages/ar/kabeeri-4-parts.html"
+      }
+    },
+    {
       "slug": "start-here",
       "titles": {
         "en": "Start Here",
-        "ar": "ابدأ من هنا"
+        "ar": "Ø§Ø¨Ø¯Ø£ Ù…Ù† Ù‡Ù†Ø§"
       },
       "paths": {
         "en": "pages/en/start-here.html",
@@ -36,7 +47,7 @@
       "slug": "install-profiles",
       "titles": {
         "en": "Install and Profiles",
-        "ar": "التثبيت والبروفايلات"
+        "ar": "Ø§Ù„ØªØ«Ø¨ÙŠØª ÙˆØ§Ù„Ø¨Ø±ÙˆÙØ§ÙŠÙ„Ø§Øª"
       },
       "paths": {
         "en": "pages/en/install-profiles.html",
@@ -47,7 +58,7 @@
       "slug": "ai-with-kabeeri",
       "titles": {
         "en": "AI Works Inside Kabeeri",
-        "ar": "كيف يعمل AI داخل كبيري"
+        "ar": "ÙƒÙŠÙ ÙŠØ¹Ù…Ù„ AI Ø¯Ø§Ø®Ù„ ÙƒØ¨ÙŠØ±ÙŠ"
       },
       "paths": {
         "en": "pages/en/ai-with-kabeeri.html",
@@ -58,7 +69,7 @@
       "slug": "developer-onboarding",
       "titles": {
         "en": "Developer Onboarding",
-        "ar": "تأهيل المطور"
+        "ar": "ØªØ£Ù‡ÙŠÙ„ Ø§Ù„Ù…Ø·ÙˆØ±"
       },
       "paths": {
         "en": "pages/en/developer-onboarding.html",
@@ -69,7 +80,7 @@
       "slug": "capabilities",
       "titles": {
         "en": "System Capabilities",
-        "ar": "قدرات النظام"
+        "ar": "Ù‚Ø¯Ø±Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…"
       },
       "paths": {
         "en": "pages/en/capabilities.html",
@@ -80,7 +91,7 @@
       "slug": "repository-layout",
       "titles": {
         "en": "Repository Layout",
-        "ar": "تنظيم المستودع"
+        "ar": "ØªÙ†Ø¸ÙŠÙ… Ø§Ù„Ù…Ø³ØªÙˆØ¯Ø¹"
       },
       "paths": {
         "en": "pages/en/repository-layout.html",
@@ -91,7 +102,7 @@
       "slug": "new-project",
       "titles": {
         "en": "Start a New Application",
-        "ar": "بدء تطبيق جديد"
+        "ar": "Ø¨Ø¯Ø¡ ØªØ·Ø¨ÙŠÙ‚ Ø¬Ø¯ÙŠØ¯"
       },
       "paths": {
         "en": "pages/en/new-project.html",
@@ -102,7 +113,7 @@
       "slug": "existing-kabeeri-project",
       "titles": {
         "en": "Continue a Kabeeri Project",
-        "ar": "استكمال مشروع كبيري"
+        "ar": "Ø§Ø³ØªÙƒÙ…Ø§Ù„ Ù…Ø´Ø±ÙˆØ¹ ÙƒØ¨ÙŠØ±ÙŠ"
       },
       "paths": {
         "en": "pages/en/existing-kabeeri-project.html",
@@ -113,7 +124,7 @@
       "slug": "existing-non-kabeeri-project",
       "titles": {
         "en": "Adopt an Existing App",
-        "ar": "اعتماد تطبيق قائم"
+        "ar": "Ø§Ø¹ØªÙ…Ø§Ø¯ ØªØ·Ø¨ÙŠÙ‚ Ù‚Ø§Ø¦Ù…"
       },
       "paths": {
         "en": "pages/en/existing-non-kabeeri-project.html",
@@ -124,7 +135,7 @@
       "slug": "delivery-mode",
       "titles": {
         "en": "Choose Agile or Structured",
-        "ar": "اختيار Agile أو Structured"
+        "ar": "Ø§Ø®ØªÙŠØ§Ø± Agile Ø£Ùˆ Structured"
       },
       "paths": {
         "en": "pages/en/delivery-mode.html",
@@ -135,7 +146,7 @@
       "slug": "agile-delivery",
       "titles": {
         "en": "Agile Delivery",
-        "ar": "التسليم الأجايل"
+        "ar": "Ø§Ù„ØªØ³Ù„ÙŠÙ… Ø§Ù„Ø£Ø¬Ø§ÙŠÙ„"
       },
       "paths": {
         "en": "pages/en/agile-delivery.html",
@@ -146,7 +157,7 @@
       "slug": "structured-delivery",
       "titles": {
         "en": "Structured Delivery",
-        "ar": "التسليم المنظم"
+        "ar": "Ø§Ù„ØªØ³Ù„ÙŠÙ… Ø§Ù„Ù…Ù†Ø¸Ù…"
       },
       "paths": {
         "en": "pages/en/structured-delivery.html",
@@ -157,7 +168,7 @@
       "slug": "questionnaire-engine",
       "titles": {
         "en": "Questionnaire Engine",
-        "ar": "محرك الأسئلة"
+        "ar": "Ù…Ø­Ø±Ùƒ Ø§Ù„Ø£Ø³Ø¦Ù„Ø©"
       },
       "paths": {
         "en": "pages/en/questionnaire-engine.html",
@@ -168,7 +179,7 @@
       "slug": "product-blueprints",
       "titles": {
         "en": "Product Blueprints",
-        "ar": "خرائط المنتجات"
+        "ar": "Ø®Ø±Ø§Ø¦Ø· Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª"
       },
       "paths": {
         "en": "pages/en/product-blueprints.html",
@@ -179,7 +190,7 @@
       "slug": "data-design",
       "titles": {
         "en": "Data Design",
-        "ar": "تصميم البيانات"
+        "ar": "ØªØµÙ…ÙŠÙ… Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª"
       },
       "paths": {
         "en": "pages/en/data-design.html",
@@ -190,7 +201,7 @@
       "slug": "ui-ux-advisor",
       "titles": {
         "en": "UI/UX Advisor",
-        "ar": "مساعد تصميم الواجهات"
+        "ar": "Ù…Ø³Ø§Ø¹Ø¯ ØªØµÙ…ÙŠÙ… Ø§Ù„ÙˆØ§Ø¬Ù‡Ø§Øª"
       },
       "paths": {
         "en": "pages/en/ui-ux-advisor.html",
@@ -201,7 +212,7 @@
       "slug": "ui-ux-reference-library",
       "titles": {
         "en": "UI/UX Reference Library",
-        "ar": "مكتبة مراجع UI/UX"
+        "ar": "Ù…ÙƒØªØ¨Ø© Ù…Ø±Ø§Ø¬Ø¹ UI/UX"
       },
       "paths": {
         "en": "pages/en/ui-ux-reference-library.html",
@@ -212,7 +223,7 @@
       "slug": "vibe-first",
       "titles": {
         "en": "Vibe-first Workflow",
-        "ar": "مسار Vibe-first"
+        "ar": "Ù…Ø³Ø§Ø± Vibe-first"
       },
       "paths": {
         "en": "pages/en/vibe-first.html",
@@ -223,7 +234,7 @@
       "slug": "task-governance",
       "titles": {
         "en": "Task Governance",
-        "ar": "حوكمة التاسكات"
+        "ar": "Ø­ÙˆÙƒÙ…Ø© Ø§Ù„ØªØ§Ø³ÙƒØ§Øª"
       },
       "paths": {
         "en": "pages/en/task-governance.html",
@@ -234,7 +245,7 @@
       "slug": "app-boundary",
       "titles": {
         "en": "App Boundary Governance",
-        "ar": "حوكمة حدود التطبيقات"
+        "ar": "Ø­ÙˆÙƒÙ…Ø© Ø­Ø¯ÙˆØ¯ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª"
       },
       "paths": {
         "en": "pages/en/app-boundary.html",
@@ -245,7 +256,7 @@
       "slug": "workstreams-scope",
       "titles": {
         "en": "Workstreams and Scope",
-        "ar": "مسارات العمل والنطاق"
+        "ar": "Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ø¹Ù…Ù„ ÙˆØ§Ù„Ù†Ø·Ø§Ù‚"
       },
       "paths": {
         "en": "pages/en/workstreams-scope.html",
@@ -256,7 +267,7 @@
       "slug": "prompt-packs",
       "titles": {
         "en": "Prompt Packs",
-        "ar": "حزم البرومبت"
+        "ar": "Ø­Ø²Ù… Ø§Ù„Ø¨Ø±ÙˆÙ…Ø¨Øª"
       },
       "paths": {
         "en": "pages/en/prompt-packs.html",
@@ -267,7 +278,7 @@
       "slug": "wordpress-development",
       "titles": {
         "en": "WordPress Development",
-        "ar": "تطوير WordPress"
+        "ar": "ØªØ·ÙˆÙŠØ± WordPress"
       },
       "paths": {
         "en": "pages/en/wordpress-development.html",
@@ -278,7 +289,7 @@
       "slug": "wordpress-plugins",
       "titles": {
         "en": "WordPress Plugin Development",
-        "ar": "تطوير إضافات WordPress"
+        "ar": "ØªØ·ÙˆÙŠØ± Ø¥Ø¶Ø§ÙØ§Øª WordPress"
       },
       "paths": {
         "en": "pages/en/wordpress-plugins.html",
@@ -286,10 +297,54 @@
       }
     },
     {
+      "slug": "ai-tool",
+      "titles": {
+        "en": "AI Tool Instructions",
+        "ar": "ØªØ¹Ù„ÙŠÙ…Ø§Øª Ø£Ø¯Ø§Ø© Ø§Ù„Ø°ÙƒØ§Ø¡ Ø§Ù„Ø§ØµØ·Ù†Ø§Ø¹ÙŠ"
+      },
+      "paths": {
+        "en": "pages/en/ai-tool.html",
+        "ar": "pages/ar/ai-tool.html"
+      }
+    },
+    {
+      "slug": "vibe-developer",
+      "titles": {
+        "en": "Vibe Developer Instructions",
+        "ar": "ØªØ¹Ù„ÙŠÙ…Ø§Øª Ù…Ø·ÙˆØ± Vibe"
+      },
+      "paths": {
+        "en": "pages/en/vibe-developer.html",
+        "ar": "pages/ar/vibe-developer.html"
+      }
+    },
+    {
+      "slug": "ai-tool-hub",
+      "titles": {
+        "en": "AI Tool Docs Site",
+        "ar": "Ø¨ÙˆØ§Ø¨Ø© Ø£Ø¯Ø§Ø© AI"
+      },
+      "paths": {
+        "en": "pages/en/ai-tool-hub.html",
+        "ar": "pages/ar/ai-tool-hub.html"
+      }
+    },
+    {
+      "slug": "vibe-developer-hub",
+      "titles": {
+        "en": "Vibe Developer Docs Site",
+        "ar": "Ø¨ÙˆØ§Ø¨Ø© Ù…Ø·ÙˆØ± Vibe"
+      },
+      "paths": {
+        "en": "pages/en/vibe-developer-hub.html",
+        "ar": "pages/ar/vibe-developer-hub.html"
+      }
+    },
+    {
       "slug": "dashboard-monitoring",
       "titles": {
         "en": "Live Dashboard",
-        "ar": "الداشبورد الحي"
+        "ar": "Ø§Ù„Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯ Ø§Ù„Ø­ÙŠ"
       },
       "paths": {
         "en": "pages/en/dashboard-monitoring.html",
@@ -300,7 +355,7 @@
       "slug": "ai-cost-control",
       "titles": {
         "en": "AI Cost Control",
-        "ar": "التحكم في تكلفة AI"
+        "ar": "Ø§Ù„ØªØ­ÙƒÙ… ÙÙŠ ØªÙƒÙ„ÙØ© AI"
       },
       "paths": {
         "en": "pages/en/ai-cost-control.html",
@@ -311,7 +366,7 @@
       "slug": "multi-ai-governance",
       "titles": {
         "en": "Multi-AI Governance",
-        "ar": "حوكمة تعدد وكلاء AI"
+        "ar": "Ø­ÙˆÙƒÙ…Ø© ØªØ¹Ø¯Ø¯ ÙˆÙƒÙ„Ø§Ø¡ AI"
       },
       "paths": {
         "en": "pages/en/multi-ai-governance.html",
@@ -322,7 +377,7 @@
       "slug": "github-release",
       "titles": {
         "en": "GitHub and Release Gates",
-        "ar": "GitHub وبوابات الإصدار"
+        "ar": "GitHub ÙˆØ¨ÙˆØ§Ø¨Ø§Øª Ø§Ù„Ø¥ØµØ¯Ø§Ø±"
       },
       "paths": {
         "en": "pages/en/github-release.html",
@@ -333,7 +388,7 @@
       "slug": "practical-examples",
       "titles": {
         "en": "Seven Practical Builds",
-        "ar": "سبعة تطبيقات عملية"
+        "ar": "Ø³Ø¨Ø¹Ø© ØªØ·Ø¨ÙŠÙ‚Ø§Øª Ø¹Ù…Ù„ÙŠØ©"
       },
       "paths": {
         "en": "pages/en/practical-examples.html",
@@ -344,7 +399,7 @@
       "slug": "example-ecommerce",
       "titles": {
         "en": "Example: Ecommerce Website",
-        "ar": "مثال: متجر إلكتروني"
+        "ar": "Ù…Ø«Ø§Ù„: Ù…ØªØ¬Ø± Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ"
       },
       "paths": {
         "en": "pages/en/example-ecommerce.html",
@@ -355,7 +410,7 @@
       "slug": "example-ai-team-ecommerce",
       "titles": {
         "en": "Example: 3 AI Developers Build Ecommerce",
-        "ar": "مثال: 3 مطوري AI لبناء متجر"
+        "ar": "Ù…Ø«Ø§Ù„: 3 Ù…Ø·ÙˆØ±ÙŠ AI Ù„Ø¨Ù†Ø§Ø¡ Ù…ØªØ¬Ø±"
       },
       "paths": {
         "en": "pages/en/example-ai-team-ecommerce.html",
@@ -366,7 +421,7 @@
       "slug": "example-blog",
       "titles": {
         "en": "Example: Personal Blog",
-        "ar": "مثال: مدونة شخصية"
+        "ar": "Ù…Ø«Ø§Ù„: Ù…Ø¯ÙˆÙ†Ø© Ø´Ø®ØµÙŠØ©"
       },
       "paths": {
         "en": "pages/en/example-blog.html",
@@ -377,7 +432,7 @@
       "slug": "example-wordpress-digital-agency",
       "titles": {
         "en": "Example: WordPress Digital Agency",
-        "ar": "مثال: WordPress لشركة تسويق رقمي"
+        "ar": "Ù…Ø«Ø§Ù„: WordPress Ù„Ø´Ø±ÙƒØ© ØªØ³ÙˆÙŠÙ‚ Ø±Ù‚Ù…ÙŠ"
       },
       "paths": {
         "en": "pages/en/example-wordpress-digital-agency.html",
@@ -388,7 +443,7 @@
       "slug": "example-dental-clinic",
       "titles": {
         "en": "Example: Dental Clinic Booking",
-        "ar": "مثال: عيادة أسنان وحجوزات"
+        "ar": "Ù…Ø«Ø§Ù„: Ø¹ÙŠØ§Ø¯Ø© Ø£Ø³Ù†Ø§Ù† ÙˆØ­Ø¬ÙˆØ²Ø§Øª"
       },
       "paths": {
         "en": "pages/en/example-dental-clinic.html",
@@ -399,7 +454,7 @@
       "slug": "example-crm",
       "titles": {
         "en": "Example: Professional CRM",
-        "ar": "مثال: CRM احترافي"
+        "ar": "Ù…Ø«Ø§Ù„: CRM Ø§Ø­ØªØ±Ø§ÙÙŠ"
       },
       "paths": {
         "en": "pages/en/example-crm.html",
@@ -410,7 +465,7 @@
       "slug": "example-mobile-commerce",
       "titles": {
         "en": "Example: Ecommerce Mobile App",
-        "ar": "مثال: تطبيق موبايل للمتجر"
+        "ar": "Ù…Ø«Ø§Ù„: ØªØ·Ø¨ÙŠÙ‚ Ù…ÙˆØ¨Ø§ÙŠÙ„ Ù„Ù„Ù…ØªØ¬Ø±"
       },
       "paths": {
         "en": "pages/en/example-mobile-commerce.html",
@@ -421,7 +476,7 @@
       "slug": "example-pos",
       "titles": {
         "en": "Example: Supermarket POS",
-        "ar": "مثال: POS سوبرماركت"
+        "ar": "Ù…Ø«Ø§Ù„: POS Ø³ÙˆØ¨Ø±Ù…Ø§Ø±ÙƒØª"
       },
       "paths": {
         "en": "pages/en/example-pos.html",
@@ -432,7 +487,7 @@
       "slug": "troubleshooting",
       "titles": {
         "en": "Troubleshooting",
-        "ar": "حل المشكلات"
+        "ar": "Ø­Ù„ Ø§Ù„Ù…Ø´ÙƒÙ„Ø§Øª"
       },
       "paths": {
         "en": "pages/en/troubleshooting.html",

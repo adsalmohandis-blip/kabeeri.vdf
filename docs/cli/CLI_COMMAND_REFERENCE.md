@@ -27,6 +27,7 @@ kvdf ai-run --help
 kvdf dashboard --help
 kvdf release --help
 kvdf github --help
+kvdf contract --help
 kvdf resume --help
 kvdf track --help
 kvdf multi-ai --help
@@ -46,6 +47,12 @@ kvdf start
 kvdf conflict scan
 ```
 
+Aliases are only convenience routes. When you are documenting a command, use
+the canonical family name first and treat aliases as compatibility notes.
+`docs/reports/KVDF_COMMAND_DEPRECATION_LEDGER.md` is the place to check which
+aliases remain intentionally supported and which canonical command they point
+to.
+
 ## Workspace
 
 ```bash
@@ -63,9 +70,9 @@ kvdf init --no-intake
 
 Without `--lang`, Kabeeri stores `language: user`, so adaptive intake and generated guidance should follow the user's detected language unless a command explicitly overrides it.
 
-When `kvdf init` is run interactively, Kabeeri asks one short question: what software application the developer wants to build. The answer immediately creates an adaptive intake plan and docs-first tasks. In non-interactive automation, use `--goal "<one sentence>"` to trigger the same flow, or `--no-intake` to initialize state only.
+When `kvdf init` is run interactively, Kabeeri asks one short question: what software application the developer wants to build. The answer immediately creates an adaptive intake plan, then the planning pack must be reviewed and approved before implementation tasks can exist. In non-interactive automation, use `--goal "<one sentence>"` to trigger the same flow, or `--no-intake` to initialize state only.
 
-The docs-first tasks are intentional. They make Kabeeri ask and document the project before implementation tasks start, reducing the chance that an AI assistant skips project documentation and jumps directly into code.
+The planning gate is intentional. It makes Kabeeri ask and document the project before implementation tasks start, reducing the chance that an AI assistant skips project documentation and jumps directly into code.
 
 ## Operating Tracks
 
@@ -102,7 +109,19 @@ answer to four questions:
 At the moment, no user-facing command is deprecated. Compatibility aliases are
 retained for convenience, and the release publish path still exists through both
 `kvdf release publish` and `kvdf github release publish` because both routes
-must respect the same release and GitHub write gates.
+must respect the same release and GitHub write gates. If alias noise starts to
+hide the canonical flow, update the ledger and this reference together instead
+of adding more ad hoc phrasing elsewhere.
+
+Command layer size matters. Keep the visible command surface small enough that
+operators can read it in one pass, then push long-form narrative into the
+dedicated reports and human docs. Use `kvdf contract` and `kvdf reports live`
+when you need the current state, and use this reference when you need the
+purpose, ownership boundary, or next exact command.
+
+Ownership boundaries should remain visible in the prose as well: framework
+commands own framework state, app-track commands own app work, and packet-first
+flows should explain when planning stops and execution starts.
 
 ## Folder Ownership Ledger
 
@@ -262,6 +281,8 @@ kvdf questionnaire flow
 kvdf questionnaire plan "Build ecommerce store with Laravel backend React frontend payments and mobile app"
 kvdf questionnaire plan "Build ERP with inventory accounting and approvals" --json
 kvdf questionnaire plan --blueprint ecommerce --framework laravel --frontend react --database mysql
+kvdf questionnaire review
+kvdf questionnaire approve --confirm
 kvdf questionnaire answer entry.project_type --value saas
 kvdf questionnaire coverage
 kvdf questionnaire missing
@@ -276,7 +297,16 @@ kvdf questionnaire status
 
 `questionnaire create` copies the real `.docx` questionnaire files into the output folder. Profiles map to groups: `lite` exports `core`, `standard` exports `core` and `production`, and `enterprise` exports all groups.
 
-`questionnaire plan` generates a focused intake plan from the Product Blueprint Catalog, framework prompt packs, Data Design Blueprint, UI/UX Advisor, and Delivery Mode Advisor. It writes the latest plan to `.kabeeri/questionnaires/adaptive_intake_plan.json` so chat, dashboard, or future VS Code surfaces can ask fewer but more useful questions.
+`questionnaire plan` generates a focused intake plan from the Product Blueprint Catalog, framework prompt packs, Data Design Blueprint, UI/UX Advisor, and Delivery Mode Advisor. It writes the latest planning pack to `.kabeeri/questionnaires/adaptive_intake_plan.json` with a `pending` review/approval state so chat, dashboard, or future VS Code surfaces can ask fewer but more useful questions.
+
+The strict flow is:
+
+1. `kvdf questionnaire plan`
+2. `kvdf questionnaire review`
+3. `kvdf questionnaire approve --confirm`
+4. `kvdf questionnaire generate-tasks`
+
+Task generation now fails closed until the planning pack has been reviewed and approved.
 
 ## Repository Foldering
 
@@ -295,6 +325,12 @@ groups the current top-level folders into stable areas similar to a mature
 framework layout: runtime core, knowledge, packs, integrations, contracts,
 documentation, quality, and local runtime state.
 
+When you are deciding where a file belongs, treat
+`knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json` as the machine
+source of truth and `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md` as the
+human workflow guide. Read the map first, choose the owning root, and only then
+add files inside that existing group.
+
 The source of truth is `knowledge/standard_systems/REPOSITORY_FOLDERING_MAP.json`, with
 the human guide in `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`.
 
@@ -309,6 +345,7 @@ kvdf evolution priorities
 kvdf evolution next
 kvdf evolution roadmap
 kvdf evolution partition
+kvdf evolution scorecards
 kvdf evolution report
 kvdf evolution batch-exe
 kvdf batch-exe
@@ -359,12 +396,16 @@ runtime behavior remains reusable and testable.
 
 The plugin loader is a shared core surface. It reads manifests from `plugins/`
 and enablement state from `.kabeeri/plugins.json`, then reports which bundles
-are active. Use `kvdf plugins status` to inspect the current load state and
+are active. Use `kvdf plugins status` to inspect the current load state,
+bundle-contract readiness, and next exact action. Use
 `kvdf plugins show <plugin-id>` to inspect bundle metadata, then use
 `kvdf plugins install|enable|uninstall|disable <plugin-id>` to adjust a
-removable bundle without changing the shared core. The owner bundle is
-packaged as a manifest-driven removable extension, so `plugins/kvdf-dev/plugin.json`
-is the source of truth for its load strategy, version, and command/docs surfaces.
+removable bundle without changing the shared core. Runtime completeness means
+the status and show surfaces, the manifest, and the live `.kabeeri/plugins.json`
+state all agree about what is loaded and what can happen next. The owner bundle
+is packaged as a manifest-driven removable extension, so
+`plugins/kvdf-dev/plugin.json` is the source of truth for its load strategy,
+version, and command/docs surfaces.
 
 Application developers can also use `kvdf evolution app ...` as a developer-
 facing alias. It keeps the same ordered lists and temporary queue behavior but
@@ -603,6 +644,77 @@ admin settings, public shortcodes/blocks, REST permission callbacks, custom post
 types, WooCommerce hooks, activation/deactivation, uninstall policy, nonces,
 capabilities, sanitization, escaping, and handoff notes.
 
+## Booking Builder
+
+```bash
+kvdf booking status
+kvdf booking init --mode appointments
+kvdf booking questionnaire
+kvdf booking brief
+kvdf booking design
+kvdf booking modules
+kvdf booking tasks
+kvdf booking approve
+kvdf booking report
+kvdf plugins install booking-builder
+kvdf plugins uninstall booking-builder
+```
+
+`booking-builder` is the removable app-track plugin for reservation systems.
+Its runtime state is stored in `.kabeeri/booking.json`, the bundle contract is
+visible in `status` and JSON output, and the command family is strict:
+`init -> questionnaire -> brief -> design -> modules -> tasks -> approve ->
+report`.
+The booking business-type pack is intentionally parallel to ecommerce so the
+shared archetype guidance stays aligned across reservations, appointments,
+services, classes, hotels, and events.
+
+## Ecommerce Builder
+
+```bash
+kvdf ecommerce status
+kvdf ecommerce init --mode store
+kvdf ecommerce questionnaire
+kvdf ecommerce brief
+kvdf ecommerce design
+kvdf ecommerce modules
+kvdf ecommerce tasks
+kvdf ecommerce approve
+kvdf ecommerce report
+kvdf plugins install ecommerce-builder
+kvdf plugins uninstall ecommerce-builder
+```
+
+`ecommerce-builder` is the removable app-track plugin for ecommerce systems.
+Its runtime state is stored in `.kabeeri/ecommerce.json`, the bundle contract
+is visible in `status` and JSON output, and the command family is strict:
+`init -> questionnaire -> brief -> design -> modules -> tasks -> approve ->
+report`.
+The ecommerce business-type pack is intentionally parallel to booking so the
+shared archetype guidance stays aligned across stores, marketplaces, digital
+products, subscriptions, and services.
+
+## App Plugin Suite
+
+```bash
+kvdf company-profile status
+kvdf news-website status
+kvdf blog status
+kvdf ecommerce-mobile-app status
+kvdf crm status
+kvdf pos status
+kvdf plugins install company-profile
+kvdf plugins install news-website
+kvdf plugins install blog
+kvdf plugins install ecommerce-mobile-app
+kvdf plugins install crm
+kvdf plugins install pos
+```
+
+The app plugin suite gives you six installable app-track bundles with strict
+runtime pipelines, plugin-state gating, bundle-contract reporting, and
+`next_exact_action` output for AI-driven flows.
+
 ## Tasks
 
 ```bash
@@ -729,6 +841,23 @@ kvdf pipeline check task-packet --task task-001
 `kvdf pipeline matrix` renders the strict build pipeline as a guard table with the exact condition, file, and failure message for each stage. `kvdf pipeline strict` writes the same matrix to `docs/reports/KVDF_PIPELINE_ENFORCEMENT_MATRIX.md` and fails closed if any prerequisite is missing. Use `kvdf pipeline strict --task <task-id>` when you want the full matrix to reflect one task path, or `kvdf pipeline check <command-key> --task <task-id>` when you want the start or completion guard to inspect a specific task's token, lock, traceability chain, verification report, or archive trail.
 
 The canonical strict pipeline contract lives in `docs/reports/KVDF_PIPELINE_SPEC.md`. Use the spec when you want the stage order, required state files, allowed transitions, and blocked transitions in one place, and use the matrix when you want the live runtime status of those gates.
+
+## AI / CLI Operating Contract
+
+```bash
+kvdf contract
+kvdf contract --json
+kvdf contract pipeline
+kvdf contract task-packet
+```
+
+`kvdf contract` shows the shared operating model for AI and CLI work: AI reasons over current state, CLI validates and writes state, and filesystem artifacts remain the source of truth. Use it when you want the current next exact action, the command registry, the pipeline contract, and the architecture or track boundary view in one place.
+
+The command registry itself lives in `src/cli/services/command_registry.js`.
+Use the registry as the source of truth for command purpose, stage, owner, and
+next-command hints. The CLI reference and the live JSON reports are derived
+surfaces that explain the registry, but they should stay aligned with it rather
+than replace it.
 
 ## Product Blueprints
 
@@ -1088,7 +1217,11 @@ Developer app workspaces live under `workspaces/apps/<app-slug>/` and keep app-l
 kvdf app workspace create --slug storefront-web --name "Storefront Web" --type frontend
 kvdf app workspace list
 kvdf app workspace show storefront-web
+kvdf app workspace validate storefront-web
+kvdf app workspace scorecards storefront-web
 ```
+
+The developer app workspace contract requires `src/`, `tests/`, `docs/`, `package.json`, `README.md`, and a local `.kabeeri/` state tree with `project.json`, `workspace.json`, `session.json`, `session_track.json`, `tasks.json`, `task_trash.json`, and `scorecards.json`. Workspace metadata also records `surface_scopes` and boundary status so later dashboard and scorecard work can split website, mobile, shared, allowed, linked, and blocked surfaces without changing the root contract.
 
 Customer-facing app routes always use `username`, never numeric IDs:
 

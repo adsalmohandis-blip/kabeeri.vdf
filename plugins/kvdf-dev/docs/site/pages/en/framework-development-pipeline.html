@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Framework Development Pipeline - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="framework-development-pipeline">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        <a class="language-link is-active" data-lang-target="en" href="framework-development-pipeline.html">English</a>
+        <a class="language-link" data-lang-target="ar" href="../ar/framework-development-pipeline.html">Arabic</a>
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">Filter</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="Search docs">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">System Development</a>
+          <a class="nav-link" href="methodology.html">Methodology</a>
+          <a class="nav-link" href="kabeeri-4-parts.html">Kabeeri in 4 Pillars</a>
+          <a class="nav-link" href="modules.html">Modules</a>
+          <a class="nav-link" href="modules-relationship.html">Modules Relationship</a>
+          <a class="nav-link" href="modules-relationship-patterns.html">Flows and Patterns</a>
+          <a class="nav-link" href="framework-dashboard.html">Framework Dashboard</a>
+          <a class="nav-link" href="framework-development.html">Framework Development</a>
+          <a class="nav-link is-active" href="framework-development-pipeline.html">Framework Development Pipeline</a>
+          <a class="nav-link" href="plugin-development.html">Plugin Development</a>
+          <a class="nav-link" href="scorecards-evo.html">Scorecards and Evolution</a>
+          <a class="nav-link" href="cli-engine.html">CLI Engine</a>
+          <a class="nav-link" href="ai-cli-contract.html">AI/CLI Operating Contract</a>
+          <a class="nav-link" href="workspace-state.html">Workspace State</a>
+          <a class="nav-link" href="session-track-router.html">Session Track Router</a>
+          <a class="nav-link" href="project-intake-profile.html">Project Intake and Profile Router</a>
+          <a class="nav-link" href="delivery-mode-advisor.html">Delivery Mode Advisor</a>
+          <a class="nav-link" href="blueprint-data-design.html">Blueprint and Data Design</a>
+          <a class="nav-link" href="questionnaires.html">Questionnaires</a>
+          <a class="nav-link" href="prompt-packs.html">Prompt Packs</a>
+          <a class="nav-link" href="task-governance.html">Task Governance</a>
+          <a class="nav-link" href="task-packet.html">Task Packet</a>
+          <a class="nav-link" href="executor-contract.html">Executor Contract</a>
+          <a class="nav-link" href="batch-execution.html">Batch Execution</a>
+          <a class="nav-link" href="plugin-system.html">Plugin System</a>
+          <a class="nav-link" href="app-builder-plugins.html">App Builder Plugins</a>
+          <a class="nav-link" href="multi-ai-governance.html">Multi-AI Governance</a>
+          <a class="nav-link" href="evolution-steward.html">Evolution Steward</a>
+          <a class="nav-link" href="dashboard.html">Dashboard</a>
+          <a class="nav-link" href="reports-traceability.html">Reports and Traceability</a>
+          <a class="nav-link" href="validation-schemas.html">Validation and Schemas</a>
+          <a class="nav-link" href="policy-gates.html">Policy Gates</a>
+          <a class="nav-link" href="design-governance.html">Design Governance</a>
+          <a class="nav-link" href="ai-cost-control.html">AI Cost Control</a>
+          <a class="nav-link" href="handoff-release.html">Handoff and Release</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>Framework Development Pipeline</h1>
+        <p class="lead">This page shows the path from a framework idea to hard implementation: scorecards, Evolution, task slicing, runtime changes, validation, and release gates move together.</p>
+        <aside class="beginner-note">
+          <strong>Beginner note</strong>
+          <p>Use this page when the work changes KVDF itself. It explains how a framework idea becomes a safe, reviewed, and traceable implementation path.</p>
+        </aside>
+
+        <section class="wide-section">
+          <h2>Related Pages</h2>
+          <div class="callout links">
+            <a href="./system-development.html">System Development</a>
+            <a href="./framework-development.html">Framework Development</a>
+            <a href="./modules-relationship.html">Modules Relationship</a>
+            <a href="./scorecards-evo.html">Scorecards and Evolution</a>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>Table of Contents</h2>
+          <div class="detail-block">
+            <ol>
+              <li><a href="#idea-intake">Idea intake</a></li>
+              <li><a href="#scorecard-preparation">Scorecard preparation</a></li>
+              <li><a href="#evolution-plan">Evolution plan</a></li>
+              <li><a href="#task-slicing">Task slicing</a></li>
+              <li><a href="#hard-implementation">Hard implementation</a></li>
+              <li><a href="#validation-and-evidence">Validation and evidence</a></li>
+              <li><a href="#release-gate">Release gate</a></li>
+              <li><a href="#common-mistakes">Common mistakes</a></li>
+              <li><a href="#practical-example">Practical example</a></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>Topic Details</h2>
+          <div class="detail-stack">
+            <article class="detail-block" id="idea-intake">
+              <h3>Idea intake</h3>
+              <p>Every framework change starts as an idea, but the idea is not yet implementation. The first job is to write the problem, the expected benefit, the boundary, and the reason the change matters to KVDF itself.</p>
+            </article>
+            <article class="detail-block" id="scorecard-preparation">
+              <h3>Scorecard preparation</h3>
+              <p>Before touching code, the change should be scored against the real relationship it affects: what module changes, what flow changes, what dashboard or policy changes, and what evidence must match afterward. This prevents framework work from becoming guesswork.</p>
+            </article>
+            <article class="detail-block" id="evolution-plan">
+              <h3>Evolution plan</h3>
+              <p>If the change is broad or strategic, the locked scorecard result becomes an Evolution item. That means the framework owner can treat the idea as a governed improvement path instead of a loose note in chat.</p>
+            </article>
+            <article class="detail-block" id="task-slicing">
+              <h3>Task slicing</h3>
+              <p>Framework work should be split into the smallest safe slices possible. One slice might update runtime behavior, another might update docs, and a third might update tests. The point is to keep each step reviewable.</p>
+            </article>
+            <article class="detail-block" id="hard-implementation">
+              <h3>Hard implementation</h3>
+              <p>This is where the actual code changes happen: commands, services, schemas, dashboards, reports, and validation logic move together. The implementation is not complete if only one layer changed and the rest were left behind.</p>
+            </article>
+            <article class="detail-block" id="validation-and-evidence">
+              <h3>Validation and evidence</h3>
+              <p>A framework change must prove itself through tests, validation output, and traceable evidence. If the change is real, the site, the runtime, and the checks should all say the same thing.</p>
+            </article>
+            <article class="detail-block" id="release-gate">
+              <h3>Release gate</h3>
+              <p>Release is the last gate, not the first. The framework should only move toward release when the scorecard is locked, the task slices are complete, and the evidence matches the intended change.</p>
+            </article>
+            <article class="detail-block" id="common-mistakes">
+              <h3>Common mistakes</h3>
+              <p>The biggest mistake is changing one file and calling it done. Another mistake is leaving the scorecard behind, or updating the docs without updating the runtime. Framework work must stay coherent across layers.</p>
+            </article>
+            <article class="detail-block" id="practical-example">
+              <h3>Practical example</h3>
+              <p>Adding a new dashboard rule, introducing a new validation schema, or changing the task pipeline are all good examples of this path: idea, scorecard, Evolution or task, implementation, validation, and release.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="wide-section">
+          <h2>Commands</h2>
+          <div class="detail-block">
+            <ul>
+              <li><code>src/cli/commands/evolution.js</code></li>
+              <li><code>src/cli/commands/dashboard.js</code></li>
+              <li><code>src/cli/validate.js</code></li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

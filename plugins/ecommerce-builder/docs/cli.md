@@ -14,10 +14,10 @@ kvdf ecommerce modules [--json]
 kvdf ecommerce tasks [--json]
 kvdf ecommerce approve [--batch <id>] [--json]
 kvdf ecommerce report [--json]
-kvdf plugin install ecommerce-builder
-kvdf plugin uninstall ecommerce-builder
-kvdf plugin enable ecommerce-builder
-kvdf plugin disable ecommerce-builder
+kvdf plugins install ecommerce-builder
+kvdf plugins uninstall ecommerce-builder
+kvdf plugins enable ecommerce-builder
+kvdf plugins disable ecommerce-builder
 ```
 
 ## Expected outputs
@@ -48,7 +48,7 @@ Creates the project shell and records the archetype.
   "plugin_id": "ecommerce-builder",
   "project_mode": "store",
   "track": "app",
-  "state_path": ".kabeeri/ecommerce/<project_id>.json",
+  "state_path": ".kabeeri/ecommerce.json",
   "next_action": "kvdf ecommerce questionnaire"
 }
 ```
@@ -154,4 +154,3 @@ Shows the full ecommerce build status and missing pieces.
   "artifacts": []
 }
 ```
-

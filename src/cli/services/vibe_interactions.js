@@ -237,6 +237,22 @@ function buildVibeBriefNextStep(plan, missingQuestions) {
       mode: "capture_missing_answer"
     };
   }
+  if (plan && plan.approval_status !== "approved") {
+    if (plan.review_status !== "reviewed") {
+      return {
+        command: "kvdf questionnaire review",
+        reason: "The planning pack is complete enough to review, but it still needs an explicit human review before approval.",
+        reusable: true,
+        mode: "review_planning_pack"
+      };
+    }
+    return {
+      command: "kvdf questionnaire approve --confirm",
+      reason: "The planning pack has been reviewed and now needs explicit approval before task generation.",
+      reusable: true,
+      mode: "approve_planning_pack"
+    };
+  }
   const projectLabel = plan && plan.blueprint && plan.blueprint.name ? plan.blueprint.name : "the project";
   return {
     command: "kvdf questionnaire generate-tasks",

@@ -4,6 +4,8 @@
 
 ### Added
 
+- Updated release and publishing guidance so `kvdf release check` is treated as the preview gate, confirmed publish stays validation-first, and the production checklists call out the `READY`/`PASS` release preflight.
+
 - `kvdf batch-exe` now resolves the active Multi-AI leader as the automatic assignee for missing EVO tasks, with `codex` as fallback when no active leader exists.
 
 - Archived all closed tasks into `.kabeeri/task_trash.json` after closure, leaving the active task list empty.
@@ -26,15 +28,15 @@
 
 - Verified `task-117` by tightening runtime resume, plugin loader, and token budget state so the first Evolution implementation slice now runs against live state and stays fully validated.
 
-- Verified `task-116` by publishing the intake implementation backlog with ordered implementation slices so the docs-first gate is complete and execution can begin from a clear plan.
+- Verified `task-116` by publishing the intake implementation backlog with ordered implementation slices so the planning gate is complete and execution can begin from a clear plan.
 
-- Verified `task-115` by publishing the intake UI/UX direction document with journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations so the docs-first gate can advance toward backlog planning.
+- Verified `task-115` by publishing the intake UI/UX direction document with journeys, key pages, design source, accessibility, responsive rules, and dashboard expectations so the planning gate can advance toward backlog planning.
 
-- Verified `task-114` by publishing the intake data design document with core entities, relationships, snapshots, indexes, constraints, audit, and migration safety rules so the docs-first gate can advance toward UI direction.
+- Verified `task-114` by publishing the intake data design document with core entities, relationships, snapshots, indexes, constraints, audit, and migration safety rules so the planning gate can advance toward UI direction.
 
-- Verified `task-113` by publishing the intake architecture and stack decision report with backend, frontend, mobile, database, integrations, and delivery mode decisions so the docs-first gate can advance toward data design.
+- Verified `task-113` by publishing the intake architecture and stack decision report with backend, frontend, mobile, database, integrations, and delivery mode decisions so the planning gate can advance toward data design.
 
-- Verified `task-112` by publishing the intake product scope statement with ecommerce goal, boundaries, users, modules, and exclusions so the docs-first gate can advance toward stack decisions.
+- Verified `task-112` by publishing the intake product scope statement with ecommerce goal, boundaries, users, modules, and exclusions so the planning gate can advance toward stack decisions.
 
 - Verified `kabeeri-075` by confirming the command reference and capability reference already document the command lifecycle ledger plus the important folder ownership map and remaining migration gaps.
 
@@ -237,8 +239,8 @@
 - Added Repository Foldering System with `standard_systems/REPOSITORY_FOLDERING_MAP.json`, `docs/architecture/REPOSITORY_FOLDERING_SYSTEM.md`, `kvdf structure`, and `kvdf validate foldering` to organize Kabeeri's growing root folders into stable core, knowledge, packs, integrations, contracts, docs, quality, and runtime-state groups.
 - Added adaptive questionnaire intake planning with `kvdf questionnaire plan`, combining Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor into focused developer questions stored in `.kabeeri/questionnaires/adaptive_intake_plan.json`.
 - Added user-language runtime behavior for adaptive intake so generated plans record input/output language and follow the user's language unless explicitly overridden.
-- Added init-time guided intake: interactive `kvdf init` can ask for the application goal, while `kvdf init --goal "..."` creates adaptive questions and docs-first tasks in non-interactive flows.
-- Added a docs-first gate so implementation tasks cannot start while init-generated project documentation tasks are still open.
+- Added init-time guided intake: interactive `kvdf init` can ask for the application goal, while `kvdf init --goal "..."` creates adaptive questions and a planning pack in non-interactive flows.
+- Added a planning gate so implementation tasks cannot start while init-generated project planning remains unreviewed or unapproved.
 - Added Evolution Steward with `.kabeeri/evolution.json`, `kvdf evolution`, impact plans, follow-up task generation, dashboard/live reports visibility, schema coverage, and capability documentation for governing Kabeeri's own updates.
 - Added automatic generator governance tasks inside initialized workspaces so Next.js/Laravel or other skeleton generation cannot silently bypass the task tracker.
 - Added non-task AI usage buckets through `kvdf usage inquiry`, `kvdf usage admin`, `kvdf usage question`, `kvdf usage planning`, and `kvdf usage docs`.

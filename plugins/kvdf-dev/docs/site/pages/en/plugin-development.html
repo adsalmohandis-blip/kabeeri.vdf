@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Plugin Development - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="plugin-development">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        
+        <a class="language-link is-active" data-lang-target="en" href="plugin-development.html">English</a>
+        <a class="language-link" data-lang-target="ar" href="../ar/plugin-development.html">Arabic</a>
+      
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">Filter</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="Search docs">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">System Development</a>
+<a class="nav-link" href="methodology.html">Methodology</a>
+<a class="nav-link" href="kabeeri-4-parts.html">Kabeeri in 4 Pillars</a>
+<a class="nav-link" href="modules.html">Modules</a>
+<a class="nav-link" href="modules-relationship.html">Modules Relationship</a>
+<a class="nav-link" href="modules-relationship-patterns.html">Flows and Patterns</a>
+<a class="nav-link" href="framework-dashboard.html">Framework Dashboard</a>
+<a class="nav-link" href="framework-development.html">Framework Development</a>
+<a class="nav-link is-active" href="plugin-development.html">Plugin Development</a>
+<a class="nav-link" href="scorecards-evo.html">Scorecards and Evolution</a>
+<a class="nav-link" href="cli-engine.html">CLI Engine</a>
+<a class="nav-link" href="ai-cli-contract.html">AI/CLI Operating Contract</a>
+<a class="nav-link" href="workspace-state.html">Workspace State</a>
+<a class="nav-link" href="session-track-router.html">Session Track Router</a>
+<a class="nav-link" href="project-intake-profile.html">Project Intake and Profile Router</a>
+<a class="nav-link" href="delivery-mode-advisor.html">Delivery Mode Advisor</a>
+<a class="nav-link" href="blueprint-data-design.html">Blueprint and Data Design</a>
+<a class="nav-link" href="questionnaires.html">Questionnaires</a>
+<a class="nav-link" href="prompt-packs.html">Prompt Packs</a>
+<a class="nav-link" href="task-governance.html">Task Governance</a>
+<a class="nav-link" href="task-packet.html">Task Packet</a>
+<a class="nav-link" href="executor-contract.html">Executor Contract</a>
+<a class="nav-link" href="batch-execution.html">Batch Execution</a>
+<a class="nav-link" href="plugin-system.html">Plugin System</a>
+<a class="nav-link" href="app-builder-plugins.html">App Builder Plugins</a>
+<a class="nav-link" href="multi-ai-governance.html">Multi-AI Governance</a>
+<a class="nav-link" href="evolution-steward.html">Evolution Steward</a>
+<a class="nav-link" href="dashboard.html">Dashboard</a>
+<a class="nav-link" href="reports-traceability.html">Reports and Traceability</a>
+<a class="nav-link" href="validation-schemas.html">Validation and Schemas</a>
+<a class="nav-link" href="policy-gates.html">Policy Gates</a>
+<a class="nav-link" href="design-governance.html">Design Governance</a>
+<a class="nav-link" href="ai-cost-control.html">AI Cost Control</a>
+<a class="nav-link" href="handoff-release.html">Handoff and Release</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>Plugin Development</h1>
+        <p class="lead">Plugin development is how KVDF grows without breaking the core contract. Plugins add capability while staying inside the workspace and plugin rules.</p>
+        <aside class="beginner-note">
+          <strong>Beginner note</strong>
+          <p>Start here when you want the shortest route into Plugin Development.</p>
+        </aside>
+        
+        <section class="wide-section">
+          <h2>Table of Contents</h2>
+          <div class="detail-block">
+            <ol><li><a href="#plugin-contract">Plugin contract</a></li><li><a href="#lifecycle">Lifecycle</a></li><li><a href="#safety">Safety</a></li><li><a href="#maintenance">Maintenance</a></li><li><a href="#extension-model">Extension model</a></li><li><a href="#boundary-rule">Boundary rule</a></li><li><a href="#plugin-examples">Plugin examples</a></li><li><a href="#what-makes-a-good-plugin">What makes a good plugin</a></li></ol>
+          </div>
+        </section>
+        
+        <section class="wide-section">
+          <h2>Topic Details</h2>
+          <div class="detail-stack"><article class="detail-block" id="plugin-contract"><h3>Plugin contract</h3><p>A plugin should have a clear manifest, runtime entry points, and a documented purpose. The contract makes the bundle understandable before anyone installs or reviews it.</p></article><article class="detail-block" id="lifecycle"><h3>Lifecycle</h3><p>Install, enable, run, disable, and remove should all be understandable and reversible. A plugin is only healthy when its whole life cycle can be traced and undone without guesswork.</p></article><article class="detail-block" id="safety"><h3>Safety</h3><p>Plugins must stay inside the approved workspace and not bypass the core contract. That keeps extension work useful without letting it quietly override framework ownership.</p></article><article class="detail-block" id="maintenance"><h3>Maintenance</h3><p>When a plugin changes, update its runtime state, documentation, and tests together. Maintenance is not only code; it is keeping the plugin honest across the files that describe it.</p></article><article class="detail-block" id="extension-model"><h3>Extension model</h3><p>Plugins add capability by composing with KVDF, not by replacing the framework rules. The plugin should amplify the system, not become a second framework hidden inside the first.</p></article><article class="detail-block" id="boundary-rule"><h3>Boundary rule</h3><p>A plugin should extend the system without blurring framework ownership. If the bundle changes the framework contract, it belongs in framework development instead of plugin development.</p></article><article class="detail-block" id="plugin-examples"><h3>Plugin examples</h3><p>A plugin can add a new capability bundle, a new command family, a domain-specific generator, or a new workspace tool. Good examples show extension without turning the plugin into a core dependency.</p></article><article class="detail-block" id="what-makes-a-good-plugin"><h3>What makes a good plugin</h3><p>A good plugin is reversible, testable, documented, and easy to map back to the framework contract. If it is hard to remove or hard to explain, it is not yet a clean plugin.</p></article></div>
+        </section>
+        <section class="wide-section">
+          <h2>Related Pages</h2>
+          <div class="callout links"><a href="./system-development.html">System Development</a><a href="./framework-development.html">Framework Development</a><a href="./scorecards-evo.html">Scorecards and Evolution</a></div>
+        </section>
+        <section class="wide-section">
+          <h2>Commands</h2>
+          <div class="detail-block"><ul><li><code>knowledge/governance/PLUGIN_FOLDER_CONTRACT.md</code></li><li><code>plugins/&lt;plugin-slug&gt;/plugin.json</code></li><li><code>plugins/&lt;plugin-slug&gt;/docs/index.md</code></li></ul></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

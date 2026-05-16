@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF App Scorecards State",
+  "type": "object",
+  "required": ["version", "workspace_root", "workspace_slug", "workspace_kind", "app_slug", "app_name", "app_type", "surface_scopes", "review_state", "cards", "surface_cards", "summary"],
+  "properties": {
+    "version": { "type": "string" },
+    "generated_at": { "type": ["string", "null"] },
+    "workspace_root": { "type": "string" },
+    "workspace_slug": { "type": "string" },
+    "workspace_kind": { "type": "string" },
+    "app_slug": { "type": "string" },
+    "app_name": { "type": "string" },
+    "app_type": { "type": "string" },
+    "surface_scopes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "linked_workspace_roots": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "current_plan_id": { "type": ["string", "null"] },
+    "planning_status": { "type": ["string", "null"] },
+    "next_exact_action": { "type": ["string", "null"] },
+    "review_state": {
+      "type": "object",
+      "required": ["status", "reviewed_at", "reviewed_by", "locked_at", "locked_by", "notes"],
+      "properties": {
+        "status": { "type": "string" },
+        "reviewed_at": { "type": ["string", "null"] },
+        "reviewed_by": { "type": ["string", "null"] },
+        "locked_at": { "type": ["string", "null"] },
+        "locked_by": { "type": ["string", "null"] },
+        "notes": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["card_id", "title", "category", "scope", "status", "score", "band", "next_action", "evidence"],
+        "properties": {
+          "card_id": { "type": "string" },
+          "title": { "type": "string" },
+          "category": { "type": "string" },
+          "scope": { "type": "string" },
+          "group": { "type": "string" },
+          "description": { "type": "string" },
+          "applicable_to": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": { "type": "string" },
+          "score": { "type": ["number", "integer"] },
+          "band": { "type": "string" },
+          "reason": { "type": "string" },
+          "next_action": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "planning_status": { "type": ["string", "null"] },
+          "task_count": { "type": ["number", "integer"] },
+          "workspace_boundary_status": { "type": ["string", "null"] },
+          "source_plan_id": { "type": ["string", "null"] },
+          "updated_at": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "surface_cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["card_id", "title", "category", "scope", "status", "score", "band", "next_action", "evidence"],
+        "properties": {
+          "card_id": { "type": "string" },
+          "title": { "type": "string" },
+          "category": { "type": "string" },
+          "scope": { "type": "string" },
+          "group": { "type": "string" },
+          "description": { "type": "string" },
+          "applicable_to": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "status": { "type": "string" },
+          "score": { "type": ["number", "integer"] },
+          "band": { "type": "string" },
+          "reason": { "type": "string" },
+          "next_action": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "planning_status": { "type": ["string", "null"] },
+          "task_count": { "type": ["number", "integer"] },
+          "workspace_boundary_status": { "type": ["string", "null"] },
+          "source_plan_id": { "type": ["string", "null"] },
+          "updated_at": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total": { "type": ["number", "integer"] },
+        "ready": { "type": ["number", "integer"] },
+        "pending": { "type": ["number", "integer"] },
+        "blocked": { "type": ["number", "integer"] },
+        "not_applicable": { "type": ["number", "integer"] },
+        "average_score": { "type": ["number", "integer"] },
+        "baseline_ready": { "type": "boolean" },
+        "release_ready": { "type": "boolean" },
+        "next_exact_action": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

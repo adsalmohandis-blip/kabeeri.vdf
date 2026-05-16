@@ -22,6 +22,7 @@ Kabeeri helps turn a product idea into:
 - a separate owner track for Kabeeri system work
 - a separate app-developer track for client application work
 - optional plugins so each feature can be added, removed, or disabled cleanly
+- plugin bundles now expose a bundle contract in `kvdf plugins status`, so the CLI can show required folders, domain folders, and the next exact action before anything runs
 
 The goal is simple: the developer speaks naturally, the AI assistant uses Kabeeri as the project operating layer, and the project remains understandable when sessions stop and resume.
 
@@ -70,6 +71,8 @@ Source of truth:
 - AI assistants should work through tasks, scopes, captures, and reports instead of editing randomly.
 
 For most vibe coders, the important idea is: talk to your AI assistant normally, and let it use `kvdf` only when the project needs traceability, dashboard updates, task records, usage logs, or governance checks.
+
+When the assistant is about to act, the safest first step is `kvdf contract` or `kvdf resume`. Those commands show the current next exact action, the command registry, and the pipeline boundary so the AI stays in the governed loop instead of guessing its own path.
 
 ## Keep AI Context Small
 
@@ -175,7 +178,7 @@ Inside the folder where you want Kabeeri runtime state:
 kvdf init --profile standard --mode structured
 ```
 
-If the command runs in an interactive terminal, Kabeeri asks one short question about the application you want to build, then creates the adaptive intake questions and docs-first tasks immediately.
+If the command runs in an interactive terminal, Kabeeri asks one short question about the application you want to build, then creates the adaptive intake questions and the planning pack. The planning pack must be reviewed and approved before implementation tasks can start.
 
 For automation, or when asking your AI assistant to do it directly:
 
@@ -233,7 +236,7 @@ A practical flow with any AI assistant:
 1. Initialize Kabeeri.
 2. Answer the one-sentence application goal prompt.
 3. Let Kabeeri generate the adaptive intake questions.
-4. Complete the docs-first tasks: intake answers, scope, architecture, data design, UI direction, and implementation backlog.
+4. Complete the planning gate: intake answers, scope, architecture, data design, UI direction, review, approval, and implementation backlog.
 5. Convert approved documentation into implementation tasks.
 6. Work on one implementation task at a time.
 7. Use task tokens and locks for execution scope.
@@ -241,7 +244,7 @@ A practical flow with any AI assistant:
 9. Capture any work done outside the normal flow.
 10. Review, verify, and hand off.
 
-This docs-first gate is deliberate. AI assistants should not jump from a vague idea directly into Laravel, Next.js, React, WordPress, or mobile implementation before the project documentation tasks are created and reviewed.
+This planning gate is deliberate. AI assistants should not jump from a vague idea directly into Laravel, Next.js, React, WordPress, or mobile implementation before the planning pack is created, reviewed, and approved.
 
 The AI assistant may use commands like these behind the scenes:
 

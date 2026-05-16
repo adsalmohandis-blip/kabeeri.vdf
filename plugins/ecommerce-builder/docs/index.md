@@ -30,3 +30,4 @@ Turn one vibe request into:
 - build an ecommerce project
 - disable or uninstall the plugin when no longer needed
 
+The live runtime state is stored in `.kabeeri/ecommerce.json`.

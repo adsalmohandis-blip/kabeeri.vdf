@@ -18,6 +18,12 @@ node docs/site/generate-pages.js
 
 The generator creates the shell pages for both languages. The detailed content
 is rendered in the browser from `assets/js/app.js`.
+The generated docs workflow is governed by the same source-of-truth loop as the
+rest of Kabeeri: update the human guidance first, regenerate the site shell,
+then validate the generated pages, page contracts, and localized content
+together. Treat `docs/site/generate-pages.js`, `docs/site/site-manifest.json`,
+and `docs/site/page-contracts.json` as the generated artifacts that reflect the
+current docs surface rather than the place to invent new guidance by hand.
 The same docs-site build also emits a deep publishing coverage report in
 `docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json` so the published
 families stay visible from CLI and validation. The generator also writes a
@@ -66,6 +72,8 @@ The site is organized around developer-facing capability docs and covers:
 - workstreams and execution scope
 - prompt packs
 - WordPress development and WordPress plugin development
+- AI Tool and Vibe developer workflow instructions and role hubs for app delivery
+- system-development docs are now published separately under `plugins/kvdf-dev/docs/site/`
 - live dashboard
 - AI cost control
 - multi-AI governance

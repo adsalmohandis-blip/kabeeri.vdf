@@ -88,6 +88,7 @@ For a normal local verification:
 ```bash
 node bin/kvdf.js validate
 node bin/kvdf.js package check
+node bin/kvdf.js release check --version v4.0.0
 node bin/kvdf.js readiness report --target release --strict
 node bin/kvdf.js governance report --target release --strict
 ```
@@ -113,6 +114,7 @@ Do not package if:
 - required runtime files are missing
 - `package.json.files` excludes `bin/`, `src/`, `knowledge/`, `packs/`, `plugins/`, `schemas/`, `docs/`, or `cli/`
 - validation fails
+- `release check` does not show `Validation: OK`, `Readiness: READY`, and `Release gate: PASS`
 - readiness/governance strict reports are blocked for the release target
 
 ## Publish Boundary
@@ -138,7 +140,7 @@ replacement for release governance.
 kvdf package check
 kvdf package check --json
 kvdf package guide
-kvdf release check --strict
+kvdf release check
 kvdf readiness report --target release --strict
 kvdf governance report --target release --strict
 npm run pack:check
@@ -154,4 +156,5 @@ Before treating the package as ready, confirm:
 - dry-run package file list includes runtime and docs
 - dry-run package file list excludes local state and secrets
 - version number matches the changelog and intended release
+- `release check` shows validation `OK`, readiness `READY`, and release gate `PASS`
 - release/readiness/governance evidence is attached to the release notes

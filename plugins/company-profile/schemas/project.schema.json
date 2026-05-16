@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Company Profile Builder Project Schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project_id", "slug", "name", "mode", "stage", "status", "created_at", "updated_at", "intake", "blockers", "next_action", "artifacts"],
+  "properties": {
+    "project_id": { "type": "string" },
+    "slug": { "type": "string" },
+    "name": { "type": "string" },
+    "mode": { "enum": ["startup", "corporate", "agency", "franchise"] },
+    "stage": { "enum": ["intake", "questionnaire", "brief", "design", "modules", "tasks", "approval", "execution"] },
+    "status": { "type": "string" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" },
+    "intake": { "type": "object" },
+    "brief": { "type": ["object", "null"] },
+    "design": { "type": ["object", "null"] },
+    "modules": { "type": ["object", "null"] },
+    "tasks": { "type": ["object", "null"] },
+    "approvals": { "type": "array" },
+    "blockers": { "type": "array" },
+    "next_action": { "type": "string" },
+    "artifacts": { "type": "object" }
+  },
+  "oneOf": [
+    { "properties": { "mode": { "const": "startup" } }, "title": "Startup profile mode" },
+    { "properties": { "mode": { "const": "corporate" } }, "title": "Corporate profile mode" },
+    { "properties": { "mode": { "const": "agency" } }, "title": "Agency profile mode" },
+    { "properties": { "mode": { "const": "franchise" } }, "title": "Franchise profile mode" }
+  ]
+}

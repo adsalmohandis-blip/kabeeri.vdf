@@ -41,10 +41,11 @@
     "kvdf ecommerce tasks",
     "kvdf ecommerce approve",
     "kvdf ecommerce report",
-    "kvdf plugin install ecommerce-builder",
-    "kvdf plugin uninstall ecommerce-builder"
+    "kvdf plugins install ecommerce-builder",
+    "kvdf plugins uninstall ecommerce-builder"
   ],
   "docs_surface": [
+    "plugins/ecommerce-builder/README.md",
     "plugins/ecommerce-builder/docs/index.md",
     "plugins/ecommerce-builder/docs/cli.md"
   ]

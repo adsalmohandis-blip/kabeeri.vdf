@@ -1,0 +1,34 @@
+{
+  "plugin_id": "news-website",
+  "name": "News Website Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "news-website",
+  "enabled_by_default": false,
+  "description": "Build news websites from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": ["commands", "docs", "prompts", "schemas", "templates", "tests"],
+  "optional_folders": ["references", "examples", "assets", "dashboard", "business-type"],
+  "domain_folders": ["business-type", "references", "examples", "assets", "dashboard"],
+  "command_surface": [
+    "kvdf news-website status",
+    "kvdf news-website init",
+    "kvdf news-website questionnaire",
+    "kvdf news-website brief",
+    "kvdf news-website design",
+    "kvdf news-website modules",
+    "kvdf news-website tasks",
+    "kvdf news-website approve",
+    "kvdf news-website report",
+    "kvdf plugins install news-website",
+    "kvdf plugins uninstall news-website"
+  ],
+  "docs_surface": [
+    "plugins/news-website/README.md",
+    "plugins/news-website/docs/index.md",
+    "plugins/news-website/docs/cli.md"
+  ]
+}

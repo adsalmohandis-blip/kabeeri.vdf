@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إضافات بناء التطبيقات - KVDF Dev System</title>
+  <link rel="stylesheet" href="../../../../../../docs/site/assets/css/style.css">
+</head>
+<body data-page="app-builder-plugins">
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="../../index.html" aria-label="KVDF Dev System documentation home">
+        <span class="brand-mark">K</span>
+        <span>KVDF Dev System</span>
+      </a>
+      <nav class="top-actions" aria-label="Language">
+        
+        <a class="language-link" data-lang-target="en" href="../en/app-builder-plugins.html">English</a>
+        <a class="language-link is-active" data-lang-target="ar" href="app-builder-plugins.html">العربية</a>
+      
+      </nav>
+    </header>
+    <div class="layout">
+      <aside class="sidebar">
+        <label class="search-label" for="doc-search">تصفية</label>
+        <input id="doc-search" class="search-input" type="search" placeholder="ابحث في الوثائق">
+        <p id="search-summary" class="search-summary">34 pages</p>
+        <nav id="sidebar-nav" class="sidebar-nav" aria-label="Documentation">
+          <a class="nav-link" href="system-development.html">تطوير النظام</a>
+<a class="nav-link" href="methodology.html">المنهجية</a>
+<a class="nav-link" href="kabeeri-4-parts.html">كبيري في 4 ركائز</a>
+<a class="nav-link" href="modules.html">الوحدات</a>
+<a class="nav-link" href="modules-relationship.html">علاقات الوحدات</a>
+<a class="nav-link" href="modules-relationship-patterns.html">التدفقات والأنماط</a>
+<a class="nav-link" href="framework-dashboard.html">لوحة تحكم الإطار</a>
+<a class="nav-link" href="framework-development.html">تطوير الإطار</a>
+<a class="nav-link" href="plugin-development.html">تطوير الإضافات</a>
+<a class="nav-link" href="scorecards-evo.html">السكور كارد والتطور</a>
+<a class="nav-link" href="cli-engine.html">محرك CLI</a>
+<a class="nav-link" href="ai-cli-contract.html">عقد تشغيل AI/CLI</a>
+<a class="nav-link" href="workspace-state.html">حالة Workspace</a>
+<a class="nav-link" href="session-track-router.html">موجّه مسار الجلسة</a>
+<a class="nav-link" href="project-intake-profile.html">استقبال المشروع وموجّه الملف</a>
+<a class="nav-link" href="delivery-mode-advisor.html">مستشار نمط التسليم</a>
+<a class="nav-link" href="blueprint-data-design.html">المخطط وتصميم البيانات</a>
+<a class="nav-link" href="questionnaires.html">الاستبيانات</a>
+<a class="nav-link" href="prompt-packs.html">حزم الأوامر</a>
+<a class="nav-link" href="task-governance.html">حوكمة المهام</a>
+<a class="nav-link" href="task-packet.html">حزمة المهمة</a>
+<a class="nav-link" href="executor-contract.html">عقد المنفذ</a>
+<a class="nav-link" href="batch-execution.html">التنفيذ على دفعات</a>
+<a class="nav-link" href="plugin-system.html">نظام الإضافات</a>
+<a class="nav-link is-active" href="app-builder-plugins.html">إضافات بناء التطبيقات</a>
+<a class="nav-link" href="multi-ai-governance.html">حوكمة تعدد الذكاءات</a>
+<a class="nav-link" href="evolution-steward.html">وصاية التطور</a>
+<a class="nav-link" href="dashboard.html">لوحة التحكم</a>
+<a class="nav-link" href="reports-traceability.html">التقارير وقابلية التتبع</a>
+<a class="nav-link" href="validation-schemas.html">التحقق والمخططات</a>
+<a class="nav-link" href="policy-gates.html">بوابات السياسة</a>
+<a class="nav-link" href="design-governance.html">حوكمة التصميم</a>
+<a class="nav-link" href="ai-cost-control.html">التحكم في تكلفة الذكاء</a>
+<a class="nav-link" href="handoff-release.html">التسليم والإصدار</a>
+        </nav>
+      </aside>
+      <main class="content" id="content" tabindex="-1">
+        <div class="eyebrow">KVDF Dev System</div>
+        <h1>إضافات بناء التطبيقات</h1>
+        <p class="lead">إضافات بناء التطبيقات تجمع القدرات الخاصة بالمجال للمنتجات والمسارات الحقيقية.</p>
+        <aside class="beginner-note">
+          <strong>ملاحظة للمبتدئ</strong>
+          <p>ابدأ هنا إذا كنت تريد أقصر طريق لفهم إضافات بناء التطبيقات.</p>
+        </aside>
+        
+        <section class="wide-section">
+          <h2>جدول المحتويات</h2>
+          <div class="detail-block">
+            <ol><li><a href="#ما-هي-هذه-الوحدة">ما هي هذه الوحدة</a></li><li><a href="#ما-الذي-تتحكم-فيه">ما الذي تتحكم فيه</a></li><li><a href="#أين-تقع-في-السلسلة">أين تقع في السلسلة</a></li><li><a href="#ما-الذي-يجب-الانتباه-له">ما الذي يجب الانتباه له</a></li><li><a href="#كيف-تستخدمها">كيف تستخدمها</a></li></ol>
+          </div>
+        </section>
+        
+        <section class="wide-section">
+          <h2>تفاصيل الموضوعات</h2>
+          <div class="detail-stack"><article class="detail-block" id="ما-هي-هذه-الوحدة"><h3>ما هي هذه الوحدة</h3><p>إضافات بناء التطبيقات هي إحدى قدرات KVDF الأساسية. هذه الصفحة تشرح لماذا توجد هذه الوحدة، وما الذي تتحكم فيه، وكيف ترتبط ببقية الإطار حتى يبقى التصميم واضحًا وقابلًا للمراجعة.</p></article><article class="detail-block" id="ما-الذي-تتحكم-فيه"><h3>ما الذي تتحكم فيه</h3><p>إضافات بناء التطبيقات تجمع القدرات الخاصة بالمجال للمنتجات والمسارات الحقيقية. إنها ليست مجرد ملف منفرد؛ بل هي نقطة مسؤولية واضحة داخل الـ runtime أو داخل سطح الوثائق أو داخل التحكم التشغيلي.</p></article><article class="detail-block" id="أين-تقع-في-السلسلة"><h3>أين تقع في السلسلة</h3><p>تعمل هذه الوحدة عادةً بين مدخلات من جهة ومخرجات أو حالة أو تقارير من الجهة الأخرى. عندما تعرف مكانها في السلسلة، يصبح من الأسهل توقع أثر أي تغيير عليها وعلى الوحدات المرتبطة بها.</p></article><article class="detail-block" id="ما-الذي-يجب-الانتباه-له"><h3>ما الذي يجب الانتباه له</h3><p>راقب راقب حزم المجال ونطاقات السطوح والتوازن بين أنواع التطبيقات. وتجنب دمج هذه المسؤولية مع وحدة أخرى فقط لأن التغيير يبدو صغيرًا. إذا بدأت الوحدة تتجاوز حدودها، أعد النظر في التقسيم أو عد إلى التخطيط.</p></article><article class="detail-block" id="كيف-تستخدمها"><h3>كيف تستخدمها</h3><p>عند العمل على إضافات بناء التطبيقات، حدّد أولًا ما الذي تملكه هذه الوحدة، ثم حدّد ما الذي لا تملكه، ثم اربط التعديل بالاختبارات والوثائق والحالة التي يقرأها باقي النظام.</p></article></div>
+        </section>
+        <section class="wide-section">
+          <h2>الروابط</h2>
+          <div class="callout links"><a href="./system-development.html">System Development</a><a href="./system-development.html">Modules</a><a href="./system-development.html">Modules Relationship</a><a href="./system-development.html">Framework Dashboard</a></div>
+        </section>
+        <section class="wide-section">
+          <h2>الأوامر</h2>
+          <div class="detail-block"><ul><li><code>plugins/booking-builder/</code></li><li><code>plugins/ecommerce-builder/</code></li><li><code>plugins/crm/</code></li><li><code>plugins/pos/</code></li></ul></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    (() => {
+      const search = document.getElementById("doc-search");
+      const nav = document.getElementById("sidebar-nav");
+      const summary = document.getElementById("search-summary");
+      if (!search || !nav) return;
+      const links = Array.from(nav.querySelectorAll(".nav-link"));
+      const total = links.length;
+      const sync = () => {
+        const query = search.value.trim().toLowerCase();
+        let visible = 0;
+        for (const link of links) {
+          const match = !query || link.textContent.toLowerCase().includes(query);
+          link.hidden = !match;
+          if (match) visible += 1;
+        }
+        if (summary) summary.textContent = query ? visible + " of " + total + " pages" : total + " pages";
+      };
+      search.addEventListener("input", sync);
+      sync();
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,387 @@
+{
+  "manifest_version": 1,
+  "generated_by": "plugins/kvdf-dev/docs/site/generate-pages.js",
+  "site_name": "KVDF Dev System Docs",
+  "default_language": "en",
+  "languages": [
+    "en",
+    "ar"
+  ],
+  "page_count": 34,
+  "pages": [
+    {
+      "slug": "system-development",
+      "titles": {
+        "en": "System Development",
+        "ar": "تطوير النظام"
+      },
+      "paths": {
+        "en": "pages/en/system-development.html",
+        "ar": "pages/ar/system-development.html"
+      }
+    },
+    {
+      "slug": "methodology",
+      "titles": {
+        "en": "Methodology",
+        "ar": "المنهجية"
+      },
+      "paths": {
+        "en": "pages/en/methodology.html",
+        "ar": "pages/ar/methodology.html"
+      }
+    },
+    {
+      "slug": "kabeeri-4-parts",
+      "titles": {
+        "en": "Kabeeri in 4 Pillars",
+        "ar": "كبيري في 4 ركائز"
+      },
+      "paths": {
+        "en": "pages/en/kabeeri-4-parts.html",
+        "ar": "pages/ar/kabeeri-4-parts.html"
+      }
+    },
+    {
+      "slug": "modules",
+      "titles": {
+        "en": "Modules",
+        "ar": "الوحدات"
+      },
+      "paths": {
+        "en": "pages/en/modules.html",
+        "ar": "pages/ar/modules.html"
+      }
+    },
+    {
+      "slug": "modules-relationship",
+      "titles": {
+        "en": "Modules Relationship",
+        "ar": "علاقات الوحدات"
+      },
+      "paths": {
+        "en": "pages/en/modules-relationship.html",
+        "ar": "pages/ar/modules-relationship.html"
+      }
+    },
+    {
+      "slug": "modules-relationship-patterns",
+      "titles": {
+        "en": "Flows and Patterns",
+        "ar": "التدفقات والأنماط"
+      },
+      "paths": {
+        "en": "pages/en/modules-relationship-patterns.html",
+        "ar": "pages/ar/modules-relationship-patterns.html"
+      }
+    },
+    {
+      "slug": "framework-dashboard",
+      "titles": {
+        "en": "Framework Dashboard",
+        "ar": "لوحة تحكم الإطار"
+      },
+      "paths": {
+        "en": "pages/en/framework-dashboard.html",
+        "ar": "pages/ar/framework-dashboard.html"
+      }
+    },
+    {
+      "slug": "framework-development",
+      "titles": {
+        "en": "Framework Development",
+        "ar": "تطوير الإطار"
+      },
+      "paths": {
+        "en": "pages/en/framework-development.html",
+        "ar": "pages/ar/framework-development.html"
+      }
+    },
+    {
+      "slug": "plugin-development",
+      "titles": {
+        "en": "Plugin Development",
+        "ar": "تطوير الإضافات"
+      },
+      "paths": {
+        "en": "pages/en/plugin-development.html",
+        "ar": "pages/ar/plugin-development.html"
+      }
+    },
+    {
+      "slug": "scorecards-evo",
+      "titles": {
+        "en": "Scorecards and Evolution",
+        "ar": "السكور كارد والتطور"
+      },
+      "paths": {
+        "en": "pages/en/scorecards-evo.html",
+        "ar": "pages/ar/scorecards-evo.html"
+      }
+    },
+    {
+      "slug": "cli-engine",
+      "titles": {
+        "en": "CLI Engine",
+        "ar": "محرك CLI"
+      },
+      "paths": {
+        "en": "pages/en/cli-engine.html",
+        "ar": "pages/ar/cli-engine.html"
+      }
+    },
+    {
+      "slug": "ai-cli-contract",
+      "titles": {
+        "en": "AI/CLI Operating Contract",
+        "ar": "عقد تشغيل AI/CLI"
+      },
+      "paths": {
+        "en": "pages/en/ai-cli-contract.html",
+        "ar": "pages/ar/ai-cli-contract.html"
+      }
+    },
+    {
+      "slug": "workspace-state",
+      "titles": {
+        "en": "Workspace State",
+        "ar": "حالة Workspace"
+      },
+      "paths": {
+        "en": "pages/en/workspace-state.html",
+        "ar": "pages/ar/workspace-state.html"
+      }
+    },
+    {
+      "slug": "session-track-router",
+      "titles": {
+        "en": "Session Track Router",
+        "ar": "موجّه مسار الجلسة"
+      },
+      "paths": {
+        "en": "pages/en/session-track-router.html",
+        "ar": "pages/ar/session-track-router.html"
+      }
+    },
+    {
+      "slug": "project-intake-profile",
+      "titles": {
+        "en": "Project Intake and Profile Router",
+        "ar": "استقبال المشروع وموجّه الملف"
+      },
+      "paths": {
+        "en": "pages/en/project-intake-profile.html",
+        "ar": "pages/ar/project-intake-profile.html"
+      }
+    },
+    {
+      "slug": "delivery-mode-advisor",
+      "titles": {
+        "en": "Delivery Mode Advisor",
+        "ar": "مستشار نمط التسليم"
+      },
+      "paths": {
+        "en": "pages/en/delivery-mode-advisor.html",
+        "ar": "pages/ar/delivery-mode-advisor.html"
+      }
+    },
+    {
+      "slug": "blueprint-data-design",
+      "titles": {
+        "en": "Blueprint and Data Design",
+        "ar": "المخطط وتصميم البيانات"
+      },
+      "paths": {
+        "en": "pages/en/blueprint-data-design.html",
+        "ar": "pages/ar/blueprint-data-design.html"
+      }
+    },
+    {
+      "slug": "questionnaires",
+      "titles": {
+        "en": "Questionnaires",
+        "ar": "الاستبيانات"
+      },
+      "paths": {
+        "en": "pages/en/questionnaires.html",
+        "ar": "pages/ar/questionnaires.html"
+      }
+    },
+    {
+      "slug": "prompt-packs",
+      "titles": {
+        "en": "Prompt Packs",
+        "ar": "حزم الأوامر"
+      },
+      "paths": {
+        "en": "pages/en/prompt-packs.html",
+        "ar": "pages/ar/prompt-packs.html"
+      }
+    },
+    {
+      "slug": "task-governance",
+      "titles": {
+        "en": "Task Governance",
+        "ar": "حوكمة المهام"
+      },
+      "paths": {
+        "en": "pages/en/task-governance.html",
+        "ar": "pages/ar/task-governance.html"
+      }
+    },
+    {
+      "slug": "task-packet",
+      "titles": {
+        "en": "Task Packet",
+        "ar": "حزمة المهمة"
+      },
+      "paths": {
+        "en": "pages/en/task-packet.html",
+        "ar": "pages/ar/task-packet.html"
+      }
+    },
+    {
+      "slug": "executor-contract",
+      "titles": {
+        "en": "Executor Contract",
+        "ar": "عقد المنفذ"
+      },
+      "paths": {
+        "en": "pages/en/executor-contract.html",
+        "ar": "pages/ar/executor-contract.html"
+      }
+    },
+    {
+      "slug": "batch-execution",
+      "titles": {
+        "en": "Batch Execution",
+        "ar": "التنفيذ على دفعات"
+      },
+      "paths": {
+        "en": "pages/en/batch-execution.html",
+        "ar": "pages/ar/batch-execution.html"
+      }
+    },
+    {
+      "slug": "plugin-system",
+      "titles": {
+        "en": "Plugin System",
+        "ar": "نظام الإضافات"
+      },
+      "paths": {
+        "en": "pages/en/plugin-system.html",
+        "ar": "pages/ar/plugin-system.html"
+      }
+    },
+    {
+      "slug": "app-builder-plugins",
+      "titles": {
+        "en": "App Builder Plugins",
+        "ar": "إضافات بناء التطبيقات"
+      },
+      "paths": {
+        "en": "pages/en/app-builder-plugins.html",
+        "ar": "pages/ar/app-builder-plugins.html"
+      }
+    },
+    {
+      "slug": "multi-ai-governance",
+      "titles": {
+        "en": "Multi-AI Governance",
+        "ar": "حوكمة تعدد الذكاءات"
+      },
+      "paths": {
+        "en": "pages/en/multi-ai-governance.html",
+        "ar": "pages/ar/multi-ai-governance.html"
+      }
+    },
+    {
+      "slug": "evolution-steward",
+      "titles": {
+        "en": "Evolution Steward",
+        "ar": "وصاية التطور"
+      },
+      "paths": {
+        "en": "pages/en/evolution-steward.html",
+        "ar": "pages/ar/evolution-steward.html"
+      }
+    },
+    {
+      "slug": "dashboard",
+      "titles": {
+        "en": "Dashboard",
+        "ar": "لوحة التحكم"
+      },
+      "paths": {
+        "en": "pages/en/dashboard.html",
+        "ar": "pages/ar/dashboard.html"
+      }
+    },
+    {
+      "slug": "reports-traceability",
+      "titles": {
+        "en": "Reports and Traceability",
+        "ar": "التقارير وقابلية التتبع"
+      },
+      "paths": {
+        "en": "pages/en/reports-traceability.html",
+        "ar": "pages/ar/reports-traceability.html"
+      }
+    },
+    {
+      "slug": "validation-schemas",
+      "titles": {
+        "en": "Validation and Schemas",
+        "ar": "التحقق والمخططات"
+      },
+      "paths": {
+        "en": "pages/en/validation-schemas.html",
+        "ar": "pages/ar/validation-schemas.html"
+      }
+    },
+    {
+      "slug": "policy-gates",
+      "titles": {
+        "en": "Policy Gates",
+        "ar": "بوابات السياسة"
+      },
+      "paths": {
+        "en": "pages/en/policy-gates.html",
+        "ar": "pages/ar/policy-gates.html"
+      }
+    },
+    {
+      "slug": "design-governance",
+      "titles": {
+        "en": "Design Governance",
+        "ar": "حوكمة التصميم"
+      },
+      "paths": {
+        "en": "pages/en/design-governance.html",
+        "ar": "pages/ar/design-governance.html"
+      }
+    },
+    {
+      "slug": "ai-cost-control",
+      "titles": {
+        "en": "AI Cost Control",
+        "ar": "التحكم في تكلفة الذكاء"
+      },
+      "paths": {
+        "en": "pages/en/ai-cost-control.html",
+        "ar": "pages/ar/ai-cost-control.html"
+      }
+    },
+    {
+      "slug": "handoff-release",
+      "titles": {
+        "en": "Handoff and Release",
+        "ar": "التسليم والإصدار"
+      },
+      "paths": {
+        "en": "pages/en/handoff-release.html",
+        "ar": "pages/ar/handoff-release.html"
+      }
+    }
+  ]
+}

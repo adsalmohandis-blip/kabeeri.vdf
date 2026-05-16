@@ -1,0 +1,34 @@
+{
+  "plugin_id": "ecommerce-mobile-app",
+  "name": "Ecommerce Mobile App Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "ecommerce-mobile-app",
+  "enabled_by_default": false,
+  "description": "Build ecommerce mobile apps from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": ["commands", "docs", "prompts", "schemas", "templates", "tests"],
+  "optional_folders": ["references", "examples", "assets", "dashboard", "business-type"],
+  "domain_folders": ["business-type", "references", "examples", "assets", "dashboard"],
+  "command_surface": [
+    "kvdf ecommerce-mobile-app status",
+    "kvdf ecommerce-mobile-app init",
+    "kvdf ecommerce-mobile-app questionnaire",
+    "kvdf ecommerce-mobile-app brief",
+    "kvdf ecommerce-mobile-app design",
+    "kvdf ecommerce-mobile-app modules",
+    "kvdf ecommerce-mobile-app tasks",
+    "kvdf ecommerce-mobile-app approve",
+    "kvdf ecommerce-mobile-app report",
+    "kvdf plugins install ecommerce-mobile-app",
+    "kvdf plugins uninstall ecommerce-mobile-app"
+  ],
+  "docs_surface": [
+    "plugins/ecommerce-mobile-app/README.md",
+    "plugins/ecommerce-mobile-app/docs/index.md",
+    "plugins/ecommerce-mobile-app/docs/cli.md"
+  ]
+}
