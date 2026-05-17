@@ -1,0 +1,193 @@
+{
+  "standard_id": "app_docs_standard",
+  "standard_name": "App Docs Standard",
+  "standard_version": "2.0.0",
+  "purpose": "Define the portable app documentation package that every developer app workspace should keep inside the app folder so the product can be understood, rebuilt, reviewed, and migrated without chat history.",
+  "source_of_truth": "knowledge/governance/APP_DOCS_STANDARD.md",
+  "machine_readable_source": "knowledge/governance/APP_DOCS_STANDARD.json",
+  "metadata_header": {
+    "required_fields": [
+      "Owner",
+      "Status",
+      "Version",
+      "Last reviewed",
+      "Source of truth",
+      "Reviewed by",
+      "Approved by",
+      "Change log",
+      "Lifecycle"
+    ],
+    "recommended_values": {
+      "Status": ["Draft", "Canonical", "Deprecated", "Archived"],
+      "Lifecycle": ["Draft", "Canonical", "Deprecated", "Archived"]
+    }
+  },
+  "navigation_rules": {
+    "canonical_front_door": [
+      "README.md",
+      "docs/README.md",
+      "docs/00-executive-summary.md"
+    ],
+    "unnumbered_docs": [
+      "docs/discovery-questionnaire.md",
+      "docs/master-doc-index.md"
+    ],
+    "numbered_sequence": {
+      "starts_at": "01",
+      "continues_without_gaps": true,
+      "anchor": "docs/00-executive-summary.md"
+    },
+    "doc_status_rule": "Canonical docs should carry a visible metadata block and keep the source-of-truth path stable.",
+    "portability_rule": "If a file is required to understand, build, validate, or operate the app later, it should live in the app folder rather than only in chat."
+  },
+  "layer_map": [
+    {
+      "layer": "front_door_and_discovery",
+      "description": "The shortest path into the app documentation set.",
+      "required_docs": [
+        "README.md",
+        "docs/README.md",
+        "docs/00-executive-summary.md",
+        "docs/discovery-questionnaire.md",
+        "docs/master-doc-index.md",
+        "docs/01-overview.md"
+      ]
+    },
+    {
+      "layer": "product_layer",
+      "description": "The app as a product: vision, scope, people, jobs, and UX intent.",
+      "required_docs": [
+        "docs/02-vision-and-goals.md",
+        "docs/03-scope-and-non-goals.md",
+        "docs/04-users-and-personas.md",
+        "docs/05-user-stories-and-jobs-to-be-done.md"
+      ]
+    },
+    {
+      "layer": "ux_ui_layer",
+      "description": "The user experience, navigation, content tone, and interaction model.",
+      "required_docs": [
+        "docs/06-ux-principles.md",
+        "docs/07-information-architecture.md",
+        "docs/08-user-flows.md",
+        "docs/09-wireframes.md",
+        "docs/10-ui-specification.md",
+        "docs/11-content-and-tone.md",
+        "docs/12-accessibility.md"
+      ]
+    },
+    {
+      "layer": "system_layer",
+      "description": "The runtime shape, service boundaries, APIs, auth, errors, integrations, and deep technical diagrams.",
+      "required_docs": [
+        "docs/13-architecture-overview.md",
+        "docs/14-module-breakdown.md",
+        "docs/15-service-boundaries.md",
+        "docs/16-api-contracts.md",
+        "docs/17-authentication-and-permissions.md",
+        "docs/18-error-handling.md",
+        "docs/19-integration-map.md",
+        "docs/44-erd.md",
+        "docs/45-system-architecture.md",
+        "docs/46-workflow-sequence.md",
+        "docs/47-state-machine.md",
+        "docs/48-data-flow.md",
+        "docs/49-technical-diagrams-index.md"
+      ]
+    },
+    {
+      "layer": "data_layer",
+      "description": "The data model, relationships, dictionary, schema rules, and lifecycle.",
+      "required_docs": [
+        "docs/20-data-model.md",
+        "docs/21-entities-and-relationships.md",
+        "docs/22-data-dictionary.md",
+        "docs/23-schema-rules.md",
+        "docs/24-state-and-lifecycle.md"
+      ]
+    },
+    {
+      "layer": "delivery_layer",
+      "description": "The feature breakdown, task plan, implementation order, release plan, acceptance criteria, and QA.",
+      "required_docs": [
+        "docs/25-feature-breakdown.md",
+        "docs/26-task-plan.md",
+        "docs/27-implementation-order.md",
+        "docs/28-release-plan.md",
+        "docs/29-acceptance-criteria.md",
+        "docs/30-test-strategy.md",
+        "docs/31-qa-checklist.md"
+      ]
+    },
+    {
+      "layer": "operations_layer",
+      "description": "The operational detail that keeps the app healthy after delivery.",
+      "required_docs": [
+        "docs/32-edge-cases.md",
+        "docs/33-performance-notes.md",
+        "docs/34-deployment-and-environments.md",
+        "docs/35-observability-and-analytics.md",
+        "docs/36-support-runbook.md",
+        "docs/37-backup-and-recovery.md",
+        "docs/38-change-log.md",
+        "docs/39-security-and-privacy.md",
+        "docs/40-compliance-notes.md",
+        "docs/41-audit-and-logging.md",
+        "docs/42-role-and-permission-matrix.md",
+        "docs/43-vendor-and-dependency-inventory.md"
+      ]
+    },
+    {
+      "layer": "page_maps_and_surface_design",
+      "description": "Page-by-page front-end and dashboard design for IDE, cloud, and admin surfaces.",
+      "required_docs": [
+        "docs/50-ide-pages-and-widget-map.md",
+        "docs/51-cloud-site-pages-and-widget-map.md",
+        "docs/52-dashboard-layout-system.md",
+        "docs/53-admin-billing-marketplace-pages.md",
+        "docs/54-component-library.md",
+        "docs/55-screen-state-matrix.md",
+        "docs/56-responsive-behavior.md",
+        "docs/57-design-tokens.md",
+        "docs/58-copy-and-microcopy.md"
+      ]
+    },
+    {
+      "layer": "runtime_and_packaging",
+      "description": "The runtime schemas, plugin lifecycle, sandboxing, and publish handoff.",
+      "required_docs": [
+        "docs/59-runtime-schema-pack.md",
+        "docs/60-plugin-and-package-lifecycle.md",
+        "docs/61-runner-and-sandbox-spec.md",
+        "docs/62-publish-ready-handoff.md"
+      ]
+    },
+    {
+      "layer": "governance_and_enterprise",
+      "description": "The documentation governance, glossary, decision records, RACI, threat model, traceability, examples, change management, interaction states, metrics, and runbooks that make the app package feel complete in a large company.",
+      "required_docs": [
+        "docs/63-doc-governance.md",
+        "docs/64-glossary.md",
+        "docs/65-decision-records.md",
+        "docs/66-ownership-and-raci.md",
+        "docs/67-threat-model.md",
+        "docs/68-traceability-and-lineage.md",
+        "docs/69-api-and-payload-examples.md",
+        "docs/70-release-and-change-management.md",
+        "docs/71-ux-interaction-states.md",
+        "docs/72-success-metrics.md",
+        "docs/73-operational-runbooks.md",
+        "docs/74-documentation-standards.md"
+      ]
+    }
+  ],
+  "quality_rules": [
+    "The app README must say what the app is and who it serves.",
+    "The docs front door must point to the executive summary and the master index.",
+    "The numbered sequence must remain contiguous after 00.",
+    "Discovery questionnaire and master index stay unnumbered by design.",
+    "Canonical docs should not rely on chat history for meaning.",
+    "Metadata headers should make the doc status, ownership, review state, and source of truth visible at a glance.",
+    "A professional app package should explain the product, UX, system design, data model, release plan, operational rules, and enterprise concerns without requiring live conversation context."
+  ]
+}

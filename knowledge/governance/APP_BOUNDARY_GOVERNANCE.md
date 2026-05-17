@@ -97,7 +97,9 @@ Kabeeri should let one product have multiple technical apps without mixing unrel
 
 The app registry is not just navigation metadata. It is a safety boundary used by tasks, locks, sessions, dashboards, policy gates, and future VS Code views. Task locks and task tokens should derive their narrowest safe scope from this registry instead of widening the boundary by hand.
 
-For portable app knowledge, use `knowledge/governance/APP_DOCS_STANDARD.md` as
-the canonical doc-package contract. It defines the app-folder documentation set
-for UI/UX, architecture, data design, delivery, operations, and enterprise
-notes.
+For portable app knowledge, use `knowledge/governance/APP_DOCS_STANDARD.md` and
+`knowledge/governance/APP_DOCS_STANDARD.json` as the canonical doc-package
+contract. They define the app-folder documentation set for the executive
+summary, discovery, product, UI/UX, architecture, data design, delivery,
+technical diagrams, component and page maps, runtime, governance, and
+enterprise notes.

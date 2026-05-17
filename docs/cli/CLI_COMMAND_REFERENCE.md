@@ -1223,7 +1223,7 @@ kvdf app workspace validate storefront-web
 kvdf app workspace scorecards storefront-web
 ```
 
-The developer app workspace contract requires `src/`, `tests/`, `docs/`, `package.json`, `README.md`, and a local `.kabeeri/` state tree with `project.json`, `workspace.json`, `session.json`, `session_track.json`, `tasks.json`, `task_trash.json`, and `scorecards.json`. Workspace metadata also records `surface_scopes` and boundary status so later dashboard and scorecard work can split website, mobile, shared, allowed, linked, and blocked surfaces without changing the root contract.
+The developer app workspace contract requires `src/`, `tests/`, `docs/`, `package.json`, `README.md`, and a local `.kabeeri/` state tree with `project.json`, `workspace.json`, `session.json`, `session_track.json`, `tasks.json`, `task_trash.json`, and `scorecards.json`. Workspace metadata also records `surface_scopes` and boundary status so later dashboard and scorecard work can split website, mobile, shared, allowed, linked, and blocked surfaces without changing the root contract. The canonical portable docs package is defined in `knowledge/governance/APP_DOCS_STANDARD.md` and `knowledge/governance/APP_DOCS_STANDARD.json`; it keeps `docs/00-executive-summary.md` first, leaves discovery and master navigation unnumbered, and keeps the numbered sequence contiguous after `00`.
 
 Customer-facing app routes always use `username`, never numeric IDs:
 

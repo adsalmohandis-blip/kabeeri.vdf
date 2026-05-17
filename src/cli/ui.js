@@ -628,6 +628,7 @@ Public routes always use username:
   Notes:
   App Boundary Governance allows multiple apps inside one KVDF workspace only when they belong to the same product.
   Developer app workspaces live under workspaces/apps/<app-slug>/ with local .kabeeri state, a strict workspace contract, tests/docs/package metadata, and workspace scorecards.
+  The portable docs package for each app is standardized in knowledge/governance/APP_DOCS_STANDARD.md and knowledge/governance/APP_DOCS_STANDARD.json so the executive summary, discovery questionnaire, master index, product docs, technical docs, and enterprise docs stay in one canonical order.
   Use separate KVDF workspaces for unrelated products, clients, or release lifecycles.
 `,
     journey: `Usage:

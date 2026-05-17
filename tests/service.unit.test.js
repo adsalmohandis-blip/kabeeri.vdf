@@ -36,6 +36,7 @@ const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/
 const { buildBootContext } = require("../src/core/bootstrap");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");
+const { repoRoot } = require("../src/cli/fs_utils");
 const {
   getGitChangedFileDetails,
   readGitStatus,
@@ -609,6 +610,19 @@ test("workspace boundary classifier distinguishes allowed, linked, and blocked p
       process.chdir(previousCwd);
     }
   });
+});
+
+test("app docs standard captures the portable documentation contract", () => {
+  const standard = JSON.parse(fs.readFileSync(path.join(repoRoot(), "knowledge", "governance", "APP_DOCS_STANDARD.json"), "utf8"));
+  assert.strictEqual(standard.standard_name, "App Docs Standard");
+  assert.strictEqual(standard.navigation_rules.numbered_sequence.starts_at, "01");
+  assert.ok(Array.isArray(standard.navigation_rules.unnumbered_docs));
+  assert.ok(standard.navigation_rules.unnumbered_docs.includes("docs/discovery-questionnaire.md"));
+  assert.ok(standard.navigation_rules.unnumbered_docs.includes("docs/master-doc-index.md"));
+  assert.ok(Array.isArray(standard.metadata_header.required_fields));
+  assert.ok(standard.metadata_header.required_fields.includes("Approved by"));
+  assert.ok(Array.isArray(standard.layer_map));
+  assert.ok(standard.layer_map.some((layer) => layer.layer === "governance_and_enterprise" && layer.required_docs.includes("docs/74-documentation-standards.md")));
 });
 
 test("vibe maintainer reports scope-aware cleanup and lifecycle states", () => {

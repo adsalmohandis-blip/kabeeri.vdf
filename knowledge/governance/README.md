@@ -26,6 +26,8 @@ The `.kabeeri/` workspace remains source of truth. Governance examples live besi
 
 ## Spec Files
 
+- `APP_DOCS_STANDARD.md` (human guide)
+- `APP_DOCS_STANDARD.json` (machine-readable companion)
 - `ROLE_PERMISSION_MATRIX.md`
 - `SINGLE_OWNER_RULE.md`
 - `OWNER_TRANSFER_TOKEN.md`
