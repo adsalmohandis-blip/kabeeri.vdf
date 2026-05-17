@@ -306,7 +306,7 @@ Update ROADMAP.md so it reflects the current repository state.
 
 - Update ROADMAP.md with current milestone plan.
 
-- Remove outdated assumptions.
+- Document the current assumptions and mark any future additions as deferred.
 
 - Keep roadmap concise and public-friendly.
 

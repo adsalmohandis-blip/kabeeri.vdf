@@ -258,8 +258,8 @@ function persistSessionTrack(route, report, source = "entry") {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
   const payload = {
     version: "v1",
-    active: route.track_id !== "unclassified",
-    active_track: route.track_id !== "unclassified" ? route.track_id : null,
+    active: source === "onboarding" ? true : route.track_id !== "unclassified",
+    active_track: route.track_id !== "unclassified" ? route.track_id : (source === "onboarding" ? "onboarding" : null),
     track_label: route.track_label,
     role_gate: route.role_gate,
     route_command: route.route_command,

@@ -36,8 +36,8 @@ This slice identifies all files, runtime state, schemas, docs, tests, and report
 | Surface | Files | Current Status | Change Required | Why |
 |---------|-------|-----------------|-----------------|-----|
 | **Governance Spec** | `knowledge/governance/MULTI_AI_GOVERNANCE.md` | ✅ Exists | Cross-check with runtime, add session rules | Canonical governance specification |
-| **Governance README** | `knowledge/governance/README.md` | ⚠️ Outdated | Mention Multi-AI governance as key system | Overview of all governance layers |
-| **Evolution Steward** | `knowledge/governance/EVOLUTION_STEWARD.md` | ⚠️ Needs update | Link Multi-AI governance to Evolution rules | Shows how Multi-AI respects Evolution |
+| **Governance README** | `knowledge/governance/README.md` | Current | Keep Multi-AI governance as a key system | Overview of all governance layers |
+| **Evolution Steward** | `knowledge/governance/EVOLUTION_STEWARD.md` | Current | Link Multi-AI governance to Evolution rules | Shows how Multi-AI respects Evolution |
 
 ### Tier 4: Capability Map (Must Change)
 
@@ -168,7 +168,7 @@ Before implementation (Slice 3) starts, **confirm all these are true**:
 
 **This slice is done when:**
 
-- [ ] All files above are audited for gaps or outdated sections
+- [ ] All files above are reviewed for gaps or wording drift
 - [ ] No contradictions exist between runtime, CLI, docs, schemas, and tests
 - [ ] A clear list of "must change" files is created for Slice 3
 - [ ] Owner agrees this map is complete and accurate

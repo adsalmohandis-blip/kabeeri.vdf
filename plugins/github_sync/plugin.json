@@ -4,6 +4,8 @@
   "plugin_version": "1.0.0",
   "bundle_type": "removable",
   "load_strategy": "manifest_driven",
+  "command_entrypoint": "plugins/github_sync/bootstrap.js",
+  "runtime_entrypoint": null,
   "removable": true,
   "track": "shared",
   "plugin_family": "platform_plugin",

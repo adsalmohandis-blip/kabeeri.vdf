@@ -1847,29 +1847,31 @@ function validateWorkstreamGovernance(pass, fail) {
   pass("workstream governance checked");
 }
 
-function validateExecutionScopeTokens(tokens, pass, fail) {
-  const tasks = safeRead(".kabeeri/tasks.json", "tasks");
-  const trashedTasks = new Set((safeRead(".kabeeri/task_trash.json", "trash") || []).map((item) => item && item.id).filter(Boolean));
-  for (const token of tokens) {
-    if (!token.task_id) fail(`token missing task_id: ${token.token_id || "unknown"}`);
-    if (!token.assignee_id) fail(`token missing assignee_id: ${token.token_id || "unknown"}`);
-    const task = tasks.find((item) => item.id === token.task_id);
+  function validateExecutionScopeTokens(tokens, pass, fail) {
+    const tasks = safeRead(".kabeeri/tasks.json", "tasks");
+    const trashedTasks = new Set((safeRead(".kabeeri/task_trash.json", "trash") || []).map((item) => item && item.id).filter(Boolean));
+    for (const token of tokens) {
+      if (!token.task_id) fail(`token missing task_id: ${token.token_id || "unknown"}`);
+      if (!token.assignee_id) fail(`token missing assignee_id: ${token.token_id || "unknown"}`);
+      const task = tasks.find((item) => item.id === token.task_id);
     if (!task) {
       if (trashedTasks.has(token.task_id)) continue;
-      fail(`token references missing task: ${token.token_id || "unknown"} -> ${token.task_id || "unknown"}`);
-      continue;
-    }
-    const taskStreams = taskWorkstreams(task).filter((item) => item !== "unassigned");
-    const tokenStreams = (token.workstreams || []).map((item) => normalizeWorkstreamId(item)).filter(Boolean);
-    for (const stream of tokenStreams) {
-      if (!taskStreams.includes(stream)) fail(`token workstream outside task: ${token.token_id || "unknown"} -> ${stream}`);
-    }
-    if (token.status === "active" && token.allowed_files && token.allowed_files.length > 0) {
-      const appPaths = taskAppPaths(task);
-      const derived = deriveValidationScope(task, taskStreams, appPaths);
-      const broad = findPathsOutsideDerivedScope(token.allowed_files, derived);
-      if (broad.length > 0 && !String(token.scope_source || "").includes("override")) {
-        fail(`token scope broader than task boundaries: ${token.token_id || "unknown"} -> ${broad.join(", ")}`);
+        fail(`token references missing task: ${token.token_id || "unknown"} -> ${token.task_id || "unknown"}`);
+        continue;
+      }
+      const enforceScope = String(token.status || "").toLowerCase() === "active";
+      if (!enforceScope) continue;
+      const taskStreams = taskWorkstreams(task).filter((item) => item !== "unassigned");
+      const tokenStreams = (token.workstreams || []).map((item) => normalizeWorkstreamId(item)).filter(Boolean);
+      for (const stream of tokenStreams) {
+        if (!taskStreams.includes(stream)) fail(`token workstream outside task: ${token.token_id || "unknown"} -> ${stream}`);
+      }
+      if (token.allowed_files && token.allowed_files.length > 0) {
+        const appPaths = taskAppPaths(task);
+        const derived = deriveValidationScope(task, taskStreams, appPaths);
+        const broad = findPathsOutsideDerivedScope(token.allowed_files, derived);
+        if (broad.length > 0 && !String(token.scope_source || "").includes("override")) {
+          fail(`token scope broader than task boundaries: ${token.token_id || "unknown"} -> ${broad.join(", ")}`);
       }
     }
   }

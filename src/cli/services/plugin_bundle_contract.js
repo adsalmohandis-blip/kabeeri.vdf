@@ -24,20 +24,22 @@ function buildPluginBundleContract(plugin, options = {}) {
   }
 
   const root = options.root || repoRoot();
-  const bundlePath = path.join(root, plugin.bundle_path || `plugins/${plugin.plugin_id}`);
+  const validationRoot = options.bundle_root ? path.join(root, options.bundle_root) : path.join(root, plugin.bundle_path || `plugins/${plugin.plugin_id}`);
   const requiredFolders = normalizeList(plugin.required_folders);
   const optionalFolders = normalizeList(plugin.optional_folders);
   const domainFolders = normalizeList(plugin.domain_folders);
   const commandSurface = normalizeList(plugin.command_surface);
   const docsSurface = normalizeList(plugin.docs_surface);
-  const presentRequiredFolders = requiredFolders.filter((folder) => fs.existsSync(path.join(bundlePath, folder)));
-  const missingRequiredFolders = requiredFolders.filter((folder) => !fs.existsSync(path.join(bundlePath, folder)));
+  const presentRequiredFolders = requiredFolders.filter((folder) => fs.existsSync(path.join(validationRoot, folder)));
+  const missingRequiredFolders = requiredFolders.filter((folder) => !fs.existsSync(path.join(validationRoot, folder)));
 
   const ready = missingRequiredFolders.length === 0;
   return {
     plugin_id: plugin.plugin_id || plugin.name || null,
     name: plugin.name || plugin.plugin_id || null,
-    bundle_path: plugin.bundle_path || null,
+    bundle_path: options.reported_bundle_path || plugin.bundle_path || null,
+    command_entrypoint: plugin.command_entrypoint || null,
+    runtime_entrypoint: plugin.runtime_entrypoint || null,
     plugin_family: plugin.plugin_family || null,
     plugin_type: plugin.plugin_type || null,
     bundle_type: plugin.bundle_type || null,

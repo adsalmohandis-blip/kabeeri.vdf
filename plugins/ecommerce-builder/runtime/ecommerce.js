@@ -1,5 +1,9 @@
-const { fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
-const { buildPluginBundleContract } = require("./plugin_bundle_contract");
+const {
+  fileExists,
+  readJsonFile,
+  writeJsonFile,
+  buildEcommerceBundleContract
+} = require("../lib/ecommerce_helpers");
 
 const ECOMMERCE_STATE_FILE = ".kabeeri/ecommerce.json";
 const SUPPORTED_MODES = ["store", "marketplace", "digital-products", "subscription", "services"];
@@ -165,7 +169,7 @@ function createEcommerceProject(value, flags = {}, deps = {}) {
     blockers: [],
     next_action: "kvdf ecommerce questionnaire",
     artifacts: {
-      bundle_contract: buildEcommerceBundleContract(plugin, mode, "intake", "kvdf ecommerce questionnaire")
+      bundle_contract: buildEcommerceBundleState(plugin, mode, "intake", "kvdf ecommerce questionnaire")
     }
   });
   const nextState = upsertCurrentProject(state, project);
@@ -566,7 +570,7 @@ function buildEcommerceTasks(project, modules, deliveryMode = "structured") {
         "plugins/ecommerce-builder/",
         ".kabeeri/ecommerce.json",
         "docs/reports/",
-        "src/cli/commands/ecommerce.js"
+        "plugins/ecommerce-builder/bootstrap.js"
       ]
     };
   });
@@ -683,7 +687,7 @@ function updateCurrentProject(updatedProject, writeJsonFileFn = writeJsonFile) {
   return nextState;
 }
 
-function buildEcommerceBundleContract(plugin, mode, stage, nextExactAction) {
+function buildEcommerceBundleState(plugin, mode, stage, nextExactAction) {
   const fallback = {
     plugin_id: "ecommerce-builder",
     name: "Ecommerce Builder",
@@ -718,7 +722,7 @@ function buildEcommerceBundleContract(plugin, mode, stage, nextExactAction) {
       "plugins/ecommerce-builder/docs/cli.md"
     ]
   };
-  const base = plugin && plugin.bundle_contract ? plugin.bundle_contract : buildPluginBundleContract(fallback, { ready_action: nextExactAction });
+  const base = plugin && plugin.bundle_contract ? plugin.bundle_contract : buildEcommerceBundleContract(fallback, { ready_action: nextExactAction });
   return {
     ...base,
     current_mode: mode || null,

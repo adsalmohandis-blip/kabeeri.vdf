@@ -140,7 +140,7 @@ From git issues, PRs, and codebase comments:
 ### Medium Priority
 - [ ] Search functionality basic (FEATURE)
 - [ ] Email notifications not batched (PERF)
-- [ ] Documentation outdated (TECH DEBT)
+- [ ] Documentation needs review (tech debt)
 
 ### Low Priority
 - [ ] UI inconsistency on mobile (UX)
@@ -209,7 +209,7 @@ Create `.kabeeri/adoption_scan/ADOPTION_REPORT.md`:
 ### Medium Priority (6)
 - [ ] Search functionality needs improvement
 - [ ] Email batching not implemented
-- [ ] Documentation outdated
+- [ ] Documentation needs review
 - [ ] Test coverage at 65% (target: 80%)
 - [ ] Some technical debt in auth module
 - [ ] No structured logging
@@ -226,7 +226,7 @@ Create `.kabeeri/adoption_scan/ADOPTION_REPORT.md`:
 |-----------|-------|-------|
 | Code Organization | 8/10 | Clear folder structure |
 | Test Coverage | 6/10 | 65%, target 80% |
-| Documentation | 5/10 | Some outdated |
+| Documentation | 5/10 | Some sections need review |
 | Deployment | 7/10 | Mostly automated |
 | Security | 7/10 | Few gaps identified |
 | Performance | 6/10 | Some optimization needed |

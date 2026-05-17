@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 
 const { ensureWorkspace, writeJsonFile } = require("../workspace");
-const { repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 const { appendJsonLine, readJsonLines } = require("../services/jsonl");
 

@@ -1,18 +1,22 @@
 {
   "report_type": "task_executor_contract",
-  "generated_at": "2026-05-14T04:55:18.322Z",
+  "generated_at": "2026-05-16T22:48:13.410Z",
   "audience": "framework_owner",
   "command_prefix": "kvdf task",
   "surface_role": "executor",
-  "contract_id": "task-executor-contract-1778734518322",
-  "packet_id": "task-packet-1778734518200",
+  "contract_id": "task-executor-contract-1778971693410",
+  "packet_id": "task-packet-1778971693150",
   "packet_state_path": "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
-  "current_task_id": null,
-  "current_task_title": null,
+  "current_task_id": "task-063",
+  "current_task_title": "Evolution Steward: update CLI surface and help",
   "executor_role": "implementation_worker",
   "planner_role": "control_plane",
   "assignment_rule": "The executor may only act on tasks supplied by the control plane packet or current task state.",
-  "allowed_files": [],
+  "allowed_files": [
+    "src/cli/index.js",
+    "src/cli/ui.js",
+    "docs/cli/CLI_COMMAND_REFERENCE.md"
+  ],
   "allowed_actions": [
     "read packet",
     "inspect allowed files",
@@ -28,19 +32,108 @@
     "replan the workflow"
   ],
   "packet_hints": {
-    "packet_id": "task-packet-1778734518200",
+    "packet_id": "task-packet-1778971693150",
     "packet_state_path": "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
-    "next_action": "kvdf task tracker --json",
-    "next_command": "kvdf task tracker --json",
+    "next_action": "kvdf task assign task-063 --assignee codex",
+    "next_command": "kvdf task assign task-063 --assignee codex",
     "recommended_assignee_id": "codex"
   },
-  "execution_queue": [],
+  "execution_queue": [
+    {
+      "id": "task-063",
+      "title": "Evolution Steward: update CLI surface and help",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        "src/cli/index.js",
+        "src/cli/ui.js",
+        "docs/cli/CLI_COMMAND_REFERENCE.md"
+      ],
+      "acceptance_criteria_count": 2
+    },
+    {
+      "id": "task-064",
+      "title": "Evolution Steward: update task tracking integration",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        ".kabeeri/tasks.json",
+        "knowledge/task_tracking/",
+        "knowledge/task_tracking/TASK_GOVERNANCE.md"
+      ],
+      "acceptance_criteria_count": 2
+    },
+    {
+      "id": "task-065",
+      "title": "Evolution Steward: update readiness/governance reports",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        ".kabeeri/reports/",
+        "src/cli/index.js",
+        "docs/internal/LIVE_JSON_REPORTS.md"
+      ],
+      "acceptance_criteria_count": 2
+    },
+    {
+      "id": "task-066",
+      "title": "Evolution Steward: update AI context and prompt guidance",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        "knowledge/vibe_ux/",
+        "packs/prompt_packs/",
+        "README.md",
+        "README_AR.md"
+      ],
+      "acceptance_criteria_count": 2
+    },
+    {
+      "id": "task-067",
+      "title": "Evolution Steward: update human documentation",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        "docs/",
+        "knowledge/"
+      ],
+      "acceptance_criteria_count": 2
+    },
+    {
+      "id": "task-068",
+      "title": "Evolution Steward: update capabilities reference",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+        "docs/site/assets/js/app.js"
+      ],
+      "acceptance_criteria_count": 2
+    },
+    {
+      "id": "task-069",
+      "title": "Evolution Steward: update automated tests",
+      "status": "approved",
+      "assignee_id": "",
+      "next_action": "assign the task and issue a scoped token",
+      "allowed_files": [
+        "tests/"
+      ],
+      "acceptance_criteria_count": 2
+    }
+  ],
   "contract_points": [
     "The AI executor is a worker that consumes a packet.",
     "The control plane owns planning, packet creation, and task ordering.",
     "The executor only acts inside approved task boundaries and allowed files.",
     "The executor returns evidence and the next action instead of inventing new scope."
   ],
-  "status": "empty",
-  "message": "No packet was found to bind to an executor contract."
+  "status": "ready",
+  "message": "Executor contract compiled for packet task-packet-1778971693150."
 }

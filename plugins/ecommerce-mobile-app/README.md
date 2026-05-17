@@ -1,6 +1,6 @@
 # Ecommerce Mobile App Builder
 
-`ecommerce-mobile-app` is the app-track plugin for mobile commerce apps.
+`ecommerce-mobile-app` is the app-track plugin for mobile commerce apps. Its plugin-owned bootstrap lives in `plugins/ecommerce-mobile-app/bootstrap.js`.
 
 ```bash
 kvdf plugins install ecommerce-mobile-app

@@ -200,7 +200,7 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["--version"]).stdout, /kvdf 0\.2\.0/);
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
-  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
+  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "cleaner", "maintenance", "vibe-maintainer", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
     const help = runKvdf([command, "--help"]).stdout;
     assert.match(help, /Usage:/, `${command} help should include usage`);
     assert.doesNotMatch(help, /No detailed help/, `${command} should have detailed help`);
@@ -227,6 +227,21 @@ test("root commands validate repository assets", () => {
   assert.ok(rootEntry.entry_route.blocked_features.includes("app creation"));
   assert.strictEqual(JSON.parse(runKvdf(["guard", "--json"]).stdout).mode, "framework_source");
   assert.strictEqual(JSON.parse(runKvdf(["conflict", "scan", "--json"]).stdout).report_type, "framework_conflict_scan");
+  const cleanerHelp = runKvdf(["cleaner", "--help"]).stdout;
+  assert.match(cleanerHelp, /cleanup workflow/);
+  assert.match(cleanerHelp, /cleaner relocate review/);
+  assert.match(cleanerHelp, /--threshold 0\.9/);
+  assert.match(cleanerHelp, /cleaner relocate/);
+  const maintenanceHelp = runKvdf(["maintenance", "--help"]).stdout;
+  assert.match(maintenanceHelp, /maintenance fast/);
+  assert.match(maintenanceHelp, /maintenance slow/);
+  const maintenanceFast = JSON.parse(runKvdf(["maintenance", "fast", "--json"]).stdout);
+  assert.strictEqual(maintenanceFast.report_type, "kvdf_system_cleanup_audit");
+  assert.strictEqual(maintenanceFast.workflow_mode, "fast");
+  const maintenanceSlow = JSON.parse(runKvdf(["maintenance", "slow", "--json"]).stdout);
+  assert.strictEqual(maintenanceSlow.report_type, "kvdf_system_cleanup_audit");
+  assert.strictEqual(maintenanceSlow.workflow_mode, "slow");
+  assert.strictEqual(maintenanceSlow.maintenance_relocation.review_mode, true);
   assert.match(runKvdf(["sync", "status"]).stdout, /Kabeeri GitHub Team Sync Status/);
   assert.match(runKvdf(["docs", "path"]).stdout, /docs[\\/]site[\\/]index\.html/);
   const sourcePackageHelp = runKvdf(["source-package", "--help"]).stdout;
@@ -4361,6 +4376,62 @@ test("developer app workspace layout scaffolds isolated app roots", () => withTe
   assert.ok(registry.workspaces.some((item) => item.slug === "storefront-web"));
 }));
 
+test("vibe maintainer cleanup supports current, all, and lifecycle workflow scopes", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  runKvdf(["app", "workspace", "create", "--slug", "storefront-web", "--name", "Storefront Web", "--type", "frontend"], { cwd: dir });
+  runKvdf(["app", "workspace", "create", "--slug", "admin-web", "--name", "Admin Web", "--type", "frontend"], { cwd: dir });
+  fs.cpSync(path.join(repoRoot, "src"), path.join(dir, "src"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "vibe-maintainer"), path.join(dir, "plugins", "vibe-maintainer"), { recursive: true });
+  runKvdf(["plugins", "install", "vibe-maintainer"], { cwd: dir });
+
+  const appRoot = path.join(dir, "workspaces", "apps", "storefront-web");
+  const currentCleanup = JSON.parse(runKvdf(["vibe-maintainer", "cleanup", "--json"], { cwd: appRoot }).stdout);
+  assert.strictEqual(currentCleanup.report_type, "vibe_maintainer_audit");
+  assert.strictEqual(currentCleanup.workflow_mode, "fast");
+  assert.strictEqual(currentCleanup.scope.scope_mode, "current");
+  assert.strictEqual(currentCleanup.summary.workspace_count, 1);
+  assert.strictEqual(currentCleanup.next_exact_action, "kvdf vibe-maintainer approve --confirm");
+
+  const allCleanup = JSON.parse(runKvdf(["vibe-maintainer", "slow", "--all", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(allCleanup.report_type, "vibe_maintainer_audit");
+  assert.strictEqual(allCleanup.workflow_mode, "slow");
+  assert.strictEqual(allCleanup.scope.scope_mode, "all");
+  assert.strictEqual(allCleanup.summary.workspace_count, 2);
+  assert.strictEqual(allCleanup.approval_status, "pending");
+
+  const summary = JSON.parse(runKvdf(["vibe-maintainer", "report", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(summary.report_type, "vibe_maintainer_summary");
+  assert.strictEqual(summary.scope.scope_mode, "all");
+  assert.strictEqual(summary.summary.workspace_count, 2);
+
+  const approval = JSON.parse(runKvdf(["vibe-maintainer", "approve", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(approval.report_type, "vibe_maintainer_state");
+  assert.strictEqual(approval.status, "approved");
+  assert.strictEqual(approval.scope.scope_mode, "all");
+
+  const execution = JSON.parse(runKvdf(["vibe-maintainer", "execute", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(execution.report_type, "vibe_maintainer_state");
+  assert.strictEqual(execution.status, "executed");
+  assert.strictEqual(execution.scope.scope_mode, "all");
+
+  const finalState = JSON.parse(runKvdf(["vibe-maintainer", "finalize", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(finalState.report_type, "vibe_maintainer_state");
+  assert.strictEqual(finalState.status, "completed");
+  assert.strictEqual(finalState.next_exact_action, "Cleanup cycle complete.");
+
+  const status = JSON.parse(runKvdf(["vibe-maintainer", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "vibe_maintainer_summary");
+  assert.strictEqual(status.status, "completed");
+  assert.strictEqual(status.approval_status, "approved");
+  assert.strictEqual(status.summary.workspace_count, 2);
+
+  runKvdf(["plugins", "uninstall", "vibe-maintainer"], { cwd: dir });
+  const disabledStatus = JSON.parse(runKvdf(["vibe-maintainer", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(disabledStatus.report_type, "vibe_maintainer_summary");
+  assert.strictEqual(disabledStatus.status, "completed");
+  assert.strictEqual(disabledStatus.next_exact_action, "Cleanup cycle complete.");
+}));
+
 test("developer app workspace dashboard renders the vibe developer view", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   runKvdf(["app", "workspace", "create", "--slug", "storefront-web", "--name", "Storefront Web", "--type", "frontend"], { cwd: dir });
@@ -5110,6 +5181,51 @@ test("evolution execution report persists a resumable report for the next open p
   assert.ok(report.resume_steps.length > 0);
   assert.ok(Array.isArray(report.verification_commands));
   assert.ok(fs.existsSync(path.join(repoRoot, "docs", "reports", "EVO_AUTO_041_EXECUTION_REPORT.md")));
+});
+
+test("cleaner cleanup saves an organized audit report", () => {
+  withTempDir((dir) => {
+    fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "plugins", "kvdf-dev"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "plugins", "kvdf-dev", "plugin.json"), JSON.stringify({
+      plugin_id: "kvdf-dev",
+      name: "KVDF Dev System Bundle",
+      plugin_version: "1.0.0",
+      bundle_type: "removable",
+      load_strategy: "manifest_driven",
+      removable: true,
+      track: "framework_owner",
+      enabled_by_default: true,
+      required_folders: ["commands", "docs"],
+      command_surface: ["kvdf cleaner cleanup", "kvdf cleaner inspect"],
+      docs_surface: ["plugins/kvdf-dev/docs/index.md"]
+    }, null, 2), "utf8");
+    fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "console.log('cleaner');\n", "utf8");
+    const result = runKvdf(["cleaner", "cleanup", "--json"], { cwd: dir });
+    const report = JSON.parse(result.stdout);
+    assert.strictEqual(report.report_type, "kvdf_system_cleanup_audit");
+    assert.ok(Array.isArray(report.cleanup_queue));
+    assert.match(report.next_exact_action, /kvdf cleaner approve --confirm/);
+    assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "kvdf_cleanup_audit.json")));
+    assert.ok(fs.existsSync(path.join(dir, "docs", "reports", "KVDF_CLEANUP_AUDIT.md")));
+    const summary = JSON.parse(runKvdf(["cleaner", "report", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(summary.report_type, "kvdf_system_cleanup_summary");
+    assert.strictEqual(summary.cleanup_id, report.cleanup_id);
+    assert.match(summary.clean_status_line, /awaiting_approval/);
+    assert.ok(Array.isArray(summary.queue_highlights));
+    assert.ok(summary.queue_highlights.length > 0);
+    const output = runKvdf(["cleaner", "report"], { cwd: dir }).stdout;
+    assert.match(output, /Clean status:/);
+    assert.match(output, /KVDF Cleaner Summary/);
+    assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "kvdf_cleanup_summary.json")));
+    assert.ok(fs.existsSync(path.join(dir, "docs", "reports", "KVDF_CLEANUP_SUMMARY.md")));
+    const inspection = JSON.parse(runKvdf(["cleaner", "inspect", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(inspection.report_type, "kvdf_maintenance_inspection_report");
+    assert.ok(inspection.inspection);
+    assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "kvdf_maintenance_inspection.json")));
+    assert.ok(fs.existsSync(path.join(dir, "docs", "reports", "KVDF_MAINTENANCE_INSPECTION.md")));
+  });
 });
 
 let failed = 0;

@@ -14,7 +14,7 @@ The execution source of truth for AI and CLI work is the shared operating contra
 
 | Group | Target meaning | Current paths |
 | --- | --- | --- |
-| `core` | Runtime code, CLI handlers, command entrypoints | `src/`, `bin/`, `cli/` |
+| `core` | Runtime code, CLI handlers, command entrypoints | `src/`, `bin/`, `src/cli/` |
 | `knowledge` | Product intelligence, governance, delivery systems, design guidance | `knowledge/standard_systems/`, `knowledge/project_intelligence/`, `knowledge/questionnaires/`, `knowledge/delivery_modes/`, `knowledge/agile_delivery/`, `knowledge/governance/`, `knowledge/task_tracking/`, `knowledge/vibe_ux/`, `knowledge/design_system/`, `knowledge/design_system/ui_ux_reference/` |
 | `packs` | Exportable templates, generators, examples, prompt packs | `packs/generators/`, `packs/templates/`, `packs/examples/`, `packs/prompt_packs/` |
 | `plugins` | GitHub, VS Code, and multi-AI plugin bundles | `plugins/github_sync/`, `plugins/github/`, `plugins/vscode_extension/`, `plugins/multi_ai_governance/` |
@@ -33,8 +33,7 @@ Current root should stay small:
 ```text
 bin/
 src/
-cli/
-knowledge/
+    knowledge/
 packs/
 plugins/
 docs/

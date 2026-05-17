@@ -1,5 +1,5 @@
 const { buildTaskTemporaryQueueReport } = require("./temp");
-const { ensureTaskTrashState, moveTaskToTrash, purgeExpiredTaskTrash, restoreTaskFromTrash, taskTrashSummary } = require("../services/task_trash");
+const { ensureTaskTrashState, moveTaskToTrash, restoreTaskFromTrash, taskTrashSummary } = require("../services/task_trash");
 const { resolvePlannedAiCandidateFromList, buildPlannedAiCandidatePoolFromEntries } = require("../services/ai_planner");
 
 const SCHEDULER_FILE = ".kabeeri/task_scheduler.json";

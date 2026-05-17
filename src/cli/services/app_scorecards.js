@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const { fileExists, repoRoot } = require("../fs_utils");
+const { repoRoot } = require("../fs_utils");
 const { readJsonFile, writeJsonFile } = require("../workspace");
 const {
   resolveWorkspaceRoot,
@@ -408,6 +408,11 @@ function buildAppScorecardReport(workspaceRootOrSlug, options = {}) {
   };
 }
 
+function buildAppScorecardSummaryLine(state) {
+  const summary = state.summary || {};
+  return `Scorecards: ${summary.total || 0} total, ${summary.ready || 0} ready, ${summary.pending || 0} pending, ${summary.blocked || 0} blocked`;
+}
+
 function buildAppScorecardTableRows(state) {
   return [...(state.cards || []), ...(state.surface_cards || [])].map((card) => [
     card.card_id,
@@ -418,33 +423,6 @@ function buildAppScorecardTableRows(state) {
     Number(card.score || 0).toFixed(1),
     card.next_action || ""
   ]);
-}
-
-function buildAppScorecardSummaryLine(state) {
-  const summary = state.summary || {};
-  return `Scorecards: ${summary.total || 0} total, ${summary.ready || 0} ready, ${summary.pending || 0} pending, ${summary.blocked || 0} blocked`;
-}
-
-function buildAppScorecardNextAction(state) {
-  return (state.summary && state.summary.next_exact_action) || "kvdf questionnaire review";
-}
-
-function buildAppScorecardBand(score) {
-  return scorecardBand(score);
-}
-
-function buildAppScorecardBlueprints(workspaceRootOrSlug) {
-  const workspaceRoot = resolveWorkspaceRoot(workspaceRootOrSlug || currentWorkspaceRoot());
-  if (!workspaceRoot) return [];
-  const contract = validateDeveloperAppWorkspace(workspaceRoot);
-  const metadata = readWorkspaceMetadata(workspaceRoot);
-  const surfaceScopes = normalizeSurfaceScopes(metadata.surface_scopes || contract.surface_scopes, metadata.app_type || contract.app_type || "application");
-  return [...BASELINE_SCORECARD_BLUEPRINTS, ...surfaceScopes.map((scope) => ({
-    card_id: `surface_${scope}`,
-    title: `${capitalize(scope)} surface readiness`,
-    category: "surface",
-    scope
-  }))];
 }
 
 function readPlanningPack(workspaceRoot) {
@@ -532,18 +510,10 @@ function uniqueList(items = []) {
   return [...new Set(items.map((item) => String(item || "").trim()).filter(Boolean))];
 }
 
-function buildAppScorecardState(workspaceRootOrSlug, options = {}) {
-  return seedAppScorecardState(workspaceRootOrSlug, options);
-}
-
 module.exports = {
   SCORECARD_FILE,
   BASELINE_SCORECARD_BLUEPRINTS,
-  buildAppScorecardBand,
-  buildAppScorecardBlueprints,
-  buildAppScorecardNextAction,
   buildAppScorecardReport,
-  buildAppScorecardState,
   buildAppScorecardSummaryLine,
   buildAppScorecardTableRows,
   evaluateScorecardStatus,

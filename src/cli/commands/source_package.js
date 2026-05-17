@@ -2,7 +2,6 @@ const fs = require("fs");
 const path = require("path");
 
 const { fileExists, repoRoot } = require("../fs_utils");
-const { readJsonFile } = require("../workspace");
 const { table } = require("../ui");
 const { getSystemAreas, buildCapabilityRegistry } = require("./capability");
 

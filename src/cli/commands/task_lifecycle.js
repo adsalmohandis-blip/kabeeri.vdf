@@ -1,4 +1,3 @@
-const { readJsonFile } = require("../workspace");
 const { ensureTaskTrashState, taskTrashSummary } = require("../services/task_trash");
 
 const LIFECYCLE_STAGES = ["intake", "ready", "execution", "validation", "closure", "blocked", "archived"];

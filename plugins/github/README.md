@@ -1,7 +1,8 @@
 # GitHub Integration Bundle
 
-This bundle packages the GitHub planning and sync notes used by KVDF as a
-removable plugin.
+This bundle packages the GitHub planning, command surface, and sync notes used
+by KVDF as a removable plugin. The bundle entrypoint lives in
+`plugins/github/bootstrap.js`.
 
 It is installable and uninstallable through the standard plugin loader:
 
@@ -19,6 +20,7 @@ kvdf plugins disable github
 
 ## What lives here
 
+- `commands/github.js`: plugin-owned GitHub command implementation.
 - `import_instructions.md`: safe import guidance for GitHub mutations.
 - `issues_backlog.md`: backlog template and issue grouping notes.
 - `labels.json`: recommended GitHub label set.
@@ -27,8 +29,9 @@ kvdf plugins disable github
 ## Relationship To GitHub Sync
 
 `plugins/github/` is the bundle that carries the GitHub planning/reference
-material. `plugins/github_sync/` carries the sync-rule bundle that aligns
-release and issue write workflows with KVDF governance.
+material and plugin-owned GitHub command implementation. `plugins/github_sync/`
+carries the sync-rule bundle that aligns release and issue write workflows with
+KVDF governance.
 
 Keep GitHub writes gated by the CLI confirmation and policy checks. The plugin
 only stores the bundle contract and reference material.

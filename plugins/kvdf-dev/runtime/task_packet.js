@@ -1,4 +1,15 @@
-const { formatNextExactAction } = require("../../../src/cli/services/command_registry");
+const path = require("path");
+
+function resolveRepoRootFromCli() {
+  const cliEntry = process.argv[1] ? path.resolve(process.argv[1]) : null;
+  if (!cliEntry) {
+    throw new Error("KVDF Dev runtime blocked: unable to resolve CLI entrypoint.");
+  }
+  return path.dirname(path.dirname(cliEntry));
+}
+
+const repoRoot = resolveRepoRootFromCli();
+const { formatNextExactAction } = require(path.join(repoRoot, "src/cli/services/command_registry"));
 
 function compileTaskControlPlanePacket(options = {}, deps = {}) {
   const {

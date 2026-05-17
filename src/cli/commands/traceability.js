@@ -1,4 +1,4 @@
-const { fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
+const { fileExists, writeJsonFile } = require("../fs_utils");
 const { ensureWorkspace } = require("../workspace");
 const { readStateArray } = require("../services/state_utils");
 const { buildTaskLifecycleState } = require("./task_lifecycle");

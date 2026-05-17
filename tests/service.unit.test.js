@@ -10,6 +10,21 @@ const { suggestCommand } = require("../src/cli/services/command_suggestions");
 const { capitalize, isExpired, matchesAny, parseCsv, uniqueBy, uniqueList } = require("../src/cli/services/collections");
 const { getCoverageAction, normalizeAnswerValue, inferAnswerConfidence } = require("../src/cli/services/questionnaire");
 const { buildEvolutionScorecards } = require("../src/cli/services/evolution");
+const {
+  buildCleanupAuditReport,
+  buildCleanupSummaryReport,
+  buildMaintenanceInspectionReport,
+  buildMaintenanceRelocationReport,
+  applyMaintenanceRelocationPlan,
+  persistMaintenanceRelocationReport,
+  persistCleanupSummaryReport,
+  persistMaintenanceInspectionReport,
+  renderCleanupAuditReport,
+  renderCleanupSummaryReport,
+  renderMaintenanceInspectionReport,
+  renderMaintenanceRelocationReport
+} = require("../src/cli/services/cleanup_audit");
+const vibeMaintainer = require("../plugins/vibe-maintainer/runtime/vibe_maintainer");
 const { buildSessionHandoff } = require("../src/cli/services/session_handoff");
 const { classifyWorkspaceBoundaryPath, summarizeWorkspaceBoundary, validateDeveloperAppWorkspace } = require("../src/cli/services/app_workspace_contract");
 const { objectLines, recordLines } = require("../src/cli/services/report_output");
@@ -20,6 +35,7 @@ const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../src/
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
 const { buildBootContext } = require("../src/core/bootstrap");
 const { serveSite } = require("../src/cli/commands/site");
+const { seedAppDocsPackage } = require("../src/cli/workspace");
 const {
   getGitChangedFileDetails,
   readGitStatus,
@@ -44,6 +60,76 @@ function withTempDir(fn) {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+}
+
+function scaffoldVibeWorkspace(dir, slug, { stale = false } = {}) {
+  const root = path.join(dir, "workspaces", "apps", slug);
+  fs.mkdirSync(path.join(root, ".kabeeri"), { recursive: true });
+  fs.mkdirSync(path.join(root, "src"), { recursive: true });
+  fs.mkdirSync(path.join(root, "tests"), { recursive: true });
+  fs.mkdirSync(path.join(root, "docs"), { recursive: true });
+  fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({
+    name: slug,
+    version: "1.0.0"
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");
+  fs.writeFileSync(path.join(root, "src", "index.js"), stale ? "// TODO: dead code candidate\n" : "module.exports = { ready: true };\n", "utf8");
+  fs.writeFileSync(path.join(root, "tests", "smoke.test.js"), "test('smoke', () => true);\n", "utf8");
+  fs.writeFileSync(path.join(root, "docs", "README.md"), stale ? "This doc contains future only guidance.\n" : "# Docs\n", "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "workspace.json"), JSON.stringify({
+    workspace_contract_version: "v1",
+    workspace_kind: "developer_app",
+    app_slug: slug,
+    app_name: slug,
+    app_type: "frontend",
+    surface_scopes: ["website"],
+    linked_workspace_roots: [],
+    root: `workspaces/apps/${slug}`
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "project.json"), JSON.stringify({
+    workspace_kind: "developer_app",
+    app_slug: slug,
+    app_type: "frontend",
+    surface_scopes: ["website"],
+    linked_workspace_roots: [],
+    root: `workspaces/apps/${slug}`
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "session.json"), JSON.stringify({
+    version: "v1",
+    current_project_id: `${slug}-project`,
+    updated_at: new Date().toISOString()
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "session_track.json"), JSON.stringify({
+    version: "v1",
+    active: true,
+    active_track: "vibe_app_developer",
+    track_label: "Vibe App Developer Track",
+    role_gate: "app_workspace",
+    route_command: "kvdf entry",
+    follow_up_command: "kvdf resume",
+    activated_features: ["vibe"],
+    blocked_features: ["evolution"],
+    started_from_mode: "kabeeri_user_app_workspace",
+    active_root: root,
+    activated_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "tasks.json"), JSON.stringify({
+    version: "v1",
+    tasks: [],
+    updated_at: new Date().toISOString()
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "task_trash.json"), JSON.stringify({
+    version: "v1",
+    trash: [],
+    updated_at: new Date().toISOString()
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(root, ".kabeeri", "scorecards.json"), JSON.stringify({
+    version: "v1",
+    cards: [],
+    updated_at: new Date().toISOString()
+  }, null, 2), "utf8");
+  return root;
 }
 
 test("dashboard contracts expose workspace, technical, business, and tracker checks", () => {
@@ -146,6 +232,147 @@ test("evolution scorecards build a review-only scorecard report", () => {
   assert.ok(report.next_actions.some((item) => item.includes("standalone evaluation artifact")));
 });
 
+test("cleanup audit builds an organized repo report", () => {
+  withTempDir((dir) => {
+    fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "plugins", "kvdf-dev"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "src", "cli", "commands"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "docs"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "packs", "prompt_packs"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "prompt-packs"), { recursive: true });
+    fs.writeFileSync(path.join(dir, "plugins", "kvdf-dev", "plugin.json"), JSON.stringify({
+      plugin_id: "kvdf-dev",
+      name: "KVDF Dev System Bundle",
+      plugin_version: "1.0.0",
+      bundle_type: "removable",
+      load_strategy: "manifest_driven",
+      removable: true,
+      track: "framework_owner",
+      enabled_by_default: true,
+      required_folders: ["commands", "docs"],
+      command_surface: ["kvdf cleaner cleanup"],
+      docs_surface: ["plugins/kvdf-dev/docs/index.md"]
+    }, null, 2), "utf8");
+    fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "console.log('cleaner');\n", "utf8");
+    fs.writeFileSync(path.join(dir, "src", "cli", "commands", "maintainability.js"), [
+      "// TODO: old info and dead code candidate",
+      "const state = { status: 'waiting_for_completion' };",
+      "function orphanedExport() { return state; }",
+      "module.exports = { orphanedExport };"
+    ].join("\n"), "utf8");
+    fs.writeFileSync(path.join(dir, "docs", "README.md"), "# Docs\n", "utf8");
+    fs.writeFileSync(path.join(dir, "docs", "spec.md"), "This spec is future only and may contain wrong spec drift.\n", "utf8");
+    fs.writeFileSync(path.join(dir, "prompt-packs", "legacy.md"), "# Legacy pack\n", "utf8");
+    fs.writeFileSync(path.join(dir, "packs", "prompt_packs", "current.md"), "# Canonical pack\n", "utf8");
+    const previousCwd = process.cwd();
+    process.chdir(dir);
+    try {
+      const fastReport = buildCleanupAuditReport({
+        readJsonFile: () => ({}),
+        fileExists: () => false
+      }, { workflow_mode: "fast" });
+      assert.strictEqual(fastReport.workflow_mode, "fast");
+      assert.strictEqual(fastReport.maintenance_inspection.analysis_mode, "fast");
+      assert.strictEqual(fastReport.maintenance_relocation.candidate_count, 0);
+
+      const report = buildCleanupAuditReport({
+        readJsonFile: () => ({}),
+        fileExists: () => false
+      }, { workflow_mode: "slow" });
+      assert.strictEqual(report.report_type, "kvdf_system_cleanup_audit");
+      assert.strictEqual(report.workflow_mode, "slow");
+      assert.ok(Array.isArray(report.cleanup_queue));
+      assert.ok(report.cleanup_queue.length > 0);
+      assert.ok(report.maintenance_relocation);
+      assert.strictEqual(report.maintenance_inspection.analysis_mode, "slow");
+      assert.ok(report.maintenance_inspection.category_counts.dead_code_candidates > 0);
+      assert.ok(report.maintenance_inspection.category_counts.stale_docs > 0);
+      assert.ok(report.maintenance_inspection.category_counts.spec_drift_candidates > 0);
+      assert.ok(report.maintenance_inspection.category_counts.deadlock_candidates >= 0);
+      assert.ok(report.maintenance_relocation.candidate_count > 0);
+      assert.match(report.next_exact_action, /kvdf cleaner approve --confirm/);
+      const summary = buildCleanupSummaryReport(report);
+      assert.strictEqual(summary.report_type, "kvdf_system_cleanup_summary");
+      assert.strictEqual(summary.cleanup_id, report.cleanup_id);
+      assert.match(summary.clean_status_line, /queue/);
+      assert.ok(Array.isArray(summary.queue_highlights));
+      assert.ok(summary.queue_highlights.length > 0);
+      const summaryMarkdown = renderCleanupSummaryReport(summary, require("../src/cli/ui").table);
+      assert.match(summaryMarkdown, /KVDF Cleaner Summary/);
+      assert.match(summaryMarkdown, /Clean status:/);
+      assert.match(summaryMarkdown, /Queue Highlights/);
+      const writes = [];
+      persistCleanupSummaryReport(summary, {
+        writeJsonFile: (file, data) => writes.push(["json", file, data.report_type]),
+        writeTextFile: (file, text) => writes.push(["text", file, text.includes("KVDF Cleaner Summary")]),
+        table: require("../src/cli/ui").table
+      });
+      assert.deepStrictEqual(writes[0], ["json", ".kabeeri/reports/kvdf_cleanup_summary.json", "kvdf_system_cleanup_summary"]);
+      assert.deepStrictEqual(writes[1], ["text", "docs/reports/KVDF_CLEANUP_SUMMARY.md", true]);
+      const markdown = renderCleanupAuditReport(report, require("../src/cli/ui").table);
+      assert.match(markdown, /KVDF System Cleanup Audit/);
+      assert.match(markdown, /Cleanup Queue/);
+      assert.ok(report.maintenance_inspection);
+      assert.strictEqual(report.maintenance_inspection.analysis_mode, "slow");
+      assert.ok(report.maintenance_inspection.scanned_files > 0);
+      assert.ok(report.maintenance_inspection.category_counts.stale_docs > 0);
+      assert.ok(report.maintenance_inspection.category_counts.dead_code_candidates > 0);
+      assert.ok(report.maintenance_inspection.category_counts.spec_drift_candidates > 0);
+      assert.ok(Number.isInteger(report.maintenance_inspection.category_counts.deadlock_candidates));
+      assert.ok(report.maintenance_inspection.category_counts.deadlock_candidates >= 0);
+      const relocationReport = buildMaintenanceRelocationReport();
+      assert.strictEqual(relocationReport.report_type, "kvdf_maintenance_relocation");
+      assert.ok(relocationReport.candidate_count > 0);
+      assert.match(relocationReport.next_exact_action, /relocate --apply/);
+      const relocationReviewReport = buildMaintenanceRelocationReport({}, { review_mode: true });
+      assert.strictEqual(relocationReviewReport.review_mode, true);
+      assert.strictEqual(relocationReviewReport.review_threshold, 0.9);
+      assert.ok(relocationReviewReport.candidates.every((candidate) => candidate.review_status));
+      assert.ok(relocationReviewReport.candidates.some((candidate) => Array.isArray(candidate.review_items) && candidate.review_items.length > 0));
+      assert.match(renderMaintenanceRelocationReport(relocationReviewReport, require("../src/cli/ui").table), /Review Evidence/);
+      const strictRelocationReport = buildMaintenanceRelocationReport({}, { review_mode: true, review_threshold: 0.95 });
+      assert.strictEqual(strictRelocationReport.review_threshold, 0.95);
+      assert.strictEqual(strictRelocationReport.candidate_count, 0);
+      const relocationMarkdown = renderMaintenanceRelocationReport(relocationReport, require("../src/cli/ui").table);
+      assert.match(relocationMarkdown, /KVDF Maintenance Relocation/);
+      const relocationWrites = [];
+      persistMaintenanceRelocationReport(relocationReport, {
+        writeJsonFile: (file, data) => relocationWrites.push(["json", file, data.report_type]),
+        writeTextFile: (file, text) => relocationWrites.push(["text", file, text.includes("KVDF Maintenance Relocation")]),
+        table: require("../src/cli/ui").table
+      });
+      assert.deepStrictEqual(relocationWrites[0], ["json", ".kabeeri/reports/kvdf_maintenance_relocation.json", "kvdf_maintenance_relocation"]);
+      assert.deepStrictEqual(relocationWrites[1], ["text", "docs/reports/KVDF_MAINTENANCE_RELOCATION.md", true]);
+      applyMaintenanceRelocationPlan(relocationReport);
+      assert.ok(fs.existsSync(path.join(dir, "packs", "prompt_packs", "legacy.md")));
+      assert.ok(!fs.existsSync(path.join(dir, "prompt-packs")));
+      const inspectionReport = buildMaintenanceInspectionReport({
+        readJsonFile: () => ({}),
+        fileExists: () => false
+      });
+      assert.strictEqual(inspectionReport.report_type, "kvdf_maintenance_inspection_report");
+      assert.strictEqual(inspectionReport.analysis_mode, "slow");
+      assert.ok(inspectionReport.inspection);
+      assert.ok(inspectionReport.inspection.scanned_files > 0);
+      assert.match(inspectionReport.next_exact_action, /Review|Refresh|Correct|Unblock/);
+      const inspectionMarkdown = renderMaintenanceInspectionReport(inspectionReport, require("../src/cli/ui").table);
+      assert.match(inspectionMarkdown, /KVDF Maintenance Inspection/);
+      const inspectionWrites = [];
+      persistMaintenanceInspectionReport(inspectionReport, {
+        writeJsonFile: (file, data) => inspectionWrites.push(["json", file, data.report_type]),
+        writeTextFile: (file, text) => inspectionWrites.push(["text", file, text.includes("KVDF Maintenance Inspection")]),
+        table: require("../src/cli/ui").table
+      });
+      assert.deepStrictEqual(inspectionWrites[0], ["json", ".kabeeri/reports/kvdf_maintenance_inspection.json", "kvdf_maintenance_inspection_report"]);
+      assert.deepStrictEqual(inspectionWrites[1], ["text", "docs/reports/KVDF_MAINTENANCE_INSPECTION.md", true]);
+      assert.match(markdown, /Maintenance Inspection/);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+});
+
 test("bootstrap context exposes a deterministic boot path and reversible plugin loader", () => {
   const boot = buildBootContext();
   assert.strictEqual(boot.report_type, "kvdf_bootstrap_context");
@@ -165,6 +392,19 @@ test("bootstrap context exposes a deterministic boot path and reversible plugin 
   assert.ok(Array.isArray(boot.plugin_loader.plugins));
   assert.ok(boot.plugin_loader.plugins.some((item) => item.plugin_id === "kvdf-dev"));
   assert.ok(boot.reversible_plugins.includes("kvdf-dev"));
+});
+
+test("app docs package scaffolds portable docs under docs/", () => {
+  withTempDir((dir) => {
+    const workspaceRoot = path.join(dir, "workspaces", "apps", "demo-app");
+    const created = seedAppDocsPackage(workspaceRoot, { name: "Demo App", slug: "demo-app" });
+    assert.ok(fs.existsSync(path.join(workspaceRoot, "assets")));
+    assert.ok(fs.existsSync(path.join(workspaceRoot, "docs", "README.md")));
+    assert.ok(fs.existsSync(path.join(workspaceRoot, "docs", "00-overview.md")));
+    assert.ok(fs.existsSync(path.join(workspaceRoot, "docs", "19-data-model.md")));
+    assert.ok(created.some((item) => item.path.endsWith("docs/README.md")));
+    assert.ok(created.every((item) => !item.path.endsWith("/README.md") || item.path.includes("/docs/")));
+  });
 });
 
 test("plugin loader surfaces bundle contracts for installed plugin bundles", () => {
@@ -365,6 +605,95 @@ test("workspace boundary classifier distinguishes allowed, linked, and blocked p
       const validation = validateDeveloperAppWorkspace("workspaces/apps/storefront-web");
       assert.ok(validation.boundary);
       assert.strictEqual(validation.boundary.counts.linked, 1);
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
+});
+
+test("vibe maintainer reports scope-aware cleanup and lifecycle states", () => {
+  withTempDir((dir) => {
+    const previousCwd = process.cwd();
+    scaffoldVibeWorkspace(dir, "storefront-web");
+    scaffoldVibeWorkspace(dir, "admin-web", { stale: true });
+    process.chdir(dir);
+    try {
+      const currentAudit = vibeMaintainer.buildVibeMaintainerAuditReport({}, {
+        workflow_mode: "fast",
+        scope: {
+          scope_mode: "current",
+          selection_reason: "current workspace",
+          workspace_count: 1,
+          workspace_roots: ["workspaces/apps/storefront-web"],
+          workspace_slugs: ["storefront-web"],
+          workspaces: [{ slug: "storefront-web", root: "workspaces/apps/storefront-web" }]
+        }
+      });
+      assert.strictEqual(currentAudit.report_type, "vibe_maintainer_audit");
+      assert.strictEqual(currentAudit.summary.workspace_count, 1);
+      assert.strictEqual(currentAudit.scope.scope_mode, "current");
+      assert.ok(currentAudit.next_exact_action.includes("approve"));
+
+      const allAudit = vibeMaintainer.buildVibeMaintainerAuditReport({}, {
+        workflow_mode: "slow",
+        scope: {
+          scope_mode: "all",
+          selection_reason: "all app workspaces",
+          workspace_count: 2,
+          workspace_roots: ["workspaces/apps/admin-web", "workspaces/apps/storefront-web"],
+          workspace_slugs: ["admin-web", "storefront-web"],
+          workspaces: [
+            { slug: "admin-web", root: "workspaces/apps/admin-web" },
+            { slug: "storefront-web", root: "workspaces/apps/storefront-web" }
+          ]
+        }
+      });
+      assert.strictEqual(allAudit.summary.workspace_count, 2);
+      assert.strictEqual(allAudit.scope.scope_mode, "all");
+      assert.strictEqual(allAudit.workflow_mode, "slow");
+
+      const inspection = vibeMaintainer.buildVibeMaintainerInspectionReport({}, {
+        workflow_mode: "slow",
+        scope: {
+          scope_mode: "workspace",
+          selection_reason: "requested workspace",
+          workspace_count: 1,
+          workspace_roots: ["workspaces/apps/storefront-web"],
+          workspace_slugs: ["storefront-web"],
+          workspaces: [{ slug: "storefront-web", root: "workspaces/apps/storefront-web" }]
+        }
+      });
+      assert.strictEqual(inspection.report_type, "vibe_maintainer_inspection");
+      assert.strictEqual(inspection.scope.workspace_count, 1);
+      assert.ok(inspection.summary.scanned_files > 0);
+
+      const relocation = vibeMaintainer.buildVibeMaintainerRelocationReport({}, {
+        workflow_mode: "slow",
+        review_mode: true,
+        review_threshold: 0.9,
+        scope: {
+          scope_mode: "workspace",
+          selection_reason: "requested workspace",
+          workspace_count: 1,
+          workspace_roots: ["workspaces/apps/storefront-web"],
+          workspace_slugs: ["storefront-web"],
+          workspaces: [{ slug: "storefront-web", root: "workspaces/apps/storefront-web" }]
+        }
+      });
+      assert.strictEqual(relocation.report_type, "vibe_maintainer_relocation");
+      assert.strictEqual(relocation.scope.workspace_count, 1);
+      assert.strictEqual(relocation.review_mode, true);
+
+      const summary = vibeMaintainer.buildVibeMaintainerSummaryReport(currentAudit, {
+        status: "completed",
+        approval_status: "approved",
+        scope: currentAudit.scope,
+        workflow_mode: currentAudit.workflow_mode
+      });
+      assert.strictEqual(summary.report_type, "vibe_maintainer_summary");
+      assert.strictEqual(summary.status, "completed");
+      assert.strictEqual(summary.scope.scope_mode, "current");
+      assert.strictEqual(summary.summary.workspace_count, 1);
     } finally {
       process.chdir(previousCwd);
     }

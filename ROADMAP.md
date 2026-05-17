@@ -252,7 +252,7 @@ The v4.0.0 plan adds governance for multiple human developers and AI Developers 
 
 ## Version Release Schedule
 
-The table below is retained as a planning schedule. `TBD` rows should be read as timeline/status placeholders unless a dedicated phase report marks the area complete.
+The table below is retained as a planning schedule. Historical placeholder rows should be read as timeline/status markers unless a dedicated phase report marks the area complete.
 
 | Version | Phase | Timeline | Status |
 |---------|-------|----------|--------|
@@ -262,24 +262,24 @@ The table below is retained as a planning schedule. `TBD` rows should be read as
 | 1.3.0 | Task Governance | May 2026 | ✅ Released |
 | 1.4.0 | Agile Core | May 2026 | ✅ Released |
 | 1.5.0 | AI Accounting | May 2026 | ✅ Released |
-| 1.6.0 | Generators | TBD | ⏳ Planned |
-| 1.7.0 | Prompt Packs | TBD | ⏳ Planned |
-| 2.0.0 | CLI Tool | TBD | ⏳ Planned |
-| 2.1.0 | Local Project State | TBD | ⏳ Planned |
-| 2.2.0 | GitHub CLI Integration | TBD | ⏳ Planned |
-| 2.3.0 | VS Code Integration Foundation | TBD | ⏳ Planned |
-| 2.4.0 | Live Technical Dashboard | TBD | ⏳ Planned |
-| 2.5.0 | Business Dashboard | TBD | ⏳ Planned |
-| 2.6.0 | Owner-Only Task Verification | TBD | ⏳ Planned |
-| 2.7.0 | AI Token Cost Dashboard | TBD | ⏳ Planned |
-| 2.8.0 | Agile Sprint Cost Analytics | TBD | ⏳ Planned |
-| 3.0.0 | Stable Platform Integration | TBD | ⏳ Planned |
-| 3.1.0 | Collaboration Identity and Role Model | TBD | ⏳ Planned |
-| 3.2.0 | Single Owner and Owner Transfer | TBD | ⏳ Planned |
-| 3.3.0 | Task Access Tokens Lifecycle | TBD | ⏳ Planned |
-| 3.4.0 | Locks and Conflict Prevention | TBD | ⏳ Planned |
-| 3.5.0 | Assignment and Execution Governance | TBD | ⏳ Planned |
-| 3.6.0 | AI Developer Sessions and Output Contracts | TBD | ⏳ Planned |
-| 3.7.0 | Token Budgets and Cost Controls | TBD | ⏳ Planned |
-| 3.8.0 | Owner Verify, Token Revocation, and Audit | TBD | ⏳ Planned |
-| 4.0.0 | Stable Multi-AI Governance | TBD | ⏳ Planned |
+| 1.6.0 | Generators | Deferred | ⏳ Planned |
+| 1.7.0 | Prompt Packs | Deferred | ⏳ Planned |
+| 2.0.0 | CLI Tool | Deferred | ⏳ Planned |
+| 2.1.0 | Local Project State | Deferred | ⏳ Planned |
+| 2.2.0 | GitHub CLI Integration | Deferred | ⏳ Planned |
+| 2.3.0 | VS Code Integration Foundation | Deferred | ⏳ Planned |
+| 2.4.0 | Live Technical Dashboard | Deferred | ⏳ Planned |
+| 2.5.0 | Business Dashboard | Deferred | ⏳ Planned |
+| 2.6.0 | Owner-Only Task Verification | Deferred | ⏳ Planned |
+| 2.7.0 | AI Token Cost Dashboard | Deferred | ⏳ Planned |
+| 2.8.0 | Agile Sprint Cost Analytics | Deferred | ⏳ Planned |
+| 3.0.0 | Stable Platform Integration | Deferred | ⏳ Planned |
+| 3.1.0 | Collaboration Identity and Role Model | Deferred | ⏳ Planned |
+| 3.2.0 | Single Owner and Owner Transfer | Deferred | ⏳ Planned |
+| 3.3.0 | Task Access Tokens Lifecycle | Deferred | ⏳ Planned |
+| 3.4.0 | Locks and Conflict Prevention | Deferred | ⏳ Planned |
+| 3.5.0 | Assignment and Execution Governance | Deferred | ⏳ Planned |
+| 3.6.0 | AI Developer Sessions and Output Contracts | Deferred | ⏳ Planned |
+| 3.7.0 | Token Budgets and Cost Controls | Deferred | ⏳ Planned |
+| 3.8.0 | Owner Verify, Token Revocation, and Audit | Deferred | ⏳ Planned |
+| 4.0.0 | Stable Multi-AI Governance | Deferred | ⏳ Planned |

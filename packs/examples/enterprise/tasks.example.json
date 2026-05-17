@@ -5,7 +5,7 @@
     {
       "id": "ENT-T001",
       "title": "Define roles and access model",
-      "status": "todo",
+    "status": "intake",
       "type": "example",
       "priority": "high",
       "prompt_id": "DOTNET-06",
@@ -26,7 +26,7 @@
     {
       "id": "ENT-T002",
       "title": "Define branch and service request data model",
-      "status": "todo",
+      "status": "intake",
       "type": "example",
       "priority": "high",
       "prompt_id": "DOTNET-07",

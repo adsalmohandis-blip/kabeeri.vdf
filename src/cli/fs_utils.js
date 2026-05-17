@@ -39,6 +39,10 @@ const assetAliases = {
   vscode_extension: "plugins/vscode_extension"
 };
 
+function getAssetAliases() {
+  return { ...assetAliases };
+}
+
 function resolveRepo(relativePath = "") {
   return path.join(repoRoot(), relativePath);
 }
@@ -134,11 +138,32 @@ function assertSafeName(value) {
   }
 }
 
+function isInsideRepoRoot(relativePath) {
+  const absolute = path.resolve(repoRoot(), relativePath);
+  const relative = path.relative(repoRoot(), absolute);
+  return Boolean(relative) && !relative.startsWith("..") && !path.isAbsolute(relative);
+}
+
+function movePath(sourceRelativePath, targetRelativePath) {
+  const source = resolveRepo(sourceRelativePath);
+  const target = resolveRepo(targetRelativePath);
+  if (!isInsideRepoRoot(sourceRelativePath) || !isInsideRepoRoot(targetRelativePath)) {
+    throw new Error(`Unsafe move path: ${sourceRelativePath} -> ${targetRelativePath}`);
+  }
+  if (!fs.existsSync(source)) {
+    throw new Error(`Source path not found: ${sourceRelativePath}`);
+  }
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.renameSync(source, target);
+  return { source: sourceRelativePath, target: targetRelativePath };
+}
+
 module.exports = {
   repoRoot,
   packageRoot,
   resolveRepo,
   resolveAsset,
+  getAssetAliases,
   fileExists,
   readTextFile,
   writeTextFile,
@@ -146,5 +171,7 @@ module.exports = {
   writeJsonFile,
   listDirectories,
   listFiles,
-  assertSafeName
+  assertSafeName,
+  movePath,
+  isInsideRepoRoot
 };

@@ -4,6 +4,8 @@
   "plugin_version": "0.1.0",
   "bundle_type": "removable",
   "load_strategy": "manifest_driven",
+  "command_entrypoint": "plugins/crm/bootstrap.js",
+  "runtime_entrypoint": "plugins/crm/runtime/crm.js",
   "removable": true,
   "track": "app",
   "plugin_family": "app_builder",

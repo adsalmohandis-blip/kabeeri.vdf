@@ -39,7 +39,7 @@ Release credentials
 2. Reuse existing components, theme, routing, and data patterns.
 3. Include loading, empty, and error states where the feature depends on data.
 4. Keep touch targets usable on mobile.
-5. Avoid hidden future scope.
+5. Avoid hidden deferred scope.
 6. Add or update a focused test if test setup exists.
 7. Leave clear notes for manual device review.
 

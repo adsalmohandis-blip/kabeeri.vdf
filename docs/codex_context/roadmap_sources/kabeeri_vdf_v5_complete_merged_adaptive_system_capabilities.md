@@ -129,7 +129,7 @@ Core value proposition<br />
 Use cases<br />
 Pricing/revenue model<br />
 MVP scope<br />
-Future scope<br />
+Deferred capability ideas<br />
 Out of scope<br />
 KPIs</td>
 </tr>
@@ -868,7 +868,7 @@ Scope
 
 • Define fields: assumption_id, text, source, status, owner, review_date.
 
-• Explain how assumptions become confirmed, rejected, or outdated.
+• Explain how assumptions become confirmed, rejected, or deferred.
 
 Acceptance criteria
 

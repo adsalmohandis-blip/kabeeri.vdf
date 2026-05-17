@@ -1,6 +1,7 @@
 const { fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
 const { buildPluginLoaderReport } = require("./plugin_loader");
 const { buildPluginBundleContract } = require("./plugin_bundle_contract");
+const { getPluginSourcePath } = require("./plugin_mounts");
 
 function createAppPluginRuntime(spec) {
   const pluginId = spec.plugin_id;
@@ -673,9 +674,14 @@ function createAppPluginRuntime(spec) {
 }
 
 function buildRuntimeBundleContract(plugin, mode, stage, nextExactAction, supportedModesValue = [], defaultModeValue = null) {
-  const bundleContract = buildPluginBundleContract(plugin, {
-    ready_action: nextExactAction || "Use the bundle command surface."
-  });
+  const validationPlugin = plugin && typeof plugin === "object" && String(plugin.bundle_path || "").startsWith(".kabeeri/plugin-links/")
+    ? { ...plugin, bundle_path: getPluginSourcePath(plugin.plugin_id) }
+    : plugin;
+  const bundleContract = validationPlugin && validationPlugin.bundle_contract && validationPlugin.bundle_contract.status === "ready"
+    ? { ...validationPlugin.bundle_contract }
+    : buildPluginBundleContract(validationPlugin, {
+        ready_action: nextExactAction || "Use the bundle command surface."
+      });
   return {
     ...bundleContract,
     default_mode: defaultModeValue,

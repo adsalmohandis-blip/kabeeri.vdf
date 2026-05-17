@@ -1,6 +1,7 @@
 # GitHub Sync Rules Bundle
 
 This bundle packages the GitHub sync rules used by KVDF as a removable plugin.
+The bundle entrypoint lives in `plugins/github_sync/bootstrap.js`.
 
 It is installable and uninstallable through the standard plugin loader:
 

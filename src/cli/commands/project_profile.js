@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { repoRoot, fileExists, readJsonFile, writeJsonFile, assertSafeName } = require("../fs_utils");
+const { repoRoot, fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
 const { table } = require("../ui");
 const { uniqueList } = require("../services/collections");
 const { buildDeliveryModeRecommendation } = require("./delivery");

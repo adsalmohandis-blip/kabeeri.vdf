@@ -2,6 +2,10 @@
 
 App Boundary Governance defines when multiple applications can live inside one Kabeeri VDF workspace and when they must be split into separate KVDF folders. Developer app workspaces are scaffolded under `workspaces/apps/<app-slug>/` so the app root stays isolated from `kabeeri-core` and removable owner bundles.
 
+App-specific product knowledge should live in the app folder itself, especially
+in `workspaces/apps/<app-slug>/docs/`, so the app remains portable if it later
+moves to another system.
+
 ## Core Rule
 
 One `.kabeeri/` workspace represents one product boundary.
@@ -92,3 +96,8 @@ Validation checks app route safety, app path uniqueness, app path overlap, missi
 Kabeeri should let one product have multiple technical apps without mixing unrelated products.
 
 The app registry is not just navigation metadata. It is a safety boundary used by tasks, locks, sessions, dashboards, policy gates, and future VS Code views. Task locks and task tokens should derive their narrowest safe scope from this registry instead of widening the boundary by hand.
+
+For portable app knowledge, use `knowledge/governance/APP_DOCS_STANDARD.md` as
+the canonical doc-package contract. It defines the app-folder documentation set
+for UI/UX, architecture, data design, delivery, operations, and enterprise
+notes.

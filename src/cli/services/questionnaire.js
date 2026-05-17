@@ -1,6 +1,6 @@
 const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
-const { fileExists, repoRoot, resolveAsset, assertSafeName, readTextFile } = require("../fs_utils");
+const { fileExists, repoRoot, resolveAsset, assertSafeName } = require("../fs_utils");
 const { table } = require("../ui");
 const { getSuggestedQuestionsForArea, mapAreaToWorkstream, getSystemAreas } = require("../commands/capability");
 const { getPromptPackCatalog, recommendFrameworkPacksForBlueprint } = require("./prompt_pack");

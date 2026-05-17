@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const { fileExists, repoRoot, readJsonFile } = require("../fs_utils");
+const { repoRoot, readJsonFile } = require("../fs_utils");
 
 const APP_WORKSPACE_REQUIRED_ROOTS = ["src", "tests", "docs", ".kabeeri"];
 const APP_WORKSPACE_REQUIRED_FILES = [

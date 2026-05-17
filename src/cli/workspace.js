@@ -14,6 +14,687 @@ function ensureWorkspace() {
   }
 }
 
+function buildAppDocTemplate({ title, purpose, questions = [], sections = [], notes = [] }) {
+  const lines = [
+    `# ${title}`,
+    "",
+    "## Purpose",
+    purpose,
+    ""
+  ];
+  if (questions.length) {
+    lines.push("## Questions this document must answer");
+    for (const question of questions) lines.push(`- ${question}`);
+    lines.push("");
+  }
+  if (sections.length) {
+    lines.push("## Suggested sections");
+    for (const section of sections) lines.push(`- ${section}`);
+    lines.push("");
+  }
+  if (notes.length) {
+    lines.push("## Notes");
+    for (const note of notes) lines.push(`- ${note}`);
+    lines.push("");
+  }
+  return { content: lines.join("\n") };
+}
+
+function buildAppDocsPackageTemplates(options = {}) {
+  const appName = String(options.name || "the app").trim();
+  const appSlug = String(options.slug || "app-slug").trim();
+  const packageIntro = [
+    `This folder is the portable app-doc package for ${appName}.`,
+    "It should let another system understand the app without rereading chat history.",
+    "Keep the final app knowledge here even if Kabeeri was used to create it."
+  ];
+  const templates = [
+    {
+      path: "README.md",
+      content: [
+        `# ${options.name || appSlug}`,
+        "",
+        ...packageIntro.map((line) => line),
+        "",
+        "## Portable doc set",
+        "",
+        "Core app docs:",
+        "- `docs/00-overview.md`",
+        "- `docs/01-vision-and-goals.md`",
+        "- `docs/02-scope-and-non-goals.md`",
+        "- `docs/03-users-and-personas.md`",
+        "- `docs/04-user-stories-and-jobs-to-be-done.md`",
+        "- `docs/05-ux-principles.md`",
+        "- `docs/06-information-architecture.md`",
+        "- `docs/07-user-flows.md`",
+        "- `docs/08-wireframes.md`",
+        "- `docs/09-ui-specification.md`",
+        "- `docs/10-content-and-tone.md`",
+        "- `docs/11-accessibility.md`",
+        "- `docs/12-architecture-overview.md`",
+        "- `docs/13-module-breakdown.md`",
+        "- `docs/14-service-boundaries.md`",
+        "- `docs/15-api-contracts.md`",
+        "- `docs/16-authentication-and-permissions.md`",
+        "- `docs/17-error-handling.md`",
+        "- `docs/18-integration-map.md`",
+        "- `docs/19-data-model.md`",
+        "- `docs/20-entities-and-relationships.md`",
+        "- `docs/21-data-dictionary.md`",
+        "- `docs/22-schema-rules.md`",
+        "- `docs/23-state-and-lifecycle.md`",
+        "- `docs/24-feature-breakdown.md`",
+        "- `docs/25-task-plan.md`",
+        "- `docs/26-implementation-order.md`",
+        "- `docs/27-release-plan.md`",
+        "- `docs/28-acceptance-criteria.md`",
+        "- `docs/29-test-strategy.md`",
+        "- `docs/30-qa-checklist.md`",
+        "- `docs/31-edge-cases.md`",
+        "- `docs/32-performance-notes.md`",
+        "- `docs/33-deployment-and-environments.md`",
+        "- `docs/34-observability-and-analytics.md`",
+        "- `docs/35-support-runbook.md`",
+        "- `docs/36-backup-and-recovery.md`",
+        "- `docs/37-change-log.md`",
+        "- `docs/38-security-and-privacy.md`",
+        "- `docs/39-compliance-notes.md`",
+        "- `docs/40-audit-and-logging.md`",
+        "- `docs/41-role-and-permission-matrix.md`",
+        "- `docs/42-vendor-and-dependency-inventory.md`",
+        "",
+        "## How to use this package",
+        "- Fill the app docs before implementation whenever the app is new or still being reconstructed.",
+        "- Keep the final answers in this folder even if Kabeeri helped produce them.",
+        "- Treat `docs/` as the portable product knowledge package and `.kabeeri/` as the working state.",
+        ""
+      ].join("\n")
+    },
+    {
+      path: "00-overview.md",
+      ...buildAppDocTemplate({
+        title: "App Overview",
+        purpose: `Summarize what ${appName} is, who owns it, and why it exists.`,
+        questions: [
+          "What is the app trying to accomplish?",
+          "Who is the owner and who are the main users?",
+          "What would make this app successful?",
+          "What is definitely not part of this app?"
+        ],
+        sections: ["Purpose", "Audience", "Business value", "Current status", "Related docs"]
+      })
+    },
+    {
+      path: "01-vision-and-goals.md",
+      ...buildAppDocTemplate({
+        title: "Vision And Goals",
+        purpose: "Explain the product vision, strategic goals, and measurable outcomes for the app.",
+        questions: [
+          "What business result should the app drive?",
+          "What outcomes matter most in the first release?",
+          "How will we know the app is working?"
+        ],
+        sections: ["Vision", "Goals", "Success metrics", "Release target"]
+      })
+    },
+    {
+      path: "02-scope-and-non-goals.md",
+      ...buildAppDocTemplate({
+        title: "Scope And Non-Goals",
+        purpose: "Define the exact boundaries of the app so the build stays focused.",
+        questions: [
+          "What is in scope for this version?",
+          "What is explicitly out of scope?",
+          "What assumptions are we relying on?"
+        ],
+        sections: ["In scope", "Out of scope", "Assumptions", "Constraints"]
+      })
+    },
+    {
+      path: "03-users-and-personas.md",
+      ...buildAppDocTemplate({
+        title: "Users And Personas",
+        purpose: "Describe the people and roles that will use the app.",
+        questions: [
+          "Who uses the app directly?",
+          "Which roles have different permissions or goals?",
+          "Which persona is the primary buyer or operator?"
+        ],
+        sections: ["Personas", "Roles", "Needs", "Permissions", "Pain points"]
+      })
+    },
+    {
+      path: "04-user-stories-and-jobs-to-be-done.md",
+      ...buildAppDocTemplate({
+        title: "User Stories And Jobs To Be Done",
+        purpose: "Translate the product goal into concrete user value and behaviors.",
+        questions: [
+          "What does each user need to do?",
+          "What job is the app hired to complete?",
+          "Which stories are must-have versus later?"
+        ],
+        sections: ["User stories", "Jobs to be done", "Priority order", "Acceptance notes"]
+      })
+    },
+    {
+      path: "05-ux-principles.md",
+      ...buildAppDocTemplate({
+        title: "UX Principles",
+        purpose: "Define the experience values that shape all interface decisions.",
+        questions: [
+          "What should the interface feel like?",
+          "What interaction style is preferred?",
+          "What should the app never do?"
+        ],
+        sections: ["Principles", "Interaction tone", "Motion guidance", "Decision rules"]
+      })
+    },
+    {
+      path: "06-information-architecture.md",
+      ...buildAppDocTemplate({
+        title: "Information Architecture",
+        purpose: "Map the screens, navigation, and content hierarchy of the app.",
+        questions: [
+          "What are the top-level sections?",
+          "How does a user move between screens?",
+          "What content belongs together?"
+        ],
+        sections: ["Navigation model", "Page hierarchy", "Primary routes", "Content grouping"]
+      })
+    },
+    {
+      path: "07-user-flows.md",
+      ...buildAppDocTemplate({
+        title: "User Flows",
+        purpose: "Document the step-by-step journeys users take through the app.",
+        questions: [
+          "What are the critical journeys?",
+          "What happens when a step fails?",
+          "Which screens are entered from each flow?"
+        ],
+        sections: ["Happy paths", "Failure paths", "Transitions", "Edge states"]
+      })
+    },
+    {
+      path: "08-wireframes.md",
+      ...buildAppDocTemplate({
+        title: "Wireframes",
+        purpose: "Capture the intended layout and screen structure before code starts.",
+        questions: [
+          "What belongs on each screen?",
+          "What needs to be above the fold?",
+          "Which elements are fixed versus dynamic?"
+        ],
+        sections: ["Screen inventory", "Layout notes", "Responsive notes", "Visual hierarchy"]
+      })
+    },
+    {
+      path: "09-ui-specification.md",
+      ...buildAppDocTemplate({
+        title: "UI Specification",
+        purpose: "Define the final interface behavior, components, and states.",
+        questions: [
+          "What components are required?",
+          "What interaction states need to exist?",
+          "What should the user see on success and failure?"
+        ],
+        sections: ["Components", "States", "Variants", "Interaction rules"]
+      })
+    },
+    {
+      path: "10-content-and-tone.md",
+      ...buildAppDocTemplate({
+        title: "Content And Tone",
+        purpose: "Record the voice, microcopy, and content style the app should use.",
+        questions: [
+          "How should the app speak to users?",
+          "What copy style should warnings and empty states use?",
+          "Which terms should be standardized?"
+        ],
+        sections: ["Voice", "Terminology", "Microcopy", "Empty states", "Error text"]
+      })
+    },
+    {
+      path: "11-accessibility.md",
+      ...buildAppDocTemplate({
+        title: "Accessibility",
+        purpose: "Define the accessibility and inclusive design requirements for the app.",
+        questions: [
+          "What contrast, keyboard, and screen-reader support is required?",
+          "Are there motion, focus, or input constraints?",
+          "What accessibility checks must pass before handoff?"
+        ],
+        sections: ["Accessibility goals", "Keyboard behavior", "Contrast", "Testing checklist"]
+      })
+    },
+    {
+      path: "12-architecture-overview.md",
+      ...buildAppDocTemplate({
+        title: "Architecture Overview",
+        purpose: "Summarize the technical shape of the app and its major layers.",
+        questions: [
+          "What runtime or stack is being used?",
+          "What are the major system layers?",
+          "What boundaries must stay clean?"
+        ],
+        sections: ["Stack", "Layering", "Runtime boundaries", "High-level decisions"]
+      })
+    },
+    {
+      path: "13-module-breakdown.md",
+      ...buildAppDocTemplate({
+        title: "Module Breakdown",
+        purpose: "Break the app into buildable modules and ownership boundaries.",
+        questions: [
+          "Which modules exist?",
+          "How do modules depend on each other?",
+          "What can be built independently?"
+        ],
+        sections: ["Modules", "Responsibilities", "Dependencies", "Implementation order"]
+      })
+    },
+    {
+      path: "14-service-boundaries.md",
+      ...buildAppDocTemplate({
+        title: "Service Boundaries",
+        purpose: "Define which service owns which responsibility and what must not leak across layers.",
+        questions: [
+          "Which services are allowed to own state?",
+          "Which service calls are internal versus external?",
+          "What must never be coupled directly?"
+        ],
+        sections: ["Service map", "Responsibility split", "Boundary rules", "Cross-service calls"]
+      })
+    },
+    {
+      path: "15-api-contracts.md",
+      ...buildAppDocTemplate({
+        title: "API Contracts",
+        purpose: "Record the request and response contracts the app depends on.",
+        questions: [
+          "What endpoints exist?",
+          "What inputs and outputs are expected?",
+          "What errors and status codes matter?"
+        ],
+        sections: ["Endpoints", "Payloads", "Status codes", "Error shapes", "Versioning"]
+      })
+    },
+    {
+      path: "16-authentication-and-permissions.md",
+      ...buildAppDocTemplate({
+        title: "Authentication And Permissions",
+        purpose: "Describe identity, role, and permission behavior for the app.",
+        questions: [
+          "How do users sign in?",
+          "Which roles can access which areas?",
+          "What happens when permission is missing?"
+        ],
+        sections: ["Auth model", "Roles", "Permissions", "Protected actions"]
+      })
+    },
+    {
+      path: "17-error-handling.md",
+      ...buildAppDocTemplate({
+        title: "Error Handling",
+        purpose: "Document the failure states, recovery messages, and operator responses.",
+        questions: [
+          "What can fail?",
+          "How should failures be surfaced to users?",
+          "What is the recovery path?"
+        ],
+        sections: ["Error classes", "Recovery behavior", "User messages", "Logging expectations"]
+      })
+    },
+    {
+      path: "18-integration-map.md",
+      ...buildAppDocTemplate({
+        title: "Integration Map",
+        purpose: "Show the external systems and internal dependencies the app connects to.",
+        questions: [
+          "Which third-party services does the app depend on?",
+          "What data crosses the boundary?",
+          "Which integrations are optional?"
+        ],
+        sections: ["External systems", "Data exchange", "Failure modes", "Fallback behavior"]
+      })
+    },
+    {
+      path: "19-data-model.md",
+      ...buildAppDocTemplate({
+        title: "Data Model",
+        purpose: "Define the core data objects and how the app stores and uses them.",
+        questions: [
+          "What are the main business entities?",
+          "Which data is owned by the app?",
+          "What is persisted versus derived?"
+        ],
+        sections: ["Entities", "Ownership", "Persistence", "Derived data"]
+      })
+    },
+    {
+      path: "20-entities-and-relationships.md",
+      ...buildAppDocTemplate({
+        title: "Entities And Relationships",
+        purpose: "Describe how the app data entities relate to one another.",
+        questions: [
+          "Which entities link to which?",
+          "What is one-to-one, one-to-many, or many-to-many?",
+          "What cardinality rules matter?"
+        ],
+        sections: ["Entity map", "Relationships", "Cardinality", "Lifecycle notes"]
+      })
+    },
+    {
+      path: "21-data-dictionary.md",
+      ...buildAppDocTemplate({
+        title: "Data Dictionary",
+        purpose: "List the important fields, meanings, and validation rules for app data.",
+        questions: [
+          "What does each field mean?",
+          "Which fields are required?",
+          "What constraints or defaults apply?"
+        ],
+        sections: ["Field catalog", "Definitions", "Required values", "Validation rules"]
+      })
+    },
+    {
+      path: "22-schema-rules.md",
+      ...buildAppDocTemplate({
+        title: "Schema Rules",
+        purpose: "Record the structural rules for database tables, documents, or API schemas.",
+        questions: [
+          "What constraints must the schema enforce?",
+          "Which indexes or uniqueness rules matter?",
+          "What should migrations preserve?"
+        ],
+        sections: ["Schema constraints", "Indexes", "Uniqueness", "Migration notes"]
+      })
+    },
+    {
+      path: "23-state-and-lifecycle.md",
+      ...buildAppDocTemplate({
+        title: "State And Lifecycle",
+        purpose: "Define how important objects move through states over time.",
+        questions: [
+          "What states exist?",
+          "What transitions are allowed?",
+          "What events trigger lifecycle changes?"
+        ],
+        sections: ["States", "Transitions", "Triggers", "Terminal conditions"]
+      })
+    },
+    {
+      path: "24-feature-breakdown.md",
+      ...buildAppDocTemplate({
+        title: "Feature Breakdown",
+        purpose: "Split the app into the major features that can be planned and delivered.",
+        questions: [
+          "What features make up the app?",
+          "Which features are MVP versus later?",
+          "What dependencies exist between features?"
+        ],
+        sections: ["Feature list", "Priorities", "Dependencies", "Notes"]
+      })
+    },
+    {
+      path: "25-task-plan.md",
+      ...buildAppDocTemplate({
+        title: "Task Plan",
+        purpose: "Convert the design into a governed build sequence.",
+        questions: [
+          "What is the first task to build?",
+          "What tasks depend on others?",
+          "What is the smallest safe order of work?"
+        ],
+        sections: ["Task sequence", "Dependencies", "Workstreams", "Acceptance links"]
+      })
+    },
+    {
+      path: "26-implementation-order.md",
+      ...buildAppDocTemplate({
+        title: "Implementation Order",
+        purpose: "Explain the recommended build order for the app.",
+        questions: [
+          "What must be implemented before UI work?",
+          "What must be in place before backend work?",
+          "What can be built in parallel?"
+        ],
+        sections: ["Phase order", "Parallelizable work", "Blocking dependencies"]
+      })
+    },
+    {
+      path: "27-release-plan.md",
+      ...buildAppDocTemplate({
+        title: "Release Plan",
+        purpose: "Describe how the app is prepared, verified, and released.",
+        questions: [
+          "What must pass before release?",
+          "What is the release destination or environment?",
+          "What is the rollback expectation?"
+        ],
+        sections: ["Release criteria", "Environment targets", "Rollback", "Approval path"]
+      })
+    },
+    {
+      path: "28-acceptance-criteria.md",
+      ...buildAppDocTemplate({
+        title: "Acceptance Criteria",
+        purpose: "List the conditions that prove the app is correctly built.",
+        questions: [
+          "How do we know the app is done?",
+          "What evidence should exist?",
+          "What must a reviewer check?"
+        ],
+        sections: ["Feature acceptance", "Evidence", "Reviewer checklist"]
+      })
+    },
+    {
+      path: "29-test-strategy.md",
+      ...buildAppDocTemplate({
+        title: "Test Strategy",
+        purpose: "Define how the app should be tested across layers.",
+        questions: [
+          "What should be covered by unit, integration, and end-to-end tests?",
+          "Which flows are most important?",
+          "What test evidence is required?"
+        ],
+        sections: ["Test layers", "Critical scenarios", "Coverage targets", "Evidence"]
+      })
+    },
+    {
+      path: "30-qa-checklist.md",
+      ...buildAppDocTemplate({
+        title: "QA Checklist",
+        purpose: "Capture the manual checks needed before handoff or release.",
+        questions: [
+          "What must QA verify by hand?",
+          "What screens or flows are high risk?",
+          "What browser or device checks matter?"
+        ],
+        sections: ["Manual checks", "Device checks", "Regression list", "Sign-off"]
+      })
+    },
+    {
+      path: "31-edge-cases.md",
+      ...buildAppDocTemplate({
+        title: "Edge Cases",
+        purpose: "Record the unusual scenarios that must still behave safely.",
+        questions: [
+          "What should happen when data is missing?",
+          "What happens on slow or failed network calls?",
+          "Which states are easy to break?"
+        ],
+        sections: ["Failure scenarios", "Boundary cases", "Recovery behavior"]
+      })
+    },
+    {
+      path: "32-performance-notes.md",
+      ...buildAppDocTemplate({
+        title: "Performance Notes",
+        purpose: "Document the performance expectations and constraints for the app.",
+        questions: [
+          "Which screens or actions need to stay fast?",
+          "What performance bottlenecks matter?",
+          "What should be measured?"
+        ],
+        sections: ["Performance goals", "Bottlenecks", "Monitoring", "Optimization notes"]
+      })
+    },
+    {
+      path: "33-deployment-and-environments.md",
+      ...buildAppDocTemplate({
+        title: "Deployment And Environments",
+        purpose: "Explain where the app runs and how it is deployed.",
+        questions: [
+          "What environments exist?",
+          "How does code reach each environment?",
+          "What configuration changes between environments?"
+        ],
+        sections: ["Environments", "Deployment flow", "Config differences", "Promotion steps"]
+      })
+    },
+    {
+      path: "34-observability-and-analytics.md",
+      ...buildAppDocTemplate({
+        title: "Observability And Analytics",
+        purpose: "Define logs, metrics, events, and product analytics for the app.",
+        questions: [
+          "What should be logged?",
+          "Which product events matter?",
+          "What should be monitored for failure or abuse?"
+        ],
+        sections: ["Logging", "Metrics", "Product events", "Dashboards", "Alerts"]
+      })
+    },
+    {
+      path: "35-support-runbook.md",
+      ...buildAppDocTemplate({
+        title: "Support Runbook",
+        purpose: "Give operators the steps they need to support the app in production.",
+        questions: [
+          "What should support do when something breaks?",
+          "What are the known operator commands or workflows?",
+          "Who should be contacted for escalation?"
+        ],
+        sections: ["Support steps", "Escalation", "Known issues", "Contact points"]
+      })
+    },
+    {
+      path: "36-backup-and-recovery.md",
+      ...buildAppDocTemplate({
+        title: "Backup And Recovery",
+        purpose: "Describe backup expectations and the recovery path for important app data.",
+        questions: [
+          "What data needs backup coverage?",
+          "How is recovery tested?",
+          "What is the acceptable recovery target?"
+        ],
+        sections: ["Backup scope", "Recovery steps", "Recovery target", "Validation"]
+      })
+    },
+    {
+      path: "37-change-log.md",
+      ...buildAppDocTemplate({
+        title: "Change Log",
+        purpose: "Record the meaningful changes made to the app over time.",
+        questions: [
+          "What changed in each release?",
+          "What decisions should future teams know?",
+          "What should be preserved for migration or audit?"
+        ],
+        sections: ["Release entries", "Decision notes", "Migration notes"]
+      })
+    },
+    {
+      path: "38-security-and-privacy.md",
+      ...buildAppDocTemplate({
+        title: "Security And Privacy",
+        purpose: "Capture the sensitive-data, access, and privacy rules for the app.",
+        questions: [
+          "What data is sensitive?",
+          "What access controls are required?",
+          "What privacy or compliance constraints apply?"
+        ],
+        sections: ["Sensitive data", "Access control", "Privacy rules", "Retention"]
+      })
+    },
+    {
+      path: "39-compliance-notes.md",
+      ...buildAppDocTemplate({
+        title: "Compliance Notes",
+        purpose: "Describe any legal, policy, or regulatory requirements the app must respect.",
+        questions: [
+          "Which compliance rules apply?",
+          "What evidence should be retained?",
+          "What review gate is needed?"
+        ],
+        sections: ["Applicable rules", "Evidence", "Review gate", "Open questions"]
+      })
+    },
+    {
+      path: "40-audit-and-logging.md",
+      ...buildAppDocTemplate({
+        title: "Audit And Logging",
+        purpose: "Define the audit trail and logging expectations for significant app events.",
+        questions: [
+          "Which actions should be auditable?",
+          "How long should logs be retained?",
+          "What should a reviewer be able to reconstruct?"
+        ],
+        sections: ["Audit events", "Log retention", "Reconstruction notes"]
+      })
+    },
+    {
+      path: "41-role-and-permission-matrix.md",
+      ...buildAppDocTemplate({
+        title: "Role And Permission Matrix",
+        purpose: "Show which roles can do what inside the app.",
+        questions: [
+          "Which roles exist?",
+          "Which actions are role-gated?",
+          "Which screens or APIs require special permission?"
+        ],
+        sections: ["Roles", "Permissions", "Restricted actions", "Escalation"]
+      })
+    },
+    {
+      path: "42-vendor-and-dependency-inventory.md",
+      ...buildAppDocTemplate({
+        title: "Vendor And Dependency Inventory",
+        purpose: "List the external vendors, packages, and services the app depends on.",
+        questions: [
+          "What third-party dependencies exist?",
+          "Which dependencies are critical?",
+          "What happens if a vendor changes?"
+        ],
+        sections: ["Vendors", "Packages", "Service dependencies", "Risk notes"]
+      })
+    }
+  ];
+  return templates;
+}
+
+function seedAppDocsPackage(workspaceRoot, options = {}) {
+  const docsRoot = path.join(workspaceRoot, "docs");
+  const assetsRoot = path.join(workspaceRoot, "assets");
+  fs.mkdirSync(docsRoot, { recursive: true });
+  fs.mkdirSync(assetsRoot, { recursive: true });
+  const templates = buildAppDocsPackageTemplates(options);
+  const created = [];
+  for (const template of templates) {
+    const relativePath = template.path.startsWith("docs/") ? template.path : path.join("docs", template.path).replace(/\\/g, "/");
+    const target = path.join(workspaceRoot, relativePath);
+    if (fs.existsSync(target)) {
+      created.push({ path: path.relative(repoRoot(), target).replace(/\\/g, "/"), status: "exists" });
+      continue;
+    }
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, template.content, "utf8");
+    created.push({ path: path.relative(repoRoot(), target).replace(/\\/g, "/"), status: "created" });
+  }
+  return created;
+}
+
 function createWorkspace({ profile, mode, lang }) {
   const root = repoRoot();
   const stateDir = path.join(root, getStateDir());
@@ -509,7 +1190,7 @@ function seedDeveloperAppWorkspace(workspaceSlug, options = {}) {
   const surfaceScopes = normalizeSurfaceScopes(options.surfaceScopes || options.surface_scopes, options.appType || "application");
   fs.mkdirSync(workspaceRoot, { recursive: true });
   const created = [];
-  for (const dir of [".kabeeri", "src", "tests", "docs"]) {
+  for (const dir of [".kabeeri", "src", "tests", "docs", "assets"]) {
     const target = path.join(workspaceRoot, dir);
     if (!fs.existsSync(target)) {
       fs.mkdirSync(target, { recursive: true });
@@ -580,6 +1261,8 @@ function seedDeveloperAppWorkspace(workspaceSlug, options = {}) {
   } else {
     created.push({ path: `workspaces/apps/${slug}/README.md`, status: "exists" });
   }
+  const docsCreated = seedAppDocsPackage(workspaceRoot, { name: options.name || slug, slug });
+  created.push(...docsCreated);
   return { workspace_root: `workspaces/apps/${slug}`, workspace_slug: slug, created };
 }
 
@@ -604,6 +1287,7 @@ module.exports = {
   ensureWorkspace,
   getStateDir,
   seedDeveloperAppWorkspace,
+  seedAppDocsPackage,
   readJsonFile,
   writeJsonFile
 };

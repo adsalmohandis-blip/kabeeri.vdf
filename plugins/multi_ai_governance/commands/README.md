@@ -1,7 +1,9 @@
-# Commands
+# Multi-AI Governance Commands
 
-This folder documents the command-contract layer for the multi-AI governance
-plugin.
+The `multi-ai` command surface is owned by this bundle.
 
-The executable commands are defined in the shared KVDF CLI. This folder keeps
-bundle-scoped command notes, ownership guidance, and extension expectations.
+- `multi_ai_governance.js`: leader sessions, agents, queues, merges, and sync.
+- `multi_ai_communications.js`: conversations, relay inboxes, and message flow.
+
+The core CLI now mounts `plugins/multi_ai_governance/bootstrap.js` and forwards
+the command calls into this bundle.

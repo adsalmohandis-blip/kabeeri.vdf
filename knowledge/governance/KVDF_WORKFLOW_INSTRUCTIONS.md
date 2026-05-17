@@ -140,6 +140,7 @@ Required planning artifacts may include:
 - architecture and stack decision
 - data design document
 - UI/UX direction
+- portable app-doc package
 - questionnaire coverage
 - module or task plan
 - scorecard summary
@@ -150,6 +151,8 @@ The planning gate is complete only when:
 - the pack has been reviewed
 - the pack has been approved
 - the next exact action is clear
+- the portable app docs package is written into the app folder when the work
+  belongs to a specific app
 
 ## Task Slicing Rules
 

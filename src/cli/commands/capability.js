@@ -116,7 +116,7 @@ function mapAreaToWorkstream(areaKey) {
 
 function buildCapabilityGroups() {
   return {
-    "A. Product & Business": ["Product vision", "Target users", "Business goals", "Core value proposition", "Use cases", "Pricing/revenue model", "MVP scope", "Future scope", "Out of scope", "KPIs"],
+    "A. Product & Business": ["Product vision", "Target users", "Business goals", "Core value proposition", "Use cases", "Pricing/revenue model", "MVP scope", "Deferred scope", "Out of scope", "KPIs"],
     "B. Users, Access, and Journeys": ["User roles", "Permissions", "Role hierarchy", "User journey", "Onboarding", "Offboarding", "Authentication", "Authorization"],
     "C. Frontend Experience": ["Public frontend", "User portal", "Admin frontend", "Internal operations frontend", "Responsive UI", "Accessibility", "RTL/LTR", "Navigation", "Forms"],
     "D. Backend, Data, and APIs": ["Backend APIs", "Business logic", "Services", "Jobs/queues", "Database", "Migrations", "Data model", "API access", "Webhooks"],

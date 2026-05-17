@@ -56,7 +56,7 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | examples | partial | Lite/standard/enterprise examples exist. | Examples were improved from placeholder state. Need audit for sample generated document set and sample acceptance review completeness. | Add v1 example audit and fill gaps in Phase 04 if approved. |
 | CLI design/runtime | partial | `cli/` docs plus `bin/kvdf.js`, `src/cli/*`, `package.json`. | Working CLI exists with tests. Some CLI docs still use "future CLI" wording. | Update CLI docs to distinguish implemented runtime from future UI/extension work. |
 | VS Code planning | partial | CLI scaffold exists; VS Code planning docs exist in CLI and runtime scaffold. | VS Code extension planning and scaffold exist, but v1 source asks for sidebar/task/checklist/prompt browser design. | Create/refresh VS Code planning index in a later implementation phase. |
-| Roadmap/release docs | partial | `ROADMAP.md`, `CHANGELOG.md`, `V1_RELEASE_SUMMARY.md`. | Release and roadmap docs exist. Several roadmap rows still show TBD/planned for items with current runtime or later plan files. | Update after Owner approves stabilization fixes; do not rewrite release history blindly. |
+| Roadmap/release docs | partial | `ROADMAP.md`, `CHANGELOG.md`, `V1_RELEASE_SUMMARY.md`. | Release and roadmap docs exist. Several roadmap rows still show deferred/planned markers for items with current runtime or later plan files. | Update after Owner approves stabilization fixes; do not rewrite release history blindly. |
 | Documentation website readiness | historical missing; current implemented | Historical evidence: no `docs_site/` folder at audit time. Current evidence: `docs_site/` exists. | The original audit predated the static docs site. | Keep docs site aligned with bilingual docs and current runtime. |
 
 ## V1 Requirement Coverage Notes
@@ -81,7 +81,7 @@ Audited v1 foundation areas requested by `00_DEEP_MASTER_COMMANDS.md`:
 | ok | 4 |
 | partial | 10 |
 | missing | 1 |
-| outdated | included under partial |
+| historical drift | included under partial |
 | duplicate | historical risk area: `task_tracking/` plus removed `task_governance/`; current policy is unified under `knowledge/task_tracking/` |
 
 ## Do Not Fix Yet

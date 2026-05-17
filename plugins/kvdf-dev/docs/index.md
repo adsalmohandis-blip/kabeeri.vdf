@@ -4,6 +4,8 @@ This bundle packages the framework-development side of KVDF as a removable
 plugin so KVDF itself stays separate from app-building plugins and app-track
 workflows.
 
+The plugin-owned bootstrap lives in `plugins/kvdf-dev/bootstrap.js`.
+
 Use it when you need to work on:
 
 - Evolution Steward priorities
@@ -19,6 +21,17 @@ Common entry points:
 - `kvdf evolution`
 - `kvdf evolution priorities`
 - `kvdf evolution batch-exe`
+- `kvdf cleaner cleanup`
+- `kvdf maintenance`
+- `kvdf maintenance fast`
+- `kvdf maintenance slow`
+- `kvdf cleaner inspect`
+- `kvdf cleaner relocate review --threshold 0.9`
+- `kvdf cleaner relocate`
+- `kvdf cleaner report`
+- `kvdf cleaner approve --confirm`
+- `kvdf cleaner execute`
+- `kvdf cleaner finalize`
 - `kvdf task packet`
 - `kvdf task executor-contract`
 - `kvdf batch-exe`

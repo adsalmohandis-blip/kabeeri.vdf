@@ -85,7 +85,6 @@ function buildVscodeExtensionJs() {
 
 const fs = require("fs");
 const path = require("path");
-const cp = require("child_process");
 const vscode = require("vscode");
 
 function activate(context) {

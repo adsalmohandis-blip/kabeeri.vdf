@@ -1,6 +1,7 @@
 # Multi-AI Governance Plugin
 
-This bundle packages the multi-AI governance surface as a removable KVDF plugin.
+This bundle packages the multi-AI governance surface as a removable KVDF plugin
+with a plugin-owned bootstrap and command surface.
 
 It provides the operational contract for:
 
@@ -11,8 +12,9 @@ It provides the operational contract for:
 - merge bundle provenance
 - token, lock, assignment, and audit governance
 
-The runtime commands still live in the shared CLI layer, but this plugin owns
-the bundle contract, docs surface, and install/uninstall identity.
+The runtime commands now load through `plugins/multi_ai_governance/bootstrap.js`.
+That bootstrap owns the command exports while the shared CLI layer only mounts
+the bundle.
 
 ## Plugin Contract
 
@@ -36,7 +38,7 @@ the bundle contract, docs surface, and install/uninstall identity.
 ## Bundle Layout
 
 - `docs/` for plugin docs and overview material
-- `commands/` for command-contract notes and extension guidance
+- `commands/` for the plugin-owned governance and communications command layer
 - `prompts/` for AI guidance and routing notes
 - `schemas/` for bundle-specific state contracts
 - `templates/` for reusable governance templates

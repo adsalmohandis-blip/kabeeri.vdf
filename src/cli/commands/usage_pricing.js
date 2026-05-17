@@ -4,7 +4,7 @@ const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace")
 const { fileExists, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 const { isExpired } = require("../services/collections");
-const { appendJsonLine, readJsonLines } = require("../services/jsonl");
+const { appendJsonLine } = require("../services/jsonl");
 const { outputLines } = require("../services/report_output");
 const { readStateArray } = require("../services/state_utils");
 

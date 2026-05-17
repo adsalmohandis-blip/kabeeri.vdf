@@ -495,7 +495,7 @@ const docs = {
       },
       "task-governance": {
         lead: "Task Governance turns ideas, answers, issues, and captures into executable work with a durable record that can be resumed from the source of truth. It uses a packet-first boundary so planning, execution, and verification stay separate.",
-        beginner: "A Kabeeri task is more than a todo. It keeps source, scope, workstream, assignee, reviewer, acceptance criteria, allowed files, token budget, evidence, durable execution details, and final verification steps in one place so the next session can resume without rereading chat history. The packet and executor contract explain exactly what the worker may do.",
+        beginner: "A Kabeeri task is more than an intake item. It keeps source, scope, workstream, assignee, reviewer, acceptance criteria, allowed files, token budget, evidence, durable execution details, and final verification steps in one place so the next session can resume without rereading chat history. The packet and executor contract explain exactly what the worker may do.",
         sections: [
           ["Source", "Every task should come from a product answer, blueprint, bug report, design spec, capture, GitHub issue, release need, or lead decision."],
           ["Source of truth", "The task record is the source of truth for what must happen, what must not change, and how completion is verified."],
@@ -898,14 +898,14 @@ const docs = {
         beginner: "When something looks wrong, ask: is the problem in `.kabeeri/` state, source docs, schemas, moved paths, CLI implementation, generated dashboard JSON, or the application code?",
         sections: [
           ["Validation fails", "Read the exact failing file, schema, command, or governance rule. Fix that source before continuing."],
-          ["Docs path looks old", "Remember legacy aliases exist. New physical paths should be used in docs and new files, but old command outputs may still display compatible aliases."],
+          ["Docs path needs review", "Remember relocated paths may still have compatibility aliases. New physical paths should be used in docs and new files."],
           ["Dashboard looks stale", "Regenerate or export dashboard state from `.kabeeri/` instead of editing UI output manually."],
           ["AI changed too much", "Use task scope, locks, token allowed files, and post-work capture to classify and control the changes."],
           ["Release blocked", "Check policy results, security scan, migration state, unresolved blockers, and lead evidence."]
         ],
         steps: ["Run validate", "Find source", "Fix source", "Regenerate derived output", "Run tests", "Validate again"],
         details: [
-          ["After folder reorganization", ["If a command uses an old path, first check whether it is a compatibility alias. The physical file may now be under `knowledge/`, `packs/`, or `integrations/`.", "Do not recreate old root folders just to satisfy a stale reference. Update the reference or asset alias."]],
+          ["After folder reorganization", ["If a command points to a relocated file, first check whether the physical file now lives under `knowledge/`, `packs/`, or `integrations/`.", "Do not recreate old root folders just to satisfy a relocated reference. Update the reference or asset map."]],
           ["After a broken AI session", ["Capture changed files, compare them to the task scope, reject or split out unrelated edits, then create follow-up tasks.", "This preserves useful work without accepting unsafe drift."]]
         ],
         checklist: ["Failure source identified.", "No manual dashboard-only fix.", "No old root folder recreated accidentally.", "Validation rerun.", "Tests rerun when code changed."],
@@ -972,7 +972,7 @@ const arOverrides = {
   "data-design": ["تصميم البيانات", "تصميم البيانات يساعد AI والمطور في بناء قاعدة بيانات موثوقة من دورة العمل وليس من شكل الشاشة.", "ابدأ بالworkflow الحقيقي ثم حدد الجداول والعلاقات والقيود والحالات والتدقيق والمعاملات واللقطات والتقارير."],
   "ui-ux-advisor": ["مساعد تصميم الواجهات", "مساعد UI/UX يختار تجربة الواجهة المناسبة ومجموعات المكونات وقوالب الصفحات وقواعد الوصول وSEO/GEO حسب نوع التطبيق.", "واجهة CRM ليست مثل مدونة، ومتجر إلكتروني ليس مثل Dashboard داخلي. كبيري يساعد AI على اختيار النمط المناسب."],
   "vibe-first": ["مسار Vibe-first", "Vibe-first يسمح للمطور بالكلام الطبيعي بينما يحول كبيري النية إلى عمل منظم وقابل للمراجعة.", "المطور لا يجب أن يحفظ أوامر. يمكنه أن يطلب طبيعيًا، وكبيري يسجل الاقتراحات والتاسكات والالتقاطات والسياق تحت السطح."],
-  "task-governance": ["حوكمة التاسكات", "حوكمة التاسكات هي قلب كبيري لتحويل الأفكار والإجابات والمشاكل والالتقاطات إلى عمل آمن قابل للتنفيذ.", "تاسك كبيري ليس todo عادي. هو مصدر ونطاق ومسار عمل ومسؤول ومراجع ومعايير قبول وملفات مسموحة وتكلفة ودليل."],
+  "task-governance": ["حوكمة التاسكات", "حوكمة التاسكات هي قلب كبيري لتحويل الأفكار والإجابات والمشاكل والالتقاطات إلى عمل آمن قابل للتنفيذ.", "تاسك كبيري ليس عنصر intake عادي. هو مصدر ونطاق ومسار عمل ومسؤول ومراجع ومعايير قبول وملفات مسموحة وتكلفة ودليل."],
   "app-boundary": ["حوكمة حدود التطبيقات", "تحدد هل يمكن وضع أكثر من تطبيق داخل فولدر كبيري واحد بدون خلط منتجات غير مرتبطة.", "Laravel backend مع React storefront لنفس المتجر يمكن أن يكونا منتجًا واحدًا. لكن متجر ومنصة أخبار لعميل آخر لا يجب خلطهما."],
   "workstreams-scope": ["مسارات العمل والنطاق", "مسارات العمل ونطاق التنفيذ يحددان من يعمل أين وعلى أي تطبيق ولأي تاسك.", "هذا يمنع تداخل backend وfrontend وmobile وdatabase وQA وsecurity وdocs أو تمدد التعديل بلا قصد."],
   "prompt-packs": ["حزم البرومبت", "حزم البرومبت تعطي أدوات AI تعليمات واعية بالفريمورك المستخدم.", "تاسك Laravel لا يكتب مثل تاسك React. كل فريمورك يحتاج سياقًا وقواعد أمان مختلفة."],
@@ -1292,7 +1292,7 @@ const arDeepOverrides = {
   },
   "task-governance": {
     lead: "حوكمة التاسكات تحول الأفكار والإجابات والمشاكل والالتقاطات إلى عمل قابل للتنفيذ مع سجل دائم يمكن استئنافه من مصدر الحقيقة. وتستخدم حدًا واضحًا قائمًا على packet حتى لا يختلط التخطيط بالتنفيذ.",
-    beginner: "تاسك كبيري ليس todo عاديًا. يحتفظ بالمصدر، والنطاق، ومسار العمل، والمسند، والمراجع، ومعايير القبول، والملفات المسموح بها، وميزانية التوكنز، والدليل، وتفاصيل التنفيذ الدائمة، وخطوات التحقق النهائية في مكان واحد حتى تستأنف الجلسة التالية من السجل بدل المحادثة. والpacket مع executor contract يشرحان ما يسمح للworker أن يفعله بالضبط.",
+    beginner: "تاسك كبيري ليس عنصر intake عاديًا. يحتفظ بالمصدر، والنطاق، ومسار العمل، والمسند، والمراجع، ومعايير القبول، والملفات المسموح بها، وميزانية التوكنز، والدليل، وتفاصيل التنفيذ الدائمة، وخطوات التحقق النهائية في مكان واحد حتى تستأنف الجلسة التالية من السجل بدل المحادثة. والpacket مع executor contract يشرحان ما يسمح للworker أن يفعله بالضبط.",
     sections: [
       ["المصدر", "كل تاسك يأتي من إجابة أو blueprint أو bug أو design spec أو capture أو GitHub issue أو قرار مالك."],
       ["مصدر الحقيقة", "سجل التاسك هو مصدر الحقيقة لما يجب أن يحدث، وما لا يجب تغييره، وكيف يتم التحقق من الإكمال."],
@@ -2692,6 +2692,7 @@ Object.assign(docs.en.pages, {
       ["Idea to intake", "Start with the plain product goal, then capture the users, scope, constraints, and unknowns before anything is built."],
       ["Questions and answers", "Use the questionnaire to expose what is missing, what must be decided, and what can wait for a later version."],
       ["System design docs", "Write the product scope, architecture, data design, and UI/UX direction so the plan is concrete enough to review."],
+      ["Portable app docs", "Store the final product knowledge in workspaces/apps/<slug>/docs/ so the app can be moved to another system without losing the design record."],
       ["Delivery mode", "Choose Agile when the shape may evolve, or Structured when the delivery needs stricter phase gates and a clearer plan."],
       ["Scorecards and Evolution", "Review readiness, score the gaps, lock the result when the evidence is clear, and only then decide whether the work becomes Evolution."],
       ["Tasks to implementation", "Turn the approved plan into scoped tasks, build one task at a time, verify each result, and keep the workspace state aligned."],
@@ -2742,6 +2743,7 @@ Object.assign(docs.en.pages, {
       "The idea is written clearly.",
       "The questionnaire answers are complete enough to review.",
       "The system design docs are present.",
+      "The portable app-doc package is written into the app folder.",
       "The delivery mode is chosen.",
       "The scorecards are prepared and locked.",
       "The tasks match the approved plan.",

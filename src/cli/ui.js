@@ -1,6 +1,6 @@
 const fs = require("fs");
 const path = require("path");
-const { readJsonFile, repoRoot } = require("./fs_utils");
+const { repoRoot } = require("./fs_utils");
 
 function getActiveTrackSurface() {
   const file = path.join(repoRoot(), ".kabeeri", "session_track.json");
@@ -81,6 +81,8 @@ function normalizeCommandName(command) {
     company_profile: "company-profile",
     news_website: "news-website",
     ecommerce_mobile_app: "ecommerce-mobile-app",
+    vibe_maintainer: "vibe-maintainer",
+    maintainer: "vibe-maintainer",
     generate: "generator",
     "software-design": "software-design",
     "software_design": "software-design",
@@ -100,6 +102,10 @@ function normalizeCommandName(command) {
     pkg: "package",
     packaging: "package",
     upgrade: "upgrade",
+    maintenance: "maintainability",
+    cleaner: "maintainability",
+    cleanup: "maintainability",
+    hygiene: "maintainability",
     delivery: "delivery",
     structured: "structured",
     waterfall: "structured",
@@ -284,6 +290,43 @@ Notes:
 
 Notes:
   Contract shows the shared operating model for AI and CLI work: AI reasons over current state, CLI validates and writes state, and filesystem artifacts remain the source of truth. Use it when you want the current next exact action, the command registry, the pipeline contract, and the architecture or track boundary view in one place.
+`,
+maintainability: `Usage:
+  kvdf maintainability
+  kvdf maintenance
+  kvdf maintenance fast
+  kvdf maintenance slow
+  kvdf maintenance cleanup
+  kvdf maintainability inspect
+  kvdf cleaner cleanup
+  kvdf cleaner fast
+  kvdf cleaner slow
+  kvdf cleaner inspect
+  kvdf cleaner relocate review
+  kvdf cleaner relocate
+  kvdf cleaner report
+  kvdf maintainability cleanup
+  kvdf maintainability approve --confirm
+  kvdf maintainability relocate
+  kvdf maintainability execute
+  kvdf maintainability finalize
+
+Notes:
+  Maintainability (also available as maintenance) includes the repo-wide cleanup workflow for kvdf-dev, a file-by-file maintenance inspection pass, and a relocation plan for mislocated files and folders. Fast mode keeps the scan light and approximate so it runs quickly, while slow mode runs strict file-by-file inspection and relocation review with detailed evidence. Use kvdf maintenance fast for a quick audit, kvdf maintenance slow for the strict evidence view, kvdf cleaner inspect for the detailed inspection report, kvdf cleaner relocate review --threshold 0.9 for the relocation review, kvdf cleaner relocate for the relocation plan, and kvdf cleaner report for the short saved-audit summary.
+`,
+    "vibe-maintainer": `Usage:
+  kvdf vibe-maintainer fast
+  kvdf vibe-maintainer slow
+  kvdf vibe-maintainer cleanup --workspace storefront-web
+  kvdf vibe-maintainer inspect --scope current
+  kvdf vibe-maintainer report --all
+  kvdf vibe-maintainer relocate review --threshold 0.9 --workspace storefront-web
+  kvdf vibe-maintainer approve --confirm
+  kvdf vibe-maintainer execute
+  kvdf vibe-maintainer finalize
+
+Notes:
+  Vibe Maintainer is the scope-aware maintenance plugin for vibe developer app workspaces. Use fast mode for a quick pass and slow mode for a strict file-by-file pass. Choose one workspace, selected workspaces, or all workspaces before reviewing findings or applying relocations.
 `,
     vibe: `Usage:
   kvdf vibe "Add admin theme settings"
@@ -1066,7 +1109,7 @@ Notes:
   kvdf design governance --json
   kvdf design missing-report --source design-source-001 --items responsive,empty-state --risk high
   kvdf design approve design-source-001 --spec frontend_specs/checkout.page.md --tokens design_system/tokens.json --actor owner-001
-  kvdf design reject design-source-001 --reason "Source is outdated" --actor owner-001
+  kvdf design reject design-source-001 --reason "Source needs review" --actor owner-001
   kvdf design audit
   kvdf design audit design-source-001
 
@@ -1267,8 +1310,9 @@ function printHelp() {
     "  track status|route           Inspect or persist the current session track",
     "  pipeline matrix|strict       Show or enforce the strict build pipeline",
     "  contract                     Show the AI/CLI operating contract and command registry",
-    "  maintainability              Show the shared-service maintainability scorecard and live state",
-    "  onboarding                   Show the guided first-session route and report",
+  "  maintainability              Show the shared-service maintainability scorecard and cleanup workflow",
+  "  vibe-maintainer              Inspect, relocate, approve, execute, and finalize app workspace maintenance",
+  "  onboarding                   Show the guided first-session route and report",
     "  guard                        Check framework boundary before edits",
     "  conflict scan                Scan for command, schema, and workspace logic drift",
     "  validate [scope]             Validate repo JSON, plans, workspace state, docs source-of-truth, historical source clarity, and blocked scenarios",
@@ -1277,6 +1321,13 @@ function printHelp() {
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
+    "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
+    "  maintenance fast|slow        Run the repo-wide maintenance workflow in fast or strict mode",
+    "  cleaner inspect              Run the file-by-file maintenance inspection report",
+  "  cleaner relocate review      Show strict file-by-file relocation evidence (--threshold 0.9)",
+  "  cleaner relocate             Preview or apply the file and folder relocation plan",
+  "  cleaner report               Show the short cleanup summary from the saved audit",
+  "  vibe-maintainer fast|slow|cleanup|inspect|report|relocate|approve|execute|finalize Scope-aware app maintenance for vibe developers",
   "  source-package study|inventory|map|source-map|placement|normalize|compare|verify Inspect the KVDF_New_Features_Docs source package",
     "  docs generate|workflow|manifest|contracts|coverage|validate Manage the docs site generation workflow artifacts",
     "  software-design list|show|index|compare Inspect the permanent software design reference",

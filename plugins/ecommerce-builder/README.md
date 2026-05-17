@@ -1,6 +1,9 @@
 # Ecommerce Builder
 
 `ecommerce-builder` is the app-track plugin for ecommerce and commerce systems.
+Its root bootstrap lives inside the plugin bundle at
+`plugins/ecommerce-builder/bootstrap.js`, which exposes the command and runtime
+owned by the plugin bundle.
 
 ## Install and uninstall
 
@@ -8,6 +11,9 @@
 kvdf plugins install ecommerce-builder
 kvdf plugins uninstall ecommerce-builder
 ```
+
+Installation mounts the bundle into `.kabeeri/plugin-mounts/ecommerce-builder/`
+and uninstall removes that mounted copy.
 
 ## Runtime pipeline
 

@@ -185,17 +185,31 @@ const COMMAND_REGISTRY = [
   },
   {
     key: "maintainability",
-    aliases: ["maintainability report"],
+    aliases: ["maintainability report", "maintenance", "maintenance report", "cleaner", "cleanup", "cleaner report"],
     category: "governance",
     stage: "assessment",
     owner: "shared",
-    purpose: "Expose the shared-service extraction scorecard and live maintainability state.",
+    purpose: "Expose the shared-service extraction scorecard, live maintainability state, repo-wide cleanup workflow, fast and slow maintenance modes, file-by-file maintenance inspection path, and relocation plan for mislocated files and folders.",
     prerequisites: ["Workspace or report state can be read."],
-    outputs: ["Maintainability report", "shared-service inventory", "live JSON state"],
-    next_commands: ["kvdf contract", "kvdf pipeline strict", "kvdf scorecards"],
-    file_dependencies: [".kabeeri/reports/maintainability.json", ".kabeeri/reports/kabeeri_scorecards.json"],
-    ai_role: "Use the maintainability report to see which runtime helpers were extracted and what still needs cleanup.",
-    cli_role: "Persist the maintainability snapshot so the runtime stops depending on chat memory."
+    outputs: ["Maintainability report", "cleanup summary", "maintenance inspection", "maintenance relocation", "shared-service inventory", "cleanup audit", "live JSON state", "fast maintenance audit", "slow maintenance audit"],
+    next_commands: ["kvdf maintenance fast", "kvdf maintenance slow", "kvdf cleaner inspect", "kvdf cleaner relocate review", "kvdf cleaner relocate", "kvdf cleaner report", "kvdf pipeline strict", "kvdf cleaner cleanup", "kvdf cleaner approve --confirm"],
+    file_dependencies: [".kabeeri/reports/maintainability.json", ".kabeeri/reports/kabeeri_scorecards.json", ".kabeeri/reports/kvdf_maintenance_inspection.json", ".kabeeri/reports/kvdf_maintenance_relocation.json"],
+    ai_role: "Use the maintainability report to see which runtime helpers were extracted, then choose fast or slow maintenance mode before reviewing the inspection and relocation plan.",
+    cli_role: "Persist the maintainability snapshot, fast or slow cleanup workflow, file-by-file inspection, relocation plan, and cleanup execution state."
+  },
+  {
+    key: "vibe-maintainer",
+    aliases: ["vibe maintainer", "vibe_maintainer", "maintainer", "vibe-maintenance"],
+    category: "governance",
+    stage: "workspace-maintenance",
+    owner: "app-or-owner",
+    purpose: "Inspect and maintain vibe developer app workspaces with fast and slow modes, scope selection, safe relocation review, approval, execution, and finalization.",
+    prerequisites: ["At least one app workspace exists or can be discovered."],
+    outputs: ["Workspace maintenance audit", "workspace inspection", "workspace relocation review", "maintenance summary"],
+    next_commands: ["kvdf vibe-maintainer cleanup", "kvdf vibe-maintainer inspect", "kvdf vibe-maintainer report", "kvdf vibe-maintainer relocate", "kvdf vibe-maintainer approve", "kvdf vibe-maintainer execute", "kvdf vibe-maintainer finalize"],
+    file_dependencies: [".kabeeri/reports/vibe_maintainer_audit.json", ".kabeeri/reports/vibe_maintainer_summary.json", ".kabeeri/reports/vibe_maintainer_inspection.json", ".kabeeri/reports/vibe_maintainer_relocation.json"],
+    ai_role: "Use the workspace maintenance report to decide whether to clean one app workspace or all app workspaces before applying any relocation plan.",
+    cli_role: "Persist scope-aware workspace maintenance state, reports, and lifecycle transitions."
   }
 ];
 

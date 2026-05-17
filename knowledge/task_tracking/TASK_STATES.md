@@ -154,8 +154,8 @@ proposed
 ## GitHub Project mapping
 
 ```text
-proposed      -> Todo
-approved      -> Todo or Ready
+proposed      -> intake
+approved      -> Ready or Done
 ready         -> Ready
 assigned      -> In Progress
 in_progress   -> In Progress

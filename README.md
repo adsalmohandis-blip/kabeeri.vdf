@@ -4,6 +4,26 @@ Kabeeri VDF, also known as `kabeeri.vdf`, is an open-source meta-framework for b
 
 It does not replace Laravel, Next.js, React, Vue, Angular, WordPress, Django, .NET, Flutter, or React Native. Instead, it gives the developer and the AI assistant a governed working environment before, during, and after code generation.
 
+## Current Reality
+
+The shipped runtime today is the local `kvdf` CLI plus `.kabeeri/` state, validation, task governance, prompt packs, dashboards, and plugin bundles.
+
+What is already working:
+
+- local CLI entrypoint and runtime bootstrap
+- workspace state stored in `.kabeeri/`
+- validation, governance, task, token, lock, and release checks
+- dashboard export and local state reporting
+- removable plugin bundles with explicit manifests
+- tests and schema validation for the core runtime
+
+What is still evolving:
+
+- richer VS Code UI
+- deeper security and migration execution layers
+- broader docs-site polish and language parity
+- later platform layers in the v2-v7 roadmap
+
 Kabeeri helps turn a product idea into:
 
 - clear questions for the developer or client

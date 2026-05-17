@@ -134,7 +134,7 @@ kvdf dashboard serve
 استخدم هذه الحالات الموحدة:
 
 ```text
-todo
+intake
 in_progress
 blocked
 review

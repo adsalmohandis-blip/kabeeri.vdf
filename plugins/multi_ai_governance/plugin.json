@@ -43,6 +43,7 @@
   ],
   "docs_surface": [
     "plugins/multi_ai_governance/README.md",
+    "plugins/multi_ai_governance/commands/README.md",
     "plugins/multi_ai_governance/docs/index.md",
     "plugins/multi_ai_governance/V4_0_UPDATED_PLAN.md",
     "plugins/multi_ai_governance/milestones_and_issues.v4.0.0.json"

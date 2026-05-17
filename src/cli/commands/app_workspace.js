@@ -6,7 +6,6 @@ const { normalizeSurfaceScopes, summarizeWorkspaceContract, validateDeveloperApp
 const {
   buildAppScorecardReport,
   buildAppScorecardSummaryLine,
-  buildAppScorecardTableRows,
   lockAppScorecards,
   refreshAppScorecards,
   reviewAppScorecards,

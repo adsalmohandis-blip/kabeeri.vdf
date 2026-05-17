@@ -16,7 +16,7 @@
       "group": "core",
       "target_path": "src/",
       "description": "Executable KVDF runtime, CLI command handlers, shared runtime utilities, and command entrypoints.",
-      "current_paths": ["src/", "bin/", "cli/"],
+      "current_paths": ["src/", "bin/"],
       "laravel_analogy": "app/, artisan, routes/console.php"
     },
     {
@@ -96,7 +96,6 @@
   "current_to_target": [
     { "path": "bin/", "target_group": "core", "role": "CLI binary entrypoint", "migration_status": "physical_root" },
     { "path": "src/", "target_group": "core", "role": "runtime source", "migration_status": "physical_root" },
-    { "path": "cli/", "target_group": "core", "role": "CLI documentation", "migration_status": "physical_root" },
     { "path": "knowledge/", "target_group": "knowledge", "role": "knowledge super-folder", "migration_status": "physical_root" },
     { "path": "packs/", "target_group": "packs", "role": "exportable packs super-folder", "migration_status": "physical_root" },
     { "path": "plugins/", "target_group": "plugins", "role": "optional removable bundles", "migration_status": "physical_root" },
@@ -110,6 +109,7 @@
   ],
   "legacy_aliases": {
     "standard_systems/": "knowledge/standard_systems/",
+    "cli/": "src/cli/",
     "project_intelligence/": "knowledge/project_intelligence/",
     "project_intake/": "knowledge/project_intake/",
     "questionnaires/": "knowledge/questionnaires/",
@@ -154,7 +154,6 @@
     "package-lock.json",
     "bin",
     "src",
-    "cli",
     "knowledge",
     "packs",
     "plugins",

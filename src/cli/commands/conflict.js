@@ -139,7 +139,7 @@ function checkWorkspaceState() {
   return makeCheck({
     id: "workspace_state",
     status: blockers.length ? "blocked" : warnings.length ? "warning" : "pass",
-    summary: blockers.length || warnings.length ? "Workspace state has possible drift." : "Workspace state has no obvious task/capture/session/lock conflicts.",
+    summary: blockers.length || warnings.length ? "Workspace state has possible inconsistency." : "Workspace state has no obvious task/capture/session/lock conflicts.",
     blockers,
     warnings,
     details: {

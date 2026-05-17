@@ -10,7 +10,7 @@ function toList(value) {
   if (Array.isArray(value)) return value.flatMap((item) => toList(item));
   if (value === null || value === undefined) return [];
   return String(value)
-    .split(/\r?\n|,/)
+    .split(/\r?\n/)
     .map((item) => item.trim())
     .filter(Boolean);
 }

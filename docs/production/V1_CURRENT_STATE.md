@@ -6,7 +6,7 @@ This file records the current v1 foundation state after Phase 04 stabilization. 
 
 | Area | Current State |
 | --- | --- |
-| Root docs | `README.md` and `README_AR.md` exist. The root README now distinguishes the working CLI MVP from future roadmap work. |
+| Root docs | `README.md` and `README_AR.md` exist. The root README now separates shipped runtime, partial surfaces, and roadmap work. |
 | Generators | `generators/lite.json`, `generators/standard.json`, and `generators/enterprise.json` exist. |
 | Questionnaires | Core, production, and extension questionnaire folders exist with Arabic and English DOCX files. |
 | Prompt packs | Many stack prompt packs exist directly under `prompt_packs/<pack-name>/`. Some logical categories and common-layer notes remain roadmap items. |
@@ -14,6 +14,15 @@ This file records the current v1 foundation state after Phase 04 stabilization. 
 | Acceptance checklists | Task, folder, prompt pack, AI output, release, and decision checklists exist. |
 | Examples | Lite, standard, and enterprise example folders exist with workflow, product brief, and task examples. |
 | CLI MVP | `kvdf` exists through `bin/kvdf.js` and package scripts. It supports local validation, project creation, dashboard export/serve, governance workflows, and additional local state operations. |
+
+## What Is Shipped First
+
+If a new reader wants the shortest accurate summary, start with:
+
+1. `kvdf` is a working local CLI runtime.
+2. `.kabeeri/` is the local source of truth.
+3. Governance, validation, tasks, tokens, locks, dashboards, and plugin bundles are real.
+4. Some product surfaces are still partial and intentionally deferred.
 
 ## What Remains Deferred
 

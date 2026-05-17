@@ -62,7 +62,7 @@ Expected flow:
 ```text
 1. Read task_tracking/task.schema.json.
 2. Create a task record.
-3. Add default status todo.
+3. Add the default intake status.
 4. Ask for milestone if missing.
 5. Show suggested GitHub issue content.
 ```

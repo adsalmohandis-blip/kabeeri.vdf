@@ -1,6 +1,7 @@
 # Commands
 
-This folder will contain the ecommerce builder command handlers when the plugin is wired into KVDF runtime.
+This folder now contains the ecommerce builder command handlers, while the
+plugin root bootstrap is `plugins/ecommerce-builder/bootstrap.js`.
 
 Expected areas:
 
@@ -12,4 +13,3 @@ Expected areas:
 - task synthesis
 - approval packaging
 - reporting
-

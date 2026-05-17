@@ -19,10 +19,12 @@ There must be exactly one final verification authority: the Owner.
 Recommended flow:
 
 ```text
-todo -> in_progress -> review_ready -> reviewer_recommended -> owner_verified
-                                      -> rejected
+proposed -> in_progress -> review_ready -> reviewer_recommended -> owner_verified
+                                           -> rejected
 owner_verified -> reopened
 ```
+
+Current intake flow uses the active task lifecycle labels instead of the legacy starter label.
 
 Reviewer approval is only a recommendation. A task is not complete until `owner_verified`.
 
@@ -56,4 +58,3 @@ Every verify/reject/reopen action writes to `audit_log.jsonl`.
 - Reviewer recommendation is separated from final verify.
 - CLI commands require owner authority.
 - Dashboard verify is unavailable to ordinary developers.
-

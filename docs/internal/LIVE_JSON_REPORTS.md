@@ -106,6 +106,7 @@ Use Markdown for stable human artifacts:
 - release notes
 - handoff documents
 - cleanup audits
+- cleanup relocation plans
 - architecture decision explanations
 
 After a feature, prefer refreshing live JSON:

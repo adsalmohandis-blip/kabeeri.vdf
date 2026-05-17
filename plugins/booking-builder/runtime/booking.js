@@ -1,5 +1,9 @@
-const { fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
-const { buildPluginBundleContract } = require("./plugin_bundle_contract");
+const {
+  fileExists,
+  readJsonFile,
+  writeJsonFile,
+  buildBookingBundleContract
+} = require("../lib/booking_helpers");
 
 const BOOKING_STATE_FILE = ".kabeeri/booking.json";
 const SUPPORTED_MODES = ["appointments", "services", "classes", "hotels", "events"];
@@ -165,7 +169,7 @@ function createBookingProject(value, flags = {}, deps = {}) {
     blockers: [],
     next_action: "kvdf booking questionnaire",
     artifacts: {
-      bundle_contract: buildBookingBundleContract(plugin, mode, "intake", "kvdf booking questionnaire")
+      bundle_contract: buildBookingBundleState(plugin, mode, "intake", "kvdf booking questionnaire")
     }
   });
   const nextState = upsertCurrentProject(state, project);
@@ -522,7 +526,7 @@ function buildBookingTasks(project, modules, deliveryMode = "structured") {
         "plugins/booking-builder/",
         ".kabeeri/booking.json",
         "docs/reports/",
-        "src/cli/commands/booking.js"
+        "plugins/booking-builder/bootstrap.js"
       ]
     };
   });
@@ -622,7 +626,7 @@ function updateCurrentProject(state, updater) {
   return nextState;
 }
 
-function buildBookingBundleContract(plugin, mode, stage, nextExactAction) {
+function buildBookingBundleState(plugin, mode, stage, nextExactAction) {
   const fallback = {
     plugin_id: "booking-builder",
     name: "Booking Builder",
@@ -657,7 +661,7 @@ function buildBookingBundleContract(plugin, mode, stage, nextExactAction) {
       "plugins/booking-builder/docs/cli.md"
     ]
   };
-  const base = plugin && plugin.bundle_contract ? plugin.bundle_contract : buildPluginBundleContract(fallback, { ready_action: nextExactAction });
+  const base = plugin && plugin.bundle_contract ? plugin.bundle_contract : buildBookingBundleContract(fallback, { ready_action: nextExactAction });
   return {
     ...base,
     current_mode: mode || null,

@@ -11,7 +11,6 @@ function isProtectedFeatureDocsPath(path) {
 }
 
 module.exports = {
-  MANUAL_FEATURE_DOCS_INBOX,
   PROTECTED_FEATURE_DOCS_RULE,
   isManualFeatureDocsInbox,
   isProtectedFeatureDocsPath

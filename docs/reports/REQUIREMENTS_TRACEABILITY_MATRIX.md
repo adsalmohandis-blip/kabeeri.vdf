@@ -50,7 +50,7 @@ The row-level matrix below preserves the original ingestion snapshot. Since that
 | Dashboard UX product polish | Live dashboard, role visibility, widget registry, workspace strategy, live refresh rules, empty/error rules, and responsive rules exist; saved views and deeper drilldowns remain future work. | Add saved views, date ranges, and richer role-specific drilldowns later. |
 | Design QA/theme automation | Design intake, visual reviews, gates, and governance reports exist, but automated contrast validation, browser screenshot helpers, theme audit, and safe CSS checks are still limited. | Add `kvdf design qa`, theme checks, contrast checks, and visual issue tracking. |
 | Bilingual docs parity | Arabic/English docs exist, but full parity is still ongoing. | Continue parity passes for root docs, numbered docs, and docs site. |
-| Roadmap/doc freshness | `ROADMAP.md` and historical reports still include stale `TBD`/`Planned` wording. | Refresh roadmap and release docs after current feature checkpoint. |
+| Roadmap/doc freshness | `ROADMAP.md` and historical reports still include placeholder planning wording. | Refresh roadmap and release docs after current feature checkpoint. |
 
 ### Updated Practical Status Summary
 

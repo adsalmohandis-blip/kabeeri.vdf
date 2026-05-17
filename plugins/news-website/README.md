@@ -1,6 +1,6 @@
 # News Website Builder
 
-`news-website` is the app-track plugin for editorial and news sites.
+`news-website` is the app-track plugin for editorial and news sites. Its plugin-owned bootstrap lives in `plugins/news-website/bootstrap.js`.
 
 ```bash
 kvdf plugins install news-website

@@ -1,0 +1,50 @@
+{
+  "plugin_id": "vibe-maintainer",
+  "name": "Vibe Maintainer",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "command_entrypoint": "plugins/vibe-maintainer/bootstrap.js",
+  "runtime_entrypoint": "plugins/vibe-maintainer/runtime/vibe_maintainer.js",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_maintenance",
+  "plugin_type": "vibe-maintainer",
+  "enabled_by_default": false,
+  "description": "Inspect and maintain vibe developer app workspaces with scope-aware cleanup, relocation review, approvals, execution, and finalization.",
+  "required_folders": [
+    "commands",
+    "docs",
+    "runtime"
+  ],
+  "optional_folders": [
+    "references",
+    "examples",
+    "assets",
+    "tests"
+  ],
+  "domain_folders": [
+    "references",
+    "examples",
+    "assets"
+  ],
+  "command_surface": [
+    "kvdf vibe-maintainer status",
+    "kvdf vibe-maintainer fast",
+    "kvdf vibe-maintainer slow",
+    "kvdf vibe-maintainer cleanup",
+    "kvdf vibe-maintainer inspect",
+    "kvdf vibe-maintainer report",
+    "kvdf vibe-maintainer relocate",
+    "kvdf vibe-maintainer approve",
+    "kvdf vibe-maintainer execute",
+    "kvdf vibe-maintainer finalize",
+    "kvdf plugins install vibe-maintainer",
+    "kvdf plugins uninstall vibe-maintainer"
+  ],
+  "docs_surface": [
+    "plugins/vibe-maintainer/README.md",
+    "plugins/vibe-maintainer/docs/index.md",
+    "plugins/vibe-maintainer/commands/README.md"
+  ]
+}

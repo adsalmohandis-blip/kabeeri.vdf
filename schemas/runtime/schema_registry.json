@@ -5,7 +5,8 @@
   "coverage_exemptions": [
     { "pattern": ".kabeeri/**/*.example.json", "reason": "Example JSON state files are documentation fixtures." },
     { "pattern": ".kabeeri/**/*.example.jsonl", "reason": "Example JSONL state files are documentation fixtures." },
-    { "pattern": ".kabeeri/**/site/**", "reason": "Generated docs site assets are not runtime state." }
+    { "pattern": ".kabeeri/**/site/**", "reason": "Generated docs site assets are not runtime state." },
+    { "pattern": ".kabeeri/plugin-mounts/**", "reason": "Legacy copied plugin mounts from the prior bundle-mirroring model." }
   ],
   "state_files": [
     { "path": ".kabeeri/project.json", "schema": "schemas/runtime/project-state.schema.json" },
@@ -66,6 +67,7 @@
     { "path": ".kabeeri/multi_ai_communications.json", "schema": "schemas/runtime/multi-ai-communications-state.schema.json" },
     { "path": ".kabeeri/app_workspaces.json", "schema": "schemas/runtime/app-workspaces-state.schema.json" },
     { "path": ".kabeeri/plugins.json", "schema": "schemas/runtime/plugin-loader-state.schema.json" },
+    { "pattern": ".kabeeri/plugin-links/*/mount.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
     { "path": ".kabeeri/dashboard/technical_state.json", "schema": "schemas/runtime/dashboard-state.schema.json" },
     { "path": ".kabeeri/dashboard/business_state.json", "schema": "schemas/runtime/dashboard-state.schema.json" },
     { "path": ".kabeeri/dashboard/task_tracker_state.json", "schema": "schemas/runtime/task-tracker-state.schema.json" },
@@ -81,6 +83,15 @@
     { "path": ".kabeeri/reports/evolution_batch_execution.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
     { "path": ".kabeeri/reports/pipeline_enforcement.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
     { "path": ".kabeeri/reports/task_batch_run.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/kvdf_cleanup_audit.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/kvdf_cleanup_summary.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/kvdf_maintenance_inspection.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/kvdf_maintenance_relocation.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/vibe_maintainer_state.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/vibe_maintainer_audit.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/vibe_maintainer_summary.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/vibe_maintainer_inspection.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
+    { "path": ".kabeeri/reports/vibe_maintainer_relocation.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
     { "pattern": ".kabeeri/reports/task-*.completion.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
     { "pattern": ".kabeeri/reports/task_coverage_task-*.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
     { "path": ".kabeeri/reports/traceability_report.json", "schema": "schemas/runtime/generic-report-state.schema.json" },

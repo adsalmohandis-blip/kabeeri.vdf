@@ -321,14 +321,16 @@ kvdf upgrade --from 1.0.0 --to 1.1.0 --apply
   "project_name": "existing-project",
   "version": "1.1.0",
   "profile": "standard",
-  "delivery_mode": "structured",    // NEW
-  "intake_mode": "kabeeri_upgrade", // NEW
+  "delivery_mode": "structured",
+  "intake_mode": "kabeeri_upgrade",
   "created": "2024-01-15T...",
   "created_by": "...",
-  "upgraded": "2026-05-07T...",     // NEW
-  "upgraded_from": "1.0.0"          // NEW
+  "upgraded": "2026-05-07T...",
+  "upgraded_from": "1.0.0"
 }
 ```
+
+The `delivery_mode`, `intake_mode`, and upgrade fields are new in the v1.1.0 example.
 
 2. Create `.kabeeri/delivery_mode.json`:
 

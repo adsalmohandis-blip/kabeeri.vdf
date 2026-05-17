@@ -1,12 +1,14 @@
 const fs = require("fs");
 const path = require("path");
-const { repoRoot, fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
+const { repoRoot } = require("../fs_utils");
 const { buildPluginBundleContract } = require("./plugin_bundle_contract");
+const { isPluginMounted, getPluginMountPath } = require("./plugin_mounts");
 
 const PLUGIN_STATE_FILE = ".kabeeri/plugins.json";
 
 function ensurePluginLoaderState() {
-  const state = fileExists(PLUGIN_STATE_FILE) ? readJsonFile(PLUGIN_STATE_FILE) : null;
+  const statePath = path.join(repoRoot(), PLUGIN_STATE_FILE);
+  const state = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, "utf8")) : null;
   if (state && typeof state === "object") {
     state.plugin_loader_version = state.plugin_loader_version || 1;
     state.enabled_plugins = Array.isArray(state.enabled_plugins) ? state.enabled_plugins : [];
@@ -68,6 +70,8 @@ function scanPluginManifests() {
         plugin_version: manifest.plugin_version || null,
         bundle_type: manifest.bundle_type || "bundle",
         load_strategy: manifest.load_strategy || "manifest_driven",
+        command_entrypoint: manifest.command_entrypoint || null,
+        runtime_entrypoint: manifest.runtime_entrypoint || null,
         removable: manifest.removable !== false,
         track: manifest.track || "shared",
         plugin_family: manifest.plugin_family || null,
@@ -90,6 +94,8 @@ function scanPluginManifests() {
         plugin_version: null,
         bundle_type: "bundle",
         load_strategy: "manifest_driven",
+        command_entrypoint: null,
+        runtime_entrypoint: null,
         removable: false,
         track: "shared",
         plugin_family: null,
@@ -117,16 +123,23 @@ function resolvePluginStates(manifests, state) {
   return manifests.map((plugin) => {
     const explicitEnabled = enabled.has(plugin.plugin_id);
     const explicitDisabled = disabled.has(plugin.plugin_id);
-    const active = explicitDisabled ? false : (explicitEnabled || plugin.enabled_by_default);
-    const bundleContract = buildPluginBundleContract({ ...plugin, enabled: active }, {
+    const mounted = isPluginMounted(plugin.plugin_id);
+    const resolvedBundlePath = mounted ? path.relative(repoRoot(), getPluginMountPath(plugin.plugin_id)).replace(/\\/g, "/") : plugin.bundle_path;
+    const validationBundlePath = path.relative(repoRoot(), path.join(repoRoot(), plugin.bundle_path)).replace(/\\/g, "/");
+    const active = explicitDisabled ? false : (explicitEnabled || plugin.enabled_by_default || mounted);
+    const bundleContract = buildPluginBundleContract({ ...plugin, enabled: active, bundle_path: resolvedBundlePath }, {
+      bundle_root: validationBundlePath,
+      reported_bundle_path: resolvedBundlePath,
       ready_action: active
         ? "Use the bundle command surface."
         : (plugin.removable ? `kvdf plugins install ${plugin.plugin_id}` : "Use the bundle command surface.")
     });
     return {
       ...plugin,
+      bundle_path: resolvedBundlePath,
       enabled: active,
       status: active ? "enabled" : "disabled",
+      mounted,
       bundle_contract: bundleContract
     };
   });
@@ -134,13 +147,15 @@ function resolvePluginStates(manifests, state) {
 
 function buildPluginLoaderReport() {
   const state = ensurePluginLoaderState();
+  const statePath = path.join(repoRoot(), PLUGIN_STATE_FILE);
   const manifests = scanPluginManifests();
   const plugins = resolvePluginStates(manifests, state);
   const active = plugins.filter((plugin) => plugin.enabled);
   const canonicalState = buildCanonicalPluginLoaderState(manifests, state);
   if (pluginLoaderStateNeedsNormalization(state, canonicalState)) {
     canonicalState.updated_at = new Date().toISOString();
-    writeJsonFile(PLUGIN_STATE_FILE, canonicalState);
+    fs.mkdirSync(path.dirname(statePath), { recursive: true });
+    fs.writeFileSync(statePath, `${JSON.stringify(canonicalState, null, 2)}\n`, "utf8");
   }
   return {
     report_type: "plugin_loader_status",
@@ -155,20 +170,29 @@ function buildPluginLoaderReport() {
 
 function setPluginEnabled(pluginId, enabled) {
   if (!pluginId) throw new Error("Missing plugin id.");
+  const report = buildPluginLoaderReport();
+  const plugin = report.plugins.find((item) => item.plugin_id === pluginId || item.name === pluginId || item.bundle_path === pluginId);
+  if (!plugin) throw new Error(`Plugin not found: ${pluginId}`);
+  const statePath = path.join(repoRoot(), PLUGIN_STATE_FILE);
   const state = ensurePluginLoaderState();
   const enabledPlugins = new Set(state.enabled_plugins || []);
   const disabledPlugins = new Set(state.disabled_plugins || []);
   if (enabled) {
+    const { mountPluginBundle } = require("./plugin_mounts");
+    mountPluginBundle(plugin);
     enabledPlugins.add(pluginId);
     disabledPlugins.delete(pluginId);
   } else {
+    const { unmountPluginBundle } = require("./plugin_mounts");
+    unmountPluginBundle(pluginId);
     disabledPlugins.add(pluginId);
     enabledPlugins.delete(pluginId);
   }
   state.enabled_plugins = Array.from(enabledPlugins).sort();
   state.disabled_plugins = Array.from(disabledPlugins).sort();
   state.updated_at = new Date().toISOString();
-  writeJsonFile(PLUGIN_STATE_FILE, state);
+  fs.mkdirSync(path.dirname(statePath), { recursive: true });
+  fs.writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
   return buildPluginLoaderReport();
 }
 

@@ -49,8 +49,8 @@ Stabilize the v1 public foundation without mixing v2-v7 features into v1 pages e
 | V1-FIX-010 | acceptance checklists | medium | Confirm release/task/folder/prompt/AI output checklist index is current. | Acceptance checklist README links all checklist types. | Low. |
 | V1-FIX-011 | CLI docs | high | Update `cli/README.md`, `CLI_COMMANDS.md`, `CLI_USER_FLOWS.md`, `CLI_SAFETY_RULES.md`, and `CLI_ROADMAP.md` wording where it says "future CLI" but runtime exists. | CLI docs distinguish implemented CLI from future UX. | Must not imply every future feature is implemented. |
 | V1-FIX-012 | VS Code planning | medium | Add/refresh a v1 VS Code planning note for sidebar, questionnaire UI, prompt browser, task tracking, and acceptance checklist views. | v1 planning requirement is explicitly covered. | Could duplicate later v3/v6 plans if not cross-linked carefully. |
-| V1-FIX-013 | ROADMAP | high | Add a current-state note above old planned/TBD rows or update statuses after review. | ROADMAP no longer contradicts current runtime. | Roadmap history can be distorted if edited carelessly. |
-| V1-FIX-014 | V1 release summary | high | Replace or annotate TBD entries for templates/examples that now exist or remain deferred. | V1 release summary matches repository state. | Requires careful distinction between v1 and later features. |
+| V1-FIX-013 | ROADMAP | high | Add a current-state note above old planning rows or update statuses after review. | ROADMAP no longer contradicts current runtime. | Roadmap history can be distorted if edited carelessly. |
+| V1-FIX-014 | V1 release summary | high | Replace or annotate placeholder entries for templates/examples that now exist or remain deferred. | V1 release summary matches repository state. | Requires careful distinction between v1 and later features. |
 | V1-FIX-015 | docs site | deferred | Historical: docs site was deferred at this phase. Current status: `docs_site/` exists. | Docs site exists and remains subject to parity/polish. | Keep current docs site aligned with runtime. |
 
 ## Suggested Phase 04 Order

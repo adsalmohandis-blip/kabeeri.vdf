@@ -32,7 +32,7 @@ Phase 04 was completed as a safe v1 stabilization pass. The changes are document
 | `acceptance_checklists/README.md` | Add v1 checklist coverage note. | Low. |
 | `prompt_packs/prompt_packs_README.md` | Add prompt-pack current/deferred status note. | Low. |
 | `ROADMAP.md` | Add current-state note without rewriting historical rows. | Low. |
-| `V1_RELEASE_SUMMARY.md` | Annotate TBD tree entries as historical/deferred notes. | Low. |
+| `V1_RELEASE_SUMMARY.md` | Annotate placeholder tree entries as historical/deferred notes. | Low. |
 
 ## Files Created
 
@@ -56,7 +56,7 @@ Phase 04 was completed as a safe v1 stabilization pass. The changes are document
 ## Checks Performed
 
 - Reviewed Phase 03 audit and `V1_FIX_PLAN.md`.
-- Searched for stale future/planned/TBD wording in v1-relevant docs.
+- Searched for stale future/planning placeholder wording in v1-relevant docs.
 - Kept changes scoped to documentation and status clarification.
 - Ran `rg` against root and CLI docs for stale future-only CLI wording; no matches remained for the targeted phrases.
 - Ran `node bin/kvdf.js --help`; command completed successfully.

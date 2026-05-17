@@ -1,3 +1,3 @@
 # Ecommerce Mobile App Commands
 
-This folder holds command notes and surface-specific guidance for the Ecommerce Mobile App Builder plugin.
+This folder holds the plugin-owned command surface for the Ecommerce Mobile App Builder plugin.
