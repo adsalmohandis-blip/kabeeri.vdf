@@ -1,6 +1,6 @@
 const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
-const { fileExists, repoRoot, resolveAsset, assertSafeName } = require("../fs_utils");
+const { fileExists, repoRoot, resolveAsset, assertSafeName, writeTextFile } = require("../fs_utils");
 const { table } = require("../ui");
 const { getSuggestedQuestionsForArea, mapAreaToWorkstream, getSystemAreas } = require("../commands/capability");
 const { getPromptPackCatalog, recommendFrameworkPacksForBlueprint } = require("./prompt_pack");
@@ -16,6 +16,8 @@ const UI_DECISION_AREA_KEYS = new Set([
   "dashboard_customization",
   "accessibility"
 ]);
+
+const QUESTIONNAIRE_SHEET_FILE = ".kabeeri/questionnaires/questionnaire_questions.md";
 
 function questionnaire(action, value, flags = {}, deps = {}) {
   const listFiles = deps.listFiles || (() => []);
@@ -95,6 +97,7 @@ function questionnaireAnswer(questionId, flags = {}, deps = {}) {
   const appendAudit = deps.appendAudit || (() => {});
   const buildCoverageMatrixFn = deps.buildCoverageMatrix || buildCoverageMatrix;
   const writeQuestionnaireReportsFn = deps.writeQuestionnaireReports || writeQuestionnaireReports;
+  const writeQuestionnaireQuestionSheetFn = deps.writeQuestionnaireQuestionSheet || writeQuestionnaireQuestionSheet;
   const inferQuestionAreas = deps.inferQuestionAreas || defaultInferQuestionAreas;
   const id = flags.question || questionId;
   if (!id) throw new Error("Missing question id.");
@@ -137,8 +140,63 @@ function questionnaireAnswer(questionId, flags = {}, deps = {}) {
 
   const matrix = buildCoverageMatrixFn(deps);
   writeQuestionnaireReportsFn(matrix);
+  writeQuestionnaireQuestionSheetFn(readLatestQuestionnairePlan(), readQuestionnaireAnswers().answers || [], deps);
   appendAudit("questionnaire.answer_recorded", "questionnaire", item.answer_id, `Answer recorded for ${id}`);
   console.log(`Recorded answer ${item.answer_id} for ${id}`);
+}
+
+function buildQuestionnaireQuestionSheet(plan, answers = []) {
+  if (!plan) return "";
+  const answerMap = buildQuestionnaireAnswerMap(answers);
+  const questions = Array.isArray(plan.generated_questions) ? plan.generated_questions : [];
+  const lines = [
+    "# Questionnaire Intake Sheet",
+    "",
+    `- Plan ID: ${plan.plan_id || "n/a"}`,
+    `- Blueprint: ${plan.blueprint && plan.blueprint.name ? `${plan.blueprint.name} (${plan.blueprint.key || "n/a"})` : "n/a"}`,
+    `- Delivery: ${plan.delivery_mode_recommendation && plan.delivery_mode_recommendation.recommended_mode ? plan.delivery_mode_recommendation.recommended_mode : "n/a"}`,
+    `- Generated at: ${plan.created_at || new Date().toISOString()}`,
+    `- Question count: ${questions.length}`,
+    `- Completion rule: ${plan.require_all_answers ? "All questions must be answered before docs/task generation." : "Partial answers allowed."}`,
+    "",
+    "## How to answer",
+    "- Use `kvdf questionnaire answer <question-id> --value \"...\" --areas <area1,area2>` to record an answer.",
+    "- Keep answers short but specific.",
+    "- If a decision is unknown, write `unknown` and explain what is still missing.",
+    "",
+    "## Questions",
+    ""
+  ];
+  questions.forEach((question, index) => {
+    const answer = answerMap[question.question_id] || null;
+    lines.push(`### ${String(index + 1).padStart(2, "0")}. ${question.question_id}`);
+    lines.push(`**Question:** ${question.text || "n/a"}`);
+    lines.push(`**Why:** ${question.why || "n/a"}`);
+    lines.push(`**Priority:** ${question.priority || "medium"}`);
+    lines.push(`**Answer type:** ${question.answer_type || "text"}`);
+    if (Array.isArray(question.area_ids) && question.area_ids.length) lines.push(`**Areas:** ${question.area_ids.join(", ")}`);
+    if (Array.isArray(question.choices) && question.choices.length) lines.push(`**Choices:** ${question.choices.join(", ")}`);
+    lines.push(`**Current answer:** ${answer ? answer.value : "___"}`);
+    lines.push("");
+  });
+  lines.push("## Completion check");
+  lines.push(`- Answered: ${questions.filter((question) => answerMap[question.question_id]).length}`);
+  lines.push(`- Missing: ${questions.filter((question) => !answerMap[question.question_id]).length}`);
+  lines.push("");
+  lines.push("## Next step");
+  lines.push("- Do not generate the full app docs until every question has a recorded answer.");
+  lines.push("");
+  return `${lines.join("\n")}\n`;
+}
+
+function writeQuestionnaireQuestionSheet(plan, answers = []) {
+  const sheet = buildQuestionnaireQuestionSheet(plan, answers);
+  if (!sheet) return null;
+  writeTextFile(plan && plan.question_sheet_path ? plan.question_sheet_path : QUESTIONNAIRE_SHEET_FILE, sheet);
+  return {
+    question_sheet_path: plan && plan.question_sheet_path ? plan.question_sheet_path : QUESTIONNAIRE_SHEET_FILE,
+    question_count: Array.isArray(plan && plan.generated_questions) ? plan.generated_questions.length : 0
+  };
 }
 
 function questionnaireIntakePlan(value, flags = {}, deps = {}) {
@@ -170,6 +228,8 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
   plan.approved_at = plan.approved_at || null;
   plan.approved_by = plan.approved_by || null;
   plan.approval_notes = Array.isArray(plan.approval_notes) ? plan.approval_notes : [];
+  plan.question_sheet_path = plan.question_sheet_path || QUESTIONNAIRE_SHEET_FILE;
+  plan.require_all_answers = plan.require_all_answers !== false;
   const file = ".kabeeri/questionnaires/adaptive_intake_plan.json";
   if (!fileExists(file)) writeJsonFile(file, { plans: [], current_plan_id: null });
   const state = readJsonFile(file);
@@ -178,6 +238,7 @@ function questionnaireIntakePlan(value, flags = {}, deps = {}) {
   state.current_plan_id = plan.plan_id;
   writeJsonFile(file, state);
   refreshDeveloperAppScorecardsIfNeeded();
+  writeQuestionnaireQuestionSheet(plan, readQuestionnaireAnswers().answers || []);
   const appendAudit = deps.appendAudit || (() => {});
   appendAudit("questionnaire.intake_plan_created", "questionnaire", plan.plan_id, `Questionnaire intake plan created for ${blueprintKey}`);
   if (!flags.silent) {
@@ -369,6 +430,8 @@ function defaultBuildQuestionnaireIntakePlan(description, blueprintKey, flags = 
     },
     compact_guidance: compactGuidance,
     generated_questions: questions,
+    question_sheet_path: QUESTIONNAIRE_SHEET_FILE,
+    require_all_answers: true,
     answer_commands: questions.slice(0, 8).map((question) => `kvdf questionnaire answer ${question.question_id} --value "<answer>" --areas ${question.area_ids.join(",")}`),
     next_actions: [
       `Answer and documentation language should be ${outputLanguage === "ar" ? "Arabic" : outputLanguage === "en" ? "English" : "the user's language"}.`,
@@ -901,7 +964,9 @@ function renderQuestionnaireIntakePlan(plan) {
     ["UI pattern", plan.ui_ux_context.experience_pattern],
     ["Implementation modules", (plan.module_plan.implementation_modules || []).map((item) => item.title).join(", ") || "none"],
     ["Delivery map", `${plan.delivery_map.active_mode} (${plan.delivery_map.delivery_shape})`],
-    ["Questions", plan.generated_questions.length]
+    ["Questions", plan.generated_questions.length],
+    ["Question sheet", plan.question_sheet_path || QUESTIONNAIRE_SHEET_FILE],
+    ["Answer policy", plan.require_all_answers ? "all questions required before task generation" : "partial answers allowed"]
   ]));
   console.log("");
   console.log("Module Plan:");
@@ -939,11 +1004,7 @@ function renderQuestionnaireIntakePlan(plan) {
     ["Token-saving hint", plan.compact_guidance.token_saving_hint]
   ]));
   console.log("");
-  console.log(table(["Priority", "Question ID", "Question"], plan.generated_questions.map((item) => [
-    item.priority,
-    item.question_id,
-    item.text
-  ])));
+  console.log(`Questions have been written to ${plan.question_sheet_path || QUESTIONNAIRE_SHEET_FILE}. Answer them there or with \`kvdf questionnaire answer\`.`);
 }
 
 function renderQuestionnairePlanReview(plan) {
@@ -1056,6 +1117,13 @@ function generateTasksFromCoverage(flags = {}, deps = {}) {
   if (!latestPlan) {
     throw new Error("Questionnaire task generation blocked: create a planning pack first with `kvdf questionnaire plan`.");
   }
+  const currentAnswers = readQuestionnaireAnswers();
+  const answerMap = buildQuestionnaireAnswerMap(currentAnswers);
+  const questions = Array.isArray(latestPlan.generated_questions) ? latestPlan.generated_questions : [];
+  const missingQuestions = questions.filter((question) => !answerMap[question.question_id]);
+  if (latestPlan.require_all_answers !== false && missingQuestions.length) {
+    throw new Error(`Questionnaire task generation blocked: answer every question in ${latestPlan.question_sheet_path || QUESTIONNAIRE_SHEET_FILE} before generating docs/tasks (${missingQuestions.map((item) => item.question_id).join(", ")}).`);
+  }
   if (latestPlan.approval_status !== "approved") {
     const nextAction = latestPlan.review_status === "reviewed"
       ? "kvdf questionnaire approve --confirm"
@@ -1152,6 +1220,22 @@ function readLatestQuestionnairePlan() {
     if (current) return current;
   }
   return plans[plans.length - 1] || null;
+}
+
+function readQuestionnaireAnswers() {
+  if (!fileExists(".kabeeri/questionnaires/answers.json")) return { answers: [] };
+  const data = readJsonFile(".kabeeri/questionnaires/answers.json");
+  data.answers = Array.isArray(data.answers) ? data.answers : [];
+  return data;
+}
+
+function buildQuestionnaireAnswerMap(answers = []) {
+  const list = Array.isArray(answers)
+    ? answers
+    : Array.isArray(answers && answers.answers)
+      ? answers.answers
+      : [];
+  return Object.fromEntries(list.map((answer) => [answer.question_id, answer]));
 }
 
 function readQuestionnairePlanState() {

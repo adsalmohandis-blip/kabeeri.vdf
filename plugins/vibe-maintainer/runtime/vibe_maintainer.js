@@ -844,6 +844,18 @@ function resolveScopeSelectionFromOptions(options = {}) {
       selected = [record];
       scopeMode = explicitCurrent ? "current" : "workspace";
       selectionReason = "requested workspace";
+    } else if (workspaceValue || detectCurrentWorkspaceSlug()) {
+      const fallbackSlug = normalizeKey(workspaceValue || detectCurrentWorkspaceSlug() || "");
+      const fallbackRoot = normalizeWorkspaceRoot(`workspaces/apps/${fallbackSlug}`);
+      selected = [{
+        slug: fallbackSlug,
+        name: fallbackSlug,
+        root: fallbackRoot,
+        app_type: "application",
+        surface_scopes: ["shared"]
+      }];
+      scopeMode = explicitCurrent ? "current" : "workspace";
+      selectionReason = "requested workspace";
     }
   } else {
     const current = detectCurrentWorkspaceSlug();
@@ -851,6 +863,16 @@ function resolveScopeSelectionFromOptions(options = {}) {
       const record = resolveWorkspaceRecordBySelector(current, allWorkspaces);
       if (record) {
         selected = [record];
+        scopeMode = "current";
+        selectionReason = "current workspace";
+      } else {
+        selected = [{
+          slug: normalizeKey(current),
+          name: normalizeKey(current),
+          root: normalizeWorkspaceRoot(`workspaces/apps/${normalizeKey(current)}`),
+          app_type: "application",
+          surface_scopes: ["shared"]
+        }];
         scopeMode = "current";
         selectionReason = "current workspace";
       }
@@ -889,8 +911,8 @@ function resolveWorkspaceRecordBySelector(selector, workspaces) {
 }
 
 function detectCurrentWorkspaceSlug() {
-  const rel = path.relative(repoRoot(), process.cwd()).replace(/\\/g, "/");
-  const match = /^workspaces\/apps\/([^/]+)/.exec(rel);
+  const cwd = path.resolve(process.cwd()).replace(/\\/g, "/");
+  const match = /(?:^|\/)workspaces\/apps\/([^/]+)/.exec(cwd);
   return match ? match[1] : null;
 }
 

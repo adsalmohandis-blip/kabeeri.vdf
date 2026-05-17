@@ -11,6 +11,7 @@ const wordpressPlanService = require("../src/cli/services/wordpress_plans");
 const appPluginCatalog = require("../src/cli/services/app_plugin_catalog");
 const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/commands/multi_ai_communications");
 const { resolveDashboardScope } = require("../src/cli/commands/site");
+const { version: packageVersion } = require("../package.json");
 
 const repoRoot = path.resolve(__dirname, "..");
 
@@ -197,7 +198,7 @@ function runAppPluginSmokeCase(dir, pluginId, spec, smokeCase) {
 }
 
 test("root commands validate repository assets", () => {
-  assert.match(runKvdf(["--version"]).stdout, /kvdf 0\.2\.0/);
+  assert.match(runKvdf(["--version"]).stdout, new RegExp(`kvdf ${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
   for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "cleaner", "maintenance", "vibe-maintainer", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
@@ -865,7 +866,7 @@ test("init creates workspace state files", () => withTempDir((dir) => {
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /runtime schema validation checked/);
   const upgrade = JSON.parse(runKvdf(["upgrade", "check", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(upgrade.report_type, "upgrade_check");
-  assert.strictEqual(upgrade.current_cli_version, "0.2.0");
+  assert.strictEqual(upgrade.current_cli_version, packageVersion);
 }));
 
 test("init goal creates adaptive questions and planning pack review before implementation", () => withTempDir((dir) => {
@@ -1349,7 +1350,8 @@ test("v5 adaptive questionnaire creates coverage and provenance tasks", () => wi
   assert.ok(coverage.areas.some((area) => area.area_key === "payments_billing" && area.status === "needs_follow_up"));
   const missing = JSON.parse(runKvdf(["questionnaire", "missing"], { cwd: dir }).stdout);
   assert.ok(missing.follow_up.some((area) => area.area_key === "payments_billing"));
-  runKvdf(["questionnaire", "plan", "Build ecommerce store with Laravel backend React frontend payments shipping and customer mobile app", "--json"], { cwd: dir });
+  const plan = JSON.parse(runKvdf(["questionnaire", "plan", "Build ecommerce store with Laravel backend React frontend payments shipping and customer mobile app", "--json"], { cwd: dir }).stdout);
+  answerAllGeneratedQuestionnaireQuestions(dir, plan);
   runKvdf(["questionnaire", "review"], { cwd: dir });
   runKvdf(["questionnaire", "approve", "--confirm"], { cwd: dir });
   runKvdf(["questionnaire", "generate-tasks"], { cwd: dir });
@@ -1619,7 +1621,7 @@ test("evolution batch-exe auto-assigns missing tasks to the active multi-ai lead
   assert.strictEqual(report.status, "ready");
 }));
 
-test("task batch-run starts approved tasks sequentially and creates execution artifacts", () => withTempDir((dir) => {
+test("task batch-run executes approved tasks to completion and creates execution artifacts", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
   fs.cpSync(path.join(repoRoot, "plugins", "kvdf-dev"), path.join(dir, "plugins", "kvdf-dev"), { recursive: true });
@@ -1652,21 +1654,26 @@ test("task batch-run starts approved tasks sequentially and creates execution ar
   assert.strictEqual(report.report_type, "task_batch_run");
   assert.strictEqual(report.summary.total_candidates, 2);
   assert.strictEqual(report.summary.started_total, 2);
+  assert.strictEqual(report.summary.completed_total, 2);
   assert.strictEqual(report.summary.blocked_total, 0);
-  assert.strictEqual(report.status, "running");
+  assert.strictEqual(report.status, "completed");
   assert.strictEqual(report.auto_assignee_id, "codex");
   assert.deepStrictEqual(report.started_tasks.map((item) => item.id), ["task-batch-001", "task-batch-002"]);
+  assert.deepStrictEqual(report.completed_tasks.map((item) => item.id), ["task-batch-001", "task-batch-002"]);
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "task_batch_run.json")));
   const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
-  assert.strictEqual(tasksState.tasks.find((item) => item.id === "task-batch-001").status, "in_progress");
-  assert.strictEqual(tasksState.tasks.find((item) => item.id === "task-batch-001").assignee_id, "codex");
-  assert.strictEqual(tasksState.tasks.find((item) => item.id === "task-batch-002").status, "in_progress");
+  assert.strictEqual(tasksState.tasks.some((item) => item.id === "task-batch-001"), false);
+  assert.strictEqual(tasksState.tasks.some((item) => item.id === "task-batch-002"), false);
   const tokens = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tokens.json"), "utf8"));
-  assert.strictEqual(tokens.tokens.filter((item) => item.task_id === "task-batch-001" && item.status === "active").length, 1);
-  assert.strictEqual(tokens.tokens.filter((item) => item.task_id === "task-batch-002" && item.status === "active").length, 1);
+  assert.strictEqual(tokens.tokens.filter((item) => item.task_id === "task-batch-001" && item.status === "revoked").length, 1);
+  assert.strictEqual(tokens.tokens.filter((item) => item.task_id === "task-batch-002" && item.status === "revoked").length, 1);
   const locks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "locks.json"), "utf8"));
-  assert.strictEqual(locks.locks.filter((item) => item.task_id === "task-batch-001" && item.status === "active").length, 1);
-  assert.strictEqual(locks.locks.filter((item) => item.task_id === "task-batch-002" && item.status === "active").length, 1);
+  assert.strictEqual(locks.locks.filter((item) => item.task_id === "task-batch-001" && item.status === "released").length, 1);
+  assert.strictEqual(locks.locks.filter((item) => item.task_id === "task-batch-002" && item.status === "released").length, 1);
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "task-batch-001.verification.md")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "task-batch-001.completion.json")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "task-batch-002.verification.md")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", "task-batch-002.completion.json")));
 }));
 
 test("task packet compiles a durable control-plane packet from intake, briefs, and approved tasks", () => withTempDir((dir) => {
@@ -2587,7 +2594,9 @@ test("adaptive questionnaire planning uses blueprints frameworks data design and
   const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json"), "utf8"));
   assert.strictEqual(state.current_plan_id, plan.plan_id);
   assert.strictEqual(state.plans.length, 1);
-  assert.match(runKvdf(["questionnaire", "generate-tasks"], { cwd: dir, expectFailure: true }).stderr, /review and approve the planning pack/);
+  assert.match(fs.readFileSync(path.join(dir, ".kabeeri", "questionnaires", "questionnaire_questions.md"), "utf8"), /Questionnaire Intake Sheet/);
+  assert.match(runKvdf(["questionnaire", "generate-tasks"], { cwd: dir, expectFailure: true }).stderr, /answer every question/);
+  answerAllGeneratedQuestionnaireQuestions(dir, plan);
   const reviewed = JSON.parse(runKvdf(["questionnaire", "review", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(reviewed.review_status, "reviewed");
   assert.strictEqual(reviewed.approval_status, "pending");
@@ -2647,7 +2656,8 @@ test("questionnaire task generation emits explicit frontend UI decision tasks", 
       { answer_id: "answer-004", question_id: "entry.has_public_frontend", value: "yes", area_ids: ["public_frontend", "seo", "accessibility"] }
     ]
   }, null, 2));
-  runKvdf(["questionnaire", "plan", "Build ecommerce store with Laravel backend React frontend payments shipping and customer mobile app", "--json"], { cwd: dir });
+  const plan = JSON.parse(runKvdf(["questionnaire", "plan", "Build ecommerce store with Laravel backend React frontend payments shipping and customer mobile app", "--json"], { cwd: dir }).stdout);
+  answerAllGeneratedQuestionnaireQuestions(dir, plan);
   runKvdf(["questionnaire", "review"], { cwd: dir });
   runKvdf(["questionnaire", "approve", "--confirm"], { cwd: dir });
   runKvdf(["questionnaire", "generate-tasks"], { cwd: dir });
@@ -3247,7 +3257,8 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   assert.strictEqual(suggestion.workstream, "admin_frontend");
   assert.ok(suggestion.acceptance_criteria.length > 0);
   assert.match(runKvdf(["vibe", "list"], { cwd: dir }).stdout, /suggestion-001/);
-  assert.match(runKvdf(["ask", "Improve the dashboard"], { cwd: dir }).stdout, /Before creating a governed task/);
+  assert.match(runKvdf(["ask", "Improve the dashboard"], { cwd: dir }).stdout, /Questions written to:/);
+  assert.match(fs.readFileSync(path.join(dir, ".kabeeri", "interactions", "vibe_questions.md"), "utf8"), /Vibe Clarification Questions/);
   const plan = JSON.parse(runKvdf(["vibe", "plan", "Build ecommerce store with products cart checkout admin and tests"], { cwd: dir }).stdout);
   assert.ok(plan.suggestions.length >= 4);
   assert.ok(plan.suggestions.some((item) => item.workstream === "backend"));
@@ -3295,6 +3306,16 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   assert.match(html, /Post-work Captures/);
   assert.match(html, /Vibe Sessions and Briefs/);
 }));
+
+function answerAllGeneratedQuestionnaireQuestions(dir, plan) {
+  for (const question of plan.generated_questions || []) {
+    const answer = Array.isArray(question.choices) && question.choices.length
+      ? question.choices[0]
+      : "confirmed";
+    const areas = Array.isArray(question.area_ids) && question.area_ids.length ? question.area_ids.join(",") : "mvp_scope";
+    runKvdf(["questionnaire", "answer", question.question_id, "--value", answer, "--areas", areas], { cwd: dir });
+  }
+}
 
 test("owner auth blocks verify without active session", () => withTempDir((dir) => {
   const env = { KVDF_OWNER_PASSPHRASE: "secret-pass" };

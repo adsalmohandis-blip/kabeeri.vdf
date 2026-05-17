@@ -663,71 +663,11 @@ function questionnaire(action, value, flags = {}) {
 }
 
 function questionnaireAnswer(questionId, flags = {}) {
-  ensureWorkspace();
-  const id = flags.question || questionId;
-  if (!id) throw new Error("Missing question id.");
-  if (flags.value === undefined && flags.answer === undefined) throw new Error("Missing --value.");
-  const value = String(flags.value !== undefined ? flags.value : flags.answer);
-  const answersFile = ".kabeeri/questionnaires/answers.json";
-  const sourcesFile = ".kabeeri/questionnaires/answer_sources.json";
-  const data = readJsonFile(answersFile);
-  data.answers = data.answers || [];
-  const existing = data.answers.find((answer) => answer.question_id === id);
-  const areaIds = parseCsv(flags.areas || inferQuestionAreas(id).join(","));
-  const item = {
-    answer_id: existing ? existing.answer_id : `answer-${String(data.answers.length + 1).padStart(3, "0")}`,
-    question_id: id,
-    value,
-    area_ids: areaIds,
-    answered_by: flags.by || flags.actor || "local-user",
-    answered_at: new Date().toISOString(),
-    confidence: flags.confidence || inferAnswerConfidence(value),
-    source: flags.source || "questionnaire",
-    source_mode: flags["source-mode"] || "direct",
-    delivery_mode: flags["delivery-mode"] || null,
-    intake_mode: flags["intake-mode"] || "adaptive"
-  };
-  if (existing) Object.assign(existing, item);
-  else data.answers.push(item);
-  writeJsonFile(answersFile, data);
-
-  const sources = readJsonFile(sourcesFile);
-  sources.sources = sources.sources || [];
-  sources.sources.push({
-    source_id: `source-${String(sources.sources.length + 1).padStart(3, "0")}`,
-    answer_id: item.answer_id,
-    question_id: id,
-    source_mode: item.source_mode,
-    recorded_at: item.answered_at,
-    summary: `Answer recorded for ${id}`
-  });
-  writeJsonFile(sourcesFile, sources);
-
-  const matrix = buildCoverageMatrix();
-  writeQuestionnaireReports(matrix);
-  appendAudit("questionnaire.answer_recorded", "questionnaire", item.answer_id, `Answer recorded for ${id}`);
-  console.log(`Recorded answer ${item.answer_id} for ${id}`);
+  return questionnaireService.questionnaireAnswer(questionId, flags, getQuestionnaireRuntimeDeps());
 }
 
 function questionnaireIntakePlan(value, flags = {}) {
-  ensureWorkspace();
-  const description = flags.description || flags.text || flags.project || value || "";
-  const blueprintKey = flags.blueprint || getCurrentBlueprintKey() || inferQuestionnaireBlueprint(description, flags);
-  if (!blueprintKey) throw new Error("Missing project description or selected blueprint. Use `kvdf questionnaire plan \"Build ecommerce store...\"` or `--blueprint ecommerce`.");
-  const plan = buildQuestionnaireIntakePlan(description || blueprintKey, blueprintKey, flags);
-  const file = ".kabeeri/questionnaires/adaptive_intake_plan.json";
-  if (!fileExists(file)) writeJsonFile(file, { plans: [], current_plan_id: null });
-  const state = readJsonFile(file);
-  state.plans = state.plans || [];
-  state.plans.push(plan);
-  state.current_plan_id = plan.plan_id;
-  writeJsonFile(file, state);
-  appendAudit("questionnaire.intake_plan_created", "questionnaire", plan.plan_id, `Questionnaire intake plan created for ${blueprintKey}`);
-  if (!flags.silent) {
-    if (flags.json) console.log(JSON.stringify(plan, null, 2));
-    else renderQuestionnaireIntakePlan(plan);
-  }
-  return plan;
+  return questionnaireService.questionnaireIntakePlan(value, flags, getQuestionnaireRuntimeDeps());
 }
 
 function vibe(action, value, flags = {}, rest = []) {
@@ -1038,19 +978,45 @@ function buildVibeAcceptanceCriteria(intent, workstream) {
 }
 
 function buildVibeAskResponse(intent) {
-  const questions = intent.missing_details.slice(0, 3).map((item) => `- Clarify ${item}.`);
-  if (questions.length === 0) questions.push("- Confirm whether you want a suggested task card or only an explanation.");
+  const questions = Array.isArray(intent.missing_details) ? intent.missing_details.slice(0, 8) : [];
+  const file = ".kabeeri/interactions/vibe_questions.md";
+  const lines = [
+    "# Vibe Clarification Questions",
+    "",
+    `- Intent ID: ${intent.intent_id || "n/a"}`,
+    `- Intent type: ${intent.intent_type || "unknown"}`,
+    `- Risk level: ${intent.risk_level || "unknown"}`,
+    `- Workstreams: ${(intent.detected_workstreams || []).join(", ") || "n/a"}`,
+    "",
+    "## Questions",
+    ""
+  ];
+  if (questions.length === 0) {
+    lines.push("- Confirm whether you want a suggested task card or only an explanation.");
+  } else {
+    questions.forEach((item, index) => {
+      lines.push(`### ${String(index + 1).padStart(2, "0")}. ${item}`);
+      lines.push(`- Answer: ___`);
+      lines.push("");
+    });
+  }
+  lines.push("## How to respond");
+  lines.push("- Fill the answers in this file or record them through the questionnaire flow.");
+  lines.push("- Keep answers specific and file-based rather than in chat.");
+  lines.push("- Once the missing items are answered, continue with the governed suggestion flow.");
+  lines.push("");
+  writeTextFile(file, `${lines.join("\n")}\n`);
   return {
     intent,
     lines: [
       `Intent: ${intent.intent_type}`,
-      `Likely workstream: ${intent.detected_workstreams.join(", ")}`,
+      `Likely workstream: ${(intent.detected_workstreams || []).join(", ") || "n/a"}`,
       `Risk: ${intent.risk_level}`,
       "",
-      "Before creating a governed task:",
-      ...questions,
+      `Questions written to: ${file}`,
+      "Answer the file first, then continue with the governed suggestion flow.",
       "",
-      "Safe next step: run `kvdf vibe suggest \"...\"` with the clarified request."
+      "Safe next step: run `kvdf vibe suggest \"...\"` with the clarified request after the file is complete."
     ]
   };
 }

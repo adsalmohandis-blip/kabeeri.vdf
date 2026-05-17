@@ -231,8 +231,8 @@ function buildVibeBriefNextStep(plan, missingQuestions) {
   if (firstMissing) {
     const areas = Array.isArray(firstMissing.area_ids) ? firstMissing.area_ids.join(",") : "";
     return {
-      command: `kvdf questionnaire answer ${firstMissing.question_id} --value "<answer>" --areas ${areas}`,
-      reason: firstMissing.why || firstMissing.text || "Capture the next missing questionnaire answer.",
+      command: `.kabeeri/questionnaires/questionnaire_questions.md`,
+      reason: firstMissing.why || firstMissing.text || `Capture the next missing questionnaire answer in the file first, then sync it with kvdf questionnaire answer ${firstMissing.question_id} --value "<answer>" --areas ${areas}.`,
       reusable: true,
       mode: "capture_missing_answer"
     };
