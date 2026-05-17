@@ -1,6 +1,6 @@
 {
   "name": "kabeeri-vdf",
-  "version": "0.2.0",
+  "version": "0.3.0-alpha",
   "description": "Kabeeri VDF command line tool for project state, validation, prompts, tasks, and governance plans.",
   "license": "MIT",
   "type": "commonjs",
