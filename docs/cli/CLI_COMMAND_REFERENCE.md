@@ -22,6 +22,7 @@ kvdf usage --help
 kvdf design --help
 kvdf structure --help
 kvdf evolution --help
+kvdf planner --help
 kvdf adr --help
 kvdf ai-run --help
 kvdf dashboard --help
@@ -95,6 +96,19 @@ Shared commands are the first stop when you are not sure which track owns the wo
 The owner track and app track stay separated in live state by default. `kvdf dashboard state`, `kvdf dashboard task-tracker`, `kvdf task list`, `kvdf task lifecycle`, `kvdf evolution`, and the scheduler views only show the current workspace track unless you explicitly opt in to linked-workspace summaries. That means the owner dashboard reads owner-track evolutions and tasks, while the app dashboard reads app-track evolutions and tasks, without mixing their analysis.
 
 When a command is blocked, the CLI should explain whether the missing piece is a track, plugin, or permission. The next-command hint should point to the shortest unblocking step, not a vague retry.
+
+## Planner Layer
+
+```bash
+kvdf planner next --json
+kvdf planner prompt --goal "Add planner layer" --json
+kvdf planner evolution --goal "Add planner layer" --json
+kvdf planner task-punch --goal "Add planner layer" --json
+```
+
+The Planner Layer is the deterministic KVDF Core owner-track planning surface. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, and prepares a Codex-ready prompt. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work.
+
+The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
 
 See `docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md` for the canonical track map and session cycle summary.
 See `knowledge/governance/TRACK_ROUTING_GOVERNANCE.md` for the route and block rules that decide which track activates at entry.

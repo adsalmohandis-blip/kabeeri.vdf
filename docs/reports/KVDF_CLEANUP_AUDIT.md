@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779093377845
-- Generated at: 2026-05-18T08:36:17.845Z
+- Report ID: kvdf-cleanup-1779094662767
+- Generated at: 2026-05-18T08:57:42.767Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            2787                                       
+Total files            2794                                       
 Total folders          13                                         
 Plugin total           13                                         
 Active plugins         8                                          
@@ -37,13 +37,13 @@ blocked-flows   Run the workflow inspection pass to look for blocked or waiting-
 Folder      Files  Primary extension  Role           
 ----------  -----  -----------------  ---------------
 .kabeeri    844    .md                workspace state
-knowledge   462    .md                project surface
-packs       435    .md                project surface
+knowledge   463    .md                project surface
+packs       437    .md                project surface
 plugins     370    .md                plugin bundles 
-docs        290    .md                documentation  
+docs        291    .md                documentation  
 workspaces  140    .json              project surface
-src         130    .js                runtime source 
-schemas     92     .md                project surface
+src         131    .js                runtime source 
+schemas     94     .md                project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
 .gitignore  1      [no extension]     project surface
@@ -53,9 +53,9 @@ bin         1      .js                project surface
 
 Extension       Files
 --------------  -----
-.md             1662 
-.json           663  
-.js             195  
+.md             1666 
+.json           665  
+.js             196  
 .html           181  
 .docx           58   
 .jsonl          15   
@@ -70,7 +70,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            1788 
+Scanned files            1795 
 Dead code candidates     4    
 Stale docs candidates    3    
 Spec drift candidates    4    

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Evolution Plan",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "evolution_id",
+    "title",
+    "track",
+    "area",
+    "reason",
+    "in_scope",
+    "out_of_scope",
+    "allowed_files",
+    "forbidden_files",
+    "acceptance_criteria",
+    "validation_commands",
+    "delivery_mode",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "type": "string" },
+    "evolution_id": { "type": "string" },
+    "title": { "type": "string" },
+    "track": { "type": "string" },
+    "area": { "type": "string" },
+    "reason": { "type": "string" },
+    "in_scope": { "type": "array", "items": { "type": "string" } },
+    "out_of_scope": { "type": "array", "items": { "type": "string" } },
+    "allowed_files": { "type": "array", "items": { "type": "string" } },
+    "forbidden_files": { "type": "array", "items": { "type": "string" } },
+    "acceptance_criteria": { "type": "array", "items": { "type": "string" } },
+    "validation_commands": { "type": "array", "items": { "type": "string" } },
+    "delivery_mode": { "type": "string" },
+    "next_action": { "type": "string" },
+    "stop_condition": { "type": "string" }
+  }
+}

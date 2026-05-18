@@ -466,6 +466,10 @@ Notes:
   kvdf evolution report
   kvdf evolution batch-exe
   kvdf batch-exe
+  kvdf planner next --json
+  kvdf planner prompt --goal "Add planner layer" --json
+  kvdf planner evolution --goal "Add planner layer" --json
+  kvdf planner task-punch --goal "Add planner layer" --json
   kvdf plugins status
   kvdf plugins install kvdf-dev
   kvdf plugins enable kvdf-dev
@@ -493,6 +497,15 @@ Notes:
   Use batch-exe to print the next governed execution queue for approved and ready tasks in priority order without losing track of blockers or stop conditions.
   The plugin loader exposes removable bundles such as kvdf-dev and keeps install/enable/uninstall/disable state under .kabeeri/plugins.json.
   Framework-owner sessions use this track to move from resume to priorities, placement confirmation, temp slices, sync, validation, and verification.
+`,
+    planner: `Usage:
+  kvdf planner next --json
+  kvdf planner prompt --goal "Add planner layer" --json
+  kvdf planner evolution --goal "Add planner layer" --json
+  kvdf planner task-punch --goal "Add planner layer" --json
+
+Notes:
+  Planner is the deterministic planning layer for KVDF Core Owner Track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, and generates a Codex-ready execution prompt without treating branch/PR as the default path.
 `,
     "batch-exe": `Usage:
   kvdf batch-exe
@@ -1323,6 +1336,7 @@ function printHelp() {
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
+    "  planner next|prompt|evolution Recommend the next KVDF Core Evolution and generate a Codex prompt",
     "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
     "  maintenance fast|slow        Run the repo-wide maintenance workflow in fast or strict mode",
     "  cleaner inspect              Run the file-by-file maintenance inspection report",
@@ -1377,6 +1391,7 @@ function printHelp() {
   ];
   const ownerCommands = [
     "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
+    "  planner next|prompt|evolution Deterministically recommend the next KVDF Core Evolution and generate a prompt",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
     "  owner init|login|status|logout Configure and use local Owner sessions",
     "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",

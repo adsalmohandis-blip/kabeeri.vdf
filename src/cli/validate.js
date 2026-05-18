@@ -694,6 +694,7 @@ function validateDocsSourceTruth(pass, fail) {
     "kvdf capability surface",
     "kvdf capability matrix",
     "kvdf capability search",
+    "kvdf planner",
     "kvdf source-package source-map",
     "kvdf evolution",
     "kvdf evolution report",
@@ -725,6 +726,7 @@ function validateDocsSourceTruth(pass, fail) {
     "AI Cost Control",
     "Delivery Mode Advisor",
     "Capability Registry",
+    "Planner Layer",
     "Source-To-Capability Mapping",
     "Blocked Scenarios Report",
     "Capability-to-Documentation Matrix"

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Task Punch",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["report_type", "evolution_id", "tasks"],
+  "properties": {
+    "report_type": { "type": "string" },
+    "evolution_id": { "type": "string" },
+    "title": { "type": "string" },
+    "tasks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "title",
+          "status",
+          "allowed_files",
+          "forbidden_files",
+          "acceptance_criteria",
+          "validation_commands",
+          "stop_condition"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "allowed_files": { "type": "array", "items": { "type": "string" } },
+          "forbidden_files": { "type": "array", "items": { "type": "string" } },
+          "acceptance_criteria": { "type": "array", "items": { "type": "string" } },
+          "validation_commands": { "type": "array", "items": { "type": "string" } },
+          "stop_condition": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -201,7 +201,7 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["--version"]).stdout, new RegExp(`kvdf ${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
-  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "cleaner", "maintenance", "vibe-maintainer", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
+  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "cleaner", "maintenance", "vibe-maintainer", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "planner", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
     const help = runKvdf([command, "--help"]).stdout;
     assert.match(help, /Usage:/, `${command} help should include usage`);
     assert.doesNotMatch(help, /No detailed help/, `${command} should have detailed help`);
@@ -5228,6 +5228,52 @@ test("capability registry exposes the canonical area map, plugins, and runtime b
   assert.strictEqual(billing.capability_id, "payments_billing");
   assert.ok(Array.isArray(billing.source_files));
   assert.ok(billing.source_files.some((item) => item.includes("SYSTEM_AREAS_INDEX.md")) || billing.source_files.some((item) => item.includes("docs/SYSTEM_CAPABILITIES_REFERENCE.md")));
+});
+
+test("planner layer recommends the next evolution and keeps direct-to-main default", () => {
+  const plannerNext = JSON.parse(runKvdf(["planner", "next", "--json"]).stdout);
+  assert.strictEqual(plannerNext.report_type, "kvdf_planner_next");
+  assert.strictEqual(plannerNext.track, "framework_owner");
+  assert.strictEqual(plannerNext.delivery_mode, "direct_main");
+  assert.ok(plannerNext.recommended_evolution);
+  assert.ok(plannerNext.recommended_evolution.title);
+  assert.ok(Array.isArray(plannerNext.out_of_scope));
+  assert.ok(plannerNext.out_of_scope.some((item) => /branch\/PR|runtime state under \.kabeeri/i.test(item)));
+  assert.ok(Array.isArray(plannerNext.allowed_files));
+  assert.ok(Array.isArray(plannerNext.forbidden_files));
+  assert.ok(Array.isArray(plannerNext.validation_commands));
+  assert.ok(plannerNext.validation_commands.includes("node bin/kvdf.js validate"));
+  assert.ok(plannerNext.task_punch);
+  assert.ok(Array.isArray(plannerNext.task_punch.tasks));
+  assert.ok(plannerNext.task_punch.tasks.length >= 3);
+  assert.ok(plannerNext.next_action.includes("kvdf planner evolution --goal"));
+  assert.doesNotMatch(plannerNext.next_action.toLowerCase(), /branch\/pr/);
+});
+
+test("planner prompt generates a codex-ready direct-to-main execution prompt", () => {
+  const plannerPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Add planner layer", "--json"]).stdout);
+  assert.strictEqual(plannerPrompt.report_type, "kvdf_planner_codex_prompt");
+  assert.strictEqual(plannerPrompt.track, "framework_owner");
+  assert.strictEqual(plannerPrompt.delivery_mode, "direct_main");
+  assert.ok(plannerPrompt.prompt.includes("CODEx PROMPT — KVDF Core"));
+  assert.ok(plannerPrompt.prompt.includes("Direct-to-main"));
+  assert.ok(plannerPrompt.prompt.includes("Do not touch KVDOS"));
+  assert.ok(plannerPrompt.prompt.includes("Allowed files:"));
+  assert.ok(plannerPrompt.prompt.includes("Validation:"));
+  assert.ok(plannerPrompt.prompt.includes("Stop condition:"));
+  assert.ok(Array.isArray(plannerPrompt.allowed_files));
+  assert.ok(Array.isArray(plannerPrompt.forbidden_files));
+  assert.ok(Array.isArray(plannerPrompt.validation_commands));
+});
+
+test("planner evolution returns a structured plan and task punch", () => {
+  const plannerEvolution = JSON.parse(runKvdf(["planner", "evolution", "--goal", "Add planner layer", "--json"]).stdout);
+  assert.strictEqual(plannerEvolution.report_type, "kvdf_planner_evolution_plan");
+  assert.ok(plannerEvolution.evolution_plan);
+  assert.strictEqual(plannerEvolution.evolution_plan.track, "framework_owner");
+  assert.strictEqual(plannerEvolution.evolution_plan.delivery_mode, "direct_main");
+  assert.ok(Array.isArray(plannerEvolution.task_punch.tasks));
+  assert.ok(plannerEvolution.prompt.includes("CODEx PROMPT — KVDF Core"));
 });
 
 test("capability surface maps capabilities to CLI command families and docs references", () => {

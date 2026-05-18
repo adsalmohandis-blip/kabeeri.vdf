@@ -39,6 +39,7 @@ const { softwareDesignReference, documentationGenerator } = require("./commands/
 const { changeControl } = require("./commands/change_control");
 const { init: initCommand } = require("./commands/init");
 const { temp: tempCommand } = require("./commands/temp");
+const { planner: plannerCommand } = require("./commands/planner");
 const kvdfDevBundle = require("../../plugins/kvdf-dev/bootstrap");
 const { taskScheduler, buildTaskSchedulerReport, recordTaskSchedulerRoute } = require("./commands/task_scheduler");
 const { pipeline: pipelineCommand } = require("./commands/pipeline");
@@ -252,6 +253,17 @@ function getVibeRuntimeDeps() {
   };
 }
 
+function getPlannerRuntimeDeps() {
+  return {
+    repoRoot,
+    fileExists,
+    readJsonFile,
+    readTextFile,
+    table,
+    buildEvolutionSummary: buildEvolutionSummaryService
+  };
+}
+
 function collectDashboardState(options = {}) {
   return collectDashboardStateBase(options, getDashboardRuntimeDeps());
 }
@@ -292,7 +304,7 @@ function getActiveTrackSurface() {
   return null;
 }
 
-const OWNER_ONLY_GROUPS = new Set(["evolution", "owner", "plugins"]);
+const OWNER_ONLY_GROUPS = new Set(["evolution", "owner", "plugins", "planner"]);
 
 function assertTrackSurfaceAllowed(group, action, trackSurface) {
   const normalizedGroup = String(group || "");
@@ -9851,6 +9863,8 @@ function getCommandDispatchContext() {
     getQuestionnaireRuntimeDeps,
     vibeCommand,
     getVibeRuntimeDeps,
+    plannerCommand,
+    getPlannerRuntimeDeps,
     capability,
     repositoryStructure,
     blueprintCommand,

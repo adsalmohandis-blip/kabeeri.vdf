@@ -49,6 +49,7 @@ function dispatchBuildCommands({ group, action, value, flags, rest, rawGroup, c 
   if (group === "ask") return handled(c.vibeCommand("ask", [action, value, ...rest].filter(Boolean).join(" "), flags, [], c.getVibeRuntimeDeps()));
   if (group === "capture") return handled(c.vibeCommand("capture", [action, value, ...rest].filter(Boolean).join(" "), flags, [], c.getVibeRuntimeDeps()));
   if (group === "capability") return handled(c.capability(action, value, flags));
+  if (group === "planner") return handled(c.plannerCommand(action, value, flags, rest, c.getPlannerRuntimeDeps()));
   if (group === "structure" || group === "foldering") return handled(c.repositoryStructure(action, value, flags));
   if (group === "blueprint") return handled(c.blueprintCommand(action, value, flags, rest, {
     table: c.table,
