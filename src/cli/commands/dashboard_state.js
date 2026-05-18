@@ -1342,7 +1342,8 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     dashboardWidget("owner_next_evolution", "Next Evolution", "status", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ok" : "empty", "framework_owner", "derived", context.plannerState.next_action || "Run planner propose."),
     dashboardWidget("owner_next_action", "Next Exact Action", "action", context.plannerState.next_action || "Run kvdf planner propose", "ok", "framework_owner", "derived", context.plannerState.next_action || "Run kvdf planner propose."),
     dashboardWidget("owner_source_control", "Direct-to-main Status", "status", context.sourceControl.mode || "direct_main", "ok", "framework_owner", "derived", "Keep the owner flow direct-to-main."),
-    dashboardWidget("owner_blockers", "Blockers Count", "metric", ownerBlockerCount(context), ownerBlockerCount(context) > 0 ? "warning" : "ok", "framework_owner", "derived", "Review governance blockers before execution.")
+    dashboardWidget("owner_blockers", "Active Blockers", "metric", ownerActiveBlockerCount(context), ownerActiveBlockerCount(context) > 0 ? "warning" : "ok", "framework_owner", "derived", "Review active blockers before execution."),
+    dashboardWidget("owner_archive", "Archived Task Trash", "metric", ownerArchiveCount(context), ownerArchiveCount(context) > 0 ? "warning" : "ok", "framework_owner", "derived", "Trash is history, not an active blocker.")
   ];
 
   const sections = {
@@ -1353,7 +1354,8 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
         ["Current Evolution", currentEvolution ? currentEvolution.change_id || currentEvolution.title || "active" : "none", currentEvolution ? "Continue the active evolution." : "Select the next evolution."],
         ["Next Evolution", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_action || "Run planner propose."],
         ["Direct-to-main", context.sourceControl.mode || "direct_main", "Keep the owner flow direct-to-main."],
-        ["Blockers", String(ownerBlockerCount(context)), ownerBlockerCount(context) ? "Resolve blockers before touching KVDOS." : "Continue with the next core task."]
+        ["Active Blockers", String(ownerActiveBlockerCount(context)), ownerActiveBlockerCount(context) ? "Resolve active blockers before touching KVDOS." : "Continue with the next core task."],
+        ["Archived Task Trash", String(ownerArchiveCount(context)), ownerArchiveCount(context) ? "Archive is separate from live blockers." : "No archived trash items."]
       ], "No owner command center data yet.")
     ]),
     core_health: createDashboardSection("core_health", "KVDF Core Health", coreHealthWidgets(context), [
@@ -1425,7 +1427,9 @@ function buildViberDashboardState(context = {}, deps = {}) {
     dashboardWidget("viber_next_evolution", "Next App Evolution", "status", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ok" : "empty", "vibe_app_developer", "derived", context.plannerState.next_action || "Run planner propose."),
     dashboardWidget("viber_next_task_punch", "Next Task Punch", "action", nextTaskPunchLabel(context), "ok", "vibe_app_developer", "derived", nextTaskPunchAction(context)),
     dashboardWidget("viber_handoff", "Local-first Handoff Status", "status", context.sourceControl.mode || "local_first", "ok", "vibe_app_developer", "derived", "Keep app delivery local-first unless a remote is explicitly enabled."),
-    dashboardWidget("viber_blockers", "Blockers Count", "metric", viberBlockerCount(context), viberBlockerCount(context) > 0 ? "warning" : "ok", "vibe_app_developer", "derived", "Resolve app blockers before releasing.")
+    dashboardWidget("viber_blockers", "Active Blockers", "metric", viberActiveBlockerCount(context), viberActiveBlockerCount(context) > 0 ? "warning" : "ok", "vibe_app_developer", "derived", "Resolve app blockers before releasing."),
+    dashboardWidget("viber_questionnaire_gaps", "Questionnaire Gaps", "metric", viberQuestionnaireGapCount(context), viberQuestionnaireGapCount(context) > 0 ? "warning" : "ok", "vibe_app_developer", "derived", "Close intake gaps before design."),
+    dashboardWidget("viber_pipeline_gaps", "Pipeline Gaps", "metric", viberPipelineGapCount(context), viberPipelineGapCount(context) > 0 ? "warning" : "ok", "vibe_app_developer", "derived", "Keep the idea-to-evolution pipeline explicit.")
   ];
 
   const sections = {
@@ -1437,7 +1441,9 @@ function buildViberDashboardState(context = {}, deps = {}) {
         ["Next App Evolution", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_action || "Run planner propose."],
         ["Next Task Punch", nextTaskPunchLabel(context), nextTaskPunchAction(context)],
         ["Local-first Handoff", context.sourceControl.mode || "local_first", "Keep app delivery local-first unless a remote is explicitly enabled."],
-        ["Blockers", String(viberBlockerCount(context)), viberBlockerCount(context) ? "Resolve blockers before releasing." : "Continue delivery."]
+        ["Active Blockers", String(viberActiveBlockerCount(context)), viberActiveBlockerCount(context) ? "Resolve blockers before releasing." : "Continue delivery."],
+        ["Questionnaire Gaps", String(viberQuestionnaireGapCount(context)), viberQuestionnaireGapCount(context) ? "Close intake gaps before design." : "Intake is complete."],
+        ["Pipeline Gaps", String(viberPipelineGapCount(context)), viberPipelineGapCount(context) ? "Keep the idea-to-evolution pipeline explicit." : "Pipeline is populated."]
       ], "No app command center data yet.")
     ]),
     idea_to_evolution_pipeline: createDashboardSection("idea_to_evolution_pipeline", "Idea-to-Evolution Pipeline", pipelineWidgets(context), [
@@ -1583,24 +1589,44 @@ function finalizeDashboardState(state) {
 }
 
 function ownerBlockerCount(context) {
+  return ownerActiveBlockerCount(context);
+}
+
+function viberBlockerCount(context) {
+  return viberActiveBlockerCount(context) + viberQuestionnaireGapCount(context) + viberPipelineGapCount(context);
+}
+
+function ownerActiveBlockerCount(context) {
   return (
     countBlocked(context.plannerState) +
     countBlockedEntries(context.gitStatus) +
-    countRecords(context.taskTrashState.trash) +
     countRecords((context.evolutionSummary.open_follow_up_tasks || 0) ? [{ id: "open_follow_up_tasks" }] : []) +
     countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []) +
     countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open" && ["high", "critical"].includes(item.severity)) : [])
   );
 }
 
-function viberBlockerCount(context) {
+function ownerArchiveCount(context) {
+  return countRecords(context.taskTrashState.trash);
+}
+
+function viberActiveBlockerCount(context) {
   return (
     countBlocked(context.plannerState) +
-    countRecords(context.questionnaireMissing) +
-    countRecords(context.questionnaireCoverage.filter((item) => item.status === "missing" || item.status === "blocked")) +
     countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []) +
     countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open" && ["high", "critical"].includes(item.severity)) : [])
   );
+}
+
+function viberQuestionnaireGapCount(context) {
+  return (
+    countRecords(context.questionnaireMissing) +
+    countRecords(context.questionnaireCoverage.filter((item) => item.status === "missing" || item.status === "blocked"))
+  );
+}
+
+function viberPipelineGapCount(context) {
+  return countBlocked(context.plannerState);
 }
 
 function countBlocked(plannerState) {
