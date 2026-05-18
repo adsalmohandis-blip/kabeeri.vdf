@@ -9,9 +9,27 @@ Codex-ready prompt.
 This workflow is deterministic and local-first. It does not replace the Owner.
 It supports owner, vibe/app, and plugin planner modes.
 
+The Idea to Evolution Pipeline is the upstream planning surface that turns a
+raw idea into the file map, design artifacts, version slices, evolutions, task
+punches, visual roadmap, and source control plan that the approval gate can
+review.
+
 ## Workflow
 
 ```text
+Idea
+-> planner pipeline
+-> pipeline review
+-> approve / materialize first Evolution
+-> planner current
+-> planner prompt --from-current
+-> planner visual --from-current
+-> Codex execution
+-> validation
+-> planner complete
+
+Then, for lower-level gated planning:
+
 Owner direction
 -> planner propose
 -> planner approve
@@ -61,6 +79,10 @@ Accepted modes include:
 
 GitHub is treated as an optional remote/provider plugin, not as the same thing
 as Git.
+
+The Idea to Evolution Pipeline also carries the same source control object so
+version slices, evolutions, and task punches can stay aligned with the selected
+delivery mode.
 
 ## KVDF Core Policy
 

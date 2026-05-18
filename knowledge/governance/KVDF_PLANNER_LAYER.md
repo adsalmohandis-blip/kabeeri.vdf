@@ -190,6 +190,41 @@ Materialization bridges the approved plan into governed KVDF runtime records:
 - it does not commit files
 - it does not make branch/PR mandatory
 
+## Idea to Evolution Pipeline Stage
+
+The Idea to Evolution Pipeline sits above the shared approval gate and turns a
+raw idea into a structured planning package before the first Evolution is
+approved or materialized.
+
+The pipeline output can include:
+
+- documentation file maps
+- system design
+- database design
+- UI/UX design
+- visual planning output
+- version plan
+- evolutions
+- task punches
+- visual roadmap
+- next evolution
+- source control plan
+- next approval or materialization action
+
+Track behavior:
+
+- Owner Track keeps KVDF Core source, docs, schemas, and tests in scope and
+  defaults to direct-to-main when Git is available.
+- Vibe/App Track keeps app workspace planning local-first by default and keeps
+  KVDF Core edits out of scope unless the Owner explicitly approves them.
+- Plugin Track keeps plugin manifest, runtime, docs, schemas, and tests in
+  parity while protecting unrelated plugins and plugin-link runtime state.
+
+The pipeline is still governed by the same approval gate:
+
+Idea -> pipeline report -> Owner review -> approve/materialize first Evolution
+-> Codex execution -> validation -> complete
+
 ## Source Control Provider Model
 
 The planner also carries an explicit source-control contract so KVDF does not

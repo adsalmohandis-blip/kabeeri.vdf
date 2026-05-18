@@ -1,0 +1,55 @@
+﻿{
+  "title": "KVDF Idea to Evolution Version Plan",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["versions"],
+  "properties": {
+    "versions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "version_id",
+          "title",
+          "goal",
+          "included_evolutions",
+          "excluded_scope",
+          "readiness_gate",
+          "source_control_mode"
+        ],
+        "properties": {
+          "version_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "included_evolutions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "excluded_scope": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "readiness_gate": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_control_mode": {
+            "type": "string",
+            "enum": ["none", "local_only", "direct_main", "branch", "branch_pr"]
+          }
+        }
+      }
+    }
+  }
+}

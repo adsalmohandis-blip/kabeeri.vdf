@@ -1,0 +1,93 @@
+﻿{
+  "title": "KVDF Idea to Evolution Pipeline",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "planner_mode",
+    "track",
+    "delivery_mode",
+    "source_control",
+    "idea",
+    "documentation_files",
+    "design_artifacts",
+    "visual_planning",
+    "version_plan",
+    "evolutions",
+    "task_punches",
+    "visual_roadmap",
+    "next_evolution",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_idea_to_evolution_pipeline"
+    },
+    "planner_mode": {
+      "type": "string",
+      "enum": ["owner", "vibe", "plugin"]
+    },
+    "track": {
+      "type": "string",
+      "enum": ["framework_owner", "vibe_app_developer", "plugin"]
+    },
+    "delivery_mode": {
+      "type": "string",
+      "enum": ["direct_main", "local_first"]
+    },
+    "source_control": {
+      "type": "object"
+    },
+    "idea": {
+      "type": "string",
+      "minLength": 1
+    },
+    "documentation_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "design_artifacts": {
+      "type": "object"
+    },
+    "visual_planning": {
+      "type": "object",
+      "required": ["graph", "board", "scope_map", "legend", "markdown_report", "validation_commands", "stop_condition"],
+      "properties": {
+        "graph": { "type": "object" },
+        "board": { "type": "object" },
+        "scope_map": { "type": "object" },
+        "legend": { "type": "object" },
+        "markdown_report": { "type": "string" },
+        "validation_commands": { "type": "array", "items": { "type": "string" } },
+        "stop_condition": { "type": "string" }
+      }
+    },
+    "version_plan": {
+      "type": "object"
+    },
+    "evolutions": {
+      "type": "array"
+    },
+    "task_punches": {
+      "type": "array"
+    },
+    "visual_roadmap": {
+      "type": "object"
+    },
+    "next_evolution": {
+      "type": "object"
+    },
+    "validation_commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "stop_condition": {
+      "type": "string"
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

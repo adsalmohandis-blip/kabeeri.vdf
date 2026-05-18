@@ -1,0 +1,80 @@
+﻿{
+  "title": "KVDF Design Artifacts",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "system_design",
+    "database_design",
+    "ui_ux_design",
+    "api_design",
+    "security_design"
+  ],
+  "properties": {
+    "system_design": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "architecture_overview",
+        "modules",
+        "boundaries",
+        "integrations",
+        "risks",
+        "source_control_assumptions",
+        "runtime_state_boundaries"
+      ],
+      "properties": {
+        "architecture_overview": { "type": "array", "items": { "type": "string" } },
+        "modules": { "type": "array", "items": { "type": "string" } },
+        "boundaries": { "type": "array", "items": { "type": "string" } },
+        "integrations": { "type": "array", "items": { "type": "string" } },
+        "risks": { "type": "array", "items": { "type": "string" } },
+        "source_control_assumptions": { "type": "array", "items": { "type": "string" } },
+        "runtime_state_boundaries": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "database_design": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "entities",
+        "relationships",
+        "persistence_notes",
+        "migrations_schemas",
+        "not_applicable_reason"
+      ],
+      "properties": {
+        "entities": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "relationships": { "type": "array", "items": { "type": "string" } },
+        "persistence_notes": { "type": "array", "items": { "type": "string" } },
+        "migrations_schemas": { "type": "array", "items": { "type": "string" } },
+        "not_applicable_reason": { "type": ["string", "null"] }
+      }
+    },
+    "ui_ux_design": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "surfaces",
+        "pages_screens",
+        "dashboard_visual_needs",
+        "accessibility_notes",
+        "cli_docs_notes"
+      ],
+      "properties": {
+        "surfaces": { "type": "array", "items": { "type": "string" } },
+        "pages_screens": { "type": "array", "items": { "type": "string" } },
+        "dashboard_visual_needs": { "type": "array", "items": { "type": "string" } },
+        "accessibility_notes": { "type": "array", "items": { "type": "string" } },
+        "cli_docs_notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "api_design": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "security_design": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

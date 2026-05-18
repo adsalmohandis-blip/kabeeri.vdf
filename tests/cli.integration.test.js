@@ -5707,7 +5707,104 @@ test("planner visual from current reuses the approved runtime plan", () => withT
   assert.strictEqual(visual.goal, "Approved visual planner");
   assert.strictEqual(visual.source_control.mode, "direct_main");
   assert.ok(visual.markdown_report.includes("KVDF Planner Visual Model - Owner"));
-})); 
+}));
+
+test("planner pipeline builds an owner-track idea to evolution package", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Improve KVDF planner", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pipeline.report_type, "kvdf_idea_to_evolution_pipeline");
+  assert.strictEqual(pipeline.planner_mode, "owner");
+  assert.strictEqual(pipeline.delivery_mode, "direct_main");
+  assert.ok(pipeline.source_control);
+  assert.strictEqual(pipeline.source_control.mode, "direct_main");
+  assert.ok(Array.isArray(pipeline.documentation_files));
+  assert.ok(pipeline.documentation_files.includes("docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md"));
+  assert.ok(pipeline.design_artifacts);
+  assert.ok(pipeline.design_artifacts.system_design);
+  assert.ok(pipeline.design_artifacts.database_design);
+  assert.ok(pipeline.version_plan);
+  assert.ok(Array.isArray(pipeline.version_plan.versions));
+  assert.ok(pipeline.version_plan.versions.length >= 3);
+  assert.ok(Array.isArray(pipeline.evolutions));
+  assert.ok(pipeline.evolutions.length >= 3);
+  assert.ok(Array.isArray(pipeline.task_punches));
+  assert.strictEqual(pipeline.evolutions[0].track, "framework_owner");
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.forbidden_files.includes("KVDOS/")));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.forbidden_files.includes(".kabeeri/")));
+  assert.ok(pipeline.visual_planning);
+  assert.ok(pipeline.visual_planning.graph);
+  assert.ok(pipeline.next_evolution);
+  assert.strictEqual(pipeline.next_action, "Review the pipeline plan, then approve/materialize the first Evolution.");
+}));
+
+test("planner pipeline builds a vibe local-first package with local-only source control", () => withTempDir((dir) => {
+  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build booking app", "--track", "vibe", "--source-control", "none", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pipeline.report_type, "kvdf_idea_to_evolution_pipeline");
+  assert.strictEqual(pipeline.planner_mode, "vibe");
+  assert.strictEqual(pipeline.delivery_mode, "local_first");
+  assert.strictEqual(pipeline.source_control.enabled, false);
+  assert.strictEqual(pipeline.source_control.provider, "none");
+  assert.strictEqual(pipeline.source_control.mode, "local_only");
+  assert.ok(Array.isArray(pipeline.pipeline));
+  assert.ok(pipeline.pipeline.includes("request"));
+  assert.ok(pipeline.pipeline.includes("handoff"));
+  assert.ok(pipeline.design_artifacts);
+  assert.ok(pipeline.design_artifacts.system_design);
+  assert.ok(pipeline.design_artifacts.database_design);
+  assert.ok(pipeline.design_artifacts.ui_ux_design);
+  assert.ok(pipeline.version_plan);
+  assert.ok(Array.isArray(pipeline.version_plan.versions));
+  assert.ok(Array.isArray(pipeline.evolutions));
+  assert.ok(Array.isArray(pipeline.task_punches));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.track === "vibe_app_developer"));
+  assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
+  assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/evolution.js"))));
+}));
+
+test("planner pipeline builds a plugin package with plugin context and isolated scope", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Improve planner visual plugin", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pipeline.report_type, "kvdf_idea_to_evolution_pipeline");
+  assert.strictEqual(pipeline.planner_mode, "plugin");
+  assert.strictEqual(pipeline.track, "plugin");
+  assert.ok(pipeline.plugin_context);
+  assert.strictEqual(pipeline.plugin_context.plugin_id, "planner-visual");
+  assert.ok(pipeline.source_control);
+  assert.strictEqual(pipeline.source_control.mode, "direct_main");
+  assert.ok(Array.isArray(pipeline.documentation_files));
+  assert.ok(pipeline.documentation_files.some((item) => item.includes("plugins/planner-visual/docs/")));
+  assert.ok(Array.isArray(pipeline.evolutions));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.track === "plugin"));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.allowed_files.some((item) => item.includes("plugins/planner-visual"))));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.forbidden_files.includes(".kabeeri/plugin-links/")));
+  assert.ok(Array.isArray(pipeline.task_punches));
+  assert.ok(pipeline.task_punches.every((taskPunch) => taskPunch.source_control && taskPunch.source_control.mode === "direct_main"));
+}));
+
+test("planner pipeline supports explicit branch-pr GitHub source control", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Team app delivery", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pipeline.planner_mode, "vibe");
+  assert.strictEqual(pipeline.source_control.mode, "branch_pr");
+  assert.strictEqual(pipeline.source_control.branching_enabled, true);
+  assert.strictEqual(pipeline.source_control.pr_enabled, true);
+  assert.strictEqual(pipeline.source_control.remote_provider, "github");
+  assert.strictEqual(pipeline.source_control.provider_plugin, "github");
+  assert.ok(pipeline.version_plan.versions.every((version) => version.source_control_mode === "branch_pr"));
+}));
+
+test("planner pipeline renders a readable markdown report", () => withTempDir((dir) => {
+  const output = runKvdf(["planner", "pipeline", "--goal", "Build app", "--track", "vibe"], { cwd: dir }).stdout;
+  assert.match(output, /# KVDF Idea to Evolution Pipeline/);
+  assert.match(output, /Documentation Files/);
+  assert.match(output, /System Design/);
+  assert.match(output, /Database Design/);
+  assert.match(output, /UI\/UX Design/);
+  assert.match(output, /Version Plan/);
+  assert.match(output, /Source Control/);
+  assert.match(output, /Next Evolution/);
+  assert.match(output, /```mermaid/);
+}));
 
 test("planner visual plugin is discoverable, installable, uninstallable, and renders markdown", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });

@@ -21,10 +21,17 @@ const MODE_ALIASES = {
 const OWNER_ALLOWED_FILES = [
   "knowledge/governance/KVDF_PLANNER_LAYER.md",
   "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md",
+  "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
+  "docs/workflows/SOURCE_CONTROL_PROVIDER_MODEL.md",
   "packs/planner/evolution-planner.prompt.md",
   "packs/planner/codex-execution.prompt.md",
+  "packs/planner/idea-to-evolution.prompt.md",
   "schemas/planner/evolution-plan.schema.json",
   "schemas/planner/task-punch.schema.json",
+  "schemas/planner/idea-to-evolution-pipeline.schema.json",
+  "schemas/planner/design-artifacts.schema.json",
+  "schemas/planner/version-plan.schema.json",
+  "schemas/planner/source-control.schema.json",
   "src/cli/commands/planner.js",
   "src/cli/dispatchers/build.js",
   "src/cli/index.js",
@@ -65,6 +72,7 @@ const VIBE_ALLOWED_FILES = [
   "knowledge/vibe_ux/",
   "docs/workflows/KVDF_LED_DELIVERY.md",
   "docs/workflows/PR_HANDOFF_TEMPLATE.md",
+  "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
   "docs/site/pages/en/vibe-developer.html",
   "docs/site/pages/ar/vibe-developer.html",
   "docs/cli/CLI_COMMAND_REFERENCE.md",
@@ -116,6 +124,7 @@ const PLUGIN_ALLOWED_FILES_GENERIC = [
   "plugins/<plugin-id>/runtime/",
   "plugins/<plugin-id>/tests/",
   "plugins/<plugin-id>/schemas/",
+  "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
   "src/cli/commands/plugin.js",
   "src/cli/services/plugin_loader.js",
   "src/cli/services/plugin_mounts.js",
@@ -146,7 +155,7 @@ const PLUGIN_OUT_OF_SCOPE = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -236,6 +245,14 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
     if (!goal) throw new Error("Missing goal for planner visual.");
     const report = buildPlannerVisualReport(goal, request, deps);
     printPlannerOutput(report, flags, deps, "visual");
+    return;
+  }
+
+  if (mode === "pipeline") {
+    const idea = resolveGoal(value, flags, rest, request.recommended_evolution.title);
+    if (!idea) throw new Error("Missing idea for planner pipeline.");
+    const report = buildIdeaToEvolutionPipelineReport(idea, request, deps);
+    printPlannerOutput(report, flags, deps, "pipeline");
     return;
   }
 
@@ -681,6 +698,572 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     `## Goal`,
     goal
   ].join("\n");
+}
+
+function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const mode = resolvePlannerMode(request, context);
+  const deliveryMode = getDeliveryMode(mode);
+  const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const normalizedIdea = String(idea || request.idea || request.goal || "").trim() || "KVDF Planning Idea";
+  const documentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
+  const designArtifacts = buildIdeaToEvolutionDesignArtifacts(normalizedIdea, mode, context, pluginContext, sourceControl);
+  const versionPlan = buildIdeaToEvolutionVersionPlan(normalizedIdea, mode, deliveryMode, context, pluginContext, sourceControl);
+  const evolutions = versionPlan.versions.map((version) => version.evolution);
+  const taskPunches = versionPlan.versions.map((version) => version.task_punch);
+  const firstEvolution = evolutions[0] || buildPlannerEvolutionPlan(normalizedIdea, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
+  const firstTaskPunch = taskPunches[0] || buildPlannerTaskPunch(firstEvolution, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
+  const visualPlanning = buildPlannerVisualPayload({
+    goal: normalizedIdea,
+    mode,
+    deliveryMode,
+    evolutionPlan: firstEvolution,
+    taskPunch: firstTaskPunch,
+    context,
+    pluginContext,
+    sourceControl
+  });
+  const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
+  const nextEvolution = visualRoadmap.next_evolution || null;
+  const report = {
+    report_type: "kvdf_idea_to_evolution_pipeline",
+    generated_at: new Date().toISOString(),
+    planner_mode: mode,
+    track: firstEvolution.track || getPlannerTrack(mode),
+    delivery_mode: deliveryMode,
+    source_control: sourceControl,
+    idea: normalizedIdea,
+    documentation_files: documentationFiles,
+    design_artifacts: designArtifacts,
+    visual_planning: visualPlanning,
+    version_plan: versionPlan,
+    evolutions,
+    task_punches: taskPunches,
+    visual_roadmap: visualRoadmap,
+    next_evolution: nextEvolution,
+    validation_commands: firstEvolution.validation_commands || visualPlanning.validation_commands || DEFAULT_VALIDATION_COMMANDS,
+    stop_condition: firstEvolution.stop_condition || visualPlanning.stop_condition || "",
+    next_action: "Review the pipeline plan, then approve/materialize the first Evolution."
+  };
+  if (mode === "vibe") report.pipeline = [...VIBE_PIPELINE];
+  if (pluginContext) report.plugin_context = pluginContext;
+  return report;
+}
+
+function buildIdeaToEvolutionDocumentationFiles(mode, pluginContext) {
+  if (mode === "vibe") {
+    return [
+      "workspaces/apps/<app-slug>/docs/",
+      "workspaces/apps/<app-slug>/requirements/",
+      "workspaces/apps/<app-slug>/system-design/",
+      "workspaces/apps/<app-slug>/database-design/",
+      "workspaces/apps/<app-slug>/ui-ux-design/",
+      "workspaces/apps/<app-slug>/handoff/",
+      "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
+      "docs/workflows/KVDF_LED_DELIVERY.md"
+    ];
+  }
+  if (mode === "plugin") {
+    const pluginId = pluginContext ? pluginContext.plugin_id : "plugin";
+    return [
+      `plugins/${pluginId}/docs/`,
+      `plugins/${pluginId}/schemas/`,
+      `plugins/${pluginId}/tests/`,
+      `plugins/${pluginId}/runtime/`,
+      `plugins/${pluginId}/plugin.json`,
+      "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
+      "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md"
+    ];
+  }
+  return [
+    "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
+    "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md",
+    "docs/workflows/SOURCE_CONTROL_PROVIDER_MODEL.md",
+    "knowledge/governance/KVDF_PLANNER_LAYER.md",
+    "docs/cli/CLI_COMMAND_REFERENCE.md",
+    "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+    "packs/planner/idea-to-evolution.prompt.md",
+    "schemas/planner/idea-to-evolution-pipeline.schema.json",
+    "schemas/planner/design-artifacts.schema.json",
+    "schemas/planner/version-plan.schema.json",
+    "tests/cli.integration.test.js"
+  ];
+}
+
+function buildIdeaToEvolutionDesignArtifacts(idea, mode, context, pluginContext, sourceControl) {
+  return {
+    system_design: {
+      architecture_overview: mode === "vibe"
+        ? [
+          `Use local-first delivery for ${idea}.`,
+          "Keep intake, design, evolution, and handoff artifacts in the app workspace.",
+          "Use KVDF Core only when explicitly approved for framework work."
+        ]
+        : mode === "plugin"
+          ? [
+            `Use manifest-driven plugin delivery for ${pluginContext ? pluginContext.plugin_id : "plugin"}.`,
+            "Keep runtime, docs, schemas, and tests in parity.",
+            "Treat the plugin bundle as removable and isolated from unrelated plugins."
+          ]
+          : [
+            `Use direct-to-main KVDF Core delivery for ${idea}.`,
+            "Keep planner, evolution, task, docs, schemas, and validation surfaces aligned.",
+            "Treat KVDOS and runtime state as forbidden unless explicitly required."
+          ],
+      modules: mode === "vibe"
+        ? ["questionnaire", "blueprint", "system design", "database design", "ui/ux design", "handoff"]
+        : mode === "plugin"
+          ? ["plugin manifest", "runtime entrypoint", "docs", "schemas", "tests", "install/uninstall checks"]
+          : ["planner", "evolution", "task punch", "visual planning", "source control", "validation"],
+      boundaries: mode === "vibe"
+        ? ["Do not edit KVDF Core by default.", "Do not cross into unrelated products or workspaces.", "GitHub remains optional."]
+        : mode === "plugin"
+          ? ["Do not touch unrelated plugins.", "Protect .kabeeri/plugin-links/.", "Keep mount and runtime state local."]
+          : ["Do not touch KVDOS.", "Do not commit .kabeeri/ runtime state.", "Branch/PR stays optional."],
+      integrations: mode === "vibe"
+        ? ["App workspace docs", "Visual planning model", "Optional GitHub mirroring", "Dashboard/reporting later"]
+        : mode === "plugin"
+          ? ["Plugin loader", "Plugin mount state", "Optional provider plugins", "CLI docs and tests"]
+          : ["Planner runtime", "Evolution runtime", "Task runtime", "Source control provider model", "Visual planner renderer plugin"],
+      risks: mode === "vibe"
+        ? ["Scope drift into owner-track work", "Branch/PR accidentally becoming mandatory", "Workspace boundary leakage"]
+        : mode === "plugin"
+          ? ["Unrelated plugin edits", "Plugin mount state drift", "Manifest/runtime/docs/test mismatch"]
+          : ["KVDOS leakage", "Runtime state commits", "Branch/PR defaulting in KVDF Core"],
+      source_control_assumptions: [
+        `Planner source control mode: ${sourceControl.mode || "local_only"}.`,
+        `Provider: ${sourceControl.provider || "none"}.`,
+        `Remote provider: ${sourceControl.remote_provider || "none"}.`,
+        `Default branch: ${sourceControl.default_branch || "main"}.`
+      ],
+      runtime_state_boundaries: mode === "plugin"
+        ? [".kabeeri/", ".kabeeri/plugin-links/", ".kabeeri/plugins.json"]
+        : mode === "vibe"
+          ? [".kabeeri/", ".kabeeri/questionnaires/", ".kabeeri/interactions/", ".kabeeri/reports/"]
+          : [".kabeeri/", ".kabeeri/planner.json", ".kabeeri/evolution.json", ".kabeeri/tasks.json"]
+    },
+    database_design: mode === "vibe"
+      ? {
+        entities: [
+          { name: "idea", purpose: `Raw request or goal for ${idea}` },
+          { name: "intake_plan", purpose: "Captured questionnaire and approved intake" },
+          { name: "evolution", purpose: "Milestone slice and version alignment" },
+          { name: "task", purpose: "Executable work item beneath the evolution" },
+          { name: "handoff", purpose: "Delivery output and closeout record" }
+        ],
+        relationships: [
+          "Idea produces one or more intake plans.",
+          "An intake plan can produce multiple evolutions.",
+          "Each evolution can produce multiple tasks.",
+          "Completed tasks produce a handoff record."
+        ],
+        persistence_notes: [
+          "Persist in the app workspace and local runtime reports.",
+          "Keep GitHub sync optional and non-authoritative.",
+          "Avoid writing owner-track runtime state unless explicitly approved."
+        ],
+        migrations_schemas: ["workspace app schemas", "questionnaire schemas", "handoff schemas"],
+        not_applicable_reason: null
+      }
+      : {
+        entities: [],
+        relationships: [],
+        persistence_notes: [
+          "The current KVDF Core pipeline is governance and planning oriented.",
+          "No new product database is required for the pipeline MVP."
+        ],
+        migrations_schemas: [],
+        not_applicable_reason: "No new database is required for this pipeline MVP."
+      },
+    ui_ux_design: mode === "vibe"
+      ? {
+        surfaces: ["questionnaire", "blueprint", "evolution board", "task handoff", "optional dashboard"],
+        pages_screens: ["Idea intake", "Design review", "Evolution plan", "Task punch", "Handoff summary"],
+        dashboard_visual_needs: ["Track separation", "Milestone progress", "Source control mode", "Next action"],
+        accessibility_notes: ["Keep the flow readable in Markdown and CLI output.", "Avoid hiding approval or handoff state."],
+        cli_docs_notes: ["Make the app-track pipeline discoverable in CLI help and docs."]
+      }
+      : mode === "plugin"
+        ? {
+          surfaces: ["manifest view", "runtime view", "docs view", "schema view", "tests view"],
+          pages_screens: ["Plugin goal", "Manifest parity", "Runtime parity", "Docs parity", "Install/uninstall check"],
+          dashboard_visual_needs: ["Plugin isolation", "Mount safety", "Lifecycle parity"],
+          accessibility_notes: ["Keep plugin scope obvious in Markdown reports."],
+          cli_docs_notes: ["Explain that plugin rendering is optional and separate from planner logic."]
+        }
+        : {
+          surfaces: ["CLI", "docs", "schemas", "planner visual model", "materialization report"],
+          pages_screens: ["Idea to Evolution plan", "Visual roadmap", "Approval gate", "Materialization summary"],
+          dashboard_visual_needs: ["Direct-to-main defaults", "Approval gate", "Source control mode", "Next Evolution"],
+          accessibility_notes: ["Make owner-track versus app-track boundaries explicit."],
+          cli_docs_notes: ["Document the deterministic owner-track pipeline in CLI help."]
+        },
+    api_design: {
+      commands: mode === "vibe"
+        ? ["kvdf vibe", "kvdf planner pipeline --track vibe", "kvdf planner propose --track vibe", "kvdf planner visual --track vibe"]
+        : mode === "plugin"
+          ? ["kvdf plugins install <plugin>", "kvdf planner pipeline --track plugin", "kvdf planner visual --track plugin"]
+          : ["kvdf planner pipeline --track owner", "kvdf planner propose --track owner", "kvdf planner materialize --from-current"],
+      integrations: mode === "vibe"
+        ? ["questionnaire engine", "blueprint generation", "handoff reports"]
+        : mode === "plugin"
+          ? ["plugin loader", "plugin mount state", "plugin docs/tests/schema parity"]
+          : ["planner runtime", "evolution runtime", "task runtime", "source control provider model"],
+      contract_notes: [
+        "The planner returns a structured idea-to-evolution pipeline report.",
+        "The source control contract stays optional and provider-driven.",
+        "Visual planning is reusable by later dashboards or IDE rendering."
+      ]
+    },
+    security_design: {
+      boundaries: mode === "vibe"
+        ? ["Protect KVDF Core by default.", "Protect unrelated workspaces.", "Keep GitHub optional."]
+        : mode === "plugin"
+          ? ["Protect unrelated plugins.", "Protect .kabeeri/plugin-links/.", "Keep mount state local."]
+          : ["Protect KVDOS.", "Protect .kabeeri/ runtime state.", "Keep branch/PR optional."],
+      sensitive_state: mode === "plugin"
+        ? [".kabeeri/plugin-links/", ".kabeeri/plugins.json"]
+        : [".kabeeri/planner.json", ".kabeeri/evolution.json", ".kabeeri/tasks.json"],
+      approval_notes: [
+        "Planner proposals are not executable until approved.",
+        "Materialization writes runtime records only after approval.",
+        "Source control provider choice must remain explicit."
+      ]
+    }
+  };
+}
+
+function buildIdeaToEvolutionVersionPlan(idea, mode, deliveryMode, context, pluginContext, sourceControl) {
+  const versions = buildIdeaToEvolutionVersionTemplates(mode, idea, context, pluginContext).map((template) => {
+    const evolutionPlan = buildPlannerEvolutionPlan(template.goal, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
+    const evolution = {
+      ...evolutionPlan,
+      version_id: template.version_id,
+      readiness_gate: template.readiness_gate,
+      excluded_scope: [...template.excluded_scope],
+      source_control: sourceControl,
+      source_control_mode: sourceControl.mode,
+      next_action: template.next_action
+    };
+    const taskPunch = buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
+    return {
+      version_id: template.version_id,
+      title: template.title,
+      goal: template.goal,
+      included_evolutions: [evolution.evolution_id],
+      excluded_scope: [...template.excluded_scope],
+      readiness_gate: template.readiness_gate,
+      source_control_mode: sourceControl.mode,
+      evolution,
+      task_punch: {
+        version_id: template.version_id,
+        evolution_id: evolution.evolution_id,
+        title: `${template.title} Task Punch`,
+        tasks: taskPunch.tasks,
+        source_control: sourceControl,
+        planner_mode: mode,
+        track: evolution.track,
+        delivery_mode: deliveryMode
+      }
+    };
+  });
+  return { versions };
+}
+
+function buildIdeaToEvolutionVersionTemplates(mode, idea, context, pluginContext) {
+  if (mode === "vibe") {
+    return [
+      {
+        version_id: "v0.1",
+        title: "Vibe Intake Foundation",
+        goal: `Document the intake foundation for ${idea}`,
+        excluded_scope: ["KVDF Core edits by default", "branch/PR as the default path"],
+        readiness_gate: "Request, questions, and answers are documented.",
+        next_action: "Review the intake foundation and approve the first app evolution."
+      },
+      {
+        version_id: "v0.2",
+        title: "Vibe Design Foundation",
+        goal: `Produce system, database, and UI/UX design artifacts for ${idea}`,
+        excluded_scope: ["KVDF Core by default", "plugin runtime behavior"],
+        readiness_gate: "Design artifacts are sufficient to start implementation.",
+        next_action: "Review the design foundation and approve the design evolution."
+      },
+      {
+        version_id: "v0.3",
+        title: "Vibe Delivery Flow",
+        goal: `Define the app evolution, task slicing, verify, and handoff flow for ${idea}`,
+        excluded_scope: ["owner-track framework changes", "unrelated product workspaces"],
+        readiness_gate: "Evolution slices and task punches are ready for local-first delivery.",
+        next_action: "Review the delivery flow and approve the next app evolution."
+      },
+      {
+        version_id: "v0.4",
+        title: "Vibe Source Control Options",
+        goal: `Document optional source-control handoff for ${idea}`,
+        excluded_scope: ["branch/PR as mandatory", "KVDF Core direct edits"],
+        readiness_gate: "Optional source control is documented but not required.",
+        next_action: "Review the optional source-control slice and approve if needed."
+      },
+      {
+        version_id: "v1.0",
+        title: "Vibe Stable Delivery",
+        goal: `Stabilize the local-first delivery workflow for ${idea}`,
+        excluded_scope: ["KVDF Core by default", "mandatory branch/PR workflow"],
+        readiness_gate: "The app track can repeat the pipeline safely.",
+        next_action: "Review stability and approve the final app delivery evolution."
+      }
+    ];
+  }
+
+  if (mode === "plugin") {
+    const pluginId = pluginContext ? pluginContext.plugin_id : "plugin";
+    const pluginName = pluginContext && pluginContext.name ? pluginContext.name : pluginId;
+    return [
+      {
+        version_id: "v0.1",
+        title: "Plugin Manifest Foundation",
+        goal: `Align the manifest and command surface for ${pluginName}`,
+        excluded_scope: ["unrelated plugins", ".kabeeri/plugin-links/"],
+        readiness_gate: "The plugin manifest and CLI surface are aligned.",
+        next_action: "Review the manifest foundation and approve the first plugin evolution."
+      },
+      {
+        version_id: "v0.2",
+        title: "Plugin Runtime Parity",
+        goal: `Protect runtime entrypoint and mount state for ${pluginName}`,
+        excluded_scope: ["unrelated plugins", "KVDOS files"],
+        readiness_gate: "Runtime and mount boundaries are explicit.",
+        next_action: "Review runtime parity and approve the runtime evolution."
+      },
+      {
+        version_id: "v0.3",
+        title: "Plugin Docs and Tests Parity",
+        goal: `Keep docs, schemas, and tests in parity for ${pluginName}`,
+        excluded_scope: ["unrelated plugins", ".kabeeri/plugin-links/"],
+        readiness_gate: "Docs, schemas, and tests are consistent.",
+        next_action: "Review docs/tests parity and approve the parity evolution."
+      },
+      {
+        version_id: "v0.4",
+        title: "Plugin Install / Uninstall Validation",
+        goal: `Verify reversible lifecycle behavior for ${pluginName}`,
+        excluded_scope: ["unrelated plugins", "dashboard rendering"],
+        readiness_gate: "Install and uninstall checks pass.",
+        next_action: "Review lifecycle validation and approve the lifecycle evolution."
+      },
+      {
+        version_id: "v1.0",
+        title: "Plugin Stable Delivery",
+        goal: `Stabilize plugin delivery and optional provider flow for ${pluginName}`,
+        excluded_scope: ["unrelated plugins", "plugin-link runtime drift"],
+        readiness_gate: "The plugin can be delivered repeatedly and safely.",
+        next_action: "Review stability and approve the final plugin delivery evolution."
+      }
+    ];
+  }
+
+  return [
+    {
+      version_id: "v0.1",
+      title: "Foundation",
+      goal: `Establish the KVDF planning foundation for ${idea}`,
+      excluded_scope: ["KVDOS files", ".kabeeri/ runtime state", "branch/PR as default"],
+      readiness_gate: "Planner governance and runtime boundaries are documented.",
+      next_action: "Review the foundation and approve the first KVDF Core evolution."
+    },
+    {
+      version_id: "v0.2",
+      title: "Core Workflow",
+      goal: `Define the governed KVDF Core workflow for ${idea}`,
+      excluded_scope: ["KVDOS files", "plugin runtime behavior", "dashboard behavior"],
+      readiness_gate: "Planner workflow, source control, and approval gates are aligned.",
+      next_action: "Review the core workflow and approve the next KVDF Core evolution."
+    },
+    {
+      version_id: "v0.3",
+      title: "Visual Planning",
+      goal: `Add visual planning and roadmap output for ${idea}`,
+      excluded_scope: ["KVDOS files", "app-builder behavior", "dashboard rendering"],
+      readiness_gate: "Mermaid, board, scope map, and markdown planning outputs exist.",
+      next_action: "Review the visual planning slice and approve the next KVDF Core evolution."
+    },
+    {
+      version_id: "v0.4",
+      title: "Materialization",
+      goal: `Link approved plans to Evolution and Task Punch runtime records for ${idea}`,
+      excluded_scope: ["KVDOS files", ".kabeeri/ runtime state writes without approval"],
+      readiness_gate: "Approved plans can become durable runtime records.",
+      next_action: "Review materialization and approve the next KVDF Core evolution."
+    },
+    {
+      version_id: "v1.0",
+      title: "Stable Delivery",
+      goal: `Stabilize direct-to-main KVDF Core delivery for ${idea}`,
+      excluded_scope: ["KVDOS files", "mandatory branch/PR workflow", "runtime state commits"],
+      readiness_gate: "The owner-track pipeline can be repeated safely.",
+      next_action: "Review stability and approve the final KVDF Core evolution."
+    }
+  ];
+}
+
+function buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode) {
+  const versions = Array.isArray(versionPlan.versions) ? versionPlan.versions : [];
+  const [currentVersion, ...futureVersions] = versions;
+  return {
+    current_version: currentVersion ? {
+      version_id: currentVersion.version_id,
+      title: currentVersion.title,
+      source_control_mode: currentVersion.source_control_mode,
+      included_evolutions: currentVersion.included_evolutions
+    } : null,
+    next_evolution: currentVersion && currentVersion.evolution ? {
+      evolution_id: currentVersion.evolution.evolution_id,
+      title: currentVersion.evolution.title,
+      version_id: currentVersion.version_id,
+      source_control_mode: currentVersion.source_control_mode,
+      source_control: currentVersion.evolution.source_control || sourceControl || null,
+      next_action: currentVersion.next_action
+    } : null,
+    future_only_evolutions: futureVersions.map((version) => ({
+      version_id: version.version_id,
+      title: version.title,
+      evolution_id: version.evolution && version.evolution.evolution_id ? version.evolution.evolution_id : null,
+      source_control_mode: version.source_control_mode
+    })),
+    blocked_items: futureVersions.map((version) => ({
+      version_id: version.version_id,
+      title: version.title,
+      reason: version.readiness_gate
+    })),
+    completed_placeholders: [],
+    source_control_modes: versions.map((version) => ({
+      version_id: version.version_id,
+      mode: version.source_control_mode
+    })),
+    track: mode
+  };
+}
+
+function renderPlannerPipelineReport(report, tableRenderer) {
+  const sourceControl = report.source_control;
+  const sourceControlLines = sourceControl ? [
+    `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
+    `- Provider: ${sourceControl.provider || "none"}`,
+    `- Remote provider: ${sourceControl.remote_provider || "none"}`,
+    `- Provider plugin: ${sourceControl.provider_plugin || "none"}`,
+    `- Mode: ${sourceControl.mode || "local_only"}`,
+    `- Branching enabled: ${sourceControl.branching_enabled ? "yes" : "no"}`,
+    `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`,
+    `- Default branch: ${sourceControl.default_branch || "main"}`,
+    `- Current branch: ${sourceControl.current_branch || "none"}`
+  ] : ["- None"];
+  const versions = Array.isArray(report.version_plan && report.version_plan.versions) ? report.version_plan.versions : [];
+  const versionRows = versions.map((version) => [
+    version.version_id,
+    version.title,
+    version.readiness_gate || "",
+    version.source_control_mode || ""
+  ]);
+  const evolutionRows = Array.isArray(report.evolutions) ? report.evolutions.map((evolution) => [
+    evolution.evolution_id,
+    evolution.title,
+    evolution.version_id || "",
+    evolution.source_control_mode || ""
+  ]) : [];
+  const taskPunchRows = Array.isArray(report.task_punches) ? report.task_punches.map((taskPunch) => [
+    taskPunch.version_id || "",
+    taskPunch.evolution_id || "",
+    taskPunch.tasks ? String(taskPunch.tasks.length) : "0",
+    taskPunch.source_control ? summarizeSourceControl(taskPunch.source_control) : "none"
+  ]) : [];
+  const designArtifacts = report.design_artifacts || {};
+  const systemDesign = designArtifacts.system_design || {};
+  const databaseDesign = designArtifacts.database_design || {};
+  const uiUxDesign = designArtifacts.ui_ux_design || {};
+  const apiDesign = designArtifacts.api_design || {};
+  const securityDesign = designArtifacts.security_design || {};
+  return [
+    "# KVDF Idea to Evolution Pipeline",
+    "",
+    `- Track: ${report.track || ""}`,
+    `- Planner mode: ${report.planner_mode || ""}`,
+    `- Delivery mode: ${report.delivery_mode || ""}`,
+    `- Idea: ${report.idea || ""}`,
+    "",
+    "## Documentation Files",
+    ...(report.documentation_files || []).map((item) => `- ${item}`),
+    "",
+    "## System Design",
+    ...renderIndentedObjectSection(systemDesign),
+    "",
+    "## Database Design",
+    ...renderIndentedObjectSection(databaseDesign),
+    "",
+    "## UI/UX Design",
+    ...renderIndentedObjectSection(uiUxDesign),
+    "",
+    "## Visual Planning",
+    "### Mermaid Graph",
+    "```mermaid",
+    report.visual_planning && report.visual_planning.graph ? report.visual_planning.graph.diagram : "",
+    "```",
+    "### Planning Board",
+    report.visual_planning && report.visual_planning.board ? (report.visual_planning.board.columns || []).map((column) => `- ${column.title}: ${(column.cards || []).length} card(s)`).join("\n") : "",
+    "### Scope Map",
+    ...renderIndentedObjectSection(report.visual_planning ? report.visual_planning.scope_map || {} : {}),
+    "",
+    "## Version Plan",
+    tableRenderer(["Version", "Title", "Readiness Gate", "Source Control"], versionRows),
+    "",
+    "## Evolutions",
+    tableRenderer(["Evolution", "Title", "Version", "Source Control"], evolutionRows),
+    "",
+    "## Task Punches",
+    tableRenderer(["Version", "Evolution", "Tasks", "Source Control"], taskPunchRows),
+    "",
+    "## Visual Roadmap",
+    ...renderIndentedObjectSection(report.visual_roadmap || {}),
+    "",
+    "## Source Control",
+    ...sourceControlLines,
+    "",
+    "## Next Evolution",
+    ...renderIndentedObjectSection(report.next_evolution || {}),
+    "",
+    "## Validation Commands",
+    ...(report.validation_commands || (report.visual_planning && report.visual_planning.validation_commands) || []).map((command) => `- ${command}`),
+    "",
+    `## Next Action`,
+    report.next_action || ""
+  ].join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
+function renderIndentedObjectSection(value, indent = "- ", nestedIndent = "  - ") {
+  if (!value || typeof value !== "object") return ["- None"];
+  const lines = [];
+  for (const [key, entry] of Object.entries(value)) {
+    if (Array.isArray(entry)) {
+      if (entry.length === 0) {
+        lines.push(`- ${key}: []`);
+      } else if (entry.every((item) => typeof item !== "object" || item === null)) {
+        lines.push(`- ${key}:`);
+        for (const item of entry) lines.push(`${nestedIndent}${String(item)}`);
+      } else {
+        lines.push(`- ${key}:`);
+        for (const item of entry) lines.push(`${nestedIndent}${JSON.stringify(item)}`);
+      }
+    } else if (entry && typeof entry === "object") {
+      lines.push(`- ${key}:`);
+      for (const nested of renderIndentedObjectSection(entry, nestedIndent, `${nestedIndent}  - `)) {
+        lines.push(`${nestedIndent}${nested.replace(/^- /, "")}`);
+      }
+    } else {
+      lines.push(`- ${key}: ${entry === null || entry === undefined ? "none" : String(entry)}`);
+    }
+  }
+  return lines.length ? lines : ["- None"];
 }
 
 function buildPlannerProposalReport(goal, request = {}, deps = {}) {
@@ -1312,6 +1895,8 @@ function printPlannerOutput(report, flags, deps, kind) {
     ? renderPlannerPromptReport(report)
     : kind === "visual"
       ? renderPlannerVisualReport(report)
+      : kind === "pipeline"
+        ? renderPlannerPipelineReport(report, deps.table)
       : kind === "materialize"
         ? renderPlannerMaterializationReport(report, deps.table)
     : kind === "evolution"
@@ -1699,8 +2284,11 @@ function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", d
   const defaultMode = mode === "vibe"
     ? "local_only"
     : "direct_main";
-  const sourceControlMode = requestedMode || defaultMode;
-  const wantsLocalOnly = !gitRepoDetected || sourceControlMode === "local_only" || sourceControlMode === "none" || requestedProvider === "none";
+  const explicitLocalOnly = requestedMode === "none" || requestedProvider === "none";
+  const sourceControlMode = gitRepoDetected
+    ? (explicitLocalOnly ? "local_only" : (requestedMode || defaultMode))
+    : "local_only";
+  const wantsLocalOnly = !gitRepoDetected || sourceControlMode === "local_only" || explicitLocalOnly;
   const defaultProvider = wantsLocalOnly ? "none" : "git";
   const provider = wantsLocalOnly ? "none" : (requestedProvider || defaultProvider);
   const remoteProvider = wantsLocalOnly ? "none" : (requestedRemote || "none");
@@ -1777,7 +2365,7 @@ function normalizePluginId(value) {
 }
 
 function resolveGoal(value, flags = {}, rest = [], fallback = "") {
-  const candidates = [value, flags.goal, flags.title, rest.filter(Boolean).join(" "), fallback];
+  const candidates = [value, flags.idea, flags.goal, flags.title, rest.filter(Boolean).join(" "), fallback];
   const goal = candidates.find((item) => typeof item === "string" && item.trim());
   return goal ? String(goal).trim() : "";
 }
@@ -2517,6 +3105,105 @@ function renderPlannerTaskPunchReport(report, tableRenderer) {
   ].join("\n");
 }
 
+function buildPlannerPipelineMarkdown(report, tableRenderer) {
+  const versionRows = Array.isArray(report.version_plan && report.version_plan.versions)
+    ? report.version_plan.versions.map((version) => [
+      version.version_id || "",
+      version.title || "",
+      version.readiness_gate || "",
+      version.source_control_mode || ""
+    ])
+    : [];
+  const evolutionRows = Array.isArray(report.evolutions)
+    ? report.evolutions.map((evolution) => [
+      evolution.evolution_id || "",
+      evolution.title || "",
+      evolution.version_id || "",
+      evolution.source_control_mode || ""
+    ])
+    : [];
+  const taskPunchRows = Array.isArray(report.task_punches)
+    ? report.task_punches.map((taskPunch) => [
+      taskPunch.version_id || "",
+      taskPunch.evolution_id || "",
+      taskPunch.tasks ? String(taskPunch.tasks.length) : "0",
+      taskPunch.source_control ? summarizeSourceControl(taskPunch.source_control) : "none"
+    ])
+    : [];
+  const sourceControl = report.source_control || null;
+  const sourceControlLines = sourceControl ? [
+    `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
+    `- Provider: ${sourceControl.provider || "none"}`,
+    `- Remote provider: ${sourceControl.remote_provider || "none"}`,
+    `- Provider plugin: ${sourceControl.provider_plugin || "none"}`,
+    `- Mode: ${sourceControl.mode || "local_only"}`,
+    `- Branching enabled: ${sourceControl.branching_enabled ? "yes" : "no"}`,
+    `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`,
+    `- Default branch: ${sourceControl.default_branch || "main"}`,
+    `- Current branch: ${sourceControl.current_branch || "none"}`,
+    ...(Array.isArray(sourceControl.notes) && sourceControl.notes.length ? ["- Notes:", ...sourceControl.notes.map((note) => `  - ${note}`)] : [])
+  ] : ["- None"];
+  return [
+    "# KVDF Idea to Evolution Pipeline",
+    "",
+    `- Track: ${report.track || ""}`,
+    `- Planner mode: ${report.planner_mode || ""}`,
+    `- Delivery mode: ${report.delivery_mode || ""}`,
+    `- Idea: ${report.idea || ""}`,
+    "",
+    "## Documentation Files",
+    ...(report.documentation_files || []).map((item) => `- ${item}`),
+    "",
+    "## System Design",
+    ...renderIndentedObjectSection(report.design_artifacts && report.design_artifacts.system_design || {}),
+    "",
+    "## Database Design",
+    ...renderIndentedObjectSection(report.design_artifacts && report.design_artifacts.database_design || {}),
+    "",
+    "## UI/UX Design",
+    ...renderIndentedObjectSection(report.design_artifacts && report.design_artifacts.ui_ux_design || {}),
+    "",
+    "## Visual Planning",
+    "### Mermaid Graph",
+    "```mermaid",
+    report.visual_planning && report.visual_planning.graph ? report.visual_planning.graph.diagram : "",
+    "```",
+    "### Planning Board",
+    ...(report.visual_planning && report.visual_planning.board && Array.isArray(report.visual_planning.board.columns)
+      ? report.visual_planning.board.columns.map((column) => `- ${column.title}: ${(column.cards || []).length} card(s)`)
+      : ["- None"]),
+    "### Scope Map",
+    ...renderIndentedObjectSection(report.visual_planning ? report.visual_planning.scope_map || {} : {}),
+    "",
+    "## Version Plan",
+    tableRenderer(["Version", "Title", "Readiness Gate", "Source Control"], versionRows),
+    "",
+    "## Evolutions",
+    tableRenderer(["Evolution", "Title", "Version", "Source Control"], evolutionRows),
+    "",
+    "## Task Punches",
+    tableRenderer(["Version", "Evolution", "Tasks", "Source Control"], taskPunchRows),
+    "",
+    "## Visual Roadmap",
+    ...renderIndentedObjectSection(report.visual_roadmap || {}),
+    "",
+    "## Source Control",
+    ...sourceControlLines,
+    "",
+    "## Next Evolution",
+    ...renderIndentedObjectSection(report.next_evolution || {}),
+    "",
+    "## Validation Commands",
+    ...(report.validation_commands || []).map((command) => `- ${command}`),
+    "",
+    "## Stop Condition",
+    report.stop_condition || "",
+    "",
+    "## Next Action",
+    report.next_action || ""
+  ].join("\n");
+}
+
 module.exports = {
   planner,
   buildPlannerNextReport,
@@ -2525,10 +3212,12 @@ module.exports = {
   buildPlannerTaskPunchReport,
   buildPlannerVisualReport,
   buildPlannerVisualFromCurrentReport,
+  buildIdeaToEvolutionPipelineReport,
   buildPlannerEvolutionPlan,
   renderPlannerNextReport,
   renderPlannerEvolutionPlan,
   renderPlannerPromptReport,
   renderPlannerTaskPunchReport,
+  renderPlannerPipelineReport,
   renderPlannerVisualReport
 };

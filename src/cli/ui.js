@@ -483,14 +483,19 @@ Notes:
   kvdf planner visual --goal "Add visual planner" --track owner --json
   kvdf planner visual --goal "Build app flow" --track vibe --json
   kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
+  kvdf planner pipeline --idea "Improve KVDF planner" --track owner --json
+  kvdf planner pipeline --idea "Build booking app" --track vibe --json
+  kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
   kvdf planner-visual status
   kvdf planner-visual render --goal "Add visual planner" --track owner
+  kvdf planner pipeline --goal "Build app" --track vibe
   kvdf planner evolution --goal "Add planner layer" --track owner --json
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
 
 Notes:
   Planner output includes an explicit source_control object so KVDF can express no source control,
   local-only, direct-to-main, branch, and branch+PR modes without assuming GitHub is mandatory.
+  The planner pipeline command turns a raw idea into documentation files, design artifacts, a visual planning model, a version plan, evolutions, task punches, and the next approval/materialization action.
   kvdf plugins status
   kvdf plugins install kvdf-dev
   kvdf plugins enable kvdf-dev
@@ -1362,7 +1367,8 @@ function printHelp() {
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
-  "  planner next|prompt|evolution|propose|approve|current|reject|visual Recommend the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate visual/prompt outputs",
+  "  planner next|prompt|evolution|propose|approve|current|reject|visual|pipeline Recommend the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+  "  planner pipeline Generate an idea-to-evolution planning package with docs, design, versions, evolutions, task punches, roadmap, and source-control guidance",
     "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
     "  maintenance fast|slow        Run the repo-wide maintenance workflow in fast or strict mode",
     "  cleaner inspect              Run the file-by-file maintenance inspection report",
@@ -1418,7 +1424,7 @@ function printHelp() {
   ];
   const ownerCommands = [
     "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
-    "  planner next|prompt|evolution|propose|approve|current|reject|visual Determine the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate visual/prompt outputs",
+    "  planner next|prompt|evolution|propose|approve|current|reject|visual|pipeline Determine the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
     "  owner init|login|status|logout Configure and use local Owner sessions",
     "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",
