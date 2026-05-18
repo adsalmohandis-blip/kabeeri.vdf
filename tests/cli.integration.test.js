@@ -1125,6 +1125,30 @@ test("task completion archives to trash and restore returns to active tasks", ()
   runKvdf(["task", "verify", "task-001", "--owner", "owner-001"], { cwd: dir });
   const lifecycleValidation = JSON.parse(runKvdf(["task", "lifecycle", "task-001", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(lifecycleValidation.current_stage, "validation");
+  const evolutionPath = path.join(dir, ".kabeeri", "evolution.json");
+  fs.writeFileSync(evolutionPath, JSON.stringify({
+    changes: [
+      {
+        change_id: "evo-001",
+        title: "Archive sync regression",
+        description: "Keep task and evolution ledgers aligned",
+        status: "planned",
+        task_ids: ["task-001"],
+        track: "framework_owner",
+        workspace_kind: "framework_owner",
+        created_at: new Date().toISOString()
+      }
+    ],
+    impact_plans: [],
+    current_change_id: "evo-001",
+    temporary_priorities: null,
+    development_priorities: [],
+    deferred_ideas: [],
+    scorecards: [],
+    workspace_kind: "framework_owner",
+    track: "framework_owner",
+    updated_at: new Date().toISOString()
+  }, null, 2));
   const completed = JSON.parse(runKvdf(["task", "complete", "task-001", "--owner", "owner-001"], { cwd: dir }).stdout);
   assert.strictEqual(completed.status, "trashed");
   assert.strictEqual(completed.task.id, "task-001");
@@ -1151,6 +1175,13 @@ test("task completion archives to trash and restore returns to active tasks", ()
   const lifecycleArchived = JSON.parse(runKvdf(["task", "lifecycle", "task-001", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(lifecycleArchived.current_stage, "archived");
   assert.ok(lifecycleArchived.trashed_at);
+  const evolutionState = JSON.parse(fs.readFileSync(evolutionPath, "utf8"));
+  const archivedEvolution = evolutionState.changes.find((item) => item.change_id === "evo-001");
+  assert.ok(archivedEvolution);
+  assert.strictEqual(archivedEvolution.status, "done");
+  assert.strictEqual(archivedEvolution.archived, true);
+  assert.ok(archivedEvolution.archived_at);
+  assert.ok(!archivedEvolution.open_task_ids || archivedEvolution.open_task_ids.length === 0);
   const lifecycleBoard = JSON.parse(runKvdf(["task", "lifecycle", "--json"], { cwd: dir }).stdout);
   assert.ok(lifecycleBoard.summary.by_stage.intake >= 0);
   assert.ok(lifecycleBoard.summary.by_stage.archived >= 1);
@@ -1416,11 +1447,22 @@ test("evolution steward creates impact plans and dependent follow-up tasks", () 
   assert.strictEqual(JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8")).changes.length, 0);
   const result = JSON.parse(runKvdf(["evolution", "plan", "Add dashboard live JSON docs update", "--confirm-placement", "--priority-position", "4", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(result.change.change_id, "evo-001");
+  assert.strictEqual(result.change.milestone_id, "evo-001");
+  assert.strictEqual(result.change.sync_policy, "local_only");
+  assert.strictEqual(result.change.github_sync_enabled, false);
+  assert.strictEqual(result.change.review_gate, "viber_review_required");
+  assert.match(result.change.branch_name, /^evo\//);
   assert.ok(result.change.impacted_areas.includes("dashboard"));
   assert.ok(result.change.impacted_areas.includes("docs"));
   assert.ok(result.change.impacted_areas.includes("capabilities"));
   assert.ok(["none", "review_required"].includes(result.change.duplicate_risk));
   assert.ok(result.tasks.length >= 6);
+  assert.strictEqual(result.tasks[0].evolution_milestone_id, "evo-001");
+  assert.strictEqual(result.tasks[0].sync_policy, "local_only");
+  assert.strictEqual(result.tasks[0].github_sync_enabled, false);
+  assert.strictEqual(result.tasks[0].archive_after_completion, true);
+  assert.strictEqual(result.impact_plan.branch_name, result.change.branch_name);
+  assert.strictEqual(result.impact_plan.review_gate, "viber_review_required");
   const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/evolution.json"), "utf8"));
   assert.strictEqual(state.changes.length, 1);
   assert.strictEqual(state.impact_plans.length, 1);
@@ -1450,6 +1492,10 @@ test("evolution steward creates impact plans and dependent follow-up tasks", () 
   assert.ok(impactTask.resume_steps.length >= 4);
   const summary = JSON.parse(runKvdf(["evolution", "status", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(summary.changes_total, 1);
+  assert.strictEqual(summary.milestone_changes_total, 1);
+  assert.strictEqual(summary.milestone_local_only_total, 1);
+  assert.strictEqual(summary.task_trash_total, 0);
+  assert.ok(summary.current_milestone);
   assert.ok(summary.open_follow_up_tasks > 0);
   assert.ok(summary.next_priority);
   assert.strictEqual(summary.feature_restructure_work_order.total_steps, 7);
@@ -1460,6 +1506,21 @@ test("evolution steward creates impact plans and dependent follow-up tasks", () 
   const reports = JSON.parse(runKvdf(["reports", "live", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(reports.reports.evolution.changes_total, 1);
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /evolution\.json matches/);
+}));
+
+test("evolution steward can create a github-linked milestone without making github mandatory", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  runKvdf(["evolution", "priority", "evo-auto-047-owner-developer-cli-separation", "--status", "done", "--note", "Test isolation", "--json"], { cwd: dir });
+  const result = JSON.parse(runKvdf(["evolution", "plan", "Add optional GitHub branch and PR flow", "--confirm-placement", "--priority-position", "4", "--github-sync", "--merge-target-branch", "develop", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(result.change.sync_policy, "github_optional");
+  assert.strictEqual(result.change.github_sync_enabled, true);
+  assert.strictEqual(result.change.merge_target_branch, "develop");
+  assert.strictEqual(result.change.source_control, "github-linked");
+  assert.strictEqual(result.tasks[0].github_sync_enabled, true);
+  assert.strictEqual(result.tasks[0].merge_target_branch, "develop");
+  assert.strictEqual(result.tasks[0].sync_policy, "github_optional");
+  const summary = JSON.parse(runKvdf(["evolution", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(summary.milestone_github_linked_total, 1);
 }));
 
 test("evolution scorecards build a review-only scorecard report", () => withTempDir((dir) => {

@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const {
   buildEvolutionSummary,
+  reconcileEvolutionCompletion,
   buildEvolutionScorecards,
   buildEvolutionTemporaryPrioritiesReport,
   buildEvolutionPriorityExecutionDetails,
@@ -38,6 +39,111 @@ function resolveEvolutionMode(flags = {}) {
 
 function buildEvolutionCommandPrefix(mode) {
   return mode === "app_developer" ? "kvdf evolution app" : "kvdf evolution";
+}
+
+function normalizeEvolutionSlug(value, fallback = "milestone") {
+  return String(value || fallback)
+    .trim()
+    .toLowerCase()
+    .replace(/['"`]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || fallback;
+}
+
+function resolveEvolutionDeliveryMode(flags = {}, appMode = false) {
+  const raw = String(
+    flags["sync-mode"] ||
+    flags.sync ||
+    flags["delivery-mode"] ||
+    flags["source-control"] ||
+    flags.mode ||
+    ""
+  ).trim().toLowerCase();
+  const githubEnabled = Boolean(
+    flags.github ||
+    flags["github-sync"] ||
+    flags["github-sync-enabled"] ||
+    ["github", "github-sync", "github_linked", "github-linked", "remote", "pr", "pull-request"].includes(raw)
+  );
+  const localOnly = Boolean(
+    flags.local ||
+    flags["local-only"] ||
+    flags["local_first"] ||
+    flags["local-first"] ||
+    ["local", "local_only", "local-only", "local_first", "local-first", ""].includes(raw) && !githubEnabled
+  );
+  const syncMode = githubEnabled ? "github_optional" : "local_only";
+  return {
+    local_first: true,
+    github_sync_enabled: githubEnabled && !localOnly,
+    sync_mode: syncMode,
+    sync_policy: githubEnabled && !localOnly ? "github_optional" : "local_only",
+    source_control: githubEnabled && !localOnly ? "github-linked" : "local-only",
+    audience: appMode ? "app_developer" : "framework_owner"
+  };
+}
+
+function resolveEvolutionWorkspaceTrack(workspaceKind = "", fallbackTrack = "framework_owner") {
+  const normalized = String(workspaceKind || "").trim().toLowerCase();
+  if (["developer_app", "vibe_app_developer", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  return fallbackTrack;
+}
+
+function resolveEvolutionRecordTrack(record = {}, workspaceTrack = "framework_owner") {
+  const normalized = String(record.track || record.audience || record.workspace_kind || "").trim().toLowerCase();
+  if (["vibe_app_developer", "developer_app", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  return workspaceTrack;
+}
+
+function buildEvolutionBranchName(change, flags = {}) {
+  const titleSlug = normalizeEvolutionSlug(change.title || change.description || change.change_id);
+  const changeSlug = normalizeEvolutionSlug(change.change_id, "evolution");
+  const branchPrefix = normalizeEvolutionSlug(flags["branch-prefix"] || flags.branch_prefix || "evo", "evo");
+  const branchName = flags.branch || flags["branch-name"] || `${branchPrefix}/${changeSlug}-${titleSlug}`;
+  return branchName.replace(/\/{2,}/g, "/").replace(/-+/g, "-").slice(0, 100);
+}
+
+function buildEvolutionMilestone(change, flags = {}, options = {}) {
+  const appMode = Boolean(options.appMode);
+  const delivery = resolveEvolutionDeliveryMode(flags, appMode);
+  const track = appMode ? "vibe_app_developer" : "framework_owner";
+  const mergeTargetBranch = flags["merge-target-branch"] || flags["target-branch"] || flags.base || flags["base-branch"] || "main";
+  const branchName = buildEvolutionBranchName(change, flags);
+  return {
+    milestone_id: change.change_id,
+    milestone_title: change.title,
+    milestone_summary: change.description || "",
+    milestone_status: change.status === "verified" || change.status === "closed" ? "complete" : change.status || "planned",
+    local_first: true,
+    source_control: delivery.source_control,
+    sync_mode: delivery.sync_mode,
+    sync_policy: delivery.sync_policy,
+    github_sync_enabled: delivery.github_sync_enabled,
+    branch_name: branchName,
+    merge_target_branch: mergeTargetBranch,
+    review_gate: "viber_review_required",
+    review_required: true,
+    review_status: "pending",
+    branch_policy: {
+      base_branch: mergeTargetBranch,
+      feature_branch: branchName,
+      never_write_directly_to_target: true
+    },
+    task_trash_policy: {
+      archive_on_complete: true,
+      archive_status: "trashed",
+      retention_days: 30
+    },
+    release_gate: {
+      merge_after_review: true,
+      pull_latest_target_before_next_milestone: true
+    },
+    audience: delivery.audience,
+    track
+  };
 }
 
 function normalizeEvolutionExecutionReportId(priorityId) {
@@ -91,6 +197,13 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
   state.impact_plans = state.impact_plans || [];
   state.deferred_ideas = state.deferred_ideas || [];
   state.scorecards = state.scorecards || [];
+  const project = localFileExists(".kabeeri/project.json") ? readLocalJsonFile(".kabeeri/project.json") : {};
+  const workspaceKind = project.workspace_kind || (appMode ? "developer_app" : "framework_owner");
+  const workspaceTrack = resolveEvolutionWorkspaceTrack(workspaceKind, appMode ? "vibe_app_developer" : "framework_owner");
+  state.workspace_kind = state.workspace_kind || workspaceKind;
+  state.track = state.track || workspaceTrack;
+  const completionSync = reconcileEvolutionCompletion(state, { workspace_kind: workspaceKind });
+  if (completionSync.changed) writeJsonFile(file, state);
   const baseSummary = buildEvolutionSummary(state);
 
   if (!action || action === "status" || action === "summary") {
@@ -350,6 +463,7 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
     change.status = openTasks.length ? "needs_follow_up" : "verified";
     change.verified_at = openTasks.length ? null : new Date().toISOString();
     change.open_task_ids = openTasks.map((taskItem) => taskItem.id);
+    reconcileEvolutionCompletion(state, { workspace_kind: workspaceKind });
     writeJsonFile(file, state);
     refreshDashboardArtifacts();
     appendAudit("evolution.verified", "evolution", change.change_id, `Evolution verification: ${change.status}`);
@@ -375,6 +489,13 @@ function createEvolutionChange(state, description, flags = {}, deps = {}) {
   const createdAt = new Date().toISOString();
   const capabilityMatches = findExistingCapabilityMatches(description, fileExists, readTextFile);
   const existingChangeMatches = findExistingEvolutionMatches(state, description);
+  const milestone = buildEvolutionMilestone({
+    change_id: changeId,
+    title,
+    description,
+    status: "planned"
+  }, flags, { appMode });
+  const track = appMode ? "vibe_app_developer" : "framework_owner";
   const change = {
     change_id: changeId,
     title,
@@ -388,7 +509,27 @@ function createEvolutionChange(state, description, flags = {}, deps = {}) {
     existing_capability_matches: capabilityMatches,
     existing_change_matches: existingChangeMatches,
     created_at: createdAt,
-    task_ids: []
+    task_ids: [],
+    track,
+    workspace_kind: appMode ? "developer_app" : "framework_owner",
+    milestone_id: milestone.milestone_id,
+    milestone_title: milestone.milestone_title,
+    milestone_summary: milestone.milestone_summary,
+    milestone_status: milestone.milestone_status,
+    local_first: milestone.local_first,
+    source_control: milestone.source_control,
+    sync_mode: milestone.sync_mode,
+    sync_policy: milestone.sync_policy,
+    github_sync_enabled: milestone.github_sync_enabled,
+    branch_name: milestone.branch_name,
+    merge_target_branch: milestone.merge_target_branch,
+    review_gate: milestone.review_gate,
+    review_required: milestone.review_required,
+    review_status: milestone.review_status,
+    branch_policy: milestone.branch_policy,
+    task_trash_policy: milestone.task_trash_policy,
+    release_gate: milestone.release_gate,
+    milestone: milestone
   };
   state.changes.push(change);
   return change;
@@ -472,6 +613,7 @@ function renderEvolutionFeatureRequestPlacement(report, table) {
 function createEvolutionTasks(change, flags = {}, deps = {}) {
   if (flags["no-tasks"]) return [];
   const { readJsonFile = () => ({}), writeJsonFile = () => {}, appendAudit = () => {}, nextRecordId = () => "task-001" } = deps;
+  const appMode = Boolean(deps.appMode);
   const tasksFile = ".kabeeri/tasks.json";
   const data = readJsonFile(tasksFile);
   data.tasks = data.tasks || [];
@@ -488,6 +630,8 @@ function createEvolutionTasks(change, flags = {}, deps = {}) {
   };
   const createdAt = new Date().toISOString();
   const selectedAreas = orderEvolutionAreas(change.impacted_areas);
+  const milestone = buildEvolutionMilestone(change, flags, { appMode });
+  const track = appMode ? "vibe_app_developer" : "framework_owner";
   const tasks = selectedAreas.map((area) => {
     const definition = evolutionAreaDefinition(area);
     const durable = buildEvolutionTaskExecutionDetails(change, area, definition);
@@ -500,11 +644,24 @@ function createEvolutionTasks(change, flags = {}, deps = {}) {
       workstream: definition.workstream,
       workstreams: [definition.workstream],
       source: `evolution:${change.change_id}`,
+      track,
       evolution_change_id: change.change_id,
+      evolution_milestone_id: milestone.milestone_id,
+      evolution_milestone_title: milestone.milestone_title,
       evolution_area: area,
       allowed_files: definition.files,
       acceptance_criteria: definition.acceptance,
       execution_summary: durable.execution_summary,
+      branch_name: milestone.branch_name,
+      merge_target_branch: milestone.merge_target_branch,
+      sync_policy: milestone.sync_policy,
+      github_sync_enabled: milestone.github_sync_enabled,
+      review_gate: milestone.review_gate,
+      review_required: milestone.review_required,
+      task_trash_policy: milestone.task_trash_policy,
+      archive_after_completion: true,
+      archive_status: milestone.task_trash_policy.archive_status,
+      track,
       memory: {
         task_id: taskId,
         title: `Evolution Steward: update ${definition.label}`,
@@ -512,9 +669,14 @@ function createEvolutionTasks(change, flags = {}, deps = {}) {
         scope: `Impacted area: ${area}`,
         source_of_truth: {
           source: `evolution:${change.change_id}`,
+          track,
           workstreams: [definition.workstream],
           app_usernames: [],
-          allowed_files: definition.files
+          allowed_files: definition.files,
+          branch_name: milestone.branch_name,
+          merge_target_branch: milestone.merge_target_branch,
+          sync_policy: milestone.sync_policy,
+          github_sync_enabled: milestone.github_sync_enabled
         },
         acceptance_criteria: definition.acceptance,
         required_inputs: durable.required_inputs,
@@ -528,6 +690,13 @@ function createEvolutionTasks(change, flags = {}, deps = {}) {
       expected_outputs: durable.expected_outputs,
       do_not_change: durable.do_not_change,
       verification_commands: durable.verification_commands,
+      branch_name: milestone.branch_name,
+      merge_target_branch: milestone.merge_target_branch,
+      sync_policy: milestone.sync_policy,
+      github_sync_enabled: milestone.github_sync_enabled,
+      review_gate: milestone.review_gate,
+      task_trash_policy: milestone.task_trash_policy,
+      track,
       created_at: createdAt
     };
   });
@@ -540,12 +709,28 @@ function createEvolutionTasks(change, flags = {}, deps = {}) {
 }
 
 function buildEvolutionImpactPlan(change, tasks) {
+  const milestone = change.milestone || buildEvolutionMilestone(change, {}, { appMode: false });
   return {
     plan_id: `${change.change_id}-impact`,
     change_id: change.change_id,
     generated_at: new Date().toISOString(),
     title: change.title,
     status: "planned",
+    milestone_id: milestone.milestone_id,
+    milestone_title: milestone.milestone_title,
+    milestone_summary: milestone.milestone_summary,
+    milestone_status: milestone.milestone_status,
+    local_first: milestone.local_first,
+    source_control: milestone.source_control,
+    sync_mode: milestone.sync_mode,
+    sync_policy: milestone.sync_policy,
+    github_sync_enabled: milestone.github_sync_enabled,
+    branch_name: milestone.branch_name,
+    merge_target_branch: milestone.merge_target_branch,
+    review_gate: milestone.review_gate,
+    review_required: milestone.review_required,
+    task_trash_policy: milestone.task_trash_policy,
+    release_gate: milestone.release_gate,
     impacted_areas: change.impacted_areas,
     dependency_rule: "When a Kabeeri framework capability changes, update every dependent runtime, schema, dashboard, report, documentation, and test surface before treating the change as done.",
     update_order: orderEvolutionAreas(change.impacted_areas),
@@ -558,7 +743,15 @@ function buildEvolutionImpactPlan(change, tasks) {
       execution_summary: taskItem.execution_summary,
       resume_steps: taskItem.resume_steps,
       expected_outputs: taskItem.expected_outputs,
-      verification_commands: taskItem.verification_commands
+      verification_commands: taskItem.verification_commands,
+      evolution_milestone_id: taskItem.evolution_milestone_id || milestone.milestone_id,
+      branch_name: taskItem.branch_name || milestone.branch_name,
+      merge_target_branch: taskItem.merge_target_branch || milestone.merge_target_branch,
+      sync_policy: taskItem.sync_policy || milestone.sync_policy,
+      github_sync_enabled: typeof taskItem.github_sync_enabled === "boolean" ? taskItem.github_sync_enabled : milestone.github_sync_enabled,
+      review_gate: taskItem.review_gate || milestone.review_gate,
+      track: taskItem.track || milestone.audience || (flags.app || flags.developer || flags["app-mode"] || flags.mode === "app" ? "vibe_app_developer" : "framework_owner"),
+      archive_after_completion: taskItem.archive_after_completion !== false
     }))
   };
 }
@@ -899,10 +1092,10 @@ function buildEvolutionNextAction(next, options = {}) {
     if (next.id === "evo-auto-005-durable-task-details") {
       return `Activate the priority with \`${commandPrefix} priority evo-auto-005-durable-task-details --status in_progress\`, then run \`${commandPrefix} temp\` and expand each task and deferred idea with durable execution details before handing work to tools.`;
     }
-    return `Activate ${next.id} with \`${commandPrefix} priority ${next.id} --status in_progress\`, then run \`${commandPrefix} temp\` to generate the execution queue and start from the current slice.`;
+    return `Activate ${next.id} with \`${commandPrefix} priority ${next.id} --status in_progress\`, then run \`${commandPrefix} temp\` to generate the execution queue and start the next milestone slice on the local branch.`;
   }
   if (next.status === "in_progress") {
-    return `Run \`${commandPrefix} temp\` for ${next.id} before any implementation, docs, or tests, then advance slices as each execution-grade task is completed.`;
+    return `Run \`${commandPrefix} temp\` for ${next.id} before any implementation, docs, or tests, keep GitHub sync optional, and finish the slice before starting the next milestone.`;
   }
   if (next.status === "blocked") {
     return `Clear blockers for ${next.id} before advancing it again.`;
@@ -1044,6 +1237,22 @@ function buildEvolutionExecutionReport(state, readJsonFile, fileExists, options 
     ] : []
   };
 
+  const currentChange = state.current_change_id ? state.changes.find((item) => item.change_id === state.current_change_id) || null : null;
+  if (currentChange) {
+    report.current_milestone = currentChange.milestone || buildEvolutionMilestone(currentChange, {}, { appMode });
+    report.current_change = {
+      change_id: currentChange.change_id,
+      title: currentChange.title,
+      status: currentChange.status,
+      branch_name: currentChange.branch_name || report.current_milestone.branch_name,
+      merge_target_branch: currentChange.merge_target_branch || report.current_milestone.merge_target_branch,
+      sync_policy: currentChange.sync_policy || report.current_milestone.sync_policy,
+      github_sync_enabled: typeof currentChange.github_sync_enabled === "boolean" ? currentChange.github_sync_enabled : report.current_milestone.github_sync_enabled,
+      review_gate: currentChange.review_gate || report.current_milestone.review_gate,
+      task_trash_policy: currentChange.task_trash_policy || report.current_milestone.task_trash_policy
+    };
+  }
+
   if (targetPriority && executionDetails) {
     report.execution_summary = executionDetails.execution_summary;
     report.resume_steps = executionDetails.resume_steps;
@@ -1099,6 +1308,12 @@ function renderEvolutionExecutionReport(report, tableRenderer = () => "") {
       ["Resume command", report.resume_command || "n/a"],
       ["Next exact action", report.next_exact_action || "n/a"],
       ["Current change", report.current_change_id || "none"],
+      ["Current milestone", report.current_milestone ? report.current_milestone.milestone_id : "none"],
+      ["Branch", report.current_milestone ? report.current_milestone.branch_name : "n/a"],
+      ["Merge target", report.current_milestone ? report.current_milestone.merge_target_branch : "n/a"],
+      ["Sync policy", report.current_milestone ? report.current_milestone.sync_policy : "n/a"],
+      ["GitHub sync", report.current_milestone ? (report.current_milestone.github_sync_enabled ? "enabled" : "local-only") : "n/a"],
+      ["Review gate", report.current_milestone ? report.current_milestone.review_gate : "n/a"],
       ["Linked tasks", report.linked_task_ids.length ? report.linked_task_ids.join(", ") : "none"],
       ["Open priorities", `${report.priority_summary.open}/${report.priority_summary.total}`]
     ]),
@@ -1565,6 +1780,8 @@ function renderEvolutionSummary(summary) {
     `Scorecards: ${summary.scorecards_total || 0} total (${summary.scorecards_open || 0} open)`,
     `Temporary priority queue: ${temp ? `${temp.queue_id} (${temp.open_slices}/${temp.total_slices} open)` : "none"}`,
     `Multi-AI orchestration: ${summary.multi_ai ? `${summary.multi_ai.status} (${summary.multi_ai.active_queues} active queues)` : "none"}`,
+    `Auto-closeout: ${summary.auto_closed_changes_total || 0} archived milestone(s)`,
+    `Closeout rule: ${summary.closeout_policy ? summary.closeout_policy.trigger : "all_linked_tasks_terminal_and_archived"}`,
     `Restructure roadmap: ${summary.feature_restructure_work_order ? `${summary.feature_restructure_work_order.total_steps} steps` : "none"}`,
     `Capability partition matrix: ${summary.capability_partition_matrix ? `${summary.capability_partition_matrix.total_capabilities} capabilities` : "none"}`,
     `Plugin loader: ${summary.plugin_loader ? `${summary.plugin_loader.active_plugins} active plugins` : "none"}`,

@@ -80,15 +80,17 @@ Kabeeri is organized around two primary tracks:
 
 ```text
 Framework Owner Track
-resume -> evolution priorities -> evolution temp -> implement -> sync -> validate -> verify
+resume -> evolution priorities -> evolution temp -> implement on a branch -> review -> merge -> pull main -> validate -> verify
 
 Vibe App Developer Track
-resume -> vibe/ask -> blueprint/questionnaire -> temp -> tasks/capture -> validate -> handoff
+resume -> vibe/ask -> blueprint/questionnaire -> evolution -> temp -> tasks/capture -> branch -> review -> merge -> pull main -> validate -> handoff
 ```
 
 Framework-owner sessions use Evolution Steward to change Kabeeri itself. Vibe app-developer sessions use the same CLI engine to build an application with governed tasks, captures, blueprints, and validation. The shared commands `resume`, `guard`, `conflict`, `validate`, `dashboard`, `reports`, and `sync` keep both tracks safe and resumable.
 
 Shared commands are the first stop when you are not sure which track owns the work. They are safe in both tracks and should be used before you guess at a framework-only or app-only command.
+
+The owner track and app track stay separated in live state by default. `kvdf dashboard state`, `kvdf dashboard task-tracker`, `kvdf task list`, `kvdf task lifecycle`, `kvdf evolution`, and the scheduler views only show the current workspace track unless you explicitly opt in to linked-workspace summaries. That means the owner dashboard reads owner-track evolutions and tasks, while the app dashboard reads app-track evolutions and tasks, without mixing their analysis.
 
 When a command is blocked, the CLI should explain whether the missing piece is a track, plugin, or permission. The next-command hint should point to the shortest unblocking step, not a vague retry.
 
@@ -409,10 +411,12 @@ version, and command/docs surfaces.
 
 Application developers can also use `kvdf evolution app ...` as a developer-
 facing alias. It keeps the same ordered lists and temporary queue behavior but
-uses app-friendly labels so a vibe developer can manage app priorities, temp
-slices, and deferred ideas without needing framework-owner language. That alias
-belongs to the vibe app-developer track, while the unqualified `kvdf evolution`
-surface belongs to the framework-owner track.
+uses app-friendly labels so a vibe developer can manage app milestones, temp
+slices, and deferred ideas without needing framework-owner language. The app
+track is local-first by default, can optionally mirror milestones to GitHub,
+and keeps task trash/archive records locally even when remote sync is enabled.
+That alias belongs to the vibe app-developer track, while the unqualified
+`kvdf evolution` surface belongs to the framework-owner track.
 
 Use `kvdf evolution priority <id> --status ...` to keep the development phase
 list current. Allowed statuses are `planned`, `in_progress`, `blocked`, `done`,
@@ -439,9 +443,11 @@ priority only. `kvdf evolution temp` shows or generates the queue, `kvdf
 evolution temp advance` moves to the next slice, and `kvdf evolution temp
 complete` closes the queue when that priority is finished. The queue expires
 automatically when the source priority leaves `in_progress`. It must cover the
-full current task from the first required step to the last required step, with
-no leftover execution remainder outside the queue. It is the required first
-step for any AI tool that begins work on an active priority.
+full current milestone from the first required step to the last required step,
+with no leftover execution remainder outside the queue. It is the required
+first step for any AI tool that begins work on an active priority. When GitHub
+sync is enabled, the milestone stays branch-based and PR-based, but the local
+workspace still owns the state and the trash/archive trail.
 
 ## Temporary Execution Queues
 
@@ -1423,9 +1429,11 @@ kvdf dashboard workspace remove --path ../store-a
 
 `dashboard state` prints the same live JSON state used by the local dashboard API. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the private dashboard at `/__kvdf/dashboard`, full live JSON at `/__kvdf/api/state`, and task tracker JSON at `/__kvdf/api/tasks`.
 
+By default, dashboard state is track-scoped. The owner dashboard only reports the framework-owner track. The app dashboard only reports the vibe app-developer track. Linked workspace summaries are excluded unless `--include-linked-workspaces` or `KVDF_INCLUDE_LINKED_WORKSPACES=1` is set, and even then they are summarized, not merged.
+
 `dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
 
-When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, generated scaffold tasks, usage records, locks, delivery status, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace and can show separate KVDF folders as linked workspace summaries. Each dashboard section adds an inline explanation describing what the table means and why it exists.
+When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, generated scaffold tasks, usage records, locks, delivery status, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace, but it keeps owner-track and app-track analysis separate. Each dashboard section adds an inline explanation describing what the table means and why it exists.
 
 Use `--workspaces`, `KVDF_WORKSPACES`, or `kvdf dashboard workspace add` to add summary rows for other KVDF folders that have their own `.kabeeri` state. Linked workspaces are summarized, not merged into the current workspace.
 

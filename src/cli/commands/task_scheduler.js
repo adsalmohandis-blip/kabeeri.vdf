@@ -19,12 +19,14 @@ function taskScheduler(action, value, flags = {}, rest = [], deps = {}) {
   } = deps;
 
   ensureWorkspace();
+  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const workspaceTrack = project.workspace_kind === "developer_app" ? "vibe_app_developer" : "framework_owner";
   ensureTaskSchedulerState(readJsonFile, writeJsonFile, fileExists);
   const state = readJsonFile(SCHEDULER_FILE);
   state.routes = Array.isArray(state.routes) ? state.routes : [];
 
   if (!action || ["status", "show", "summary", "list"].includes(String(action).toLowerCase())) {
-    const report = buildTaskSchedulerReport(readJsonFile, fileExists);
+    const report = buildTaskSchedulerReport(readJsonFile, fileExists, { workspaceTrack });
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(renderTaskSchedulerReport(report, table));
     return;
@@ -38,7 +40,7 @@ function taskScheduler(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (["history", "routes"].includes(String(action).toLowerCase())) {
-    const report = buildTaskSchedulerReport(readJsonFile, fileExists);
+    const report = buildTaskSchedulerReport(readJsonFile, fileExists, { workspaceTrack });
     if (flags.json) console.log(JSON.stringify({ routes: report.routes, task_lineage: report.task_lineage, trash_recovery: report.trash_recovery }, null, 2));
     else console.log(table(["Route", "Task", "From", "To", "At"], report.routes.map((item) => [
       item.route_id,
@@ -73,7 +75,8 @@ function ensureTaskSchedulerState(readJsonFile, writeJsonFile, fileExists) {
   return state;
 }
 
-function buildTaskSchedulerReport(readJsonFile, fileExists) {
+function buildTaskSchedulerReport(readJsonFile, fileExists, options = {}) {
+  const workspaceTrack = options.workspaceTrack || "framework_owner";
   const schedulerState = fileExists(SCHEDULER_FILE) ? readJsonFile(SCHEDULER_FILE) : { routes: [], policy: {} };
   const tasksState = fileExists(TASKS_FILE) ? readJsonFile(TASKS_FILE) : { tasks: [], temporary_queue: null };
   const trashState = fileExists(".kabeeri/task_trash.json") ? readJsonFile(".kabeeri/task_trash.json") : ensureTaskTrashState();
@@ -89,15 +92,15 @@ function buildTaskSchedulerReport(readJsonFile, fileExists) {
   const activeAgentEntries = multiAiState && Array.isArray(multiAiState.agent_entries)
     ? multiAiState.agent_entries.filter((item) => item.status === "active")
     : [];
-  const activeTasks = tasksState.tasks.filter((item) => ["assigned", "in_progress", "review", "owner_verified"].includes(item.status));
+  const activeTasks = tasksState.tasks.filter((item) => ["assigned", "in_progress", "review", "owner_verified"].includes(item.status) && resolveSchedulerTaskTrack(item, workspaceTrack) === workspaceTrack);
   const routes = schedulerState.routes.map((route) => buildTaskSchedulerRouteRecord(route));
   const newestRoute = routes.length ? routes[routes.length - 1] : null;
-  const taskLineage = buildTaskSchedulerLineage(routes, tasksState, trashState);
-  const trashRecovery = buildTaskTrashRecovery(trashState);
+  const taskLineage = buildTaskSchedulerLineage(routes, tasksState, trashState, evolutionState, workspaceTrack);
+  const trashRecovery = buildTaskTrashRecovery(trashState, workspaceTrack);
   return {
     report_type: "task_scheduler_status",
     generated_at: new Date().toISOString(),
-    active_tasks: activeTasks.map(taskSchedulerSummary),
+    active_tasks: activeTasks.map((task) => taskSchedulerSummary(task, evolutionState)),
     temporary_queue: tempQueue ? {
       queue_id: tempQueue.queue_id,
       source_task_id: tempQueue.source_task_id,
@@ -105,7 +108,7 @@ function buildTaskSchedulerReport(readJsonFile, fileExists) {
       status: tempQueue.status
     } : null,
     trash: {
-      total: trashState.trash.length,
+      total: trashState.trash.filter((item) => resolveSchedulerTaskTrack(item, workspaceTrack) === workspaceTrack).length,
       retention_days: trashState.retention_days || 30,
       last_sweep_at: trashState.last_sweep_at || null
     },
@@ -124,7 +127,8 @@ function buildTaskSchedulerReport(readJsonFile, fileExists) {
     task_lineage: taskLineage,
     trash_recovery: trashRecovery,
     counts: {
-      tasks: tasksState.tasks.length,
+      tasks: tasksState.tasks.filter((item) => resolveSchedulerTaskTrack(item, workspaceTrack) === workspaceTrack).length,
+      track: workspaceTrack,
       active_tasks: activeTasks.length,
       routes: routes.length,
       lineage_tasks: taskLineage.length,
@@ -350,14 +354,26 @@ function nextRouteId(records) {
   return `task-route-${String((records || []).length + 1).padStart(3, "0")}`;
 }
 
-function taskSchedulerSummary(task) {
+function taskSchedulerSummary(task, evolutionState = null) {
+  const evolution = resolveSchedulerTaskEvolution(task, evolutionState);
   return {
     id: task.id,
     title: task.title,
     status: task.status,
     assignee_id: task.assignee_id || null,
     scheduler_state: task.scheduler_state || null,
-    workstreams: Array.isArray(task.workstreams) ? task.workstreams : task.workstream ? [task.workstream] : []
+    workstreams: Array.isArray(task.workstreams) ? task.workstreams : task.workstream ? [task.workstream] : [],
+    evolution_milestone_id: task.evolution_milestone_id || task.milestone_id || evolution.milestone_id || null,
+    branch_name: task.branch_name || evolution.branch_name || null,
+    merge_target_branch: task.merge_target_branch || evolution.merge_target_branch || null,
+    sync_policy: task.sync_policy || evolution.sync_policy || null,
+    github_sync_enabled: typeof task.github_sync_enabled === "boolean"
+      ? task.github_sync_enabled
+      : typeof evolution.github_sync_enabled === "boolean"
+        ? evolution.github_sync_enabled
+        : null,
+    review_gate: task.review_gate || evolution.review_gate || null,
+    archive_status: task.archive_status || evolution.archive_status || null
   };
 }
 
@@ -370,22 +386,32 @@ function summarizeAgent(agent) {
   };
 }
 
-function buildTaskSchedulerLineage(routes, tasksState, trashState) {
+function buildTaskSchedulerLineage(routes, tasksState, trashState, evolutionState = null, workspaceTrack = "framework_owner") {
   const taskIndex = new Map();
   for (const task of Array.isArray(tasksState && tasksState.tasks) ? tasksState.tasks : []) {
+    if (resolveSchedulerTaskTrack(task, workspaceTrack) !== workspaceTrack) continue;
+    const evolution = resolveSchedulerTaskEvolution(task, evolutionState);
     taskIndex.set(task.id, {
       location: "tasks",
       task: taskTrashSummary(task),
       status: task.status || "unknown",
-      title: task.title || ""
+      title: task.title || "",
+      milestone_id: task.evolution_milestone_id || task.milestone_id || evolution.milestone_id || null,
+      branch_name: task.branch_name || evolution.branch_name || null,
+      review_gate: task.review_gate || evolution.review_gate || null
     });
   }
   for (const task of Array.isArray(trashState && trashState.trash) ? trashState.trash : []) {
+    if (resolveSchedulerTaskTrack(task, workspaceTrack) !== workspaceTrack) continue;
+    const evolution = resolveSchedulerTaskEvolution(task, evolutionState);
     taskIndex.set(task.id, {
       location: "trash",
       task: taskTrashSummary(task),
       status: task.original_status || task.status || "trashed",
-      title: task.title || ""
+      title: task.title || "",
+      milestone_id: task.evolution_milestone_id || task.milestone_id || evolution.milestone_id || null,
+      branch_name: task.branch_name || evolution.branch_name || null,
+      review_gate: task.review_gate || evolution.review_gate || null
     });
   }
 
@@ -427,17 +453,72 @@ function buildTaskSchedulerLineage(routes, tasksState, trashState) {
         current_location: snapshot ? snapshot.location : entry.current_destination || null,
         current_status: snapshot ? snapshot.status : null,
         current_title: snapshot ? snapshot.title : null,
+        current_milestone_id: snapshot ? snapshot.milestone_id || null : null,
+        current_branch_name: snapshot ? snapshot.branch_name || null : null,
+        current_review_gate: snapshot ? snapshot.review_gate || null : null,
         restore_hint: restoreHint
       };
     })
     .sort((left, right) => compareDates(right.last_moved_at, left.last_moved_at));
 }
 
-function buildTaskTrashRecovery(trashState) {
+function resolveSchedulerTaskEvolution(task = {}, evolutionState = null) {
+  const changes = Array.isArray(evolutionState && evolutionState.changes) ? evolutionState.changes : [];
+  const fallbackMilestoneId = task.evolution_milestone_id || task.milestone_id || task.evolution_change_id || task.change_id || null;
+  if (!changes.length) return {};
+  const candidateIds = [
+    task.evolution_change_id,
+    task.change_id,
+    task.evolution_id,
+    task.evolution_milestone_id,
+    task.milestone_id
+  ].filter(Boolean).map((value) => String(value));
+  for (const change of changes) {
+    if (!change) continue;
+    const ids = [change.change_id, change.milestone_id].filter(Boolean).map((value) => String(value));
+    if (candidateIds.some((candidate) => ids.includes(candidate))) return {
+      milestone_id: change.milestone_id || change.change_id || null,
+      branch_name: change.branch_name || (change.milestone_id || change.change_id ? `evo/${String(change.milestone_id || change.change_id).toLowerCase()}` : null),
+      merge_target_branch: change.merge_target_branch || "main",
+      sync_policy: change.sync_policy || "local_only",
+      github_sync_enabled: typeof change.github_sync_enabled === "boolean" ? change.github_sync_enabled : false,
+      review_gate: change.review_gate || "viber_review_required",
+      archive_status: change.task_trash_policy && change.task_trash_policy.archive_status ? change.task_trash_policy.archive_status : "trashed"
+    };
+  }
+  if (evolutionState.current_change_id) {
+    const current = changes.find((item) => item && item.change_id === evolutionState.current_change_id);
+    if (current) {
+      return {
+        milestone_id: current.milestone_id || current.change_id || fallbackMilestoneId || null,
+        branch_name: current.branch_name || (current.milestone_id || current.change_id ? `evo/${String(current.milestone_id || current.change_id).toLowerCase()}` : fallbackMilestoneId ? `evo/${String(fallbackMilestoneId).toLowerCase()}` : null),
+        merge_target_branch: current.merge_target_branch || "main",
+        sync_policy: current.sync_policy || "local_only",
+        github_sync_enabled: typeof current.github_sync_enabled === "boolean" ? current.github_sync_enabled : false,
+        review_gate: current.review_gate || "viber_review_required",
+        archive_status: current.task_trash_policy && current.task_trash_policy.archive_status ? current.task_trash_policy.archive_status : "trashed"
+      };
+    }
+  }
+  if (fallbackMilestoneId) {
+    return {
+      milestone_id: fallbackMilestoneId,
+      branch_name: `evo/${String(fallbackMilestoneId).toLowerCase()}`,
+      merge_target_branch: "main",
+      sync_policy: "local_only",
+      github_sync_enabled: false,
+      review_gate: "viber_review_required",
+      archive_status: "trashed"
+    };
+  }
+  return {};
+}
+
+function buildTaskTrashRecovery(trashState, workspaceTrack = "framework_owner") {
   const items = Array.isArray(trashState && trashState.trash) ? trashState.trash : [];
   return {
-    total: items.length,
-    items: items.map((item) => ({
+    total: items.filter((item) => resolveSchedulerTaskTrack(item, workspaceTrack) === workspaceTrack).length,
+    items: items.filter((item) => resolveSchedulerTaskTrack(item, workspaceTrack) === workspaceTrack).map((item) => ({
       task_id: item.id || null,
       title: item.title || "",
       trashed_reason: item.trashed_reason || null,
@@ -448,6 +529,14 @@ function buildTaskTrashRecovery(trashState) {
       scheduler_command: item.id ? `kvdf schedule route ${item.id} --to restore` : null
     }))
   };
+}
+
+function resolveSchedulerTaskTrack(task = {}, fallbackTrack = "framework_owner") {
+  const normalized = String(task.track || task.evolution_track || task.workspace_track || "").trim().toLowerCase();
+  if (["vibe_app_developer", "developer_app", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  if (Array.isArray(task.app_usernames) && task.app_usernames.length) return "vibe_app_developer";
+  return fallbackTrack;
 }
 
 function compareDates(left, right) {
@@ -552,7 +641,12 @@ function renderTaskSchedulerReport(report, table) {
   if (report.task_lineage && report.task_lineage.length) {
     lines.push(table(["Task", "Current", "Hops", "Last reason", "Restore hint"], report.task_lineage.slice(0, 20).map((item) => [
       item.task_id,
-      item.current_location || "",
+      [
+        item.current_location || "",
+        item.current_milestone_id ? `milestone:${item.current_milestone_id}` : null,
+        item.current_branch_name ? `branch:${item.current_branch_name}` : null,
+        item.current_review_gate ? `review:${item.current_review_gate}` : null
+      ].filter(Boolean).join(" | "),
       String(item.route_count || 0),
       item.current_reason || "",
       item.restore_hint ? item.restore_hint.command : ""

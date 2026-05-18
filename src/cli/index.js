@@ -77,6 +77,7 @@ const {
 } = require("./services/git_snapshot");
 const {
   buildEvolutionSummary: buildEvolutionSummaryService,
+  reconcileEvolutionCompletion: reconcileEvolutionCompletionService,
   buildEvolutionTemporaryPrioritiesReport: buildEvolutionTemporaryPrioritiesReportService,
   advanceEvolutionTemporaryPriorities: advanceEvolutionTemporaryPrioritiesService,
   completeEvolutionTemporaryPriorities: completeEvolutionTemporaryPrioritiesService,
@@ -2501,13 +2502,18 @@ function task(action, id, flags, rest = []) {
   const file = ".kabeeri/tasks.json";
   const data = readJsonFile(file);
   data.tasks = data.tasks || [];
+  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const workspaceTrack = project.workspace_kind === "developer_app" ? "vibe_app_developer" : "framework_owner";
   const evolutionState = fileExists(".kabeeri/evolution.json") ? readJsonFile(".kabeeri/evolution.json") : { current_change_id: null };
 
   if (!action || action === "list") {
-    const rows = data.tasks.map((item) => {
-      const lifecycle = buildTaskLifecycleState(item);
-      return [item.id, item.title, item.status, lifecycle.current_stage, item.assignee_id || ""];
-    });
+    const rows = data.tasks
+      .map((item) => {
+        const lifecycle = buildTaskLifecycleState(item, { evolution_state: evolutionState });
+        return { item, lifecycle };
+      })
+      .filter((row) => (row.lifecycle.track || workspaceTrack) === workspaceTrack)
+      .map(({ item, lifecycle }) => [item.id, item.title, item.status, lifecycle.current_stage, item.assignee_id || ""]);
     console.log(table(["ID", "Title", "Status", "Lifecycle", "Assignee"], rows));
     return;
   }
@@ -2693,7 +2699,7 @@ function task(action, id, flags, rest = []) {
     if (taskId) {
       const found = data.tasks.find((item) => item.id === taskId);
       if (found) {
-        const lifecycle = buildTaskLifecycleState(found);
+        const lifecycle = buildTaskLifecycleState(found, { evolution_state: evolutionState });
         const output = { ...lifecycle, task: found };
         if (flags.json) console.log(JSON.stringify(output, null, 2));
         else console.log(renderTaskLifecycleState(output));
@@ -2708,7 +2714,7 @@ function task(action, id, flags, rest = []) {
           trashed_at: archived.trashed_at,
           trashed_reason: archived.trashed_reason,
           original_status: archived.original_status
-        }, { archived: true, original_status: archived.original_status, trashed_reason: archived.trashed_reason });
+        }, { archived: true, original_status: archived.original_status, trashed_reason: archived.trashed_reason, evolution_state: evolutionState });
         const output = { ...lifecycle, task: archived };
         if (flags.json) console.log(JSON.stringify(output, null, 2));
         else console.log(renderTaskLifecycleState(output));
@@ -2716,7 +2722,7 @@ function task(action, id, flags, rest = []) {
       }
       throw new Error(`Task not found: ${taskId}`);
     }
-    const board = buildTaskLifecycleBoard(data.tasks);
+    const board = buildTaskLifecycleBoard(data.tasks, { evolution_state: evolutionState, workspace_track: workspaceTrack });
     if (flags.json) console.log(JSON.stringify(board, null, 2));
     else console.log(renderTaskLifecycleBoard(board));
     return;
@@ -2738,7 +2744,7 @@ function task(action, id, flags, rest = []) {
         trashed_at: trash.item.trashed_at,
           trashed_reason: trash.item.trashed_reason,
         original_status: trash.item.original_status
-      }, { archived: true, original_status: trash.item.original_status, trashed_reason: trash.item.trashed_reason });
+      }, { archived: true, original_status: trash.item.original_status, trashed_reason: trash.item.trashed_reason, evolution_state: evolutionState });
       console.log(JSON.stringify({
         ...trash.item,
         lifecycle,
@@ -2757,7 +2763,7 @@ function task(action, id, flags, rest = []) {
     if (!Array.isArray(found.expected_outputs) || found.expected_outputs.length === 0) found.expected_outputs = memory.expected_outputs;
     if (!Array.isArray(found.do_not_change) || found.do_not_change.length === 0) found.do_not_change = memory.do_not_change;
     if (!Array.isArray(found.verification_commands) || found.verification_commands.length === 0) found.verification_commands = memory.verification_commands;
-    found.lifecycle = buildTaskLifecycleState(found);
+    found.lifecycle = buildTaskLifecycleState(found, { evolution_state: evolutionState });
     const assessmentsState = readTaskAssessmentsState();
     const assessment = (assessmentsState.assessments || []).find((item) => item.task_id === found.id || item.assessment_id === found.assessment_id) || null;
     if (assessment) found.assessment = assessment;
@@ -2778,6 +2784,7 @@ function task(action, id, flags, rest = []) {
     const title = flags.title;
     if (!title) throw new Error("Missing --title.");
     const next = data.tasks.length + 1;
+    const track = workspaceTrack;
     const workstreams = parseCsv(flags.workstreams || flags.workstream || "unassigned");
     const appRefs = parseCsv(flags.apps || flags.app || flags["app-username"]);
     const appLinks = resolveTaskApps(appRefs);
@@ -2793,6 +2800,7 @@ function task(action, id, flags, rest = []) {
       app_username: appLinks[0] ? appLinks[0].username : null,
       app_usernames: appLinks.map((appItem) => appItem.username),
       app_paths: appLinks.map((appItem) => appItem.path).filter(Boolean),
+      track,
       sprint_id: flags.sprint || null,
       source: flags.source || "manual",
       acceptance_criteria: flags.acceptance ? [flags.acceptance] : [],
@@ -2818,6 +2826,7 @@ function task(action, id, flags, rest = []) {
       app_username: appLinks[0] ? appLinks[0].username : null,
       app_usernames: appLinks.map((appItem) => appItem.username),
       app_paths: appLinks.map((appItem) => appItem.path).filter(Boolean),
+      track,
       allowed_files: allowedFiles,
       sprint_id: flags.sprint || null,
       source: flags.source || "manual",
@@ -2899,6 +2908,8 @@ function task(action, id, flags, rest = []) {
       trash_task: result.trashed_task || archiveTrail.item || null,
       reason: flags.reason || "completed"
     });
+    const evolutionSync = reconcileEvolutionCompletionService(evolutionState, { workspace_kind: project.workspace_kind });
+    if (evolutionSync.changed) writeJsonFile(".kabeeri/evolution.json", evolutionState);
     refreshDashboardArtifacts();
     appendAudit("task.completed", "task", taskId, `Task completed and moved to trash: ${found.title}`, {
       completion_report_path: completionReport.path
@@ -9980,6 +9991,7 @@ function getCommandDispatchContext() {
     buildDashboardHtmlModule,
     exportCustomerAppPagesModule,
     serveSite,
+    repoRoot,
     summarizeWorkspaceRoot,
     refreshLiveReportsState,
     refreshAgileDashboardState,

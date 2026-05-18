@@ -10,7 +10,13 @@ Field              Value
 Execution summary  Execute priority evo-auto-041-execution-reports: Generate clear execution reports for each improvement so the next session can resume quickly.
 Resume command     kvdf evolution priority evo-auto-041-execution-reports --status in_progress                                                                   
 Next exact action  Review evo-auto-041-execution-reports and update its status as needed.                                                                        
-Current change     evo-102                                                                                                                                       
+Current change     none                                                                                                                                          
+Current milestone  none                                                                                                                                          
+Branch             n/a                                                                                                                                           
+Merge target       n/a                                                                                                                                           
+Sync policy        n/a                                                                                                                                           
+GitHub sync        n/a                                                                                                                                           
+Review gate        n/a                                                                                                                                           
 Linked tasks       none                                                                                                                                          
 Open priorities    0/48                                                                                                                                          
 

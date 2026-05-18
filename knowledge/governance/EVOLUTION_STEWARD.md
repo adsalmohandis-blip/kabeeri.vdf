@@ -101,6 +101,10 @@ Application developers can use `kvdf evolution app ...` as the developer-
 facing alias for the same lifecycle. It preserves the same `priorities`,
 `temp`, and `deferred` behavior but uses app-oriented wording so a vibe
 developer can manage app work without framework-owner language.
+For app work, each Evolution is treated as a milestone-sized product slice
+with a local branch, optional GitHub sync, a viber review gate before merge,
+and a task trash/archive trail that stays local even when a remote mirror is
+enabled.
 
 Framework-owner and vibe-app sessions share the same engine but remain
 separate operating tracks:
@@ -114,6 +118,29 @@ temporary queue coverage before execution counts as complete.
 For application task execution, use `kvdf temp` against the active task in
 `.kabeeri/tasks.json`. `kvdf evolution temp` remains the Evolution-specific
 queue for framework priorities.
+
+## Evolution Closeout Rule
+
+Evolution Steward uses one closeout rule for both tracks:
+
+1. Every linked task must reach a terminal state.
+2. Every completed task must be archived into task trash.
+3. Once the last linked task is archived, the parent Evolution auto-closes.
+4. The Evolution record is then marked `done`, `archived`, and stamped with
+   completion metadata.
+
+Track-specific details:
+
+- Framework-owner Evolutions auto-close inside the owner track when the
+  linked work is terminal and archived.
+- Vibe-app Evolutions auto-close inside the app track when the linked work is
+  terminal and archived, even when GitHub sync is optional or disabled.
+- Optional remote mirrors never override the local closeout result.
+
+This rule prevents the Evolution ledger from drifting behind the task ledger.
+The dashboard, live JSON, and status commands should reflect the closeout
+state directly instead of leaving the milestone-looking change open after all
+work is complete.
 
 ## Development Priorities
 

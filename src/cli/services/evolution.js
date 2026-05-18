@@ -5,11 +5,13 @@ const { readStateArray, summarizeBy } = require("./state_utils");
 function buildEvolutionSummary(state) {
   ensureEvolutionDevelopmentPriorities(state);
   ensureEvolutionTemporaryPriorities(state);
-  const changes = state.changes || [];
+  const workspaceTrack = resolveEvolutionWorkspaceTrack(state.workspace_kind || state.track || "framework_owner");
+  const changes = (state.changes || []).filter((item) => resolveEvolutionRecordTrack(item, workspaceTrack) === workspaceTrack);
   const scorecards = Array.isArray(state.scorecards) ? state.scorecards : [];
   const deferredIdeas = getOpenDeferredIdeas(state);
-  const tasks = readStateArray(".kabeeri/tasks.json", "tasks").filter((taskItem) => taskItem.evolution_change_id);
+  const tasks = readStateArray(".kabeeri/tasks.json", "tasks").filter((taskItem) => taskItem.evolution_change_id && resolveEvolutionRecordTrack(taskItem, workspaceTrack) === workspaceTrack);
   const openTasks = tasks.filter((taskItem) => !["owner_verified", "done", "closed", "rejected"].includes(taskItem.status));
+  const trashedTasks = readStateArray(".kabeeri/task_trash.json", "trash");
   const openPriorities = state.development_priorities.filter((item) => !["done", "deferred", "rejected"].includes(item.status));
   const temporaryReport = buildEvolutionTemporaryPrioritiesReport(state);
   const temporary = temporaryReport.status === "empty" ? null : temporaryReport.queue;
@@ -29,18 +31,56 @@ function buildEvolutionSummary(state) {
     ? multiAiCommunicationsState.conversations
     : [];
   const multiAiConversationMessages = multiAiConversationThreads.flatMap((conversation) => Array.isArray(conversation.messages) ? conversation.messages : []);
+  const milestoneChanges = changes.filter((item) => item.milestone_id || item.branch_name || item.sync_policy || item.review_gate);
+  const currentChange = state.current_change_id ? changes.find((item) => item.change_id === state.current_change_id) || null : null;
+  if (currentChange && !milestoneChanges.some((item) => item.change_id === currentChange.change_id)) milestoneChanges.push(currentChange);
+  const localOnlyMilestones = milestoneChanges.filter((item) => String(item.sync_policy || "local_only") === "local_only");
+  const githubLinkedMilestones = milestoneChanges.filter((item) => Boolean(item.github_sync_enabled));
+  const milestoneBranches = milestoneChanges.map((item) => item.branch_name || (item.change_id ? `evo/${String(item.change_id).toLowerCase()}` : null)).filter(Boolean);
+  const milestoneMergeTargets = [...new Set(milestoneChanges.map((item) => item.merge_target_branch || "main").filter(Boolean))];
+  const autoClosedChanges = changes.filter((item) => item.archived && String(item.status || "").toLowerCase() === "done").length;
+  const closeoutPolicy = {
+    applies_to: ["framework_owner", "vibe_app_developer"],
+    trigger: "all_linked_tasks_terminal_and_archived",
+    owner_track_rule: "Owner-track Evolutions auto-close when every linked task is terminal and archived, then the Evolution record is marked done and archived.",
+    vibe_app_rule: "Vibe-app Evolutions auto-close when every linked task is terminal and archived; optional GitHub sync, branch, and PR metadata remain advisory and do not block local closeout.",
+    archive_effect: "done -> archived -> archived_at -> archived_reason=completed",
+    sync_note: "Local closeout is authoritative in both tracks; remote mirrors are updated only when enabled."
+  };
   return {
     report_type: "evolution_steward_summary",
     generated_at: new Date().toISOString(),
     status: openTasks.length ? "needs_follow_up" : changes.length ? "ready" : "empty",
+    track: workspaceTrack,
+    workspace_kind: state.workspace_kind || workspaceTrack,
     changes_total: changes.length,
-    active_changes: changes.filter((item) => !["verified", "closed"].includes(item.status)).length,
+    active_changes: changes.filter((item) => !item.archived && !["verified", "closed", "done"].includes(item.status)).length,
     follow_up_tasks_total: tasks.length,
     open_follow_up_tasks: openTasks.length,
     priorities_total: state.development_priorities.length,
     open_priorities: openPriorities.length,
     deferred_ideas_total: Array.isArray(state.deferred_ideas) ? state.deferred_ideas.length : 0,
     open_deferred_ideas: deferredIdeas.length,
+    milestone_changes_total: milestoneChanges.length,
+    milestone_local_only_total: localOnlyMilestones.length,
+    milestone_github_linked_total: githubLinkedMilestones.length,
+    milestone_branches: milestoneBranches,
+    milestone_merge_targets: milestoneMergeTargets,
+    auto_closed_changes_total: autoClosedChanges,
+    closeout_policy: closeoutPolicy,
+    task_trash_total: trashedTasks.length,
+    task_trash_retained: trashedTasks.length ? trashedTasks.length : 0,
+    current_milestone: currentChange ? {
+      change_id: currentChange.change_id,
+      title: currentChange.title,
+      branch_name: currentChange.branch_name || `evo/${String(currentChange.change_id || "milestone").toLowerCase()}`,
+      merge_target_branch: currentChange.merge_target_branch || "main",
+      sync_policy: currentChange.sync_policy || "local_only",
+      github_sync_enabled: Boolean(currentChange.github_sync_enabled),
+      review_gate: currentChange.review_gate || "viber_review_required",
+      closeout_state: currentChange.archived ? "auto-archived" : (currentChange.status === "done" ? "awaiting_archive" : "active"),
+      closeout_rule: closeoutPolicy
+    } : null,
     scorecards_total: scorecards.length,
     scorecards_open: scorecards.filter((item) => !["done", "closed"].includes(String(item.status || "").toLowerCase())).length,
     temporary_priority_queue: temporary ? {
@@ -84,6 +124,146 @@ function buildEvolutionSummary(state) {
     current_change_id: state.current_change_id || null,
     by_status: summarizeBy(changes, "status"),
     latest_change: changes.length ? changes[changes.length - 1] : null
+  };
+}
+
+function reconcileEvolutionCompletion(state, options = {}) {
+  ensureEvolutionDevelopmentPriorities(state);
+  ensureEvolutionTemporaryPriorities(state);
+  state.changes = Array.isArray(state.changes) ? state.changes : [];
+  const workspaceTrack = resolveEvolutionWorkspaceTrack(
+    options.workspace_kind || state.workspace_kind || state.track || "framework_owner",
+    options.fallbackTrack || "framework_owner"
+  );
+  const now = options.now || new Date().toISOString();
+  const readTasks = typeof options.readTasks === "function"
+    ? options.readTasks
+    : () => readStateArray(".kabeeri/tasks.json", "tasks");
+  const readTrash = typeof options.readTrash === "function"
+    ? options.readTrash
+    : () => readStateArray(".kabeeri/task_trash.json", "trash");
+  const tasks = (readTasks() || []).filter((taskItem) => resolveEvolutionRecordTrack(taskItem, workspaceTrack) === workspaceTrack);
+  const trash = (readTrash() || []).filter((trashItem) => resolveEvolutionRecordTrack(trashItem, workspaceTrack) === workspaceTrack);
+  const taskIndex = new Map(tasks.map((taskItem) => [String(taskItem.id || taskItem.task_id || ""), taskItem]));
+  const trashIndex = new Map(trash.map((trashItem) => [String(trashItem.id || trashItem.task_id || ""), trashItem]));
+  const taskIsTerminal = (taskItem) => ["owner_verified", "done", "closed", "rejected"].includes(String(taskItem && taskItem.status ? taskItem.status : "").toLowerCase());
+  const archivedChanges = [];
+  let changed = false;
+
+  for (const change of state.changes) {
+    if (resolveEvolutionRecordTrack(change, workspaceTrack) !== workspaceTrack) continue;
+    if (change.archived && String(change.status || "").toLowerCase() === "done") continue;
+
+    const linkedTaskIds = [];
+    const seen = new Set();
+    for (const taskId of Array.isArray(change.task_ids) ? change.task_ids : []) {
+      const normalized = String(taskId || "").trim();
+      if (normalized && !seen.has(normalized)) {
+        seen.add(normalized);
+        linkedTaskIds.push(normalized);
+      }
+    }
+    for (const task of tasks) {
+      if (String(task.evolution_change_id || task.change_id || task.evolution_id || task.milestone_id || "").trim() !== String(change.change_id || "").trim()) continue;
+      const normalized = String(task.id || task.task_id || "").trim();
+      if (normalized && !seen.has(normalized)) {
+        seen.add(normalized);
+        linkedTaskIds.push(normalized);
+      }
+    }
+    for (const trashItem of trash) {
+      if (String(trashItem.evolution_change_id || trashItem.change_id || trashItem.evolution_id || trashItem.milestone_id || "").trim() !== String(change.change_id || "").trim()) continue;
+      const normalized = String(trashItem.id || trashItem.task_id || "").trim();
+      if (normalized && !seen.has(normalized)) {
+        seen.add(normalized);
+        linkedTaskIds.push(normalized);
+      }
+    }
+
+    if (!linkedTaskIds.length) continue;
+
+    const openTaskIds = [];
+    const archivedTaskIds = [];
+    const missingArchivedTaskIds = [];
+
+    for (const taskId of linkedTaskIds) {
+      const activeTask = taskIndex.get(taskId) || null;
+      const trashTask = trashIndex.get(taskId) || null;
+      if (activeTask) {
+        if (taskIsTerminal(activeTask)) archivedTaskIds.push(taskId);
+        else openTaskIds.push(taskId);
+        if (!trashTask && taskIsTerminal(activeTask)) missingArchivedTaskIds.push(taskId);
+      } else if (trashTask) {
+        archivedTaskIds.push(taskId);
+      } else {
+        missingArchivedTaskIds.push(taskId);
+      }
+    }
+
+    if (openTaskIds.length || missingArchivedTaskIds.length) {
+      if (change.open_task_ids || openTaskIds.length) {
+        const nextOpenIds = openTaskIds;
+        if (JSON.stringify(change.open_task_ids || []) !== JSON.stringify(nextOpenIds)) {
+          change.open_task_ids = nextOpenIds;
+          changed = true;
+        }
+      }
+      continue;
+    }
+
+    if (change.status !== "done") {
+      change.status = "done";
+      changed = true;
+    }
+    if (!change.archived) {
+      change.archived = true;
+      changed = true;
+    }
+    if (!change.archived_at) {
+      change.archived_at = now;
+      changed = true;
+    }
+    if (!change.archived_reason) {
+      change.archived_reason = "completed";
+      changed = true;
+    }
+    if (!change.completed_at) {
+      change.completed_at = now;
+      changed = true;
+    }
+    if (!change.verified_at) {
+      change.verified_at = now;
+      changed = true;
+    }
+    if (Array.isArray(change.open_task_ids) && change.open_task_ids.length) {
+      change.open_task_ids = [];
+      changed = true;
+    }
+    archivedChanges.push({
+      change_id: change.change_id,
+      title: change.title || "",
+      linked_task_ids: linkedTaskIds,
+      archived_task_ids: archivedTaskIds
+    });
+  }
+
+  if (state.current_change_id) {
+    const current = state.changes.find((item) => item.change_id === state.current_change_id) || null;
+    if (current && current.archived) {
+      const nextChange = state.changes.find((item) => resolveEvolutionRecordTrack(item, workspaceTrack) === workspaceTrack && !item.archived && !["done", "verified", "closed"].includes(String(item.status || "").toLowerCase())) || null;
+      const nextChangeId = nextChange ? nextChange.change_id : null;
+      if (state.current_change_id !== nextChangeId) {
+        state.current_change_id = nextChangeId;
+        changed = true;
+      }
+    }
+  }
+
+  return {
+    changed,
+    workspace_track: workspaceTrack,
+    archived_changes: archivedChanges,
+    current_change_id: state.current_change_id || null
   };
 }
 
@@ -1416,6 +1596,21 @@ function renderKVDFFeaturePartitionMatrix(report, table) {
   ].join("\n");
 }
 
+function resolveEvolutionWorkspaceTrack(workspaceKind = "", fallbackTrack = "framework_owner") {
+  const normalized = String(workspaceKind || "").trim().toLowerCase();
+  if (["developer_app", "vibe_app_developer", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  return fallbackTrack;
+}
+
+function resolveEvolutionRecordTrack(record = {}, fallbackTrack = "framework_owner") {
+  const normalized = String(record.track || record.audience || record.workspace_kind || "").trim().toLowerCase();
+  if (["vibe_app_developer", "developer_app", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  if (record.app_usernames && record.app_usernames.length) return "vibe_app_developer";
+  return fallbackTrack;
+}
+
 module.exports = {
   buildEvolutionSummary,
   buildEvolutionScorecards,
@@ -1425,6 +1620,7 @@ module.exports = {
   getCurrentEvolutionPriority,
   buildEvolutionTemporaryPrioritySlices,
   buildEvolutionTemporaryPrioritiesReport,
+  reconcileEvolutionCompletion,
   advanceEvolutionTemporaryPriorities,
   completeEvolutionTemporaryPriorities,
   buildEvolutionPriorityExecutionDetails,

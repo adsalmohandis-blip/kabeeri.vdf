@@ -1,6 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const { moveTaskToTrash } = require("../../../src/cli/services/task_trash");
+const { readStateArray } = require("../../../src/cli/services/state_utils");
+const { reconcileEvolutionCompletion } = require("../../../src/cli/services/evolution");
 
 function runTaskBatch(options = {}, deps = {}) {
   const {
@@ -350,6 +352,16 @@ function completeBatchTask(task, actorId, batchId, deps = {}) {
     reason: `completed by kvdf task batch-run ${batchId}`,
     actor: actorId
   });
+  const evolutionStateFile = ".kabeeri/evolution.json";
+  if (fs.existsSync(evolutionStateFile)) {
+    const evolutionState = JSON.parse(fs.readFileSync(evolutionStateFile, "utf8"));
+    const evolutionSync = reconcileEvolutionCompletion(evolutionState, {
+      workspace_kind: task.workspace_kind || task.track || null,
+      readTasks: () => readStateArray(".kabeeri/tasks.json", "tasks"),
+      readTrash: () => readStateArray(".kabeeri/task_trash.json", "trash")
+    });
+    if (evolutionSync.changed) fs.writeFileSync(evolutionStateFile, `${JSON.stringify(evolutionState, null, 2)}\n`, "utf8");
+  }
   const completionReportPath = writeBatchCompletionReport(task, completionAt, verificationReportPath, trashed);
   recordBatchSchedulerRoute(task.id, actorId, completionAt, batchId);
 

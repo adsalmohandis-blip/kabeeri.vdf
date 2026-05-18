@@ -945,8 +945,9 @@ Notes:
   kvdf dashboard workspace list
 
 Notes:
-  The live dashboard shows multiple customer apps from the current .kabeeri workspace.
-  Task tracker JSON is written to .kabeeri/dashboard/task_tracker_state.json and served live at /__kvdf/api/tasks.
+  The live dashboard is track-scoped by default: framework-owner workspaces see the owner board, and app-developer workspaces see the app board.
+  Task tracker JSON is written to .kabeeri/dashboard/task_tracker_state.json and served live at /__kvdf/api/tasks for the current track only.
+  Linked workspace summaries stay opt-in and are summarized, not merged, so one board never shows the other board's analysis unless explicitly requested.
   Control-plane commands:
   - Use task packet to compile a durable packet from vibe intake, questionnaire answers, briefs, modules, and task state before any executor starts work.
   - Use task batch-run with --mode dry-run or --mode review when you want packet-only or packet-plus-contract previews.

@@ -17,7 +17,24 @@
           "description": { "type": "string" },
           "status": { "type": "string" },
           "impacted_areas": { "type": "array", "items": { "type": "string" } },
-          "task_ids": { "type": "array", "items": { "type": "string" } }
+          "task_ids": { "type": "array", "items": { "type": "string" } },
+          "milestone_id": { "type": "string" },
+          "milestone_title": { "type": "string" },
+          "milestone_summary": { "type": "string" },
+          "milestone_status": { "type": "string" },
+          "local_first": { "type": "boolean" },
+          "source_control": { "type": "string" },
+          "sync_mode": { "type": "string" },
+          "sync_policy": { "type": "string" },
+          "github_sync_enabled": { "type": "boolean" },
+          "branch_name": { "type": "string" },
+          "merge_target_branch": { "type": "string" },
+          "review_gate": { "type": "string" },
+          "review_required": { "type": "boolean" },
+          "review_status": { "type": "string" },
+          "branch_policy": { "type": "object" },
+          "task_trash_policy": { "type": "object" },
+          "release_gate": { "type": "object" }
         }
       }
     },
@@ -45,12 +62,22 @@
                 "allowed_files": { "type": "array", "items": { "type": "string" } },
                 "execution_summary": { "type": "string" },
                 "resume_steps": { "type": "array", "items": { "type": "string" } },
-                "expected_outputs": { "type": "array", "items": { "type": "string" } },
-                "verification_commands": { "type": "array", "items": { "type": "string" } }
-              }
+              "expected_outputs": { "type": "array", "items": { "type": "string" } },
+              "verification_commands": { "type": "array", "items": { "type": "string" } },
+              "evolution_milestone_id": { "type": "string" },
+              "evolution_milestone_title": { "type": "string" },
+              "branch_name": { "type": "string" },
+              "merge_target_branch": { "type": "string" },
+              "sync_policy": { "type": "string" },
+              "github_sync_enabled": { "type": "boolean" },
+              "review_gate": { "type": "string" },
+              "task_trash_policy": { "type": "object" },
+              "archive_after_completion": { "type": "boolean" },
+              "archive_status": { "type": "string" }
             }
           }
         }
+      }
       }
     },
     "current_change_id": { "type": ["string", "null"] }

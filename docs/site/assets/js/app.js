@@ -2661,12 +2661,14 @@ Object.assign(docs.en.pages, {
     commands: ["knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md", "docs/site/pages/en/ai-tool.html", "docs/site/pages/en/vibe-developer.html"]
   },
   "vibe-developer-hub": {
-    lead: "This is the Vibe Developer entry surface. It focuses on app workspaces, planning packs, scorecards, boundaries, tasks, validation, and delivery flow.",
-    beginner: "Start here when you are building a customer app. The hub points to the vibe developer instructions and keeps the app-building surface separate from framework work.",
+    lead: "This is the Vibe Developer entry surface. It focuses on app workspaces, planning packs, scorecards, boundaries, tasks, validation, and delivery flow, including the optional GitHub handoff layer for KVDF-led delivery.",
+    beginner: "Start here when you are building a customer app. The hub points to the vibe developer instructions, keeps the app-building surface separate from framework work, and reminds you to confirm the target repo before implementation.",
     sections: [
       ["Primary guide", "The vibe developer page explains how to use the planning gate, generate tasks only after approval, and keep scorecards tied to the workspace."],
       ["Use it when", "You are inside workspaces/apps/<slug>/ and need the safe sequence for plan, review, approve, build, validate, and handoff."],
-      ["Role boundary", "If the work changes Kabeeri itself, switch to the system development docs site."]
+      ["Role boundary", "If the work changes Kabeeri itself, switch to the system development docs site."],
+      ["KVDF-led delivery", "Use the pipeline page when you need the local-only handoff plus optional GitHub branch, PR, Owner review, merge, and pull-main sequence."],
+      ["Track boundary", "App-track work stays in the app workspace; owner-track work stays in the core repository and must not be mixed into the same delivery pack."]
     ],
     featuredPages: [
       ["vibe-developer", "Vibe Developer Instructions", "The app-builder operating contract for governed workspace delivery."],
@@ -2680,22 +2682,28 @@ Object.assign(docs.en.pages, {
     ],
     steps: ["Open the workspace", "Review planning", "Approve the pack", "Generate tasks", "Build one task", "Validate", "Hand off"],
     details: [
-      ["Canonical links", ["`knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`", "`docs/site/pages/en/vibe-developer.html`", "`docs/site/pages/en/ai-tool.html`"]]
+      ["Canonical links", ["`knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`", "`docs/site/pages/en/vibe-developer.html`", "`docs/site/pages/en/ai-tool.html`", "`docs/workflows/KVDF_LED_DELIVERY.md`", "`docs/workflows/PR_HANDOFF_TEMPLATE.md`"]],
+      ["Track warning", ["Do not mix app-track delivery with owner-track governance in the same task batch.", "If the work touches the core repository, switch to the owner track and re-check the target repo before you continue."]]
     ],
-    checklist: ["Workspace boundary is valid.", "Planning pack is reviewed.", "Planning pack is approved.", "Scorecards are ready.", "Tasks match the approved plan."],
-    commands: ["workspaces/apps/<slug>/", "kvdf questionnaire plan", "kvdf questionnaire review", "kvdf questionnaire approve --confirm", "kvdf app workspace scorecards <slug>", "kvdf dashboard show"]
+    checklist: ["Workspace boundary is valid.", "Planning pack is reviewed.", "Planning pack is approved.", "Target repo is confirmed.", "Scorecards are ready.", "Tasks match the approved plan."],
+    commands: ["workspaces/apps/<slug>/", "kvdf questionnaire plan", "kvdf questionnaire review", "kvdf questionnaire approve --confirm", "git rev-parse --show-toplevel", "git branch --show-current", "git status --short", "kvdf app workspace scorecards <slug>", "kvdf dashboard show"]
   },
   "vibe-developer-pipeline": {
-    lead: "This page traces a product idea from first discussion to a fully ready system: questions and answers, system design docs, delivery mode, scorecards and evolution planning, task generation, implementation, validation, and handoff.",
-    beginner: "Use this when you need the full path from idea to a system-ready app. It shows how the vibe developer gathers answers, produces the planning pack, chooses Agile or Structured delivery, turns the plan into locked scorecards and tasks, and then executes one task at a time.",
+    lead: "This page traces a product idea from first discussion to a fully ready system: file-based questions and answers, system design docs, delivery mode, scorecards and Evolution planning, task generation, implementation, verification, local archive, and optional GitHub handoff.",
+    beginner: "Use this when you need the full path from idea to a system-ready app. It shows how the vibe developer gathers answers, confirms the target repo, produces the planning pack, chooses local-only or GitHub-enabled delivery, turns the plan into locked scorecards and tasks, and then executes one task at a time.",
     sections: [
       ["Idea to intake", "Start with the plain product goal, then capture the users, scope, constraints, and unknowns before anything is built."],
+      ["Start a vibe-app project", "Open the workspace, run the intake, answer the questions in the markdown file, review the plan, approve it, let Evolution create the slice, then build one task at a time inside the app workspace."],
+      ["KVDF-led delivery", "KVDF-led delivery means the local workspace stays authoritative. GitHub is an optional handoff layer for branch, tests, commit, push, PR preparation, Owner review, merge, and pull-main."],
+      ["Target repo confirmation", "Before implementation, confirm the repo root, current branch, and working tree so app-track work stays in the app repo and owner-track work stays in KVDF core."],
       ["Questions and answers", "Use the questionnaire to expose what is missing, what must be decided, and what can wait for a later version."],
       ["System design docs", "Write the product scope, architecture, data design, and UI/UX direction so the plan is concrete enough to review."],
+      ["App-track vs owner-track warning", "Do not mix the two tracks in one delivery pack. App-track changes belong to the application workspace; owner-track changes belong to the framework and governance repo."],
       ["Portable app docs", "Store the final product knowledge in workspaces/apps/<slug>/docs/ so the app can be moved to another system without losing the design record."],
       ["Delivery mode", "Choose Agile when the shape may evolve, or Structured when the delivery needs stricter phase gates and a clearer plan."],
-      ["Scorecards and Evolution", "Review readiness, score the gaps, lock the result when the evidence is clear, and only then decide whether the work becomes Evolution."],
+      ["Scorecards and Evolution", "Review readiness, score the gaps, lock the result when the evidence is clear, and then turn the plan into an Evolution slice with a task punch."],
       ["Tasks to implementation", "Turn the approved plan into scoped tasks, build one task at a time, verify each result, and keep the workspace state aligned."],
+      ["GitHub handoff", "If GitHub is enabled, create the delivery branch, run tests, commit, push, prepare or create the PR, wait for Owner review, merge to main, and then pull the latest main before the next Evolution."],
       ["Release readiness", "The last step is not just coding; it is proving that the workspace is ready to hand off, validate, and release with traceability."]
     ],
     featuredPages: [
@@ -2709,15 +2717,60 @@ Object.assign(docs.en.pages, {
     ],
     steps: [
       "Capture the idea",
-      "Ask and answer the missing questions",
-      "Write the system design docs",
-      "Choose Agile or Structured",
-      "Prepare scorecards and the Evolution plan",
-      "Create approved tasks",
+      "Write questions to markdown",
+      "Answer questions one by one",
+      "Review the intake plan",
+      "Approve the plan",
+      "Confirm the target repo",
+      "Create the Evolution slice",
+      "Slice tasks",
       "Implement one task at a time",
-      "Validate and hand off"
+      "Verify and archive",
+      "Auto-close Evolution",
+      "Prepare branch and tests",
+      "Commit and push",
+      "Prepare PR",
+      "Owner review",
+      "Merge main",
+      "Pull latest main",
+      "Handoff"
     ],
     details: [
+      ["New app startup checklist", [
+        "Create or open the app workspace.",
+        "Run the vibe intake so Kabeeri writes the questions to a `.md` file.",
+        "Answer each question one by one in the file.",
+        "Review the intake plan.",
+        "Approve the plan.",
+        "Confirm the target repo with `git rev-parse --show-toplevel`, `git branch --show-current`, and `git status --short`.",
+        "Let Evolution create the slice and the task punch.",
+        "Implement the tasks one by one inside the app workspace.",
+        "Verify each completed task.",
+        "Archive completed tasks to trash.",
+        "Let the parent Evolution auto-close.",
+        "If GitHub sync is enabled, create the delivery branch, run tests, commit, push, prepare or create the PR, wait for Owner review, merge it, then pull `main` before the next Evolution."
+      ]],
+      ["KVDF-led delivery mode", [
+        "Local-only mode ends at the handoff report and archive. GitHub is optional, not required.",
+        "GitHub-enabled mode adds branch, tests, commit, push, PR preparation or creation, Owner review, merge, and pull-main before the next Evolution.",
+        "Runtime state such as `.kabeeri/` must stay out of the commit payload unless the approved Evolution explicitly requires it."
+      ]],
+      ["Target repo confirmation", [
+        "Before implementation, check the repo root, current branch, and working tree status.",
+        "If the current workspace is an app-track Evolution, the target repo must be the app workspace.",
+        "If the current workspace is an owner-track Evolution, the target repo must be KVDF core.",
+        "If the target repo is unclear, stop and return to planning."
+      ]],
+      ["GitHub handoff", [
+        "The GitHub layer is a handoff mechanism, not the source of truth.",
+        "The owner is the final merge authority.",
+        "Push the approved branch, prepare or create the PR, then wait for Owner review before merge.",
+        "After merge, pull the latest `main` and re-validate the workspace before the next Evolution begins."
+      ]],
+      ["App-track vs owner-track warning", [
+        "Do not mix app-track and owner-track analysis in one delivery pack.",
+        "If the work changes the core repository, switch to the owner track and re-confirm the target repo before you continue."
+      ]],
       ["Questions and answers", [
         "The first job is to turn an informal idea into a list of answered and unanswered questions. This keeps the workspace honest about what is known and what is still risky.",
         "Good intake does not rush to implementation. It separates discovery from execution so the later plan can be reviewed with confidence."
@@ -2741,18 +2794,28 @@ Object.assign(docs.en.pages, {
     ],
     checklist: [
       "The idea is written clearly.",
+      "The intake questions are in a markdown file.",
       "The questionnaire answers are complete enough to review.",
       "The system design docs are present.",
       "The portable app-doc package is written into the app folder.",
+      "The target repo is confirmed before implementation.",
       "The delivery mode is chosen.",
       "The scorecards are prepared and locked.",
       "The tasks match the approved plan.",
-      "Validation passes before handoff."
+      "Validation passes before handoff.",
+      "If GitHub is enabled, the branch, PR, review, merge, and pull-main steps are recorded."
     ],
     commands: [
+      "kvdf vibe",
       "kvdf questionnaire plan",
       "kvdf questionnaire review",
       "kvdf questionnaire approve --confirm",
+      "git rev-parse --show-toplevel",
+      "git branch --show-current",
+      "git status --short",
+      "kvdf sync --dry-run",
+      "kvdf github status",
+      "kvdf evolution app status",
       "kvdf app workspace scorecards <slug>",
       "kvdf dashboard show"
     ]
@@ -2798,12 +2861,14 @@ Object.assign(docs.ar.pages, {
     commands: ["knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md", "docs/site/pages/ar/ai-tool.html", "docs/site/pages/ar/vibe-developer.html"]
   },
   "vibe-developer-hub": {
-    lead: "هذه هي بوابة مطور Vibe. تركز على مساحات العمل للتطبيقات، وحزم التخطيط، والـ scorecards، والحدود، والتاسكات، والتحقق، ومسار التسليم.",
-    beginner: "ابدأ من هنا عندما تبني تطبيق عميل. هذه البوابة ترشدك إلى تعليمات مطور Vibe وتحافظ على فصل مساحة بناء التطبيق عن عمل الفريمورك.",
+    lead: "هذه هي بوابة مطور Vibe. تركز على مساحات العمل للتطبيقات، وحزم التخطيط، والـ scorecards، والحدود، والتاسكات، والتحقق، ومسار التسليم، مع طبقة تسليم GitHub الاختيارية في KVDF-led delivery.",
+    beginner: "ابدأ من هنا عندما تبني تطبيق عميل. هذه البوابة ترشدك إلى تعليمات مطور Vibe وتحافظ على فصل مساحة بناء التطبيق عن عمل الفريمورك، وتذكرك بتأكيد الريبو الهدف قبل التنفيذ.",
     sections: [
       ["الدليل الأساسي", "صفحة مطور Vibe تشرح كيف تستخدم بوابة التخطيط، وكيف تولد التاسكات فقط بعد الموافقة، وكيف تربط الـ scorecards بالمساحة."],
       ["استخدمها عندما", "تكون داخل workspaces/apps/<slug>/ وتحتاج إلى التسلسل الآمن: plan, review, approve, build, validate, handoff."],
-      ["حد الدور", "إذا تغيّر العمل ليصبح تعديل كبيري نفسه، انتقل إلى بوابة مطور كبيري."]
+      ["حد الدور", "إذا تغيّر العمل ليصبح تعديل كبيري نفسه، انتقل إلى بوابة مطور كبيري."],
+      ["KVDF-led delivery", "استخدم صفحة pipeline عندما تحتاج المسار المحلي فقط أو المسار مع branch وPR وOwner review وmerge وpull-main."],
+      ["حد المسار", "عمل app-track يبقى داخل مساحة التطبيق؛ وعمل owner-track يبقى داخل الريبو الأساسي ولا يجب خلطهما في حزمة تسليم واحدة."]
     ],
     featuredPages: [
       ["vibe-developer", "تعليمات مطور Vibe", "عقد التشغيل الخاص ببناء التطبيقات داخل مساحة عمل محكومة."],
@@ -2816,21 +2881,27 @@ Object.assign(docs.ar.pages, {
     ],
     steps: ["افتح مساحة العمل", "راجع التخطيط", "اعتمد الحزمة", "ولد التاسكات", "ابنِ تاسكاً واحداً", "تحقق", "سلّم"],
     details: [
-      ["روابط كانونيكية", ["`knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`", "`docs/site/pages/ar/vibe-developer.html`", "`docs/site/pages/ar/ai-tool.html`"]]
+      ["روابط كانونيكية", ["`knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`", "`docs/site/pages/ar/vibe-developer.html`", "`docs/site/pages/ar/ai-tool.html`", "`docs/workflows/KVDF_LED_DELIVERY.md`", "`docs/workflows/PR_HANDOFF_TEMPLATE.md`"]],
+      ["تحذير المسار", ["لا تخلط بين تحليل app-track وتحليل owner-track في حزمة تسليم واحدة.", "إذا كان العمل يغيّر الريبو الأساسي، انتقل إلى owner track وأعد تأكيد الريبو الهدف قبل المتابعة."]]
     ],
-    checklist: ["الحدود صحيحة.", "التخطيط تمت مراجعته.", "التخطيط معتمد.", "الـ scorecards جاهزة.", "التاسكات تطابق الخطة المعتمدة."],
-    commands: ["workspaces/apps/<slug>/", "kvdf questionnaire plan", "kvdf questionnaire review", "kvdf questionnaire approve --confirm", "kvdf app workspace scorecards <slug>", "kvdf dashboard show"]
+    checklist: ["الحدود صحيحة.", "التخطيط تمت مراجعته.", "التخطيط معتمد.", "الريبو الهدف مؤكد.", "الـ scorecards جاهزة.", "التاسكات تطابق الخطة المعتمدة."],
+    commands: ["workspaces/apps/<slug>/", "kvdf questionnaire plan", "kvdf questionnaire review", "kvdf questionnaire approve --confirm", "git rev-parse --show-toplevel", "git branch --show-current", "git status --short", "kvdf app workspace scorecards <slug>", "kvdf dashboard show"]
   },
   "vibe-developer-pipeline": {
-    lead: "تتبع هذه الصفحة رحلة فكرة المنتج من أول نقاش إلى نظام جاهز بالكامل: أسئلة وأجوبة، وثائق التصميم، نمط التسليم، خطة الـ scorecards والتطور، توليد التاسكات، التنفيذ، التحقق، ثم التسليم.",
-    beginner: "استخدم هذه الصفحة عندما تحتاج المسار الكامل من الفكرة إلى تطبيق جاهز للنظام. توضح كيف يجمع مطور Vibe الإجابات، ويخرج حزمة التخطيط، ويختار Agile أو Structured، ثم يحول الخطة إلى scorecards مقفلة وتاسكات قابلة للتنفيذ.",
+    lead: "تتبع هذه الصفحة رحلة فكرة المنتج من أول نقاش إلى نظام جاهز بالكامل: أسئلة وملفات إجابات، وثائق التصميم، نمط التسليم، خطة الـ scorecards والتطور، توليد التاسكات، التنفيذ، التحقق، الأرشفة المحلية، والتسليم الاختياري عبر GitHub.",
+    beginner: "استخدم هذه الصفحة عندما تحتاج المسار الكامل من الفكرة إلى تطبيق جاهز للنظام. توضح كيف يجمع مطور Vibe الإجابات، يؤكد الريبو الهدف، ويخرج حزمة التخطيط، ويختار التسليم المحلي أو GitHub-enabled، ثم يحول الخطة إلى scorecards مقفلة وتاسكات قابلة للتنفيذ.",
     sections: [
       ["من الفكرة إلى الاستقبال", "ابدأ بالهدف الواضح للمنتج، ثم سجّل المستخدمين والنطاق والقيود والأسئلة المفتوحة قبل أن يبدأ البناء."],
+      ["ابدأ مشروع vibe-app", "افتح مساحة العمل، شغّل الاستقبال، أجب عن الأسئلة في ملف markdown، راجع الخطة، اعتمدها، ثم دع Evolution ينشئ slice والتاسكات وابدأ التنفيذ تاسكاً واحداً في كل مرة داخل مساحة التطبيق."],
+      ["KVDF-led delivery", "يعني أن الريبو المحلي هو المرجع الأساسي. GitHub يصبح طبقة handoff اختيارية لخط branch، الاختبارات، commit، push، تحضير/إنشاء PR، مراجعة Owner، merge، ثم pull-main."],
+      ["تأكيد الريبو الهدف", "قبل التنفيذ، أكد root الريبو والفرع الحالي وحالة working tree حتى يبقى عمل app-track داخل التطبيق وعمل owner-track داخل KVDF core."],
       ["الأسئلة والأجوبة", "استخدم الاستبيان لإظهار ما هو مفقود وما يجب حسمه وما يمكن تأجيله إلى نسخة لاحقة."],
       ["وثائق تصميم النظام", "اكتب نطاق المنتج والاتجاه المعماري وتصميم البيانات واتجاه UI/UX بشكل يكفي للمراجعة."],
+      ["تحذير app-track و owner-track", "لا تخلط المسارين في حزمة تسليم واحدة. عمل app-track يبقى داخل مساحة التطبيق، وعمل owner-track يبقى داخل الريبو الأساسي وحوكمة الفريمورك."],
       ["نمط التسليم", "اختر Agile عندما يكون الشكل قابلاً للتغيير، أو Structured عندما تحتاج إلى بوابات مرحلة أكثر صرامة وخطة أوضح."],
-      ["الـ scorecards والتطور", "راجع الجاهزية، قيّم الفجوات، وأقفل النتيجة عندما تكون الأدلة واضحة، ثم قرر هل يتحول العمل إلى Evolution."],
+      ["الـ scorecards والتطور", "راجع الجاهزية، قيّم الفجوات، وأقفل النتيجة عندما تكون الأدلة واضحة، ثم حوّل الخطة إلى Evolution slice مع Task Punch."],
       ["من التاسكات إلى التنفيذ", "حوّل الخطة المعتمدة إلى تاسكات صغيرة، ونفذ تاسكاً واحداً في كل مرة، وتحقق من كل نتيجة، وحافظ على تطابق حالة المساحة."],
+      ["التسليم عبر GitHub", "إذا كان GitHub مفعلاً، أنشئ branch، شغّل الاختبارات، commit، push، حضّر أو أنشئ PR، انتظر Owner review، ثم merge إلى main وبعدها pull للـ main قبل بدء Evolution التالية."],
       ["جاهزية التسليم", "المرحلة الأخيرة ليست مجرد كتابة الكود؛ بل إثبات أن المساحة جاهزة للتسليم والتحقق والإصدار مع قابلية تتبع كاملة."]
     ],
     featuredPages: [
@@ -2844,15 +2915,60 @@ Object.assign(docs.ar.pages, {
     ],
     steps: [
       "اجمع الفكرة",
-      "اطرح الأسئلة وأجب عنها",
-      "اكتب وثائق تصميم النظام",
-      "اختر Agile أو Structured",
-      "حضّر الـ scorecards وخطة التطور",
-      "أنشئ التاسكات المعتمدة",
+      "اكتب الأسئلة في markdown",
+      "أجب عن الأسئلة واحداً واحداً",
+      "راجع خطة الاستقبال",
+      "اعتمد الخطة",
+      "أكد الريبو الهدف",
+      "أنشئ slice التطور",
+      "قسّم التاسكات",
       "نفذ تاسكاً واحداً في كل مرة",
-      "تحقق ثم سلّم"
+      "تحقق وارشف",
+      "أغلق Evolution تلقائياً",
+      "حضّر branch والاختبارات",
+      "اعمل commit و push",
+      "حضّر PR",
+      "مراجعة Owner",
+      "merge إلى main",
+      "pull لأحدث main",
+      "سلّم"
     ],
     details: [
+      ["قائمة بدء vibe-app", [
+        "افتح أو أنشئ مساحة العمل للتطبيق.",
+        "شغّل الاستقبال حتى يكتب كبيري الأسئلة في ملف `.md`.",
+        "أجب عن كل سؤال واحداً واحداً داخل الملف.",
+        "راجع خطة الاستقبال.",
+        "اعتمد الخطة.",
+        "أكد الريبو الهدف عبر `git rev-parse --show-toplevel` و`git branch --show-current` و`git status --short`.",
+        "دع Evolution ينشئ الـ slice والتاسكات.",
+        "نفّذ التاسكات واحدة واحدة داخل مساحة التطبيق.",
+        "تحقق من كل تاسك يكتمل.",
+        "أرشف التاسكات المكتملة في trash.",
+        "دع Evolution الأم يغلق تلقائياً بعد اكتمال آخر تاسك مرتبط.",
+        "إذا كان GitHub sync مفعلاً، أنشئ branch، شغّل الاختبارات، اعمل commit وpush، حضّر أو أنشئ PR، انتظر Owner review، ثم merge إلى main وبعدها pull للـ main قبل بدء Evolution التالية."
+      ]],
+      ["KVDF-led delivery", [
+        "التسليم المحلي ينتهي عند تقرير handoff والأرشفة المحلية. GitHub اختياري وليس إلزامياً.",
+        "التسليم عبر GitHub يضيف branch والاختبارات وcommit وpush وتحضير/إنشاء PR ومراجعة Owner وmerge وpull-main قبل الـ Evolution التالية.",
+        "يجب أن تبقى حالة التشغيل مثل `.kabeeri/` خارج commit إلا إذا نصت Evolution المعتمدة على غير ذلك."
+      ]],
+      ["تأكيد الريبو الهدف", [
+        "قبل التنفيذ، افحص root الريبو والفرع الحالي وحالة working tree.",
+        "إذا كان العمل app-track، فالريبو الهدف يجب أن يكون مساحة التطبيق.",
+        "إذا كان العمل owner-track، فالريبو الهدف يجب أن يكون KVDF core.",
+        "إذا كان الريبو الهدف غير واضح، توقف وارجع إلى التخطيط."
+      ]],
+      ["التسليم عبر GitHub", [
+        "طبقة GitHub هي handoff layer وليست مصدر الحقيقة.",
+        "Owner هو سلطة الدمج النهائية.",
+        "بعد commit وpush، حضّر أو أنشئ PR ثم انتظر مراجعة Owner قبل الدمج.",
+        "بعد merge، اعمل pull لأحدث main ثم أعد التحقق من المساحة قبل بدء Evolution التالية."
+      ]],
+      ["تحذير app-track و owner-track", [
+        "لا تخلط بين تحليل app-track وتحليل owner-track في حزمة تسليم واحدة.",
+        "إذا كان العمل يغيّر الريبو الأساسي، انتقل إلى owner track وأعد تأكيد الريبو الهدف قبل المتابعة."
+      ]],
       ["الأسئلة والأجوبة", [
         "الخطوة الأولى هي تحويل الفكرة غير الرسمية إلى قائمة أسئلة مجابة وأخرى غير مجابة. هذا يبقي المساحة صادقة بشأن ما هو معروف وما زال يحمل مخاطرة.",
         "الاستقبال الجيد لا يركض نحو التنفيذ. بل يفصل بين الاكتشاف والتنفيذ حتى يمكن مراجعة الخطة بثقة."
@@ -2876,17 +2992,27 @@ Object.assign(docs.ar.pages, {
     ],
     checklist: [
       "الفكرة مكتوبة بوضوح.",
+      "الأسئلة موجودة في ملف markdown.",
       "إجابات الاستبيان كافية للمراجعة.",
       "وثائق تصميم النظام موجودة.",
       "نمط التسليم تم اختياره.",
+      "الريبو الهدف مؤكد قبل التنفيذ.",
       "الـ scorecards أُعدّت وأُقفلت.",
       "التاسكات تطابق الخطة المعتمدة.",
-      "التحقق ينجح قبل التسليم."
+      "التحقق ينجح قبل التسليم.",
+      "إذا كان GitHub مفعلاً، فخط branch وPR والمراجعة والدمج والـ pull موثقة."
     ],
     commands: [
+      "kvdf vibe",
       "kvdf questionnaire plan",
       "kvdf questionnaire review",
       "kvdf questionnaire approve --confirm",
+      "git rev-parse --show-toplevel",
+      "git branch --show-current",
+      "git status --short",
+      "kvdf sync --dry-run",
+      "kvdf github status",
+      "kvdf evolution app status",
       "kvdf app workspace scorecards <slug>",
       "kvdf dashboard show"
     ]

@@ -87,6 +87,14 @@ The Kabeeri developer changes Kabeeri itself.
 - Keep docs, runtime, and tests aligned.
 - Update governance and capability references when behavior changes.
 - Verify each slice before moving on.
+- Confirm the target repo and workspace before implementation by checking the
+  repo root, current branch, and working tree status.
+- Keep runtime state out of commits unless an Evolution explicitly requires a
+  runtime artifact to be versioned.
+- Treat Owner review as the final merge authority for any GitHub-backed handoff.
+- Treat Evolution as a closeout-aware milestone system: when all linked tasks
+  are terminal and archived, the parent Evolution must auto-close in the
+  current track.
 
 ### Not allowed
 
@@ -118,8 +126,15 @@ The vibe developer builds an app inside a governed workspace.
 - Approve the planning pack before tasks are created.
 - Keep work inside the workspace boundary.
 - Respect the surface scopes for website, mobile, admin, API, backend, or other approved app surfaces.
+- Confirm the target repo and workspace before implementation by checking the
+  repo root, current branch, and working tree status.
 - Implement one task at a time.
 - Stop when scope changes.
+- Keep runtime state out of commits unless the approved Evolution explicitly
+  requires a runtime artifact to be versioned.
+- Treat app-track Evolution as a closeout-aware milestone system: when all
+  linked tasks are terminal and archived, the parent Evolution auto-closes in
+  the app track even if GitHub sync is disabled.
 
 ### Not allowed
 
@@ -128,6 +143,77 @@ The vibe developer builds an app inside a governed workspace.
 - mix unrelated products inside one workspace
 - create tasks from assumptions instead of approved planning
 - ignore boundary status or scorecard warnings
+
+## KVDF-Led Delivery
+
+KVDF-led delivery is the workflow where KVDF keeps the local workspace as the
+source of truth, slices approved Evolutions into Tasks, and decides whether the
+handoff stops locally or continues through GitHub.
+
+### Definition
+
+- **Evolution** is the milestone / release slice / change layer.
+- **Task** is a closable issue or work item under an Evolution.
+- **Task Punch** is the generated batch of Tasks for the approved slice.
+- **Evolution Handoff** is the final report and delivery output.
+- **GitHub Handoff** is the optional branch, commit, push, PR, review, merge,
+  and pull workflow.
+- **Owner Track** is framework and core governance work.
+- **App Track** is the product or application repository being built.
+
+### Local-only handoff
+
+Local-only handoff is valid and complete when:
+
+- implementation is finished inside the approved workspace
+- tasks are verified and archived
+- the parent Evolution auto-closes
+- the final handoff report is written
+- no GitHub step is required or available
+
+### GitHub handoff
+
+GitHub handoff is optional and may be enabled after local verification. When it
+is enabled:
+
+- create or update a delivery branch from the approved Evolution slice
+- run tests before commit
+- commit only the intended source, docs, and deliverable artifacts
+- do not commit runtime state such as `.kabeeri/`, temporary runtime outputs,
+  or other live workspace state unless the Evolution explicitly requires it
+- push the branch
+- prepare or create the PR
+- request Owner review
+- merge only after Owner approval
+- pull the latest `main`
+- validate the workspace again
+- start the next Evolution only after the sync succeeds
+
+### Target repo confirmation rule
+
+Before implementation begins, the actor must confirm the target repo and
+workspace by inspecting:
+
+- `git rev-parse --show-toplevel`
+- `git branch --show-current`
+- `git status --short`
+
+Then confirm:
+
+- app-track work targets the app workspace, not the KVDF core repository
+- owner-track work targets the KVDF core repository only when the Evolution
+  explicitly says it is core work
+- if the target repo is wrong or unclear, stop and return to planning
+
+### Failure handling
+
+If push or PR tooling is unavailable:
+
+- stay local
+- record the failure in the handoff report
+- preserve the completed local work
+- do not pretend the GitHub handoff happened
+- do not start the next Evolution until the local closeout is verified
 
 ## Planning Gate
 
