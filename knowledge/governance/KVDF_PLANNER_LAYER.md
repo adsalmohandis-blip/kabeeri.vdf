@@ -62,6 +62,8 @@ The planner can emit:
 - a recommended next Evolution
 - a Task Punch
 - a Codex-ready execution prompt
+- a visual planning model with Mermaid, planning board JSON, scope map, and
+  markdown report output
 - allowed and forbidden file lists
 - acceptance criteria
 - validation commands
@@ -100,6 +102,35 @@ app-track analysis by default.
 This mode is for plugin development and plugin lifecycle work. The planner
 should read the plugin manifest and keep plugin runtime mount state protected
 unless the requested Evolution explicitly concerns plugin operations.
+
+## Visual Planner Model
+
+The visual planner model is a data and report layer, not a dashboard UI.
+
+It should reuse the deterministic planner outputs and reshape them into:
+
+- a Mermaid planning graph
+- a planning board JSON model
+- a scope map
+- a readable markdown visual planning report
+
+Responsibilities:
+
+- show the proposed Evolution
+- show the task punch for the slice
+- show what Codex may edit
+- show what Codex must not edit
+- show runtime-state boundaries
+- show generated artifacts that may refresh during validation
+- show the validation commands
+- show the stop condition
+
+Track behavior:
+
+- Owner visuals should center on direct-to-main KVDF Core planning.
+- Vibe visuals should center on local-first app delivery planning.
+- Plugin visuals should center on manifest, runtime, docs, schema, and test
+  parity.
 
 ## Planner Runtime State and Owner Approval Gate
 

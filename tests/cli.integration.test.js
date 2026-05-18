@@ -5437,6 +5437,68 @@ test("planner prompt from current fails clearly without an approved plan", () =>
   assert.match(failure.stderr, /No approved current planner plan exists/i);
 }));
 
+test("planner visual builds an owner-track Mermaid board and scope map", () => {
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Add visual planner", "--track", "owner", "--json"]).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.strictEqual(visual.planner_mode, "owner");
+  assert.strictEqual(visual.track, "framework_owner");
+  assert.strictEqual(visual.delivery_mode, "direct_main");
+  assert.strictEqual(visual.graph.format, "mermaid");
+  assert.ok(visual.graph.diagram.includes("Owner Direction"));
+  assert.ok(visual.graph.diagram.includes("Direct-to-main Commit"));
+  assert.ok(Array.isArray(visual.board.columns));
+  assert.strictEqual(visual.board.columns.length, 6);
+  assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes("KVDOS/")));
+  assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes(".kabeeri/")));
+  assert.ok(Array.isArray(visual.validation_commands));
+  assert.ok(visual.validation_commands.includes("node bin/kvdf.js validate"));
+  assert.ok(visual.markdown_report.includes("```mermaid"));
+  assert.ok(visual.markdown_report.includes("Planning Board"));
+});
+
+test("planner visual builds a vibe-track local-first visual pipeline", () => {
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build app flow", "--track", "vibe", "--json"]).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.strictEqual(visual.planner_mode, "vibe");
+  assert.strictEqual(visual.track, "vibe_app_developer");
+  assert.strictEqual(visual.delivery_mode, "local_first");
+  assert.ok(visual.graph.diagram.includes("Request"));
+  assert.ok(visual.graph.diagram.includes("Questions"));
+  assert.ok(visual.graph.diagram.includes("Answers"));
+  assert.ok(visual.graph.diagram.includes("Handoff"));
+  assert.ok(visual.scope_map.allowed_files.some((item) => item.includes("workspaces/apps/")));
+  assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes("src/cli/commands/planner.js")));
+});
+
+test("planner visual builds a plugin-track visual parity model", () => {
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Improve plugin docs", "--track", "plugin", "--plugin", "kvdf-dev", "--json"]).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.strictEqual(visual.planner_mode, "plugin");
+  assert.strictEqual(visual.track, "plugin");
+  assert.strictEqual(visual.plugin_context.plugin_id, "kvdf-dev");
+  assert.ok(visual.graph.diagram.includes("Manifest Review"));
+  assert.ok(visual.graph.diagram.includes("Install/Uninstall Check"));
+  assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes(".kabeeri/plugin-links/")));
+  assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes("plugins/*/runtime/")));
+});
+
+test("planner visual renders a readable markdown report", () => {
+  const visual = runKvdf(["planner", "visual", "--goal", "Add visual planner", "--track", "owner"]);
+  assert.match(visual.stdout, /KVDF Planner Visual Model - Owner/);
+  assert.match(visual.stdout, /```mermaid/);
+  assert.match(visual.stdout, /Owner Direction/);
+});
+
+test("planner visual from current reuses the approved runtime plan", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Approved visual planner", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.strictEqual(visual.planner_mode, "owner");
+  assert.strictEqual(visual.goal, "Approved visual planner");
+  assert.ok(visual.markdown_report.includes("KVDF Planner Visual Model - Owner"));
+}));
+
 test("capability surface maps capabilities to CLI command families and docs references", () => {
   const surface = JSON.parse(runKvdf(["capability", "surface", "--json"]).stdout);
   assert.strictEqual(surface.report_type, "kvdf_capability_cli_surface");

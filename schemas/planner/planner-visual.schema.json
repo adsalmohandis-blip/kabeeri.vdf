@@ -1,0 +1,112 @@
+{
+  "title": "KVDF Planner Visual",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "planner_mode",
+    "track",
+    "delivery_mode",
+    "goal",
+    "graph",
+    "board",
+    "scope_map",
+    "legend",
+    "validation_commands",
+    "stop_condition",
+    "markdown_report"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_planner_visual"
+    },
+    "planner_mode": {
+      "type": "string",
+      "enum": ["owner", "vibe", "plugin"]
+    },
+    "track": {
+      "type": "string",
+      "enum": ["framework_owner", "vibe_app_developer", "plugin"]
+    },
+    "delivery_mode": {
+      "type": "string",
+      "enum": ["direct_main", "local_first"]
+    },
+    "goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "graph": {
+      "type": "object",
+      "required": ["format", "diagram"],
+      "properties": {
+        "format": {
+          "type": "string",
+          "const": "mermaid"
+        },
+        "diagram": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "board": {
+      "type": "object",
+      "required": ["columns"],
+      "properties": {
+        "columns": {
+          "type": "array",
+          "minItems": 6,
+          "items": {
+            "type": "object",
+            "required": ["id", "title", "cards"],
+            "properties": {
+              "id": { "type": "string", "minLength": 1 },
+              "title": { "type": "string", "minLength": 1 },
+              "cards": { "type": "array" }
+            }
+          }
+        }
+      }
+    },
+    "scope_map": {
+      "type": "object",
+      "required": ["allowed_files", "forbidden_files", "runtime_state", "generated_artifacts", "docs", "tests"],
+      "properties": {
+        "allowed_files": { "type": "array", "items": { "type": "string" } },
+        "forbidden_files": { "type": "array", "items": { "type": "string" } },
+        "runtime_state": { "type": "array", "items": { "type": "string" } },
+        "generated_artifacts": { "type": "array", "items": { "type": "string" } },
+        "docs": { "type": "array", "items": { "type": "string" } },
+        "tests": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "legend": {
+      "type": "object",
+      "required": ["allowed", "forbidden", "runtime_state", "generated_artifacts", "docs", "tests"],
+      "properties": {
+        "allowed": { "type": "string" },
+        "forbidden": { "type": "string" },
+        "runtime_state": { "type": "string" },
+        "generated_artifacts": { "type": "string" },
+        "docs": { "type": "string" },
+        "tests": { "type": "string" }
+      }
+    },
+    "validation_commands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stop_condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "markdown_report": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}
