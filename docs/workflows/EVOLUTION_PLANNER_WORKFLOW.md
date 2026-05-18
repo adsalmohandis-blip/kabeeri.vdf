@@ -3,7 +3,8 @@
 ## Overview
 
 The KVDF Planner Layer turns governed repository context into the next
-approved Evolution, a Task Punch, and a Codex-ready prompt.
+approved Evolution, a Task Punch, a materialized runtime record, and a
+Codex-ready prompt.
 
 This workflow is deterministic and local-first. It does not replace the Owner.
 It supports owner, vibe/app, and plugin planner modes.
@@ -15,8 +16,9 @@ Owner direction
 -> planner propose
 -> planner approve
 -> planner current
--> planner visual
+-> planner materialize
 -> planner prompt --from-current
+-> planner visual
 -> Codex execution
 -> validation
 -> planner complete
@@ -26,9 +28,9 @@ Owner direction
 Track-aware variants:
 
 ```text
-Owner direction -> planner (owner mode) -> propose -> approve -> current -> visual -> prompt from current -> Codex -> validation -> complete -> direct-to-main KVDF Core delivery
-Owner direction -> planner (vibe mode) -> propose -> approve -> current -> visual -> prompt from current -> Codex -> validation -> complete -> local-first app delivery and optional GitHub handoff
-Owner direction -> planner (plugin mode) -> propose -> approve -> current -> visual -> prompt from current -> Codex -> validation -> complete -> plugin manifest/runtime/docs parity and direct-to-main delivery
+Owner direction -> planner (owner mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> Codex -> validation -> complete -> direct-to-main KVDF Core delivery
+Owner direction -> planner (vibe mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> Codex -> validation -> complete -> local-first app delivery and optional GitHub handoff
+Owner direction -> planner (plugin mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> Codex -> validation -> complete -> plugin manifest/runtime/docs parity and direct-to-main delivery
 ```
 
 ## Required Checks
@@ -90,6 +92,7 @@ Planner state is used to:
 - keep rejected plans as historical records
 - mark approved work as completed and clear the current plan when a slice is closed out
 - generate Codex prompts from approved runtime state with `kvdf planner prompt --from-current`
+- materialize approved plans into Evolution and Task Punch runtime records with `kvdf planner materialize --from-current`
 - generate visual planner models with `kvdf planner visual --from-current`
 
 Planner state is runtime-only and is not part of the normal commit set.

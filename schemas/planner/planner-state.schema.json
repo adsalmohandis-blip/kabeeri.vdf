@@ -20,30 +20,30 @@
       "items": {
         "type": "object",
         "additionalProperties": true,
-        "required": [
-          "plan_id",
-          "status",
-          "planner_mode",
-          "track",
-          "delivery_mode",
-          "goal",
-          "recommended_evolution",
-          "task_punch",
-          "codex_prompt",
-          "visual",
-          "allowed_files",
-          "forbidden_files",
-          "out_of_scope",
-          "validation_commands",
-          "stop_condition",
-          "created_at",
-          "approved_at",
-          "approved_by",
-          "rejected_at",
-          "rejection_reason",
-          "completed_at",
-          "completion_note"
-        ],
+          "required": [
+            "plan_id",
+            "status",
+            "planner_mode",
+            "track",
+            "delivery_mode",
+            "goal",
+            "recommended_evolution",
+            "task_punch",
+            "codex_prompt",
+            "visual",
+            "allowed_files",
+            "forbidden_files",
+            "out_of_scope",
+            "validation_commands",
+            "stop_condition",
+            "created_at",
+            "approved_at",
+            "approved_by",
+            "rejected_at",
+            "rejection_reason",
+            "completed_at",
+            "completion_note"
+          ],
         "properties": {
           "plan_id": {
             "type": "string",
@@ -130,6 +130,24 @@
             "type": ["string", "null"]
           },
           "completion_note": {
+            "type": ["string", "null"]
+          },
+          "materialized_at": {
+            "type": ["string", "null"]
+          },
+          "materialization_status": {
+            "type": ["string", "null"]
+          },
+          "evolution_change_id": {
+            "type": ["string", "null"]
+          },
+          "materialized_task_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "materialization_report_path": {
             "type": ["string", "null"]
           }
         }

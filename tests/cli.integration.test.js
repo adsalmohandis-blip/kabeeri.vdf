@@ -5468,6 +5468,99 @@ test("planner complete closes an approved plan and clears the current plan", () 
   assert.match(rejectCompleted.stderr, /completed/i);
 }));
 
+test("planner materialize creates evolution and task runtime records from an approved owner plan", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize owner plan", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const materialization = JSON.parse(runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(materialization.report_type, "kvdf_planner_materialization");
+  assert.strictEqual(materialization.plan_id, proposal.plan_id);
+  assert.strictEqual(materialization.planner_mode, "owner");
+  assert.strictEqual(materialization.track, "framework_owner");
+  assert.strictEqual(materialization.delivery_mode, "direct_main");
+  assert.strictEqual(materialization.status, "materialized");
+  assert.ok(materialization.evolution.change_id);
+  assert.strictEqual(materialization.evolution.planner_plan_id, proposal.plan_id);
+  assert.ok(Array.isArray(materialization.task_punch.task_ids));
+  assert.ok(materialization.task_punch.tasks_created > 0);
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "evolution.json")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "tasks.json")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "reports", `planner_materialization_${proposal.plan_id}.json`)));
+  const plannerState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
+  const currentPlan = plannerState.plans.find((item) => item.plan_id === proposal.plan_id);
+  assert.ok(currentPlan.materialized_at);
+  assert.strictEqual(currentPlan.materialization_status, "materialized");
+  assert.ok(currentPlan.evolution_change_id);
+  assert.ok(Array.isArray(currentPlan.materialized_task_ids));
+  assert.ok(currentPlan.materialization_report_path.includes(`planner_materialization_${proposal.plan_id}.json`));
+  const evolutionState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "evolution.json"), "utf8"));
+  const evolutionChange = evolutionState.changes.find((item) => item.planner_plan_id === proposal.plan_id);
+  assert.ok(evolutionChange);
+  assert.strictEqual(evolutionChange.status, "planned");
+  assert.strictEqual(evolutionChange.source, "planner");
+  assert.ok(Array.isArray(evolutionChange.task_ids));
+  const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
+  const plannerTasks = tasksState.tasks.filter((item) => item.planner_plan_id === proposal.plan_id);
+  assert.ok(plannerTasks.length > 0);
+  assert.ok(plannerTasks.every((task) => task.status === "proposed"));
+  assert.ok(plannerTasks.every((task) => task.source === `planner:${proposal.plan_id}`));
+  assert.ok(plannerTasks.every((task) => task.evolution_change_id === evolutionChange.change_id));
+  assert.ok(plannerTasks.every((task) => Array.isArray(task.allowed_files)));
+}));
+
+test("planner materialize creates local-first vibe runtime records without defaulting to KVDF Core", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize vibe plan", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const materialization = JSON.parse(runKvdf(["planner", "materialize", proposal.plan_id, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(materialization.planner_mode, "vibe");
+  assert.strictEqual(materialization.track, "vibe_app_developer");
+  assert.strictEqual(materialization.delivery_mode, "local_first");
+  const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
+  const plannerTasks = tasksState.tasks.filter((item) => item.planner_plan_id === proposal.plan_id);
+  assert.ok(plannerTasks.length > 0);
+  assert.ok(plannerTasks.every((task) => task.track === "vibe_app_developer"));
+  assert.ok(plannerTasks.every((task) => !task.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
+}));
+
+test("planner materialize preserves plugin context and keeps unrelated plugins out of scope", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize plugin plan", "--track", "plugin", "--plugin", "kvdf-dev", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const materialization = JSON.parse(runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(materialization.planner_mode, "plugin");
+  assert.strictEqual(materialization.track, "plugin");
+  assert.ok(materialization.evolution.change_id);
+  const plannerState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
+  const currentPlan = plannerState.plans.find((item) => item.plan_id === proposal.plan_id);
+  assert.ok(currentPlan.plugin_context);
+  const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
+  const plannerTasks = tasksState.tasks.filter((item) => item.planner_plan_id === proposal.plan_id);
+  assert.ok(plannerTasks.length > 0);
+  assert.ok(plannerTasks.every((task) => task.track === "plugin"));
+  assert.ok(plannerTasks.every((task) => Array.isArray(task.forbidden_files)));
+}));
+
+test("planner materialize fails clearly for proposed rejected completed or missing plans", () => withTempDir((dir) => {
+  const proposed = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize failure", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  const proposedFailure = runKvdf(["planner", "materialize", proposed.plan_id, "--json"], { cwd: dir, expectFailure: true });
+  assert.match(proposedFailure.stderr, /must be approved before materialization/i);
+
+  const rejected = JSON.parse(runKvdf(["planner", "propose", "--goal", "Reject then materialize", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "reject", rejected.plan_id, "--reason", "Not now", "--json"], { cwd: dir });
+  const rejectedFailure = runKvdf(["planner", "materialize", rejected.plan_id, "--json"], { cwd: dir, expectFailure: true });
+  assert.match(rejectedFailure.stderr, /must be approved before materialization/i);
+
+  const completed = JSON.parse(runKvdf(["planner", "propose", "--goal", "Complete then materialize", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", completed.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  runKvdf(["planner", "complete", completed.plan_id, "--note", "Done", "--json"], { cwd: dir });
+  const completedFailure = runKvdf(["planner", "materialize", completed.plan_id, "--json"], { cwd: dir, expectFailure: true });
+  assert.match(completedFailure.stderr, /must be approved before materialization/i);
+
+  const missingFailure = runKvdf(["planner", "materialize", "planner-plan-999", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(missingFailure.stderr, /Planner plan not found/i);
+
+  const fromCurrentFailure = runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(fromCurrentFailure.stderr, /No approved current planner plan exists/i);
+}));
+
 test("planner prompt from current fails clearly without an approved plan", () => withTempDir((dir) => {
   const failure = runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir, expectFailure: true });
   assert.match(failure.stderr, /No approved current planner plan exists/i);

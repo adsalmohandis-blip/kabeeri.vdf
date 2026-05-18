@@ -145,7 +145,7 @@ const PLUGIN_OUT_OF_SCOPE = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "propose", "approve", "current", "reject", "complete"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -186,6 +186,13 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
     if (!planId) throw new Error("Missing plan id for planner complete.");
     const report = completePlannerPlan(planId, resolveCompleteNote(flags, rest), deps);
     printPlannerOutput(report, flags, deps, "complete");
+    return;
+  }
+
+  if (mode === "materialize") {
+    const planId = isFromCurrentPlan(flags) ? null : resolvePlanId(value, flags, rest);
+    const report = materializePlannerPlan(planId, flags, deps);
+    printPlannerOutput(report, flags, deps, "materialize");
     return;
   }
 
@@ -740,6 +747,11 @@ function rejectPlannerPlan(planId, reason, flags = {}, deps = {}) {
   plan.approved_by = null;
   plan.completed_at = null;
   plan.completion_note = null;
+  plan.materialized_at = null;
+  plan.materialization_status = null;
+  plan.evolution_change_id = null;
+  plan.materialized_task_ids = [];
+  plan.materialization_report_path = null;
   if (state.current_plan_id === planId) state.current_plan_id = null;
   savePlannerState(context.repo_root, state);
   return {
@@ -776,6 +788,63 @@ function completePlannerPlan(planId, note, deps = {}) {
     current_plan_id: state.current_plan_id || null,
     completion_note: completionNote,
     next_action: "Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json to create the next proposed plan."
+  };
+}
+
+function materializePlannerPlan(planId, flags = {}, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const state = loadPlannerState(context.repo_root);
+  const plan = resolveMaterializablePlannerPlan(state, planId, flags);
+  const approvedPlan = normalizePlannerPlanRecord(plan);
+  const materialization = buildPlannerMaterializationArtifact(approvedPlan, context);
+  const evolutionState = loadPlannerEvolutionState(context.repo_root);
+  const tasksState = loadPlannerTasksState(context.repo_root);
+  const evolutionRecord = upsertPlannerEvolutionRecord(evolutionState, approvedPlan, materialization, context);
+  const taskRecords = upsertPlannerMaterializationTasks(tasksState, evolutionState, approvedPlan, materialization, context, evolutionRecord.change_id);
+  const materializedAt = new Date().toISOString();
+  const reportPath = path.join(context.repo_root, ".kabeeri", "reports", `planner_materialization_${approvedPlan.plan_id}.json`);
+  const report = buildPlannerMaterializationReport({
+    plan: approvedPlan,
+    materialization,
+    evolutionRecord,
+    taskRecords,
+    reportPath,
+    materializedAt
+  });
+
+  plan.materialized_at = materializedAt;
+  plan.materialization_status = "materialized";
+  plan.evolution_change_id = evolutionRecord.change_id;
+  plan.materialized_task_ids = taskRecords.map((task) => task.id);
+  plan.materialization_report_path = reportPath.replace(/\\/g, "/");
+
+  evolutionState.current_change_id = evolutionRecord.change_id;
+  savePlannerState(context.repo_root, state);
+  savePlannerEvolutionState(context.repo_root, evolutionState);
+  savePlannerTasksState(context.repo_root, tasksState);
+  savePlannerMaterializationReport(reportPath, report);
+
+  return {
+    report_type: "kvdf_planner_materialization",
+    generated_at: materializedAt,
+    plan_id: approvedPlan.plan_id,
+    planner_mode: approvedPlan.planner_mode,
+    track: approvedPlan.track,
+    delivery_mode: approvedPlan.delivery_mode,
+    status: "materialized",
+    evolution: {
+      change_id: evolutionRecord.change_id,
+      title: evolutionRecord.title,
+      status: evolutionRecord.status,
+      planner_plan_id: approvedPlan.plan_id
+    },
+    task_punch: {
+      tasks_created: taskRecords.length,
+      task_ids: taskRecords.map((task) => task.id)
+    },
+    report_path: reportPath.replace(/\\/g, "/"),
+    next_action: "Run kvdf planner prompt --from-current --json, then execute the first approved task slice.",
+    plugin_context: approvedPlan.plugin_context || null
   };
 }
 
@@ -1115,6 +1184,8 @@ function printPlannerOutput(report, flags, deps, kind) {
     ? renderPlannerPromptReport(report)
     : kind === "visual"
       ? renderPlannerVisualReport(report)
+      : kind === "materialize"
+        ? renderPlannerMaterializationReport(report, deps.table)
     : kind === "evolution"
       ? renderPlannerEvolutionPlan(report, deps.table)
       : kind === "task-punch"
@@ -1536,6 +1607,45 @@ function savePlannerState(repoRootPath, state) {
   fs.writeFileSync(filePath, `${JSON.stringify(normalizePlannerState(state), null, 2)}\n`, "utf8");
 }
 
+function loadPlannerEvolutionState(repoRootPath) {
+  const filePath = path.join(repoRootPath || process.cwd(), ".kabeeri", "evolution.json");
+  if (!fs.existsSync(filePath)) {
+    return { changes: [], impact_plans: [], current_change_id: null };
+  }
+  const state = safeReadJson(filePath);
+  state.changes = Array.isArray(state.changes) ? state.changes : [];
+  state.impact_plans = Array.isArray(state.impact_plans) ? state.impact_plans : [];
+  state.current_change_id = state.current_change_id || null;
+  return state;
+}
+
+function savePlannerEvolutionState(repoRootPath, state) {
+  const filePath = path.join(repoRootPath || process.cwd(), ".kabeeri", "evolution.json");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+function loadPlannerTasksState(repoRootPath) {
+  const filePath = path.join(repoRootPath || process.cwd(), ".kabeeri", "tasks.json");
+  if (!fs.existsSync(filePath)) {
+    return { tasks: [] };
+  }
+  const state = safeReadJson(filePath);
+  state.tasks = Array.isArray(state.tasks) ? state.tasks : [];
+  return state;
+}
+
+function savePlannerTasksState(repoRootPath, state) {
+  const filePath = path.join(repoRootPath || process.cwd(), ".kabeeri", "tasks.json");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+function savePlannerMaterializationReport(reportPath, report) {
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
 function normalizePlannerState(state = {}) {
   const plans = Array.isArray(state.plans) ? state.plans.map(normalizePlannerPlanRecord).filter(Boolean) : [];
   return {
@@ -1572,6 +1682,11 @@ function normalizePlannerPlanRecord(plan = {}) {
     rejection_reason: plan.rejection_reason || null,
     completed_at: plan.completed_at || null,
     completion_note: plan.completion_note || null,
+    materialized_at: plan.materialized_at || null,
+    materialization_status: plan.materialization_status || null,
+    evolution_change_id: plan.evolution_change_id || null,
+    materialized_task_ids: Array.isArray(plan.materialized_task_ids) ? [...plan.materialized_task_ids] : [],
+    materialization_report_path: plan.materialization_report_path || null,
     plugin_context: plan.plugin_context || null,
     pipeline: Array.isArray(plan.pipeline) ? [...plan.pipeline] : undefined
   };
@@ -1611,11 +1726,250 @@ function buildPlannerPlanRecord({
     rejected_at: null,
     rejection_reason: null,
     completed_at: null,
-    completion_note: null
+    completion_note: null,
+    materialized_at: null,
+    materialization_status: null,
+    evolution_change_id: null,
+    materialized_task_ids: [],
+    materialization_report_path: null
   };
   if (pluginContext) plan.plugin_context = pluginContext;
   if (Array.isArray(evolutionPlan.pipeline)) plan.pipeline = [...evolutionPlan.pipeline];
   return plan;
+}
+
+function resolveMaterializablePlannerPlan(state = {}, planId, flags = {}) {
+  const selectedPlanId = isFromCurrentPlan(flags) ? String(state.current_plan_id || "").trim() : String(planId || "").trim();
+  if (!selectedPlanId) {
+    throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json first.");
+  }
+  const plan = findPlannerPlan(state, selectedPlanId);
+  if (!plan) {
+    throw new Error(`Planner plan not found: ${selectedPlanId}`);
+  }
+  const status = String(plan.status || "").toLowerCase();
+  if (status !== "approved") {
+    throw new Error(`Planner plan ${selectedPlanId} must be approved before materialization.`);
+  }
+  return plan;
+}
+
+function buildPlannerMaterializationArtifact(plan, context = {}) {
+  const mode = normalizePlannerMode(plan.planner_mode);
+  const deliveryMode = plan.delivery_mode || getDeliveryMode(mode);
+  const pluginContext = mode === "plugin" ? (plan.plugin_context || buildPluginContext({ plugin_id: plan.recommended_evolution && plan.recommended_evolution.plugin_context && plan.recommended_evolution.plugin_context.plugin_id }, context)) : null;
+  const evolutionPlan = plan.recommended_evolution && Object.keys(plan.recommended_evolution).length
+    ? plan.recommended_evolution
+    : buildPlannerEvolutionPlan(plan.goal || "Approved planner plan", { mode, deliveryMode, pluginContext }, context);
+  const taskPunch = plan.task_punch && Array.isArray(plan.task_punch.tasks) && plan.task_punch.tasks.length
+    ? plan.task_punch
+    : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext }, context);
+  return {
+    report_type: "kvdf_planner_materialization_artifact",
+    generated_at: new Date().toISOString(),
+    planner_mode: mode,
+    track: plan.track || getPlannerTrack(mode),
+    delivery_mode: deliveryMode,
+    goal: plan.goal || evolutionPlan.title || "",
+    evolution_plan: evolutionPlan,
+    task_punch: taskPunch,
+    plugin_context: pluginContext
+  };
+}
+
+function upsertPlannerEvolutionRecord(evolutionState, plan, materialization, context = {}) {
+  evolutionState.changes = Array.isArray(evolutionState.changes) ? evolutionState.changes : [];
+  evolutionState.impact_plans = Array.isArray(evolutionState.impact_plans) ? evolutionState.impact_plans : [];
+  const changeId = plan.evolution_change_id || (plan.recommended_evolution && plan.recommended_evolution.evolution_id) || normalizeEvolutionId(plan.goal || "planner evolution");
+  const evolutionPlan = materialization.evolution_plan || {};
+  const existing = evolutionState.changes.find((item) => String(item.change_id || "") === changeId) || null;
+  const now = new Date().toISOString();
+  const change = existing || {
+    change_id: changeId,
+    title: evolutionPlan.title || plan.goal || "Planner Evolution",
+    description: plan.goal || evolutionPlan.reason || evolutionPlan.title || "Planner Evolution",
+    status: "planned",
+    impacted_areas: [],
+    task_ids: [],
+    created_at: now
+  };
+  change.title = evolutionPlan.title || plan.goal || change.title;
+  change.description = plan.goal || evolutionPlan.reason || change.description || change.title;
+  change.status = "planned";
+  change.source = "planner";
+  change.planner_source = plan.planner_mode === "owner" ? "planner_owner" : plan.planner_mode === "vibe" ? "planner_vibe" : "planner_plugin";
+  change.planner_plan_id = plan.plan_id;
+  change.planner_mode = plan.planner_mode;
+  change.track = plan.track;
+  change.delivery_mode = plan.delivery_mode;
+  change.impacted_areas = Array.isArray(evolutionPlan.impacted_areas)
+    ? [...evolutionPlan.impacted_areas]
+    : (Array.isArray(evolutionPlan.in_scope) ? [...evolutionPlan.in_scope] : []);
+  change.in_scope = Array.isArray(evolutionPlan.in_scope) ? [...evolutionPlan.in_scope] : [];
+  change.out_of_scope = Array.isArray(evolutionPlan.out_of_scope) ? [...evolutionPlan.out_of_scope] : [];
+  change.allowed_files = Array.isArray(evolutionPlan.allowed_files) ? [...evolutionPlan.allowed_files] : [];
+  change.forbidden_files = Array.isArray(evolutionPlan.forbidden_files) ? [...evolutionPlan.forbidden_files] : [];
+  change.validation_commands = Array.isArray(evolutionPlan.validation_commands) ? [...evolutionPlan.validation_commands] : [];
+  change.stop_condition = evolutionPlan.stop_condition || "";
+  change.task_ids = [];
+  change.updated_at = now;
+  change.milestone_id = change.milestone_id || `planner-${changeId}`;
+  change.milestone_title = evolutionPlan.title || change.title;
+  change.milestone_summary = evolutionPlan.reason || plan.goal || change.description;
+  change.milestone_status = "planned";
+  change.local_first = plan.delivery_mode === "local_first";
+  change.source_control = plan.delivery_mode === "local_first" ? "local" : "direct_main";
+  change.sync_mode = plan.delivery_mode === "local_first" ? "local_first" : "direct_main";
+  change.sync_policy = plan.delivery_mode === "local_first" ? "local_only" : "direct_main";
+  change.github_sync_enabled = plan.delivery_mode !== "local_first";
+  change.branch_name = change.branch_name || (plan.delivery_mode === "local_first" ? "local-first" : `evo/${changeId}`);
+  change.merge_target_branch = change.merge_target_branch || "main";
+  change.review_gate = change.review_gate || (plan.planner_mode === "owner" ? "owner_approval_required" : "planner_approval_required");
+  change.review_required = true;
+  change.review_status = change.review_status || "pending";
+  change.branch_policy = change.branch_policy || {
+    mode: plan.delivery_mode === "local_first" ? "local_only" : "direct_main"
+  };
+  change.task_trash_policy = change.task_trash_policy || {
+    enabled: true,
+    archive_status: "archived"
+  };
+  change.release_gate = change.release_gate || {
+    enabled: plan.planner_mode === "owner",
+    owner_required: true
+  };
+  change.planner_materialized_at = now;
+  change.planner_materialization_status = "materialized";
+  change.planner_materialization_report_path = `.kabeeri/reports/planner_materialization_${plan.plan_id}.json`;
+  if (existing) {
+    const index = evolutionState.changes.findIndex((item) => String(item.change_id || "") === changeId);
+    evolutionState.changes[index] = change;
+  } else {
+    evolutionState.changes.push(change);
+  }
+  const impactPlan = {
+    plan_id: `${changeId}-materialization`,
+    change_id: changeId,
+    title: change.title,
+    status: "planned",
+    planner_plan_id: plan.plan_id,
+    planner_mode: plan.planner_mode,
+    track: plan.track,
+    delivery_mode: plan.delivery_mode,
+    impacted_areas: [...change.impacted_areas],
+    tasks: []
+  };
+  const impactIndex = evolutionState.impact_plans.findIndex((item) => String(item.change_id || "") === changeId);
+  if (impactIndex >= 0) evolutionState.impact_plans[impactIndex] = impactPlan;
+  else evolutionState.impact_plans.push(impactPlan);
+  return change;
+}
+
+function upsertPlannerMaterializationTasks(tasksState, evolutionState, plan, materialization, context = {}, changeId) {
+  tasksState.tasks = Array.isArray(tasksState.tasks) ? tasksState.tasks : [];
+  const evolutionPlan = materialization.evolution_plan || {};
+  const taskPunch = materialization.task_punch || { tasks: [] };
+  const now = new Date().toISOString();
+  const createdTasks = [];
+  for (const task of taskPunch.tasks || []) {
+    const taskId = String(task.id || "").trim();
+    if (!taskId) continue;
+    const record = {
+      id: taskId,
+      title: task.title || `Planner task for ${plan.plan_id}`,
+      status: "proposed",
+      source: `planner:${plan.plan_id}`,
+      planner_source: plan.planner_mode === "owner" ? "planner_owner" : plan.planner_mode === "vibe" ? "planner_vibe" : "planner_plugin",
+      planner_plan_id: plan.plan_id,
+      evolution_change_id: changeId,
+      evolution_milestone_id: evolutionState.changes.find((item) => String(item.change_id || "") === changeId)?.milestone_id || `planner-${changeId}`,
+      evolution_milestone_title: evolutionState.changes.find((item) => String(item.change_id || "") === changeId)?.milestone_title || plan.goal || evolutionPlan.title || "Planner Evolution",
+      track: plan.track,
+      allowed_files: Array.isArray(task.allowed_files) ? [...task.allowed_files] : [],
+      forbidden_files: Array.isArray(task.forbidden_files) ? [...task.forbidden_files] : [],
+      acceptance_criteria: Array.isArray(task.acceptance_criteria) ? [...task.acceptance_criteria] : [],
+      validation_commands: Array.isArray(task.validation_commands) ? [...task.validation_commands] : [],
+      stop_condition: task.stop_condition || evolutionPlan.stop_condition || "",
+      created_at: now
+    };
+    if (task.workstream) record.workstream = task.workstream;
+    if (Array.isArray(task.workstreams)) record.workstreams = [...task.workstreams];
+    if (plan.planner_mode === "plugin" && plan.plugin_context) record.plugin_context = plan.plugin_context;
+    if (plan.delivery_mode === "direct_main") {
+      record.branch_name = `evo/${changeId}`;
+      record.merge_target_branch = "main";
+      record.sync_policy = "direct_main";
+      record.github_sync_enabled = true;
+    } else {
+      record.branch_name = "local-first";
+      record.merge_target_branch = "main";
+      record.sync_policy = "local_only";
+      record.github_sync_enabled = false;
+    }
+    const existingIndex = tasksState.tasks.findIndex((item) => String(item.id || "") === taskId || String(item.planner_plan_id || "") === plan.plan_id);
+    if (existingIndex >= 0) tasksState.tasks[existingIndex] = { ...tasksState.tasks[existingIndex], ...record };
+    else tasksState.tasks.push(record);
+    createdTasks.push(record);
+  }
+  const existingTaskIds = new Set(createdTasks.map((task) => task.id));
+  for (const task of tasksState.tasks) {
+    if (String(task.planner_plan_id || "") === plan.plan_id && !existingTaskIds.has(task.id)) {
+      task.evolution_change_id = changeId;
+    }
+  }
+  if (changeId) {
+    const evolutionStateTaskTargets = createdTasks.map((task) => task.id);
+    const idx = Array.isArray(evolutionState.changes)
+      ? evolutionState.changes.findIndex((item) => String(item.change_id || "") === changeId)
+      : -1;
+    if (idx >= 0) {
+      evolutionState.changes[idx].task_ids = evolutionStateTaskTargets;
+      evolutionState.changes[idx].updated_at = now;
+    }
+    const impactIdx = Array.isArray(evolutionState.impact_plans)
+      ? evolutionState.impact_plans.findIndex((item) => String(item.change_id || "") === changeId)
+      : -1;
+    if (impactIdx >= 0) {
+      evolutionState.impact_plans[impactIdx].tasks = createdTasks.map((task) => ({
+        task_id: task.id,
+        title: task.title,
+        allowed_files: Array.isArray(task.allowed_files) ? [...task.allowed_files] : [],
+        validation_commands: Array.isArray(task.validation_commands) ? [...task.validation_commands] : []
+      }));
+      evolutionState.impact_plans[impactIdx].updated_at = now;
+    }
+  }
+  return createdTasks;
+}
+
+function buildPlannerMaterializationReport({ plan, materialization, evolutionRecord, taskRecords, reportPath, materializedAt }) {
+  return {
+    report_type: "kvdf_planner_materialization",
+    generated_at: materializedAt,
+    plan_id: plan.plan_id,
+    planner_mode: plan.planner_mode,
+    track: plan.track,
+    delivery_mode: plan.delivery_mode,
+    status: "materialized",
+    evolution: {
+      change_id: evolutionRecord.change_id,
+      title: evolutionRecord.title,
+      status: evolutionRecord.status,
+      planner_plan_id: plan.plan_id,
+      area: evolutionRecord.impacted_areas && evolutionRecord.impacted_areas.length ? evolutionRecord.impacted_areas[0] : null
+    },
+    task_punch: {
+      tasks_created: taskRecords.length,
+      task_ids: taskRecords.map((task) => task.id)
+    },
+    report_path: reportPath.replace(/\\/g, "/"),
+    next_action: "Run kvdf planner prompt --from-current --json, then execute the first approved task slice.",
+    visual: plan.visual || null,
+    allowed_files: materialization.evolution_plan ? materialization.evolution_plan.allowed_files || [] : [],
+    forbidden_files: materialization.evolution_plan ? materialization.evolution_plan.forbidden_files || [] : [],
+    validation_commands: materialization.evolution_plan ? materialization.evolution_plan.validation_commands || [] : [],
+    stop_condition: materialization.evolution_plan ? materialization.evolution_plan.stop_condition || "" : ""
+  };
 }
 
 function normalizePlannerStatus(value) {
@@ -1798,6 +2152,42 @@ function renderPlannerPromptReport(report) {
 
 function renderPlannerVisualReport(report) {
   return report.markdown_report;
+}
+
+function renderPlannerMaterializationReport(report, tableRenderer) {
+  const rows = [
+    ["Plan ID", report.plan_id || ""],
+    ["Planner mode", report.planner_mode || ""],
+    ["Track", report.track || ""],
+    ["Delivery mode", report.delivery_mode || ""],
+    ["Status", report.status || ""],
+    ["Evolution", report.evolution && report.evolution.change_id ? report.evolution.change_id : ""]
+  ];
+  const taskIds = Array.isArray(report.task_punch && report.task_punch.task_ids) ? report.task_punch.task_ids : [];
+  return [
+    "KVDF Planner Materialization",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Evolution:",
+    `- Change ID: ${report.evolution && report.evolution.change_id ? report.evolution.change_id : ""}`,
+    `- Title: ${report.evolution && report.evolution.title ? report.evolution.title : ""}`,
+    `- Status: ${report.evolution && report.evolution.status ? report.evolution.status : ""}`,
+    `- Planner plan: ${report.evolution && report.evolution.planner_plan_id ? report.evolution.planner_plan_id : ""}`,
+    "",
+    "Task Punch:",
+    `- Tasks created: ${report.task_punch && typeof report.task_punch.tasks_created === "number" ? report.task_punch.tasks_created : 0}`,
+    ...(taskIds.length ? taskIds.map((taskId) => `- ${taskId}`) : ["- None"]),
+    "",
+    "Validation commands:",
+    ...(report.validation_commands || []).map((command) => `- ${command}`),
+    "",
+    `Stop condition: ${report.stop_condition || ""}`,
+    "",
+    `Report path: ${report.report_path || ""}`,
+    "",
+    `Next action: ${report.next_action || ""}`
+  ].join("\n");
 }
 
 function renderPlannerStateSummaryReport(report, tableRenderer) {

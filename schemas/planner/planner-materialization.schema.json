@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Materialization Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "plan_id",
+    "planner_mode",
+    "track",
+    "delivery_mode",
+    "status",
+    "evolution",
+    "task_punch",
+    "report_path",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_planner_materialization"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "planner_mode": {
+      "type": "string",
+      "enum": ["owner", "vibe", "plugin"]
+    },
+    "track": {
+      "type": "string",
+      "enum": ["framework_owner", "vibe_app_developer", "plugin"]
+    },
+    "delivery_mode": {
+      "type": "string",
+      "enum": ["direct_main", "local_first"]
+    },
+    "status": {
+      "type": "string",
+      "const": "materialized"
+    },
+    "evolution": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["change_id", "title", "status", "planner_plan_id"],
+      "properties": {
+        "change_id": { "type": "string", "minLength": 1 },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "minLength": 1 },
+        "planner_plan_id": { "type": "string", "minLength": 1 },
+        "area": { "type": ["string", "null"] }
+      }
+    },
+    "task_punch": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["tasks_created", "task_ids"],
+      "properties": {
+        "tasks_created": { "type": "integer", "minimum": 0 },
+        "task_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "report_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "validation_commands": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "stop_condition": {
+      "type": "string"
+    }
+  }
+}

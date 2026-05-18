@@ -474,6 +474,8 @@ Notes:
   kvdf planner current --json
   kvdf planner reject <plan-id> --reason "Not now" --json
   kvdf planner complete <plan-id> --note "Done" --json
+  kvdf planner materialize --from-current --json
+  kvdf planner materialize <plan-id> --json
   kvdf planner prompt --from-current --json
   kvdf planner prompt --goal "Add planner layer" --track owner --json
   kvdf planner prompt --goal "Build app delivery slice" --track vibe --json

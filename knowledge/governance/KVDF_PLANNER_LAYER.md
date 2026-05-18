@@ -160,21 +160,35 @@ Required progression:
 2. planner propose
 3. Owner approve or reject
 4. planner current
-5. planner prompt --from-current
-6. planner visual --from-current
-7. Codex execution
-8. validation
-9. planner complete
+5. planner materialize
+6. planner prompt --from-current
+7. planner visual --from-current
+8. Codex execution
+9. validation
+10. planner complete
 
 Rules:
 
 - proposed plans are not executable
 - approved plans become the current planner source of truth
 - rejected plans remain historical and do not become the current plan
+- approved plans can be materialized into Evolution and Task Punch runtime records without executing the tasks yet
 - approved plans remain current until they are completed or explicitly rejected
 - completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
 - `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
+
+## Planner Materialization Stage
+
+Materialization bridges the approved plan into governed KVDF runtime records:
+
+- it creates or updates the Evolution record for the approved plan
+- it creates or updates the Task Punch task records for the approved plan
+- it records a planner-to-evolution trace link in runtime state
+- it writes a materialization report under `.kabeeri/reports/`
+- it does not execute tasks
+- it does not commit files
+- it does not make branch/PR mandatory
 
 ## Track Rules
 

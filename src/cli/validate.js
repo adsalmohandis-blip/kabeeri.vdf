@@ -581,11 +581,14 @@ function validateRuntimeSchemas(pass, fail) {
   validateJson(registryFile, pass, fail);
   if (!fileExists(registryFile)) return;
   const registry = readJsonFile(registryFile);
+  const specialRuntimeEntries = [
+    { pattern: ".kabeeri/reports/planner_materialization_*.json", schema: "schemas/planner/planner-materialization.schema.json" }
+  ];
   if (!registry.registry_version) fail("runtime schema registry missing registry_version");
   else if (typeof registry.registry_version !== "string") fail("runtime schema registry version must be a string");
   const stateFiles = registry.state_files || [];
   const jsonlFiles = registry.jsonl_files || [];
-  const runtimeEntries = [...stateFiles, ...jsonlFiles];
+  const runtimeEntries = [...stateFiles, ...jsonlFiles, ...specialRuntimeEntries];
   const coverageExemptions = getRuntimeSchemaCoverageExemptions(registry);
   let checkedJson = 0;
   let checkedJsonl = 0;
