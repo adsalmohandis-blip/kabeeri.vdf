@@ -3,7 +3,7 @@ const path = require("path");
 const { readJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { summarizeUsage } = require("./usage_pricing");
-const { buildCustomerAppSummaries } = require("./dashboard_state");
+const { buildCustomerAppSummaries, buildPlannerDashboardState } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
 const { readStateArray } = require("../services/state_utils");
 const { buildEvolutionSummary } = require("../services/evolution");
@@ -170,6 +170,7 @@ function buildDeveloperAppDashboardHtml(options = {}) {
     evolutionSummary.current_milestone ? evolutionSummary.current_milestone.closeout_state : "none",
     evolutionSummary.auto_closed_changes_total || 0
   );
+  const plannerState = buildPlannerDashboardState({ project });
 
   return `<!doctype html>
 <html lang="en">
@@ -204,9 +205,11 @@ function buildDeveloperAppDashboardHtml(options = {}) {
     <span class="pill">${escapeHtml(summary.boundary_status || "unknown")} boundary</span>
     ${(summary.surface_scopes || []).map((scope) => `<span class="pill">${escapeHtml(scope)}</span>`).join("")}
     <div class="muted">This dashboard is the app-track view for the current app workspace. It stays separate from the owner dashboard and only shows app-track analysis. Milestones auto-archive when their linked tasks finish and trash/archive is written.</div>
+    <div class="muted">Planner: ${escapeHtml(plannerState.available ? `${plannerState.current_planner_mode || "unknown"} / ${plannerState.delivery_mode || "unknown"}` : "missing")}</div>
     <div class="pill">${escapeHtml(evolutionCloseoutBadge)}</div>
   </header>
   <main>
+    ${renderPlannerDashboardSection(plannerState, { label: "Planner / Pipeline", emptyMessage: "No planner runtime state yet. The app dashboard stays safe when planner state is missing." })}
     <section class="grid">
       ${metricCard("Tasks", tasks.length)}
       ${metricCard("Open Tasks", tasks.filter((item) => !["done", "closed", "archived", "owner_verified"].includes(String(item.status || "").toLowerCase())).length)}
@@ -336,6 +339,7 @@ function buildDashboardHtml(options = {}) {
     (business.evolution_auto_closeout || {}).current_milestone_closeout_state,
     (business.evolution_auto_closeout || {}).auto_closed_changes_total || 0
   );
+  const plannerState = buildPlannerDashboardState({ project });
   const dashboardActionItems = buildDashboardActionItems({
     technical,
     business,
@@ -400,6 +404,7 @@ function buildDashboardHtml(options = {}) {
     <div class="source-note">Framework-owner view: platform health, governance, evolution, runtime contracts, plugins, and shared workspace state. App-track dashboards use the app route and stay separate by default.</div>
     <div class="source-note">Workspace mode: ${escapeHtml(dashboardUxGovernance.workspace_strategy && dashboardUxGovernance.workspace_strategy.current_workspace_mode ? dashboardUxGovernance.workspace_strategy.current_workspace_mode : "workspace")}</div>
     <div class="source-note">Evolution closeout: <strong>${escapeHtml(evolutionCloseoutBadge)}</strong></div>
+    <div class="source-note">Planner: <strong>${escapeHtml(plannerState.available ? `${plannerState.current_planner_mode || "unknown"} / ${plannerState.delivery_mode || "unknown"}` : "missing")}</strong></div>
     <div class="toolbar">
       <span class="muted"><strong>Dashboard Controls</strong></span>
       <label for="app-filter">App</label>
@@ -427,6 +432,7 @@ function buildDashboardHtml(options = {}) {
     <div class="scope-summary" id="scope-summary">Current view: Overview</div>
   </header>
   <main>
+    ${renderPlannerDashboardSection(plannerState, { label: "Planner / Pipeline", emptyMessage: "No planner runtime state yet. The owner dashboard stays safe when planner state is missing." })}
     <section class="grid">
       ${metricCard("Tasks", tasks.length)}
       ${metricCard("Verified", business.verified_tasks || 0)}
@@ -781,6 +787,57 @@ function buildEvolutionCloseoutBadge(closeoutState, autoClosedTotal) {
   if (state === "awaiting_archive") return "Milestone awaiting archive";
   if (state === "active") return "Milestone active";
   return "No active evolution";
+}
+
+function renderPlannerDashboardSection(plannerState = null, options = {}) {
+  const label = options.label || "Planner / Pipeline";
+  const emptyMessage = options.emptyMessage || "No planner runtime state yet. Run `kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json` to create a plan.";
+  if (!plannerState || !plannerState.available) {
+    return `
+      <section class="section">
+        <h2>${escapeHtml(label)}</h2>
+        <p class="section-help">${escapeHtml(emptyMessage)}</p>
+      </section>
+    `;
+  }
+  const sourceControl = plannerState.source_control || {};
+  const currentPlan = plannerState.current_plan || {};
+  const pipeline = plannerState.pipeline || {};
+  const visual = plannerState.visual || {};
+  const materialization = plannerState.materialization || {};
+  const versionPlan = plannerState.version_plan || {};
+  const taskPunch = plannerState.task_punch || {};
+  const guidance = plannerState.guidance || {};
+  const notes = Array.isArray(guidance.notes) ? guidance.notes : [];
+  return `
+    <section class="section">
+      <h2>${escapeHtml(label)}</h2>
+      <p class="section-help">${escapeHtml(guidance.summary || "Planner state is available for the current workspace.")}</p>
+      ${htmlTable(["Field", "Value"], [
+        ["Current plan", plannerState.current_plan_id || ""],
+        ["Planner mode", plannerState.current_planner_mode || ""],
+        ["Track", plannerState.track || ""],
+        ["Delivery mode", plannerState.delivery_mode || ""],
+        ["Source control", [
+          sourceControl.enabled ? "enabled" : "disabled",
+          sourceControl.provider || "none",
+          sourceControl.remote_provider || "none",
+          sourceControl.mode || "none"
+        ].join(" / ")],
+        ["Version plan", `${versionPlan.available ? versionPlan.versions_total || 0 : 0} version(s)`],
+        ["Materialization", materialization.status || "unknown"],
+        ["Task punch", `${taskPunch.available ? taskPunch.task_count || 0 : 0} task(s)`],
+        ["Next evolution", plannerState.next_evolution && plannerState.next_evolution.title ? plannerState.next_evolution.title : ""],
+        ["Next action", plannerState.next_action || ""]
+      ])}
+      <p class="section-help"><strong>Current plan</strong>: ${escapeHtml(currentPlan.goal || currentPlan.title || "none")}</p>
+      <p class="section-help"><strong>Pipeline</strong>: ${escapeHtml(pipeline.available ? `${pipeline.documentation_files_total || 0} docs, ${pipeline.versions_total || 0} versions, ${pipeline.evolutions_total || 0} evolutions` : "not available")}</p>
+      <p class="section-help"><strong>Visual</strong>: ${escapeHtml(visual.available ? `${visual.graph_format || "mermaid"}, ${visual.board_columns || 0} board columns, ${visual.scope_allowed_total || 0} allowed files, ${visual.scope_forbidden_total || 0} forbidden files` : "not available")}</p>
+      <p class="section-help"><strong>Task punch IDs</strong>: ${escapeHtml((taskPunch.task_ids || []).join(", ") || "none")}</p>
+      <p class="section-help"><strong>Guidance</strong>: ${escapeHtml(guidance.summary || "")}</p>
+      ${notes.length ? `<ul>${notes.map((note) => `<li>${escapeHtml(note)}</li>`).join("")}</ul>` : ""}
+    </section>
+  `;
 }
 
 function metricCard(label, value) {

@@ -1,13 +1,13 @@
 {
   "report_type": "task_control_plane_packet",
-  "generated_at": "2026-05-16T22:48:13.161Z",
+  "generated_at": "2026-05-18T14:18:16.959Z",
   "audience": "framework_owner",
   "command_prefix": "kvdf task",
   "surface_role": "control_plane",
-  "packet_id": "task-packet-1778971693150",
+  "packet_id": "task-packet-1779113896940",
   "packet_state_path": "docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json",
   "packet_preview_command": "kvdf task packet --json",
-  "current_change_id": "evo-099",
+  "current_change_id": "evo-104",
   "control_plane_mode": "packet_preview",
   "statuses_requested": [
     "approved",
@@ -179,9 +179,9 @@
     },
     "traceability": {
       "brief_id": "brief-1778788879920",
-      "questionnaire_plan_id": "questionnaire-intake-1778790943730",
-      "module_plan_id": "module-plan-1778790943729",
-      "delivery_map_id": "delivery-map-1778790943730",
+      "questionnaire_plan_id": "questionnaire-intake-1779095809853",
+      "module_plan_id": "module-plan-1779095809853",
+      "delivery_map_id": "delivery-map-1779095809853",
       "task_synthesis_id": null,
       "chain": [
         "vibe_brief",
@@ -208,7 +208,7 @@
     },
     "execution_candidates": [
       {
-        "id": "task-063",
+        "id": "task-072",
         "title": "Evolution Steward: update CLI surface and help",
         "status": "approved",
         "assignee_id": "",
@@ -222,11 +222,11 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-064",
+        "id": "task-073",
         "title": "Evolution Steward: update task tracking integration",
         "status": "approved",
         "assignee_id": "",
@@ -240,11 +240,11 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-065",
+        "id": "task-074",
         "title": "Evolution Steward: update readiness/governance reports",
         "status": "approved",
         "assignee_id": "",
@@ -258,11 +258,11 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-066",
+        "id": "task-075",
         "title": "Evolution Steward: update AI context and prompt guidance",
         "status": "approved",
         "assignee_id": "",
@@ -277,11 +277,11 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-067",
+        "id": "task-076",
         "title": "Evolution Steward: update human documentation",
         "status": "approved",
         "assignee_id": "",
@@ -294,11 +294,11 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-068",
+        "id": "task-077",
         "title": "Evolution Steward: update capabilities reference",
         "status": "approved",
         "assignee_id": "",
@@ -311,11 +311,11 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-069",
+        "id": "task-078",
         "title": "Evolution Steward: update automated tests",
         "status": "approved",
         "assignee_id": "",
@@ -327,8 +327,8 @@
         "acceptance_criteria_count": 2,
         "lifecycle_stage": "ready",
         "next_action": "assign the task and issue a scoped token",
-        "created_at": "2026-05-16T22:47:51.388Z",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "created_at": "2026-05-18T14:18:11.143Z",
+        "updated_at": "2026-05-18T14:18:13.031Z"
       }
     ],
     "proposed_tasks": [
@@ -454,74 +454,74 @@
       }
     ],
     "task_tracker": {
-      "total_tasks": 69,
+      "total_tasks": 78,
       "approved_total": 7,
       "ready_total": 7,
       "in_progress_total": 0,
       "proposed_total": 0,
       "active_tasks": [
         {
-          "id": "task-063",
+          "id": "task-072",
           "title": "Evolution Steward: update CLI surface and help",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         },
         {
-          "id": "task-064",
+          "id": "task-073",
           "title": "Evolution Steward: update task tracking integration",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         },
         {
-          "id": "task-065",
+          "id": "task-074",
           "title": "Evolution Steward: update readiness/governance reports",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         },
         {
-          "id": "task-066",
+          "id": "task-075",
           "title": "Evolution Steward: update AI context and prompt guidance",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         },
         {
-          "id": "task-067",
+          "id": "task-076",
           "title": "Evolution Steward: update human documentation",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         },
         {
-          "id": "task-068",
+          "id": "task-077",
           "title": "Evolution Steward: update capabilities reference",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         },
         {
-          "id": "task-069",
+          "id": "task-078",
           "title": "Evolution Steward: update automated tests",
           "status": "approved",
           "assignee_id": "",
           "lifecycle_stage": "approved",
           "next_action": "",
-          "updated_at": "2026-05-16T22:47:51.616Z"
+          "updated_at": "2026-05-18T14:18:13.031Z"
         }
       ],
       "tracker_open": 7,
@@ -529,67 +529,67 @@
     },
     "current_active_tasks": [
       {
-        "id": "task-063",
+        "id": "task-072",
         "title": "Evolution Steward: update CLI surface and help",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-064",
+        "id": "task-073",
         "title": "Evolution Steward: update task tracking integration",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-065",
+        "id": "task-074",
         "title": "Evolution Steward: update readiness/governance reports",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-066",
+        "id": "task-075",
         "title": "Evolution Steward: update AI context and prompt guidance",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-067",
+        "id": "task-076",
         "title": "Evolution Steward: update human documentation",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-068",
+        "id": "task-077",
         "title": "Evolution Steward: update capabilities reference",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       },
       {
-        "id": "task-069",
+        "id": "task-078",
         "title": "Evolution Steward: update automated tests",
         "status": "approved",
         "assignee_id": "",
         "lifecycle_stage": "approved",
         "next_action": "",
-        "updated_at": "2026-05-16T22:47:51.616Z"
+        "updated_at": "2026-05-18T14:18:13.031Z"
       }
     ]
   },
@@ -606,12 +606,12 @@
     "The packet can be inspected later without replaying chat history.",
     "The packet stays in the CLI/control-plane layer and does not plan work inside the executor."
   ],
-  "next_action": "kvdf task assign task-063 --assignee codex",
-  "next_exact_action": "kvdf task assign task-063 --assignee codex",
-  "next_command": "kvdf task assign task-063 --assignee codex",
+  "next_action": "kvdf task assign task-072 --assignee codex",
+  "next_exact_action": "kvdf task assign task-072 --assignee codex",
+  "next_command": "kvdf task assign task-072 --assignee codex",
   "execution_queue": [
     {
-      "id": "task-063",
+      "id": "task-072",
       "title": "Evolution Steward: update CLI surface and help",
       "status": "approved",
       "assignee_id": "",
@@ -625,11 +625,11 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     },
     {
-      "id": "task-064",
+      "id": "task-073",
       "title": "Evolution Steward: update task tracking integration",
       "status": "approved",
       "assignee_id": "",
@@ -643,11 +643,11 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     },
     {
-      "id": "task-065",
+      "id": "task-074",
       "title": "Evolution Steward: update readiness/governance reports",
       "status": "approved",
       "assignee_id": "",
@@ -661,11 +661,11 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     },
     {
-      "id": "task-066",
+      "id": "task-075",
       "title": "Evolution Steward: update AI context and prompt guidance",
       "status": "approved",
       "assignee_id": "",
@@ -680,11 +680,11 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     },
     {
-      "id": "task-067",
+      "id": "task-076",
       "title": "Evolution Steward: update human documentation",
       "status": "approved",
       "assignee_id": "",
@@ -697,11 +697,11 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     },
     {
-      "id": "task-068",
+      "id": "task-077",
       "title": "Evolution Steward: update capabilities reference",
       "status": "approved",
       "assignee_id": "",
@@ -714,11 +714,11 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     },
     {
-      "id": "task-069",
+      "id": "task-078",
       "title": "Evolution Steward: update automated tests",
       "status": "approved",
       "assignee_id": "",
@@ -730,18 +730,18 @@
       "acceptance_criteria_count": 2,
       "lifecycle_stage": "ready",
       "next_action": "assign the task and issue a scoped token",
-      "created_at": "2026-05-16T22:47:51.388Z",
-      "updated_at": "2026-05-16T22:47:51.616Z"
+      "created_at": "2026-05-18T14:18:11.143Z",
+      "updated_at": "2026-05-18T14:18:13.031Z"
     }
   ],
   "summary": {
-    "total_tasks": 69,
+    "total_tasks": 78,
     "approved_total": 7,
     "ready_total": 7,
     "in_progress_total": 0,
     "proposed_total": 0,
     "candidate_total": 7,
-    "first_candidate_id": "task-063",
+    "first_candidate_id": "task-072",
     "first_candidate_status": "approved"
   },
   "status": "ready",

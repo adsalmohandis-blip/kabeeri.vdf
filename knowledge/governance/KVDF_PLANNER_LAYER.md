@@ -190,6 +190,31 @@ Materialization bridges the approved plan into governed KVDF runtime records:
 - it does not commit files
 - it does not make branch/PR mandatory
 
+## Planner Dashboard Sync Stage
+
+The dashboard and live-report layers are derived consumers of Planner runtime
+state. They do not decide the next Evolution, but they do expose enough of the
+approved plan to keep the workspace readable without opening the planner files
+manually.
+
+The dashboard sync layer should expose:
+
+- the current planner state
+- the current approved plan
+- the current pipeline summary when present
+- version plan summary
+- visual planning summary
+- source control state
+- materialization status
+- next evolution guidance
+- task punch summary
+- track-specific guidance for owner, vibe, and plugin modes
+
+The planner dashboard view must remain safe when `.kabeeri/planner.json` is
+missing, when no current plan is approved, or when the current plan has not yet
+been materialized. In those cases the dashboard should show empty or missing
+states rather than throwing.
+
 ## Idea to Evolution Pipeline Stage
 
 The Idea to Evolution Pipeline sits above the shared approval gate and turns a

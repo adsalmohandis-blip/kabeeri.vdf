@@ -101,6 +101,7 @@ const {
   buildTaskTrackerActionItems,
   buildWorkstreamSummaries,
   buildCustomerAppSummaries,
+  buildPlannerDashboardState,
   collectWorkspaceDashboardSummaries,
   getDashboardWorkspaceRoots,
   parseWorkspaceRoots,
@@ -8832,6 +8833,7 @@ function buildLiveReportsState(overrides = {}) {
   const latestDashboardUx = dashboardUxAudits.length ? dashboardUxAudits[dashboardUxAudits.length - 1] : null;
   const evolutionState = fileExists(".kabeeri/evolution.json") ? readJsonFile(".kabeeri/evolution.json") : { changes: [], impact_plans: [], current_change_id: null };
   const evolutionSummary = buildEvolutionSummaryService(evolutionState);
+  const plannerState = buildPlannerDashboardState({ project: fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {} });
   const securityScan = getLatestSecurityScan();
   const migrationChecks = latestMigrationChecks();
   const generatedAt = new Date().toISOString();
@@ -8859,6 +8861,39 @@ function buildLiveReportsState(overrides = {}) {
       warnings: 1
     },
     evolution: evolutionSummary,
+    planner: plannerState.available ? {
+      report_type: "planner_dashboard_summary",
+      status: plannerState.current_plan_status,
+      planner_version: plannerState.planner_version,
+      current_plan_id: plannerState.current_plan_id,
+      track: plannerState.track,
+      planner_mode: plannerState.current_planner_mode,
+      delivery_mode: plannerState.delivery_mode,
+      materialization_status: plannerState.materialization.status,
+      next_action: plannerState.next_action,
+      source_control: plannerState.source_control,
+      visual: plannerState.visual,
+      pipeline: plannerState.pipeline,
+      version_plan: plannerState.version_plan,
+      task_punch: plannerState.task_punch,
+      next_evolution: plannerState.next_evolution
+    } : {
+      report_type: "planner_dashboard_summary",
+      status: "missing",
+      planner_version: null,
+      current_plan_id: null,
+      track: null,
+      planner_mode: null,
+      delivery_mode: null,
+      materialization_status: "unknown",
+      next_action: "Run kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json.",
+      source_control: null,
+      visual: null,
+      pipeline: null,
+      version_plan: null,
+      task_punch: null,
+      next_evolution: null
+    },
     security: securityScan ? {
       report_type: "security_latest",
       status: securityScan.status,
@@ -8905,6 +8940,7 @@ function buildLiveReportsState(overrides = {}) {
       task_tracker_blocked: reports.task_tracker.summary.blocked || 0,
       dashboard_ux: reports.dashboard_ux.status,
       evolution: reports.evolution.status,
+      planner: reports.planner.status,
       security: reports.security.status,
       migration: reports.migration.status,
       action_items: actionItems.length,
@@ -8926,6 +8962,8 @@ function buildLiveReportActionItems(reports, resumeReport = null) {
   if (reports.migration.status === "blocked") push("blocker", "migration", "Latest migration checks include blockers.", "Run `kvdf migration audit` and resolve blocked checks.");
   if (reports.security.status === "missing") push("warning", "security", "No security scan is recorded.", "Run `kvdf security scan` before release or handoff.");
   if (reports.dashboard_ux.status === "missing") push("warning", "dashboard", "No dashboard UX audit is recorded.", "Run `kvdf dashboard ux` after dashboard changes.");
+  if (reports.planner && reports.planner.status === "missing") push("info", "planner", "No planner runtime state is recorded yet.", "Run `kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json` to create a governed plan.");
+  if (reports.planner && reports.planner.status === "empty") push("info", "planner", "Planner runtime exists but no approved current plan is selected.", "Run `kvdf planner approve <plan-id> --owner local-owner --json` after proposing a plan.");
   if (reports.evolution && reports.evolution.open_follow_up_tasks > 0) push("warning", "evolution", `${reports.evolution.open_follow_up_tasks} Evolution Steward follow-up task(s) are still open.`, "Run `kvdf evolution status` and finish dependent docs/runtime/test updates.");
   if (resumeReport && resumeReport.track_context && resumeReport.track_context.mismatch) {
     push(

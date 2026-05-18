@@ -1,35 +1,37 @@
 # KVDF Cleaner Summary
 
-Clean status: completed / approved / queue 3 / trashed 7 / remaining 0 / next Cleanup cycle complete.
+Clean status: awaiting_approval / pending / queue 7 / trashed 0 / remaining 0 / next Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
-- Cleanup ID: kvdf-cleanup-1778971671365
+- Cleanup ID: kvdf-cleanup-1779113845515
 - Source report: .kabeeri/reports/kvdf_cleanup_audit.json
-- Generated at: 2026-05-16T23:21:35.611Z
+- Generated at: 2026-05-18T14:17:32.671Z
 
 ## Lifecycle
 
-Metric               Value                  
--------------------  -----------------------
-Status               completed              
-Approval status      approved               
-Next exact action    Cleanup cycle complete.
-Cleanup queue items  3                      
-Trashed tasks        7                      
-Remaining tasks      0                      
-Blocked tasks        0                      
+Metric               Value                                                                                           
+-------------------  ------------------------------------------------------------------------------------------------
+Status               awaiting_approval                                                                               
+Approval status      pending                                                                                         
+Next exact action    Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
+Cleanup queue items  7                                                                                               
+Trashed tasks        0                                                                                               
+Remaining tasks      0                                                                                               
+Blocked tasks        0                                                                                               
 
 ## Queue Highlights
 
-Area            Next action                                                 
---------------  ------------------------------------------------------------
-repo-structure  Review the structure validation and remove folder drift.    
-kvdf-dev        Review the kvdf-dev plugin bundle and command surface.      
-pipeline        Complete traceability before starting the cleanup execution.
+Area            Next action                                                                           
+--------------  --------------------------------------------------------------------------------------
+repo-structure  Review the structure validation and remove folder drift.                              
+kvdf-dev        Review the kvdf-dev plugin bundle and command surface.                                
+pipeline        Complete traceability before starting the cleanup execution.                          
+dead-code       Review dead-code candidates file by file and remove or consolidate the unused surface.
 
 ## Recommendations
 
 - Complete the packet traceability chain before starting execution.
-- Resolve active Evolution state first: ready.
+- Review 4 dead-code candidates flagged by the file inspection pass.
+- Refresh 3 stale-doc candidates flagged by the file inspection pass.
 
 ## Approval Commands
 

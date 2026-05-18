@@ -79,6 +79,7 @@ function collectDashboardState(options = {}, deps = {}) {
   const appSummaries = buildCustomerAppSummaries(apps, features, journeys, filteredTasks, usageSummary, { workspaceTrack: dashboardScope });
   const workstreamSummaries = buildWorkstreamSummaries(workstreams, filteredTasks, filteredSessions, usageSummary, { buildSprintSummary });
   const workspaceSummaries = collectWorkspaceDashboardSummaries(options, dashboardScope);
+  const plannerDashboardState = buildPlannerDashboardState({ project, dashboard_scope: dashboardScope });
   const dashboardUxGovernance = buildDashboardUxGovernanceState({
     apps,
     appSummaries,
@@ -128,6 +129,7 @@ function collectDashboardState(options = {}, deps = {}) {
         live_reports_state: "/__kvdf/api/reports"
       }
     },
+    planner: plannerDashboardState,
     workspaces: workspaceSummaries,
     technical: {
       generated_at: generatedAt,
@@ -156,6 +158,7 @@ function collectDashboardState(options = {}, deps = {}) {
       evolution: evolutionSummary,
       evolution_auto_closeout: evolutionAutoCloseout,
       evolution_closeout_policy: evolutionCloseoutPolicy,
+      planner: plannerDashboardState,
       agile_backlog: summarizeBy(agileState.backlog, "status"),
       agile_stories: summarizeBy(agileState.stories, "status"),
       agile_sprint_reviews: agileState.sprint_reviews.length,
@@ -206,6 +209,7 @@ function collectDashboardState(options = {}, deps = {}) {
       evolution_open_follow_up_tasks: evolutionSummary.open_follow_up_tasks,
       evolution_auto_closeout: evolutionAutoCloseout,
       evolution_closeout_policy: evolutionCloseoutPolicy,
+      planner: plannerDashboardState,
       agile_backlog_total: agileState.backlog.length,
       agile_epics_total: agileState.epics.length,
       agile_stories_total: agileState.stories.length,
@@ -254,6 +258,7 @@ function collectDashboardState(options = {}, deps = {}) {
       context_briefs: contextBriefs,
       evolution: evolutionState,
       evolution_summary: evolutionSummary,
+      planner: plannerDashboardState,
       agile: agileState,
       agile_live: agileLiveState,
       structured: structuredState,
@@ -798,6 +803,210 @@ function filterEvolutionState(evolutionState = {}, workspaceTrack = "framework_o
   return state;
 }
 
+function readPlannerRuntimeState() {
+  if (!fileExists(".kabeeri/planner.json")) return null;
+  try {
+    return readJsonFile(".kabeeri/planner.json");
+  } catch (error) {
+    return null;
+  }
+}
+
+function findCurrentApprovedPlannerPlan(plannerState = {}) {
+  if (!plannerState || !Array.isArray(plannerState.plans)) return null;
+  const currentId = String(plannerState.current_plan_id || "").trim();
+  const currentPlan = currentId ? plannerState.plans.find((plan) => String(plan.plan_id || "") === currentId) : null;
+  if (currentPlan && String(currentPlan.status || "").toLowerCase() === "approved") return currentPlan;
+  return plannerState.plans.find((plan) => String(plan.status || "").toLowerCase() === "approved") || null;
+}
+
+function normalizePlannerSourceControl(sourceControl = null) {
+  const resolved = sourceControl && typeof sourceControl === "object" ? sourceControl : {};
+  return {
+    enabled: Boolean(resolved.enabled),
+    provider: resolved.provider || "none",
+    remote_provider: resolved.remote_provider || "none",
+    provider_plugin: resolved.provider_plugin || null,
+    mode: resolved.mode || "none",
+    branching_enabled: Boolean(resolved.branching_enabled),
+    pr_enabled: Boolean(resolved.pr_enabled),
+    default_branch: resolved.default_branch || "main",
+    current_branch: resolved.current_branch || null,
+    requires_owner_approval: resolved.requires_owner_approval !== false,
+    replaceable_provider: resolved.replaceable_provider !== false,
+    notes: Array.isArray(resolved.notes) ? [...resolved.notes] : []
+  };
+}
+
+function buildPlannerVersionPlanSummary(plan = null) {
+  const versions = Array.isArray(plan && plan.version_plan && plan.version_plan.versions) ? plan.version_plan.versions : [];
+  return {
+    available: Boolean(plan),
+    versions_total: versions.length,
+    current_version: plan && plan.version_plan ? plan.version_plan.current_version || plan.version_plan.active_version || null : null,
+    next_version: plan && plan.version_plan ? plan.version_plan.next_version || null : null,
+    source_control_mode: plan && plan.source_control ? plan.source_control.mode || null : null
+  };
+}
+
+function buildPlannerPipelineSummary(plan = null) {
+  const pipeline = plan && plan.pipeline ? plan.pipeline : null;
+  const rawVersionPlan = plan && plan.version_plan ? plan.version_plan : null;
+  const taskPunch = plan && plan.task_punch ? plan.task_punch : null;
+  const visual = plan && plan.visual ? plan.visual : null;
+  const designArtifacts = pipeline && pipeline.design_artifacts ? pipeline.design_artifacts : {};
+  const versionPlan = rawVersionPlan || null;
+  return {
+    available: Boolean(pipeline),
+    idea: pipeline && pipeline.idea ? pipeline.idea : (plan && plan.goal) || (plan && plan.recommended_evolution && plan.recommended_evolution.title) || "",
+    documentation_files_total: Array.isArray(pipeline && pipeline.documentation_files) ? pipeline.documentation_files.length : 0,
+    design_artifacts: {
+      system_design: Boolean(designArtifacts.system_design),
+      database_design: Boolean(designArtifacts.database_design),
+      ui_ux_design: Boolean(designArtifacts.ui_ux_design),
+      api_design: Boolean(designArtifacts.api_design),
+      security_design: Boolean(designArtifacts.security_design)
+    },
+    versions_total: Array.isArray(versionPlan && versionPlan.versions) ? versionPlan.versions.length : 0,
+    evolutions_total: Array.isArray(pipeline && pipeline.evolutions) ? pipeline.evolutions.length : Array.isArray(plan && plan.evolutions) ? plan.evolutions.length : 0,
+    task_punches_total: Array.isArray(pipeline && pipeline.task_punches) ? pipeline.task_punches.length : taskPunch ? 1 : 0,
+    next_evolution: pipeline && pipeline.next_evolution ? pipeline.next_evolution : (plan && plan.recommended_evolution) || {},
+    visual: visual ? {
+      available: true,
+      graph_format: visual.graph && visual.graph.format ? visual.graph.format : (visual.format || "mermaid"),
+      board_columns: visual.board && Array.isArray(visual.board.columns) ? visual.board.columns.length : 0,
+      scope_allowed_total: visual.scope_map && Array.isArray(visual.scope_map.allowed_files) ? visual.scope_map.allowed_files.length : 0,
+      scope_forbidden_total: visual.scope_map && Array.isArray(visual.scope_map.forbidden_files) ? visual.scope_map.forbidden_files.length : 0
+    } : {
+      available: false,
+      graph_format: null,
+      board_columns: 0,
+      scope_allowed_total: 0,
+      scope_forbidden_total: 0
+    },
+    task_punch: taskPunch ? {
+      available: true,
+      task_count: Array.isArray(taskPunch.tasks) ? taskPunch.tasks.length : 0,
+      task_ids: Array.isArray(taskPunch.tasks) ? taskPunch.tasks.map((task) => task.id || task.task_id).filter(Boolean) : [],
+      first_task: Array.isArray(taskPunch.tasks) && taskPunch.tasks.length ? taskPunch.tasks[0] : null
+    } : {
+      available: false,
+      task_count: 0,
+      task_ids: [],
+      first_task: null
+    }
+  };
+}
+
+function buildPlannerGuidanceState(plan = null) {
+  if (!plan) {
+    return {
+      summary: "Planner runtime is missing or has no approved current plan yet.",
+      notes: [
+        "Run planner propose to create a governed plan.",
+        "Approve the plan before materializing or executing it.",
+        "Dashboard state remains safe when planner runtime is absent."
+      ]
+    };
+  }
+  const mode = String(plan && plan.planner_mode || "").trim().toLowerCase();
+  if (mode === "vibe") {
+    return {
+      summary: "Local-first app-track planning stays separate from KVDF Core unless owner-approved.",
+      notes: [
+        "Keep KVDF Core edits out of scope unless the Owner explicitly asks for framework work.",
+        "Use the questionnaire, intake, design, version, evolution, and handoff pipeline first.",
+        "Branch, PR, and GitHub remain optional and provider-driven."
+      ]
+    };
+  }
+  if (mode === "plugin") {
+    return {
+      summary: "Plugin-track planning stays inside the selected plugin and protects unrelated plugins and plugin-links state.",
+      notes: [
+        "Keep the selected plugin manifest, runtime, docs, schemas, and tests in parity.",
+        "Protect .kabeeri/plugin-links/ runtime mount state.",
+        "Do not touch unrelated plugins."
+      ]
+    };
+  }
+  return {
+    summary: "KVDF Core owner-track planning defaults to direct-to-main and keeps KVDOS and runtime state out of scope.",
+    notes: [
+      "Direct-to-main is the default source-control delivery mode when Git is available.",
+      "Do not touch KVDOS unless the Evolution explicitly targets it.",
+      "Do not commit .kabeeri runtime state."
+    ]
+  };
+}
+
+function buildPlannerDashboardState(options = {}) {
+  const project = options.project || {};
+  const plannerState = readPlannerRuntimeState();
+  const currentPlan = findCurrentApprovedPlannerPlan(plannerState || {});
+  const available = Boolean(plannerState);
+  const currentPlanStatus = !plannerState ? "missing" : currentPlan ? "approved" : "empty";
+  const plannerMode = currentPlan ? String(currentPlan.planner_mode || "").trim().toLowerCase() || null : null;
+  const track = currentPlan ? String(currentPlan.track || "").trim() || null : null;
+  const deliveryMode = currentPlan ? String(currentPlan.delivery_mode || "").trim() || null : null;
+  const sourceControl = normalizePlannerSourceControl(currentPlan ? currentPlan.source_control : null);
+  const versionPlan = buildPlannerVersionPlanSummary(currentPlan);
+  const pipeline = buildPlannerPipelineSummary(currentPlan);
+  const visual = currentPlan && currentPlan.visual ? {
+    available: true,
+    graph_format: currentPlan.visual.graph && currentPlan.visual.graph.format ? currentPlan.visual.graph.format : (currentPlan.visual.format || "mermaid"),
+    board_columns: currentPlan.visual.board && Array.isArray(currentPlan.visual.board.columns) ? currentPlan.visual.board.columns.length : 0,
+    scope_allowed_total: currentPlan.visual.scope_map && Array.isArray(currentPlan.visual.scope_map.allowed_files) ? currentPlan.visual.scope_map.allowed_files.length : 0,
+    scope_forbidden_total: currentPlan.visual.scope_map && Array.isArray(currentPlan.visual.scope_map.forbidden_files) ? currentPlan.visual.scope_map.forbidden_files.length : 0,
+    graph: currentPlan.visual.graph || null,
+    board: currentPlan.visual.board || null,
+    scope_map: currentPlan.visual.scope_map || null
+  } : {
+    available: false,
+    graph_format: null,
+    board_columns: 0,
+    scope_allowed_total: 0,
+    scope_forbidden_total: 0,
+    graph: null,
+    board: null,
+    scope_map: null
+  };
+  const materialization = {
+    status: currentPlan ? (currentPlan.materialization_status || (currentPlan.materialized_at ? "materialized" : "not_materialized")) : "unknown",
+    evolution_change_id: currentPlan ? currentPlan.evolution_change_id || null : null,
+    materialized_task_ids: currentPlan && Array.isArray(currentPlan.materialized_task_ids) ? [...currentPlan.materialized_task_ids] : [],
+    report_path: currentPlan ? currentPlan.materialization_report_path || null : null
+  };
+  const nextEvolution = currentPlan && currentPlan.recommended_evolution ? currentPlan.recommended_evolution : {};
+  const nextAction = !plannerState
+    ? "Run kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json."
+    : currentPlan
+      ? materialization.status === "materialized"
+        ? "Run kvdf planner prompt --from-current --json, then execute the first approved task slice."
+        : "Run kvdf planner materialize --from-current --json."
+      : "Run kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json.";
+  return {
+    available,
+    planner_version: plannerState ? plannerState.planner_version || "1" : null,
+    current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
+    current_plan_status: currentPlanStatus,
+    current_planner_mode: plannerMode,
+    track,
+    delivery_mode: deliveryMode,
+    source_control: sourceControl,
+    version_plan: versionPlan,
+    pipeline,
+    visual,
+    task_punch: pipeline.task_punch,
+    materialization,
+    next_evolution: nextEvolution,
+    next_action: nextAction,
+    guidance: buildPlannerGuidanceState(currentPlan),
+    planner_state: plannerState || null,
+    current_plan: currentPlan || null
+  };
+}
+
 function writeDashboardStateFiles(state, deps = {}) {
   const summarizeUsage = deps.summarizeUsage || (() => ({ total_events: 0, total_cost: 0, total_tokens: 0, by_task: {}, by_developer: {}, by_workstream: {}, by_provider: {}, by_sprint: {}, tracked_vs_untracked: { tracked: 0, untracked: 0 } }));
   const buildTaskTrackerStateFromFiles = deps.buildTaskTrackerStateFromFiles || (() => ({ generated_at: new Date().toISOString(), summary: { by_status: {} } }));
@@ -969,6 +1178,7 @@ module.exports = {
   buildTaskTrackerActionItems,
   buildWorkstreamSummaries,
   buildCustomerAppSummaries,
+  buildPlannerDashboardState,
   collectWorkspaceDashboardSummaries,
   getDashboardWorkspaceRoots,
   parseWorkspaceRoots,

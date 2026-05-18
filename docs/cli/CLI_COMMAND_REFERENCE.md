@@ -1497,14 +1497,15 @@ kvdf dashboard workspace remove --path ../store-a
 ```
 
 `dashboard export` writes the customer-facing first page to `.kabeeri/site/index.html`, writes the private technical dashboard to `.kabeeri/site/__kvdf/dashboard/index.html`, and exports per-app pages under `.kabeeri/site/customer/apps/<username>/index.html`.
+When planner runtime exists, the exported owner/app dashboards also show a small Planner / Pipeline section so the current approved plan and next action are visible without opening the planner command directly.
 
-`dashboard state` prints the same live JSON state used by the local dashboard API. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the private dashboard at `/__kvdf/dashboard`, full live JSON at `/__kvdf/api/state`, and task tracker JSON at `/__kvdf/api/tasks`.
+`dashboard state` prints the same live JSON state used by the local dashboard API. That JSON now includes a `planner` section when planner runtime state exists, so the dashboard can show the current approved plan, pipeline summary, visual summary, source-control state, materialization status, and next action without guessing. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the private dashboard at `/__kvdf/dashboard`, full live JSON at `/__kvdf/api/state`, and task tracker JSON at `/__kvdf/api/tasks`.
 
 By default, dashboard state is track-scoped. The owner dashboard only reports the framework-owner track. The app dashboard only reports the vibe app-developer track. Linked workspace summaries are excluded unless `--include-linked-workspaces` or `KVDF_INCLUDE_LINKED_WORKSPACES=1` is set, and even then they are summarized, not merged.
 
-`dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
+`dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, planner / pipeline visibility, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
 
-When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, generated scaffold tasks, usage records, locks, delivery status, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace, but it keeps owner-track and app-track analysis separate. Each dashboard section adds an inline explanation describing what the table means and why it exists.
+When served locally, the private dashboard polls the live API every few seconds and reloads itself when project state changes, so new tasks, generated scaffold tasks, usage records, locks, delivery status, planner state, and governance updates appear without running `dashboard export` again. The dashboard summarizes multiple same-product apps inside the current `.kabeeri` workspace, but it keeps owner-track and app-track analysis separate. Each dashboard section adds an inline explanation describing what the table means and why it exists.
 
 Use `--workspaces`, `KVDF_WORKSPACES`, or `kvdf dashboard workspace add` to add summary rows for other KVDF folders that have their own `.kabeeri` state. Linked workspaces are summarized, not merged into the current workspace.
 
@@ -1573,8 +1574,11 @@ coverage view for trust, safety, privacy, compliance, and extensibility.
 
 `reports live` writes `.kabeeri/reports/live_reports_state.json`, a compact
 derived JSON state for Codex, dashboard widgets, VS Code views, and automation.
-Markdown reports remain human-readable snapshots; live JSON is the fast-changing
-operational surface.
+When planner runtime state exists, the live report also carries a planner
+summary so dashboard and automation surfaces can show the current approved plan,
+pipeline summary, visual summary, source-control state, materialization status,
+and next action. Markdown reports remain human-readable snapshots; live JSON is
+the fast-changing operational surface.
 
 `reports blocked` writes `.kabeeri/reports/blocked_scenarios_report.json`, a
 derived blocker summary that explains what cannot proceed yet, why it is blocked

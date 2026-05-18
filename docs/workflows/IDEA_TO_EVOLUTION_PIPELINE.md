@@ -3,6 +3,8 @@
 The Idea to Evolution Pipeline is the next planning layer above the shared Planner Runtime Approval Gate.
 It turns a raw idea or goal into documentation files, design artifacts, a visual planning model, a version plan, governed evolutions, task punches, a visual roadmap, and the next approved Evolution slice.
 
+The planner dashboard sync layer can then surface the approved plan, visual summary, source-control state, materialization status, and next action in live dashboard JSON and exported HTML.
+
 ## Flow
 
 ```text
@@ -18,6 +20,7 @@ Idea
 -> Visual Roadmap
 -> Next Evolution
 -> Planner approval / materialization
+-> Dashboard / live-state sync
 -> Execution
 -> Validation
 -> Dashboard / visual updates later
@@ -51,6 +54,9 @@ The pipeline reuses the Planner visual model so the plan can be rendered as:
 - planning board
 - scope map
 - markdown visual report
+
+The dashboard sync layer can render the planner summary as an empty-state-safe
+Planner / Pipeline section without becoming the source of truth.
 
 ## Source Control
 

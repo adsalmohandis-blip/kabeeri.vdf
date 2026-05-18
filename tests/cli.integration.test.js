@@ -4069,6 +4069,7 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.match(html, /same_product_multi_app/);
   assert.match(html, /app-filter/);
   assert.match(html, /Dashboard task/);
+  assert.match(html, /Planner \/ Pipeline/);
   assert.match(html, /Feature Readiness/);
   assert.match(html, /ready_to_demo/);
   assert.match(html, /User Journeys/);
@@ -4097,6 +4098,85 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   } finally {
     fs.rmSync(otherDir, { recursive: true, force: true });
   }
+}));
+
+test("dashboard state safely handles missing planner runtime state", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.ok(state.planner);
+  assert.strictEqual(state.planner.available, false);
+  assert.ok(["missing", "empty"].includes(state.planner.current_plan_status));
+  assert.strictEqual(state.planner.current_plan_id, null);
+  assert.strictEqual(state.planner.current_planner_mode, null);
+  assert.strictEqual(state.planner.track, null);
+}));
+
+test("dashboard state exposes owner planner summaries after approval and materialization", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Owner dashboard planner", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir });
+  runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
+  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.ok(state.planner);
+  assert.strictEqual(state.planner.available, true);
+  assert.strictEqual(state.planner.current_plan_status, "approved");
+  assert.strictEqual(state.planner.current_planner_mode, "owner");
+  assert.strictEqual(state.planner.track, "framework_owner");
+  assert.strictEqual(state.planner.delivery_mode, "direct_main");
+  assert.strictEqual(state.planner.source_control.mode, "local_only");
+  assert.strictEqual(state.planner.materialization.status, "materialized");
+  assert.ok(state.planner.next_action);
+  assert.ok(state.planner.version_plan);
+  assert.ok(state.planner.visual);
+  assert.ok(state.planner.task_punch);
+  assert.ok(state.planner.guidance.summary.includes("direct-to-main"));
+  const dashboardHtml = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
+  assert.match(dashboardHtml, /Planner \/ Pipeline/);
+  assert.match(dashboardHtml, /Planner:\s*<strong>owner \/ direct_main<\/strong>/);
+}));
+
+test("dashboard state exposes vibe planner summaries after approval", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Vibe dashboard planner", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.ok(state.planner);
+  assert.strictEqual(state.planner.current_plan_status, "approved");
+  assert.strictEqual(state.planner.current_planner_mode, "vibe");
+  assert.strictEqual(state.planner.track, "vibe_app_developer");
+  assert.strictEqual(state.planner.delivery_mode, "local_first");
+  assert.strictEqual(state.planner.source_control.mode, "local_only");
+  assert.ok(state.planner.guidance.summary.includes("Local-first"));
+  assert.ok(state.planner.guidance.notes.some((note) => /KVDF Core edits/i.test(note)));
+}));
+
+test("dashboard state exposes plugin planner summaries after approval", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Plugin dashboard planner", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.ok(state.planner);
+  assert.strictEqual(state.planner.current_plan_status, "approved");
+  assert.strictEqual(state.planner.current_planner_mode, "plugin");
+  assert.strictEqual(state.planner.track, "plugin");
+  assert.ok(state.planner.current_plan.plugin_context);
+  assert.strictEqual(state.planner.current_plan.plugin_context.plugin_id, "planner-visual");
+  assert.strictEqual(state.planner.source_control.provider, "none");
+  assert.strictEqual(state.planner.source_control.mode, "local_only");
+  assert.ok(state.planner.guidance.summary.includes("Plugin-track"));
+}));
+
+test("reports live includes planner summary when planner state exists", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Live planner summary", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir });
+  const liveReports = JSON.parse(runKvdf(["reports", "live", "--json"], { cwd: dir }).stdout);
+  assert.ok(liveReports.reports.planner);
+  assert.strictEqual(liveReports.reports.planner.planner_mode, "owner");
+  assert.strictEqual(liveReports.reports.planner.delivery_mode, "direct_main");
+  assert.strictEqual(liveReports.summary.planner, "approved");
 }));
 
 test("policy engine evaluates task gates and writes reports", () => withTempDir((dir) => {

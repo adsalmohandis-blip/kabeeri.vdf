@@ -1,24 +1,24 @@
 # Task Control Plane Packet
 
-Next exact action: kvdf task assign task-063 --assignee codex
+Next exact action: kvdf task assign task-072 --assignee codex
 
-Packet ID: task-packet-1778971693150
-Generated at: 2026-05-16T22:48:13.161Z
+Packet ID: task-packet-1779113896940
+Generated at: 2026-05-18T14:18:16.959Z
 Surface role: control_plane
-Current change: evo-099
+Current change: evo-104
 Status: ready
 Message: Compiled a deterministic control-plane packet for 7 execution candidate(s).
 Packet state path: docs/reports/KVDF_TASK_CONTROL_PLANE_PACKET.json
 Recommended assignee: codex
 
 Summary:
-- Total tasks: 69
+- Total tasks: 78
 - Approved tasks: 7
 - Ready tasks: 7
 - In progress tasks: 0
 - Proposed tasks: 0
 - Execution candidates: 7
-- First candidate: task-063
+- First candidate: task-072
 
 Source snapshot:
 - Vibe intent: intent-004 | ابدأ تطوير | type=create_task | risk=low
@@ -28,7 +28,7 @@ Source snapshot:
 - Blueprints: unknown | modules=0/0/0
 - Data design: 0 module(s), 0 entity(s)
 - Delivery: unknown | selected
-- Traceability: brief:brief-1778788879920 -> questionnaire:questionnaire-intake-1778790943730 -> modules:module-plan-1778790943729 -> delivery:delivery-map-1778790943730 -> complete
+- Traceability: brief:brief-1778788879920 -> questionnaire:questionnaire-intake-1779095809853 -> modules:module-plan-1779095809853 -> delivery:delivery-map-1779095809853 -> complete
 
 Assumptions:
 - The CLI owns planning and packet compilation.
@@ -44,4 +44,4 @@ Expected outputs:
 - The packet stays in the CLI/control-plane layer and does not plan work inside the executor.
 
 Next action:
-- kvdf task assign task-063 --assignee codex
+- kvdf task assign task-072 --assignee codex

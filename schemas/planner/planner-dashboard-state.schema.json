@@ -1,0 +1,104 @@
+{
+  "title": "KVDF Planner Dashboard State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "available",
+    "current_plan_status",
+    "source_control",
+    "version_plan",
+    "pipeline",
+    "visual",
+    "materialization",
+    "next_action"
+  ],
+  "properties": {
+    "available": { "type": "boolean" },
+    "planner_version": { "type": ["string", "null"] },
+    "current_plan_id": { "type": ["string", "null"] },
+    "current_plan_status": { "type": "string", "enum": ["approved", "empty", "missing"] },
+    "current_planner_mode": { "type": ["string", "null"], "enum": ["owner", "vibe", "plugin", null] },
+    "track": { "type": ["string", "null"], "enum": ["framework_owner", "vibe_app_developer", "plugin", null] },
+    "delivery_mode": { "type": ["string", "null"], "enum": ["direct_main", "local_first", null] },
+    "source_control": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "version_plan": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "available": { "type": "boolean" },
+        "versions_total": { "type": "number" },
+        "current_version": { "type": ["string", "null"] },
+        "next_version": { "type": ["string", "null"] },
+        "source_control_mode": { "type": ["string", "null"] }
+      }
+    },
+    "pipeline": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "available": { "type": "boolean" },
+        "idea": { "type": "string" },
+        "documentation_files_total": { "type": "number" },
+        "design_artifacts": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "versions_total": { "type": "number" },
+        "evolutions_total": { "type": "number" },
+        "task_punches_total": { "type": "number" },
+        "next_evolution": { "type": "object", "additionalProperties": true },
+        "visual": { "type": "object", "additionalProperties": true },
+        "task_punch": { "type": "object", "additionalProperties": true }
+      }
+    },
+    "visual": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "available": { "type": "boolean" },
+        "graph_format": { "type": ["string", "null"] },
+        "board_columns": { "type": "number" },
+        "scope_allowed_total": { "type": "number" },
+        "scope_forbidden_total": { "type": "number" },
+        "graph": { "type": ["object", "null"], "additionalProperties": true },
+        "board": { "type": ["object", "null"], "additionalProperties": true },
+        "scope_map": { "type": ["object", "null"], "additionalProperties": true }
+      }
+    },
+    "materialization": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": { "type": "string", "enum": ["materialized", "not_materialized", "unknown"] },
+        "evolution_change_id": { "type": ["string", "null"] },
+        "materialized_task_ids": { "type": "array", "items": { "type": "string" } },
+        "report_path": { "type": ["string", "null"] }
+      }
+    },
+    "task_punch": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "available": { "type": "boolean" },
+        "task_count": { "type": "number" },
+        "task_ids": { "type": "array", "items": { "type": "string" } },
+        "first_task": { "type": ["object", "null"], "additionalProperties": true }
+      }
+    },
+    "next_evolution": { "type": "object", "additionalProperties": true },
+    "guidance": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "summary": { "type": "string" },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "next_action": { "type": "string" },
+    "planner_state": { "type": ["object", "null"], "additionalProperties": true },
+    "current_plan": { "type": ["object", "null"], "additionalProperties": true }
+  }
+}

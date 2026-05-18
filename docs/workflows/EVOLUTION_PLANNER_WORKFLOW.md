@@ -14,6 +14,10 @@ raw idea into the file map, design artifacts, version slices, evolutions, task
 punches, visual roadmap, and source control plan that the approval gate can
 review.
 
+Planner dashboard sync sits alongside the approval gate so dashboard state can
+show the current approved plan, visual summary, source control state,
+materialization status, and next action without becoming the source of truth.
+
 ## Workflow
 
 ```text
@@ -24,6 +28,7 @@ Idea
 -> planner current
 -> planner prompt --from-current
 -> planner visual --from-current
+-> dashboard/live-state sync
 -> Codex execution
 -> validation
 -> planner complete
@@ -47,9 +52,9 @@ Owner direction
 Track-aware variants:
 
 ```text
-Owner direction -> planner (owner mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> Codex -> validation -> complete -> direct-to-main KVDF Core delivery
-Owner direction -> planner (vibe mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> Codex -> validation -> complete -> local-first app delivery and optional GitHub handoff
-Owner direction -> planner (plugin mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> Codex -> validation -> complete -> plugin manifest/runtime/docs parity and direct-to-main delivery
+Owner direction -> planner (owner mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> dashboard/live-state sync -> Codex -> validation -> complete -> direct-to-main KVDF Core delivery
+Owner direction -> planner (vibe mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> dashboard/live-state sync -> Codex -> validation -> complete -> local-first app delivery and optional GitHub handoff
+Owner direction -> planner (plugin mode) -> propose -> approve -> current -> materialize -> prompt from current -> visual -> dashboard/live-state sync -> Codex -> validation -> complete -> plugin manifest/runtime/docs parity and direct-to-main delivery
 ```
 
 ## Required Checks
@@ -135,6 +140,8 @@ Planner state is used to:
 - generate Codex prompts from approved runtime state with `kvdf planner prompt --from-current`
 - materialize approved plans into Evolution and Task Punch runtime records with `kvdf planner materialize --from-current`
 - generate visual planner models with `kvdf planner visual --from-current`
+- surface planner, pipeline, visual, materialization, and source-control state
+  in dashboard live JSON and exported dashboard HTML
 
 Planner state is runtime-only and is not part of the normal commit set.
 
