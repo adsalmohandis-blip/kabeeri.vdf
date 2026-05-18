@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779086183453
-- Generated at: 2026-05-18T06:36:23.453Z
+- Report ID: kvdf-cleanup-1779093377845
+- Generated at: 2026-05-18T08:36:17.845Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            2784                                       
+Total files            2787                                       
 Total folders          13                                         
 Plugin total           13                                         
 Active plugins         8                                          
@@ -28,7 +28,7 @@ repo-structure  Keep the repository foldering map authoritative.                
 kvdf-dev        Keep the framework-development bundle aligned with its manifest, commands, docs, and runtime.  Review the kvdf-dev plugin bundle and command surface.                                
 pipeline        The packet traceability chain still needs review before execution.                             Complete traceability before starting the cleanup execution.                          
 dead-code       Review 4 file(s) flagged as dead-code candidates by the file inspection pass.                  Review dead-code candidates file by file and remove or consolidate the unused surface.
-stale-docs      Review 2 file(s) with stale wording, legacy aliases, or future-only language.                  Inspect docs one by one and refresh outdated wording, references, and status claims.  
+stale-docs      Review 3 file(s) with stale wording, legacy aliases, or future-only language.                  Inspect docs one by one and refresh outdated wording, references, and status claims.  
 spec-drift      Review 4 file(s) flagged for possible wrong-spec or drift signals.                             Compare each flagged file with the current source of truth and correct drifted specs. 
 blocked-flows   Run the workflow inspection pass to look for blocked or waiting-state deadlocks.               Resolve blocked workflow states and make finalization paths idempotent.               
 
@@ -37,10 +37,10 @@ blocked-flows   Run the workflow inspection pass to look for blocked or waiting-
 Folder      Files  Primary extension  Role           
 ----------  -----  -----------------  ---------------
 .kabeeri    844    .md                workspace state
-knowledge   460    .md                project surface
+knowledge   462    .md                project surface
 packs       435    .md                project surface
 plugins     370    .md                plugin bundles 
-docs        289    .md                documentation  
+docs        290    .md                documentation  
 workspaces  140    .json              project surface
 src         130    .js                runtime source 
 schemas     92     .md                project surface
@@ -53,8 +53,8 @@ bin         1      .js                project surface
 
 Extension       Files
 --------------  -----
-.md             1660 
-.json           662  
+.md             1662 
+.json           663  
 .js             195  
 .html           181  
 .docx           58   
@@ -70,9 +70,9 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            1785 
+Scanned files            1788 
 Dead code candidates     4    
-Stale docs candidates    2    
+Stale docs candidates    3    
 Spec drift candidates    4    
 Blocked flow candidates  0    
 
@@ -82,6 +82,7 @@ dead_code_candidates   docs/reports/VIBE_MAINTAINER_AUDIT.md               16   
 dead_code_candidates   docs/reports/VIBE_MAINTAINER_SUMMARY.md             16    Dead code             | 0                                                                                                                                          
 dead_code_candidates   plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
 dead_code_candidates   plugins/vibe-maintainer/runtime/vibe_maintainer.js  521   ["Dead code", String(report.summary ? report.summary.dead_code_candidates || 0 : 0)],                                                                              
+stale_docs             docs/reports/KVDF_FULL_REPOSITORY_AUDIT.md          522   - The repo supports it, but old wording can still confuse users if not kept consistent.                                                                            
 stale_docs             plugins/vibe-maintainer/runtime/vibe_maintainer.js  1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },
 stale_docs             tests/service.unit.test.js                          76    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_AUDIT.md               18    Spec drift            | 0                                                                                                                                          
@@ -124,7 +125,7 @@ kvdf-dev  enabled  framework_owner  commands, docs, prompts, schemas, templates,
 
 - Complete the packet traceability chain before starting execution.
 - Review 4 dead-code candidates flagged by the file inspection pass.
-- Refresh 2 stale-doc candidates flagged by the file inspection pass.
+- Refresh 3 stale-doc candidates flagged by the file inspection pass.
 - Resolve 4 possible spec-drift candidates.
 - Resolve active Evolution state first: ready.
 

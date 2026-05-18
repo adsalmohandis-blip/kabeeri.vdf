@@ -80,7 +80,7 @@ from this index:
 | Generators | Creates Lite, Standard, and Enterprise project skeletons and proposed governance tasks when a `.kabeeri` workspace is active. | `packs/generators/*.json`, `kvdf create`, `kvdf generate` |
 | Examples Library | Shows Lite, Standard, and Enterprise reference examples. | `packs/examples/`, `kvdf example` |
 | Questionnaires | Collects structured product and technical answers; adaptive intake planning now uses blueprints, framework prompt packs, data design, UI/UX, delivery mode context, detected user language, explicit module plans, and delivery maps before asking, and the resulting planning pack must be reviewed and approved before task generation. | `knowledge/questionnaires/`, `knowledge/questionnaire_engine/`, `.kabeeri/questionnaires/adaptive_intake_plan.json`, `kvdf questionnaire plan`, `kvdf questionnaire review`, `kvdf questionnaire approve` |
-| Capability Map | Maps project type to required, optional, deferred, or unknown system areas. | `knowledge/standard_systems/`, `kvdf capability`, `kvdf questionnaire coverage` |
+| Capability Map | Maps project type to required, optional, deferred, or unknown system areas. The canonical capability registry is the single source of truth for ownership, runtime boundaries, and generated artifacts. | `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.json`, `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.md`, `kvdf capability`, `kvdf capability registry`, `kvdf questionnaire coverage` |
 | Prompt Packs And Common Prompt Layer | Provides stack-specific AI coding prompts plus shared scope, review, and AI-run rules. The scale pack router adds large-system bundles for enterprise or high-risk projects so prompts do not stay overly generic. | `packs/prompt_packs/`, `packs/prompt_packs/common/`, `.kabeeri/prompt_layer/`, `.kabeeri/reports/scale_specific_packs_report.json`, `kvdf prompt-pack` |
 | Task Assessment System | Generates a structured pre-build assessment so scope, blockers, dependencies, allowed files, checks, and readiness gates are visible before large work starts. | `.kabeeri/task_assessments.json`, `kvdf task assessment`, `knowledge/task_tracking/TASK_INTAKE_TEMPLATE.md` |
 | Task Coverage Report | Breaks a task into the full temporary execution path, records the materialized queue, and shows whether any slice remains open so the active task has no uncovered remainder. | `.kabeeri/reports/task_coverage_*.json`, `kvdf task coverage`, `src/cli/commands/task_coverage.js` |
@@ -131,7 +131,7 @@ shared logic layer behind the owner and Multi-AI command facades.
 | Folder Ownership Ledger | Tracks the important command, service, kvdf-dev, app-track, and bridge folders plus remaining migration gaps so folder ownership stays visible during CLI migration. | `docs/cli/CLI_COMMAND_REFERENCE.md`, `src/cli/index.js`, `src/cli/commands/`, `src/cli/services/`, `plugins/kvdf-dev/`, `workspaces/apps/<app-slug>/`, `docs/reports/` |
 | Product Packaging And Upgrade | Checks npm packaging readiness and workspace upgrade compatibility. | `kvdf package`, `kvdf upgrade`, `docs/production/` |
 | Validation And Doctor | Checks repository health, JSON/state integrity, scoped governance rules, docs source-of-truth, and historical source clarity. | `kvdf doctor`, `kvdf validate`, `kvdf validate historical-source-clarity` |
-| Capability Registry | Exposes the 53 imported system areas as named, traceable units with owner/workstream and source mapping. | `kvdf capability registry`, `knowledge/standard_systems/CAPABILITY_REGISTRY.md`, `knowledge/standard_systems/SYSTEM_AREAS_INDEX.md` |
+| Capability Registry | Exposes the canonical capability areas as named, traceable units with ownership, runtime boundaries, and generated-artifact mapping. | `kvdf capability registry`, `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.md`, `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.json` |
 | Capability CLI Surface | Maps each imported capability area to a discoverable CLI command family and docs reference so the operational entry point is obvious before a developer starts work. | `kvdf capability surface`, `docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json` |
 | Capability-to-Documentation Matrix | Requires every capability to carry docs, CLI, runtime, tests, and report links in one traceable matrix so capability coverage stays complete. | `kvdf capability matrix`, `docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json` |
 | Capability Search Surface | Builds a searchable index across the registry, CLI surface, documentation matrix, and roadmap views so developers can filter by track, capability, command, phase, and report type. | `kvdf capability search`, `docs/reports/KVDF_CAPABILITY_SEARCH_INDEX.json` |
@@ -1404,4 +1404,15 @@ Main references:
 - Owner verification is the final authority for task completion.
 - GitHub confirmed writes require explicit confirmation and policy gates.
 - Separate products should use separate KVDF folders.
+
+### Canonical Capability Registry
+
+The canonical capability registry is the machine-readable source of truth for
+the platform capability map, plugin area ownership, runtime boundaries, and
+generated artifacts. Prefer it over older capability-map summaries when you
+need to answer what KVDF currently supports.
+
+- JSON: `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.json`
+- Markdown: `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.md`
+- CLI: `kvdf capability registry`
 | Scale-Specific Packs | Recommends large-system prompt bundle combinations for enterprise, regulated, and high-risk projects so Kabeeri can scale beyond a single stack prompt pack. | `.kabeeri/reports/scale_specific_packs_report.json`, `kvdf prompt-pack scale` |

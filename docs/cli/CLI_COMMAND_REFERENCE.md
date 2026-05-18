@@ -1268,7 +1268,12 @@ kvdf validate questionnaire
 ```
 
 `questionnaire coverage` generates `.kabeeri/questionnaires/coverage_matrix.json` for the 53 standard system areas. `questionnaire missing` writes `.kabeeri/questionnaires/missing_answers_report.json`. `questionnaire generate-tasks` creates proposed tasks with provenance fields for `system_area_key`, `question_ids`, `answer_ids`, and `source_mode`.
-`kvdf capability registry` exposes the same 53 areas as named, traceable units with owner/workstream and source mapping so the imported capability catalog stays machine-readable. `kvdf capability registry payments_billing` shows one registry entry directly; `kvdf capability registry map` returns the grouped registry map as JSON.
+`kvdf capability registry` exposes the canonical capability registry as named, traceable units with ownership, runtime boundaries, and generated-artifact mapping so the imported capability catalog stays machine-readable. `kvdf capability registry payments_billing` shows one registry entry directly; `kvdf capability registry map` returns the grouped registry map as JSON.
+
+The canonical registry lives in:
+
+- `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.json`
+- `knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.md`
 
 `kvdf capability surface` builds a CLI capability surface report that maps the same registry entries to discoverable command families and docs references so new capabilities always have an obvious operational entry point.
 

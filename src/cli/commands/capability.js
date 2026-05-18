@@ -7,6 +7,8 @@ const { buildKVDFFeatureRestructureRoadmap } = require("../services/evolution");
 const CAPABILITY_SURFACE_REPORT = "docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json";
 const CAPABILITY_DOC_MATRIX_REPORT = "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json";
 const CAPABILITY_SEARCH_INDEX_REPORT = "docs/reports/KVDF_CAPABILITY_SEARCH_INDEX.json";
+const CANONICAL_CAPABILITY_REGISTRY_JSON = "knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.json";
+const CANONICAL_CAPABILITY_REGISTRY_MD = "knowledge/standard_systems/KVDF_CANONICAL_CAPABILITY_REGISTRY.md";
 
 function capability(action, value, flags = {}) {
   const areas = getSystemAreas();
@@ -56,36 +58,33 @@ function capability(action, value, flags = {}) {
   }
 
   if (action === "registry") {
+    const canonicalRegistry = getCanonicalCapabilityRegistry();
     const subaction = String(value || "").trim().toLowerCase();
     if (!subaction || subaction === "list") {
       if (flags.json) {
-        console.log(JSON.stringify(registry, null, 2));
+        console.log(JSON.stringify(canonicalRegistry, null, 2));
       } else {
-        console.log(table(["ID", "Capability", "Owner", "Source"], registry.map((item) => [
-          item.id,
-          item.name,
-          item.owner,
-          item.source_reference.join(", ")
-        ])));
+        console.log(renderCanonicalCapabilityRegistry(canonicalRegistry, table));
       }
       return;
     }
 
     if (subaction === "map") {
-      console.log(JSON.stringify(buildCapabilityRegistryMap(registry), null, 2));
+      const map = buildCanonicalCapabilityRegistryMap(canonicalRegistry);
+      if (flags.json) console.log(JSON.stringify(map, null, 2));
+      else console.log(renderCanonicalCapabilityRegistryMap(map, table));
       return;
     }
 
     const key = String(flags.id || flags.key || flags.name || value || "").trim().toLowerCase();
     if (!key) throw new Error("Missing capability registry id or key.");
-    if (subaction === "show") {
-      const item = registry.find((entry) => String(entry.id) === key || entry.key === key || entry.name.toLowerCase() === key);
-      if (!item) throw new Error(`Capability registry entry not found: ${value || key}`);
-      console.log(JSON.stringify(item, null, 2));
+    const item = findCanonicalCapabilityRegistryEntry(canonicalRegistry, key);
+    if (!item) throw new Error(`Capability registry entry not found: ${value || key}`);
+    if (subaction === "show" || key) {
+      if (flags.json) console.log(JSON.stringify(item, null, 2));
+      else console.log(renderCanonicalCapabilityRegistryEntry(item));
       return;
     }
-    const item = registry.find((entry) => String(entry.id) === key || entry.key === key || entry.name.toLowerCase() === key);
-    if (!item) throw new Error(`Capability registry entry not found: ${value || key}`);
     console.log(JSON.stringify(item, null, 2));
     return;
   }
@@ -146,6 +145,125 @@ function buildCapabilityRegistry(areas = getSystemAreas()) {
       system_areas_index: "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md"
     }
   }));
+}
+
+function getCanonicalCapabilityRegistry() {
+  const filePath = path.join(repoRoot(), CANONICAL_CAPABILITY_REGISTRY_JSON);
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Canonical capability registry not found: ${CANONICAL_CAPABILITY_REGISTRY_JSON}`);
+  }
+  return JSON.parse(fs.readFileSync(filePath, "utf8"));
+}
+
+function buildCanonicalCapabilityRegistryMap(registry) {
+  const areas = Array.isArray(registry.areas) ? registry.areas : [];
+  const areaSummaries = areas.map((area) => ({
+    area_id: area.area_id,
+    title: area.title,
+    default_track: area.default_track,
+    capability_count: Array.isArray(area.capabilities) ? area.capabilities.length : 0
+  }));
+  return {
+    report_type: registry.report_type || "kvdf_canonical_capability_registry",
+    registry_version: registry.registry_version || "1",
+    generated_at: new Date().toISOString(),
+    total_areas: areas.length,
+    total_capabilities: areas.reduce((total, area) => total + (Array.isArray(area.capabilities) ? area.capabilities.length : 0), 0),
+    areas: areaSummaries,
+    runtime_boundaries: registry.runtime_boundaries || [],
+    generated_artifacts: registry.generated_artifacts || []
+  };
+}
+
+function findCanonicalCapabilityRegistryEntry(registry, key) {
+  const normalized = String(key || "").trim().toLowerCase();
+  if (!normalized) return null;
+  for (const area of registry.areas || []) {
+    if (String(area.area_id || "").toLowerCase() === normalized || String(area.title || "").toLowerCase() === normalized) {
+      return { kind: "area", ...area };
+    }
+    for (const capability of area.capabilities || []) {
+      const aliases = Array.isArray(capability.aliases) ? capability.aliases : [];
+      if (
+        String(capability.capability_id || "").toLowerCase() === normalized ||
+        String(capability.title || "").toLowerCase() === normalized ||
+        aliases.some((alias) => String(alias).toLowerCase() === normalized)
+      ) {
+        return { kind: "capability", area_id: area.area_id, area_title: area.title, default_track: area.default_track, ...capability };
+      }
+    }
+  }
+  return null;
+}
+
+function renderCanonicalCapabilityRegistry(registry, tableRenderer) {
+  const areas = Array.isArray(registry.areas) ? registry.areas : [];
+  const lines = [
+    "KVDF Canonical Capability Registry",
+    "",
+    `Registry version: ${registry.registry_version || "1"}`,
+    `Report type: ${registry.report_type || "kvdf_canonical_capability_registry"}`,
+    `Areas: ${areas.length}`,
+    `Capabilities: ${areas.reduce((total, area) => total + (Array.isArray(area.capabilities) ? area.capabilities.length : 0), 0)}`,
+    ""
+  ];
+
+  for (const area of areas) {
+    lines.push(`${area.title} (${area.area_id})`);
+    lines.push(`Purpose: ${area.purpose}`);
+    lines.push(`Default track: ${area.default_track}`);
+    const capabilities = Array.isArray(area.capabilities) ? area.capabilities : [];
+    const rows = capabilities.map((capability) => [
+      capability.capability_id,
+      capability.title,
+      capability.category,
+      capability.primary_track,
+      capability.maturity,
+      (capability.commands || []).join(", ")
+    ]);
+    if (rows.length) {
+      lines.push(tableRenderer(["Capability ID", "Title", "Category", "Track", "Maturity", "Commands"], rows));
+    } else {
+      lines.push("No capabilities recorded.");
+    }
+    lines.push("");
+  }
+
+  lines.push("Runtime boundaries:");
+  for (const boundary of registry.runtime_boundaries || []) {
+    lines.push(`- ${boundary.path} (${boundary.classification})`);
+  }
+  lines.push("");
+  lines.push("Generated artifacts:");
+  for (const artifact of registry.generated_artifacts || []) {
+    lines.push(`- ${artifact.path} (${artifact.classification})`);
+  }
+  return lines.join("\n");
+}
+
+function renderCanonicalCapabilityRegistryMap(registryMap, tableRenderer) {
+  const rows = (registryMap.areas || []).map((area) => [
+    area.area_id,
+    area.title,
+    area.default_track,
+    String(area.capability_count)
+  ]);
+  return [
+    "KVDF Canonical Capability Registry Map",
+    "",
+    tableRenderer(["Area ID", "Title", "Default Track", "Capabilities"], rows),
+    "",
+    `Runtime boundaries: ${(registryMap.runtime_boundaries || []).length}`,
+    `Generated artifacts: ${(registryMap.generated_artifacts || []).length}`
+  ].join("\n");
+}
+
+function renderCanonicalCapabilityRegistryEntry(entry) {
+  return [
+    "KVDF Canonical Capability Registry Entry",
+    "",
+    JSON.stringify(entry, null, 2)
+  ].join("\n");
 }
 
 function buildCapabilityRegistryMap(registry) {

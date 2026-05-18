@@ -5202,15 +5202,32 @@ test("historical source clarity checks pass on archived roadmap and report files
   assert.ok(report.lines.some((line) => line.includes("historical source archive source-of-truth checked")));
 });
 
-test("capability registry exposes named traceable units with ownership and source mapping", () => {
+test("capability registry exposes the canonical area map, plugins, and runtime boundaries", () => {
   const registry = JSON.parse(runKvdf(["capability", "registry", "--json"]).stdout);
-  assert.strictEqual(Array.isArray(registry), true);
-  assert.strictEqual(registry.length, 53);
+  assert.strictEqual(registry.report_type, "kvdf_canonical_capability_registry");
+  assert.strictEqual(registry.registry_version, "1");
+  assert.ok(Array.isArray(registry.areas));
+  assert.strictEqual(registry.areas.length, 4);
+  assert.ok(registry.areas.some((area) => area.area_id === "core_native_system_capabilities"));
+  assert.ok(registry.areas.some((area) => area.area_id === "kvdf_development_pipeline_dev"));
+  assert.ok(registry.areas.some((area) => area.area_id === "vibe_development_pipeline_dev"));
+  assert.ok(registry.areas.some((area) => area.area_id === "plugins_dev"));
+  assert.strictEqual(registry.areas.find((area) => area.area_id === "plugins_dev").capabilities.length, 13);
+  assert.ok(registry.areas.find((area) => area.area_id === "kvdf_development_pipeline_dev").capabilities.some((capability) => capability.capability_id === "direct_to_main_delivery"));
+  assert.ok(registry.runtime_boundaries.some((item) => item.path === ".kabeeri/" && item.classification === "runtime_only"));
+  assert.ok(!registry.runtime_boundaries.some((item) => item.path === ".kabeeri/" && item.classification === "source_code"));
+  const map = JSON.parse(runKvdf(["capability", "registry", "map", "--json"]).stdout);
+  assert.strictEqual(map.report_type, "kvdf_canonical_capability_registry");
+  assert.strictEqual(map.total_areas, 4);
+  assert.strictEqual(map.total_capabilities, registry.areas.reduce((total, area) => total + area.capabilities.length, 0));
+  const nonJson = runKvdf(["capability", "registry"]).stdout;
+  assert.match(nonJson, /KVDF Canonical Capability Registry/);
+  assert.match(nonJson, /Core Native System Capabilities/);
+  assert.match(nonJson, /Plugins Dev/);
   const billing = JSON.parse(runKvdf(["capability", "registry", "payments_billing", "--json"]).stdout);
-  assert.strictEqual(billing.key, "payments_billing");
-  assert.ok(Array.isArray(billing.source_reference));
-  assert.ok(billing.source_reference.some((item) => item.includes("SYSTEM_AREAS_INDEX.md")));
-  assert.strictEqual(typeof billing.owner, "string");
+  assert.strictEqual(billing.capability_id, "payments_billing");
+  assert.ok(Array.isArray(billing.source_files));
+  assert.ok(billing.source_files.some((item) => item.includes("SYSTEM_AREAS_INDEX.md")) || billing.source_files.some((item) => item.includes("docs/SYSTEM_CAPABILITIES_REFERENCE.md")));
 });
 
 test("capability surface maps capabilities to CLI command families and docs references", () => {
