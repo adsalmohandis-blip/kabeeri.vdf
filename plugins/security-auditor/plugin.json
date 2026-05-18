@@ -1,0 +1,43 @@
+{
+  "plugin_id": "security-auditor",
+  "name": "Security Auditor",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "command_entrypoint": "plugins/security-auditor/runtime/index.js",
+  "runtime_entrypoint": "plugins/security-auditor/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "security",
+  "plugin_type": "auditor",
+  "enabled_by_default": false,
+  "description": "Optional built-in security auditor plugin that scans tasks, evolutions, handoff packages, and workspace changes for common secret, injection, auth, and backdoor patterns before release or handoff.",
+  "required_folders": [
+    "runtime",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "optional_folders": [
+    "assets"
+  ],
+  "domain_folders": [
+    "runtime",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "command_surface": [
+    "kvdf security-auditor status",
+    "kvdf security-auditor scan",
+    "kvdf security-auditor scan --task <task-id>",
+    "kvdf security-auditor scan --evolution current",
+    "kvdf security-auditor report",
+    "kvdf plugins install security-auditor",
+    "kvdf plugins uninstall security-auditor"
+  ],
+  "docs_surface": [
+    "plugins/security-auditor/docs/index.md",
+    "plugins/security-auditor/docs/cli.md"
+  ]
+}

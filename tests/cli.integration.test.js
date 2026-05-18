@@ -2425,6 +2425,52 @@ test("evolution roadmap exposes the canonical seven-step restructure order", () 
   assert.match(runKvdf(["evolution", "priorities"], { cwd: dir }).stdout, /KVDF Feature Restructure Roadmap/);
 }));
 
+test("security auditor plugin installs scans clean workspaces and blocks fake secrets", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "security-auditor");
+
+  const loader = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
+  const auditor = loader.plugins.find((item) => item.plugin_id === "security-auditor");
+  assert.ok(auditor);
+  assert.strictEqual(auditor.status, "disabled");
+
+  const initialStatus = JSON.parse(runKvdf(["security-auditor", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(initialStatus.report_type, "security_auditor_status");
+  assert.strictEqual(initialStatus.plugin_enabled, false);
+  assert.strictEqual(initialStatus.external_tools_required, false);
+
+  runKvdf(["plugins", "install", "security-auditor"], { cwd: dir });
+  const installedLoader = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(installedLoader.plugins.find((item) => item.plugin_id === "security-auditor").status, "enabled");
+
+  fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "ok.js"), "const ok = true;\n", "utf8");
+  const cleanScan = JSON.parse(runKvdf(["security-auditor", "scan", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(cleanScan.report_type, "security_auditor_scan");
+  assert.strictEqual(cleanScan.status, "pass");
+  assert.strictEqual(cleanScan.summary.blocked, 0);
+  assert.strictEqual(cleanScan.summary.warnings, 0);
+  assert.strictEqual(cleanScan.summary.files_scanned > 0, true);
+  assert.strictEqual(cleanScan.track, "owner");
+
+  fs.mkdirSync(path.join(dir, "src"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "leak.js"), 'const password = "secretpassword123456";\n', "utf8");
+  const blockedScan = JSON.parse(runKvdf(["security-auditor", "scan", "--include", "src/leak.js", "--track", "plugin", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(blockedScan.status, "blocked");
+  assert.ok(blockedScan.findings.length > 0);
+  assert.ok(blockedScan.findings.some((item) => item.severity === "critical"));
+
+  const report = JSON.parse(runKvdf(["security-auditor", "report", "--track", "plugin", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "security_auditor_report");
+  assert.ok(Array.isArray(report.findings));
+  assert.ok(report.findings.length > 0);
+  assert.strictEqual(report.status, "blocked");
+
+  runKvdf(["plugins", "uninstall", "security-auditor"], { cwd: dir });
+  const uninstalledLoader = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(uninstalledLoader.plugins.find((item) => item.plugin_id === "security-auditor").status, "disabled");
+}));
+
 test("evolution priorities lists open work before archived done items", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const priorities = JSON.parse(runKvdf(["evolution", "priorities", "--json"], { cwd: dir }).stdout);

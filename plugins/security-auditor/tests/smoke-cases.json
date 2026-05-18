@@ -1,0 +1,23 @@
+{
+  "plugin_id": "security-auditor",
+  "smoke_cases": [
+    {
+      "name": "clean workspace scan",
+      "steps": [
+        "kvdf plugins install security-auditor",
+        "kvdf security-auditor scan --json"
+      ],
+      "expected_status": "pass",
+      "scope": "workspace"
+    },
+    {
+      "name": "secret pattern is blocked",
+      "steps": [
+        "kvdf plugins install security-auditor",
+        "kvdf security-auditor scan --include src/leak.js --json"
+      ],
+      "expected_status": "blocked",
+      "scope": "manual"
+    }
+  ]
+}

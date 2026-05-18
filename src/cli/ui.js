@@ -971,6 +971,18 @@ Notes:
 Notes:
   Security scan is a lightweight KVDF secrets and privacy guard. It stores results in .kabeeri/security/security_scans.json and blocks security gate on critical/high findings.
 `,
+    "security-auditor": `Usage:
+  kvdf security-auditor status
+  kvdf security-auditor scan
+  kvdf security-auditor scan --task task-001
+  kvdf security-auditor scan --evolution current
+  kvdf security-auditor report
+  kvdf plugins install security-auditor
+  kvdf plugins uninstall security-auditor
+
+Notes:
+  Security Auditor is an optional removable plugin. KVDF Core keeps the security gate policy, while the plugin provides the built-in scanner that checks tasks, evolutions, handoff packages, and workspace changes for common risks without requiring external tools.
+`,
     migration: `Usage:
   kvdf migration plan --id migration-001 --title "Upgrade schema" --from v1 --to v2 --scope database,migrations --backup backup-2026-05-08 --risk high
   kvdf migration rollback-plan --plan migration-001 --backup backup-2026-05-08 --steps "restore backup,run rollback,verify app"
@@ -1424,6 +1436,7 @@ function printHelp() {
     "  model-route list|recommend    Recommend AI model class by task kind and risk",
     "  handoff package|list          Generate client and Owner handoff report packages",
     "  security scan|report|gate     Scan for secrets and enforce security readiness",
+    "  security-auditor status|scan|report Optional removable security auditor plugin",
     "  migration plan|check|report   Govern migration safety and rollback readiness",
     "  github status|report|feedback|plan|label|milestone|issue Dry-run by default; use --confirm to write through gh",
     "  sync status|pull|push         Coordinate local Kabeeri state with git/GitHub and feedback counts",

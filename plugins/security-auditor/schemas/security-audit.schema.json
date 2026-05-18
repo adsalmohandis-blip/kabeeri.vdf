@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Security Auditor Scan",
+  "type": "object",
+  "required": [
+    "report_type",
+    "status",
+    "track",
+    "scope",
+    "findings",
+    "summary",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "security_auditor_scan"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass",
+        "warning",
+        "blocked"
+      ]
+    },
+    "track": {
+      "type": "string",
+      "enum": [
+        "owner",
+        "vibe",
+        "plugin"
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "enum": [
+        "task",
+        "evolution",
+        "workspace",
+        "manual"
+      ]
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "finding_id",
+          "rule_id",
+          "category",
+          "severity",
+          "file",
+          "line",
+          "message",
+          "evidence",
+          "next_action"
+        ],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "rule_id": { "type": "string" },
+          "category": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low"]
+          },
+          "file": { "type": "string" },
+          "line": { "type": "integer" },
+          "message": { "type": "string" },
+          "evidence": { "type": "string" },
+          "next_action": { "type": "string" }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "blocked",
+        "warnings",
+        "files_scanned"
+      ],
+      "properties": {
+        "blocked": { "type": "integer" },
+        "warnings": { "type": "integer" },
+        "files_scanned": { "type": "integer" }
+      }
+    },
+    "next_action": { "type": "string" }
+  }
+}

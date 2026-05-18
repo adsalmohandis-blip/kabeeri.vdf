@@ -1,6 +1,6 @@
 const { handled } = require("./shared");
 
-function dispatchGovernanceCommands({ group, action, value, flags, c }) {
+function dispatchGovernanceCommands({ group, action, value, flags, rest = [], c }) {
   if (group === "budget") return handled(c.budget(action, value, flags, { requireAnyRole: c.requireAnyRole, appendAudit: c.appendAudit, getEffectiveActor: c.getEffectiveActor, getOwnerActor: c.getOwnerActor }));
   if (group === "pricing") return handled(c.pricing(action, value, flags, { requireAnyRole: c.requireAnyRole, appendAudit: c.appendAudit }));
   if (group === "usage") return handled(c.usage(action, value, flags, { refreshDashboardArtifacts: c.refreshDashboardArtifacts, appendAudit: c.appendAudit }));
@@ -11,6 +11,7 @@ function dispatchGovernanceCommands({ group, action, value, flags, c }) {
   if (group === "model-route" || group === "routing") return handled(c.modelRoute(action, value, flags));
   if (group === "handoff") return handled(c.handoff(action, value, flags, { runPolicyGate: c.runPolicyGate, collectDashboardState: c.collectDashboardState, summarizeUsage: c.summarizeUsage, appendAudit: c.appendAudit, getEffectiveActor: c.getEffectiveActor }));
   if (group === "security") return handled(c.security(action, value, flags, { appendAudit: c.appendAudit }));
+  if (group === "security-auditor") return handled(c.securityAuditor(action, value, flags, rest, { appendAudit: c.appendAudit }));
   if (group === "migration" || group === "migrate") return handled(c.migration(action, value, flags, { requireAnyRole: c.requireAnyRole, getEffectiveActor: c.getEffectiveActor, appendAudit: c.appendAudit }));
   if (group === "learn") return handled(c.aiLearning(action, value, flags));
   return null;

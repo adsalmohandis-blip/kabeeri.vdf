@@ -35,6 +35,7 @@ kvdf track --help
 kvdf multi-ai --help
 kvdf conflict --help
 kvdf source-package --help
+kvdf security-auditor --help
 ```
 
 Common command aliases are supported for terminal convenience:
@@ -1437,6 +1438,7 @@ Policy scopes now include:
 - `release`: repository validation, latest security scan, migration safety state, and unresolved policy blockers before confirmed publish.
 - `handoff`: latest security scan and unresolved blockers before client/Owner package generation.
 - `security`: latest security scan existence and blocker status.
+- `security-auditor`: optional removable scanner plugin for task, evolution, handoff, and workspace security review. KVDF Core keeps the policy gate; the plugin provides the scan/report surface and does not require external security tools.
 - `migration`: migration plan, rollback plan, backup reference, and latest migration safety check.
 - `github_write`: explicit confirmation, repository validation, latest security scan, unresolved policy blockers, and Owner actor warning before confirmed GitHub writes.
 
@@ -1478,11 +1480,20 @@ kvdf security report --id security-scan-001 --output .kabeeri/security/security.
 kvdf security gate
 kvdf security list
 kvdf security show security-scan-001
+kvdf security-auditor status
+kvdf security-auditor scan
+kvdf security-auditor scan --task task-001
+kvdf security-auditor scan --evolution current
+kvdf security-auditor report
+kvdf plugins install security-auditor
+kvdf plugins uninstall security-auditor
 ```
 
 `security scan` performs a lightweight local pattern scan for common secrets such as private keys, API keys, Stripe secret keys, GitHub tokens, AWS access keys, `.env` files, and generic secret assignments. Results are stored in `.kabeeri/security/security_scans.json`; the latest scan is also written to `.kabeeri/security/latest_security_scan.json` and `.kabeeri/security/latest_security_report.md`.
 
 `security gate` runs a scan and exits with an error if critical or high findings exist. It is intended as a pre-AI, pre-release, and pre-publish guard. It is not a replacement for a professional security scanner.
+
+`security-auditor` is the optional plugin-scoped scanner surface. It writes `.kabeeri/security/security_auditor_scans.json`, stays shared across owner/vibe/plugin tracks, and can be installed or removed without changing the core security gate policy.
 
 ## Migration Safety
 

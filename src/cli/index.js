@@ -121,6 +121,7 @@ const { budget } = require("./commands/budget");
 const { contextPack, preflight, modelRoute, findLatestContextPackForTask, getContextPack } = require("./commands/cost_control");
 const { handoff } = require("./commands/handoff");
 const { security, getLatestSecurityScan } = require("./commands/security");
+const { securityAuditor } = require("./commands/security_auditor");
 const { migration, getMigrationPlan, latestMigrationChecks } = require("./commands/migration");
 const { token, defaultForbiddenFiles } = require("./commands/token");
 const { lock, locksOverlap, normalizeLockType, normalizeLockScope, pathScopeContains } = require("./commands/lock");
@@ -9967,6 +9968,7 @@ function getCommandDispatchContext() {
     modelRoute,
     handoff,
     security,
+    securityAuditor,
     migration,
     createWorkspace,
     ensureWorkspace,
