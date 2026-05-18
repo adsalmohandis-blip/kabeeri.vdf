@@ -2689,12 +2689,14 @@ Object.assign(docs.en.pages, {
     commands: ["workspaces/apps/<slug>/", "kvdf questionnaire plan", "kvdf questionnaire review", "kvdf questionnaire approve --confirm", "git rev-parse --show-toplevel", "git branch --show-current", "git status --short", "kvdf app workspace scorecards <slug>", "kvdf dashboard show"]
   },
   "vibe-developer-pipeline": {
-    lead: "This page traces a product idea from first discussion to a fully ready system: file-based questions and answers, system design docs, delivery mode, scorecards and Evolution planning, task generation, implementation, verification, local archive, and optional GitHub handoff.",
-    beginner: "Use this when you need the full path from idea to a system-ready app. It shows how the vibe developer gathers answers, confirms the target repo, produces the planning pack, chooses local-only or GitHub-enabled delivery, turns the plan into locked scorecards and tasks, and then executes one task at a time.",
+    lead: "This page traces a product idea from first discussion to a fully ready system. KVDF-led delivery is local-first: the pipeline always starts with file-based questions, complete answers, system design docs, delivery mode, scorecards, Evolution planning, task generation, implementation, verification, local archive, and handoff. For KVDF Core solo-owner work, the default GitHub path is direct-to-main. Branch and PR handoff stays optional for team, protected-repo, or risky experimental work.",
+    beginner: "Use this when you need the full path from idea to a system-ready app. It shows how the vibe developer gathers answers, confirms the target repo, produces the planning pack, chooses local-only handoff or the default solo-owner direct-to-main path for KVDF Core, and uses branch/PR only when the repo or risk profile requires it.",
     sections: [
       ["Idea to intake", "Start with the plain product goal, then capture the users, scope, constraints, and unknowns before anything is built."],
       ["Start a vibe-app project", "Open the workspace, run the intake, answer the questions in the markdown file, review the plan, approve it, let Evolution create the slice, then build one task at a time inside the app workspace."],
-      ["KVDF-led delivery", "KVDF-led delivery means the local workspace stays authoritative. GitHub is an optional handoff layer for branch, tests, commit, push, PR preparation, Owner review, merge, and pull-main."],
+      ["Local-only handoff", "Use local-only mode when GitHub is not part of the delivery. Tasks are completed, verified, archived, and the parent Evolution auto-closes locally."],
+      ["Solo Owner Direct-to-Main Mode", "For KVDF Core solo-owner development, the default GitHub path is direct-to-main: confirm the repo, run validation, commit intended KVDF core changes, and push to origin main."],
+      ["Team / Protected Repo GitHub Mode", "Use branch and PR handoff only when more than one developer is active, the repo is protected, or the change is risky or experimental."],
       ["Target repo confirmation", "Before implementation, confirm the repo root, current branch, and working tree so app-track work stays in the app repo and owner-track work stays in KVDF core."],
       ["Questions and answers", "Use the questionnaire to expose what is missing, what must be decided, and what can wait for a later version."],
       ["System design docs", "Write the product scope, architecture, data design, and UI/UX direction so the plan is concrete enough to review."],
@@ -2727,6 +2729,8 @@ Object.assign(docs.en.pages, {
       "Implement one task at a time",
       "Verify and archive",
       "Auto-close Evolution",
+      "Choose local-only handoff or GitHub mode",
+      "For solo-owner KVDF Core, default to direct-to-main",
       "Prepare branch and tests",
       "Commit and push",
       "Prepare PR",
@@ -2751,8 +2755,9 @@ Object.assign(docs.en.pages, {
         "If GitHub sync is enabled, create the delivery branch, run tests, commit, push, prepare or create the PR, wait for Owner review, merge it, then pull `main` before the next Evolution."
       ]],
       ["KVDF-led delivery mode", [
-        "Local-only mode ends at the handoff report and archive. GitHub is optional, not required.",
-        "GitHub-enabled mode adds branch, tests, commit, push, PR preparation or creation, Owner review, merge, and pull-main before the next Evolution.",
+        "KVDF-led delivery is local-first. Local-only mode ends at the handoff report and archive. GitHub is optional, not required.",
+        "For KVDF Core solo-owner development, the default GitHub path is direct-to-main: confirm the repo, run validation, commit the intended KVDF core changes, and push to origin main.",
+        "GitHub-enabled team or protected-repo mode adds branch, tests, commit, push, PR preparation or creation, Owner review, merge, and pull-main before the next Evolution.",
         "Runtime state such as `.kabeeri/` must stay out of the commit payload unless the approved Evolution explicitly requires it."
       ]],
       ["Target repo confirmation", [
@@ -2764,7 +2769,8 @@ Object.assign(docs.en.pages, {
       ["GitHub handoff", [
         "The GitHub layer is a handoff mechanism, not the source of truth.",
         "The owner is the final merge authority.",
-        "Push the approved branch, prepare or create the PR, then wait for Owner review before merge.",
+        "For Solo Owner Direct-to-Main Mode, commit the approved KVDF core changes and push directly to `origin main` after validation.",
+        "For Team / Protected Repo GitHub Mode, push the approved branch, prepare or create the PR, then wait for Owner review before merge.",
         "After merge, pull the latest `main` and re-validate the workspace before the next Evolution begins."
       ]],
       ["App-track vs owner-track warning", [
@@ -2888,12 +2894,14 @@ Object.assign(docs.ar.pages, {
     commands: ["workspaces/apps/<slug>/", "kvdf questionnaire plan", "kvdf questionnaire review", "kvdf questionnaire approve --confirm", "git rev-parse --show-toplevel", "git branch --show-current", "git status --short", "kvdf app workspace scorecards <slug>", "kvdf dashboard show"]
   },
   "vibe-developer-pipeline": {
-    lead: "تتبع هذه الصفحة رحلة فكرة المنتج من أول نقاش إلى نظام جاهز بالكامل: أسئلة وملفات إجابات، وثائق التصميم، نمط التسليم، خطة الـ scorecards والتطور، توليد التاسكات، التنفيذ، التحقق، الأرشفة المحلية، والتسليم الاختياري عبر GitHub.",
-    beginner: "استخدم هذه الصفحة عندما تحتاج المسار الكامل من الفكرة إلى تطبيق جاهز للنظام. توضح كيف يجمع مطور Vibe الإجابات، يؤكد الريبو الهدف، ويخرج حزمة التخطيط، ويختار التسليم المحلي أو GitHub-enabled، ثم يحول الخطة إلى scorecards مقفلة وتاسكات قابلة للتنفيذ.",
+    lead: "تتبع هذه الصفحة رحلة فكرة المنتج من أول نقاش إلى نظام جاهز بالكامل. KVDF-led delivery يبدأ محليًا أولًا: أسئلة داخل ملف، إجابات مكتملة، وثائق التصميم، نمط التسليم، scorecards، تخطيط Evolution، توليد التاسكات، التنفيذ، التحقق، الأرشفة المحلية، ثم handoff. في KVDF Core وعندما يكون المالك هو المطوّر الوحيد، المسار الافتراضي عبر GitHub هو direct-to-main. مسار branch وPR يبقى اختياريًا فقط للفرق أو المستودعات المحمية أو التجارب عالية المخاطر.",
+    beginner: "استخدم هذه الصفحة عندما تحتاج المسار الكامل من الفكرة إلى تطبيق جاهز للنظام. توضح كيف يجمع مطور Vibe الإجابات، يؤكد الريبو الهدف، يبني حزمة التخطيط، يختار local-only handoff أو direct-to-main الافتراضي في KVDF Core، ويستخدم branch/PR فقط عندما يفرضه الريبو أو مستوى المخاطرة.",
     sections: [
       ["من الفكرة إلى الاستقبال", "ابدأ بالهدف الواضح للمنتج، ثم سجّل المستخدمين والنطاق والقيود والأسئلة المفتوحة قبل أن يبدأ البناء."],
       ["ابدأ مشروع vibe-app", "افتح مساحة العمل، شغّل الاستقبال، أجب عن الأسئلة في ملف markdown، راجع الخطة، اعتمدها، ثم دع Evolution ينشئ slice والتاسكات وابدأ التنفيذ تاسكاً واحداً في كل مرة داخل مساحة التطبيق."],
-      ["KVDF-led delivery", "يعني أن الريبو المحلي هو المرجع الأساسي. GitHub يصبح طبقة handoff اختيارية لخط branch، الاختبارات، commit، push، تحضير/إنشاء PR، مراجعة Owner، merge، ثم pull-main."],
+      ["التسليم المحلي", "استخدم local-only mode عندما لا يكون GitHub جزءًا من التسليم. تكتمل التاسكات، تُتحقق، تُؤرشف، ثم تُغلق Evolution الأم تلقائيًا محليًا."],
+      ["Solo Owner Direct-to-Main Mode", "في تطوير KVDF Core عندما يكون المالك هو المطوّر الوحيد، المسار الافتراضي عبر GitHub هو direct-to-main: تأكيد الريبو، تشغيل التحقق، commit للتغييرات المقصودة فقط، ثم push إلى origin main."],
+      ["Team / Protected Repo GitHub Mode", "استخدم branch وPR فقط عندما يكون هناك أكثر من مطوّر، أو يكون الريبو محمياً، أو يكون التغيير تجريبياً أو عالي المخاطرة."],
       ["تأكيد الريبو الهدف", "قبل التنفيذ، أكد root الريبو والفرع الحالي وحالة working tree حتى يبقى عمل app-track داخل التطبيق وعمل owner-track داخل KVDF core."],
       ["الأسئلة والأجوبة", "استخدم الاستبيان لإظهار ما هو مفقود وما يجب حسمه وما يمكن تأجيله إلى نسخة لاحقة."],
       ["وثائق تصميم النظام", "اكتب نطاق المنتج والاتجاه المعماري وتصميم البيانات واتجاه UI/UX بشكل يكفي للمراجعة."],
@@ -2925,6 +2933,8 @@ Object.assign(docs.ar.pages, {
       "نفذ تاسكاً واحداً في كل مرة",
       "تحقق وارشف",
       "أغلق Evolution تلقائياً",
+      "اختر التسليم المحلي أو GitHub",
+      "في KVDF Core solo-owner استخدم direct-to-main افتراضياً",
       "حضّر branch والاختبارات",
       "اعمل commit و push",
       "حضّر PR",
@@ -2949,8 +2959,9 @@ Object.assign(docs.ar.pages, {
         "إذا كان GitHub sync مفعلاً، أنشئ branch، شغّل الاختبارات، اعمل commit وpush، حضّر أو أنشئ PR، انتظر Owner review، ثم merge إلى main وبعدها pull للـ main قبل بدء Evolution التالية."
       ]],
       ["KVDF-led delivery", [
-        "التسليم المحلي ينتهي عند تقرير handoff والأرشفة المحلية. GitHub اختياري وليس إلزامياً.",
-        "التسليم عبر GitHub يضيف branch والاختبارات وcommit وpush وتحضير/إنشاء PR ومراجعة Owner وmerge وpull-main قبل الـ Evolution التالية.",
+        "KVDF-led delivery يبدأ محلياً أولاً. التسليم المحلي ينتهي عند تقرير handoff والأرشفة المحلية. GitHub اختياري وليس إلزامياً.",
+        "في KVDF Core وعندما يكون المالك هو المطوّر الوحيد، المسار الافتراضي عبر GitHub هو direct-to-main: تأكيد الريبو، تشغيل التحقق، commit للتغييرات المقصودة فقط، ثم push إلى origin main.",
+        "مسار GitHub للفرق أو للمستودعات المحمية يضيف branch والاختبارات وcommit وpush وتحضير/إنشاء PR ومراجعة Owner وmerge وpull-main قبل الـ Evolution التالية.",
         "يجب أن تبقى حالة التشغيل مثل `.kabeeri/` خارج commit إلا إذا نصت Evolution المعتمدة على غير ذلك."
       ]],
       ["تأكيد الريبو الهدف", [
@@ -2962,7 +2973,8 @@ Object.assign(docs.ar.pages, {
       ["التسليم عبر GitHub", [
         "طبقة GitHub هي handoff layer وليست مصدر الحقيقة.",
         "Owner هو سلطة الدمج النهائية.",
-        "بعد commit وpush، حضّر أو أنشئ PR ثم انتظر مراجعة Owner قبل الدمج.",
+        "في Solo Owner Direct-to-Main Mode، اعمل commit للتغييرات المقصودة ثم push مباشرة إلى origin main بعد التحقق.",
+        "في Team / Protected Repo GitHub Mode، بعد commit وpush، حضّر أو أنشئ PR ثم انتظر مراجعة Owner قبل الدمج.",
         "بعد merge، اعمل pull لأحدث main ثم أعد التحقق من المساحة قبل بدء Evolution التالية."
       ]],
       ["تحذير app-track و owner-track", [
