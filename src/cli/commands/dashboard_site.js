@@ -365,11 +365,19 @@ function buildDashboardHtml(options = {}) {
     h1, h2 { margin: 0 0 12px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
     .card { background: white; border: 1px solid #d9dee7; border-radius: 8px; padding: 16px; }
-    .metric { font-size: 30px; font-weight: 700; }
+    .metric { font-size: 24px; font-weight: 700; line-height: 1.1; word-break: break-word; }
     .muted { color: #5f6b7a; font-size: 13px; }
     .source-note { margin-top: 8px; font-size: 13px; color: #d7e8ff; }
     .section-help { margin: -6px 0 12px; color: #5f6b7a; font-size: 13px; max-width: 920px; }
-    .table-wrap { width: 100%; overflow-x: auto; margin-bottom: 24px; }
+    .table-shell { border: 1px solid #d9dee7; border-radius: 10px; overflow: hidden; background: white; margin-bottom: 24px; }
+    .table-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid #e7ebf0; background: #f8fafc; }
+    .table-toolbar-title h3 { margin: 0; font-size: 16px; color: #202124; }
+    .table-summary { margin-top: 4px; font-size: 12px; color: #5f6b7a; }
+    .table-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .table-control { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #5f6b7a; }
+    .table-control input,
+    .table-control select { min-width: 150px; border: 1px solid #9aa7b6; border-radius: 6px; padding: 8px 10px; background: white; color: #202124; font: inherit; }
+    .table-wrap { width: 100%; overflow-x: auto; }
     .empty-state { color: #5f6b7a; font-style: italic; }
     .dashboard-section[hidden],
     .app-drilldown-card[hidden] { display: none !important; }
@@ -380,9 +388,14 @@ function buildDashboardHtml(options = {}) {
     .toolbar .muted { margin-right: 4px; }
     select { min-width: 220px; border: 1px solid #9aa7b6; border-radius: 6px; padding: 8px 10px; background: white; color: #202124; }
     .scope-summary { margin-top: 10px; font-size: 13px; color: #d7e8ff; }
-    table { width: 100%; border-collapse: collapse; background: white; border: 1px solid #d9dee7; margin-bottom: 24px; }
-    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 10px; font-size: 14px; }
-    th { background: #eef2f7; }
+    table { width: 100%; border-collapse: collapse; background: white; min-width: 780px; }
+    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 9px 10px; font-size: 13px; vertical-align: top; word-break: break-word; }
+    th { background: #eef2f7; position: sticky; top: 0; z-index: 1; }
+    .table-pagination { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid #e7ebf0; background: #fff; }
+    .table-pagination-summary { font-size: 12px; color: #5f6b7a; }
+    .table-pagination-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .table-pagination-controls button { border: 1px solid #9aa7b6; border-radius: 6px; padding: 7px 12px; background: white; color: #202124; font: inherit; cursor: pointer; }
+    .table-pagination-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
     code { background: #eef2f7; padding: 2px 5px; border-radius: 4px; }
     .live { display: inline-block; margin-top: 8px; font-size: 13px; color: #c7f9cc; }
     .app-drilldown-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
@@ -729,6 +742,7 @@ function buildDashboardHtml(options = {}) {
     applyFilters();
   })();
   </script>
+  ${buildTableEnhancementScript()}
 </body>
 </html>
 `;
@@ -850,12 +864,58 @@ function developerModeValue(developerMode, key) {
   return developerMode[key];
 }
 
-function htmlTable(headers, rows, options = {}) {
+function tableShellMarkup(title, headers, rows, options = {}) {
   const trusted = new Set(options.trustedHtmlColumns || []);
-  if (!rows.length) {
-    return `<div class="table-wrap"><table><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody><tr><td class="empty-state" colspan="${headers.length}">No records</td></tr></tbody></table></div>`;
-  }
-  return `<div class="table-wrap"><table><thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${headers.map((_, index) => `<td>${trusted.has(index) ? String(row[index] || "") : escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  const normalizedRows = Array.isArray(rows) ? rows : [];
+  const totalRows = normalizedRows.length;
+  const titleMarkup = title ? `<h3>${escapeHtml(title)}</h3>` : "";
+  const tableRows = totalRows
+    ? normalizedRows.map((row) => `<tr data-kvdf-table-row>${headers.map((_, index) => `<td>${trusted.has(index) ? String(row[index] || "") : escapeHtml(row[index] || "")}</td>`).join("")}</tr>`).join("")
+    : `<tr data-kvdf-table-empty><td class="empty-state" colspan="${headers.length}">${escapeHtml(options.emptyState || "No records")}</td></tr>`;
+  return `
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          ${titleMarkup}
+          <div class="table-summary" data-table-summary>${escapeHtml(totalRows ? `${totalRows} row${totalRows === 1 ? "" : "s"}` : options.emptyState || "No records")}</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join("")}</tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function htmlTable(headers, rows, options = {}) {
+  return tableShellMarkup(options.title || "", headers, rows, options);
 }
 
 function escapeHtml(value) {
@@ -923,18 +983,35 @@ function renderDashboardProductHtml(state = {}, options = {}) {
     .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
     .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.16); }
     .section { background: white; border: 1px solid #d9dee7; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
-    .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0 16px; }
-    .widget { border: 1px solid #e7ebf0; border-radius: 10px; padding: 12px; background: #fbfcfe; }
-    .widget-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #52606d; margin-bottom: 4px; }
-    .widget-value { font-size: 22px; font-weight: 800; color: #0f172a; }
-    .widget-note { font-size: 12px; color: #52606d; margin-top: 4px; }
+    .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 12px 0 16px; }
+    .widget { display: flex; flex-direction: column; gap: 6px; min-height: 122px; border: 1px solid #e7ebf0; border-radius: 10px; padding: 12px 14px; background: #fbfcfe; }
+    .widget-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #52606d; margin-bottom: 0; }
+    .widget-value { font-size: 17px; line-height: 1.4; font-weight: 700; color: #0f172a; word-break: break-word; }
+    .widget--metric .widget-value { font-size: 30px; line-height: 1.05; }
+    .widget--status .widget-value { font-size: 18px; }
+    .widget--action { min-height: 148px; }
+    .widget--action .widget-value { font-size: 14px; line-height: 1.55; font-weight: 600; }
+    .widget-note { font-size: 12px; color: #52606d; margin-top: auto; line-height: 1.45; }
     .widget-status { display: inline-block; margin-top: 8px; font-size: 12px; border-radius: 999px; padding: 3px 8px; background: #e8f1f8; color: #334e68; }
     .widget-status.warning { background: #fff4d6; color: #8a5b00; }
     .widget-status.blocked { background: #fde2e1; color: #9b1c1c; }
-    .table-wrap { width: 100%; overflow-x: auto; margin-top: 12px; }
-    table { width: 100%; border-collapse: collapse; min-width: 700px; }
-    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 10px; font-size: 14px; vertical-align: top; }
-    th { background: #eef2f7; }
+    .table-shell { border: 1px solid #d9dee7; border-radius: 12px; overflow: hidden; background: white; margin-top: 12px; }
+    .table-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid #e7ebf0; background: #f8fafc; }
+    .table-toolbar-title h3 { margin: 0; font-size: 16px; }
+    .table-summary { margin-top: 4px; font-size: 12px; color: #5f6b7a; }
+    .table-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .table-control { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #52606d; }
+    .table-control input,
+    .table-control select { min-width: 150px; border: 1px solid #cdd6e0; border-radius: 8px; padding: 8px 10px; background: white; font: inherit; color: #1f2933; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 780px; }
+    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 9px 10px; font-size: 13px; vertical-align: top; word-break: break-word; }
+    th { background: #eef2f7; position: sticky; top: 0; z-index: 1; }
+    .table-pagination { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid #e7ebf0; background: #fff; }
+    .table-pagination-summary { font-size: 12px; color: #5f6b7a; }
+    .table-pagination-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .table-pagination-controls button { border: 1px solid #cdd6e0; border-radius: 8px; padding: 7px 12px; background: #fff; color: #1f2933; font: inherit; cursor: pointer; }
+    .table-pagination-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
     .empty-state { color: #5f6b7a; font-style: italic; }
     .section-help { color: #5f6b7a; font-size: 13px; margin-top: 4px; }
   </style>
@@ -953,6 +1030,7 @@ function renderDashboardProductHtml(state = {}, options = {}) {
   <main>
     ${sections.map((section) => renderDashboardSection(section)).join("")}
   </main>
+  ${buildTableEnhancementScript()}
 </body>
 </html>
 `;
@@ -974,8 +1052,9 @@ function renderDashboardSection(section = {}) {
 
 function renderDashboardWidget(widget = {}) {
   const statusClass = widget.status === "warning" ? "warning" : widget.status === "blocked" ? "blocked" : "";
+  const widgetTypeClass = widget.type ? ` widget--${escapeHtml(widget.type)}` : "";
   return `
-    <article class="widget">
+    <article class="widget${widgetTypeClass}">
       <div class="widget-title">${escapeHtml(widget.title || widget.id || "")}</div>
       <div class="widget-value">${escapeHtml(widget.value ?? "")}</div>
       <div class="widget-status ${statusClass}">${escapeHtml(widget.status || "unknown")}</div>
@@ -988,17 +1067,114 @@ function renderDashboardTable(tableState = {}) {
   const columns = Array.isArray(tableState.columns) ? tableState.columns : [];
   const rows = Array.isArray(tableState.rows) ? tableState.rows : [];
   if (!columns.length) return "";
+  return tableShellMarkup(tableState.title || tableState.id || "", columns, rows, {
+    emptyState: tableState.empty_state || "No records"
+  });
+}
+
+function buildTableEnhancementScript() {
   return `
-    <div class="table-wrap">
-      <h3>${escapeHtml(tableState.title || tableState.id || "")}</h3>
-      ${rows.length ? `
-        <table>
-          <thead><tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr></thead>
-          <tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
-        </table>
-      ` : `<p class="empty-state">${escapeHtml(tableState.empty_state || "No records")}</p>`}
-    </div>
-  `;
+  <script>
+  (function () {
+    function normalize(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+    function clampPage(page, totalPages) {
+      if (!Number.isFinite(page) || page < 1) return 1;
+      if (page > totalPages) return totalPages;
+      return page;
+    }
+    function initShell(shell) {
+      var table = shell.querySelector("table");
+      var rows = table ? Array.prototype.slice.call(table.querySelectorAll("tbody tr[data-kvdf-table-row]")) : [];
+      var search = shell.querySelector("[data-table-search]");
+      var pageSizeSelect = shell.querySelector("[data-table-page-size]");
+      var prevButton = shell.querySelector("[data-table-prev]");
+      var nextButton = shell.querySelector("[data-table-next]");
+      var summary = shell.querySelector("[data-table-summary]");
+      var pageSummary = shell.querySelector("[data-table-page-summary]");
+      var allRowsLabel = "all";
+      var state = { query: "", page: 1, pageSize: rows.length > 10 ? 10 : "all" };
+      var emptyRow = table ? table.querySelector("tbody tr[data-kvdf-table-empty]") : null;
+
+      function getVisibleRows() {
+        if (!rows.length) return [];
+        if (!state.query) return rows.slice();
+        return rows.filter(function (row) {
+          return normalize(row.textContent).indexOf(state.query) !== -1;
+        });
+      }
+
+      function getPageSize(total) {
+        if (state.pageSize === allRowsLabel) return total || 1;
+        var parsed = Number(state.pageSize || 10);
+        if (!Number.isFinite(parsed) || parsed < 1) return 10;
+        return parsed;
+      }
+
+      function update() {
+        var visibleRows = getVisibleRows();
+        var total = visibleRows.length;
+        var pageSize = getPageSize(total);
+        var totalPages = Math.max(1, Math.ceil(total / pageSize));
+        state.page = clampPage(state.page, totalPages);
+        var start = total ? (state.page - 1) * pageSize : 0;
+        var end = total ? Math.min(start + pageSize, total) : 0;
+
+        rows.forEach(function (row) { row.hidden = true; });
+        if (emptyRow) emptyRow.hidden = total !== 0;
+        visibleRows.forEach(function (row, index) {
+          row.hidden = index < start || index >= end;
+        });
+
+        if (summary) {
+          summary.textContent = total ? total + " row" + (total === 1 ? "" : "s") : "No records";
+        }
+        if (pageSummary) {
+          pageSummary.textContent = total
+            ? "Showing " + (start + 1) + "-" + end + " of " + total + " row" + (total === 1 ? "" : "s")
+            : "No rows to show";
+        }
+        if (prevButton) prevButton.disabled = state.page <= 1 || total === 0;
+        if (nextButton) nextButton.disabled = state.page >= totalPages || total === 0;
+      }
+
+      if (search) {
+        search.addEventListener("input", function () {
+          state.query = normalize(search.value);
+          state.page = 1;
+          update();
+        });
+      }
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener("change", function () {
+          state.pageSize = pageSizeSelect.value === allRowsLabel ? allRowsLabel : Number(pageSizeSelect.value);
+          state.page = 1;
+          update();
+        });
+        if (rows.length <= 10) {
+          pageSizeSelect.value = allRowsLabel;
+          state.pageSize = allRowsLabel;
+        }
+      }
+      if (prevButton) {
+        prevButton.addEventListener("click", function () {
+          state.page = clampPage(state.page - 1, Math.max(1, Math.ceil(getVisibleRows().length / getPageSize(getVisibleRows().length))));
+          update();
+        });
+      }
+      if (nextButton) {
+        nextButton.addEventListener("click", function () {
+          state.page = state.page + 1;
+          update();
+        });
+      }
+      update();
+    }
+    Array.prototype.slice.call(document.querySelectorAll("[data-kvdf-table-shell]")).forEach(initShell);
+  })();
+  </script>
+`;
 }
 
 module.exports = {
