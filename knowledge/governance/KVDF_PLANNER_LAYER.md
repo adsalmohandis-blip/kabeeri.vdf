@@ -159,15 +159,20 @@ Required progression:
 1. Owner direction
 2. planner propose
 3. Owner approve or reject
-4. planner prompt --from-current
-5. Codex execution
-6. validation
+4. planner current
+5. planner prompt --from-current
+6. planner visual --from-current
+7. Codex execution
+8. validation
+9. planner complete
 
 Rules:
 
 - proposed plans are not executable
 - approved plans become the current planner source of truth
 - rejected plans remain historical and do not become the current plan
+- approved plans remain current until they are completed or explicitly rejected
+- completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
 - `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
 

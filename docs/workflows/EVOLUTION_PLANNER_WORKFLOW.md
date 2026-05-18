@@ -14,20 +14,21 @@ It supports owner, vibe/app, and plugin planner modes.
 Owner direction
 -> planner propose
 -> planner approve
+-> planner current
 -> planner visual
 -> planner prompt --from-current
 -> Codex execution
 -> validation
--> review
+-> planner complete
 -> direct-to-main commit for KVDF Core
 ```
 
 Track-aware variants:
 
 ```text
-Owner direction -> planner (owner mode) -> propose -> approve -> visual -> prompt from current -> direct-to-main KVDF Core delivery
-Owner direction -> planner (vibe mode) -> propose -> approve -> visual -> prompt from current -> local-first app delivery and optional GitHub handoff
-Owner direction -> planner (plugin mode) -> propose -> approve -> visual -> prompt from current -> plugin manifest/runtime/docs parity and direct-to-main delivery
+Owner direction -> planner (owner mode) -> propose -> approve -> current -> visual -> prompt from current -> Codex -> validation -> complete -> direct-to-main KVDF Core delivery
+Owner direction -> planner (vibe mode) -> propose -> approve -> current -> visual -> prompt from current -> Codex -> validation -> complete -> local-first app delivery and optional GitHub handoff
+Owner direction -> planner (plugin mode) -> propose -> approve -> current -> visual -> prompt from current -> Codex -> validation -> complete -> plugin manifest/runtime/docs parity and direct-to-main delivery
 ```
 
 ## Required Checks
@@ -87,6 +88,7 @@ Planner state is used to:
 - store proposed planner outputs
 - mark approved plans as the current plan
 - keep rejected plans as historical records
+- mark approved work as completed and clear the current plan when a slice is closed out
 - generate Codex prompts from approved runtime state with `kvdf planner prompt --from-current`
 - generate visual planner models with `kvdf planner visual --from-current`
 

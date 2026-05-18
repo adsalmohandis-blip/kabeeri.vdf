@@ -473,6 +473,7 @@ Notes:
   kvdf planner approve <plan-id> --owner local-owner --json
   kvdf planner current --json
   kvdf planner reject <plan-id> --reason "Not now" --json
+  kvdf planner complete <plan-id> --note "Done" --json
   kvdf planner prompt --from-current --json
   kvdf planner prompt --goal "Add planner layer" --track owner --json
   kvdf planner prompt --goal "Build app delivery slice" --track vibe --json

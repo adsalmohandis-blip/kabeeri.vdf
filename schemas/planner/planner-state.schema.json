@@ -30,6 +30,7 @@
           "recommended_evolution",
           "task_punch",
           "codex_prompt",
+          "visual",
           "allowed_files",
           "forbidden_files",
           "out_of_scope",
@@ -39,7 +40,9 @@
           "approved_at",
           "approved_by",
           "rejected_at",
-          "rejection_reason"
+          "rejection_reason",
+          "completed_at",
+          "completion_note"
         ],
         "properties": {
           "plan_id": {
@@ -75,6 +78,9 @@
           "codex_prompt": {
             "type": "string",
             "minLength": 1
+          },
+          "visual": {
+            "type": ["object", "null"]
           },
           "allowed_files": {
             "type": "array",
@@ -118,6 +124,12 @@
             "type": ["string", "null"]
           },
           "rejection_reason": {
+            "type": ["string", "null"]
+          },
+          "completed_at": {
+            "type": ["string", "null"]
+          },
+          "completion_note": {
             "type": ["string", "null"]
           }
         }

@@ -145,7 +145,7 @@ const PLUGIN_OUT_OF_SCOPE = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "propose", "approve", "current", "reject"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "propose", "approve", "current", "reject", "complete"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -176,8 +176,16 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
   if (mode === "reject") {
     const planId = resolvePlanId(value, flags, rest);
     if (!planId) throw new Error("Missing plan id for planner reject.");
-    const report = rejectPlannerPlan(planId, resolveRejectReason(flags, rest), deps);
+    const report = rejectPlannerPlan(planId, resolveRejectReason(flags, rest), flags, deps);
     printPlannerOutput(report, flags, deps, "reject");
+    return;
+  }
+
+  if (mode === "complete") {
+    const planId = resolvePlanId(value, flags, rest);
+    if (!planId) throw new Error("Missing plan id for planner complete.");
+    const report = completePlannerPlan(planId, resolveCompleteNote(flags, rest), deps);
+    printPlannerOutput(report, flags, deps, "complete");
     return;
   }
 
@@ -342,7 +350,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   const state = loadPlannerState(context.repo_root);
   const currentPlan = findCurrentPlannerPlan(state);
   if (!currentPlan) {
-    throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner --json first.");
+    throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json first.");
   }
   const goal = currentPlan.goal || (currentPlan.recommended_evolution && currentPlan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(currentPlan.planner_mode);
@@ -356,6 +364,9 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   const taskPunch = currentPlan.task_punch && Array.isArray(currentPlan.task_punch.tasks) && currentPlan.task_punch.tasks.length
     ? currentPlan.task_punch
     : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext }, context);
+  if (currentPlan.visual && currentPlan.visual.report_type === "kvdf_planner_visual") {
+    return currentPlan.visual;
+  }
   return buildPlannerVisualPayload({
     goal,
     mode,
@@ -613,6 +624,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext });
   const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
@@ -623,6 +635,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     deliveryMode,
     evolutionPlan,
     taskPunch,
+    visual,
     codexPrompt,
     pluginContext,
     createdAt: new Date().toISOString()
@@ -637,6 +650,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     planner_mode: mode,
     track: evolutionPlan.track,
     delivery_mode: deliveryMode,
+    visual,
     next_action: `Review and approve with kvdf planner approve ${planId}.`
   };
 }
@@ -656,6 +670,19 @@ function approvePlannerPlan(planId, approvedBy, deps = {}) {
   plan.approved_by = owner;
   plan.rejected_at = null;
   plan.rejection_reason = null;
+  const pluginContext = String(plan.planner_mode || "").toLowerCase() === "plugin"
+    ? (plan.plugin_context || buildPluginContext({ plugin_id: plan.recommended_evolution && plan.recommended_evolution.plugin_context && plan.recommended_evolution.plugin_context.plugin_id }, context))
+    : null;
+  plan.visual = buildPlannerVisualPayload({
+    goal: plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan",
+    mode: plan.planner_mode,
+    deliveryMode: plan.delivery_mode || getDeliveryMode(plan.planner_mode),
+    evolutionPlan: plan.recommended_evolution && Object.keys(plan.recommended_evolution).length ? plan.recommended_evolution : buildPlannerEvolutionPlan(plan.goal || "Approved planner plan", { mode: plan.planner_mode, deliveryMode: plan.delivery_mode || getDeliveryMode(plan.planner_mode), pluginContext }, context),
+    taskPunch: plan.task_punch && Array.isArray(plan.task_punch.tasks) && plan.task_punch.tasks.length ? plan.task_punch : buildPlannerTaskPunch(plan.recommended_evolution && Object.keys(plan.recommended_evolution).length ? plan.recommended_evolution : buildPlannerEvolutionPlan(plan.goal || "Approved planner plan", { mode: plan.planner_mode, deliveryMode: plan.delivery_mode || getDeliveryMode(plan.planner_mode), pluginContext }, context), { mode: plan.planner_mode, deliveryMode: plan.delivery_mode || getDeliveryMode(plan.planner_mode), pluginContext }, context),
+    context,
+    pluginContext,
+    currentPlan: plan
+  });
   state.current_plan_id = planId;
   savePlannerState(context.repo_root, state);
   return {
@@ -678,7 +705,7 @@ function buildPlannerCurrentReport(deps = {}) {
       generated_at: new Date().toISOString(),
       status: "empty",
       current_plan: null,
-      next_action: "Run kvdf planner propose --goal \"...\" --track owner --json to create a proposed plan."
+      next_action: "Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json to create a proposed plan."
     };
   }
   return {
@@ -691,12 +718,17 @@ function buildPlannerCurrentReport(deps = {}) {
   };
 }
 
-function rejectPlannerPlan(planId, reason, deps = {}) {
+function rejectPlannerPlan(planId, reason, flags = {}, deps = {}) {
   const context = buildPlannerContext(deps);
   const state = loadPlannerState(context.repo_root);
   const plan = findPlannerPlan(state, planId);
   if (!plan) throw new Error(`Planner plan not found: ${planId}`);
-  if (String(plan.status || "").toLowerCase() !== "proposed") {
+  const force = resolveBooleanFlag(flags.force);
+  const status = String(plan.status || "").toLowerCase();
+  if (status === "completed" && !force) {
+    throw new Error(`Planner plan ${planId} is completed. Use --force to reject it.`);
+  }
+  if (status !== "proposed" && !force) {
     throw new Error(`Planner plan ${planId} must be proposed before rejection.`);
   }
   const rejectionReason = String(reason || "").trim();
@@ -706,6 +738,8 @@ function rejectPlannerPlan(planId, reason, deps = {}) {
   plan.rejection_reason = rejectionReason;
   plan.approved_at = null;
   plan.approved_by = null;
+  plan.completed_at = null;
+  plan.completion_note = null;
   if (state.current_plan_id === planId) state.current_plan_id = null;
   savePlannerState(context.repo_root, state);
   return {
@@ -715,7 +749,33 @@ function rejectPlannerPlan(planId, reason, deps = {}) {
     status: "rejected",
     rejection_reason: rejectionReason,
     current_plan_id: state.current_plan_id || null,
-    next_action: "Run kvdf planner propose --goal \"...\" --track owner --json to create a new proposed plan."
+    next_action: "Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json to create a new proposed plan."
+  };
+}
+
+function completePlannerPlan(planId, note, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const state = loadPlannerState(context.repo_root);
+  const plan = findPlannerPlan(state, planId);
+  if (!plan) throw new Error(`Planner plan not found: ${planId}`);
+  if (String(plan.status || "").toLowerCase() !== "approved") {
+    throw new Error(`Planner plan ${planId} must be approved before completion.`);
+  }
+  const completionNote = String(note || "").trim();
+  if (!completionNote) throw new Error("Missing completion note for planner complete.");
+  plan.status = "completed";
+  plan.completed_at = new Date().toISOString();
+  plan.completion_note = completionNote;
+  if (state.current_plan_id === planId) state.current_plan_id = null;
+  savePlannerState(context.repo_root, state);
+  return {
+    report_type: "kvdf_planner_completed",
+    generated_at: new Date().toISOString(),
+    plan_id: planId,
+    status: "completed",
+    current_plan_id: state.current_plan_id || null,
+    completion_note: completionNote,
+    next_action: "Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json to create the next proposed plan."
   };
 }
 
@@ -724,7 +784,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
   const state = loadPlannerState(context.repo_root);
   const currentPlan = findCurrentPlannerPlan(state);
   if (!currentPlan) {
-    throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner --json first.");
+    throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json first.");
   }
   const prompt = currentPlan.codex_prompt || renderPlannerPromptFromPlan(currentPlan, context);
   return {
@@ -1504,11 +1564,14 @@ function normalizePlannerPlanRecord(plan = {}) {
     out_of_scope: Array.isArray(plan.out_of_scope) ? [...plan.out_of_scope] : [],
     validation_commands: Array.isArray(plan.validation_commands) ? [...plan.validation_commands] : [],
     stop_condition: String(plan.stop_condition || ""),
+    visual: plan.visual || null,
     created_at: plan.created_at || null,
     approved_at: plan.approved_at || null,
     approved_by: plan.approved_by || null,
     rejected_at: plan.rejected_at || null,
     rejection_reason: plan.rejection_reason || null,
+    completed_at: plan.completed_at || null,
+    completion_note: plan.completion_note || null,
     plugin_context: plan.plugin_context || null,
     pipeline: Array.isArray(plan.pipeline) ? [...plan.pipeline] : undefined
   };
@@ -1521,6 +1584,7 @@ function buildPlannerPlanRecord({
   deliveryMode,
   evolutionPlan,
   taskPunch,
+  visual,
   codexPrompt,
   pluginContext,
   createdAt
@@ -1540,11 +1604,14 @@ function buildPlannerPlanRecord({
     out_of_scope: [...(evolutionPlan.out_of_scope || [])],
     validation_commands: [...(evolutionPlan.validation_commands || [])],
     stop_condition: evolutionPlan.stop_condition || "",
+    visual: visual || null,
     created_at: createdAt,
     approved_at: null,
     approved_by: null,
     rejected_at: null,
-    rejection_reason: null
+    rejection_reason: null,
+    completed_at: null,
+    completion_note: null
   };
   if (pluginContext) plan.plugin_context = pluginContext;
   if (Array.isArray(evolutionPlan.pipeline)) plan.pipeline = [...evolutionPlan.pipeline];
@@ -1608,6 +1675,19 @@ function resolveRejectReason(flags = {}, rest = []) {
   const candidates = [flags.reason, flags.message, rest.filter((item) => typeof item === "string" && !String(item).startsWith("--")).join(" ")];
   const reason = candidates.find((item) => typeof item === "string" && item.trim());
   return reason ? String(reason).trim() : "";
+}
+
+function resolveCompleteNote(flags = {}, rest = []) {
+  const candidates = [flags.note, flags.message, rest.filter((item) => typeof item === "string" && !String(item).startsWith("--")).join(" ")];
+  const note = candidates.find((item) => typeof item === "string" && item.trim());
+  return note ? String(note).trim() : "";
+}
+
+function resolveBooleanFlag(value) {
+  if (value === true) return true;
+  if (value === false || value == null) return false;
+  const normalized = String(value).trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
 }
 
 function isFromCurrentPlan(flags = {}) {

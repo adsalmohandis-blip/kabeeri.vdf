@@ -5383,6 +5383,8 @@ test("planner propose persists a proposed plan in runtime state", () => withTemp
   assert.strictEqual(result.planner_mode, "owner");
   assert.strictEqual(result.track, "framework_owner");
   assert.strictEqual(result.delivery_mode, "direct_main");
+  assert.ok(result.visual);
+  assert.strictEqual(result.visual.report_type, "kvdf_planner_visual");
   assert.ok(result.plan_id);
   const statePath = path.join(dir, ".kabeeri", "planner.json");
   assert.ok(fs.existsSync(statePath));
@@ -5392,6 +5394,8 @@ test("planner propose persists a proposed plan in runtime state", () => withTemp
   assert.strictEqual(state.plans.length, 1);
   assert.strictEqual(state.plans[0].plan_id, result.plan_id);
   assert.strictEqual(state.plans[0].status, "proposed");
+  assert.ok(state.plans[0].visual);
+  assert.strictEqual(state.plans[0].visual.report_type, "kvdf_planner_visual");
 }));
 
 test("planner approve promotes a proposed plan and marks it current", () => withTempDir((dir) => {
@@ -5416,6 +5420,8 @@ test("planner current returns the approved plan and prompt from current reuses a
   assert.strictEqual(current.status, "approved");
   assert.ok(current.current_plan);
   assert.strictEqual(current.current_plan.plan_id, proposal.plan_id);
+  assert.ok(current.current_plan.visual);
+  assert.strictEqual(current.current_plan.visual.report_type, "kvdf_planner_visual");
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
   assert.strictEqual(prompt.plan_id, proposal.plan_id);
@@ -5423,6 +5429,10 @@ test("planner current returns the approved plan and prompt from current reuses a
   assert.ok(prompt.prompt.includes("Direct-to-main"));
   assert.ok(prompt.prompt.includes("Validation:"));
   assert.ok(prompt.prompt.includes("Stop condition:"));
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.strictEqual(visual.graph.format, "mermaid");
+  assert.strictEqual(visual.goal, proposal.goal || "Add planner approval gate");
 }));
 
 test("planner reject records the rejection reason and clears the current plan when needed", () => withTempDir((dir) => {
@@ -5436,6 +5446,26 @@ test("planner reject records the rejection reason and clears the current plan wh
   assert.strictEqual(state.current_plan_id, null);
   assert.strictEqual(state.plans[0].status, "rejected");
   assert.strictEqual(state.plans[0].rejection_reason, "Not now");
+}));
+
+test("planner complete closes an approved plan and clears the current plan", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Finish planner slice", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const completion = JSON.parse(runKvdf(["planner", "complete", proposal.plan_id, "--note", "Done", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(completion.report_type, "kvdf_planner_completed");
+  assert.strictEqual(completion.plan_id, proposal.plan_id);
+  assert.strictEqual(completion.status, "completed");
+  assert.strictEqual(completion.current_plan_id, null);
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
+  assert.strictEqual(state.current_plan_id, null);
+  assert.strictEqual(state.plans[0].status, "completed");
+  assert.ok(state.plans[0].completed_at);
+  assert.strictEqual(state.plans[0].completion_note, "Done");
+  const current = JSON.parse(runKvdf(["planner", "current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(current.status, "empty");
+  assert.strictEqual(current.current_plan, null);
+  const rejectCompleted = runKvdf(["planner", "reject", proposal.plan_id, "--reason", "Too late", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(rejectCompleted.stderr, /completed/i);
 }));
 
 test("planner prompt from current fails clearly without an approved plan", () => withTempDir((dir) => {
