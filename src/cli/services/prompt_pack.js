@@ -4,6 +4,7 @@ const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace")
 const { fileExists, repoRoot, resolveAsset, assertSafeName, readTextFile } = require("../fs_utils");
 const { findLatestContextPackForTask, getContextPack } = require("../commands/cost_control");
 const { taskWorkstreams } = require("../commands/dashboard_state");
+const { buildAiLearningPromptContext } = require("../commands/ai_learning");
 const { uniqueList } = require("./collections");
 
 function composePromptPack(packName, flags = {}) {
@@ -33,7 +34,8 @@ function composePromptPack(packName, flags = {}) {
     packManifest,
     taskItem,
     selectedPrompt,
-    context
+    context,
+    aiLearning: buildAiLearningPromptContext(inferPromptPackTrack(taskItem, context, packName, selectedPrompt), { include_all: true })
   });
   const idData = readJsonFile(".kabeeri/prompt_layer/compositions.json");
   idData.compositions = idData.compositions || [];
@@ -188,6 +190,10 @@ ${composition.traceability_outputs.length ? composition.traceability_outputs.map
 
 ${renderCompactPromptGuidance(composition.compact_guidance)}
 
+## AI Learning Memory
+
+${renderAiLearningPromptContext(composition.compact_guidance && composition.compact_guidance.ai_learning ? composition.compact_guidance.ai_learning : null)}
+
 ## Context Pack
 
 ${context ? `Goal: ${context.goal || ""}
@@ -241,7 +247,7 @@ function renderCompactGuidance(compactGuidance) {
   return lines.join("\n");
 }
 
-function buildPromptPackCompactGuidance({ packName, packManifest = {}, taskItem = null, selectedPrompt = "", context = null } = {}) {
+function buildPromptPackCompactGuidance({ packName, packManifest = {}, taskItem = null, selectedPrompt = "", context = null, aiLearning = null } = {}) {
   const contextCompact = context && context.compact_guidance ? context.compact_guidance : null;
   const taskKind = contextCompact && contextCompact.task_kind ? contextCompact.task_kind : inferPromptPackTaskKind(taskItem, packName, selectedPrompt);
   const executionMode = contextCompact && contextCompact.execution_mode
@@ -269,8 +275,43 @@ function buildPromptPackCompactGuidance({ packName, packManifest = {}, taskItem 
     routing_reason: routingReason,
     token_saving_hint: tokenSavingHint,
     prompt_focus: taskItem ? taskItem.title || taskItem.id : packManifest.display_name || packName,
-    next_actions: nextActions
+    next_actions: nextActions,
+    ai_learning: aiLearning || null
   };
+}
+
+function renderAiLearningPromptContext(aiLearning) {
+  if (!aiLearning) return "- None recorded.";
+  const warnings = (aiLearning.active_warning_rules || []).slice(0, 6).map((item) => `- ${item.prompt_warning || item.prevention_rule || item.problem || item.title}`);
+  const fastPaths = (aiLearning.active_fast_paths || []).slice(0, 6).map((item) => `- ${item.title}: ${(item.validation_commands || []).length ? item.validation_commands.join(" -> ") : (item.steps || []).join(" -> ")}`);
+  const lines = [
+    `- Track: ${aiLearning.track || "unknown"}`,
+    `- Active warnings: ${String((aiLearning.active_warning_rules || []).length)}`,
+    `- Active fast paths: ${String((aiLearning.active_fast_paths || []).length)}`
+  ];
+  if (warnings.length) {
+    lines.push("- Warnings:");
+    lines.push(...warnings);
+  }
+  if (fastPaths.length) {
+    lines.push("- Fast paths:");
+    lines.push(...fastPaths);
+  }
+  return lines.join("\n");
+}
+
+function inferPromptPackTrack(taskItem, context, packName, selectedPrompt) {
+  const contextTrack = context && context.track ? context.track : null;
+  if (contextTrack) return contextTrack;
+  const text = [
+    packName,
+    selectedPrompt,
+    taskItem && taskItem.title,
+    taskItem && taskItem.source
+  ].filter(Boolean).join(" ").toLowerCase();
+  if (text.includes("plugin")) return "plugin";
+  if (text.includes("vibe") || text.includes("app")) return "vibe";
+  return "owner";
 }
 
 function renderCompactPromptGuidance(compactGuidance) {

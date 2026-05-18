@@ -253,6 +253,19 @@ function buildPromptContext(state, flags) {
   };
 }
 
+function buildAiLearningPromptContext(track, options = {}) {
+  const state = readAiLearningState();
+  const payload = buildPromptContext(state, { track });
+  if (options.include_all !== false) return payload;
+  return {
+    track: payload.track,
+    active_warning_rules: payload.active_warning_rules,
+    active_fast_paths: payload.active_fast_paths,
+    prompt_warnings: payload.prompt_warnings,
+    fast_path_summaries: payload.fast_path_summaries
+  };
+}
+
 function renderAiLearningList(payload) {
   console.log("AI Learning Memory");
   console.log("");
@@ -493,5 +506,6 @@ module.exports = {
   aiLearning,
   readAiLearningState,
   writeAiLearningState,
-  summarizeAiLearningState
+  summarizeAiLearningState,
+  buildAiLearningPromptContext
 };

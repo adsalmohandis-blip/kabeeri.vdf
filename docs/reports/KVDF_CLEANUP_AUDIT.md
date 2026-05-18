@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779132694708
-- Generated at: 2026-05-18T19:31:34.708Z
+- Report ID: kvdf-cleanup-1779134205212
+- Generated at: 2026-05-18T19:56:45.212Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 

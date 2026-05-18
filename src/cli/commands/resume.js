@@ -9,6 +9,7 @@ const { purgeExpiredTaskTrash } = require("../services/task_trash");
 const { buildTaskMemory } = require("../services/task_memory");
 const { readGitStatus: readGitStatusService } = require("../services/git_snapshot");
 const { buildPluginLoaderReport } = require("../services/plugin_loader");
+const { buildAiLearningPromptContext } = require("./ai_learning");
 const ONBOARDING_REPORT_FILE = ".kabeeri/reports/session_onboarding.json";
 const SESSION_TRACE_REPORT_FILE = ".kabeeri/reports/session_trace.json";
 
@@ -120,6 +121,9 @@ function buildResumeReport(options = {}) {
   const questionnaireUiDecisions = readQuestionnaireUiDecisionSummary(cwd);
   const sessionTrack = readSessionTrack(cwd);
   const gitSummary = summarizeGitStatus(git);
+  const aiLearningTrack = deriveAiLearningTrack({ mode, sessionTrack, primaryTrack: null, appStack });
+  const aiLearning = buildAiLearningPromptContext(aiLearningTrack, { include_all: true });
+  warnings.push(...buildAiLearningWarnings(aiLearning));
   const nextExactAction = buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireUiDecisions, hasWorkspace, appStack, git, pluginLoader });
   const taskTrackerMemory = buildTaskTrackerMemorySnapshot(taskState, taskTrashState, sessionTrack, mode, evolution);
   const archiveState = buildArchiveState(taskTrashState, taskTrashSweep);
@@ -158,6 +162,7 @@ function buildResumeReport(options = {}) {
     archive_state: archiveState,
     root_roles: rootRoles,
     warnings,
+    ai_learning: aiLearning,
     evolution,
     owner_checkpoint: ownerCheckpoint,
     questionnaire_ui_decisions: questionnaireUiDecisions,
@@ -422,7 +427,29 @@ function buildResumeWarnings({ mode, isFrameworkSource, hasWorkspace, appStack, 
   return warnings;
 }
 
+function deriveAiLearningTrack({ mode, sessionTrack, appStack }) {
+  if (mode === "framework_owner_development") return "owner";
+  if (sessionTrack && sessionTrack.active_track === "framework_owner") return "owner";
+  if (sessionTrack && sessionTrack.active_track === "vibe_app_developer") return "vibe";
+  if (mode === "kabeeri_user_app_workspace" || mode === "kabeeri_user_workspace" || mode === "application_without_kabeeri_workspace" || appStack.length) return "vibe";
+  return "owner";
+}
+
+function buildAiLearningWarnings(aiLearning) {
+  const warnings = [];
+  if (!aiLearning) return warnings;
+  for (const item of aiLearning.active_warning_rules || []) {
+    if (item && item.prompt_warning) warnings.push(item.prompt_warning);
+  }
+  if ((aiLearning.active_fast_paths || []).length) {
+    const labels = aiLearning.active_fast_paths.slice(0, 3).map((item) => item.title).filter(Boolean);
+    if (labels.length) warnings.push(`AI learning fast paths available: ${labels.join(", ")}.`);
+  }
+  return warnings;
+}
+
 function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnaireUiDecisions, pluginLoader }) {
+  const aiLearning = buildAiLearningPromptContext(deriveAiLearningTrack({ mode, sessionTrack: readSessionTrack(repoRoot()), appStack }), { include_all: true });
   if (mode === "framework_owner_development") {
     const actions = [
       "Read OWNER_DEVELOPMENT_STATE.md.",
@@ -439,6 +466,9 @@ function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnai
     if (questionnaireUiDecisions && questionnaireUiDecisions.pending_count > 0) {
       actions.push(`Resolve ${questionnaireUiDecisions.pending_count} pending UI/UX decision(s) from the questionnaire if they affect frontend work.`);
     }
+    if ((aiLearning.active_fast_paths || []).length) {
+      actions.push(`Reuse AI learning fast path: ${aiLearning.active_fast_paths[0].title}.`);
+    }
     return actions;
   }
   if (hasWorkspace) {
@@ -452,6 +482,9 @@ function buildResumeNextActions({ mode, hasWorkspace, git, appStack, questionnai
     }
     if (appStack.includes("nextjs")) actions.push("For Next.js work, run npm install/dev/build only in this application root.");
     if (git.changed_files > 0) actions.push("Use kvdf capture before continuing if changed files are not linked to a governed task.");
+    if ((aiLearning.active_fast_paths || []).length) {
+      actions.push(`Reuse AI learning fast path: ${aiLearning.active_fast_paths[0].title}.`);
+    }
     return actions;
   }
   return [
@@ -913,6 +946,25 @@ function renderResumeReport(report) {
       ["Trash items", String(report.task_tracker_memory.summary.trashed || 0)],
       ["Memory path", report.task_tracker_memory.task_memory_path || "none"]
     ]));
+  }
+  if (report.ai_learning) {
+    console.log("");
+    console.log("AI learning memory:");
+    console.log(table(["Field", "Value"], [
+      ["Track", report.ai_learning.track || "unknown"],
+      ["Warnings", String((report.ai_learning.active_warning_rules || []).length)],
+      ["Fast paths", String((report.ai_learning.active_fast_paths || []).length)]
+    ]));
+    if ((report.ai_learning.prompt_warnings || []).length) {
+      console.log("");
+      console.log("Learned warnings:");
+      for (const item of report.ai_learning.prompt_warnings) console.log(`- ${item}`);
+    }
+    if ((report.ai_learning.fast_path_summaries || []).length) {
+      console.log("");
+      console.log("Fast paths:");
+      for (const item of report.ai_learning.fast_path_summaries) console.log(`- ${item.title}`);
+    }
   }
   if (report.track_context) {
     console.log("");

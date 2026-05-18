@@ -5,6 +5,7 @@ const DEFAULT_VALIDATION_COMMANDS = ["node bin/kvdf.js validate", "npm test", "n
 const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 const { readGitRepositoryState } = require("../services/git_snapshot");
+const { buildAiLearningPromptContext } = require("./ai_learning");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -297,6 +298,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return {
@@ -306,13 +308,14 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     track: plan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    ai_learning: aiLearning,
     goal,
     allowed_files: plan.allowed_files,
     forbidden_files: plan.forbidden_files,
     validation_commands: plan.validation_commands,
     stop_condition: plan.stop_condition,
     task_punch: taskPunch,
-    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl })
+    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl, aiLearning })
   };
 }
 
@@ -322,6 +325,7 @@ function buildPlannerEvolutionReport(goal, request = {}, deps = {}) {
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return {
@@ -331,10 +335,11 @@ function buildPlannerEvolutionReport(goal, request = {}, deps = {}) {
     track: plan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    ai_learning: aiLearning,
     goal,
     evolution_plan: plan,
     task_punch: taskPunch,
-    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl })
+    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl, aiLearning })
   };
 }
 
@@ -344,6 +349,7 @@ function buildPlannerTaskPunchReport(goal, request = {}, deps = {}) {
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return {
@@ -353,6 +359,7 @@ function buildPlannerTaskPunchReport(goal, request = {}, deps = {}) {
     track: plan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    ai_learning: aiLearning,
     evolution_id: plan.evolution_id,
     title: `${plan.title} Task Punch`,
     tasks: taskPunch.tasks,
@@ -366,6 +373,7 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return buildPlannerVisualPayload({
@@ -376,7 +384,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     taskPunch,
     context,
     pluginContext,
-    sourceControl
+    sourceControl,
+    aiLearning
   });
 }
 
@@ -1272,10 +1281,11 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl });
-  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl });
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
   const plan = buildPlannerPlanRecord({
@@ -1508,7 +1518,8 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     currentPlan.delivery_mode || getDeliveryMode(normalizePlannerMode(currentPlan.planner_mode)),
     normalizePlannerMode(currentPlan.planner_mode) === "plugin" ? currentPlan.plugin_context || null : null
   );
-  const prompt = renderPlannerPromptFromPlan(currentPlan, context, sourceControl);
+  const aiLearning = buildAiLearningPromptContext(normalizePlannerMode(currentPlan.track || currentPlan.planner_mode), { include_all: true });
+  const prompt = renderPlannerPromptFromPlan(currentPlan, context, sourceControl, aiLearning);
   return {
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
@@ -1516,6 +1527,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     track: currentPlan.track,
     delivery_mode: currentPlan.delivery_mode,
     source_control: sourceControl,
+    ai_learning: aiLearning,
     plan_id: currentPlan.plan_id,
     goal: currentPlan.goal,
     allowed_files: currentPlan.allowed_files || [],
@@ -1732,7 +1744,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -1743,6 +1755,7 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
   const validationCommands = plan.validation_commands || [];
   const taskLines = (taskPunch.tasks || []).map((task, index) => `${index + 1}. ${task.title}`);
   const contextLines = buildPromptContextLines(mode, pluginContext, sourceControl);
+  const aiLearningLines = buildAiLearningPromptLines(aiLearning);
   const commitLines = buildPromptCommitLines(mode, plan, pluginContext, sourceControl);
   const pipelineLines = mode === "vibe"
     ? ["", "Pipeline:", ...VIBE_PIPELINE.map((step) => `- ${step}`)]
@@ -1753,6 +1766,7 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "Context:",
     "- Repo: kabeeri.vdf",
     ...contextLines,
+    ...(aiLearningLines.length ? ["", "AI Learning Memory:", ...aiLearningLines] : []),
     "",
     "Goal:",
     goal,
@@ -1776,6 +1790,26 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "",
     `Stop condition: ${plan.stop_condition}`
   ].join("\\n");
+}
+
+function buildAiLearningPromptLines(aiLearning) {
+  if (!aiLearning) return [];
+  const warnings = (aiLearning.active_warning_rules || []).slice(0, 6).map((pattern) => `- ${pattern.prompt_warning || pattern.prevention_rule || pattern.problem || pattern.title}`);
+  const fastPaths = (aiLearning.active_fast_paths || []).slice(0, 6).map((fastPath) => `- ${fastPath.title}: ${(fastPath.validation_commands || []).length ? fastPath.validation_commands.join(" -> ") : (fastPath.steps || []).join(" -> ")}`);
+  const lines = [
+    `- Track: ${aiLearning.track || "unknown"}`,
+    `- Active warnings: ${String((aiLearning.active_warning_rules || []).length)}`,
+    `- Active fast paths: ${String((aiLearning.active_fast_paths || []).length)}`
+  ];
+  if (warnings.length) {
+    lines.push("- Warnings:");
+    lines.push(...warnings);
+  }
+  if (fastPaths.length) {
+    lines.push("- Fast paths:");
+    lines.push(...fastPaths);
+  }
+  return lines;
 }
 
 function buildPromptContextLines(mode, pluginContext, sourceControl) {
@@ -3055,7 +3089,7 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
   ].join("\n");
 }
 
-function renderPlannerPromptFromPlan(plan, context, sourceControl = null) {
+function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null) {
   const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(plan.planner_mode);
   const pluginContext = mode === "plugin"
@@ -3081,7 +3115,8 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null) {
     taskPunch,
     context,
     pluginContext,
-    sourceControl: sourceControlState
+    sourceControl: sourceControlState,
+    aiLearning
   });
 }
 

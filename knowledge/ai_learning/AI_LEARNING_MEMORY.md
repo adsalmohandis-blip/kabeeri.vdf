@@ -19,6 +19,7 @@ The durable state lives in:
 - `.kabeeri/ai_learning/failure_patterns.json`
 
 The file is shared across owner, vibe, and plugin tracks. The command writes runtime state only; it does not modify source files or auto-apply fixes.
+The memory is auto-synced into planner prompt generation, resume guidance, and prompt-pack composition so the next AI action sees the learned warnings immediately.
 
 ## Commands
 
@@ -65,7 +66,7 @@ Each fast path stores:
 
 `prompt-context` returns only the active warning rules and fast paths for the requested track.
 
-This output is intended for prompt injection and should stay concise, track-aware, and safe.
+This output is intended for prompt injection and should stay concise, track-aware, and safe. KVDF also injects it automatically into the main AI prompt builders so the memory stays in sync without a separate manual step.
 
 ## Track Rules
 

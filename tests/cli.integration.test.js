@@ -1460,6 +1460,70 @@ test("ai learning memory writes runtime state only in the active workspace", () 
   assert.strictEqual(fs.existsSync(repoLearningStatePath), repoLearningStateExistsBefore);
 }));
 
+test("ai learning memory auto-syncs into planner prompts, resume guidance, and prompt packs", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Planner assertion drift",
+    "--problem",
+    "The planner prompt forgot the current AI learning warning",
+    "--fix",
+    "Inject the learned warning into the generated prompt",
+    "--category",
+    "test_failure",
+    "--track",
+    "owner",
+    "--applies-to-tracks",
+    "owner",
+    "--applies-to-tracks",
+    "vibe",
+    "--json"
+  ], { cwd: dir });
+  runKvdf([
+    "learn",
+    "fast-path",
+    "--title",
+    "Planner prompt fast path",
+    "--steps",
+    "node --check src/cli/commands/planner.js,npm test,npm run check",
+    "--validation",
+    "node --check src/cli/commands/planner.js,npm test,npm run check",
+    "--track",
+    "owner",
+    "--applies-to-tracks",
+    "owner",
+    "--applies-to-tracks",
+    "vibe",
+    "--json"
+  ], { cwd: dir });
+
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner memory sync", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+
+  const plannerPrompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(plannerPrompt.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(plannerPrompt.ai_learning);
+  assert.match(plannerPrompt.prompt, /AI Learning Memory/);
+  assert.ok(plannerPrompt.ai_learning.active_warning_rules.length >= 0);
+
+  const resume = JSON.parse(runKvdf(["resume", "--json"], { cwd: dir }).stdout);
+  assert.ok(resume.ai_learning);
+  assert.ok(Array.isArray(resume.ai_learning.active_warning_rules));
+  assert.ok(Array.isArray(resume.ai_learning.fast_path_summaries));
+  assert.ok(Array.isArray(resume.warnings));
+
+  runKvdf(["task", "create", "--id", "task-001", "--title", "Build React settings component", "--workstream", "public_frontend", "--acceptance", "Settings can be saved"], { cwd: dir });
+  runKvdf(["context-pack", "create", "--task", "task-001", "--allowed-files", "src/settings/", "--specs", "frontend_specs/settings.md"], { cwd: dir });
+  const composition = JSON.parse(runKvdf(["prompt-pack", "compose", "react", "--task", "task-001", "--context", "ctx-001"], { cwd: dir }).stdout);
+  assert.ok(composition.compact_guidance.ai_learning);
+  assert.ok(fs.existsSync(path.join(dir, composition.output_path)));
+  const prompt = fs.readFileSync(path.join(dir, composition.output_path), "utf8");
+  assert.match(prompt, /AI Learning Memory/);
+}));
+
 test("dashboard state reflects canonical task statuses and next actions", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
