@@ -1993,9 +1993,10 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #475569; }
     .pill { padding: 4px 10px; border-radius: 999px; background: #e8eef7; }
     main { padding: 24px 28px 40px; display: grid; gap: 20px; }
-    .diagram-shell { margin-bottom: 20px; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow: auto; max-height: calc(100vh - 240px); }
+    .diagram-shell { margin-bottom: 20px; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow: hidden; height: clamp(320px, 48vh, 560px); }
     .diagram-title { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
-    .diagram-shell svg { display: block; width: 100%; height: auto; min-width: min(100%, 960px); }
+    .diagram-frame { width: 100%; height: calc(100% - 28px); overflow: hidden; }
+    .diagram-shell svg { display: block; width: 100%; height: 100%; }
     pre { white-space: pre-wrap; word-break: break-word; margin: 0; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); font-size: 14px; line-height: 1.6; }
   </style>
 </head>
@@ -2005,7 +2006,7 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     <div class="meta">${summary.map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join("")}</div>
   </header>
   <main>
-    ${diagramHtml ? `<section class="diagram-shell"><div class="diagram-title">Diagram Graph</div>${diagramHtml}</section>` : ""}
+    ${diagramHtml ? `<section class="diagram-shell"><div class="diagram-title">Diagram Graph</div><div class="diagram-frame">${diagramHtml}</div></section>` : ""}
     <pre>${escapeHtml(rendered || "")}</pre>
   </main>
 </body>
@@ -2080,7 +2081,7 @@ function renderFlowchartSvg(source) {
       : `<path d="M ${x1} ${y1} C ${x1} ${y1 + 24}, ${x2} ${y2 - 24}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}"></path>`;
   }).join("");
   return `
-    <svg viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="Planner visual diagram">
+    <svg viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Planner visual diagram">
       <defs>
         <marker id="kvdf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
