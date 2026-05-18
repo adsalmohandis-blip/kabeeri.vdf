@@ -1437,6 +1437,47 @@ test("ai learning memory records fast paths, lists state, and returns track-spec
   assert.ok(pluginContext.prompt_warnings.some((warning) => /plugin manifest safety/i.test(warning)));
 }));
 
+test("ai learning memory supports combined all-track prompt context and expanded categories", () => withTempDir((dir) => {
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Dashboard separation warning",
+    "--problem",
+    "The prompt mixed owner and viber dashboard products",
+    "--fix",
+    "Keep owner and viber dashboards separate and track-aware",
+    "--category",
+    "dashboard_confusion",
+    "--track",
+    "all",
+    "--applies-to-tracks",
+    "all",
+    "--json"
+  ], { cwd: dir });
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Execution loop warning",
+    "--problem",
+    "The prompt stayed in inspection mode instead of patching the failure",
+    "--fix",
+    "Inspect the exact failure and then patch the smallest safe surface",
+    "--category",
+    "execution_loop",
+    "--track",
+    "vibe",
+    "--json"
+  ], { cwd: dir });
+
+  const allContext = JSON.parse(runKvdf(["learn", "prompt-context", "--track", "all", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(allContext.track, "all");
+  assert.ok(allContext.active_warning_rules.length >= 2);
+  assert.ok(allContext.prompt_warnings.some((warning) => /dashboard separation warning/i.test(warning)));
+  assert.ok(allContext.prompt_warnings.some((warning) => /execution loop warning/i.test(warning)));
+}));
+
 test("ai learning memory writes runtime state only in the active workspace", () => withTempDir((dir) => {
   const repoLearningStatePath = path.join(repoRoot, ".kabeeri", "ai_learning", "failure_patterns.json");
   const repoLearningStateExistsBefore = fs.existsSync(repoLearningStatePath);

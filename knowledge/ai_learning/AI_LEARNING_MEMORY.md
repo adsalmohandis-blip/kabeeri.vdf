@@ -11,6 +11,8 @@ It exists so future prompts can avoid replaying the same failure patterns:
 - mixing owner and viber/app scope
 - assuming branch or PR is the default delivery mode
 - writing runtime state into the committed tree
+- staying in an execution loop instead of checking the exact failure
+- confusing dashboard separation with a role filter
 
 ## Runtime State
 
@@ -64,7 +66,7 @@ Each fast path stores:
 
 ### `prompt-context`
 
-`prompt-context` returns only the active warning rules and fast paths for the requested track.
+`prompt-context` returns only the active warning rules and fast paths for the requested track. Use `--track all` to retrieve the combined active context across every track.
 
 This output is intended for prompt injection and should stay concise, track-aware, and safe. KVDF also injects it automatically into the main AI prompt builders so the memory stays in sync without a separate manual step.
 
@@ -73,6 +75,7 @@ This output is intended for prompt injection and should stay concise, track-awar
 - Owner track entries should help KVDF Core work stay direct-to-main and keep validation order explicit.
 - Vibe/App track entries should help app delivery stay local-first and prevent mixing owner core work into app tasks.
 - Plugin track entries should protect plugin manifests, runtime state, docs, schema, and tests from unrelated edits.
+- Combined `all` track context should stay concise and act as prompt injection for shared warnings, not as a replacement for track-specific guidance.
 
 ## Prevention Rules
 
@@ -82,5 +85,6 @@ Memory entries should explain:
 - why it happened
 - how to fix it
 - how to prevent it next time
+- what exact check or command should happen before patching
 
 The best entries are short enough to inject into prompts and specific enough to change behavior on the next attempt.

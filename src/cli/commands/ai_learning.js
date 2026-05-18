@@ -29,6 +29,8 @@ const PATTERN_CATEGORIES = new Set([
   "track_confusion",
   "source_control",
   "security",
+  "dashboard_confusion",
+  "execution_loop",
   "other"
 ]);
 
@@ -454,6 +456,7 @@ function resolveAppliesToTracks(value) {
 }
 
 function isTrackApplicable(tracks, track) {
+  if (track === "all") return true;
   const normalizedTracks = resolveAppliesToTracks(tracks || []);
   return normalizedTracks.includes(track);
 }

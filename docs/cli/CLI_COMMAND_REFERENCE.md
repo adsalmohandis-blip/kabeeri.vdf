@@ -1368,13 +1368,15 @@ kvdf learn prompt-context --track owner --json
 
 `kvdf learn` stores repeated AI execution mistakes, blockers, and fast paths in `.kabeeri/ai_learning/failure_patterns.json`. Capture records deduplicate by normalized title and problem, increment `seen_count` when the same failure is seen again, and keep track-specific prompt warnings available for later prompt injection. Fast paths record the shortest validated solution path so future prompts can bias toward the proven sequence instead of replaying the same failed loop.
 
+Supported learning categories include `test_failure`, `scope_violation`, `runtime_state`, `generated_artifact`, `track_confusion`, `source_control`, `security`, `dashboard_confusion`, `execution_loop`, and `other`.
+
 The memory is auto-synced into the prompt generators that KVDF already uses:
 
 - `kvdf planner prompt` and planner current-plan prompt generation
 - `kvdf resume` and resume guidance
 - prompt-pack composition for AI/task capture flows
 
-Use `kvdf learn prompt-context` when you want the active warning rules and fast paths for a specific track. The command is shared across owner, vibe, and plugin tracks, but the returned memory stays track-aware so the prompt guidance can be scoped instead of mixed.
+Use `kvdf learn prompt-context` when you want the active warning rules and fast paths for a specific track. The command is shared across owner, vibe, and plugin tracks, but the returned memory stays track-aware so the prompt guidance can be scoped instead of mixed. Pass `--track all` when you want the combined active prompt context across every supported track.
 
 ## ADR And AI Run History
 

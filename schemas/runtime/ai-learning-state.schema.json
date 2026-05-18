@@ -33,7 +33,7 @@
           "title": { "type": "string" },
           "category": {
             "type": "string",
-            "enum": ["test_failure", "scope_violation", "runtime_state", "generated_artifact", "track_confusion", "source_control", "security", "other"]
+            "enum": ["test_failure", "scope_violation", "runtime_state", "generated_artifact", "track_confusion", "source_control", "security", "dashboard_confusion", "execution_loop", "other"]
           },
           "problem": { "type": "string" },
           "root_cause": { "type": "string" },
