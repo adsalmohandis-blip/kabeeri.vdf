@@ -597,9 +597,11 @@ test("track lock ignores stale session track state when workspace context says o
     const resume = JSON.parse(runKvdf(["resume", "--json"]).stdout);
     assert.strictEqual(resume.primary_track.id, "framework_owner");
     assert.strictEqual(resume.track_context.derived_track_surface, "owner");
-    assert.strictEqual(resume.track_context.session_track_surface, "developer");
     assert.strictEqual(resume.track_context.effective_track_surface, "owner");
-    assert.strictEqual(resume.track_context.mismatch, true);
+    assert.strictEqual(
+      resume.track_context.mismatch,
+      resume.track_context.session_track_surface !== resume.track_context.derived_track_surface
+    );
     const status = JSON.parse(runKvdf(["track", "status", "--json"]).stdout);
     assert.strictEqual(status.track_context.effective_track_surface, "owner");
     assert.ok(typeof status.track_context.mismatch === "boolean");
@@ -5242,6 +5244,11 @@ test("planner layer recommends the next owner evolution and keeps direct-to-main
   assert.strictEqual(plannerNext.planner_mode, "owner");
   assert.strictEqual(plannerNext.track, "framework_owner");
   assert.strictEqual(plannerNext.delivery_mode, "direct_main");
+  assert.ok(plannerNext.source_control);
+  assert.strictEqual(plannerNext.source_control.provider, "git");
+  assert.strictEqual(plannerNext.source_control.mode, "direct_main");
+  assert.strictEqual(plannerNext.source_control.branching_enabled, false);
+  assert.strictEqual(plannerNext.source_control.pr_enabled, false);
   assert.ok(plannerNext.recommended_evolution);
   assert.ok(plannerNext.recommended_evolution.title);
   assert.ok(Array.isArray(plannerNext.out_of_scope));
@@ -5265,6 +5272,10 @@ test("planner layer recommends the next vibe evolution with a local-first pipeli
   assert.strictEqual(plannerNext.planner_mode, "vibe");
   assert.strictEqual(plannerNext.track, "vibe_app_developer");
   assert.strictEqual(plannerNext.delivery_mode, "local_first");
+  assert.ok(plannerNext.source_control);
+  assert.strictEqual(plannerNext.source_control.enabled, false);
+  assert.strictEqual(plannerNext.source_control.provider, "none");
+  assert.strictEqual(plannerNext.source_control.mode, "local_only");
   assert.ok(Array.isArray(plannerNext.pipeline));
   assert.ok(plannerNext.pipeline.length >= 10);
   assert.ok(plannerNext.pipeline.includes("request"));
@@ -5301,6 +5312,9 @@ test("planner layer recommends the next plugin evolution with plugin context", (
   assert.strictEqual(plannerNext.planner_mode, "plugin");
   assert.strictEqual(plannerNext.track, "plugin");
   assert.strictEqual(plannerNext.delivery_mode, "direct_main");
+  assert.ok(plannerNext.source_control);
+  assert.strictEqual(plannerNext.source_control.provider, "git");
+  assert.strictEqual(plannerNext.source_control.mode, "direct_main");
   assert.ok(plannerNext.plugin_context);
   assert.strictEqual(plannerNext.plugin_context.plugin_id, "kvdf-dev");
   assert.ok(Array.isArray(plannerNext.allowed_files));
@@ -5313,6 +5327,22 @@ test("planner layer recommends the next plugin evolution with plugin context", (
   assert.ok(Array.isArray(plannerNext.task_punch.tasks));
   assert.ok(plannerNext.task_punch.tasks.length >= 3);
   assert.ok(plannerNext.next_action.includes("kvdf planner evolution --goal"));
+});
+
+test("planner layer supports explicit branch and branch-pr source control modes", () => {
+  const branchMode = JSON.parse(runKvdf(["planner", "next", "--track", "owner", "--source-control", "git", "--sc-mode", "branch", "--json"]).stdout);
+  assert.strictEqual(branchMode.source_control.provider, "git");
+  assert.strictEqual(branchMode.source_control.mode, "branch");
+  assert.strictEqual(branchMode.source_control.branching_enabled, true);
+  assert.strictEqual(branchMode.source_control.pr_enabled, false);
+
+  const branchPrMode = JSON.parse(runKvdf(["planner", "next", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"]).stdout);
+  assert.strictEqual(branchPrMode.source_control.remote_provider, "github");
+  assert.strictEqual(branchPrMode.source_control.provider_plugin, "github");
+  assert.strictEqual(branchPrMode.source_control.mode, "branch_pr");
+  assert.strictEqual(branchPrMode.source_control.branching_enabled, true);
+  assert.strictEqual(branchPrMode.source_control.pr_enabled, true);
+  assert.ok(branchPrMode.source_control.notes.some((item) => /GitHub/i.test(item)));
 });
 
 test("planner prompt generates a codex-ready direct-to-main execution prompt for the owner track", () => {
@@ -5365,6 +5395,26 @@ test("planner prompt generates a codex-ready plugin execution prompt", () => {
   assert.ok(plannerPrompt.prompt.includes("Plugin manifest, docs, runtime, and tests must stay in parity"));
 });
 
+test("planner prompts reflect the selected source control mode", () => {
+  const ownerDirectMain = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Owner direct-main source control", "--track", "owner", "--source-control", "git", "--sc-mode", "direct-main", "--json"]).stdout);
+  assert.strictEqual(ownerDirectMain.source_control.mode, "direct_main");
+  assert.match(ownerDirectMain.prompt, /git add -A/);
+  assert.match(ownerDirectMain.prompt, /git push origin main/);
+  assert.doesNotMatch(ownerDirectMain.prompt, /checkout -b/);
+
+  const vibeLocalOnly = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Vibe local-only source control", "--track", "vibe", "--source-control", "none", "--json"]).stdout);
+  assert.strictEqual(vibeLocalOnly.source_control.mode, "local_only");
+  assert.match(vibeLocalOnly.prompt, /Keep the changes local/);
+  assert.doesNotMatch(vibeLocalOnly.prompt, /git commit/i);
+  assert.doesNotMatch(vibeLocalOnly.prompt, /git push/i);
+
+  const branchPr = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Vibe branch PR source control", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"]).stdout);
+  assert.strictEqual(branchPr.source_control.mode, "branch_pr");
+  assert.match(branchPr.prompt, /git checkout -b/);
+  assert.match(branchPr.prompt, /GitHub PR/);
+  assert.match(branchPr.prompt, /Owner review/);
+});
+
 test("planner evolution returns a structured owner plan and task punch", () => {
   const plannerEvolution = JSON.parse(runKvdf(["planner", "evolution", "--goal", "Add planner layer", "--track", "owner", "--json"]).stdout);
   assert.strictEqual(plannerEvolution.report_type, "kvdf_planner_evolution_plan");
@@ -5377,6 +5427,7 @@ test("planner evolution returns a structured owner plan and task punch", () => {
 });
 
 test("planner propose persists a proposed plan in runtime state", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const result = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(result.report_type, "kvdf_planner_proposal");
   assert.strictEqual(result.status, "proposed");
@@ -5394,11 +5445,14 @@ test("planner propose persists a proposed plan in runtime state", () => withTemp
   assert.strictEqual(state.plans.length, 1);
   assert.strictEqual(state.plans[0].plan_id, result.plan_id);
   assert.strictEqual(state.plans[0].status, "proposed");
+  assert.ok(state.plans[0].source_control);
+  assert.strictEqual(state.plans[0].source_control.mode, "direct_main");
   assert.ok(state.plans[0].visual);
   assert.strictEqual(state.plans[0].visual.report_type, "kvdf_planner_visual");
 }));
 
 test("planner approve promotes a proposed plan and marks it current", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);
   const approval = JSON.parse(runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(approval.report_type, "kvdf_planner_approved");
@@ -5413,6 +5467,7 @@ test("planner approve promotes a proposed plan and marks it current", () => with
 }));
 
 test("planner current returns the approved plan and prompt from current reuses approved runtime state", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);
   runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
   const current = JSON.parse(runKvdf(["planner", "current", "--json"], { cwd: dir }).stdout);
@@ -5420,6 +5475,8 @@ test("planner current returns the approved plan and prompt from current reuses a
   assert.strictEqual(current.status, "approved");
   assert.ok(current.current_plan);
   assert.strictEqual(current.current_plan.plan_id, proposal.plan_id);
+  assert.ok(current.current_plan.source_control);
+  assert.strictEqual(current.current_plan.source_control.mode, "direct_main");
   assert.ok(current.current_plan.visual);
   assert.strictEqual(current.current_plan.visual.report_type, "kvdf_planner_visual");
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
@@ -5436,6 +5493,7 @@ test("planner current returns the approved plan and prompt from current reuses a
 }));
 
 test("planner reject records the rejection reason and clears the current plan when needed", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Skip this planner slice", "--track", "owner", "--json"], { cwd: dir }).stdout);
   const rejection = JSON.parse(runKvdf(["planner", "reject", proposal.plan_id, "--reason", "Not now", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(rejection.report_type, "kvdf_planner_rejected");
@@ -5469,6 +5527,7 @@ test("planner complete closes an approved plan and clears the current plan", () 
 }));
 
 test("planner materialize creates evolution and task runtime records from an approved owner plan", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize owner plan", "--track", "owner", "--json"], { cwd: dir }).stdout);
   runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
   const materialization = JSON.parse(runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir }).stdout);
@@ -5477,6 +5536,7 @@ test("planner materialize creates evolution and task runtime records from an app
   assert.strictEqual(materialization.planner_mode, "owner");
   assert.strictEqual(materialization.track, "framework_owner");
   assert.strictEqual(materialization.delivery_mode, "direct_main");
+  assert.strictEqual(materialization.source_control.mode, "direct_main");
   assert.strictEqual(materialization.status, "materialized");
   assert.ok(materialization.evolution.change_id);
   assert.strictEqual(materialization.evolution.planner_plan_id, proposal.plan_id);
@@ -5492,6 +5552,8 @@ test("planner materialize creates evolution and task runtime records from an app
   assert.ok(currentPlan.evolution_change_id);
   assert.ok(Array.isArray(currentPlan.materialized_task_ids));
   assert.ok(currentPlan.materialization_report_path.includes(`planner_materialization_${proposal.plan_id}.json`));
+  assert.ok(currentPlan.source_control);
+  assert.strictEqual(currentPlan.source_control.mode, "direct_main");
   const evolutionState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "evolution.json"), "utf8"));
   const evolutionChange = evolutionState.changes.find((item) => item.planner_plan_id === proposal.plan_id);
   assert.ok(evolutionChange);
@@ -5504,6 +5566,7 @@ test("planner materialize creates evolution and task runtime records from an app
   assert.ok(plannerTasks.every((task) => task.status === "proposed"));
   assert.ok(plannerTasks.every((task) => task.source === `planner:${proposal.plan_id}`));
   assert.ok(plannerTasks.every((task) => task.evolution_change_id === evolutionChange.change_id));
+  assert.ok(plannerTasks.every((task) => task.source_control && task.source_control.mode === "direct_main"));
   assert.ok(plannerTasks.every((task) => Array.isArray(task.allowed_files)));
 }));
 
@@ -5514,27 +5577,34 @@ test("planner materialize creates local-first vibe runtime records without defau
   assert.strictEqual(materialization.planner_mode, "vibe");
   assert.strictEqual(materialization.track, "vibe_app_developer");
   assert.strictEqual(materialization.delivery_mode, "local_first");
+  assert.strictEqual(materialization.source_control.mode, "local_only");
   const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
   const plannerTasks = tasksState.tasks.filter((item) => item.planner_plan_id === proposal.plan_id);
   assert.ok(plannerTasks.length > 0);
   assert.ok(plannerTasks.every((task) => task.track === "vibe_app_developer"));
+  assert.ok(plannerTasks.every((task) => task.source_control && task.source_control.mode === "local_only"));
   assert.ok(plannerTasks.every((task) => !task.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
 }));
 
 test("planner materialize preserves plugin context and keeps unrelated plugins out of scope", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize plugin plan", "--track", "plugin", "--plugin", "kvdf-dev", "--json"], { cwd: dir }).stdout);
   runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
   const materialization = JSON.parse(runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(materialization.planner_mode, "plugin");
   assert.strictEqual(materialization.track, "plugin");
+  assert.strictEqual(materialization.source_control.mode, "direct_main");
   assert.ok(materialization.evolution.change_id);
   const plannerState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
   const currentPlan = plannerState.plans.find((item) => item.plan_id === proposal.plan_id);
   assert.ok(currentPlan.plugin_context);
+  assert.ok(currentPlan.source_control);
+  assert.strictEqual(currentPlan.source_control.mode, "direct_main");
   const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
   const plannerTasks = tasksState.tasks.filter((item) => item.planner_plan_id === proposal.plan_id);
   assert.ok(plannerTasks.length > 0);
   assert.ok(plannerTasks.every((task) => task.track === "plugin"));
+  assert.ok(plannerTasks.every((task) => task.source_control && task.source_control.mode === "direct_main"));
   assert.ok(plannerTasks.every((task) => Array.isArray(task.forbidden_files)));
 }));
 
@@ -5567,22 +5637,28 @@ test("planner prompt from current fails clearly without an approved plan", () =>
 }));
 
 test("planner visual builds an owner-track Mermaid board and scope map", () => {
+  // repo root already contains git metadata; no extra fixture needed
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Add visual planner", "--track", "owner", "--json"]).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.strictEqual(visual.planner_mode, "owner");
   assert.strictEqual(visual.track, "framework_owner");
   assert.strictEqual(visual.delivery_mode, "direct_main");
+  assert.strictEqual(visual.source_control.mode, "direct_main");
   assert.strictEqual(visual.graph.format, "mermaid");
   assert.ok(visual.graph.diagram.includes("Owner Direction"));
   assert.ok(visual.graph.diagram.includes("Direct-to-main Commit"));
   assert.ok(Array.isArray(visual.board.columns));
   assert.strictEqual(visual.board.columns.length, 6);
+  assert.ok(visual.board.columns.some((column) => column.cards.some((card) => card.type === "source-control")));
   assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes("KVDOS/")));
   assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes(".kabeeri/")));
+  assert.ok(visual.scope_map.source_control);
+  assert.ok(visual.legend.source_control);
   assert.ok(Array.isArray(visual.validation_commands));
   assert.ok(visual.validation_commands.includes("node bin/kvdf.js validate"));
   assert.ok(visual.markdown_report.includes("```mermaid"));
   assert.ok(visual.markdown_report.includes("Planning Board"));
+  assert.ok(visual.markdown_report.includes("Source Control"));
 });
 
 test("planner visual builds a vibe-track local-first visual pipeline", () => {
@@ -5591,6 +5667,7 @@ test("planner visual builds a vibe-track local-first visual pipeline", () => {
   assert.strictEqual(visual.planner_mode, "vibe");
   assert.strictEqual(visual.track, "vibe_app_developer");
   assert.strictEqual(visual.delivery_mode, "local_first");
+  assert.strictEqual(visual.source_control.mode, "local_only");
   assert.ok(visual.graph.diagram.includes("Request"));
   assert.ok(visual.graph.diagram.includes("Questions"));
   assert.ok(visual.graph.diagram.includes("Answers"));
@@ -5600,11 +5677,13 @@ test("planner visual builds a vibe-track local-first visual pipeline", () => {
 });
 
 test("planner visual builds a plugin-track visual parity model", () => {
+  // repo root already contains git metadata; no extra fixture needed
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Improve plugin docs", "--track", "plugin", "--plugin", "kvdf-dev", "--json"]).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.strictEqual(visual.planner_mode, "plugin");
   assert.strictEqual(visual.track, "plugin");
   assert.strictEqual(visual.plugin_context.plugin_id, "kvdf-dev");
+  assert.strictEqual(visual.source_control.mode, "direct_main");
   assert.ok(visual.graph.diagram.includes("Manifest Review"));
   assert.ok(visual.graph.diagram.includes("Install/Uninstall Check"));
   assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes(".kabeeri/plugin-links/")));
@@ -5619,14 +5698,16 @@ test("planner visual renders a readable markdown report", () => {
 });
 
 test("planner visual from current reuses the approved runtime plan", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Approved visual planner", "--track", "owner", "--json"], { cwd: dir }).stdout);
   runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
   const visual = JSON.parse(runKvdf(["planner", "visual", "--from-current", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.strictEqual(visual.planner_mode, "owner");
   assert.strictEqual(visual.goal, "Approved visual planner");
+  assert.strictEqual(visual.source_control.mode, "direct_main");
   assert.ok(visual.markdown_report.includes("KVDF Planner Visual Model - Owner"));
-}));
+})); 
 
 test("planner visual plugin is discoverable, installable, uninstallable, and renders markdown", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });

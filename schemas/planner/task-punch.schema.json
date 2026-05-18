@@ -8,6 +8,24 @@
     "report_type": { "type": "string" },
     "evolution_id": { "type": "string" },
     "title": { "type": "string" },
+    "source_control": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "provider": { "type": "string" },
+        "remote_provider": { "type": "string" },
+        "provider_plugin": { "type": ["string", "null"] },
+        "mode": { "type": "string" },
+        "branching_enabled": { "type": "boolean" },
+        "pr_enabled": { "type": "boolean" },
+        "default_branch": { "type": "string" },
+        "current_branch": { "type": ["string", "null"] },
+        "requires_owner_approval": { "type": "boolean" },
+        "replaceable_provider": { "type": "boolean" },
+        "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "tasks": {
       "type": "array",
       "items": {

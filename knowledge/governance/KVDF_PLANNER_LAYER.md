@@ -190,6 +190,36 @@ Materialization bridges the approved plan into governed KVDF runtime records:
 - it does not commit files
 - it does not make branch/PR mandatory
 
+## Source Control Provider Model
+
+The planner also carries an explicit source-control contract so KVDF does not
+hardcode GitHub as the only delivery shape.
+
+Supported planning modes include:
+
+- no source control
+- local-only delivery
+- Git direct-to-main
+- Git branch without PR
+- Git branch with PR
+- GitHub as an optional remote/provider plugin
+- future replaceable providers such as GitLab, Bitbucket, or custom adapters
+
+Rules:
+
+- Git is the default source-control provider only when a Git repository is
+  detected.
+- GitHub is an optional remote/provider layer, not the same thing as Git.
+- Branch and PR are optional delivery modes, not the default shape.
+- Owner Track defaults to direct-to-main when Git is available.
+- Vibe/App Track defaults to local-first and only uses source control when it
+  is explicitly enabled.
+- Plugin Track follows the selected plugin repository or parent provider
+  contract and must keep plugin mount/runtime state protected.
+- Planner outputs should expose the `source_control` object so prompts, visual
+  reports, materialization, and documentation all agree on the same delivery
+  mode.
+
 ## Track Rules
 
 - Owner Track owns KVDF Core and its governance.

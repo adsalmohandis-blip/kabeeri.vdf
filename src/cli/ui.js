@@ -487,6 +487,10 @@ Notes:
   kvdf planner-visual render --goal "Add visual planner" --track owner
   kvdf planner evolution --goal "Add planner layer" --track owner --json
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
+
+Notes:
+  Planner output includes an explicit source_control object so KVDF can express no source control,
+  local-only, direct-to-main, branch, and branch+PR modes without assuming GitHub is mandatory.
   kvdf plugins status
   kvdf plugins install kvdf-dev
   kvdf plugins enable kvdf-dev

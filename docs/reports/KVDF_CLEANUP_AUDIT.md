@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779102419468
-- Generated at: 2026-05-18T11:06:59.468Z
+- Report ID: kvdf-cleanup-1779105634779
+- Generated at: 2026-05-18T12:00:34.779Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            2808                                       
+Total files            2810                                       
 Total folders          13                                         
 Plugin total           14                                         
 Active plugins         8                                          
@@ -40,10 +40,10 @@ Folder      Files  Primary extension  Role
 knowledge   463    .md                project surface
 packs       437    .md                project surface
 plugins     379    .md                plugin bundles 
-docs        291    .md                documentation  
+docs        292    .md                documentation  
 workspaces  140    .json              project surface
 src         132    .js                runtime source 
-schemas     97     .md                project surface
+schemas     98     .md                project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
 .gitignore  1      [no extension]     project surface
@@ -53,8 +53,8 @@ bin         1      .js                project surface
 
 Extension       Files
 --------------  -----
-.md             1669 
-.json           671  
+.md             1670 
+.json           672  
 .js             201  
 .html           181  
 .docx           58   
@@ -70,7 +70,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            1808 
+Scanned files            1810 
 Dead code candidates     4    
 Stale docs candidates    3    
 Spec drift candidates    4    

@@ -119,6 +119,10 @@ kvdf planner visual --goal "Build app flow" --track vibe --json
   kvdf planner visual --from-current --json
   kvdf planner-visual status
   kvdf planner-visual render --goal "Add visual planner" --track owner
+  kvdf planner next --track owner --source-control git --sc-mode direct-main --json
+  kvdf planner next --track vibe --source-control none --json
+  kvdf planner next --track owner --source-control git --sc-mode branch --json
+  kvdf planner next --track vibe --source-control git --remote-provider github --sc-mode branch-pr --json
   kvdf planner-visual render --from-current
   kvdf planner-visual export --goal "Build app flow" --track vibe
   kvdf planner evolution --goal "Add planner layer" --track owner --json
@@ -126,6 +130,8 @@ kvdf planner visual --goal "Build app flow" --track vibe --json
 ```
 
 The Planner Layer is the deterministic native planning surface for KVDF Core, vibe/app, and plugin work. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, persists proposed plans under `.kabeeri/planner.json`, can generate a Codex-ready prompt from the approved current plan, and can emit a visual planning model with Mermaid, board, scope map, and markdown report output. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work. When no track is provided, the owner repo defaults to the owner planner, app work defaults to vibe planner mode, and `--plugin` selects plugin mode.
+
+Planner outputs now include an explicit `source_control` object so Git, no source control, direct-to-main, branch, and branch+PR can be expressed as provider-driven modes instead of assuming GitHub is mandatory. GitHub is treated as an optional remote/provider plugin, not the same thing as Git.
 
 Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.

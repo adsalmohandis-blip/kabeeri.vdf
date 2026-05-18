@@ -16,6 +16,7 @@ Owner direction
 -> planner propose
 -> planner approve
 -> planner current
+-> planner source_control selection
 -> planner materialize
 -> planner prompt --from-current
 -> planner visual
@@ -42,6 +43,24 @@ Before execution, the planner should surface:
 - acceptance criteria
 - validation commands
 - stop condition
+
+## Source Control Selection
+
+The planner carries an explicit `source_control` object in its proposal,
+current-plan, prompt, visual, and materialization outputs. That object makes
+source control a provider-driven choice instead of an assumed GitHub branch/PR
+workflow.
+
+Accepted modes include:
+
+- no source control
+- local-only
+- Git direct-to-main
+- Git branch
+- Git branch + PR
+
+GitHub is treated as an optional remote/provider plugin, not as the same thing
+as Git.
 
 ## KVDF Core Policy
 

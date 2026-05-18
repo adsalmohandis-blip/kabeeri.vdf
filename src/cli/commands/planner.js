@@ -4,6 +4,7 @@ const path = require("path");
 const DEFAULT_VALIDATION_COMMANDS = ["node bin/kvdf.js validate", "npm test", "npm run check"];
 const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
+const { readGitRepositoryState } = require("../services/git_snapshot");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -247,15 +248,17 @@ function buildPlannerNextReport(request = {}, deps = {}) {
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
   const recommendedEvolution = recommendNextEvolution(mode, context, pluginContext, request);
-  const plan = buildPlannerEvolutionPlan(recommendedEvolution.title, { ...request, mode, deliveryMode, pluginContext, recommendedEvolution }, context);
-  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const plan = buildPlannerEvolutionPlan(recommendedEvolution.title, { ...request, mode, deliveryMode, pluginContext, sourceControl, recommendedEvolution }, context);
+  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const report = {
     report_type: "kvdf_planner_next",
     generated_at: new Date().toISOString(),
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     recommended_evolution: recommendedEvolution,
     allowed_files: plan.allowed_files,
     forbidden_files: plan.forbidden_files,
@@ -276,21 +279,23 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
-  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return {
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     goal,
     allowed_files: plan.allowed_files,
     forbidden_files: plan.forbidden_files,
     validation_commands: plan.validation_commands,
     stop_condition: plan.stop_condition,
     task_punch: taskPunch,
-    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext })
+    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl })
   };
 }
 
@@ -299,18 +304,20 @@ function buildPlannerEvolutionReport(goal, request = {}, deps = {}) {
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
-  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return {
     report_type: "kvdf_planner_evolution_plan",
     generated_at: new Date().toISOString(),
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     goal,
     evolution_plan: plan,
     task_punch: taskPunch,
-    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext })
+    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl })
   };
 }
 
@@ -319,14 +326,16 @@ function buildPlannerTaskPunchReport(goal, request = {}, deps = {}) {
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
-  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return {
     report_type: "kvdf_task_punch",
     generated_at: new Date().toISOString(),
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     evolution_id: plan.evolution_id,
     title: `${plan.title} Task Punch`,
     tasks: taskPunch.tasks,
@@ -339,8 +348,9 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
-  const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   return buildPlannerVisualPayload({
     goal,
     mode,
@@ -348,7 +358,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     evolutionPlan,
     taskPunch,
     context,
-    pluginContext
+    pluginContext,
+    sourceControl
   });
 }
 
@@ -362,6 +373,13 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   const goal = currentPlan.goal || (currentPlan.recommended_evolution && currentPlan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(currentPlan.planner_mode);
   const deliveryMode = currentPlan.delivery_mode || getDeliveryMode(mode);
+  const sourceControl = currentPlan.source_control || buildPlannerSourceControl(
+    { flags: {} },
+    context,
+    mode,
+    deliveryMode,
+    mode === "plugin" ? (currentPlan.plugin_context || (currentPlan.recommended_evolution && currentPlan.recommended_evolution.plugin_context) || null) : null
+  );
   const pluginContext = mode === "plugin"
     ? (currentPlan.plugin_context || buildPluginContext({ plugin_id: currentPlan.recommended_evolution && currentPlan.recommended_evolution.plugin_context && currentPlan.recommended_evolution.plugin_context.plugin_id }, context))
     : null;
@@ -371,7 +389,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   const taskPunch = currentPlan.task_punch && Array.isArray(currentPlan.task_punch.tasks) && currentPlan.task_punch.tasks.length
     ? currentPlan.task_punch
     : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext }, context);
-  if (currentPlan.visual && currentPlan.visual.report_type === "kvdf_planner_visual") {
+  if (currentPlan.visual && currentPlan.visual.report_type === "kvdf_planner_visual" && currentPlan.visual.source_control) {
     return currentPlan.visual;
   }
   return buildPlannerVisualPayload({
@@ -382,14 +400,15 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     taskPunch,
     context,
     pluginContext,
-    currentPlan
+    currentPlan,
+    sourceControl
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null }) {
   const graph = buildPlannerVisualGraph({ mode });
-  const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan });
-  const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext });
+  const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
+  const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
   const validationCommands = [...(evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS)];
   const stopCondition = evolutionPlan.stop_condition || buildPlannerStopCondition(mode, context, pluginContext);
   const markdownReport = buildPlannerVisualMarkdown({
@@ -401,7 +420,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     board,
     scopeMap,
     validationCommands,
-    stopCondition
+    stopCondition,
+    sourceControl
   });
   const report = {
     report_type: "kvdf_planner_visual",
@@ -410,6 +430,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     track: evolutionPlan.track,
     delivery_mode: deliveryMode,
     goal,
+    source_control: sourceControl,
     graph,
     board,
     scope_map: scopeMap,
@@ -473,7 +494,7 @@ function buildPlannerVisualGraph({ mode }) {
   };
 }
 
-function buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan }) {
+function buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl }) {
   const baseColumns = [
     { id: "proposed", title: "Proposed", cards: [] },
     { id: "approved", title: "Approved", cards: [] },
@@ -524,6 +545,15 @@ function buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan }
       status: "proposed"
     });
   }
+  if (sourceControl) {
+    baseColumns.find((column) => column.id === "proposed").cards.push({
+      id: `${evolutionPlan.evolution_id}-source-control`,
+      title: `Source Control: ${summarizeSourceControl(sourceControl)}`,
+      type: "source-control",
+      status: sourceControl.mode || "proposed",
+      source_control: sourceControl
+    });
+  }
   return { columns: baseColumns };
 }
 
@@ -537,7 +567,7 @@ function normalizePlannerBoardColumn(status) {
   return "proposed";
 }
 
-function buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext }) {
+function buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl }) {
   const runtimeState = mode === "plugin"
     ? [".kabeeri/plugin-links/", ".kabeeri/plugins.json"]
     : [".kabeeri/planner.json"];
@@ -548,6 +578,7 @@ function buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginCont
   return {
     allowed_files: [...(evolutionPlan.allowed_files || [])],
     forbidden_files: forbiddenFiles,
+    source_control: sourceControl || null,
     runtime_state: runtimeState,
     generated_artifacts: generatedArtifacts,
     docs: [
@@ -564,6 +595,7 @@ function buildPlannerVisualLegend() {
   return {
     allowed: "Files Codex may edit",
     forbidden: "Files Codex must not edit",
+    source_control: "Source control provider, remote provider, and branch/PR mode",
     runtime_state: "Runtime files that must not be committed",
     generated_artifacts: "Generated files that may refresh during validation",
     docs: "Documentation surfaces",
@@ -571,7 +603,7 @@ function buildPlannerVisualLegend() {
   };
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Model - Vibe/App"
     : mode === "plugin"
@@ -584,6 +616,20 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
   const generatedArtifacts = (scopeMap.generated_artifacts || []).map((item) => `- ${item}`).join("\n");
   const docs = (scopeMap.docs || []).map((item) => `- ${item}`).join("\n");
   const tests = (scopeMap.tests || []).map((item) => `- ${item}`).join("\n");
+  const sourceControlLines = sourceControl ? [
+    `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
+    `- Provider: ${sourceControl.provider || "none"}`,
+    `- Remote provider: ${sourceControl.remote_provider || "none"}`,
+    `- Provider plugin: ${sourceControl.provider_plugin || "none"}`,
+    `- Mode: ${sourceControl.mode || "local_only"}`,
+    `- Branching enabled: ${sourceControl.branching_enabled ? "yes" : "no"}`,
+    `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`,
+    `- Default branch: ${sourceControl.default_branch || "main"}`,
+    `- Current branch: ${sourceControl.current_branch || "none"}`,
+    `- Requires Owner approval: ${sourceControl.requires_owner_approval ? "yes" : "no"}`,
+    `- Replaceable provider: ${sourceControl.replaceable_provider ? "yes" : "no"}`,
+    ...(Array.isArray(sourceControl.notes) && sourceControl.notes.length ? ["- Notes:", ...sourceControl.notes.map((note) => `  - ${note}`)] : [])
+  ].join("\n") : "";
   return [
     `# ${title}`,
     "",
@@ -599,11 +645,24 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     "## Planning Board",
     boardSummary,
     "",
+    "## Source Control",
+    sourceControlLines || "- None",
+    "",
     "## Scope Map",
     "### Allowed Files",
     allowedFiles || "- None",
     "### Forbidden Files",
     forbiddenFiles || "- None",
+    "### Source Control",
+    sourceControl ? [
+      `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
+      `- Provider: ${sourceControl.provider || "none"}`,
+      `- Remote provider: ${sourceControl.remote_provider || "none"}`,
+      `- Provider plugin: ${sourceControl.provider_plugin || "none"}`,
+      `- Mode: ${sourceControl.mode || "local_only"}`,
+      `- Branching enabled: ${sourceControl.branching_enabled ? "yes" : "no"}`,
+      `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`
+    ].join("\n") : "- None",
     "### Runtime State",
     runtimeState || "- None",
     "### Generated Artifacts",
@@ -629,10 +688,11 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
-  const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext }, context);
-  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext });
-  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext });
+  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl });
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
   const plan = buildPlannerPlanRecord({
@@ -645,6 +705,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     visual,
     codexPrompt,
     pluginContext,
+    sourceControl,
     createdAt: new Date().toISOString()
   });
   state.plans.push(plan);
@@ -657,6 +718,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     planner_mode: mode,
     track: evolutionPlan.track,
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     visual,
     next_action: `Review and approve with kvdf planner approve ${planId}.`
   };
@@ -831,6 +893,7 @@ function materializePlannerPlan(planId, flags = {}, deps = {}) {
     planner_mode: approvedPlan.planner_mode,
     track: approvedPlan.track,
     delivery_mode: approvedPlan.delivery_mode,
+    source_control: materialization.source_control || approvedPlan.source_control || null,
     status: "materialized",
     evolution: {
       change_id: evolutionRecord.change_id,
@@ -855,13 +918,21 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
   if (!currentPlan) {
     throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json first.");
   }
-  const prompt = currentPlan.codex_prompt || renderPlannerPromptFromPlan(currentPlan, context);
+  const sourceControl = currentPlan.source_control || buildPlannerSourceControl(
+    { flags: {} },
+    context,
+    normalizePlannerMode(currentPlan.planner_mode),
+    currentPlan.delivery_mode || getDeliveryMode(normalizePlannerMode(currentPlan.planner_mode)),
+    normalizePlannerMode(currentPlan.planner_mode) === "plugin" ? currentPlan.plugin_context || null : null
+  );
+  const prompt = renderPlannerPromptFromPlan(currentPlan, context, sourceControl);
   return {
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
     planner_mode: currentPlan.planner_mode,
     track: currentPlan.track,
     delivery_mode: currentPlan.delivery_mode,
+    source_control: sourceControl,
     plan_id: currentPlan.plan_id,
     goal: currentPlan.goal,
     allowed_files: currentPlan.allowed_files || [],
@@ -877,6 +948,7 @@ function buildPlannerEvolutionPlan(goal, request = {}, context = {}) {
   const mode = request.mode || "owner";
   const deliveryMode = request.deliveryMode || getDeliveryMode(mode);
   const pluginContext = request.pluginContext || null;
+  const sourceControl = request.source_control || request.sourceControl || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
   const title = normalizeEvolutionTitle(goal, mode, context, pluginContext);
   const evolutionId = normalizeEvolutionId(title);
   const recommendationArea = getPlannerArea(mode);
@@ -896,6 +968,7 @@ function buildPlannerEvolutionPlan(goal, request = {}, context = {}) {
     acceptance_criteria: buildPlannerAcceptanceCriteria(mode, context, pluginContext),
     validation_commands: buildPlannerValidationCommands(mode, context, pluginContext),
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     next_action: nextAction,
     stop_condition: buildPlannerStopCondition(mode, context, pluginContext)
   };
@@ -907,6 +980,7 @@ function buildPlannerEvolutionPlan(goal, request = {}, context = {}) {
 function buildPlannerTaskPunch(plan, request = {}, context = {}) {
   const mode = request.mode || plan.planner_mode || "owner";
   const pluginContext = request.pluginContext || plan.plugin_context || null;
+  const sourceControl = request.source_control || request.sourceControl || plan.source_control || buildPlannerSourceControl(request, context, mode, request.deliveryMode || plan.delivery_mode || getDeliveryMode(mode), pluginContext);
   const evolutionId = plan.evolution_id || normalizeEvolutionId(plan.title);
   const tasks = buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId);
   return {
@@ -917,6 +991,7 @@ function buildPlannerTaskPunch(plan, request = {}, context = {}) {
     planner_mode: mode,
     track: plan.track,
     delivery_mode: plan.delivery_mode,
+    source_control: sourceControl,
     tasks
   };
 }
@@ -1074,7 +1149,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -1084,8 +1159,8 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext }) {
   const forbiddenFiles = plan.forbidden_files || [];
   const validationCommands = plan.validation_commands || [];
   const taskLines = (taskPunch.tasks || []).map((task, index) => `${index + 1}. ${task.title}`);
-  const contextLines = buildPromptContextLines(mode, pluginContext);
-  const commitLines = buildPromptCommitLines(mode, plan, pluginContext);
+  const contextLines = buildPromptContextLines(mode, pluginContext, sourceControl);
+  const commitLines = buildPromptCommitLines(mode, plan, pluginContext, sourceControl);
   const pipelineLines = mode === "vibe"
     ? ["", "Pipeline:", ...VIBE_PIPELINE.map((step) => `- ${step}`)]
     : [];
@@ -1120,11 +1195,20 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext }) {
   ].join("\\n");
 }
 
-function buildPromptContextLines(mode, pluginContext) {
+function buildPromptContextLines(mode, pluginContext, sourceControl) {
+  const sourceControlLines = sourceControl ? [
+    `- Source control: ${summarizeSourceControl(sourceControl)}`,
+    `- Source control enabled: ${sourceControl.enabled ? "yes" : "no"}`,
+    `- Source control provider: ${sourceControl.provider || "none"}`,
+    `- Remote provider: ${sourceControl.remote_provider || "none"}`,
+    `- Branching enabled: ${sourceControl.branching_enabled ? "yes" : "no"}`,
+    `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`
+  ] : [];
   if (mode === "vibe") {
     return [
       "- Track: Vibe App Developer",
       "- Delivery mode: Local-first",
+      ...sourceControlLines,
       "- No branch / no PR unless explicitly enabled",
       "- Do not touch KVDF Core unless the Owner explicitly asks for framework work",
       "- GitHub handoff is optional and never the default",
@@ -1136,6 +1220,7 @@ function buildPromptContextLines(mode, pluginContext) {
       "- Track: Plugin Development",
       `- Plugin: ${pluginContext ? pluginContext.plugin_id : "unknown"}`,
       "- Delivery mode: Direct-to-main",
+      ...sourceControlLines,
       "- Do not touch KVDOS",
       "- Protect .kabeeri/plugin-links/ runtime mount state",
       "- Plugin manifest, docs, runtime, and tests must stay in parity"
@@ -1144,7 +1229,7 @@ function buildPromptContextLines(mode, pluginContext) {
   return [
     "- Track: Owner Track / KVDF Core only",
     "- Delivery mode: Direct-to-main",
-    "- No branch / no PR unless explicitly requested",
+    ...sourceControlLines,
     "- Do not touch KVDOS",
     "- Do not commit runtime state under .kabeeri/",
     "- The Owner is the only active KVDF Core developer",
@@ -1152,13 +1237,56 @@ function buildPromptContextLines(mode, pluginContext) {
   ];
 }
 
-function buildPromptCommitLines(mode, plan, pluginContext) {
-  if (mode === "vibe") {
+function buildPromptCommitLines(mode, plan, pluginContext, sourceControl) {
+  const sc = sourceControl || {};
+  const sourceControlMode = normalizeSourceControlMode(sc.mode) || (sc.enabled === false || sc.provider === "none" ? "local_only" : null);
+  const remoteProvider = String(sc.remote_provider || "none");
+  const deliveryMode = String(plan.delivery_mode || "").trim().toLowerCase();
+  if (sourceControlMode === "local_only" || sourceControlMode === "none" || sc.enabled === false || sc.provider === "none") {
+    return [
+      "Run validation.",
+      "Keep the changes local.",
+      "Write the final handoff report.",
+      "Do not create a branch, commit, or push unless a later Evolution explicitly enables source control."
+    ];
+  }
+  if (sourceControlMode === "direct_main") {
     return [
       "git add -A",
-      'git commit -m "feat: implement approved vibe/app delivery slice"',
-      "If GitHub handoff is enabled, publish only through the approved delivery branch and Owner review gate.",
-      "If GitHub handoff is not enabled, keep the delivery local and write the final handoff report."
+      `git commit -m "feat: implement approved ${mode === "vibe" ? "vibe/app" : mode === "plugin" ? "plugin" : "direct-to-main"} delivery slice"`,
+      "git push origin main"
+    ];
+  }
+  if (sourceControlMode === "branch_pr") {
+    return [
+      "git checkout -b <approved-evolution-branch>",
+      "git add -A",
+      `git commit -m "feat: implement approved ${mode === "vibe" ? "vibe/app" : mode === "plugin" ? "plugin" : "delivery"} slice"`,
+      "git push origin <approved-evolution-branch>",
+      remoteProvider === "github"
+        ? "Prepare or create the GitHub PR for Owner review."
+        : "Prepare or create the PR if the selected source-control provider supports it.",
+      "Request Owner review before merge.",
+      "Merge only after approval.",
+      "Pull the latest main and re-validate the workspace."
+    ];
+  }
+  if (sourceControlMode === "branch") {
+    return [
+      "git checkout -b <approved-evolution-branch>",
+      "git add -A",
+      'git commit -m "feat: implement approved delivery slice"',
+      "Push the branch to the selected source-control provider.",
+      "Do not open a PR unless explicitly enabled.",
+      "Validate the workspace before the next Evolution."
+    ];
+  }
+  if (deliveryMode === "local_first" || mode === "vibe") {
+    return [
+      "Run validation.",
+      "Keep the changes local.",
+      "Write the final handoff report.",
+      "Do not create a branch, commit, or push unless the selected source-control provider explicitly enables it."
     ];
   }
   if (mode === "plugin") {
@@ -1210,6 +1338,7 @@ function buildPlannerContext(deps = {}) {
   const capabilityRegistry = fs.existsSync(capabilityRegistryFile) ? safeReadJson(capabilityRegistryFile) : null;
   const resumeReport = safeBuild(() => (typeof deps.buildResumeReport === "function" ? deps.buildResumeReport({ scan: false }) : null));
   const pluginLoader = safeBuild(() => (typeof deps.buildPluginLoaderReport === "function" ? deps.buildPluginLoaderReport() : null));
+  const gitState = safeBuild(() => readGitRepositoryState(repoRootPath));
   const openTasksTotal = Array.isArray(taskState.tasks)
     ? taskState.tasks.filter((task) => !["owner_verified", "done", "closed", "rejected"].includes(String(task.status || "").toLowerCase())).length
     : 0;
@@ -1250,6 +1379,12 @@ function buildPlannerContext(deps = {}) {
         active_plugins: pluginLoader.active_plugins || 0,
         plugin_ids: Array.isArray(pluginLoader.plugins) ? pluginLoader.plugins.map((item) => item.plugin_id) : []
       } : null,
+      git: gitState ? {
+        available: Boolean(gitState.available),
+        is_repo: Boolean(gitState.is_repo),
+        root: gitState.root || null,
+        current_branch: gitState.current_branch || null
+      } : null,
       project: projectState ? {
         product_name: projectState.product_name || "",
         profile: projectState.profile || null,
@@ -1260,6 +1395,7 @@ function buildPlannerContext(deps = {}) {
     },
     resume_report: resumeReport,
     plugin_loader: pluginLoader,
+    git_state: gitState,
     task_state: taskState,
     evolution_state: evolutionState,
     project_state: projectState
@@ -1274,6 +1410,7 @@ function resolvePlannerRequest({ action, value, flags, rest }, deps = {}) {
   const mode = explicitPlugin ? "plugin" : (explicitTrack || detectPlannerMode(context, explicitTrack));
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext({ plugin_id: explicitPlugin }, context) : null;
+  const sourceControl = buildPlannerSourceControl({ flags }, context, mode, deliveryMode, pluginContext);
   const recommendedEvolution = recommendNextEvolution(mode, context, pluginContext, { goal });
   return {
     action,
@@ -1281,6 +1418,7 @@ function resolvePlannerRequest({ action, value, flags, rest }, deps = {}) {
     mode,
     deliveryMode,
     plugin_id: pluginContext ? pluginContext.plugin_id : null,
+    source_control: sourceControl,
     recommended_evolution: recommendedEvolution,
     context
   };
@@ -1519,6 +1657,110 @@ function getDeliveryMode(mode) {
   return mode === "vibe" ? "local_first" : "direct_main";
 }
 
+function readPlannerFlag(flags = {}, ...names) {
+  for (const name of names) {
+    if (flags && Object.prototype.hasOwnProperty.call(flags, name)) return flags[name];
+    const underscored = String(name).replace(/-/g, "_");
+    if (flags && Object.prototype.hasOwnProperty.call(flags, underscored)) return flags[underscored];
+  }
+  return undefined;
+}
+
+function normalizeSourceControlProvider(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "none") return "none";
+  if (normalized === "git" || normalized === "custom") return normalized;
+  return null;
+}
+
+function normalizeRemoteProvider(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === "none") return "none";
+  if (normalized === "github" || normalized === "gitlab" || normalized === "bitbucket" || normalized === "custom") return normalized;
+  return null;
+}
+
+function normalizeSourceControlMode(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  if (!normalized) return null;
+  if (normalized === "local_only" || normalized === "direct_main" || normalized === "branch" || normalized === "branch_pr" || normalized === "none") return normalized;
+  return null;
+}
+
+function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", deliveryMode = getDeliveryMode(mode), pluginContext = null) {
+  const gitState = context.git_state || { available: false, is_repo: false, root: null, current_branch: null };
+  const gitRepoDetected = Boolean(gitState && gitState.is_repo);
+  const requestedProvider = normalizeSourceControlProvider(readPlannerFlag(request.flags || {}, "source-control", "source_control"));
+  const requestedMode = normalizeSourceControlMode(readPlannerFlag(request.flags || {}, "sc-mode", "sc_mode"));
+  const requestedRemote = normalizeRemoteProvider(readPlannerFlag(request.flags || {}, "remote-provider", "remote_provider"));
+  const explicitProviderPlugin = normalizePluginId(readPlannerFlag(request.flags || {}, "provider-plugin", "provider_plugin"));
+  const defaultMode = mode === "vibe"
+    ? "local_only"
+    : "direct_main";
+  const sourceControlMode = requestedMode || defaultMode;
+  const wantsLocalOnly = !gitRepoDetected || sourceControlMode === "local_only" || sourceControlMode === "none" || requestedProvider === "none";
+  const defaultProvider = wantsLocalOnly ? "none" : "git";
+  const provider = wantsLocalOnly ? "none" : (requestedProvider || defaultProvider);
+  const remoteProvider = wantsLocalOnly ? "none" : (requestedRemote || "none");
+  const enabled = !wantsLocalOnly && provider !== "none" && gitRepoDetected;
+  const branchingEnabled = enabled && (sourceControlMode === "branch" || sourceControlMode === "branch_pr");
+  const prEnabled = enabled && sourceControlMode === "branch_pr" && remoteProvider !== "none";
+  const providerPlugin = remoteProvider === "github"
+    ? "github"
+    : (remoteProvider === "custom" ? explicitProviderPlugin || null : null);
+  const notes = [];
+  if (!gitRepoDetected) {
+    notes.push("No Git repository detected; source control is local-only for this plan.");
+  } else {
+    notes.push(`Git repository detected${gitState.current_branch ? ` on ${gitState.current_branch}` : ""}.`);
+  }
+  if (provider === "git" && sourceControlMode === "direct_main") {
+    notes.push("Git direct-to-main is the default for KVDF Core owner-track planning.");
+  }
+  if (mode === "vibe") {
+    notes.push("Vibe/App planning stays local-first unless source control is explicitly enabled.");
+  }
+  if (branchingEnabled && !prEnabled) {
+    notes.push("Branch workflow is enabled without PR.");
+  }
+  if (prEnabled) {
+    notes.push(`PR workflow is enabled through ${remoteProvider === "github" ? "GitHub" : remoteProvider}.`);
+  }
+  if (remoteProvider === "github") {
+    notes.push("GitHub is an optional remote/provider plugin, not the same thing as Git.");
+  }
+  if (!enabled) {
+    notes.push("Source control is disabled for this plan.");
+  }
+  return {
+    enabled,
+    provider,
+    remote_provider: remoteProvider,
+    provider_plugin: providerPlugin,
+    mode: sourceControlMode,
+    branching_enabled: branchingEnabled,
+    pr_enabled: prEnabled,
+    default_branch: "main",
+    current_branch: enabled ? gitState.current_branch || null : null,
+    requires_owner_approval: true,
+    replaceable_provider: true,
+    notes
+  };
+}
+
+function summarizeSourceControl(sourceControl = {}) {
+  const provider = String(sourceControl.provider || "none");
+  const remoteProvider = String(sourceControl.remote_provider || "none");
+  const mode = String(sourceControl.mode || "local_only");
+  const parts = [provider, mode];
+  if (remoteProvider && remoteProvider !== "none") parts.push(`remote:${remoteProvider}`);
+  if (sourceControl.branching_enabled) parts.push("branching");
+  if (sourceControl.pr_enabled) parts.push("pr");
+  return parts.join(" / ");
+}
+
 function normalizePlannerAction(value) {
   return String(value || "next").trim().toLowerCase();
 }
@@ -1675,6 +1917,7 @@ function normalizePlannerPlanRecord(plan = {}) {
     validation_commands: Array.isArray(plan.validation_commands) ? [...plan.validation_commands] : [],
     stop_condition: String(plan.stop_condition || ""),
     visual: plan.visual || null,
+    source_control: plan.source_control || null,
     created_at: plan.created_at || null,
     approved_at: plan.approved_at || null,
     approved_by: plan.approved_by || null,
@@ -1702,6 +1945,7 @@ function buildPlannerPlanRecord({
   visual,
   codexPrompt,
   pluginContext,
+  sourceControl,
   createdAt
 }) {
   const plan = {
@@ -1720,6 +1964,7 @@ function buildPlannerPlanRecord({
     validation_commands: [...(evolutionPlan.validation_commands || [])],
     stop_condition: evolutionPlan.stop_condition || "",
     visual: visual || null,
+    source_control: sourceControl || null,
     created_at: createdAt,
     approved_at: null,
     approved_by: null,
@@ -1758,6 +2003,13 @@ function buildPlannerMaterializationArtifact(plan, context = {}) {
   const mode = normalizePlannerMode(plan.planner_mode);
   const deliveryMode = plan.delivery_mode || getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? (plan.plugin_context || buildPluginContext({ plugin_id: plan.recommended_evolution && plan.recommended_evolution.plugin_context && plan.recommended_evolution.plugin_context.plugin_id }, context)) : null;
+  const sourceControl = plan.source_control || buildPlannerSourceControl(
+    { flags: {} },
+    context,
+    mode,
+    deliveryMode,
+    pluginContext
+  );
   const evolutionPlan = plan.recommended_evolution && Object.keys(plan.recommended_evolution).length
     ? plan.recommended_evolution
     : buildPlannerEvolutionPlan(plan.goal || "Approved planner plan", { mode, deliveryMode, pluginContext }, context);
@@ -1770,6 +2022,7 @@ function buildPlannerMaterializationArtifact(plan, context = {}) {
     planner_mode: mode,
     track: plan.track || getPlannerTrack(mode),
     delivery_mode: deliveryMode,
+    source_control: sourceControl,
     goal: plan.goal || evolutionPlan.title || "",
     evolution_plan: evolutionPlan,
     task_punch: taskPunch,
@@ -1818,17 +2071,19 @@ function upsertPlannerEvolutionRecord(evolutionState, plan, materialization, con
   change.milestone_summary = evolutionPlan.reason || plan.goal || change.description;
   change.milestone_status = "planned";
   change.local_first = plan.delivery_mode === "local_first";
-  change.source_control = plan.delivery_mode === "local_first" ? "local" : "direct_main";
-  change.sync_mode = plan.delivery_mode === "local_first" ? "local_first" : "direct_main";
-  change.sync_policy = plan.delivery_mode === "local_first" ? "local_only" : "direct_main";
-  change.github_sync_enabled = plan.delivery_mode !== "local_first";
-  change.branch_name = change.branch_name || (plan.delivery_mode === "local_first" ? "local-first" : `evo/${changeId}`);
-  change.merge_target_branch = change.merge_target_branch || "main";
+  change.source_control = materialization.source_control || plan.source_control || null;
+  change.sync_mode = change.source_control ? String(change.source_control.mode || plan.delivery_mode || "direct_main") : (plan.delivery_mode === "local_first" ? "local_first" : "direct_main");
+  change.sync_policy = change.source_control
+    ? (String(change.source_control.mode || "").toLowerCase() === "local_only" ? "local_only" : String(change.source_control.mode || plan.delivery_mode || "direct_main"))
+    : (plan.delivery_mode === "local_first" ? "local_only" : "direct_main");
+  change.github_sync_enabled = Boolean(change.source_control && change.source_control.remote_provider && change.source_control.remote_provider !== "none");
+  change.branch_name = change.branch_name || (change.source_control && String(change.source_control.mode || "").toLowerCase() === "local_only" ? "local-first" : `evo/${changeId}`);
+  change.merge_target_branch = change.merge_target_branch || (change.source_control && change.source_control.default_branch ? change.source_control.default_branch : "main");
   change.review_gate = change.review_gate || (plan.planner_mode === "owner" ? "owner_approval_required" : "planner_approval_required");
   change.review_required = true;
   change.review_status = change.review_status || "pending";
   change.branch_policy = change.branch_policy || {
-    mode: plan.delivery_mode === "local_first" ? "local_only" : "direct_main"
+    mode: change.source_control ? String(change.source_control.mode || "direct_main") : (plan.delivery_mode === "local_first" ? "local_only" : "direct_main")
   };
   change.task_trash_policy = change.task_trash_policy || {
     enabled: true,
@@ -1890,7 +2145,8 @@ function upsertPlannerMaterializationTasks(tasksState, evolutionState, plan, mat
       acceptance_criteria: Array.isArray(task.acceptance_criteria) ? [...task.acceptance_criteria] : [],
       validation_commands: Array.isArray(task.validation_commands) ? [...task.validation_commands] : [],
       stop_condition: task.stop_condition || evolutionPlan.stop_condition || "",
-      created_at: now
+      created_at: now,
+      source_control: materialization.source_control || plan.source_control || null
     };
     if (task.workstream) record.workstream = task.workstream;
     if (Array.isArray(task.workstreams)) record.workstreams = [...task.workstreams];
@@ -1950,6 +2206,7 @@ function buildPlannerMaterializationReport({ plan, materialization, evolutionRec
     planner_mode: plan.planner_mode,
     track: plan.track,
     delivery_mode: plan.delivery_mode,
+    source_control: plan.source_control || null,
     status: "materialized",
     evolution: {
       change_id: evolutionRecord.change_id,
@@ -2057,6 +2314,7 @@ function renderPlannerNextReport(report, tableRenderer) {
     ["Planner mode", report.planner_mode],
     ["Track", report.track],
     ["Delivery mode", report.delivery_mode],
+    ["Source control", report.source_control ? summarizeSourceControl(report.source_control) : "none"],
     ["Recommended evolution", report.recommended_evolution.title],
     ["Area", report.recommended_evolution.area],
     ["Risk", report.recommended_evolution.risk],
@@ -2106,6 +2364,7 @@ function renderPlannerEvolutionPlan(report, tableRenderer) {
     ["Evolution", plan.title],
     ["Track", plan.track],
     ["Delivery mode", plan.delivery_mode],
+    ["Source control", plan.source_control ? summarizeSourceControl(plan.source_control) : "none"],
     ["Area", plan.area],
     ["Next action", plan.next_action]
   ];
@@ -2208,12 +2467,19 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
   ].join("\n");
 }
 
-function renderPlannerPromptFromPlan(plan, context) {
+function renderPlannerPromptFromPlan(plan, context, sourceControl = null) {
   const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(plan.planner_mode);
   const pluginContext = mode === "plugin"
     ? (plan.plugin_context || buildPluginContext({ plugin_id: plan.recommended_evolution && plan.recommended_evolution.plugin_context && plan.recommended_evolution.plugin_context.plugin_id }, context))
     : null;
+  const sourceControlState = sourceControl || plan.source_control || buildPlannerSourceControl(
+    { flags: {} },
+    context,
+    mode,
+    plan.delivery_mode || getDeliveryMode(mode),
+    pluginContext
+  );
   const evolutionPlan = plan.recommended_evolution && Object.keys(plan.recommended_evolution).length
     ? plan.recommended_evolution
     : buildPlannerEvolutionPlan(goal, { mode, deliveryMode: plan.delivery_mode, pluginContext }, context);
@@ -2226,7 +2492,8 @@ function renderPlannerPromptFromPlan(plan, context) {
     plan: evolutionPlan,
     taskPunch,
     context,
-    pluginContext
+    pluginContext,
+    sourceControl: sourceControlState
   });
 }
 
@@ -2245,6 +2512,7 @@ function renderPlannerTaskPunchReport(report, tableRenderer) {
     `Planner mode: ${report.planner_mode || ""}`,
     `Track: ${report.track || ""}`,
     `Delivery mode: ${report.delivery_mode || ""}`,
+    `Source control: ${report.source_control ? summarizeSourceControl(report.source_control) : "none"}`,
     `Evolution: ${report.evolution_id || ""}`
   ].join("\n");
 }

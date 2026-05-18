@@ -9,6 +9,65 @@ function shouldUseLocalGitSnapshot() {
   return value === "1" || value === "true" || value === "yes";
 }
 
+function readGitRepositoryState(cwd = repoRoot()) {
+  const gitRoot = findGitWorktreeRoot(cwd);
+  if (!gitRoot) {
+    return {
+      available: false,
+      is_repo: false,
+      root: null,
+      current_branch: null
+    };
+  }
+  return {
+    available: true,
+    is_repo: true,
+    root: gitRoot.root,
+    current_branch: gitRoot.current_branch
+  };
+}
+
+function findGitWorktreeRoot(startDir = repoRoot()) {
+  let current = path.resolve(startDir);
+  while (true) {
+    const gitDir = path.join(current, ".git");
+    if (fs.existsSync(gitDir)) {
+      return readGitMetadataFromGitDir(current, gitDir);
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+function readGitMetadataFromGitDir(root, gitDirPath) {
+  try {
+    let actualGitDir = gitDirPath;
+    if (fs.statSync(gitDirPath).isFile()) {
+      const contents = String(fs.readFileSync(gitDirPath, "utf8") || "").trim();
+      const match = contents.match(/^gitdir:\s*(.+)$/i);
+      if (match) {
+        const linkedPath = match[1].trim();
+        actualGitDir = path.isAbsolute(linkedPath) ? linkedPath : path.resolve(root, linkedPath);
+      }
+    }
+    const headPath = path.join(actualGitDir, "HEAD");
+    const head = fs.existsSync(headPath) ? String(fs.readFileSync(headPath, "utf8") || "").trim() : "";
+    const branchMatch = head.match(/^ref:\s*refs\/heads\/(.+)$/i);
+    const currentBranch = branchMatch ? branchMatch[1].trim() || null : null;
+    return {
+      root,
+      current_branch: currentBranch
+    };
+  } catch {
+    return {
+      root,
+      current_branch: null
+    };
+  }
+}
+
 function getGitChangedFiles(cwd = repoRoot()) {
   return getGitChangedFileDetails(cwd).map((item) => item.file);
 }
@@ -67,5 +126,6 @@ module.exports = {
   getGitChangedFileDetails,
   listLocalGitChangedFileDetails,
   readGitStatus,
+  readGitRepositoryState,
   shouldUseLocalGitSnapshot
 };

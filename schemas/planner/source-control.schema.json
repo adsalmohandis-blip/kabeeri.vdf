@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Source Control",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "enabled",
+    "provider",
+    "remote_provider",
+    "provider_plugin",
+    "mode",
+    "branching_enabled",
+    "pr_enabled",
+    "default_branch",
+    "current_branch",
+    "requires_owner_approval",
+    "replaceable_provider",
+    "notes"
+  ],
+  "properties": {
+    "enabled": { "type": "boolean" },
+    "provider": {
+      "type": "string",
+      "enum": ["none", "git", "custom"]
+    },
+    "remote_provider": {
+      "type": "string",
+      "enum": ["none", "github", "gitlab", "bitbucket", "custom"]
+    },
+    "provider_plugin": {
+      "type": ["string", "null"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["none", "local_only", "direct_main", "branch", "branch_pr"]
+    },
+    "branching_enabled": { "type": "boolean" },
+    "pr_enabled": { "type": "boolean" },
+    "default_branch": { "type": "string" },
+    "current_branch": { "type": ["string", "null"] },
+    "requires_owner_approval": { "type": "boolean" },
+    "replaceable_provider": { "type": "boolean" },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
