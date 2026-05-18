@@ -32,6 +32,7 @@ const { policyReportItem, taskReportItem } = require("../src/cli/services/report
 const { appendJsonLine, readJsonLines, writeJsonLines } = require("../src/cli/services/jsonl");
 const { readStateArray, summarizeBy } = require("../src/cli/services/state_utils");
 const { buildFullscreenUrl, buildLocalServerSkipMessage, injectFullscreenShell, shouldLaunchFullscreen, shouldOpenBrowser, shouldStartLocalServer } = require("../src/cli/services/local_server");
+const { openPlannerPreview, buildPlannerPreviewHtml } = require("../src/cli/commands/planner");
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
 const { buildBootContext } = require("../src/core/bootstrap");
 const { serveSite } = require("../src/cli/commands/site");
@@ -775,4 +776,29 @@ test("visual server helpers support no-open and fullscreen options", () => {
   assert.strictEqual(shouldLaunchFullscreen({ fullscreen: true }), true);
   assert.match(buildFullscreenUrl("http://127.0.0.1:4188/", { fullscreen: true }), /fullscreen=1/);
   assert.match(injectFullscreenShell("<html><body>Test</body></html>", { fullscreen: true }), /requestFullscreen/);
+});
+
+test("planner visual previews can open in browser and request fullscreen", () => {
+  withTempDir((dir) => {
+    const opened = [];
+    const preview = openPlannerPreview(
+      { report_type: "kvdf_planner_visual", track: "framework_owner", planner_mode: "owner", delivery_mode: "direct_main", goal: "Preview planner" },
+      "# Planner Visual\n\n```mermaid\nflowchart TD\nA --> B\n```",
+      "visual",
+      { open: true, fullscreen: true },
+      {
+        repoRoot: () => dir,
+        openExternalUrl: (url) => opened.push(url)
+      }
+    );
+
+    assert.strictEqual(opened.length, 1);
+    assert.match(opened[0], /^file:\/\//);
+    assert.match(preview.output_path, /planner_visual_preview\.html$/);
+    assert.ok(fs.existsSync(preview.output_path));
+    const html = fs.readFileSync(preview.output_path, "utf8");
+    assert.match(html, /Planner Visual Preview/);
+    assert.match(html, /requestFullscreen/);
+    assert.match(html, /flowchart TD/);
+  });
 });

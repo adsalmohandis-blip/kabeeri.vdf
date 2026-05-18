@@ -6,6 +6,8 @@ const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 const { readGitRepositoryState } = require("../services/git_snapshot");
 const { buildAiLearningPromptContext } = require("./ai_learning");
+const { pathToFileURL } = require("url");
+const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenBrowser } = require("../services/local_server");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -1937,10 +1939,71 @@ function printPlannerOutput(report, flags, deps, kind) {
       ? renderPlannerEvolutionPlan(report, deps.table)
       : kind === "task-punch"
         ? renderPlannerTaskPunchReport(report, deps.table)
-        : ["propose", "approve", "current", "reject"].includes(kind)
+      : ["propose", "approve", "current", "reject"].includes(kind)
           ? renderPlannerStateSummaryReport(report, deps.table)
         : renderPlannerNextReport(report, deps.table);
+  if (shouldOpenBrowser(flags) && (kind === "visual" || kind === "pipeline")) {
+    openPlannerPreview(report, rendered, kind, flags, deps);
+  }
   console.log(rendered);
+}
+
+function openPlannerPreview(report, rendered, kind, flags = {}, deps = {}) {
+  const repoRootPath = typeof deps.repoRoot === "function" ? deps.repoRoot() : process.cwd();
+  const previewDir = path.join(repoRootPath, ".kabeeri", "reports");
+  const previewFile = path.join(previewDir, kind === "pipeline" ? "planner_pipeline_preview.html" : "planner_visual_preview.html");
+  fs.mkdirSync(previewDir, { recursive: true });
+  const html = buildPlannerPreviewHtml(report, rendered, kind);
+  const finalHtml = injectFullscreenShell(html, shouldLaunchFullscreen(flags) ? { fullscreen: true } : {});
+  fs.writeFileSync(previewFile, finalHtml, "utf8");
+  const previewUrl = pathToFileURL(previewFile).toString();
+  if (shouldOpenBrowser(flags)) {
+    const opener = typeof deps.openExternalUrl === "function" ? deps.openExternalUrl : openExternalUrl;
+    opener(previewUrl);
+  }
+  return {
+    report_type: "kvdf_planner_visual_preview",
+    output_path: previewFile.replace(/\\/g, "/"),
+    output_url: previewUrl
+  };
+}
+
+function buildPlannerPreviewHtml(report, rendered, kind) {
+  const title = kind === "pipeline" ? "KVDF Planner Pipeline Preview" : "KVDF Planner Visual Preview";
+  const summary = [
+    report.track ? `Track: ${report.track}` : null,
+    report.planner_mode ? `Planner mode: ${report.planner_mode}` : null,
+    report.delivery_mode ? `Delivery mode: ${report.delivery_mode}` : null,
+    report.goal ? `Goal: ${report.goal}` : null,
+    report.idea ? `Idea: ${report.idea}` : null
+  ].filter(Boolean);
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    :root { color-scheme: light; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #f5f7fb; color: #1f2937; }
+    header { padding: 24px 28px 12px; border-bottom: 1px solid #d9e1ee; background: linear-gradient(180deg, #ffffff, #f7f9fc); }
+    h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.2; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #475569; }
+    .pill { padding: 4px 10px; border-radius: 999px; background: #e8eef7; }
+    main { padding: 24px 28px 40px; }
+    pre { white-space: pre-wrap; word-break: break-word; margin: 0; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); font-size: 14px; line-height: 1.6; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(title)}</h1>
+    <div class="meta">${summary.map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join("")}</div>
+  </header>
+  <main>
+    <pre>${escapeHtml(rendered || "")}</pre>
+  </main>
+</body>
+</html>`;
 }
 
 function buildPlannerContext(deps = {}) {
@@ -3239,6 +3302,15 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
   ].join("\n");
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 module.exports = {
   planner,
   buildPlannerNextReport,
@@ -3249,6 +3321,8 @@ module.exports = {
   buildPlannerVisualFromCurrentReport,
   buildIdeaToEvolutionPipelineReport,
   buildPlannerEvolutionPlan,
+  openPlannerPreview,
+  buildPlannerPreviewHtml,
   renderPlannerNextReport,
   renderPlannerEvolutionPlan,
   renderPlannerPromptReport,

@@ -118,10 +118,12 @@ kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin book
 kvdf planner visual --goal "Add visual planner" --track owner --json
 kvdf planner visual --goal "Build app flow" --track vibe --json
   kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
+kvdf planner visual --goal "Add visual planner" --track owner --open --fullscreen
   kvdf planner visual --from-current --json
 kvdf planner pipeline --idea "Improve KVDF planner" --track owner --json
 kvdf planner pipeline --idea "Build booking app" --track vibe --json
-kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
+  kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
+kvdf planner pipeline --idea "Improve KVDF planner" --track owner --open --fullscreen
 kvdf planner pipeline --goal "Build app" --track vibe
   kvdf planner-visual status
   kvdf planner-visual render --goal "Add visual planner" --track owner
@@ -141,8 +143,8 @@ Planner outputs now include an explicit `source_control` object so Git, no sourc
 
 Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.
-Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. The visual renderer plugin also reads the approved current plan when `--from-current` is used, so the rendered markdown stays aligned with the shared approval gate.
-Use `kvdf planner pipeline` to turn a raw idea into a documentation map, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action.
+Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Add `--open` to write a browser preview HTML file for the visual output, `--no-open` to keep the command stdout-only, and `--fullscreen` to request a fullscreen preview shell. The visual renderer plugin also reads the approved current plan when `--from-current` is used, so the rendered markdown stays aligned with the shared approval gate.
+Use `kvdf planner pipeline` to turn a raw idea into a documentation map, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action. It supports the same `--open`, `--no-open`, and `--fullscreen` preview behavior for browser-based inspection.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
 

@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779141638937
-- Generated at: 2026-05-18T22:00:38.937Z
+- Report ID: kvdf-cleanup-1779142128721
+- Generated at: 2026-05-18T22:08:48.721Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -84,7 +84,7 @@ dead_code_candidates   plugins/vibe-maintainer/README.md                   9    
 dead_code_candidates   plugins/vibe-maintainer/runtime/vibe_maintainer.js  521   ["Dead code", String(report.summary ? report.summary.dead_code_candidates || 0 : 0)],                                                                              
 stale_docs             docs/reports/KVDF_FULL_REPOSITORY_AUDIT.md          522   - The repo supports it, but old wording can still confuse users if not kept consistent.                                                                            
 stale_docs             plugins/vibe-maintainer/runtime/vibe_maintainer.js  1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },
-stale_docs             tests/service.unit.test.js                          76    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           
+stale_docs             tests/service.unit.test.js                          77    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_AUDIT.md               18    Spec drift            | 0                                                                                                                                          
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_SUMMARY.md             18    Spec drift            | 0                                                                                                                                          
 spec_drift_candidates  plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
