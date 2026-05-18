@@ -3,7 +3,7 @@ const path = require("path");
 const { readJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { summarizeUsage } = require("./usage_pricing");
-const { buildCustomerAppSummaries, buildPlannerDashboardState } = require("./dashboard_state");
+const { buildCustomerAppSummaries, buildPlannerDashboardState, collectDashboardStateForCurrentTrack } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
 const { readStateArray } = require("../services/state_utils");
 const { buildEvolutionSummary } = require("../services/evolution");
@@ -895,10 +895,116 @@ function buildAiRunHistoryReport() {
   };
 }
 
+function buildSeparatedDashboardHtml(options = {}) {
+  const state = collectDashboardStateForCurrentTrack(options);
+  return renderDashboardProductHtml(state, options);
+}
+
+function renderDashboardProductHtml(state = {}, options = {}) {
+  const isOwner = state.dashboard_type === "owner";
+  const title = state.title || (isOwner ? "KVDF Owner Dashboard" : "KVDF Viber Dashboard");
+  const header = state.subtitle || (isOwner ? "Owner Track / KVDF Core" : "Viber/App Track");
+  const plannerMode = state.planner && state.planner.current_planner_mode ? state.planner.current_planner_mode : "missing";
+  const deliveryMode = state.planner && state.planner.delivery_mode ? state.planner.delivery_mode : "unknown";
+  const sections = Object.values(state.sections || {});
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(title)}</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%); }
+    header { background: ${isOwner ? "linear-gradient(135deg, #1f2937, #334155)" : "linear-gradient(135deg, #0f766e, #134e4a)"}; color: white; padding: 28px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    h1, h2, h3 { margin: 0 0 12px; }
+    p { margin: 0 0 12px; }
+    .subtle { color: ${isOwner ? "#d8e1ea" : "#d7e8e4"}; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.16); }
+    .section { background: white; border: 1px solid #d9dee7; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+    .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 12px 0 16px; }
+    .widget { border: 1px solid #e7ebf0; border-radius: 10px; padding: 12px; background: #fbfcfe; }
+    .widget-title { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #52606d; margin-bottom: 4px; }
+    .widget-value { font-size: 22px; font-weight: 800; color: #0f172a; }
+    .widget-note { font-size: 12px; color: #52606d; margin-top: 4px; }
+    .widget-status { display: inline-block; margin-top: 8px; font-size: 12px; border-radius: 999px; padding: 3px 8px; background: #e8f1f8; color: #334e68; }
+    .widget-status.warning { background: #fff4d6; color: #8a5b00; }
+    .widget-status.blocked { background: #fde2e1; color: #9b1c1c; }
+    .table-wrap { width: 100%; overflow-x: auto; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 700px; }
+    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 10px; font-size: 14px; vertical-align: top; }
+    th { background: #eef2f7; }
+    .empty-state { color: #5f6b7a; font-style: italic; }
+    .section-help { color: #5f6b7a; font-size: 13px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>${escapeHtml(title)}</h1>
+    <p class="subtle">${escapeHtml(header)}</p>
+    <div class="meta">
+      <span class="pill">Planner: ${escapeHtml(plannerMode)} / ${escapeHtml(deliveryMode)}</span>
+      <span class="pill">Track: ${escapeHtml(state.track || "")}</span>
+      <span class="pill">Next: ${escapeHtml(state.next_action || "")}</span>
+    </div>
+    ${state.blocked_cross_track_data && state.blocked_cross_track_data.length ? `<p class="subtle">Blocked cross-track data: ${escapeHtml(state.blocked_cross_track_data.join(", "))}</p>` : ""}
+  </header>
+  <main>
+    ${sections.map((section) => renderDashboardSection(section)).join("")}
+  </main>
+</body>
+</html>
+`;
+}
+
+function renderDashboardSection(section = {}) {
+  const widgets = Array.isArray(section.widgets) ? section.widgets : [];
+  const tables = Array.isArray(section.tables) ? section.tables : [];
+  return `
+    <section class="section">
+      <h2>${escapeHtml(section.title || section.id || "")}</h2>
+      <div class="widget-grid">
+        ${widgets.map((widget) => renderDashboardWidget(widget)).join("")}
+      </div>
+      ${tables.map((tableState) => renderDashboardTable(tableState)).join("")}
+    </section>
+  `;
+}
+
+function renderDashboardWidget(widget = {}) {
+  const statusClass = widget.status === "warning" ? "warning" : widget.status === "blocked" ? "blocked" : "";
+  return `
+    <article class="widget">
+      <div class="widget-title">${escapeHtml(widget.title || widget.id || "")}</div>
+      <div class="widget-value">${escapeHtml(widget.value ?? "")}</div>
+      <div class="widget-status ${statusClass}">${escapeHtml(widget.status || "unknown")}</div>
+      ${widget.next_action ? `<div class="widget-note">${escapeHtml(widget.next_action)}</div>` : ""}
+    </article>
+  `;
+}
+
+function renderDashboardTable(tableState = {}) {
+  const columns = Array.isArray(tableState.columns) ? tableState.columns : [];
+  const rows = Array.isArray(tableState.rows) ? tableState.rows : [];
+  if (!columns.length) return "";
+  return `
+    <div class="table-wrap">
+      <h3>${escapeHtml(tableState.title || tableState.id || "")}</h3>
+      ${rows.length ? `
+        <table>
+          <thead><tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("")}</tr></thead>
+          <tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+        </table>
+      ` : `<p class="empty-state">${escapeHtml(tableState.empty_state || "No records")}</p>`}
+    </div>
+  `;
+}
+
 module.exports = {
   buildClientHomeHtml,
   buildCustomerAppHtml,
-  buildDashboardHtml,
+  buildDashboardHtml: buildSeparatedDashboardHtml,
   renderLiveReportsDashboard,
   metricCard,
   htmlTable,

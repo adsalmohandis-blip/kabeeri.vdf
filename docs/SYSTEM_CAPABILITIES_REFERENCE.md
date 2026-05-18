@@ -120,7 +120,7 @@ shared logic layer behind the owner and Multi-AI command facades.
 | UI/UX Reference Library | Stores approved UI/UX rules and reference patterns, then generates design questions, screen plans, module plans, and governed frontend/design tasks from them. | `knowledge/design_system/ui_ux_reference/`, `.kabeeri/design_sources/ui_ux_reference.json`, `kvdf design reference-*` |
 | ADR And AI Run History | Records formal architecture decisions and accepted/rejected AI prompt runs. | `knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md`, `.kabeeri/adr/`, `.kabeeri/ai_runs/`, `kvdf adr`, `kvdf ai-run` |
 | AI Cost Control | Tracks usage, budgets, context packs, preflight estimates, and model routing. | `knowledge/ai_cost_control/`, `kvdf usage`, `kvdf preflight` |
-| Live Dashboard | Shows live state for tasks, governance, apps, costs, policies, planner pipeline state, and dashboard UX audits, with framework-owner and vibe app-developer views separated by default. Linked workspace summaries are opt-in and stay summarized rather than merged. | `docs/reports/dashboard/`, `kvdf dashboard` |
+| Live Dashboard | Shows live state for tasks, governance, apps, costs, policies, planner pipeline state, and dashboard UX audits. Owner and viber dashboards are separate dashboard products, not filters inside one page, and the shared planner cycle feeds both while rendering stays track-separated. Linked workspace summaries are opt-in and stay summarized rather than merged. | `docs/reports/dashboard/`, `kvdf dashboard` |
 | VS Code Integration | Scaffolds workspace tasks and command helpers, and reports the editor bridge state without becoming the source of truth. | `plugins/vscode_extension/`, `kvdf vscode`, `kvdf vscode report` |
 | GitHub Sync | Plans and optionally confirms labels, milestones, issues, and releases through `gh`, with a local trace report for the sync adapter. The GitHub planning bundle and sync bundle are installable and uninstallable as removable plugins. | `plugins/github_sync/`, `plugins/github/`, `kvdf github`, `kvdf github report`, `kvdf plugins install github`, `kvdf plugins uninstall github`, `kvdf plugins install github_sync`, `kvdf plugins uninstall github_sync` |
 | GitHub Team Sync Preflight | Reports branch, remote, upstream, ahead/behind, local changes, dry-run pull/push commands, and whether sync is optional for solo work or recommended for team work. | `kvdf sync` |
@@ -1001,7 +1001,12 @@ Main references:
 
 ## 18. Live Dashboard
 
-The Live Dashboard is a view over `.kabeeri/` state.
+The Live Dashboard is actually two product dashboards over `.kabeeri/` state:
+
+- KVDF Owner Dashboard for KVDF Core / framework-owner work.
+- KVDF Viber Dashboard for app/product delivery work.
+
+The shared planner cycle feeds both dashboards, but the rendered output stays separated by track.
 
 It can show:
 
@@ -1026,7 +1031,11 @@ Main commands:
 
 ```bash
 kvdf dashboard state
+kvdf dashboard owner state --json
+kvdf dashboard viber state --json
 kvdf dashboard export
+kvdf dashboard owner export --output owner-dashboard.html
+kvdf dashboard viber export --output viber-dashboard.html
 kvdf dashboard ux
 kvdf dashboard serve --port auto
 kvdf dashboard serve --port 4177 --workspaces ../store-a,../store-b
@@ -1039,7 +1048,9 @@ Dashboard UX Governance records role visibility, widget registry rules,
 app/workspace strategy, live refresh behavior, and empty/error/responsive rules
 inside dashboard state. Same-product apps stay inside the current workspace;
 separate products, clients, or release lifecycles are linked as KVDF workspace
-summaries instead of being merged.
+summaries instead of being merged. Owner and viber dashboard HTML and JSON are
+separate artifacts, so the dashboard product you open matches the track you are
+working in.
 
 Main reference:
 

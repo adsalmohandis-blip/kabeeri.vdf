@@ -93,7 +93,9 @@ const { buildTaskMemory, ensureTaskMemory } = require("./services/task_memory");
 const { dashboard } = require("./commands/dashboard");
 const {
   collectDashboardState: collectDashboardStateBase,
+  collectDashboardStateForCurrentTrack,
   writeDashboardStateFiles: writeDashboardStateFilesBase,
+  writeDashboardStateFilesForCurrentTrack,
   refreshDashboardArtifacts: refreshDashboardArtifactsBase,
   refreshTaskTrackerState,
   buildTaskTrackerStateFromFiles,
@@ -10042,7 +10044,9 @@ function getCommandDispatchContext() {
     getOwnerActor,
     suggestCommandService,
     collectDashboardState,
+    collectDashboardStateForCurrentTrack,
     writeDashboardStateFiles,
+    writeDashboardStateFilesForCurrentTrack,
     buildClientHomeHtmlModule,
     buildDashboardHtmlModule,
     exportCustomerAppPagesModule,

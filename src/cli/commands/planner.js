@@ -2033,7 +2033,7 @@ function recommendNextEvolution(mode, context, pluginContext, request = {}) {
       evolution_id: normalizeEvolutionId(`${productName} delivery slice`),
       title: request.goal || `${productName} Delivery Slice`,
       reason: openTask
-        ? `The current app-track work can continue from the next open task: ${openTask.title}.`
+        ? `The current app-track work can continue from the next open task: ${openTask.title}, keeping the delivery local-first.`
         : "The next app-track step is a local-first delivery slice that keeps intake, blueprinting, and handoff separated from KVDF Core work.",
       area: "vibe_development_pipeline_dev",
       risk: openTask ? "medium" : "low"

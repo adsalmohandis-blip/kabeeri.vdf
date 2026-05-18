@@ -2,13 +2,17 @@ const path = require("path");
 const { readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
-const { collectDashboardState, writeDashboardStateFiles } = require("./dashboard_state");
+const { collectDashboardStateForCurrentTrack, writeDashboardStateFilesForCurrentTrack } = require("./dashboard_state");
+
+const OWNER_SCOPE_ALIASES = new Set(["owner", "framework", "framework-owner", "framework_owner"]);
+const VIBER_SCOPE_ALIASES = new Set(["viber", "vibe", "app", "app-developer", "app_developer", "vibe_app_developer"]);
+const ACTION_ALIASES = new Set(["state", "export", "generate", "ux", "ux-audit", "audit-ux", "serve"]);
 
 function dashboard(action, value, flags = {}, deps = {}) {
   const {
     ensureWorkspace,
-    collectDashboardState: collectState = collectDashboardState,
-    writeDashboardStateFiles: writeStateFiles = writeDashboardStateFiles,
+    collectDashboardState: collectState = collectDashboardStateForCurrentTrack,
+    writeDashboardStateFiles: writeStateFiles = writeDashboardStateFilesForCurrentTrack,
     appendAudit,
     writeTextFile,
     buildClientHomeHtml,
@@ -18,11 +22,14 @@ function dashboard(action, value, flags = {}, deps = {}) {
     summarizeWorkspaceRoot
   } = deps;
   ensureWorkspace();
+  const scope = resolveDashboardScopeAction(action);
+  const subaction = scope ? (value || "state") : action;
+  const scopedFlags = scope ? { ...flags, scope } : flags;
   if (action === "workspace" || action === "workspaces") {
     return dashboardWorkspace(value, flags, { appendAudit, summarizeWorkspaceRoot });
   }
-  if (action === "ux" || action === "ux-audit" || action === "audit-ux") {
-    return dashboardUxAudit(flags, {
+  if (subaction === "ux" || subaction === "ux-audit" || subaction === "audit-ux") {
+    return dashboardUxAudit(scopedFlags, {
       collectDashboardState: collectState,
       writeDashboardStateFiles: writeStateFiles,
       buildDashboardHtml,
@@ -31,53 +38,76 @@ function dashboard(action, value, flags = {}, deps = {}) {
     });
   }
 
-  if (!action || action === "generate") {
-    writeStateFiles(collectState(flags));
+  if (!subaction || subaction === "generate") {
+    const state = collectState(scopedFlags);
+    writeStateFiles(state);
     appendAudit("dashboard.generated", "dashboard", "local", "Dashboard state generated");
     console.log("Generated dashboard state files.");
     return;
   }
 
-  if (action === "export") {
-    writeStateFiles(collectState(flags));
+  if (subaction === "export") {
+    const state = collectState(scopedFlags);
+    writeStateFiles(state);
     appendAudit("dashboard.generated", "dashboard", "local", "Dashboard state generated");
-    const output = flags.output || ".kabeeri/site/index.html";
-    const dashboardOutput = flags["dashboard-output"] || ".kabeeri/site/__kvdf/dashboard/index.html";
-    writeTextFile(output, buildClientHomeHtml());
-    writeTextFile(dashboardOutput, buildDashboardHtml(flags));
-    exportCustomerAppPages();
-    console.log(`Wrote customer page: ${output}`);
-    console.log(`Wrote private dashboard: ${dashboardOutput}`);
+    const output = flags.output || (scope ? `.kabeeri/site/__kvdf/dashboard/${scope}.html` : ".kabeeri/site/index.html");
+    const dashboardOutput = flags["dashboard-output"] || (scope ? output : ".kabeeri/site/__kvdf/dashboard/index.html");
+    if (scope) {
+      writeTextFile(dashboardOutput, buildDashboardHtml(scopedFlags));
+      console.log(`Wrote ${scope} dashboard: ${dashboardOutput}`);
+    } else {
+      writeTextFile(output, buildClientHomeHtml());
+      writeTextFile(dashboardOutput, buildDashboardHtml(scopedFlags));
+      exportCustomerAppPages();
+      console.log(`Wrote customer page: ${output}`);
+      console.log(`Wrote private dashboard: ${dashboardOutput}`);
+    }
     return;
   }
 
-  if (action === "state" || action === "api") {
-    const state = collectState(flags);
+  if (subaction === "state" || subaction === "api") {
+    const state = collectState(scopedFlags);
     writeStateFiles(state);
     console.log(JSON.stringify(state, null, 2));
     return;
   }
 
-  if (["task-tracker", "tasks", "tracker", "task-state"].includes(action)) {
-    const state = collectState(flags);
+  if (["task-tracker", "tasks", "tracker", "task-state"].includes(subaction)) {
+    const state = collectState(scopedFlags);
     writeStateFiles(state);
     console.log(JSON.stringify(state.task_tracker, null, 2));
     return;
   }
 
-  if (action === "serve") {
-    dashboard("export", null, flags, deps);
-    return serveSite(flags.port || 4177, flags, deps);
+  if (subaction === "serve") {
+    dashboard("export", null, scopedFlags, deps);
+    return serveSite(flags.port || 4177, scopedFlags, {
+      ...deps,
+      collectDashboardState: collectState,
+      writeDashboardStateFiles: writeStateFiles,
+      buildDashboardHtml
+    });
+  }
+
+  if (scope && !ACTION_ALIASES.has(subaction)) {
+    throw new Error(`Unknown dashboard action: ${action} ${subaction}`);
   }
 
   throw new Error(`Unknown dashboard action: ${action}`);
 }
 
+function resolveDashboardScopeAction(action) {
+  const normalized = String(action || "").trim().toLowerCase().replace(/_/g, "-");
+  if (OWNER_SCOPE_ALIASES.has(normalized)) return "owner";
+  if (VIBER_SCOPE_ALIASES.has(normalized)) return "viber";
+  return null;
+}
+
 function dashboardUxAudit(flags = {}, deps = {}) {
-  const { buildDashboardHtml, appendAudit, collectDashboardState: collectState = collectDashboardState, writeDashboardStateFiles: writeStateFiles = writeDashboardStateFiles } = deps;
+  const { buildDashboardHtml, appendAudit, collectDashboardState: collectState = collectDashboardStateForCurrentTrack, writeDashboardStateFiles: writeStateFiles = writeDashboardStateFilesForCurrentTrack } = deps;
   const state = collectState(flags);
   writeStateFiles(state);
-  const html = buildDashboardHtml();
+  const html = buildDashboardHtml(flags);
   const audit = evaluateDashboardUx(state, html);
   const file = ".kabeeri/dashboard/ux_audits.json";
   if (!fileExists(file)) writeJsonFile(file, { audits: [] });
@@ -107,7 +137,7 @@ function evaluateDashboardUx(state, html) {
   push("responsive_tables", html.includes("table-wrap") && html.includes("overflow-x: auto"), "Tables are wrapped for small screens.");
   push("empty_states", html.includes("empty-state"), "Empty tables render a readable empty state.");
   push("workspace_boundary", html.includes("App Boundary Governance") && html.includes("KVDF Workspaces"), "Dashboard separates app boundaries from linked workspaces.");
-  push("dashboard_ux_governance", html.includes("Dashboard UX Governance") && html.includes("Widget Registry"), "Dashboard renders its own UX governance model.", 2);
+  push("dashboard_ux_governance", html.includes("KVDF Owner Dashboard") || html.includes("KVDF Viber Dashboard"), "Dashboard renders one of the separated dashboard products.", 2);
   push("role_visibility", html.includes("Role Visibility") && html.includes("Owner") && html.includes("AI Agent"), "Dashboard documents role-based widget visibility.", 2);
   push("dashboard_controls", html.includes("app-filter") && html.includes("role-filter") && html.includes("view-preset") && html.includes("app-drilldown") && html.includes("Dashboard Controls"), "Dashboard exposes app, role, saved view, and app drilldown controls.");
   push("multi_app_multi_workspace_strategy", html.includes("same-product apps") && html.includes("Linked KVDF workspaces"), "Dashboard explains same-workspace apps versus separate KVDF workspaces.", 2);

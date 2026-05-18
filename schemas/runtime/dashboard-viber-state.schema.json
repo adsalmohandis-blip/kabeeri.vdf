@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Viber Dashboard State",
+  "type": "object",
+  "required": [
+    "report_type",
+    "dashboard_type",
+    "track",
+    "title",
+    "widgets",
+    "tables",
+    "sections",
+    "blocked_cross_track_data"
+  ],
+  "properties": {
+    "report_type": { "const": "kvdf_viber_dashboard_state" },
+    "dashboard_type": { "const": "viber" },
+    "track": { "const": "vibe_app_developer" },
+    "title": { "const": "KVDF Viber Dashboard" },
+    "subtitle": { "type": "string" },
+    "generated_at": { "type": ["string", "null"] },
+    "widgets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/widget" }
+    },
+    "tables": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/table" }
+    },
+    "sections": {
+      "type": "object",
+      "required": [
+        "command_center",
+        "idea_to_evolution_pipeline",
+        "questionnaire",
+        "product_app_design",
+        "system_design",
+        "database_design",
+        "ui_ux_design",
+        "version_plan",
+        "evolutions",
+        "task_punches",
+        "source_control_handoff",
+        "ai_cost_control",
+        "app_plugins",
+        "validation_readiness"
+      ],
+      "properties": {
+        "command_center": { "$ref": "#/$defs/section" },
+        "idea_to_evolution_pipeline": { "$ref": "#/$defs/section" },
+        "questionnaire": { "$ref": "#/$defs/section" },
+        "product_app_design": { "$ref": "#/$defs/section" },
+        "system_design": { "$ref": "#/$defs/section" },
+        "database_design": { "$ref": "#/$defs/section" },
+        "ui_ux_design": { "$ref": "#/$defs/section" },
+        "version_plan": { "$ref": "#/$defs/section" },
+        "evolutions": { "$ref": "#/$defs/section" },
+        "task_punches": { "$ref": "#/$defs/section" },
+        "source_control_handoff": { "$ref": "#/$defs/section" },
+        "ai_cost_control": { "$ref": "#/$defs/section" },
+        "app_plugins": { "$ref": "#/$defs/section" },
+        "validation_readiness": { "$ref": "#/$defs/section" }
+      },
+      "additionalProperties": true
+    },
+    "blocked_cross_track_data": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_control": { "type": "object", "additionalProperties": true },
+    "planner": { "type": ["object", "null"], "additionalProperties": true },
+    "next_action": { "type": "string" },
+    "current_plan_id": { "type": ["string", "null"] },
+    "current_plan_status": { "type": "string" },
+    "current_evolution": { "type": ["string", "null"] }
+  },
+  "$defs": {
+    "widget": {
+      "type": "object",
+      "required": ["id", "title", "type", "status", "track", "source", "next_action"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "value": {},
+        "status": { "type": "string" },
+        "track": { "type": "string" },
+        "source": { "type": "string" },
+        "next_action": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "table": {
+      "type": "object",
+      "required": ["id", "title", "columns", "rows", "empty_state"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "columns": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "rows": {
+          "type": "array",
+          "items": { "type": "array" }
+        },
+        "empty_state": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "title", "widgets", "tables"],
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "widgets": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/widget" }
+        },
+        "tables": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/table" }
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

@@ -70,6 +70,8 @@
     { "pattern": ".kabeeri/plugin-links/*/mount.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
     { "path": ".kabeeri/dashboard/technical_state.json", "schema": "schemas/runtime/dashboard-state.schema.json" },
     { "path": ".kabeeri/dashboard/business_state.json", "schema": "schemas/runtime/dashboard-state.schema.json" },
+    { "path": ".kabeeri/dashboard/owner_dashboard_state.json", "schema": "schemas/runtime/dashboard-owner-state.schema.json" },
+    { "path": ".kabeeri/dashboard/viber_dashboard_state.json", "schema": "schemas/runtime/dashboard-viber-state.schema.json" },
     { "path": ".kabeeri/dashboard/task_tracker_state.json", "schema": "schemas/runtime/task-tracker-state.schema.json" },
     { "path": ".kabeeri/dashboard/agile_state.json", "schema": "schemas/runtime/agile-dashboard-state.schema.json" },
     { "path": ".kabeeri/dashboard/structured_state.json", "schema": "schemas/runtime/structured-dashboard-state.schema.json" },

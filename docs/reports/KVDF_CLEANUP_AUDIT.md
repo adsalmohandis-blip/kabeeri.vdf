@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779116584949
-- Generated at: 2026-05-18T15:03:04.949Z
+- Report ID: kvdf-cleanup-1779121095331
+- Generated at: 2026-05-18T16:18:15.331Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            2816                                       
+Total files            2822                                       
 Total folders          13                                         
 Plugin total           14                                         
 Active plugins         8                                          
@@ -36,14 +36,14 @@ blocked-flows   Run the workflow inspection pass to look for blocked or waiting-
 
 Folder      Files  Primary extension  Role           
 ----------  -----  -----------------  ---------------
-.kabeeri    845    .md                workspace state
+.kabeeri    849    .md                workspace state
 knowledge   463    .md                project surface
 packs       438    .md                project surface
 plugins     379    .md                plugin bundles 
 docs        293    .md                documentation  
 workspaces  140    .json              project surface
 src         132    .js                runtime source 
-schemas     102    .md                project surface
+schemas     104    .md                project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
 .gitignore  1      [no extension]     project surface
@@ -54,7 +54,7 @@ bin         1      .js                project surface
 Extension       Files
 --------------  -----
 .md             1672 
-.json           676  
+.json           682  
 .js             201  
 .html           181  
 .docx           58   
@@ -70,7 +70,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            1816 
+Scanned files            1818 
 Dead code candidates     4    
 Stale docs candidates    3    
 Spec drift candidates    4    
@@ -127,7 +127,7 @@ kvdf-dev  enabled  framework_owner  commands, docs, prompts, schemas, templates,
 - Review 4 dead-code candidates flagged by the file inspection pass.
 - Refresh 3 stale-doc candidates flagged by the file inspection pass.
 - Resolve 4 possible spec-drift candidates.
-- Resolve active Evolution state first: ready.
+- Resolve active Evolution state first: needs_follow_up.
 
 ## Approval Commands
 

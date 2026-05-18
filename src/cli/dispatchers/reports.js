@@ -37,8 +37,8 @@ function dispatchReportCommands({ group, action, value, flags, c }) {
   }));
   if (group === "dashboard") return handled(c.dashboard(action, value, flags, {
     ensureWorkspace: c.ensureWorkspace,
-    collectDashboardState: c.collectDashboardState,
-    writeDashboardStateFiles: c.writeDashboardStateFiles,
+    collectDashboardState: c.collectDashboardStateForCurrentTrack || c.collectDashboardState,
+    writeDashboardStateFiles: c.writeDashboardStateFilesForCurrentTrack || c.writeDashboardStateFiles,
     appendAudit: c.appendAudit,
     writeTextFile: c.writeTextFile,
     buildClientHomeHtml: c.buildClientHomeHtmlModule,

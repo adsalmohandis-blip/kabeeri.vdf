@@ -23,7 +23,10 @@
           "milestone_summary": { "type": "string" },
           "milestone_status": { "type": "string" },
           "local_first": { "type": "boolean" },
-          "source_control": { "type": "string" },
+          "source_control": {
+            "type": ["string", "object"],
+            "additionalProperties": true
+          },
           "sync_mode": { "type": "string" },
           "sync_policy": { "type": "string" },
           "github_sync_enabled": { "type": "boolean" },

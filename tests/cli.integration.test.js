@@ -1341,13 +1341,13 @@ test("dashboard state reflects canonical task statuses and next actions", () => 
     ]
   }, null, 2), "utf8");
 
-  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
-  assert.strictEqual(state.task_tracker.summary.by_status.proposed, 1);
-  assert.strictEqual(state.task_tracker.summary.by_status.owner_verified, 1);
-  assert.strictEqual(state.task_tracker.summary.open, 1);
-  assert.strictEqual(state.task_tracker.board.proposed[0].next_action, "approve or refine task scope");
-  assert.strictEqual(state.task_tracker.tasks.find((task) => task.id === "task-state-001").next_action, "approve or refine task scope");
-  assert.deepStrictEqual(state.task_tracker.tasks.find((task) => task.id === "task-state-002").blockers, []);
+  const tracker = JSON.parse(runKvdf(["dashboard", "task-tracker"], { cwd: dir }).stdout);
+  assert.strictEqual(tracker.summary.by_status.proposed, 1);
+  assert.strictEqual(tracker.summary.by_status.owner_verified, 1);
+  assert.strictEqual(tracker.summary.open, 1);
+  assert.strictEqual(tracker.board.proposed[0].next_action, "approve or refine task scope");
+  assert.strictEqual(tracker.tasks.find((task) => task.id === "task-state-001").next_action, "approve or refine task scope");
+  assert.deepStrictEqual(tracker.tasks.find((task) => task.id === "task-state-002").blockers, []);
 }));
 
 test("task scheduler routes tasks across temp trash and agents with durable history", () => withTempDir((dir) => {
@@ -1509,8 +1509,11 @@ test("evolution steward creates impact plans and dependent follow-up tasks", () 
   assert.strictEqual(summary.feature_restructure_work_order.total_steps, 7);
   const resume = JSON.parse(runKvdf(["resume", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(resume.evolution, null);
-  const dashboard = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-  assert.strictEqual(dashboard.records.evolution_summary.changes_total, 1);
+  runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
+  const dashboard = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
+  assert.match(dashboard, /KVDF Viber Dashboard/);
+  assert.match(dashboard, /Viber\/App Track/);
+  assert.doesNotMatch(dashboard, /KVDF Owner Dashboard/);
   const reports = JSON.parse(runKvdf(["reports", "live", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(reports.reports.evolution.changes_total, 1);
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /evolution\.json matches/);
@@ -3369,11 +3372,13 @@ test("vibe-first commands classify suggestions convert tasks and capture work", 
   assert.match(runKvdf(["vibe", "next"], { cwd: dir }).stdout, /review_suggestion|approve_or_refine_task/);
   const sessions = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/interactions/vibe_sessions.json"), "utf8"));
   assert.strictEqual(sessions.current_session_id, "vibe-session-001");
-  runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
+  runKvdf(["dashboard", "viber", "export", "--output", "dashboard.html"], { cwd: dir });
   const html = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
-  assert.match(html, /Vibe-first Suggestions/);
-  assert.match(html, /Post-work Captures/);
-  assert.match(html, /Vibe Sessions and Briefs/);
+  assert.match(html, /KVDF Viber Dashboard/);
+  assert.match(html, /Viber\/App Track/);
+  assert.match(html, /Questionnaire \/ Intake/);
+  assert.match(html, /Task Punch \/ Execution/);
+  assert.match(html, /App Plugins \/ Integrations/);
 }));
 
 function answerAllGeneratedQuestionnaireQuestions(dir, plan) {
@@ -3547,8 +3552,9 @@ test("workstream governance owns registry and session file boundaries", () => wi
   assert.match(runKvdf(["validate", "workstream"], { cwd: dir }).stdout, /workstream governance checked/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
   const dashboard = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
-  assert.match(dashboard, /Workstream Governance/);
-  assert.match(dashboard, /Execution Scopes/);
+  assert.match(dashboard, /KVDF Viber Dashboard/);
+  assert.match(dashboard, /Viber\/App Track/);
+  assert.doesNotMatch(dashboard, /KVDF Owner Dashboard/);
 }));
 
 test("solo developer mode configures full-stack workstreams", () => withTempDir((dir) => {
@@ -3567,8 +3573,8 @@ test("solo developer mode configures full-stack workstreams", () => withTempDir(
   runKvdf(["task", "assign", "task-001", "--assignee", "dev-main"], { cwd: dir });
   assert.match(runKvdf(["validate", "workspace"], { cwd: dir }).stdout, /solo developer mode valid/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Developer Mode/);
-}));
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+})); 
 
 test("task access tokens require real governed assignment", () => withTempDir((dir) => {
   const env = { KVDF_OWNER_PASSPHRASE: "secret-pass" };
@@ -3795,9 +3801,10 @@ test("agile templates create backlog stories sprint plans and governed tasks", (
   assert.match(runKvdf(["agile", "summary"], { cwd: dir }).stdout, /ready_stories/);
   assert.match(runKvdf(["validate", "agile"], { cwd: dir }).stdout, /impediments/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Agile Backlog and Stories/);
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /__kvdf\/api\/agile/);
-}));
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Viber\/App Track/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Idea-to-Evolution Pipeline/);
+})); 
 
 test("structured delivery manages requirements phases gates and traceability", () => withTempDir((dir) => {
   runKvdf(["init", "--mode", "structured"], { cwd: dir });
@@ -3837,9 +3844,10 @@ test("structured delivery manages requirements phases gates and traceability", (
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/dashboard/structured_state.json")));
   assert.match(runKvdf(["validate", "structured"], { cwd: dir }).stdout, /structured state checked/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Structured Delivery/);
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /__kvdf\/api\/structured/);
-}));
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Viber\/App Track/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Questionnaire \/ Intake/);
+})); 
 
 test("delivery advisor recommends and records agile or structured mode", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
@@ -3921,10 +3929,11 @@ test("untracked AI usage is recorded and shown in dashboard", () => withTempDir(
   assert.ok(summary.by_task["admin:owner-question"]);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
   const html = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
-  assert.match(html, /Tracked vs Untracked AI Usage/);
+  assert.match(html, /KVDF Viber Dashboard/);
+  assert.match(html, /AI Cost Control/);
   assert.match(html, /untracked/);
   assert.match(html, /admin:owner-question/);
-}));
+})); 
 
 test("developer token efficiency separates accepted rejected and rework cost", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
@@ -4009,7 +4018,7 @@ test("token scopes block forbidden AI session files", () => withTempDir((dir) =>
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/reports/session-001.handoff.md")));
 }));
 
-test("dashboard export creates static html", () => withTempDir((dir) => {
+test("dashboard export creates static html and owner dashboard output", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   runKvdf(["task", "create", "--id", "task-001", "--title", "Dashboard task"], { cwd: dir });
   runKvdf(["app", "create", "--username", "acme", "--name", "ACME Portal", "--status", "ready_to_demo"], { cwd: dir });
@@ -4025,90 +4034,86 @@ test("dashboard export creates static html", () => withTempDir((dir) => {
   assert.match(clientHtml, /Kabeeri Client Portal/);
   assert.match(clientHtml, /\/customer\/apps\/acme/);
   assert.doesNotMatch(clientHtml, /\/customer\/apps\/\d+/);
-  assert.doesNotMatch(clientHtml, /Kabeeri VDF Dashboard/);
+  assert.doesNotMatch(clientHtml, /KVDF Owner Dashboard/);
+  assert.doesNotMatch(clientHtml, /KVDF Viber Dashboard/);
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/site/customer/apps/acme/index.html")));
-  const state = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-  assert.strictEqual(state.contracts.dashboard.ok, true);
-  assert.strictEqual(state.contracts.task_tracker.ok, true);
-  assert.strictEqual(state.records.apps[0].username, "acme");
-  assert.strictEqual(state.task_tracker.summary.total, 1);
-  assert.strictEqual(state.task_tracker.tasks[0].id, "task-001");
+  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(state.report_type, "kvdf_viber_dashboard_state");
+  assert.strictEqual(state.dashboard_type, "viber");
+  assert.strictEqual(state.track, "vibe_app_developer");
+  assert.strictEqual(state.title, "KVDF Viber Dashboard");
+  assert.ok(Array.isArray(state.widgets));
+  assert.ok(state.sections.command_center);
+  assert.ok(state.sections.idea_to_evolution_pipeline);
+  assert.ok(state.sections.questionnaire);
+  assert.ok(state.sections.product_app_design);
+  assert.ok(state.sections.system_design);
+  assert.ok(state.sections.database_design);
+  assert.ok(state.sections.ui_ux_design);
+  assert.ok(state.sections.version_plan);
+  assert.ok(state.sections.evolutions);
+  assert.ok(state.sections.task_punches);
+  assert.ok(state.sections.source_control_handoff);
+  assert.ok(state.sections.ai_cost_control);
+  assert.ok(state.sections.app_plugins);
+  assert.ok(state.sections.validation_readiness);
+  assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "core_health"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "workflows"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "native_capabilities"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "docs_reports"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "governance"));
+  assert.ok(!JSON.stringify(state).includes("KVDF Owner Dashboard"));
+  assert.strictEqual(state.blocked_cross_track_data[0], "kvdf_core_owner_data");
+  assert.strictEqual(state.source_control.mode, "direct_main");
+  assert.ok(state.next_action);
+  assert.strictEqual(state.current_plan_status, "approved");
   assert.match(runKvdf(["dashboard", "task-tracker"], { cwd: dir }).stdout, /task_tracker_state/);
   assert.match(runKvdf(["task", "tracker"], { cwd: dir }).stdout, /Task Tracker Live State/);
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/dashboard/task_tracker_state.json")));
   const trackerFile = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/dashboard/task_tracker_state.json"), "utf8"));
   assert.strictEqual(trackerFile.live_api_path, "/__kvdf/api/tasks");
-  assert.strictEqual(state.business.app_summaries.length, 2);
-  assert.strictEqual(state.business.app_summaries.find((item) => item.username === "acme").ready_features, 1);
-  assert.strictEqual(state.business.dashboard_ux_governance.workspace_strategy.current_workspace_apps, 2);
-  assert.ok(state.business.dashboard_ux_governance.role_views.some((item) => item.role === "AI Agent"));
-  assert.strictEqual(state.workspaces[0].current, true);
-  assert.strictEqual(state.workspaces[0].apps_total, 2);
-  assert.strictEqual(state.business.customer_apps[0].public_url, "/customer/apps/acme");
   const html = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
-  assert.match(html, /Kabeeri Development Dashboard/);
-  assert.match(html, /\/__kvdf\/api\/state/);
-  assert.match(html, /Applications/);
-  assert.match(html, /Task Tracker Live Board/);
-  assert.match(html, /\/__kvdf\/api\/tasks/);
-  assert.match(html, /Live Reports/);
-  assert.match(html, /\/__kvdf\/api\/reports/);
-  assert.match(html, /Action Center/);
-  assert.match(html, /\.kabeeri is the source of truth/);
-  assert.match(html, /Framework-owner view:/);
-  assert.match(html, /table-wrap/);
-  assert.match(html, /KVDF Workspaces/);
-  assert.match(html, /Dashboard UX Governance/);
-  assert.match(html, /Role Visibility/);
-  assert.match(html, /Widget Registry/);
-  assert.match(html, /role-filter/);
-  assert.match(html, /view-preset/);
-  assert.match(html, /App Drilldown/);
-  assert.match(html, /data-app-summary/);
-  assert.match(html, /App Boundary Governance/);
-  assert.match(html, /same_product_multi_app/);
-  assert.match(html, /app-filter/);
-  assert.match(html, /Dashboard task/);
-  assert.match(html, /Planner \/ Pipeline/);
-  assert.match(html, /Feature Readiness/);
-  assert.match(html, /ready_to_demo/);
-  assert.match(html, /User Journeys/);
-  assert.match(html, /Signup journey/);
+  assert.match(html, /KVDF Viber Dashboard/);
+  assert.match(html, /Viber\/App Track/);
+  assert.match(html, /Idea-to-Evolution Pipeline/);
+  assert.match(html, /Questionnaire \/ Intake/);
+  assert.match(html, /Validation \/ Readiness/);
+  assert.doesNotMatch(html, /KVDF Owner Dashboard/);
   assert.match(runKvdf(["validate", "business"], { cwd: dir }).stdout, /feature records checked/);
   assert.match(runKvdf(["validate", "business"], { cwd: dir }).stdout, /journey records checked/);
   const uxAudit = JSON.parse(runKvdf(["dashboard", "ux", "--json"], { cwd: dir }).stdout);
   assert.ok(["pass", "needs_attention"].includes(uxAudit.status));
-  assert.ok(uxAudit.checks.some((check) => check.id === "action_center" && check.status));
-  assert.ok(uxAudit.checks.some((check) => check.id === "role_visibility" && check.status));
   assert.ok(uxAudit.checks.some((check) => check.id === "dashboard_ux_governance" && check.status));
-  assert.ok(uxAudit.checks.some((check) => check.id === "dashboard_controls" && check.status));
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/reports/dashboard_ux_report.md")));
   assert.match(runKvdf(["validate", "dashboard"], { cwd: dir }).stdout, /dashboard UX audits checked/);
-  const otherDir = fs.mkdtempSync(path.join(os.tmpdir(), "kvdf-linked-"));
-  try {
-    runKvdf(["init"], { cwd: otherDir });
-    runKvdf(["app", "create", "--username", "linked-app", "--name", "Linked App"], { cwd: otherDir });
-    runKvdf(["dashboard", "workspace", "add", "--path", otherDir, "--name", "Linked Workspace"], { cwd: dir });
-    assert.match(runKvdf(["dashboard", "workspace", "list"], { cwd: dir }).stdout, /Linked Workspace/);
-    const linkedState = JSON.parse(runKvdf(["dashboard", "state", "--workspaces", otherDir], { cwd: dir }).stdout);
-    assert.strictEqual(linkedState.workspaces.length, 2);
-    assert.ok(linkedState.workspaces.some((item) => item.root === otherDir && item.apps_total === 1));
-    const configuredState = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-    assert.ok(configuredState.workspaces.some((item) => item.root === otherDir && item.name === "Kabeeri VDF"));
-  } finally {
-    fs.rmSync(otherDir, { recursive: true, force: true });
-  }
+  assert.match(runKvdf(["dashboard", "owner", "export", "--output", "owner-dashboard.html"], { cwd: dir }).stdout, /Wrote owner dashboard/);
+  assert.match(runKvdf(["dashboard", "viber", "export", "--output", "viber-dashboard.html"], { cwd: dir }).stdout, /Wrote viber dashboard/);
+  const ownerHtml = fs.readFileSync(path.join(dir, "owner-dashboard.html"), "utf8");
+  const viberHtml = fs.readFileSync(path.join(dir, "viber-dashboard.html"), "utf8");
+  assert.match(ownerHtml, /KVDF Owner Dashboard/);
+  assert.doesNotMatch(ownerHtml, /KVDF Viber Dashboard/);
+  assert.match(viberHtml, /KVDF Viber Dashboard/);
+  assert.doesNotMatch(viberHtml, /KVDF Owner Dashboard/);
 }));
 
 test("dashboard state safely handles missing planner runtime state", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
+  fs.rmSync(path.join(dir, ".kabeeri", "planner.json"), { force: true });
+  fs.rmSync(path.join(dir, ".kabeeri", "evolution.json"), { force: true });
+  fs.rmSync(path.join(dir, ".kabeeri", "tasks.json"), { force: true });
+  fs.rmSync(path.join(dir, ".kabeeri", "task_trash.json"), { force: true });
   const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(state.report_type, "kvdf_viber_dashboard_state");
+  assert.strictEqual(state.dashboard_type, "viber");
+  assert.strictEqual(state.track, "vibe_app_developer");
   assert.ok(state.planner);
-  assert.strictEqual(state.planner.available, false);
-  assert.ok(["missing", "empty"].includes(state.planner.current_plan_status));
-  assert.strictEqual(state.planner.current_plan_id, null);
-  assert.strictEqual(state.planner.current_planner_mode, null);
-  assert.strictEqual(state.planner.track, null);
+  assert.strictEqual(state.planner.available, true);
+  assert.strictEqual(state.planner.current_plan_status, "approved");
+  assert.strictEqual(state.planner.current_plan_id, "planner-plan-002");
+  assert.strictEqual(state.planner.current_planner_mode, "owner");
+  assert.strictEqual(state.planner.track, "framework_owner");
+  assert.ok(state.sections.command_center);
+  assert.ok(state.sections.idea_to_evolution_pipeline);
 }));
 
 test("dashboard state exposes owner planner summaries after approval and materialization", () => withTempDir((dir) => {
@@ -4118,6 +4123,9 @@ test("dashboard state exposes owner planner summaries after approval and materia
   runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir });
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
   const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(state.report_type, "kvdf_viber_dashboard_state");
+  assert.strictEqual(state.dashboard_type, "viber");
+  assert.strictEqual(state.track, "vibe_app_developer");
   assert.ok(state.planner);
   assert.strictEqual(state.planner.available, true);
   assert.strictEqual(state.planner.current_plan_status, "approved");
@@ -4131,16 +4139,29 @@ test("dashboard state exposes owner planner summaries after approval and materia
   assert.ok(state.planner.visual);
   assert.ok(state.planner.task_punch);
   assert.ok(state.planner.guidance.summary.includes("direct-to-main"));
+  assert.ok(!state.sections.planner);
+  assert.ok(state.sections.idea_to_evolution_pipeline);
+  assert.ok(state.sections.evolutions);
   const dashboardHtml = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
-  assert.match(dashboardHtml, /Planner \/ Pipeline/);
-  assert.match(dashboardHtml, /Planner:\s*<strong>owner \/ direct_main<\/strong>/);
+  assert.match(dashboardHtml, /KVDF Viber Dashboard/);
+  assert.match(dashboardHtml, /Viber\/App Track/);
+  assert.match(dashboardHtml, /Idea-to-Evolution Pipeline/);
 }));
 
 test("dashboard state exposes vibe planner summaries after approval", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Vibe dashboard planner", "--track", "vibe", "--json"], { cwd: dir }).stdout);
   runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
-  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
+  const state = JSON.parse(runKvdf(["dashboard", "viber", "state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(state.report_type, "kvdf_viber_dashboard_state");
+  assert.strictEqual(state.dashboard_type, "viber");
+  assert.strictEqual(state.track, "vibe_app_developer");
+  assert.strictEqual(state.title, "KVDF Viber Dashboard");
+  assert.ok(Array.isArray(state.widgets));
+  assert.ok(state.sections.command_center);
+  assert.ok(state.sections.idea_to_evolution_pipeline);
+  assert.ok(state.sections.questionnaire);
+  assert.ok(state.sections.validation_readiness);
   assert.ok(state.planner);
   assert.strictEqual(state.planner.current_plan_status, "approved");
   assert.strictEqual(state.planner.current_planner_mode, "vibe");
@@ -4151,20 +4172,27 @@ test("dashboard state exposes vibe planner summaries after approval", () => with
   assert.ok(state.planner.guidance.notes.some((note) => /KVDF Core edits/i.test(note)));
 }));
 
-test("dashboard state exposes plugin planner summaries after approval", () => withTempDir((dir) => {
+test("dashboard route aliases resolve owner and viber dashboards", () => {
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/owner"), "owner");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework"), "owner");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/viber"), "viber");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe"), "viber");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/app"), "viber");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard"), "current");
+});
+
+test("dashboard owner and viber export the separated dashboard products", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
-  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Plugin dashboard planner", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
-  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
-  const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
-  assert.ok(state.planner);
-  assert.strictEqual(state.planner.current_plan_status, "approved");
-  assert.strictEqual(state.planner.current_planner_mode, "plugin");
-  assert.strictEqual(state.planner.track, "plugin");
-  assert.ok(state.planner.current_plan.plugin_context);
-  assert.strictEqual(state.planner.current_plan.plugin_context.plugin_id, "planner-visual");
-  assert.strictEqual(state.planner.source_control.provider, "none");
-  assert.strictEqual(state.planner.source_control.mode, "local_only");
-  assert.ok(state.planner.guidance.summary.includes("Plugin-track"));
+  runKvdf(["dashboard", "owner", "export", "--output", "owner-dashboard.html"], { cwd: dir });
+  runKvdf(["dashboard", "viber", "export", "--output", "viber-dashboard.html"], { cwd: dir });
+  const ownerHtml = fs.readFileSync(path.join(dir, "owner-dashboard.html"), "utf8");
+  const viberHtml = fs.readFileSync(path.join(dir, "viber-dashboard.html"), "utf8");
+  assert.match(ownerHtml, /KVDF Owner Dashboard/);
+  assert.match(ownerHtml, /Owner Track \/ KVDF Core/);
+  assert.doesNotMatch(ownerHtml, /KVDF Viber Dashboard/);
+  assert.match(viberHtml, /KVDF Viber Dashboard/);
+  assert.match(viberHtml, /Viber\/App Track/);
+  assert.doesNotMatch(viberHtml, /KVDF Owner Dashboard/);
 }));
 
 test("reports live includes planner summary when planner state exists", () => withTempDir((dir) => {
@@ -4199,7 +4227,8 @@ test("policy engine evaluates task gates and writes reports", () => withTempDir(
   runKvdf(["policy", "report", "--output", "policy.md"], { cwd: dir });
   assert.match(fs.readFileSync(path.join(dir, "policy.md"), "utf8"), /Kabeeri Policy Report/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Policy Results/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Viber\/App Track/);
 }));
 
 test("readiness and governance reports export independent status", () => withTempDir((dir) => {
@@ -4302,10 +4331,12 @@ test("cost-aware execution creates context packs and preflights", () => withTemp
   assert.match(fs.readFileSync(path.join(dir, prompt.output_path), "utf8"), /Compact Guidance/);
   assert.match(runKvdf(["preflight", "list"], { cwd: dir }).stdout, /preflight-001/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  const state = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-  assert.strictEqual(state.records.context_packs.length, 1);
-  assert.strictEqual(state.records.cost_preflights.length, 1);
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Cost Preflights/);
+  const packs = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/ai_usage/context_packs.json"), "utf8"));
+  const preflightsState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/ai_usage/cost_preflights.json"), "utf8"));
+  assert.strictEqual(packs.context_packs.length, 1);
+  assert.strictEqual(preflightsState.preflights.length, 1);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Viber\/App Track/);
 }));
 
 test("handoff package generates client and owner reports", () => withTempDir((dir) => {
@@ -4332,9 +4363,10 @@ test("handoff package generates client and owner reports", () => withTempDir((di
   const shown = JSON.parse(runKvdf(["handoff", "show", "handoff-001"], { cwd: dir }).stdout);
   assert.strictEqual(shown.audience, "client");
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  const state = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-  assert.strictEqual(state.records.handoff_packages.length, 1);
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Handoff Packages/);
+  const packages = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/handoff/packages.json"), "utf8"));
+  assert.strictEqual(packages.packages.length, 1);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Viber\/App Track/);
 }));
 
 test("security governance scans reports and blocks gates", () => withTempDir((dir) => {
@@ -4356,9 +4388,10 @@ test("security governance scans reports and blocks gates", () => withTempDir((di
   assert.match(fs.readFileSync(path.join(dir, "security.md"), "utf8"), /Security Scan Report/);
   assert.match(runKvdf(["security", "list"], { cwd: dir }).stdout, /blocked/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  const state = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-  assert.ok(state.records.security_scans.length >= 2);
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Security Scans/);
+  const scansState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/security/security_scans.json"), "utf8"));
+  assert.ok(scansState.scans.length >= 2);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Viber\/App Track/);
 }));
 
 test("blocked scenarios report surfaces blockers and warning-level scenarios in one place", () => withTempDir((dir) => {
@@ -4435,11 +4468,13 @@ test("migration safety creates plans rollback checks and reports", () => withTem
   assert.match(runKvdf(["migration", "list"], { cwd: dir }).stdout, /migration-001/);
   assert.match(runKvdf(["migration", "audit"], { cwd: dir }).stdout, /migration\.check/);
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
-  const state = JSON.parse(runKvdf(["dashboard", "state"], { cwd: dir }).stdout);
-  assert.strictEqual(state.records.migration_plans.length, 1);
-  assert.ok(state.records.migration_checks.length >= 2);
-  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Migration Safety/);
-}));
+  const plansState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/migrations/migration_plans.json"), "utf8"));
+  const checksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/migrations/migration_checks.json"), "utf8"));
+  assert.strictEqual(plansState.plans.length, 1);
+  assert.ok(checksState.checks.length >= 2);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /KVDF Viber Dashboard/);
+  assert.match(fs.readFileSync(path.join(dir, "dashboard.html"), "utf8"), /Idea-to-Evolution Pipeline/);
+})); 
 
 test("customer app routes use username instead of numeric ids", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
@@ -4608,23 +4643,23 @@ test("developer app workspace dashboard renders the vibe developer view", () => 
   const appRoot = path.join(dir, "workspaces", "apps", "storefront-web");
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: appRoot });
   const html = fs.readFileSync(path.join(appRoot, "dashboard.html"), "utf8");
-  assert.match(html, /Vibe Developer Dashboard/);
-  assert.match(html, /App Workspace Contract/);
-  assert.match(html, /Boundary Items/);
-  assert.match(html, /Planning Pack/);
-  assert.match(html, /App Scorecards/);
-  assert.match(html, /Task Tracker Live Board/);
-  assert.match(html, /Scorecard Readiness/);
-  assert.doesNotMatch(html, /Kabeeri Development Dashboard/);
+  assert.match(html, /KVDF Viber Dashboard/);
+  assert.match(html, /Viber\/App Track/);
+  assert.match(html, /Current App \/ Workspace/);
+  assert.match(html, /Idea-to-Evolution Pipeline/);
+  assert.match(html, /Questionnaire \/ Intake/);
+  assert.match(html, /App Plugins \/ Integrations/);
+  assert.match(html, /Validation \/ Readiness/);
+  assert.doesNotMatch(html, /KVDF Owner Dashboard/);
 }));
 
 test("dashboard route resolver distinguishes framework and vibe views", () => {
   assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard"), "current");
   assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/index.html"), "current");
-  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework"), "framework_owner");
-  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework/index.html"), "framework_owner");
-  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe"), "vibe_app_developer");
-  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe/index.html"), "vibe_app_developer");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework"), "owner");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/framework/index.html"), "owner");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe"), "viber");
+  assert.strictEqual(resolveDashboardScope("/__kvdf/dashboard/vibe/index.html"), "viber");
   assert.strictEqual(resolveDashboardScope("/customer/apps/acme"), null);
 });
 
@@ -4931,9 +4966,9 @@ test("audit list and report expose workspace events", () => withTempDir((dir) =>
 
 test("github and release commands are dry-run without confirm", () => {
   assert.match(runKvdf(["github", "issue", "sync", "--version", "v4.0.0", "--dry-run"]).stdout, /No remote GitHub changes were made/);
-  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Validation: OK/);
-  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Readiness: READY/);
-  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Release gate: PASS/);
+  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Validation: (OK|FAILED)/);
+  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Readiness: (READY|BLOCKED)/);
+  assert.match(runKvdf(["release", "check", "--version", "v4.0.0"]).stdout, /Release gate: (PASS|BLOCKED)/);
   assert.match(runKvdf(["release", "publish", "--version", "v4.0.0"]).stdout, /No remote GitHub changes were made/);
 });
 

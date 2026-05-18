@@ -1,12 +1,27 @@
 const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../services/local_server");
+const { collectDashboardStateForCurrentTrack, writeDashboardStateFilesForCurrentTrack } = require("./dashboard_state");
 
 function resolveDashboardScope(pathname) {
   const normalized = String(pathname || "").replace(/\/$/, "") || "/";
-  if (normalized === "/__kvdf/dashboard/framework" || normalized === "/__kvdf/dashboard/framework/index.html") {
-    return "framework_owner";
+  if (
+    normalized === "/__kvdf/dashboard/owner" ||
+    normalized === "/__kvdf/dashboard/owner/index.html" ||
+    normalized === "/__kvdf/dashboard/framework" ||
+    normalized === "/__kvdf/dashboard/framework/index.html" ||
+    normalized === "/__kvdf/dashboard/framework-owner" ||
+    normalized === "/__kvdf/dashboard/framework-owner/index.html"
+  ) {
+    return "owner";
   }
-  if (normalized === "/__kvdf/dashboard/vibe" || normalized === "/__kvdf/dashboard/vibe/index.html") {
-    return "vibe_app_developer";
+  if (
+    normalized === "/__kvdf/dashboard/viber" ||
+    normalized === "/__kvdf/dashboard/viber/index.html" ||
+    normalized === "/__kvdf/dashboard/vibe" ||
+    normalized === "/__kvdf/dashboard/vibe/index.html" ||
+    normalized === "/__kvdf/dashboard/app" ||
+    normalized === "/__kvdf/dashboard/app/index.html"
+  ) {
+    return "viber";
   }
   if (normalized === "/__kvdf/dashboard" || normalized === "/__kvdf/dashboard/index.html") {
     return "current";
@@ -20,8 +35,8 @@ function serveSite(port, options = {}, deps = {}) {
   const path = require("path");
   const {
     repoRoot,
-    collectDashboardState,
-    writeDashboardStateFiles,
+    collectDashboardState: collectDashboardState = collectDashboardStateForCurrentTrack,
+    writeDashboardStateFiles: writeDashboardStateFiles = writeDashboardStateFilesForCurrentTrack,
       buildDashboardHtml,
     refreshLiveReportsState,
     refreshAgileDashboardState,

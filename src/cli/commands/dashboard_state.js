@@ -3,9 +3,12 @@ const path = require("path");
 const { fileExists, repoRoot } = require("../fs_utils");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { buildDashboardContracts, validateDashboardContracts } = require("../services/dashboard_contract");
+const { buildEvolutionSummary } = require("../services/evolution");
+const { readGitRepositoryState, readGitStatus } = require("../services/git_snapshot");
 const { readStateArray, summarizeBy } = require("../services/state_utils");
 const { readJsonLines } = require("../services/jsonl");
 const { buildTaskLifecycleState, buildTaskLifecycleBoard } = require("./task_lifecycle");
+const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
 
 function collectDashboardState(options = {}, deps = {}) {
   const {
@@ -1170,6 +1173,1049 @@ function parseCsv(value) {
   return String(value).split(",").map((item) => item.trim()).filter(Boolean);
 }
 
+function collectDashboardStateForCurrentTrack(options = {}, deps = {}) {
+  const context = buildDashboardTrackContext(options, deps);
+  return context.dashboard_type === "viber"
+    ? buildViberDashboardState(context, deps)
+    : buildOwnerDashboardState(context, deps);
+}
+
+function writeDashboardStateFilesForCurrentTrack(stateOrOptions = {}, deps = {}) {
+  const context = buildDashboardTrackContext(stateOrOptions, deps);
+  const ownerState = context.dashboard_type === "owner" && stateOrOptions && stateOrOptions.dashboard_type === "owner"
+    ? stateOrOptions
+    : buildOwnerDashboardState(context, deps);
+  const viberState = context.dashboard_type === "viber" && stateOrOptions && stateOrOptions.dashboard_type === "viber"
+    ? stateOrOptions
+    : buildViberDashboardState(context, deps);
+  writeJsonFile(".kabeeri/dashboard/owner_dashboard_state.json", ownerState);
+  writeJsonFile(".kabeeri/dashboard/viber_dashboard_state.json", viberState);
+  writeJsonFile(".kabeeri/dashboard/task_tracker_state.json", context.task_tracker_state || buildTaskTrackerStateFromFiles(deps));
+  return { owner: ownerState, viber: viberState };
+}
+
+function buildDashboardTrackContext(options = {}, deps = {}) {
+  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const projectTrack = resolveWorkspaceTrack(project.workspace_kind);
+  const deliveryMode = String(project.delivery_mode || "").trim().toLowerCase();
+  const deliveryTrack = ["agile", "structured"].includes(deliveryMode) ? "vibe_app_developer" : projectTrack;
+  const requested = normalizeDashboardScope(options.scope || options.dashboard_type || options.track || options.product || options.dashboard_scope || "");
+  const dashboardType = requested === "viber" || requested === "app" || requested === "current-viber"
+    ? "viber"
+    : requested === "owner" || requested === "framework" || requested === "current-owner"
+      ? "owner"
+      : deliveryTrack === "vibe_app_developer"
+        ? "viber"
+        : "owner";
+  const workspaceTrack = dashboardType === "viber" ? "vibe_app_developer" : "framework_owner";
+  const plannerState = buildPlannerDashboardState({ project, dashboard_scope: workspaceTrack });
+  const plannerPlan = plannerState.current_plan || null;
+  const sourceControl = buildDashboardSourceControl(dashboardType, plannerState, deps);
+  const tasks = filterByTrack(readStateArray(".kabeeri/tasks.json", "tasks"), workspaceTrack);
+  const tokens = filterByTrack(readStateArray(".kabeeri/tokens.json", "tokens"), workspaceTrack);
+  const locks = filterByTrack(readStateArray(".kabeeri/locks.json", "locks"), workspaceTrack);
+  const sessions = filterByTrack(readStateArray(".kabeeri/sessions.json", "sessions"), workspaceTrack);
+  const evolutionState = fileExists(".kabeeri/evolution.json") ? readJsonFile(".kabeeri/evolution.json") : { changes: [], impact_plans: [], current_change_id: null };
+  const filteredEvolutionState = filterEvolutionState(evolutionState, workspaceTrack, project.workspace_kind);
+  const evolutionSummary = buildEvolutionSummary(filteredEvolutionState);
+  const usageSummary = fileExists(".kabeeri/ai_usage/usage_summary.json") ? readJsonFile(".kabeeri/ai_usage/usage_summary.json") : summarizeUsage();
+  const apps = readStateArray(".kabeeri/customer_apps.json", "apps");
+  const features = readStateArray(".kabeeri/features.json", "features");
+  const journeys = readStateArray(".kabeeri/journeys.json", "journeys");
+  const questionnaireAnswers = readStateArray(".kabeeri/questionnaires/answers.json", "answers");
+  const questionnaireCoverage = readStateArray(".kabeeri/questionnaires/coverage_matrix.json", "areas");
+  const questionnairePlans = readStateArray(".kabeeri/questionnaires/adaptive_intake_plan.json", "plans");
+  const questionnaireMissing = readStateArray(".kabeeri/questionnaires/missing_answers_report.json", "missing");
+  const productBlueprintState = fileExists(".kabeeri/product_blueprints.json") ? readJsonFile(".kabeeri/product_blueprints.json") : { selected_blueprints: [], recommendations: [] };
+  const dataDesignState = fileExists(".kabeeri/data_design.json") ? readJsonFile(".kabeeri/data_design.json") : { contexts: [], reviews: [] };
+  const agileState = fileExists(".kabeeri/agile.json") ? readJsonFile(".kabeeri/agile.json") : { backlog: [], epics: [], stories: [], sprint_reviews: [], impediments: [], retrospectives: [], releases: [] };
+  const structuredState = fileExists(".kabeeri/structured.json") ? readJsonFile(".kabeeri/structured.json") : { requirements: [], phases: [], milestones: [], deliverables: [], approvals: [], change_requests: [], risks: [], gates: [] };
+  const taskTrashState = fileExists(".kabeeri/task_trash.json") ? readJsonFile(".kabeeri/task_trash.json") : { trash: [], retention_days: null, last_sweep_at: null };
+  const pluginState = fileExists(".kabeeri/plugins.json") ? readJsonFile(".kabeeri/plugins.json") : { plugins: [], bundles: [] };
+  const developerEfficiency = buildDeveloperEfficiency();
+  const git = readGitRepositoryState(repoRoot());
+  const gitStatus = readGitStatus(repoRoot());
+  const currentPlanVersionSummary = plannerState.version_plan || {
+    available: false,
+    versions_total: 0,
+    current_version: null,
+    next_version: null,
+    source_control_mode: null
+  };
+  const evolutionBoard = buildDashboardEvolutionBoard(filteredEvolutionState, evolutionSummary);
+  const currentTaskTracker = buildTaskTrackerState({
+    generatedAt: new Date().toISOString(),
+    workspaceTrack,
+    tasks,
+    apps,
+    tokens,
+    locks,
+    sessions,
+    sprints: readStateArray(".kabeeri/sprints.json", "sprints"),
+    acceptanceRecords: readStateArray(".kabeeri/acceptance.json", "records"),
+    usageSummary,
+    vibeSuggestions: readStateArray(".kabeeri/interactions/suggested_tasks.json", "suggested_tasks"),
+    vibeCaptures: readStateArray(".kabeeri/interactions/post_work_captures.json", "captures")
+  }, deps);
+  return {
+    dashboard_type: dashboardType,
+    workspace_track: workspaceTrack,
+    project,
+    plannerState,
+    plannerPlan,
+    sourceControl,
+    tasks,
+    tokens,
+    locks,
+    sessions,
+    evolutionState,
+    evolutionSummary,
+    usageSummary,
+    apps,
+    features,
+    journeys,
+    questionnaireAnswers,
+    questionnaireCoverage,
+    questionnairePlans,
+    questionnaireMissing,
+    productBlueprintState,
+    dataDesignState,
+    agileState,
+    structuredState,
+    taskTrashState,
+    pluginState,
+    developerEfficiency,
+    git,
+    gitStatus,
+    versionPlanSummary: currentPlanVersionSummary,
+    evolutionBoard,
+    task_tracker_state: currentTaskTracker
+  };
+}
+
+function buildDashboardSourceControl(dashboardType, plannerState, deps = {}) {
+  const project = plannerState && plannerState.current_plan ? plannerState.current_plan.project || {} : {};
+  const git = readGitRepositoryState(repoRoot());
+  const currentBranch = git.available ? git.current_branch || null : null;
+  const sourceControl = normalizePlannerSourceControl(plannerState ? plannerState.source_control : null);
+  if (dashboardType === "viber") {
+    return {
+      ...sourceControl,
+      provider: sourceControl.provider || "none",
+      remote_provider: sourceControl.remote_provider || "none",
+      mode: sourceControl.mode && sourceControl.mode !== "none" ? sourceControl.mode : "local_first",
+      branching_enabled: Boolean(sourceControl.branching_enabled),
+      pr_enabled: Boolean(sourceControl.pr_enabled),
+      current_branch: sourceControl.current_branch || currentBranch,
+      default_branch: sourceControl.default_branch || "main",
+      notes: [
+        ...(sourceControl.notes || []),
+        "Viber/App dashboards default to local-first delivery and keep Git optional.",
+        "Branching and pull requests stay optional unless the selected plan enables them."
+      ]
+    };
+  }
+  return {
+    ...sourceControl,
+    provider: git.available ? sourceControl.provider || "git" : "none",
+    remote_provider: sourceControl.remote_provider || "none",
+    mode: sourceControl.mode && sourceControl.mode !== "none" ? sourceControl.mode : "direct_main",
+    branching_enabled: Boolean(sourceControl.branching_enabled),
+    pr_enabled: Boolean(sourceControl.pr_enabled),
+    current_branch: sourceControl.current_branch || currentBranch,
+    default_branch: sourceControl.default_branch || "main",
+    notes: [
+      ...(sourceControl.notes || []),
+      "Owner dashboards default to direct-to-main source control.",
+      "KVDOS and runtime state remain out of the commit path."
+    ]
+  };
+}
+
+function buildOwnerDashboardState(context = {}, deps = {}) {
+  const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
+  const currentPlan = context.plannerPlan || null;
+  const commandCenterWidgets = [
+    dashboardWidget("owner_current_track", "Current Track", "status", "framework_owner", "ok", "framework_owner", "derived", "Stay on KVDF Core work."),
+    dashboardWidget("owner_current_plan", "Current Planner Plan", "status", currentPlan ? currentPlan.title || currentPlan.goal || currentPlan.plan_id : "none", currentPlan ? "ok" : "empty", "framework_owner", "derived", currentPlan ? "Review the approved plan." : "Create or approve an owner plan."),
+    dashboardWidget("owner_current_evolution", "Current Evolution", "status", currentEvolution ? currentEvolution.title || currentEvolution.change_id : "none", currentEvolution ? "ok" : "empty", "framework_owner", "derived", currentEvolution ? "Continue the active evolution." : "Select the next evolution."),
+    dashboardWidget("owner_next_evolution", "Next Evolution", "status", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ok" : "empty", "framework_owner", "derived", context.plannerState.next_action || "Run planner propose."),
+    dashboardWidget("owner_next_action", "Next Exact Action", "action", context.plannerState.next_action || "Run kvdf planner propose", "ok", "framework_owner", "derived", context.plannerState.next_action || "Run kvdf planner propose."),
+    dashboardWidget("owner_source_control", "Direct-to-main Status", "status", context.sourceControl.mode || "direct_main", "ok", "framework_owner", "derived", "Keep the owner flow direct-to-main."),
+    dashboardWidget("owner_blockers", "Blockers Count", "metric", ownerBlockerCount(context), ownerBlockerCount(context) > 0 ? "warning" : "ok", "framework_owner", "derived", "Review governance blockers before execution.")
+  ];
+
+  const sections = {
+    command_center: createDashboardSection("command_center", "Command Center", commandCenterWidgets, [
+      createDashboardTable("owner_command_center", "Owner Command Center", ["Metric", "Value", "Next Action"], [
+        ["Current Track", "framework_owner", "Stay on KVDF Core work."],
+        ["Current Planner Plan", currentPlan ? currentPlan.plan_id || currentPlan.title || currentPlan.goal || "approved" : "none", currentPlan ? "Review the approved plan." : "Create or approve an owner plan."],
+        ["Current Evolution", currentEvolution ? currentEvolution.change_id || currentEvolution.title || "active" : "none", currentEvolution ? "Continue the active evolution." : "Select the next evolution."],
+        ["Next Evolution", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_action || "Run planner propose."],
+        ["Direct-to-main", context.sourceControl.mode || "direct_main", "Keep the owner flow direct-to-main."],
+        ["Blockers", String(ownerBlockerCount(context)), ownerBlockerCount(context) ? "Resolve blockers before touching KVDOS." : "Continue with the next core task."]
+      ], "No owner command center data yet.")
+    ]),
+    core_health: createDashboardSection("core_health", "KVDF Core Health", coreHealthWidgets(context), [
+      createDashboardTable("owner_core_health", "KVDF Core Health", ["Check", "Status", "Evidence", "Next Action"], coreHealthRows(context), "No core health data yet.")
+    ]),
+    planner: createDashboardSection("planner", "Planner", plannerWidgets(context), [
+      createDashboardTable("owner_planner", "Planner Plans", ["Plan ID", "Status", "Mode", "Track", "Delivery", "Source Control", "Approved By", "Materialized", "Next Action"], plannerRows(context), "No approved planner plans yet.")
+    ]),
+    evolutions: createDashboardSection("evolutions", "Evolutions", evolutionWidgets(context), [
+      createDashboardTable("owner_evolutions", "Evolutions", ["Evolution ID", "Title", "Status", "Version", "Track", "Source Control Mode", "Tasks", "Open Tasks", "Materialized", "Stop Condition"], evolutionRows(context), "No owner evolutions yet."),
+      createDashboardTable("owner_task_punch", "Task Punch", ["Task ID", "Title", "Status", "Evolution", "Allowed Files", "Validation Commands", "Blockers"], taskPunchRows(context), "No owner task punches yet.")
+    ]),
+    source_control: createDashboardSection("source_control", "Source Control", sourceControlWidgets(context), [
+      createDashboardTable("owner_source_control", "Source Control Matrix", ["Provider", "Remote", "Mode", "Branching", "PR", "Current Branch", "Default Branch", "Notes"], [
+        sourceControlRow(context)
+      ], "No source control data yet.")
+    ]),
+    workflows: createDashboardSection("workflows", "Workflows", workflowWidgets(context), [
+      createDashboardTable("owner_workflows", "Workflow Table", ["Workflow", "Stage", "Status", "Next Action", "Runtime File", "Owner"], workflowRows(context), "No workflow data yet.")
+    ]),
+    native_capabilities: createDashboardSection("native_capabilities", "Native Capabilities", capabilityWidgets(context), [
+      createDashboardTable("owner_capabilities", "Capability Table", ["Capability", "Commands", "Category", "Maturity", "Runtime Files", "Tests", "Notes"], capabilityRows(context), "No capability registry data yet.")
+    ]),
+    plugins: createDashboardSection("plugins", "Plugins", pluginWidgets(context), [
+      createDashboardTable("owner_plugins", "Plugin Table", ["Plugin", "Track", "Enabled", "Removable", "Family", "Type", "Runtime Entrypoint", "Status", "Gaps"], pluginRows(context), "No plugin data yet.")
+    ]),
+    ai_cost_control: createDashboardSection("ai_cost_control", "AI Cost Control", aiCostWidgets(context), [
+      createDashboardTable("owner_ai_usage", "AI Usage by Task", ["Task ID", "Events", "Tokens", "Cost", "Provider", "Model", "Tracked", "Workstream"], aiUsageRows(context), "No AI usage data yet."),
+      createDashboardTable("owner_ai_cost", "AI Cost Control", ["Budget/Preflight ID", "Task", "Estimated Cost", "Approval Required", "Status"], aiCostRows(context), "No cost preflights yet.")
+    ]),
+    docs_reports: createDashboardSection("docs_reports", "Docs / Reports", docsWidgets(context), [
+      createDashboardTable("owner_reports", "Reports", ["Report", "Type", "Generated At", "Source of Truth", "Status"], reportsRows(context), "No report data yet.")
+    ]),
+    governance: createDashboardSection("governance", "Security / Migration / Governance", governanceWidgets(context), [
+      createDashboardTable("owner_governance", "Governance Blockers", ["Area", "Status", "Count", "Next Action"], governanceRows(context), "No governance blockers found.")
+    ])
+  };
+
+  return finalizeDashboardState({
+    report_type: "kvdf_owner_dashboard_state",
+    dashboard_type: "owner",
+    track: "framework_owner",
+    title: "KVDF Owner Dashboard",
+    subtitle: "Owner Track / KVDF Core",
+    widgets: flattenDashboardWidgets(sections),
+    tables: flattenDashboardTables(sections),
+    sections,
+    blocked_cross_track_data: ["viber_app_workspace_data"],
+    source_control: context.sourceControl,
+    planner: context.plannerState,
+    task_tracker: context.task_tracker_state,
+    next_action: context.plannerState.next_action || "Run kvdf planner propose",
+    current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
+    current_plan_status: context.plannerState.current_plan_status || "empty",
+    current_evolution: currentEvolution ? currentEvolution.change_id || currentEvolution.title || null : null,
+    generated_at: new Date().toISOString()
+  });
+}
+
+function buildViberDashboardState(context = {}, deps = {}) {
+  const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
+  const currentPlan = context.plannerPlan || null;
+  const currentApp = context.apps.find((app) => resolveWorkspaceTrack(app.workspace_kind || app.track || app.audience || "") === "vibe_app_developer") || context.apps[0] || {};
+  const commandCenterWidgets = [
+    dashboardWidget("viber_current_track", "Current Track", "status", "vibe_app_developer", "ok", "vibe_app_developer", "derived", "Stay on app/product delivery work."),
+    dashboardWidget("viber_current_workspace", "Current App / Workspace", "status", currentApp.name || currentApp.username || context.project.name || "none", currentApp.username || currentApp.name ? "ok" : "empty", "vibe_app_developer", "derived", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."),
+    dashboardWidget("viber_current_request", "Current Idea / Request", "status", context.plannerState.current_plan && context.plannerState.current_plan.goal ? context.plannerState.current_plan.goal : "none", context.plannerState.current_plan ? "ok" : "empty", "vibe_app_developer", "derived", context.plannerState.next_action || "Run planner propose."),
+    dashboardWidget("viber_current_plan", "Current Planner Plan", "status", currentPlan ? currentPlan.title || currentPlan.goal || currentPlan.plan_id : "none", currentPlan ? "ok" : "empty", "vibe_app_developer", "derived", currentPlan ? "Review the approved plan." : "Approve the app plan."),
+    dashboardWidget("viber_next_evolution", "Next App Evolution", "status", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ok" : "empty", "vibe_app_developer", "derived", context.plannerState.next_action || "Run planner propose."),
+    dashboardWidget("viber_next_task_punch", "Next Task Punch", "action", nextTaskPunchLabel(context), "ok", "vibe_app_developer", "derived", nextTaskPunchAction(context)),
+    dashboardWidget("viber_handoff", "Local-first Handoff Status", "status", context.sourceControl.mode || "local_first", "ok", "vibe_app_developer", "derived", "Keep app delivery local-first unless a remote is explicitly enabled."),
+    dashboardWidget("viber_blockers", "Blockers Count", "metric", viberBlockerCount(context), viberBlockerCount(context) > 0 ? "warning" : "ok", "vibe_app_developer", "derived", "Resolve app blockers before releasing.")
+  ];
+
+  const sections = {
+    command_center: createDashboardSection("command_center", "Command Center", commandCenterWidgets, [
+      createDashboardTable("viber_command_center", "Viber Command Center", ["Metric", "Value", "Next Action"], [
+        ["Current App / Workspace", currentApp.name || currentApp.username || "none", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."],
+        ["Current Idea / Request", context.plannerState.current_plan && context.plannerState.current_plan.goal ? context.plannerState.current_plan.goal : "none", context.plannerState.next_action || "Run planner propose."],
+        ["Current Planner Plan", currentPlan ? currentPlan.plan_id || currentPlan.title || currentPlan.goal || "approved" : "none", currentPlan ? "Review the approved plan." : "Approve the app plan."],
+        ["Next App Evolution", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_action || "Run planner propose."],
+        ["Next Task Punch", nextTaskPunchLabel(context), nextTaskPunchAction(context)],
+        ["Local-first Handoff", context.sourceControl.mode || "local_first", "Keep app delivery local-first unless a remote is explicitly enabled."],
+        ["Blockers", String(viberBlockerCount(context)), viberBlockerCount(context) ? "Resolve blockers before releasing." : "Continue delivery."]
+      ], "No app command center data yet.")
+    ]),
+    idea_to_evolution_pipeline: createDashboardSection("idea_to_evolution_pipeline", "Idea-to-Evolution Pipeline", pipelineWidgets(context), [
+      createDashboardTable("viber_pipeline", "Pipeline Stage Table", ["Stage", "Status", "Output", "Next Action", "Owner", "Runtime/Doc Path"], pipelineRows(context), "No pipeline stages yet.")
+    ]),
+    questionnaire: createDashboardSection("questionnaire", "Questionnaire / Intake", questionnaireWidgets(context), [
+      createDashboardTable("viber_questionnaire", "Questions", ["Question ID", "Area", "Status", "Answered", "Required Action"], questionnaireRows(context), "No questionnaire data yet.")
+    ]),
+    product_app_design: createDashboardSection("product_app_design", "Product / App Design", productWidgets(context), [
+      createDashboardTable("viber_modules", "Module Table", ["Module", "Purpose", "Workstream", "Status", "Related Tasks"], moduleRows(context), "No module data yet."),
+      createDashboardTable("viber_journeys", "Journey Table", ["Journey", "Status", "Ready", "Related Features", "Related Tasks"], journeyRows(context), "No journey data yet.")
+    ]),
+    system_design: createDashboardSection("system_design", "System Design", systemWidgets(context), [
+      createDashboardTable("viber_system_design", "System Design", ["Component", "Responsibility", "Dependencies", "Risks", "Status"], systemRows(context), "No system design data yet.")
+    ]),
+    database_design: createDashboardSection("database_design", "Database Design", databaseWidgets(context), [
+      createDashboardTable("viber_database", "Entity Table", ["Entity", "Fields/Notes", "Relationships", "Migration", "Status"], databaseRows(context), "No database design data yet.")
+    ]),
+    ui_ux_design: createDashboardSection("ui_ux_design", "UI/UX Design", uiUxWidgets(context), [
+      createDashboardTable("viber_uiux", "Screen/Page Table", ["Screen", "Purpose", "Components", "Status", "Related Tasks"], uiUxRows(context), "No UI/UX design data yet.")
+    ]),
+    version_plan: createDashboardSection("version_plan", "Version Plan", versionWidgets(context), [
+      createDashboardTable("viber_version", "Version Table", ["Version", "Goal", "Included Evolutions", "Excluded Scope", "Readiness Gate", "Source Control Mode"], versionRows(context), "No version plan yet.")
+    ]),
+    evolutions: createDashboardSection("evolutions", "Evolutions", evolutionWidgets(context, "viber"), [
+      createDashboardTable("viber_evolutions", "Evolution Table", ["Evolution ID", "Title", "Version", "Status", "Tasks", "Next Action", "Stop Condition"], evolutionRows(context, "viber"), "No app evolutions yet.")
+    ]),
+    task_punches: createDashboardSection("task_punches", "Task Punch / Execution", taskPunchWidgets(context), [
+      createDashboardTable("viber_task_punch", "Task Punch Table", ["Task ID", "Title", "Status", "Evolution", "Allowed Files", "Forbidden Files", "Acceptance", "Validation", "Stop Condition"], taskPunchRows(context, true), "No task punches yet.")
+    ]),
+    source_control_handoff: createDashboardSection("source_control_handoff", "Source Control / Handoff", sourceControlWidgets(context, "viber"), [
+      createDashboardTable("viber_source_control", "Source Control Table", ["Provider", "Remote", "Mode", "Branching", "PR", "Current Branch", "Notes"], [
+        sourceControlRow(context, "viber")
+      ], "No source control data yet."),
+      createDashboardTable("viber_handoff", "Handoff Table", ["Handoff ID", "Status", "Evidence", "Next Action"], handoffRows(context), "No handoff package yet.")
+    ]),
+    ai_cost_control: createDashboardSection("ai_cost_control", "AI Cost Control", aiCostWidgets(context, "viber"), [
+      createDashboardTable("viber_ai_usage", "AI Usage Table", ["Task", "Evolution", "Events", "Tokens", "Cost", "Provider", "Model", "Tracked"], aiUsageRows(context, "viber"), "No AI usage data yet.")
+    ]),
+    app_plugins: createDashboardSection("app_plugins", "App Plugins / Integrations", appPluginWidgets(context), [
+      createDashboardTable("viber_plugins", "App Plugin Table", ["Plugin", "Enabled", "Purpose", "Runtime Entrypoint", "Status", "Gaps"], appPluginRows(context), "No app plugin data yet.")
+    ]),
+    validation_readiness: createDashboardSection("validation_readiness", "Validation / Readiness", validationWidgets(context), [
+      createDashboardTable("viber_validation", "Validation Table", ["Check", "Status", "Evidence", "Next Action"], validationRows(context), "No validation data yet.")
+    ])
+  };
+
+  return finalizeDashboardState({
+    report_type: "kvdf_viber_dashboard_state",
+    dashboard_type: "viber",
+    track: "vibe_app_developer",
+    title: "KVDF Viber Dashboard",
+    subtitle: "Viber/App Track",
+    widgets: flattenDashboardWidgets(sections),
+    tables: flattenDashboardTables(sections),
+    sections,
+    blocked_cross_track_data: ["kvdf_core_owner_data"],
+    source_control: context.sourceControl,
+    planner: context.plannerState,
+    task_tracker: context.task_tracker_state,
+    next_action: context.plannerState.next_action || "Run kvdf planner propose",
+    current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
+    current_plan_status: context.plannerState.current_plan_status || "empty",
+    current_evolution: currentEvolution ? currentEvolution.change_id || currentEvolution.title || null : null,
+    generated_at: new Date().toISOString()
+  });
+}
+
+function buildDashboardStateForCurrentTrack(options = {}, deps = {}) {
+  return collectDashboardStateForCurrentTrack(options, deps);
+}
+
+function buildDashboardStateForScope(scope, options = {}, deps = {}) {
+  const normalized = normalizeDashboardScope(scope);
+  return normalized === "viber" ? buildViberDashboardState(buildDashboardTrackContext({ ...options, scope: "viber" }, deps), deps) : buildOwnerDashboardState(buildDashboardTrackContext({ ...options, scope: "owner" }, deps), deps);
+}
+
+function normalizeDashboardScope(value = "") {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
+  if (["viber", "vibe", "app", "app-developer", "vibe-app-developer", "current-viber"].includes(normalized)) return "viber";
+  if (["owner", "framework", "framework-owner", "framework-owner-track", "current-owner"].includes(normalized)) return "owner";
+  if (normalized === "current") return "current";
+  return normalized;
+}
+
+function dashboardWidget(id, title, type, value, status, track, source, nextAction) {
+  return {
+    id,
+    title,
+    type,
+    value,
+    status: status || "unknown",
+    track: track || "plugin",
+    source: source || "derived",
+    next_action: nextAction || ""
+  };
+}
+
+function createDashboardTable(id, title, columns, rows, emptyState) {
+  return {
+    id,
+    title,
+    columns,
+    rows,
+    empty_state: emptyState
+  };
+}
+
+function createDashboardSection(id, title, widgets = [], tables = []) {
+  return {
+    id,
+    title,
+    widgets,
+    tables
+  };
+}
+
+function flattenDashboardWidgets(sections) {
+  return Object.values(sections).flatMap((section) => section.widgets || []);
+}
+
+function flattenDashboardTables(sections) {
+  return Object.values(sections).reduce((tables, section) => {
+    for (const table of section.tables || []) tables[table.id] = table;
+    return tables;
+  }, {});
+}
+
+function finalizeDashboardState(state) {
+  return {
+    ...state,
+    widgets: Array.isArray(state.widgets) ? state.widgets : [],
+    tables: state.tables || {},
+    sections: state.sections || {},
+    blocked_cross_track_data: Array.isArray(state.blocked_cross_track_data) ? state.blocked_cross_track_data : [],
+    source_control: state.source_control || {},
+    planner: state.planner || null,
+    next_action: state.next_action || "",
+    current_plan_id: state.current_plan_id || null,
+    current_plan_status: state.current_plan_status || "empty",
+    current_evolution: state.current_evolution || null
+  };
+}
+
+function ownerBlockerCount(context) {
+  return (
+    countBlocked(context.plannerState) +
+    countBlockedEntries(context.gitStatus) +
+    countRecords(context.taskTrashState.trash) +
+    countRecords((context.evolutionSummary.open_follow_up_tasks || 0) ? [{ id: "open_follow_up_tasks" }] : []) +
+    countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []) +
+    countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open" && ["high", "critical"].includes(item.severity)) : [])
+  );
+}
+
+function viberBlockerCount(context) {
+  return (
+    countBlocked(context.plannerState) +
+    countRecords(context.questionnaireMissing) +
+    countRecords(context.questionnaireCoverage.filter((item) => item.status === "missing" || item.status === "blocked")) +
+    countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []) +
+    countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open" && ["high", "critical"].includes(item.severity)) : [])
+  );
+}
+
+function countBlocked(plannerState) {
+  if (!plannerState || !plannerState.current_plan) return 0;
+  return plannerState.materialization && plannerState.materialization.status === "materialized" ? 0 : 1;
+}
+
+function countBlockedEntries(value) {
+  if (!value) return 0;
+  if (Array.isArray(value.entries)) return value.entries.length;
+  if (typeof value.changed_files === "number") return value.changed_files > 0 ? 1 : 0;
+  return 0;
+}
+
+function countRecords(items) {
+  return Array.isArray(items) ? items.length : Number(items || 0);
+}
+
+function coreHealthWidgets(context) {
+  const dirtyCount = Number(context.gitStatus && context.gitStatus.changed_files ? context.gitStatus.changed_files : 0);
+  return [
+    dashboardWidget("owner_validation", "Validation Status", "status", "ready", "ok", "framework_owner", "derived", "Run validate before touching core state."),
+    dashboardWidget("owner_npm_test", "npm test Status", "status", "ready", "ok", "framework_owner", "derived", "Keep the suite green before merge."),
+    dashboardWidget("owner_npm_check", "npm run check Status", "status", "ready", "ok", "framework_owner", "derived", "Refresh generated reports when needed."),
+    dashboardWidget("owner_runtime_schema", "Runtime Schema Validation", "status", "ready", "ok", "framework_owner", "derived", "Keep runtime schemas in sync."),
+    dashboardWidget("owner_package_check", "Package / Check Status", "status", "ready", "ok", "framework_owner", "derived", "Use package checks to guard release prep."),
+    dashboardWidget("owner_dirty_reports", "Generated Report Dirty-State Warning", "warning", dirtyCount > 0 ? `${dirtyCount} changed file(s)` : "clean", dirtyCount > 0 ? "warning" : "ok", "framework_owner", "generated", dirtyCount > 0 ? "Inspect generated report churn." : "No generated report drift detected.")
+  ];
+}
+
+function coreHealthRows(context) {
+  return [
+    ["Validation", "ready", "schema registry and CLI validation are available", "Run validate before touching core state."],
+    ["npm test", "ready", "test suite is present", "Keep the suite green before merge."],
+    ["npm run check", "ready", "generated docs/reports can refresh", "Refresh generated reports when needed."],
+    ["Runtime schema validation", "ready", fileExists("schemas/runtime/schema_registry.json") ? "schema registry exists" : "schema registry missing", "Keep runtime schemas in sync."],
+    ["Package / check", "ready", "package scripts are wired", "Use package checks to guard release prep."],
+    ["Generated report drift", context.gitStatus && context.gitStatus.changed_files ? "warning" : "clean", context.gitStatus && context.gitStatus.entries ? context.gitStatus.entries.join("; ") : "clean working tree", context.gitStatus && context.gitStatus.changed_files ? "Inspect generated report churn." : "No generated report drift detected."]
+  ];
+}
+
+function plannerWidgets(context) {
+  const currentPlan = context.plannerPlan || null;
+  return [
+    dashboardWidget("owner_planner_mode", "Planner Mode", "status", context.plannerState.current_planner_mode || "none", currentPlan ? "ok" : "empty", "framework_owner", "derived", "Keep the planner track-aware."),
+    dashboardWidget("owner_planner_materialization", "Materialization Status", "status", context.plannerState.materialization ? context.plannerState.materialization.status || "unknown" : "unknown", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ok" : "warning", "framework_owner", "derived", context.plannerState.next_action || "Materialize the plan."),
+    dashboardWidget("owner_pipeline_status", "Idea-to-Evolution Pipeline Status", "status", context.plannerState.pipeline && context.plannerState.pipeline.available ? "available" : "missing", context.plannerState.pipeline && context.plannerState.pipeline.available ? "ok" : "empty", "framework_owner", "derived", "Use the pipeline as the governed path to evolution."),
+    dashboardWidget("owner_visual_status", "Visual Planner Availability", "status", context.plannerState.visual && context.plannerState.visual.available ? "available" : "missing", context.plannerState.visual && context.plannerState.visual.available ? "ok" : "empty", "framework_owner", "derived", "Keep the visual planner and scope map available."),
+    dashboardWidget("owner_next_action_planner", "Planner Next Action", "action", context.plannerState.next_action || "Run kvdf planner propose", "ok", "framework_owner", "derived", context.plannerState.next_action || "Run kvdf planner propose.")
+  ];
+}
+
+function plannerRows(context) {
+  const currentPlan = context.plannerPlan || {};
+  return [[
+    currentPlan.plan_id || "none",
+    context.plannerState.current_plan_status || "empty",
+    context.plannerState.current_planner_mode || "",
+    context.plannerState.track || "",
+    context.plannerState.delivery_mode || "",
+    context.plannerState.source_control && context.plannerState.source_control.mode ? context.plannerState.source_control.mode : "",
+    currentPlan.approved_by || currentPlan.owner || "",
+    context.plannerState.materialization ? context.plannerState.materialization.status || "unknown" : "unknown",
+    context.plannerState.next_action || ""
+  ]];
+}
+
+function evolutionWidgets(context, dashboardType = "owner") {
+  return [
+    dashboardWidget(`${dashboardType}_open_evolutions`, "Open Evolutions", "metric", countRecords(context.evolutionBoard.open_evolutions || []), "ok", context.workspace_track, "derived", "Keep evolutions track-aligned."),
+    dashboardWidget(`${dashboardType}_current_evolution`, "Current Evolution", "status", context.evolutionBoard.current_evolution ? context.evolutionBoard.current_evolution.title || context.evolutionBoard.current_evolution.change_id : "none", context.evolutionBoard.current_evolution ? "ok" : "empty", context.workspace_track, "derived", context.plannerState.next_action || "Select the next evolution."),
+    dashboardWidget(`${dashboardType}_archived_evolutions`, "Completed / Archived Evolutions", "metric", countRecords(context.evolutionBoard.archived_evolutions || []), "ok", context.workspace_track, "derived", "Preserve archive history."),
+    dashboardWidget(`${dashboardType}_closeout`, "Auto-closeout Status", "status", context.evolutionBoard.auto_closeout_status || "unknown", "ok", context.workspace_track, "derived", "Use the closeout policy consistently."),
+    dashboardWidget(`${dashboardType}_future_blocked`, "Future-only Blocked Items", "warning", countRecords(context.evolutionBoard.future_blocked_items || []), context.evolutionBoard.future_blocked_items && context.evolutionBoard.future_blocked_items.length ? "warning" : "ok", context.workspace_track, "derived", "Keep future-only items out of the current plan.")
+  ];
+}
+
+function evolutionRows(context) {
+  const changes = Array.isArray(context.evolutionBoard.changes) ? context.evolutionBoard.changes : [];
+  return (changes.length ? changes : [context.evolutionBoard.current_evolution || {}]).map((item) => [
+    item.change_id || item.id || "none",
+    item.title || item.goal || "",
+    item.status || "",
+    item.version || item.release || "",
+    item.track || context.workspace_track,
+    item.source_control_mode || (context.sourceControl && context.sourceControl.mode) || "",
+    String((item.task_ids || []).length || item.tasks_total || 0),
+    String((item.open_tasks || []).length || item.open_tasks_total || 0),
+    item.materialization_status || item.materialized ? "yes" : "no",
+    item.stop_condition || item.task_trash_policy || ""
+  ]);
+}
+
+function taskPunchRows(context, viber = false) {
+  const source = context.plannerState.task_punch || {};
+  const tasks = Array.isArray(source.tasks) ? source.tasks : [];
+  if (!tasks.length) {
+    const trackerRows = context.task_tracker_state && Array.isArray(context.task_tracker_state.tasks) ? context.task_tracker_state.tasks : [];
+    return trackerRows.slice(0, 10).map((task) => [
+      task.id || "",
+      task.title || "",
+      task.status || "",
+      task.evolution_id || task.evolution || "",
+      (task.allowed_files || []).join(", "),
+      (task.forbidden_files || []).join(", "),
+      (task.acceptance_criteria || []).join(", "),
+      (task.validation_commands || []).join(", "),
+      task.stop_condition || ""
+    ]);
+  }
+  return tasks.map((task) => [
+    task.id || task.task_id || "",
+    task.title || "",
+    task.status || "",
+    task.evolution_id || task.evolution || "",
+    (task.allowed_files || []).join(", "),
+    (task.forbidden_files || []).join(", "),
+    (task.acceptance_criteria || []).join(", "),
+    (task.validation_commands || []).join(", "),
+    task.stop_condition || ""
+  ]);
+}
+
+function sourceControlWidgets(context, dashboardType = "owner") {
+  const source = context.sourceControl || {};
+  return [
+    dashboardWidget(`${dashboardType}_sc_provider`, "Provider", "status", source.provider || "none", source.provider === "none" ? "warning" : "ok", context.workspace_track, "derived", "Show the correct provider mode."),
+    dashboardWidget(`${dashboardType}_sc_remote`, "Remote Provider", "status", source.remote_provider || "none", "ok", context.workspace_track, "derived", "Optional remote is fine for this track."),
+    dashboardWidget(`${dashboardType}_sc_mode`, "Mode", "status", source.mode || (dashboardType === "viber" ? "local_first" : "direct_main"), "ok", context.workspace_track, "derived", "Keep the track's preferred mode visible."),
+    dashboardWidget(`${dashboardType}_sc_branching`, "Branching Enabled", "status", source.branching_enabled ? "yes" : "no", source.branching_enabled ? "ok" : "warning", context.workspace_track, "derived", "Branching is optional and should be explicit."),
+    dashboardWidget(`${dashboardType}_sc_pr`, "PR Enabled", "status", source.pr_enabled ? "yes" : "no", source.pr_enabled ? "ok" : "warning", context.workspace_track, "derived", "PRs stay optional unless explicitly enabled."),
+    dashboardWidget(`${dashboardType}_sc_branch`, "Current Branch", "status", source.current_branch || "none", "ok", context.workspace_track, "derived", "Show the live branch when Git exists.")
+  ];
+}
+
+function sourceControlRow(context) {
+  const source = context.sourceControl || {};
+  return [[
+    source.provider || "none",
+    source.remote_provider || "none",
+    source.mode || (context.dashboard_type === "viber" ? "local_first" : "direct_main"),
+    source.branching_enabled ? "enabled" : "disabled",
+    source.pr_enabled ? "enabled" : "disabled",
+    source.current_branch || context.git.current_branch || "none",
+    source.default_branch || "main",
+    (source.notes || []).join(" ")
+  ]];
+}
+
+function workflowWidgets(context) {
+  return [
+    dashboardWidget("owner_pipeline_dev", "KVDF Development Pipeline", "status", context.plannerState.pipeline && context.plannerState.pipeline.available ? "available" : "missing", "ok", "framework_owner", "derived", "Keep the core development pipeline track-aware."),
+    dashboardWidget("owner_pipeline_planner", "Planner Pipeline", "status", context.plannerState.pipeline && context.plannerState.pipeline.available ? "available" : "missing", "ok", "framework_owner", "derived", "Use planner output as the pipeline source."),
+    dashboardWidget("owner_pipeline_validation", "Validation Pipeline", "status", "ready", "ok", "framework_owner", "derived", "Keep validation part of the dashboard flow."),
+    dashboardWidget("owner_pipeline_docs", "Docs Pipeline", "status", "ready", "ok", "framework_owner", "derived", "Refresh docs alongside dashboard changes."),
+    dashboardWidget("owner_pipeline_release", "Release / Package Pipeline", "status", "ready", "ok", "framework_owner", "derived", "Release checks stay explicit.")
+  ];
+}
+
+function workflowRows(context) {
+  return [
+    ["KVDF Development Pipeline", "dashboard", context.plannerState.pipeline && context.plannerState.pipeline.available ? "available" : "missing", context.plannerState.next_action || "", ".kabeeri/planner.json", "Owner"],
+    ["Planner Pipeline", "planner", context.plannerState.pipeline && context.plannerState.pipeline.available ? "available" : "missing", context.plannerState.next_action || "", ".kabeeri/planner.json", "Owner"],
+    ["Validation Pipeline", "validation", "ready", "Run validate before export.", "schemas/runtime/schema_registry.json", "Owner"],
+    ["Docs Pipeline", "docs", "ready", "Refresh generated docs/reports when needed.", "docs/cli/CLI_COMMAND_REFERENCE.md", "Owner"],
+    ["Release / Package Pipeline", "release", "ready", "Keep package and release checks green.", "package.json", "Owner"]
+  ];
+}
+
+function capabilityWidgets(context) {
+  const total = 0;
+  return [
+    dashboardWidget("owner_cap_total", "Total Native Capabilities", "metric", total, "unknown", "framework_owner", "derived", "Capability registry coverage can be expanded later."),
+    dashboardWidget("owner_cap_mature", "Mature / Working", "metric", 0, "unknown", "framework_owner", "derived", "Count working capabilities when the registry is available."),
+    dashboardWidget("owner_cap_partial", "Partial", "metric", 0, "unknown", "framework_owner", "derived", "Count partial capabilities when the registry is available."),
+    dashboardWidget("owner_cap_registry", "Capability Registry Status", "status", fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md") ? "present" : "missing", fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md") ? "ok" : "warning", "framework_owner", "docs", "Keep capability docs in sync.")
+  ];
+}
+
+function capabilityRows(context) {
+  return [
+    ["KVDF Core", "dashboard, planner, validate", "core", "working", "docs/SYSTEM_CAPABILITIES_REFERENCE.md", "npm test", "Owner track capability surface."],
+    ["Planner / Pipeline", "planner, planner-visual", "planner", "working", ".kabeeri/planner.json", "npm test", "Shared planner cycle feeds both dashboards."],
+    ["Dashboard", "dashboard state, dashboard export", "reports", "working", ".kabeeri/dashboard/owner_dashboard_state.json", "npm run check", "Separate owner and viber dashboards."],
+    ["Reports", "reports live, dashboard ux", "reports", "working", ".kabeeri/reports/live_reports_state.json", "npm run check", "Generated reports stay derived."]
+  ];
+}
+
+function pluginWidgets(context) {
+  return [
+    dashboardWidget("owner_plugins_active", "Active Plugins", "metric", countRecords((context.pluginState.plugins || []).filter((item) => item.enabled !== false)), "ok", "framework_owner", "derived", "Show only relevant KVDF development plugins."),
+    dashboardWidget("owner_plugins_disabled", "Disabled Plugins", "metric", countRecords((context.pluginState.plugins || []).filter((item) => item.enabled === false)), "ok", "framework_owner", "derived", "Disabled plugins remain visible."),
+    dashboardWidget("owner_plugins_kvdf_dev", "kvdf-dev Status", "status", "available", "ok", "framework_owner", "plugin", "Core development plugins stay visible."),
+    dashboardWidget("owner_plugins_planner_visual", "planner-visual Status", "status", plannerVisualStatus(context), "ok", "framework_owner", "plugin", "Planner visual support stays visible when installed."),
+    dashboardWidget("owner_plugins_github", "GitHub Provider Plugin", "status", githubProviderStatus(context), "ok", "framework_owner", "plugin", "GitHub provider remains optional.")
+  ];
+}
+
+function pluginRows(context) {
+  const plugins = Array.isArray(context.pluginState.plugins) ? context.pluginState.plugins : [];
+  if (!plugins.length) return [["kvdf-dev", "framework_owner", "unknown", "yes", "core", "plugin", "src/cli", "missing", "No plugin registry state yet."]];
+  return plugins.map((plugin) => [
+    plugin.id || plugin.name || "",
+    plugin.track || "framework_owner",
+    plugin.enabled === false ? "no" : "yes",
+    plugin.removable === false ? "no" : "yes",
+    plugin.family || plugin.scope || "",
+    plugin.type || "",
+    plugin.runtime_entrypoint || plugin.entrypoint || "",
+    plugin.status || (plugin.enabled === false ? "disabled" : "active"),
+    Array.isArray(plugin.gaps) ? plugin.gaps.join(", ") : plugin.gaps || ""
+  ]);
+}
+
+function aiCostWidgets(context, dashboardType = "owner") {
+  const summary = context.usageSummary || {};
+  return [
+    dashboardWidget(`${dashboardType}_ai_cost`, "Total AI Usage Cost", "metric", summary.total_cost || 0, "ok", context.workspace_track, "derived", "Keep the cost visible."),
+    dashboardWidget(`${dashboardType}_ai_tokens`, "Total Tokens", "metric", summary.total_tokens || 0, "ok", context.workspace_track, "derived", "Track tokens against tasks."),
+    dashboardWidget(`${dashboardType}_ai_tracked`, "Tracked AI", "metric", summary.tracked_vs_untracked && summary.tracked_vs_untracked.tracked ? summary.tracked_vs_untracked.tracked.cost || 0 : 0, "ok", context.workspace_track, "derived", "Task-linked cost stays visible."),
+    dashboardWidget(`${dashboardType}_ai_untracked`, "Untracked AI", "metric", summary.tracked_vs_untracked && summary.tracked_vs_untracked.untracked ? summary.tracked_vs_untracked.untracked.cost || 0 : 0, "warning", context.workspace_track, "derived", "Untracked work needs review.")
+  ];
+}
+
+function aiUsageRows(context, dashboardType = "owner") {
+  const byTask = (context.usageSummary && context.usageSummary.by_task) || {};
+  const entries = Object.entries(byTask);
+  if (!entries.length) return [["untracked", 0, 0, 0, "", "", "", ""]];
+  return entries.map(([taskId, usage]) => [
+    taskId,
+    usage.events || 0,
+    usage.tokens || 0,
+    usage.cost || 0,
+    (usage.provider || usage.by_provider || usage.last_provider || "unknown"),
+    usage.model || "unknown",
+    usage.tracked === false ? "no" : "yes",
+    usage.workstream || ""
+  ]);
+}
+
+function aiCostRows(context) {
+  return [
+    ["budget:default", "all tasks", context.usageSummary.total_cost || 0, "no", context.usageSummary.budget_pressure ? context.usageSummary.budget_pressure.level || "unknown" : "unknown"]
+  ];
+}
+
+function docsWidgets(context) {
+  return [
+    dashboardWidget("owner_docs_sync", "Docs Sync Status", "status", fileExists("docs/cli/CLI_COMMAND_REFERENCE.md") ? "present" : "missing", fileExists("docs/cli/CLI_COMMAND_REFERENCE.md") ? "ok" : "warning", "framework_owner", "docs", "Keep command docs synchronized."),
+    dashboardWidget("owner_cli_reference", "CLI Reference Status", "status", fileExists("docs/cli/CLI_COMMAND_REFERENCE.md") ? "present" : "missing", fileExists("docs/cli/CLI_COMMAND_REFERENCE.md") ? "ok" : "warning", "framework_owner", "docs", "Document owner and viber commands separately."),
+    dashboardWidget("owner_system_capabilities", "System Capabilities Status", "status", fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md") ? "present" : "missing", fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md") ? "ok" : "warning", "framework_owner", "docs", "Keep capability docs explicit."),
+    dashboardWidget("owner_reports_generated", "Generated Reports Status", "status", fileExists(".kabeeri/reports/live_reports_state.json") ? "present" : "missing", "ok", "framework_owner", "generated", "Generated reports stay derived.")
+  ];
+}
+
+function reportsRows(context) {
+  return [
+    ["Live Reports", "live_reports_state", new Date().toISOString(), ".kabeeri/reports/live_reports_state.json", context.gitStatus.changed_files ? "dirty" : "clean"],
+    ["CLI Command Reference", "documentation", new Date().toISOString(), "docs/cli/CLI_COMMAND_REFERENCE.md", fileExists("docs/cli/CLI_COMMAND_REFERENCE.md") ? "present" : "missing"],
+    ["System Capabilities Reference", "documentation", new Date().toISOString(), "docs/SYSTEM_CAPABILITIES_REFERENCE.md", fileExists("docs/SYSTEM_CAPABILITIES_REFERENCE.md") ? "present" : "missing"]
+  ];
+}
+
+function governanceWidgets(context) {
+  return [
+    dashboardWidget("owner_policy_blocks", "Policy Blockers", "warning", countRecords((context.plannerState && context.plannerState.current_plan && context.plannerState.current_plan.policy_blocks) || []), "ok", "framework_owner", "derived", "Resolve policy blockers before merge."),
+    dashboardWidget("owner_security_blocks", "Security Blockers", "warning", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), "ok", "framework_owner", "derived", "Security blockers stay visible."),
+    dashboardWidget("owner_migration_blocks", "Migration Blockers", "warning", countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open") : []), "ok", "framework_owner", "derived", "Migration blockers stay visible."),
+    dashboardWidget("owner_handoff", "Handoff Readiness", "status", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ready" : "pending", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ok" : "warning", "framework_owner", "derived", "Handoff is only ready after materialization.")
+  ];
+}
+
+function governanceRows(context) {
+  return [
+    ["Policy", countRecords((context.plannerState && context.plannerState.current_plan && context.plannerState.current_plan.policy_blocks) || []), countRecords((context.plannerState && context.plannerState.current_plan && context.plannerState.current_plan.policy_blocks) || []), "Run the relevant policy command."],
+    ["Security", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), "Run security checks before release."],
+    ["Migration", countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open") : []), countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open") : []), "Resolve migration blockers before deploy."],
+    ["Handoff", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? 0 : 1, context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? 0 : 1, context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "Use the handoff package." : "Materialize the plan first."]
+  ];
+}
+
+function nextTaskPunchLabel(context) {
+  const punch = context.plannerState.task_punch || {};
+  if (Array.isArray(punch.tasks) && punch.tasks.length) return punch.tasks[0].title || punch.tasks[0].id || "task punch ready";
+  return "No task punch yet";
+}
+
+function nextTaskPunchAction(context) {
+  const punch = context.plannerState.task_punch || {};
+  if (Array.isArray(punch.tasks) && punch.tasks.length) return "Execute the first approved task slice.";
+  return "Run kvdf planner materialize --from-current --json.";
+}
+
+function pipelineWidgets(context) {
+  const pipeline = context.plannerState.pipeline || {};
+  return [
+    dashboardWidget("viber_idea", "Idea Captured", "status", pipeline.idea || context.plannerState.current_plan && context.plannerState.current_plan.goal || "none", pipeline.available ? "ok" : "empty", "vibe_app_developer", "derived", "Keep the original idea visible."),
+    dashboardWidget("viber_docs", "Documentation Files", "metric", pipeline.documentation_files_total || 0, pipeline.available ? "ok" : "empty", "vibe_app_developer", "derived", "Document the app before implementation."),
+    dashboardWidget("viber_system_design", "System Design Status", "status", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ok" : "warning", "vibe_app_developer", "derived", "System design stays app-focused."),
+    dashboardWidget("viber_database_design", "Database Design Status", "status", pipeline.design_artifacts && pipeline.design_artifacts.database_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.database_design ? "ok" : "warning", "vibe_app_developer", "derived", "Database design stays app-focused."),
+    dashboardWidget("viber_uiux_design", "UI/UX Design Status", "status", pipeline.design_artifacts && pipeline.design_artifacts.ui_ux_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.ui_ux_design ? "ok" : "warning", "vibe_app_developer", "derived", "UI/UX planning stays app-focused."),
+    dashboardWidget("viber_visual_planning", "Visual Planning Status", "status", pipeline.visual && pipeline.visual.available ? "available" : "missing", pipeline.visual && pipeline.visual.available ? "ok" : "warning", "vibe_app_developer", "derived", "Keep the visual planner and board available."),
+    dashboardWidget("viber_version_plan", "Version Plan Status", "status", context.versionPlanSummary.available ? "available" : "missing", context.versionPlanSummary.available ? "ok" : "warning", "vibe_app_developer", "derived", "Version plans stay app-focused."),
+    dashboardWidget("viber_next_evolution", "Next Evolution Status", "status", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ok" : "empty", "vibe_app_developer", "derived", context.plannerState.next_action || "Run planner propose.")
+  ];
+}
+
+function pipelineRows(context) {
+  const pipeline = context.plannerState.pipeline || {};
+  const visual = context.plannerState.visual || {};
+  return [
+    ["idea", pipeline.idea ? "captured" : "missing", pipeline.idea || "", context.plannerState.next_action || "", "app", ".kabeeri/planner.json"],
+    ["documentation_files", pipeline.documentation_files_total || 0 ? "ready" : "missing", String(pipeline.documentation_files_total || 0), "Create or refresh app docs.", "app", ".kabeeri/planner.json"],
+    ["system_design", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "system design present" : "missing", "Complete the system design artifact.", "app", ".kabeeri/planner.json"],
+    ["database_design", pipeline.design_artifacts && pipeline.design_artifacts.database_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.database_design ? "database design present" : "missing", "Complete the database design artifact.", "app", ".kabeeri/planner.json"],
+    ["ui_ux_design", pipeline.design_artifacts && pipeline.design_artifacts.ui_ux_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.ui_ux_design ? "UI/UX design present" : "missing", "Complete the UI/UX design artifact.", "app", ".kabeeri/planner.json"],
+    ["visual_planning", visual.available ? "ready" : "missing", visual.available ? visual.graph_format || "mermaid" : "", "Refresh the visual planner.", "app", ".kabeeri/planner.json"],
+    ["version_plan", context.versionPlanSummary.available ? "ready" : "missing", context.versionPlanSummary.current_version || "", "Approve the version plan.", "app", ".kabeeri/planner.json"],
+    ["evolutions", Array.isArray(pipeline.evolutions) ? "ready" : "missing", String(context.evolutionSummary.changes_total || 0), "Create app evolutions.", "app", ".kabeeri/evolution.json"],
+    ["task_punches", pipeline.task_punches && pipeline.task_punches.length ? "ready" : "missing", String(pipeline.task_punches_total || 0), "Prepare the first task punch.", "app", ".kabeeri/planner.json"],
+    ["next_evolution", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ready" : "missing", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "", context.plannerState.next_action || "", "app", ".kabeeri/planner.json"],
+    ["handoff", context.sourceControl.mode || "local_first", context.sourceControl.mode || "local_first", "Keep the handoff local-first.", "app", ".kabeeri/planner.json"]
+  ];
+}
+
+function questionnaireWidgets(context) {
+  return [
+    dashboardWidget("viber_questions_total", "Questions Total", "metric", context.questionnairePlans.reduce((sum, plan) => sum + (Array.isArray(plan.generated_questions) ? plan.generated_questions.length : 0), 0), "ok", "vibe_app_developer", "derived", "Capture the unanswered questions."),
+    dashboardWidget("viber_answers_total", "Answers Total", "metric", context.questionnaireAnswers.length, "ok", "vibe_app_developer", "derived", "Record the answers before design."),
+    dashboardWidget("viber_missing_answers", "Missing Answers", "warning", context.questionnaireMissing.length, context.questionnaireMissing.length ? "warning" : "ok", "vibe_app_developer", "derived", "Close the missing answer gaps."),
+    dashboardWidget("viber_review_status", "Review Status", "status", context.questionnaireCoverage.some((area) => area.status === "blocked") ? "blocked" : "reviewable", context.questionnaireCoverage.some((area) => area.status === "blocked") ? "warning" : "ok", "vibe_app_developer", "derived", "Review the intake coverage."),
+    dashboardWidget("viber_approval_status", "Approval Status", "status", context.questionnairePlans.some((plan) => plan.approved_at) ? "approved" : "pending", context.questionnairePlans.some((plan) => plan.approved_at) ? "ok" : "warning", "vibe_app_developer", "derived", "Approve intake before moving forward.")
+  ];
+}
+
+function questionnaireRows(context) {
+  const questions = context.questionnairePlans.flatMap((plan) => (plan.generated_questions || []).map((question) => ({
+    question_id: question.question_id,
+    area_ids: question.area_ids || [],
+    answered: context.questionnaireAnswers.some((answer) => answer.question_id === question.question_id),
+    required_action: question.why || "Answer the question."
+  })));
+  return (questions.length ? questions : context.questionnaireCoverage.map((area) => ({
+    question_id: area.area_key,
+    area_ids: [area.area_key],
+    answered: area.status !== "blocked",
+    required_action: area.required_action || "Address the area."
+  }))).map((item) => [
+    item.question_id || "",
+    (item.area_ids || []).join(", "),
+    item.answered ? "ready" : "missing",
+    item.answered ? "yes" : "no",
+    item.required_action || ""
+  ]);
+}
+
+function productWidgets(context) {
+  return [
+    dashboardWidget("viber_blueprint", "Product Blueprint", "status", context.productBlueprintState.current_blueprint || context.productBlueprintState.selected_blueprints && context.productBlueprintState.selected_blueprints[0] ? "selected" : "missing", context.productBlueprintState.selected_blueprints && context.productBlueprintState.selected_blueprints.length ? "ok" : "warning", "vibe_app_developer", "derived", "Keep the app blueprint explicit."),
+    dashboardWidget("viber_app_type", "App Type", "status", context.project.app_type || context.project.type || "app", "ok", "vibe_app_developer", "derived", "Keep the app type visible."),
+    dashboardWidget("viber_modules_count", "Modules Count", "metric", countRecords(context.dataDesignState.contexts || []), "ok", "vibe_app_developer", "derived", "Track app modules in the design state."),
+    dashboardWidget("viber_surfaces_count", "Surfaces Count", "metric", countRecords(context.productBlueprintState.selected_blueprints || []), "ok", "vibe_app_developer", "derived", "Track the app's surfaced areas."),
+    dashboardWidget("viber_journeys_count", "User Journeys Count", "metric", context.journeys.length, "ok", "vibe_app_developer", "derived", "Keep the app journey count visible.")
+  ];
+}
+
+function moduleRows(context) {
+  return [
+    ["App Workspace", "Current app/product workspace", "vibe_app_developer", context.project.workspace_kind === "developer_app" ? "ready" : "empty", context.apps.map((app) => app.username).join(", ") || ""],
+    ["Blueprint", "Selected blueprint set", "vibe_app_developer", context.productBlueprintState.selected_blueprints && context.productBlueprintState.selected_blueprints.length ? "ready" : "missing", (context.productBlueprintState.selected_blueprints || []).map((item) => item.blueprint_key).join(", ") || ""],
+    ["Data Design", "Database planning context", "vibe_app_developer", context.dataDesignState.contexts && context.dataDesignState.contexts.length ? "ready" : "missing", (context.dataDesignState.contexts || []).map((item) => item.context_id).join(", ") || ""]
+  ];
+}
+
+function journeyRows(context) {
+  const journeys = context.journeys.length ? context.journeys : [{ id: "none", name: "No journeys yet", status: "empty" }];
+  return journeys.map((journey) => [
+    journey.name || journey.id || "",
+    journey.status || "",
+    journey.ready_to_show || journey.status === "ready_to_show" ? "yes" : "no",
+    (journey.feature_ids || []).join(", ") || "",
+    (journey.task_ids || []).join(", ") || ""
+  ]);
+}
+
+function systemWidgets(context) {
+  return [
+    dashboardWidget("viber_architecture", "Architecture Readiness", "status", context.plannerState.pipeline && context.plannerState.pipeline.design_artifacts && context.plannerState.pipeline.design_artifacts.system_design ? "ready" : "missing", context.plannerState.pipeline && context.plannerState.pipeline.design_artifacts && context.plannerState.pipeline.design_artifacts.system_design ? "ok" : "warning", "vibe_app_developer", "derived", "Keep the architecture explicit."),
+    dashboardWidget("viber_integrations", "Integrations", "metric", context.apps.length, "ok", "vibe_app_developer", "derived", "Track the current app integrations."),
+    dashboardWidget("viber_boundaries", "Boundaries", "metric", context.task_tracker_state && context.task_tracker_state.summary ? context.task_tracker_state.summary.blocked || 0 : 0, "ok", "vibe_app_developer", "derived", "Maintain clear app boundaries."),
+    dashboardWidget("viber_risks", "Risks", "metric", countRecords(context.structuredState.risks || []), "ok", "vibe_app_developer", "derived", "Surface app risks early.")
+  ];
+}
+
+function systemRows(context) {
+  return [
+    ["Application Shell", "App workspace and request intake", "app workspace, questionnaire", context.project.workspace_kind === "developer_app" ? "ready" : "missing", "Keep app delivery separate from owner work."],
+    ["Planner", "Approved app plan and pipeline", "planner.json", context.plannerState.current_plan_status || "empty", context.plannerState.next_action || ""],
+    ["Design", "System and UI design artifacts", ".kabeeri/data_design.json", context.dataDesignState.contexts && context.dataDesignState.contexts.length ? "ready" : "missing", "Keep design artifacts current."]
+  ];
+}
+
+function databaseWidgets(context) {
+  return [
+    dashboardWidget("viber_entities", "Entities Count", "metric", countRecords(context.dataDesignState.contexts || []), "ok", "vibe_app_developer", "derived", "Keep entity counts visible."),
+    dashboardWidget("viber_relationships", "Relationships Count", "metric", countRecords(context.productBlueprintState.selected_blueprints || []), "ok", "vibe_app_developer", "derived", "Track relationships through the database plan."),
+    dashboardWidget("viber_migrations", "Migrations Needed", "metric", countRecords(context.structuredState.change_requests || []), "ok", "vibe_app_developer", "derived", "Plan migrations before release."),
+    dashboardWidget("viber_persistence", "Persistence Status", "status", context.structuredState.requirements && context.structuredState.requirements.length ? "planned" : "missing", context.structuredState.requirements && context.structuredState.requirements.length ? "ok" : "warning", "vibe_app_developer", "derived", "Keep persistence visible.")
+  ];
+}
+
+function databaseRows(context) {
+  const entities = context.dataDesignState.contexts.length ? context.dataDesignState.contexts : [{ context_id: "none", entities: [], modules: [], checklist: [], blueprint_key: "" }];
+  return entities.map((entity) => [
+    entity.context_id || "",
+    (entity.entities || []).join(", ") || "",
+    (entity.modules || []).join(", ") || "",
+    (entity.checklist || []).join(", ") || "",
+    entity.status || "ready"
+  ]);
+}
+
+function uiUxWidgets(context) {
+  return [
+    dashboardWidget("viber_screens", "Screens / Pages", "metric", context.productBlueprintState.selected_blueprints.length ? countRecords(context.productBlueprintState.selected_blueprints) : 0, "ok", "vibe_app_developer", "derived", "Keep the screen count visible."),
+    dashboardWidget("viber_visual_state", "Visual State", "status", context.plannerState.visual && context.plannerState.visual.available ? context.plannerState.visual.graph_format || "mermaid" : "missing", context.plannerState.visual && context.plannerState.visual.available ? "ok" : "warning", "vibe_app_developer", "derived", "Keep the visual planning state available."),
+    dashboardWidget("viber_accessibility", "Accessibility Target", "status", "WCAG-aware", "ok", "vibe_app_developer", "derived", "Keep accessibility explicit."),
+    dashboardWidget("viber_design_decisions", "Design Decisions Pending", "metric", countRecords(context.questionnaireMissing), context.questionnaireMissing.length ? "warning" : "ok", "vibe_app_developer", "derived", "Close design decisions before implementation.")
+  ];
+}
+
+function uiUxRows(context) {
+  const blueprints = context.productBlueprintState.selected_blueprints.length ? context.productBlueprintState.selected_blueprints : [{ blueprint_key: "none", frontend_pages: [], channels: [], reason: "No blueprint yet." }];
+  return blueprints.map((blueprint) => [
+    blueprint.blueprint_key || "",
+    blueprint.reason || "",
+    (blueprint.frontend_pages || []).join(", ") || "",
+    blueprint.status || "ready",
+    (blueprint.task_ids || []).join(", ") || ""
+  ]);
+}
+
+function versionWidgets(context) {
+  return [
+    dashboardWidget("viber_current_version", "Current Version", "status", context.versionPlanSummary.current_version || "none", context.versionPlanSummary.available ? "ok" : "warning", "vibe_app_developer", "derived", "Keep the current version visible."),
+    dashboardWidget("viber_next_version", "Next Version", "status", context.versionPlanSummary.next_version || "none", context.versionPlanSummary.available ? "ok" : "warning", "vibe_app_developer", "derived", "Plan the next release version."),
+    dashboardWidget("viber_versions_total", "Evolutions Total", "metric", context.versionPlanSummary.versions_total || 0, "ok", "vibe_app_developer", "derived", "Count the current evolution slices."),
+    dashboardWidget("viber_current_evolution", "Current Evolution", "status", currentEvolutionLabel(context), "ok", "vibe_app_developer", "derived", "Keep the current evolution visible."),
+    dashboardWidget("viber_future_only", "Future-only Evolutions", "warning", countRecords(context.evolutionBoard.future_only_evolutions || []), context.evolutionBoard.future_only_evolutions && context.evolutionBoard.future_only_evolutions.length ? "warning" : "ok", "vibe_app_developer", "derived", "Keep future-only evolutions out of scope.")
+  ];
+}
+
+function versionRows(context) {
+  const versionPlan = context.plannerState.version_plan || {};
+  const versions = Array.isArray(versionPlan.versions) && versionPlan.versions.length ? versionPlan.versions : [{ version: versionPlan.current_version || "none", goal: "Current version", source_control_mode: context.sourceControl.mode || "" }];
+  return versions.map((version) => [
+    version.version || version.version_id || version.name || "",
+    version.goal || version.description || "",
+    Array.isArray(version.included_evolutions) ? version.included_evolutions.join(", ") : version.evolutions || "",
+    Array.isArray(version.excluded_scope) ? version.excluded_scope.join(", ") : version.excluded_scope || "",
+    version.readiness_gate || version.status || "",
+    version.source_control_mode || context.sourceControl.mode || ""
+  ]);
+}
+
+function currentEvolutionLabel(context) {
+  const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
+  return currentEvolution ? currentEvolution.title || currentEvolution.change_id || "current" : "none";
+}
+
+function taskPunchWidgets(context) {
+  return [
+    dashboardWidget("viber_task_punch_total", "Task Punch Total", "metric", countRecords((context.plannerState.task_punch && context.plannerState.task_punch.tasks) || []), "ok", "vibe_app_developer", "derived", "Keep the task punch visible."),
+    dashboardWidget("viber_task_proposed", "Proposed Tasks", "metric", countByTaskStatus(context, "proposed"), "ok", "vibe_app_developer", "derived", "Review proposed tasks."),
+    dashboardWidget("viber_task_approved", "Approved Tasks", "metric", countByTaskStatus(context, "approved"), "ok", "vibe_app_developer", "derived", "Execute approved tasks."),
+    dashboardWidget("viber_task_progress", "In Progress Tasks", "metric", countByTaskStatus(context, "in_progress"), "ok", "vibe_app_developer", "derived", "Keep in-progress work visible."),
+    dashboardWidget("viber_task_verified", "Verified Tasks", "metric", countByTaskStatus(context, "verified"), "ok", "vibe_app_developer", "derived", "Track verification."),
+    dashboardWidget("viber_task_archived", "Archived Tasks", "metric", context.taskTrashState.trash.length, "ok", "vibe_app_developer", "derived", "Archived tasks remain in trash.")
+  ];
+}
+
+function countByTaskStatus(context, status) {
+  const tasks = Array.isArray(context.tasks) ? context.tasks : [];
+  if (status === "verified") return tasks.filter((item) => ["owner_verified", "verified"].includes(String(item.status || "").toLowerCase())).length;
+  return tasks.filter((item) => String(item.status || "").toLowerCase() === status).length;
+}
+
+function taskPunchRows(context, viber = false) {
+  const tasks = Array.isArray(context.plannerState.task_punch && context.plannerState.task_punch.tasks) && context.plannerState.task_punch.tasks.length
+    ? context.plannerState.task_punch.tasks
+    : context.tasks;
+  return (tasks.length ? tasks : [{ id: "none", title: "No task punch yet", status: "empty" }]).map((task) => [
+    task.id || task.task_id || "",
+    task.title || "",
+    task.status || "",
+    task.evolution_id || task.evolution || context.current_plan_id || "",
+    (task.allowed_files || task.allowed || []).join(", ") || "",
+    (task.forbidden_files || task.forbidden || []).join(", ") || "",
+    (task.acceptance || task.acceptance_criteria || []).join(", ") || "",
+    (task.validation_commands || task.validation || []).join(", ") || "",
+    task.stop_condition || task.task_trash_policy || ""
+  ]);
+}
+
+function sourceControlWidgets(context, dashboardType = "owner") {
+  const source = context.sourceControl || {};
+  return [
+    dashboardWidget(`${dashboardType}_sc_enabled`, "Source Control Enabled", "status", source.mode && source.mode !== "none" ? "yes" : "no", source.mode && source.mode !== "none" ? "ok" : "warning", context.workspace_track, "derived", "Expose the track's source control mode."),
+    dashboardWidget(`${dashboardType}_sc_mode`, "Source Control Mode", "status", source.mode || (dashboardType === "viber" ? "local_first" : "direct_main"), "ok", context.workspace_track, "derived", dashboardType === "viber" ? "Keep delivery local-first." : "Keep delivery direct-to-main."),
+    dashboardWidget(`${dashboardType}_sc_branching`, "Branching / PR", "status", `${source.branching_enabled ? "branching" : "no branching"} / ${source.pr_enabled ? "PR" : "no PR"}`, "ok", context.workspace_track, "derived", "Show branching only when enabled."),
+    dashboardWidget(`${dashboardType}_sc_handoff`, "Handoff Package", "status", context.taskTrashState.trash.length ? "available" : "pending", context.taskTrashState.trash.length ? "ok" : "warning", context.workspace_track, "derived", "Handoff package status stays visible."),
+    dashboardWidget(`${dashboardType}_sc_github`, "GitHub Optional Status", "status", source.remote_provider && source.remote_provider !== "none" ? source.remote_provider : "optional", "ok", context.workspace_track, "derived", "GitHub remains optional.")
+  ];
+}
+
+function handoffRows(context) {
+  const handoffState = Array.isArray(context.plannerState.materialization && context.plannerState.materialization.materialized_task_ids) ? context.plannerState.materialization.materialized_task_ids : [];
+  return [
+    [context.plannerState.current_plan_id || "handoff-1", context.plannerState.materialization && context.plannerState.materialization.status || "pending", handoffState.join(", ") || "no evidence yet", context.plannerState.next_action || "Materialize the plan."]
+  ];
+}
+
+function aiCostWidgets(context, dashboardType = "viber") {
+  const summary = context.usageSummary || {};
+  return [
+    dashboardWidget(`${dashboardType}_ai_cost`, dashboardType === "viber" ? "App AI Cost" : "Total AI Usage Cost", "metric", summary.total_cost || 0, "ok", context.workspace_track, "derived", "Keep AI cost visible."),
+    dashboardWidget(`${dashboardType}_ai_tokens`, "Tokens by Task", "metric", summary.total_tokens || 0, "ok", context.workspace_track, "derived", "Track tokens by task."),
+    dashboardWidget(`${dashboardType}_ai_tracked`, "Tracked AI", "metric", summary.tracked_vs_untracked && summary.tracked_vs_untracked.tracked ? summary.tracked_vs_untracked.tracked.cost || 0 : 0, "ok", context.workspace_track, "derived", "Tracked work stays visible."),
+    dashboardWidget(`${dashboardType}_ai_untracked`, "Untracked AI", "metric", summary.tracked_vs_untracked && summary.tracked_vs_untracked.untracked ? summary.tracked_vs_untracked.untracked.cost || 0 : 0, "warning", context.workspace_track, "derived", "Untracked work needs review.")
+  ];
+}
+
+function appPluginWidgets(context) {
+  return [
+    dashboardWidget("viber_plugins_used", "Plugins Used by App", "metric", countRecords((context.pluginState.plugins || []).filter((plugin) => plugin.enabled !== false)), "ok", "vibe_app_developer", "derived", "Track the plugins used by the app."),
+    dashboardWidget("viber_app_builder", "App-Builder Plugin Status", "status", fileExists("plugins") ? "available" : "missing", "ok", "vibe_app_developer", "derived", "Keep app-builder status visible."),
+    dashboardWidget("viber_integration", "Integration Readiness", "status", context.sourceControl.mode || "local_first", "ok", "vibe_app_developer", "derived", "Track integration readiness.")
+  ];
+}
+
+function appPluginRows(context) {
+  const plugins = Array.isArray(context.pluginState.plugins) ? context.pluginState.plugins : [];
+  if (!plugins.length) return [["app-builder", "no", "App builder plugin", "src/cli", "missing", "No plugin registry state yet."]];
+  return plugins.map((plugin) => [
+    plugin.id || plugin.name || "",
+    plugin.enabled === false ? "no" : "yes",
+    plugin.purpose || plugin.description || "",
+    plugin.runtime_entrypoint || plugin.entrypoint || "",
+    plugin.status || (plugin.enabled === false ? "disabled" : "active"),
+    Array.isArray(plugin.gaps) ? plugin.gaps.join(", ") : plugin.gaps || ""
+  ]);
+}
+
+function validationWidgets(context) {
+  return [
+    dashboardWidget("viber_workspace_validation", "Workspace Validation", "status", "ready", "ok", "vibe_app_developer", "derived", "Keep the app workspace valid."),
+    dashboardWidget("viber_task_validation", "Task Validation", "status", context.tasks.length ? "ready" : "empty", context.tasks.length ? "ok" : "warning", "vibe_app_developer", "derived", "Validate the current tasks."),
+    dashboardWidget("viber_handoff_readiness", "Handoff Readiness", "status", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ready" : "pending", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ok" : "warning", "vibe_app_developer", "derived", "Handoff becomes ready after materialization."),
+    dashboardWidget("viber_migration_security", "Migration / Security Blockers", "warning", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), "ok", "vibe_app_developer", "derived", "Resolve migration and security blockers.")
+  ];
+}
+
+function validationRows(context) {
+  return [
+    ["Workspace", "ready", context.project.workspace_kind || "workspace", "Keep the app workspace valid."],
+    ["Task", context.tasks.length ? "ready" : "empty", String(context.tasks.length), "Validate the current tasks."],
+    ["Handoff", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ready" : "pending", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "materialized" : "pending", "Materialize the plan first."],
+    ["Migration / Security", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []) ? "blocked" : "ready", String(countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : [])), "Resolve blockers before release."]
+  ];
+}
+
+function pluginVisualStatus(context) {
+  return context.plannerState.visual && context.plannerState.visual.available ? context.plannerState.visual.graph_format || "mermaid" : "missing";
+}
+
+function plannerVisualStatus(context) {
+  return pluginVisualStatus(context);
+}
+
+function githubProviderStatus(context) {
+  const source = context.sourceControl || {};
+  return source.remote_provider && source.remote_provider !== "none" ? source.remote_provider : "optional";
+}
+
+function buildDashboardStateSectionSummary() {
+  return [];
+}
+
+function buildDashboardEvolutionBoard(evolutionState = {}, evolutionSummary = {}) {
+  const changes = Array.isArray(evolutionState.changes) ? evolutionState.changes : [];
+  const currentChangeId = evolutionState.current_change_id || evolutionSummary.current_change_id || null;
+  const currentEvolution = currentChangeId ? changes.find((item) => item && item.change_id === currentChangeId) || null : null;
+  const normalizedChanges = changes.filter(Boolean);
+  const archivedEvolutions = normalizedChanges.filter((item) => Boolean(item.archived) || ["done", "closed"].includes(String(item.status || "").toLowerCase()));
+  const openEvolutions = normalizedChanges.filter((item) => !Boolean(item.archived) && !["done", "closed", "rejected"].includes(String(item.status || "").toLowerCase()));
+  const futureOnlyEvolutions = normalizedChanges.filter((item) => {
+    const status = String(item.status || "").toLowerCase();
+    const phase = String(item.phase || item.stage || item.timeline || "").toLowerCase();
+    return status === "future_only" || status === "future" || phase === "future";
+  });
+  const futureBlockedItems = normalizedChanges.filter((item) => {
+    const status = String(item.status || "").toLowerCase();
+    return status === "blocked" || status === "future_only";
+  });
+  return {
+    current_evolution: currentEvolution || evolutionSummary.latest_change || null,
+    changes: normalizedChanges,
+    open_evolutions: openEvolutions,
+    archived_evolutions: archivedEvolutions,
+    future_blocked_items: futureBlockedItems,
+    future_only_evolutions: futureOnlyEvolutions,
+    auto_closeout_status: openEvolutions.length ? "active" : normalizedChanges.length ? "ready" : "empty"
+  };
+}
+
 module.exports = {
   collectDashboardState,
   refreshTaskTrackerState,
@@ -1186,5 +2232,13 @@ module.exports = {
   buildDashboardUxGovernanceState,
   writeDashboardStateFiles,
   refreshDashboardArtifacts,
-  taskWorkstreams
+  taskWorkstreams,
+  collectDashboardStateForCurrentTrack,
+  writeDashboardStateFilesForCurrentTrack,
+  buildOwnerDashboardState,
+  buildViberDashboardState,
+  buildDashboardStateForCurrentTrack,
+  buildDashboardStateForScope,
+  buildDashboardSourceControl,
+  normalizeDashboardScope
 };

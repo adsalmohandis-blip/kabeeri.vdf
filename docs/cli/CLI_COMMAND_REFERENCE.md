@@ -1483,8 +1483,12 @@ Migration commands are dry-run governance commands. They do not execute database
 ```bash
 kvdf dashboard generate
 kvdf dashboard state
+kvdf dashboard owner state --json
+kvdf dashboard viber state --json
 kvdf dashboard task-tracker
 kvdf dashboard export
+kvdf dashboard owner export --output owner-dashboard.html
+kvdf dashboard viber export --output viber-dashboard.html
 kvdf dashboard export --output .kabeeri/site/index.html --dashboard-output .kabeeri/site/__kvdf/dashboard/index.html
 kvdf dashboard ux
 kvdf dashboard ux --json
@@ -1496,12 +1500,15 @@ kvdf dashboard workspace list
 kvdf dashboard workspace remove --path ../store-a
 ```
 
-`dashboard export` writes the customer-facing first page to `.kabeeri/site/index.html`, writes the private technical dashboard to `.kabeeri/site/__kvdf/dashboard/index.html`, and exports per-app pages under `.kabeeri/site/customer/apps/<username>/index.html`.
-When planner runtime exists, the exported owner/app dashboards also show a small Planner / Pipeline section so the current approved plan and next action are visible without opening the planner command directly.
+`dashboard owner state` and `dashboard viber state` are separate dashboard products, not role filters inside one page. `dashboard state` returns the current-track dashboard only, so owner work stays on the owner dashboard and app work stays on the viber dashboard.
 
-`dashboard state` prints the same live JSON state used by the local dashboard API. That JSON now includes a `planner` section when planner runtime state exists, so the dashboard can show the current approved plan, pipeline summary, visual summary, source-control state, materialization status, and next action without guessing. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the private dashboard at `/__kvdf/dashboard`, full live JSON at `/__kvdf/api/state`, and task tracker JSON at `/__kvdf/api/tasks`.
+`dashboard export` keeps the legacy customer-page export path: it writes the customer-facing first page to `.kabeeri/site/index.html`, writes the private dashboard for the current track to `.kabeeri/site/__kvdf/dashboard/index.html`, and exports per-app pages under `.kabeeri/site/customer/apps/<username>/index.html`. `dashboard owner export --output owner-dashboard.html` and `dashboard viber export --output viber-dashboard.html` write the separated dashboard products directly to the requested file path.
 
-By default, dashboard state is track-scoped. The owner dashboard only reports the framework-owner track. The app dashboard only reports the vibe app-developer track. Linked workspace summaries are excluded unless `--include-linked-workspaces` or `KVDF_INCLUDE_LINKED_WORKSPACES=1` is set, and even then they are summarized, not merged.
+The shared planner cycle feeds both dashboards, but the rendered dashboard product stays separated by track. Planner and pipeline summaries appear in the dashboard JSON and HTML for the active track only.
+
+`dashboard state` prints the same live JSON state used by the local dashboard API. That JSON now includes a `planner` section when planner runtime state exists, so the dashboard can show the current approved plan, pipeline summary, visual summary, source-control state, materialization status, and next action without guessing. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the current-track dashboard at `/__kvdf/dashboard`, and the owner/viber dashboard aliases at `/__kvdf/dashboard/owner`, `/__kvdf/dashboard/viber`, `/__kvdf/dashboard/framework`, `/__kvdf/dashboard/vibe`, and `/__kvdf/dashboard/app`. The live API remains available at `/__kvdf/api/state`, with task tracker JSON at `/__kvdf/api/tasks`.
+
+By default, dashboard state is track-scoped. The owner dashboard only reports the framework-owner track. The viber/app dashboard only reports the vibe app-developer track. Linked workspace summaries are excluded unless `--include-linked-workspaces` or `KVDF_INCLUDE_LINKED_WORKSPACES=1` is set, and even then they are summarized, not merged. Owner and viber dashboards remain separate products even when they share the same planner cycle.
 
 `dashboard ux` writes a Dashboard UX Governance audit into `.kabeeri/dashboard/ux_audits.json` and a Markdown report under `.kabeeri/reports/dashboard_ux_report.md`. It checks the action center, source-of-truth notice, live state, role visibility, widget registry, app/workspace strategy, planner / pipeline visibility, responsive tables, empty states, governance visibility, cost visibility, Vibe/Agile visibility, and common secret leakage.
 
