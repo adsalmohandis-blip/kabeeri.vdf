@@ -48,7 +48,6 @@ function collectDashboardState(options = {}, deps = {}) {
   const vibeSessions = readStateArray(".kabeeri/interactions/vibe_sessions.json", "sessions");
   const contextBriefs = readStateArray(".kabeeri/interactions/context_briefs.json", "briefs");
   const evolutionState = fileExists(".kabeeri/evolution.json") ? readJsonFile(".kabeeri/evolution.json") : { changes: [], impact_plans: [], current_change_id: null };
-  const evolutionSummary = buildEvolutionSummary(evolutionState);
   const agileState = fileExists(".kabeeri/agile.json") ? readAgileState() : { backlog: [], epics: [], stories: [], sprint_reviews: [], impediments: [], retrospectives: [], releases: [] };
   const agileLiveState = refreshAgileDashboardState(agileState);
   const structuredState = fileExists(".kabeeri/structured.json") ? readStructuredState() : { requirements: [], phases: [], milestones: [], deliverables: [], approvals: [], change_requests: [], risks: [], gates: [] };
@@ -61,11 +60,25 @@ function collectDashboardState(options = {}, deps = {}) {
   const developerEfficiency = buildDeveloperEfficiency();
   const generatedAt = new Date().toISOString();
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
-  const dashboardScope = project.workspace_kind === "developer_app" ? "vibe_app_developer" : "framework_owner";
+  const dashboardScope = resolveWorkspaceTrack(project.workspace_kind);
   const dashboardTitle = project.workspace_kind === "developer_app" ? "Vibe Developer Dashboard" : "Kabeeri Development Dashboard";
-  const appSummaries = buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary);
-  const workstreamSummaries = buildWorkstreamSummaries(workstreams, tasks, sessions, usageSummary, { buildSprintSummary });
-  const workspaceSummaries = collectWorkspaceDashboardSummaries(options);
+  const filteredTasks = filterByTrack(tasks, dashboardScope);
+  const filteredTokens = filterByTrack(tokens, dashboardScope);
+  const filteredLocks = filterByTrack(locks, dashboardScope);
+  const filteredSessions = filterByTrack(sessions, dashboardScope);
+  const filteredEvolutionState = filterEvolutionState(evolutionState, dashboardScope, project.workspace_kind);
+  const evolutionSummary = buildEvolutionSummary(filteredEvolutionState);
+  const evolutionAutoCloseout = {
+    auto_closed_changes_total: evolutionSummary.auto_closed_changes_total || 0,
+    current_milestone_closeout_state: evolutionSummary.current_milestone ? evolutionSummary.current_milestone.closeout_state || "active" : "none"
+  };
+  const evolutionCloseoutPolicy = evolutionSummary.closeout_policy || {
+    applies_to: ["framework_owner", "vibe_app_developer"],
+    trigger: "all_linked_tasks_terminal_and_archived"
+  };
+  const appSummaries = buildCustomerAppSummaries(apps, features, journeys, filteredTasks, usageSummary, { workspaceTrack: dashboardScope });
+  const workstreamSummaries = buildWorkstreamSummaries(workstreams, filteredTasks, filteredSessions, usageSummary, { buildSprintSummary });
+  const workspaceSummaries = collectWorkspaceDashboardSummaries(options, dashboardScope);
   const dashboardUxGovernance = buildDashboardUxGovernanceState({
     apps,
     appSummaries,
@@ -76,11 +89,11 @@ function collectDashboardState(options = {}, deps = {}) {
   });
   const taskTracker = buildTaskTrackerState({
     generatedAt,
-    tasks,
+    tasks: filteredTasks,
     apps,
-    tokens,
-    locks,
-    sessions,
+    tokens: filteredTokens,
+    locks: filteredLocks,
+    sessions: filteredSessions,
     sprints,
     acceptanceRecords: readStateArray(".kabeeri/acceptance.json", "records"),
     usageSummary,
@@ -118,9 +131,9 @@ function collectDashboardState(options = {}, deps = {}) {
     workspaces: workspaceSummaries,
     technical: {
       generated_at: generatedAt,
-      tasks: summarizeBy(tasks, "status"),
-      active_locks: locks.filter((item) => item.status === "active"),
-      active_tokens: tokens.filter((item) => item.status === "active"),
+      tasks: summarizeBy(filteredTasks, "status"),
+      active_locks: filteredLocks.filter((item) => item.status === "active"),
+      active_tokens: filteredTokens.filter((item) => item.status === "active"),
       ai_usage: usageSummary,
       sprints: sprints.map((item) => buildSprintSummary(item.id)),
       sessions: summarizeBy(sessions, "status"),
@@ -141,6 +154,8 @@ function collectDashboardState(options = {}, deps = {}) {
       vibe_sessions: summarizeBy(vibeSessions, "status"),
       context_briefs: contextBriefs.length,
       evolution: evolutionSummary,
+      evolution_auto_closeout: evolutionAutoCloseout,
+      evolution_closeout_policy: evolutionCloseoutPolicy,
       agile_backlog: summarizeBy(agileState.backlog, "status"),
       agile_stories: summarizeBy(agileState.stories, "status"),
       agile_sprint_reviews: agileState.sprint_reviews.length,
@@ -164,10 +179,10 @@ function collectDashboardState(options = {}, deps = {}) {
       app_summaries: appSummaries,
       task_tracker: taskTracker,
       workspaces: workspaceSummaries,
-      task_status: summarizeBy(tasks, "status"),
+      task_status: summarizeBy(filteredTasks, "status"),
       task_tracker_status: taskTracker.summary.by_status,
-      tasks_total: tasks.length,
-      verified_tasks: tasks.filter((item) => item.status === "owner_verified").length,
+      tasks_total: filteredTasks.length,
+      verified_tasks: filteredTasks.filter((item) => item.status === "owner_verified").length,
       ai_usage_cost: usageSummary.total_cost,
       ai_usage_tokens: usageSummary.total_tokens,
       features,
@@ -189,6 +204,8 @@ function collectDashboardState(options = {}, deps = {}) {
       evolution_status: evolutionSummary.status,
       evolution_changes_total: evolutionSummary.changes_total,
       evolution_open_follow_up_tasks: evolutionSummary.open_follow_up_tasks,
+      evolution_auto_closeout: evolutionAutoCloseout,
+      evolution_closeout_policy: evolutionCloseoutPolicy,
       agile_backlog_total: agileState.backlog.length,
       agile_epics_total: agileState.epics.length,
       agile_stories_total: agileState.stories.length,
@@ -216,7 +233,7 @@ function collectDashboardState(options = {}, deps = {}) {
       }))
     },
     records: {
-      tasks,
+      tasks: filteredTasks,
       task_tracker: taskTracker,
       apps,
       features,
@@ -269,13 +286,20 @@ function refreshTaskTrackerState(deps = {}) {
 }
 
 function buildTaskTrackerStateFromFiles(deps = {}) {
+  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  const workspaceTrack = resolveWorkspaceTrack(project.workspace_kind);
+  const tasks = readStateArray(".kabeeri/tasks.json", "tasks").filter((item) => resolveTaskTrack(item, workspaceTrack) === workspaceTrack);
+  const tokens = readStateArray(".kabeeri/tokens.json", "tokens").filter((item) => resolveTaskTrack(item, workspaceTrack) === workspaceTrack);
+  const locks = readStateArray(".kabeeri/locks.json", "locks").filter((item) => resolveTaskTrack(item, workspaceTrack) === workspaceTrack);
+  const sessions = readStateArray(".kabeeri/sessions.json", "sessions").filter((item) => resolveTaskTrack(item, workspaceTrack) === workspaceTrack);
   return buildTaskTrackerState({
     generatedAt: new Date().toISOString(),
-    tasks: readStateArray(".kabeeri/tasks.json", "tasks"),
+    workspaceTrack,
+    tasks,
     apps: readStateArray(".kabeeri/customer_apps.json", "apps"),
-    tokens: readStateArray(".kabeeri/tokens.json", "tokens"),
-    locks: readStateArray(".kabeeri/locks.json", "locks"),
-    sessions: readStateArray(".kabeeri/sessions.json", "sessions"),
+    tokens,
+    locks,
+    sessions,
     sprints: readStateArray(".kabeeri/sprints.json", "sprints"),
     acceptanceRecords: readStateArray(".kabeeri/acceptance.json", "records"),
     usageSummary: (deps.summarizeUsage || (() => ({ by_task: {} })))(),
@@ -312,10 +336,12 @@ function buildTaskTrackerState(input = {}, deps = {}) {
     const taskAcceptance = acceptanceByTask[taskItem.id] || [];
     const usage = usageByTask[taskItem.id] || { events: 0, tokens: 0, cost: 0 };
     const lifecycle = buildTaskLifecycleState(taskItem);
+    const track = resolveTaskTrack(taskItem, input.workspaceTrack || "framework_owner");
     return {
       id: taskItem.id,
       title: taskItem.title,
       status: taskItem.status,
+      track,
       lifecycle_stage: lifecycle.current_stage,
       lifecycle_next_action: lifecycle.next_action,
       type: taskItem.type || "general",
@@ -361,13 +387,14 @@ function buildTaskTrackerState(input = {}, deps = {}) {
   }
   const openTasks = rows.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status));
   const blockedTasks = rows.filter((item) => item.blockers.length > 0);
-  const lifecycle = buildTaskLifecycleBoard(rows);
+  const lifecycle = buildTaskLifecycleBoard(rows, { workspace_track: input.workspaceTrack || "framework_owner" });
   const generatedAt = input.generatedAt || new Date().toISOString();
   return {
     generated_at: generatedAt,
     source: ".kabeeri/tasks.json",
     live_json_path: ".kabeeri/dashboard/task_tracker_state.json",
     live_api_path: "/__kvdf/api/tasks",
+    track: input.workspaceTrack || "framework_owner",
     summary: {
       total: rows.length,
       open: openTasks.length,
@@ -483,7 +510,8 @@ function buildWorkstreamSummaries(workstreams, tasks, sessions, usageSummary, de
   });
 }
 
-function buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary) {
+function buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary, options = {}) {
+  const workspaceTrack = options.workspaceTrack || "framework_owner";
   const featureMap = Object.fromEntries(features.map((item) => [item.id, item]));
   const journeyMap = Object.fromEntries(journeys.map((item) => [item.id, item]));
   const usageByTask = usageSummary.by_task || {};
@@ -497,6 +525,8 @@ function buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary
         : taskItem.app_username ? [taskItem.app_username] : [];
       if (taskApps.includes(appItem.username)) taskIds.add(taskItem.id);
     }
+    const appTrack = resolveWorkspaceTrack(appItem.workspace_kind || appItem.track || appItem.audience || "");
+    if ((appItem.workspace_kind || appItem.track || appItem.audience) && appTrack !== workspaceTrack) return null;
     const appTasks = tasks.filter((taskItem) => taskIds.has(taskItem.id));
     const usage = [...taskIds].reduce((summary, taskId) => {
       const item = usageByTask[taskId] || {};
@@ -524,17 +554,18 @@ function buildCustomerAppSummaries(apps, features, journeys, tasks, usageSummary
       open_tasks: appTasks.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status)).length,
       ai_usage: usage
     };
-  });
+  }).filter(Boolean);
 }
 
-function collectWorkspaceDashboardSummaries(options = {}) {
+function collectWorkspaceDashboardSummaries(options = {}, workspaceTrack = "framework_owner") {
   const roots = getDashboardWorkspaceRoots(options);
-  const current = summarizeWorkspaceRoot(repoRoot(), true);
+  const current = summarizeWorkspaceRoot(repoRoot(), true, workspaceTrack);
   const external = roots
-    .map((root) => summarizeWorkspaceRoot(root, false))
+    .map((root) => summarizeWorkspaceRoot(root, false, workspaceTrack))
     .filter(Boolean)
     .filter((item) => item.root !== current.root);
-  return [current, ...external];
+  if (!shouldIncludeLinkedWorkspaceSummaries(options)) return [current];
+  return [current, ...external.filter((item) => resolveWorkspaceTrack(item.workspace_kind) === workspaceTrack || !item.workspace_kind)];
 }
 
 function getDashboardWorkspaceRoots(options = {}) {
@@ -549,11 +580,23 @@ function getDashboardWorkspaceRoots(options = {}) {
   return [...new Set(roots)];
 }
 
+function shouldIncludeLinkedWorkspaceSummaries(options = {}) {
+  return Boolean(
+    options.workspaces ||
+    options["workspace-roots"] ||
+    options.workspace ||
+    options.include_linked_workspaces ||
+    options["include-linked-workspaces"] ||
+    fileExists(".kabeeri/dashboard/workspaces.json") ||
+    process.env.KVDF_INCLUDE_LINKED_WORKSPACES === "1"
+  );
+}
+
 function parseWorkspaceRoots(value) {
   return parseCsv(value).map((item) => path.resolve(repoRoot(), item));
 }
 
-function summarizeWorkspaceRoot(root, current) {
+function summarizeWorkspaceRoot(root, current, workspaceTrack = "framework_owner") {
   const fs = require("fs");
   const stateDir = path.join(root, ".kabeeri");
   if (!fs.existsSync(stateDir)) {
@@ -571,11 +614,17 @@ function summarizeWorkspaceRoot(root, current) {
   };
   const project = read("project.json", {});
   const apps = read("customer_apps.json", { apps: [] }).apps || [];
-  const tasks = read("tasks.json", { tasks: [] }).tasks || [];
+  const tasks = (read("tasks.json", { tasks: [] }).tasks || []).filter((item) => resolveTaskTrack(item, workspaceTrack) === workspaceTrack);
   const features = read("features.json", { features: [] }).features || [];
   const policyResults = read("policies/policy_results.json", { results: [] }).results || [];
   const securityScans = read("security/security_scans.json", { scans: [] }).scans || [];
   const migrationChecks = read("migrations/migration_checks.json", { checks: [] }).checks || [];
+  const filteredApps = apps.filter((item) => {
+    const appTrack = resolveWorkspaceTrack(item.workspace_kind || item.track || item.audience || "");
+    if (appTrack && appTrack !== "framework_owner" && appTrack !== workspaceTrack) return false;
+    if (item.workspace_kind || item.track || item.audience) return resolveWorkspaceTrack(item.workspace_kind || item.track || item.audience || workspaceTrack) === workspaceTrack;
+    return true;
+  });
   return {
     root,
     current,
@@ -584,9 +633,10 @@ function summarizeWorkspaceRoot(root, current) {
     product_name: project.product_name || project.name || "",
     project_scope: project.project_scope || "single_product_multi_app",
     boundary_mode: apps.length > 1 ? "same_product_multi_app" : apps.length === 1 ? "single_app" : "workspace",
+    workspace_kind: project.workspace_kind || "framework_owner",
     profile: project.profile || "",
     delivery_mode: project.delivery_mode || "",
-    apps_total: apps.length,
+    apps_total: filteredApps.length,
     tasks_total: tasks.length,
     open_tasks: tasks.filter((item) => !["owner_verified", "rejected", "done"].includes(item.status)).length,
     features_total: features.length,
@@ -594,7 +644,7 @@ function summarizeWorkspaceRoot(root, current) {
     security_blocks: securityScans.filter((item) => item.status === "blocked").length,
     migration_blocks: migrationChecks.filter((item) => item.status === "blocked").length,
     dashboard_command: `kvdf dashboard serve --port auto`,
-    apps: apps.map((item) => ({
+    apps: filteredApps.map((item) => ({
       username: item.username,
       name: item.name,
       app_type: item.app_type || item.type || "",
@@ -610,6 +660,8 @@ function buildDashboardUxGovernanceState(input = {}) {
   const workspaceSummaries = input.workspaceSummaries || [];
   const project = input.project || {};
   const currentWorkspace = workspaceSummaries.find((item) => item.current) || workspaceSummaries[0] || {};
+  const workspaceTrack = resolveWorkspaceTrack(project.workspace_kind || currentWorkspace.workspace_kind || "");
+  const taskBoardLabel = workspaceTrack === "vibe_app_developer" ? "App Track Task Board" : "Owner Track Task Board";
   const roleViews = [
     {
       role: "Owner",
@@ -620,19 +672,19 @@ function buildDashboardUxGovernanceState(input = {}) {
     {
       role: "Maintainer",
       visibility: "delivery_and_blockers",
-      widgets: ["Task Tracker Live Board", "Execution Scopes", "Workstream Governance", "Live Reports"],
+      widgets: [taskBoardLabel, "Execution Scopes", "Workstream Governance", "Live Reports"],
       actions: ["triage", "assign", "review", "prepare handoff"]
     },
     {
       role: "Developer",
       visibility: "assigned_work",
-      widgets: ["Task Tracker Live Board", "Active Locks", "Execution Scopes", "Post-work Captures"],
+      widgets: [taskBoardLabel, "Active Locks", "Execution Scopes", "Post-work Captures"],
       actions: ["continue task", "attach evidence", "avoid locked scopes"]
     },
     {
       role: "AI Agent",
       visibility: "scoped_context",
-      widgets: ["Task Tracker Live Board", "Execution Scopes", "Common Prompt Layer", "Tracked vs Untracked AI Usage"],
+      widgets: [taskBoardLabel, "Execution Scopes", "Common Prompt Layer", "Tracked vs Untracked AI Usage"],
       actions: ["read allowed files", "respect token scope", "report usage"]
     },
     {
@@ -665,7 +717,7 @@ function buildDashboardUxGovernanceState(input = {}) {
     { id: "role-filter", label: "Role view", purpose: "Explain which widgets each role should use first.", status: "documented" },
     { id: "view-preset", label: "Saved views", purpose: "Restore the last scope or jump between common owner, developer, QA, client, and AI views.", status: "active" },
     { id: "app-drilldown", label: "App drilldown", purpose: "Inspect one app's summary cards without leaving the dashboard.", status: appSummaries.length ? "active" : "empty" },
-    { id: "workspace-links", label: "Linked workspace summaries", purpose: "Summarize separate KVDF folders without merging their source state.", status: workspaceSummaries.length > 1 ? "active" : "available" },
+    { id: "workspace-links", label: "Linked workspace summaries", purpose: "Summarize separate KVDF folders without merging owner-track or app-track source state.", status: workspaceSummaries.length > 1 ? "active" : "available" },
     { id: "live-refresh", label: "Live refresh", purpose: "Poll local API and reload when derived state changes.", status: "active" },
     { id: "responsive-tables", label: "Responsive tables", purpose: "Keep wide governance tables readable on smaller screens.", status: "active" }
   ];
@@ -677,7 +729,7 @@ function buildDashboardUxGovernanceState(input = {}) {
       current_workspace_mode: currentWorkspace.boundary_mode || (apps.length > 1 ? "same_product_multi_app" : apps.length === 1 ? "single_app" : "workspace"),
       current_workspace_apps: apps.length,
       linked_workspaces: Math.max(0, workspaceSummaries.length - 1),
-      rule: "Use one KVDF workspace for related apps in the same product. Use linked KVDF workspaces for separate products, clients, or release lifecycles.",
+      rule: "Use one KVDF workspace for related apps in the same product. Owner-track dashboards show owner analysis only. App-track dashboards show app analysis only. Use linked KVDF workspaces for separate products, clients, or release lifecycles.",
       product_name: project.product_name || project.name || ""
     },
     role_views: roleViews,
@@ -687,7 +739,8 @@ function buildDashboardUxGovernanceState(input = {}) {
       "The dashboard is derived from .kabeeri and never becomes source of truth.",
       "Local serve mode polls /__kvdf/api/state and reloads when the stable state fingerprint changes.",
       "Static exports must still show the latest generated_at timestamp and readable empty states.",
-      "Linked workspaces are summarized only; their tasks, approvals, and policies are not merged."
+      "Linked workspaces are summarized only; their tasks, approvals, and policies are not merged.",
+      "Owner-track and app-track analysis stay separated unless linked workspace summaries are explicitly requested."
     ],
     empty_error_rules: [
       "Empty tables must render an explicit empty-state row or message.",
@@ -700,6 +753,49 @@ function buildDashboardUxGovernanceState(input = {}) {
       "Controls must wrap instead of overlapping on narrow screens."
     ]
   };
+}
+
+function resolveWorkspaceTrack(workspaceKind = "") {
+  const normalized = String(workspaceKind || "").trim().toLowerCase();
+  if (["developer_app", "vibe_app_developer", "vibe", "app", "app_developer"].includes(normalized)) return "vibe_app_developer";
+  return "framework_owner";
+}
+
+function resolveTaskTrack(taskItem = {}, fallbackTrack = "framework_owner") {
+  const normalized = String(taskItem.track || taskItem.evolution_track || taskItem.workspace_track || "").trim().toLowerCase();
+  if (["vibe_app_developer", "developer_app", "app_developer", "vibe"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  if (taskItem.app_usernames && taskItem.app_usernames.length) return "vibe_app_developer";
+  return fallbackTrack;
+}
+
+function filterByTrack(items = [], workspaceTrack = "framework_owner") {
+  return (items || []).filter((item) => resolveTaskTrack(item, workspaceTrack) === workspaceTrack);
+}
+
+function resolveEvolutionTrack(value = "", fallbackTrack = "framework_owner") {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["vibe_app_developer", "developer_app", "app_developer", "vibe"].includes(normalized)) return "vibe_app_developer";
+  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  return fallbackTrack;
+}
+
+function filterEvolutionState(evolutionState = {}, workspaceTrack = "framework_owner", workspaceKind = "") {
+  const state = {
+    ...evolutionState,
+    changes: Array.isArray(evolutionState.changes)
+      ? evolutionState.changes.filter((item) => resolveEvolutionTrack(item.track || item.audience || workspaceKind, workspaceTrack) === workspaceTrack)
+      : [],
+    impact_plans: Array.isArray(evolutionState.impact_plans)
+      ? evolutionState.impact_plans.filter((item) => resolveEvolutionTrack(item.track || item.audience || workspaceKind, workspaceTrack) === workspaceTrack)
+      : [],
+    workspace_kind: workspaceKind || evolutionState.workspace_kind || workspaceTrack
+  };
+  if (state.current_change_id) {
+    const current = state.changes.find((item) => item && item.change_id === state.current_change_id);
+    if (!current && state.changes.length) state.current_change_id = state.changes[state.changes.length - 1].change_id;
+  }
+  return state;
 }
 
 function writeDashboardStateFiles(state, deps = {}) {

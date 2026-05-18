@@ -6,6 +6,7 @@ const { summarizeUsage } = require("./usage_pricing");
 const { buildCustomerAppSummaries } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
 const { readStateArray } = require("../services/state_utils");
+const { buildEvolutionSummary } = require("../services/evolution");
 const { summarizeWorkspaceContract, validateDeveloperAppWorkspace } = require("../services/app_workspace_contract");
 const { refreshAppScorecards, buildAppScorecardTableRows, buildAppScorecardSummaryLine } = require("../services/app_scorecards");
 
@@ -76,7 +77,17 @@ function buildCustomerAppHtml(appItem) {
   const features = readStateArray(".kabeeri/features.json", "features");
   const journeys = readStateArray(".kabeeri/journeys.json", "journeys");
   const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
-  const summary = buildCustomerAppSummaries([appItem], features, journeys, tasks, summarizeUsage())[0];
+  const summary = buildCustomerAppSummaries([appItem], features, journeys, tasks, summarizeUsage())[0] || {
+    features_total: 0,
+    ready_features: 0,
+    journeys_total: 0,
+    ready_journeys: 0,
+    tasks_total: 0,
+    verified_tasks: 0,
+    open_tasks: 0,
+    ai_usage: { events: 0, tokens: 0, cost: 0 },
+    public_url: publicCustomerAppUrl(appItem.username)
+  };
   const linkedFeatures = features.filter((featureItem) => (appItem.feature_ids || []).includes(featureItem.id));
   const linkedJourneys = journeys.filter((journeyItem) => (appItem.journey_ids || []).includes(journeyItem.id));
   return `<!doctype html>
@@ -128,6 +139,10 @@ function buildDeveloperAppDashboardHtml(options = {}) {
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
   const contract = validateDeveloperAppWorkspace(repoRoot());
   const summary = summarizeWorkspaceContract(contract);
+  const evolutionState = fileExists(".kabeeri/evolution.json")
+    ? readJsonFile(".kabeeri/evolution.json")
+    : { changes: [], impact_plans: [], current_change_id: null };
+  const evolutionSummary = buildEvolutionSummary(evolutionState);
   const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
   const taskTracker = fileExists(".kabeeri/dashboard/task_tracker_state.json")
     ? readJsonFile(".kabeeri/dashboard/task_tracker_state.json")
@@ -150,13 +165,18 @@ function buildDeveloperAppDashboardHtml(options = {}) {
   const boundaries = (contract.boundary && contract.boundary.items) || [];
   const nextAction = scorecards.summary.next_exact_action || summary.next_exact_action || "kvdf app workspace validate";
   const title = project.app_name || project.name || summary.workspace_slug || "Vibe Developer Workspace";
+  const dashboardTitle = "Vibe Developer Dashboard";
+  const evolutionCloseoutBadge = buildEvolutionCloseoutBadge(
+    evolutionSummary.current_milestone ? evolutionSummary.current_milestone.closeout_state : "none",
+    evolutionSummary.auto_closed_changes_total || 0
+  );
 
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(title)} - Vibe Developer Dashboard</title>
+  <title>${escapeHtml(title)} - ${escapeHtml(dashboardTitle)}</title>
   <style>
     body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #f6f7f9; }
     header { background: linear-gradient(135deg, #0f766e, #134e4a); color: white; padding: 24px 28px; }
@@ -183,7 +203,8 @@ function buildDeveloperAppDashboardHtml(options = {}) {
     <p>Workspace scope: ${escapeHtml(project.workspace_kind || "developer_app")} · Contract status: ${escapeHtml(contract.status || "unknown")} · Next action: ${escapeHtml(nextAction)}</p>
     <span class="pill">${escapeHtml(summary.boundary_status || "unknown")} boundary</span>
     ${(summary.surface_scopes || []).map((scope) => `<span class="pill">${escapeHtml(scope)}</span>`).join("")}
-    <div class="muted">This dashboard is the vibe developer view for the current app workspace. It stays separate from the Kabeeri development dashboard.</div>
+    <div class="muted">This dashboard is the app-track view for the current app workspace. It stays separate from the owner dashboard and only shows app-track analysis. Milestones auto-archive when their linked tasks finish and trash/archive is written.</div>
+    <div class="pill">${escapeHtml(evolutionCloseoutBadge)}</div>
   </header>
   <main>
     <section class="grid">
@@ -239,7 +260,7 @@ function buildDeveloperAppDashboardHtml(options = {}) {
 
     <section class="section">
       <h2>Task Tracker Live Board</h2>
-      <p class="section-help">Task tracker state is derived from the local app workspace and is refreshed from the same source of truth before render.</p>
+      <p class="section-help">Task tracker state is derived from the local app workspace and is refreshed from the same source of truth before render. It does not show owner-track tasks. Completed milestone slices auto-close when the last linked task is archived.</p>
       ${htmlTable(["Metric", "Value"], [
         ["Generated At", taskTracker.generated_at || ""],
         ["Tracked Tasks", Array.isArray(taskTracker.tasks) ? taskTracker.tasks.length : 0],
@@ -311,6 +332,10 @@ function buildDashboardHtml(options = {}) {
   const workspaceSummaries = business.workspaces || [];
   const workstreamSummaries = business.workstreams || [];
   const dashboardUxGovernance = business.dashboard_ux_governance || {};
+  const evolutionCloseoutBadge = buildEvolutionCloseoutBadge(
+    (business.evolution_auto_closeout || {}).current_milestone_closeout_state,
+    (business.evolution_auto_closeout || {}).auto_closed_changes_total || 0
+  );
   const dashboardActionItems = buildDashboardActionItems({
     technical,
     business,
@@ -372,7 +397,9 @@ function buildDashboardHtml(options = {}) {
     <div class="live">Live endpoint: <code>/__kvdf/api/state</code> · Task tracker: <code>/__kvdf/api/tasks</code> · Agile: <code>/__kvdf/api/agile</code> · Reports: <code>/__kvdf/api/reports</code> · <span id="live-status">checking...</span></div>
     <div class="source-note">Derived view; .kabeeri is the source of truth.</div>
     <div class="source-note">Stale data policy: poll the live API and keep static exports readable.</div>
-    <div class="source-note">Framework-owner view: platform health, governance, evolution, runtime contracts, plugins, and shared workspace state. App-workspace dashboards use the vibe developer route.</div>
+    <div class="source-note">Framework-owner view: platform health, governance, evolution, runtime contracts, plugins, and shared workspace state. App-track dashboards use the app route and stay separate by default.</div>
+    <div class="source-note">Workspace mode: ${escapeHtml(dashboardUxGovernance.workspace_strategy && dashboardUxGovernance.workspace_strategy.current_workspace_mode ? dashboardUxGovernance.workspace_strategy.current_workspace_mode : "workspace")}</div>
+    <div class="source-note">Evolution closeout: <strong>${escapeHtml(evolutionCloseoutBadge)}</strong></div>
     <div class="toolbar">
       <span class="muted"><strong>Dashboard Controls</strong></span>
       <label for="app-filter">App</label>
@@ -435,6 +462,7 @@ function buildDashboardHtml(options = {}) {
     </section>
     <section class="dashboard-section" data-roles="all_roles">
       <h2>Task Tracker Live Board</h2>
+      <p class="section-help">This board shows the current owner-track task analysis only. App-track tasks stay on the app dashboard unless linked summaries are explicitly requested. Completed milestone slices auto-close when the last linked task is archived.</p>
       ${htmlTable(["Task", "Title", "Status", "Workstream"], tasks.map((item) => [
         item.id,
         item.title,
@@ -481,8 +509,8 @@ function buildDashboardHtml(options = {}) {
     <section class="dashboard-section" data-roles="owner,maintainer,developer,ai_agent">
       <h2>App Boundary Governance</h2>
       <p class="section-help">Same-product apps stay inside the current KVDF workspace; linked KVDF workspaces are summarized separately and never merged into source truth.</p>
-      <p class="section-help">Project scope: <code>${escapeHtml(project.project_scope || "single_product_multi_app")}</code>; app strategy: <code>same_product_multi_app</code></p>
-      <p class="section-help">same-product apps and Linked KVDF workspaces are visible together so boundaries stay obvious during review.</p>
+      <p class="section-help">Project scope: <code>${escapeHtml(project.project_scope || "single_product_multi_app")}</code>; current track: <code>framework_owner</code></p>
+      <p class="section-help">Owner analysis stays on this dashboard. App-track analysis stays on the app dashboard unless linked workspace summaries are explicitly enabled.</p>
     </section>
     <section class="dashboard-section" data-roles="owner,maintainer,developer,ai_agent">
       <h2>AI Usage by Task</h2>
@@ -744,6 +772,15 @@ function renderAppDrilldownCards(appSummaries) {
       </article>
     `;
   }).join("");
+}
+
+function buildEvolutionCloseoutBadge(closeoutState, autoClosedTotal) {
+  const total = Number(autoClosedTotal || 0);
+  const state = String(closeoutState || "").trim().toLowerCase();
+  if (state === "auto-archived") return total === 1 ? "Auto-archived milestone" : `Auto-archived milestones (${total})`;
+  if (state === "awaiting_archive") return "Milestone awaiting archive";
+  if (state === "active") return "Milestone active";
+  return "No active evolution";
 }
 
 function metricCard(label, value) {
