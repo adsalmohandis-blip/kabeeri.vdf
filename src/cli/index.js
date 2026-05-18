@@ -8917,7 +8917,7 @@ function buildLiveReportActionItems(reports, resumeReport = null) {
       "warning",
       "track",
       "Session track differs from the current workspace context.",
-      "Run `kvdf track route` or `kvdf resume` so the workspace context becomes the active track source."
+      "Run `kvdf track route` or `kvdf resume` so the workspace context becomes the active track source. For KVDF Core owner-track work, continue with direct-to-main delivery guidance."
     );
   }
   if ((reports.task_tracker.summary.open || 0) > 0) push("info", "tasks", `${reports.task_tracker.summary.open} task(s) are open.`, "Run `kvdf task tracker` for next actions.");

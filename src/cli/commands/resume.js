@@ -691,12 +691,13 @@ function buildNextExactAction({ mode, evolution, ownerCheckpoint, questionnaireU
     if (evolution && evolution.next_priority) {
       return `Continue ${evolution.next_priority.id}: ${evolution.next_priority.title}.`;
     }
-    if (questionnaireUiDecisions && questionnaireUiDecisions.pending_count > 0) {
-      const preview = questionnaireUiDecisions.pending_titles.slice(0, 3).join(", ");
-      return `Resolve pending UI/UX decisions: ${preview}${questionnaireUiDecisions.pending_count > 3 ? ", ..." : ""}.`;
+    if (git.changed_files > 0) {
+      return "Run validation, commit intended KVDF Core changes on main, then push origin main.";
     }
-    if (ownerCheckpoint && ownerCheckpoint.next_actions.length) return ownerCheckpoint.next_actions[0];
-    return git.changed_files ? "Review current diff, then run npm test." : "Pick the next Evolution Steward priority.";
+    if (questionnaireUiDecisions && questionnaireUiDecisions.pending_count > 0) {
+      return "Run validation, commit intended KVDF Core changes on main, then push origin main.";
+    }
+    return "Run validation, commit intended KVDF Core changes on main, then push origin main.";
   }
   if (questionnaireUiDecisions && questionnaireUiDecisions.pending_count > 0) {
     const preview = questionnaireUiDecisions.pending_titles.slice(0, 3).join(", ");

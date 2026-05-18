@@ -218,7 +218,7 @@ test("root commands validate repository assets", () => {
   assert.strictEqual(rootResume.primary_track.id, "framework_owner");
   assert.strictEqual(rootResume.evolution.next_priority, null);
   assert.ok(rootResume.owner_checkpoint);
-  assert.match(rootResume.next_exact_action, /Resolve pending UI\/UX decisions|Review current diff|Pick the next Evolution Steward priority/);
+  assert.strictEqual(rootResume.next_exact_action, "Run validation, commit intended KVDF Core changes on main, then push origin main.");
   assert.ok(rootResume.git_summary);
   const rootEntry = JSON.parse(runKvdf(["entry", "--json"]).stdout);
   assert.strictEqual(rootEntry.entry_route.track_id, "framework_owner");

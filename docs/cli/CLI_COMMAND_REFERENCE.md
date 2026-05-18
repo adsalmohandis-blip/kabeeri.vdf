@@ -80,13 +80,15 @@ Kabeeri is organized around two primary tracks:
 
 ```text
 Framework Owner Track
-resume -> evolution priorities -> evolution temp -> implement on a branch -> review -> merge -> pull main -> validate -> verify
+resume -> evolution priorities -> evolution temp -> validate -> verify -> commit on main -> push origin main
 
 Vibe App Developer Track
-resume -> vibe/ask -> blueprint/questionnaire -> evolution -> temp -> tasks/capture -> branch -> review -> merge -> pull main -> validate -> handoff
+resume -> vibe/ask -> blueprint/questionnaire -> evolution -> temp -> tasks/capture -> handoff (local-first) -> branch/PR optional for team/protected/risky work -> validate
 ```
 
 Framework-owner sessions use Evolution Steward to change Kabeeri itself. Vibe app-developer sessions use the same CLI engine to build an application with governed tasks, captures, blueprints, and validation. The shared commands `resume`, `guard`, `conflict`, `validate`, `dashboard`, `reports`, and `sync` keep both tracks safe and resumable.
+
+In KVDF Core owner-track work, `resume` should make the solo-owner direct-to-main policy explicit. The next exact action should point to validation, commit on `main`, and push to `origin main` instead of implying branch/PR as the default path.
 
 Shared commands are the first stop when you are not sure which track owns the work. They are safe in both tracks and should be used before you guess at a framework-only or app-only command.
 
@@ -206,9 +208,9 @@ kvdf sync push
 kvdf sync push --confirm
 ```
 
-`sync` is the local-to-GitHub team coordination preflight. It checks branch, remote, upstream, ahead/behind counts, local changed files, and whether `.kabeeri` exists. `pull` and `push` are dry-run commands unless `--confirm` is provided.
+`sync` is the local-to-GitHub team coordination preflight. It checks branch, remote, upstream, ahead/behind counts, local changed files, and whether `.kabeeri` exists. `pull` and `push` are dry-run commands unless `--confirm` is provided. For KVDF Core solo-owner work, direct-to-main remains the default delivery path and branch/PR is optional rather than assumed.
 
-Use `sync status` before starting a task in a multi-developer workspace. Use `sync pull` to preview a safe `git pull --ff-only`. Use `sync push` to preview remote publication after tests, validation, and Owner review.
+Use `sync status` before starting a task in a multi-developer workspace. Use `sync pull` to preview a safe `git pull --ff-only`. Use `sync push` to preview remote publication after tests, validation, and Owner review. Solo-owner KVDF Core work should still default to direct-to-main; use branch/PR only when team, protected-repo, or risky work requires it.
 
 For solo or single-developer local workspaces, `sync` is optional and acts as a manual safety check. For team workspaces with multiple active developers or agents, Kabeeri treats sync as recommended before starting team-scoped work and after task/session/capture changes.
 
@@ -446,8 +448,9 @@ automatically when the source priority leaves `in_progress`. It must cover the
 full current milestone from the first required step to the last required step,
 with no leftover execution remainder outside the queue. It is the required
 first step for any AI tool that begins work on an active priority. When GitHub
-sync is enabled, the milestone stays branch-based and PR-based, but the local
-workspace still owns the state and the trash/archive trail.
+sync is enabled, the milestone can use the optional Team / Protected Repo GitHub
+Mode branch/PR path, but the local workspace still owns the state and the
+trash/archive trail.
 
 ## Temporary Execution Queues
 
