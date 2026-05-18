@@ -1,4 +1,4 @@
-const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../services/local_server");
+const { buildFullscreenUrl, buildLocalServerSkipMessage, injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenBrowser, shouldStartLocalServer } = require("../services/local_server");
 const { collectDashboardStateForCurrentTrack, writeDashboardStateFilesForCurrentTrack } = require("./dashboard_state");
 
 function resolveDashboardScope(pathname) {
@@ -61,6 +61,7 @@ function serveSite(port, options = {}, deps = {}) {
     const server = http.createServer((request, response) => {
       const url = new URL(request.url, `http://127.0.0.1:${currentPort}`);
       const pathname = url.pathname.replace(/\/$/, "") || "/";
+      const fullscreen = shouldLaunchFullscreen(options) || url.searchParams.has("fullscreen");
       let file = null;
       if (pathname === "/" || pathname === "/index.html") {
         file = homeFile;
@@ -74,7 +75,7 @@ function serveSite(port, options = {}, deps = {}) {
             "cache-control": "no-store"
           });
           const dashboardOptions = dashboardScope === "current" ? options : { ...options, scope: dashboardScope };
-          response.end(buildDashboardHtml(dashboardOptions));
+          response.end(injectFullscreenShell(buildDashboardHtml(dashboardOptions), fullscreen ? { fullscreen: true } : {}));
           return;
         }
       }
@@ -139,7 +140,7 @@ function serveSite(port, options = {}, deps = {}) {
         return;
       }
       response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-      response.end(fs.readFileSync(file, "utf8"));
+      response.end(injectFullscreenShell(fs.readFileSync(file, "utf8"), fullscreen ? { fullscreen: true } : {}));
     });
     server.on("error", (error) => {
       if (error.code === "EADDRINUSE" && autoPort && currentPort < startPort + 100) {
@@ -150,9 +151,12 @@ function serveSite(port, options = {}, deps = {}) {
       throw error;
     });
     server.listen(currentPort, "127.0.0.1", () => {
-      console.log(`Kabeeri customer page running at http://127.0.0.1:${currentPort}/`);
-      console.log(`Private dashboard running at http://127.0.0.1:${currentPort}/__kvdf/dashboard`);
+      const baseUrl = `http://127.0.0.1:${currentPort}/`;
+      const dashboardUrl = buildFullscreenUrl(`http://127.0.0.1:${currentPort}/__kvdf/dashboard`, options);
+      console.log(`Kabeeri customer page running at ${baseUrl}`);
+      console.log(`Private dashboard running at ${dashboardUrl}`);
       console.log(`Live state API running at http://127.0.0.1:${currentPort}/__kvdf/api/state`);
+      if (shouldOpenBrowser(options)) openExternalUrl(dashboardUrl);
     });
   }
 

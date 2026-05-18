@@ -4,7 +4,7 @@ const path = require("path");
 const { spawn, spawnSync } = require("child_process");
 const { fileExists, repoRoot, resolveAsset } = require("../fs_utils");
 const { readJsonFile } = require("../workspace");
-const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../services/local_server");
+const { buildFullscreenUrl, buildLocalServerSkipMessage, injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenBrowser, shouldStartLocalServer } = require("../services/local_server");
 
 const DOCS_SITE_COVERAGE_FILE = "docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json";
 const DOCS_SITE_SYNC_REPORT_FILE = "docs/reports/DOCS_SITE_SYNC_REPORT.json";
@@ -136,7 +136,13 @@ function docsSite(action, value, flags = {}) {
   if (mode === "preview" || mode === "open" || mode === "serve" || mode === "live") {
     generateDocsSite();
     validateDocsSiteArtifacts();
-    const shouldOpen = mode === "open" || flags.open === true || flags.open === "true";
+    const openDisabled = flags.open === false
+      || flags.open === "false"
+      || flags["no-open"] === true
+      || flags["no-open"] === "true"
+      || flags.no_open === true
+      || flags.no_open === "true";
+    const shouldOpen = !openDisabled && (mode === "open" || flags.open === true || flags.open === "true");
     return serveDocsSite(flags.port || 4188, { ...flags, open: shouldOpen });
   }
 
@@ -399,6 +405,16 @@ function serveDocsSite(port, options = {}) {
         response.end("Not found");
         return;
       }
+      const fullscreen = shouldLaunchFullscreen(options) || url.searchParams.has("fullscreen");
+      if (filePath.endsWith(".html")) {
+        response.writeHead(200, {
+          "content-type": docsMimeType(filePath),
+          "cache-control": "no-store"
+        });
+        const content = fs.readFileSync(filePath, "utf8");
+        response.end(injectFullscreenShell(content, fullscreen ? { fullscreen: true } : {}));
+        return;
+      }
       response.writeHead(200, {
         "content-type": docsMimeType(filePath),
         "cache-control": "no-store"
@@ -418,7 +434,7 @@ function serveDocsSite(port, options = {}) {
       console.log(`Kabeeri docs site running at ${url}`);
       console.log(`English docs: ${url}pages/en/what-is.html`);
       console.log(`Arabic docs: ${url}pages/ar/what-is.html`);
-      if (options.open) openExternalUrl(url);
+      if (shouldOpenBrowser(options)) openExternalUrl(buildFullscreenUrl(url, options));
     });
   }
 
@@ -439,14 +455,6 @@ function docsMimeType(filePath) {
     ".webp": "image/webp"
   };
   return types[ext] || "application/octet-stream";
-}
-
-function openExternalUrl(url) {
-  const command = process.platform === "win32" ? "cmd" : process.platform === "darwin" ? "open" : "xdg-open";
-  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
-  const child = spawn(command, args, { detached: true, stdio: "ignore" });
-  child.on("error", () => {});
-  child.unref();
 }
 
 function openInVsCode(target) {

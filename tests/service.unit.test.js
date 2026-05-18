@@ -31,7 +31,7 @@ const { objectLines, recordLines } = require("../src/cli/services/report_output"
 const { policyReportItem, taskReportItem } = require("../src/cli/services/report_items");
 const { appendJsonLine, readJsonLines, writeJsonLines } = require("../src/cli/services/jsonl");
 const { readStateArray, summarizeBy } = require("../src/cli/services/state_utils");
-const { buildLocalServerSkipMessage, shouldStartLocalServer } = require("../src/cli/services/local_server");
+const { buildFullscreenUrl, buildLocalServerSkipMessage, injectFullscreenShell, shouldLaunchFullscreen, shouldOpenBrowser, shouldStartLocalServer } = require("../src/cli/services/local_server");
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
 const { buildBootContext } = require("../src/core/bootstrap");
 const { serveSite } = require("../src/cli/commands/site");
@@ -767,4 +767,12 @@ test("local server helpers skip serve mode in non-interactive environments", () 
   });
   if (previousCi === undefined) delete process.env.CI;
   else process.env.CI = previousCi;
+});
+
+test("visual server helpers support no-open and fullscreen options", () => {
+  assert.strictEqual(shouldOpenBrowser({ open: true }), true);
+  assert.strictEqual(shouldOpenBrowser({ open: true, "no-open": true }), false);
+  assert.strictEqual(shouldLaunchFullscreen({ fullscreen: true }), true);
+  assert.match(buildFullscreenUrl("http://127.0.0.1:4188/", { fullscreen: true }), /fullscreen=1/);
+  assert.match(injectFullscreenShell("<html><body>Test</body></html>", { fullscreen: true }), /requestFullscreen/);
 });

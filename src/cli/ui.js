@@ -1006,6 +1006,8 @@ Notes:
   kvdf dashboard serve --port 4177
   kvdf dashboard serve --port auto
   kvdf dashboard serve --port 4177 --workspaces ../store-a,../store-b
+  kvdf dashboard serve --port 4177 --open --fullscreen
+  kvdf dashboard serve --port 4177 --no-open
   kvdf dashboard workspace add --path ../store-a --name "Store A"
   kvdf dashboard workspace list
 
@@ -1028,6 +1030,7 @@ Notes:
   kvdf docs open
   kvdf docs serve --port 4188
   kvdf docs serve --port auto --open
+  kvdf docs serve --port 4188 --no-open --fullscreen
   kvdf docs generate
   kvdf docs build
   kvdf docs preview
@@ -1042,7 +1045,7 @@ Notes:
 
 Notes:
   The docs site is served from docs/site and regenerated before open/serve/generate.
-  Use docs open for reading the live documentation in the browser.
+  Use docs open for reading the live documentation in the browser. Use --no-open when you want the server running but do not want the browser opened automatically, and use --fullscreen when you want the browser to request a full-screen launch shell.
   Use docs build, preview, and sync as CLI-first aliases for the docs publishing lifecycle.
   Use docs workflow to inspect the template catalog, manifest, page contracts, and validation steps as one resumable report.
   Use docs manifest and docs contracts to inspect the generated site manifest and page contracts.

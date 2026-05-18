@@ -1528,6 +1528,8 @@ kvdf dashboard ux --json
 kvdf dashboard serve --port 4177
 kvdf dashboard serve --port auto
 kvdf dashboard serve --port 4177 --workspaces ../store-a,../store-b
+kvdf dashboard serve --port 4177 --open --fullscreen
+kvdf dashboard serve --port 4177 --no-open
 kvdf dashboard workspace add --path ../store-a --name "Store A"
 kvdf dashboard workspace list
 kvdf dashboard workspace remove --path ../store-a
@@ -1539,7 +1541,7 @@ kvdf dashboard workspace remove --path ../store-a
 
 The shared planner cycle feeds both dashboards, but the rendered dashboard product stays separated by track. Planner and pipeline summaries appear in the dashboard JSON and HTML for the active track only.
 
-`dashboard state` prints the same live JSON state used by the local dashboard API. That JSON now includes a `planner` section when planner runtime state exists, so the dashboard can show the current approved plan, pipeline summary, visual summary, source-control state, materialization status, and next action without guessing. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the current-track dashboard at `/__kvdf/dashboard`, and the owner/viber dashboard aliases at `/__kvdf/dashboard/owner`, `/__kvdf/dashboard/viber`, `/__kvdf/dashboard/framework`, `/__kvdf/dashboard/vibe`, and `/__kvdf/dashboard/app`. The live API remains available at `/__kvdf/api/state`, with task tracker JSON at `/__kvdf/api/tasks`.
+`dashboard state` prints the same live JSON state used by the local dashboard API. That JSON now includes a `planner` section when planner runtime state exists, so the dashboard can show the current approved plan, pipeline summary, visual summary, source-control state, materialization status, and next action without guessing. `dashboard task-tracker` prints the focused task board JSON written to `.kabeeri/dashboard/task_tracker_state.json`. `dashboard serve` serves the customer page at `/`, app pages at `/customer/apps/<username>`, the current-track dashboard at `/__kvdf/dashboard`, and the owner/viber dashboard aliases at `/__kvdf/dashboard/owner`, `/__kvdf/dashboard/viber`, `/__kvdf/dashboard/framework`, `/__kvdf/dashboard/vibe`, and `/__kvdf/dashboard/app`. Use `--open` to launch the browser automatically, `--no-open` to keep the server running without opening a browser, and `--fullscreen` to request a fullscreen launch shell for the visual page. The live API remains available at `/__kvdf/api/state`, with task tracker JSON at `/__kvdf/api/tasks`.
 
 By default, dashboard state is track-scoped. The owner dashboard only reports the framework-owner track. The viber/app dashboard only reports the vibe app-developer track. Linked workspace summaries are excluded unless `--include-linked-workspaces` or `KVDF_INCLUDE_LINKED_WORKSPACES=1` is set, and even then they are summarized, not merged. Owner and viber dashboards remain separate products even when they share the same planner cycle.
 
@@ -1557,6 +1559,7 @@ See `docs/reports/dashboard/LIVE_DASHBOARD_RUNTIME.md`.
 kvdf docs open
 kvdf docs serve --port 4188
 kvdf docs serve --port auto --open
+kvdf docs serve --port 4188 --no-open --fullscreen
 kvdf docs generate
 kvdf docs workflow
 kvdf docs manifest
@@ -1571,7 +1574,9 @@ and opens the site in the default browser. This is the recommended reading
 flow for developers.
 
 `docs serve` runs the same local docs server without opening a browser unless
-`--open` is provided. `docs generate` rebuilds `docs/site/pages/*` plus the
+`--open` is provided. Use `--no-open` to suppress browser launch even when a
+wrapper command would otherwise open it, and use `--fullscreen` to request a
+fullscreen launch shell when the browser opens. `docs generate` rebuilds `docs/site/pages/*` plus the
 generated template catalog, site manifest, and page contracts from the site
 source. `docs workflow` prints the resumable generation workflow report,
 including the templates, manifest, contracts, validation steps, and coverage
