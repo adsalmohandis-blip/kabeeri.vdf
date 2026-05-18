@@ -59,6 +59,9 @@ function validateRepository(scope) {
   if (scope === "all" || scope === "runtime-schemas") {
     validateRuntimeSchemas(pass, fail);
   }
+  if (scope === "all" || scope === "planner" || scope === "planner-state") {
+    validatePlannerState(pass, fail);
+  }
 
   if (scope === "docs-source-truth" || scope === "docs-truth" || scope === "docs-sync" || scope === "documentation") {
     validateDocsSourceTruth(pass, fail);
@@ -192,6 +195,8 @@ function normalizeScope(scope) {
     "runtime-schema": "runtime-schemas",
     "runtime-schemas": "runtime-schemas",
     runtime: "runtime-schemas",
+    planner: "planner",
+    "planner-state": "planner-state",
     "docs-source-truth": "docs-source-truth",
     "docs-truth": "docs-source-truth",
     "docs-sync": "docs-source-truth",
@@ -527,6 +532,48 @@ function validateWorkspaceFile(file, key, validator, pass, fail) {
   validateJson(file, pass, fail);
   const data = key ? safeRead(file, key) : readJsonFile(file);
   validator(data, pass, fail);
+}
+
+function validatePlannerState(pass, fail) {
+  const file = ".kabeeri/planner.json";
+  if (!fileExists(file)) {
+    pass("planner runtime state missing; no approved plans to validate");
+    return;
+  }
+  validateJson(file, pass, fail);
+  const data = readJsonFile(file);
+  const schemaFile = "schemas/planner/planner-state.schema.json";
+  if (!fileExists(schemaFile)) {
+    fail(`${schemaFile} is missing`);
+    return;
+  }
+  validateJson(schemaFile, pass, fail);
+  const schema = readJsonFile(schemaFile);
+  validateDataAgainstSchema(data, schema, file, pass, fail);
+  if (!data.planner_version) fail("planner state missing planner_version");
+  else if (typeof data.planner_version !== "string") fail("planner version must be a string");
+  if (!Array.isArray(data.plans)) fail("planner state plans must be an array");
+  else {
+    const ids = new Set();
+    const approvedPlans = [];
+    for (const plan of data.plans) {
+      if (!plan.plan_id) fail("planner plan missing plan_id");
+      else if (ids.has(plan.plan_id)) fail(`duplicate planner plan id: ${plan.plan_id}`);
+      else ids.add(plan.plan_id);
+      const status = String(plan.status || "").toLowerCase();
+      if (!status || !["proposed", "approved", "rejected", "completed"].includes(status)) fail(`planner plan ${plan.plan_id || "unknown"} has invalid status`);
+      if (!plan.planner_mode || !["owner", "vibe", "plugin"].includes(String(plan.planner_mode).toLowerCase())) fail(`planner plan ${plan.plan_id || "unknown"} has invalid planner_mode`);
+      if (!plan.track || !["framework_owner", "vibe_app_developer", "plugin"].includes(String(plan.track).toLowerCase())) fail(`planner plan ${plan.plan_id || "unknown"} has invalid track`);
+      if (status === "approved") approvedPlans.push(plan);
+    }
+    if (approvedPlans.length > 0 && !data.current_plan_id) fail("planner state has approved plans but missing current_plan_id");
+    if (data.current_plan_id) {
+      const currentPlan = data.plans.find((plan) => String(plan.plan_id || "") === String(data.current_plan_id || ""));
+      if (!currentPlan) fail("planner current_plan_id does not reference a known plan");
+      else if (String(currentPlan.status || "").toLowerCase() !== "approved") fail("planner current_plan_id must reference an approved plan");
+    }
+  }
+  pass(`planner runtime state checked (${Array.isArray(data.plans) ? data.plans.length : 0} plans)`);
 }
 
 function validateRuntimeSchemas(pass, fail) {
@@ -878,7 +925,8 @@ function getRuntimeSchemaCoverageExemptions(registry = {}) {
   const defaults = [
     { pattern: ".kabeeri/**/*.example.json", reason: "Example JSON state files are documentation fixtures." },
     { pattern: ".kabeeri/**/*.example.jsonl", reason: "Example JSONL state files are documentation fixtures." },
-    { pattern: ".kabeeri/**/site/**", reason: "Generated docs site assets are not runtime state." }
+    { pattern: ".kabeeri/**/site/**", reason: "Generated docs site assets are not runtime state." },
+    { pattern: ".kabeeri/planner.json", reason: "Planner runtime state is validated by the dedicated planner-state check." }
   ];
   return [
     ...defaults,

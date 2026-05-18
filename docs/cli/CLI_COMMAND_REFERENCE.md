@@ -103,6 +103,11 @@ When a command is blocked, the CLI should explain whether the missing piece is a
 kvdf planner next --track owner --json
 kvdf planner next --track vibe --json
 kvdf planner next --track plugin --plugin kvdf-dev --json
+kvdf planner propose --goal "Add planner approval gate" --track owner --json
+kvdf planner approve planner-plan-001 --owner local-owner --json
+kvdf planner current --json
+kvdf planner reject planner-plan-001 --reason "Not now" --json
+kvdf planner prompt --from-current --json
 kvdf planner prompt --goal "Add planner layer" --track owner --json
 kvdf planner prompt --goal "Build app delivery slice" --track vibe --json
 kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json
@@ -110,7 +115,9 @@ kvdf planner evolution --goal "Add planner layer" --track owner --json
 kvdf planner task-punch --goal "Add planner layer" --track owner --json
 ```
 
-The Planner Layer is the deterministic native planning surface for KVDF Core, vibe/app, and plugin work. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, and prepares a Codex-ready prompt. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work. When no track is provided, the owner repo defaults to the owner planner, app work defaults to vibe planner mode, and `--plugin` selects plugin mode.
+The Planner Layer is the deterministic native planning surface for KVDF Core, vibe/app, and plugin work. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, persists proposed plans under `.kabeeri/planner.json`, and can generate a Codex-ready prompt from the approved current plan. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work. When no track is provided, the owner repo defaults to the owner planner, app work defaults to vibe planner mode, and `--plugin` selects plugin mode.
+
+Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
 

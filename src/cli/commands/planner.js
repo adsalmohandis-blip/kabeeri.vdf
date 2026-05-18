@@ -2,6 +2,8 @@
 const path = require("path");
 
 const DEFAULT_VALIDATION_COMMANDS = ["node bin/kvdf.js validate", "npm test", "npm run check"];
+const PLANNER_STATE_FILE = ".kabeeri/planner.json";
+const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -143,13 +145,48 @@ const PLUGIN_OUT_OF_SCOPE = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "propose", "approve", "current", "reject"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
   const request = resolvePlannerRequest({ action: mode, value, flags, rest }, deps);
 
+  if (mode === "propose") {
+    const goal = resolveGoal(value, flags, rest, request.recommended_evolution.title);
+    if (!goal) throw new Error("Missing goal for planner propose.");
+    const report = buildPlannerProposalReport(goal, request, deps);
+    printPlannerOutput(report, flags, deps, "propose");
+    return;
+  }
+
+  if (mode === "approve") {
+    const planId = resolvePlanId(value, flags, rest);
+    if (!planId) throw new Error("Missing plan id for planner approve.");
+    const report = approvePlannerPlan(planId, resolveApprovalOwner(flags), deps);
+    printPlannerOutput(report, flags, deps, "approve");
+    return;
+  }
+
+  if (mode === "current") {
+    const report = buildPlannerCurrentReport(deps);
+    printPlannerOutput(report, flags, deps, "current");
+    return;
+  }
+
+  if (mode === "reject") {
+    const planId = resolvePlanId(value, flags, rest);
+    if (!planId) throw new Error("Missing plan id for planner reject.");
+    const report = rejectPlannerPlan(planId, resolveRejectReason(flags, rest), deps);
+    printPlannerOutput(report, flags, deps, "reject");
+    return;
+  }
+
   if (mode === "prompt") {
+    if (isFromCurrentPlan(flags)) {
+      const report = buildPlannerPromptFromCurrentPlan(request, deps);
+      printPlannerOutput(report, flags, deps, "prompt");
+      return;
+    }
     const goal = resolveGoal(value, flags, rest, request.recommended_evolution.title);
     if (!goal) throw new Error("Missing goal for planner prompt.");
     const report = buildPlannerPromptReport(goal, request, deps);
@@ -266,6 +303,144 @@ function buildPlannerTaskPunchReport(goal, request = {}, deps = {}) {
     title: `${plan.title} Task Punch`,
     tasks: taskPunch.tasks,
     plugin_context: pluginContext || undefined
+  };
+}
+
+function buildPlannerProposalReport(goal, request = {}, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const mode = resolvePlannerMode(request, context);
+  const deliveryMode = getDeliveryMode(mode);
+  const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
+  const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext }, context);
+  const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext }, context);
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext });
+  const state = loadPlannerState(context.repo_root);
+  const planId = allocatePlannerPlanId(state);
+  const plan = buildPlannerPlanRecord({
+    planId,
+    goal,
+    mode,
+    deliveryMode,
+    evolutionPlan,
+    taskPunch,
+    codexPrompt,
+    pluginContext,
+    createdAt: new Date().toISOString()
+  });
+  state.plans.push(plan);
+  savePlannerState(context.repo_root, state);
+  return {
+    report_type: "kvdf_planner_proposal",
+    generated_at: new Date().toISOString(),
+    plan_id: planId,
+    status: "proposed",
+    planner_mode: mode,
+    track: evolutionPlan.track,
+    delivery_mode: deliveryMode,
+    next_action: `Review and approve with kvdf planner approve ${planId}.`
+  };
+}
+
+function approvePlannerPlan(planId, approvedBy, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const state = loadPlannerState(context.repo_root);
+  const plan = findPlannerPlan(state, planId);
+  if (!plan) throw new Error(`Planner plan not found: ${planId}`);
+  if (String(plan.status || "").toLowerCase() !== "proposed") {
+    throw new Error(`Planner plan ${planId} must be proposed before approval.`);
+  }
+  const owner = String(approvedBy || "").trim();
+  if (!owner) throw new Error("Missing owner for planner approve.");
+  plan.status = "approved";
+  plan.approved_at = new Date().toISOString();
+  plan.approved_by = owner;
+  plan.rejected_at = null;
+  plan.rejection_reason = null;
+  state.current_plan_id = planId;
+  savePlannerState(context.repo_root, state);
+  return {
+    report_type: "kvdf_planner_approved",
+    generated_at: new Date().toISOString(),
+    plan_id: planId,
+    status: "approved",
+    current_plan_id: planId,
+    next_action: "Generate the Codex prompt with kvdf planner prompt --from-current --json."
+  };
+}
+
+function buildPlannerCurrentReport(deps = {}) {
+  const context = buildPlannerContext(deps);
+  const state = loadPlannerState(context.repo_root);
+  const currentPlan = findCurrentPlannerPlan(state);
+  if (!currentPlan) {
+    return {
+      report_type: "kvdf_planner_current",
+      generated_at: new Date().toISOString(),
+      status: "empty",
+      current_plan: null,
+      next_action: "Run kvdf planner propose --goal \"...\" --track owner --json to create a proposed plan."
+    };
+  }
+  return {
+    report_type: "kvdf_planner_current",
+    generated_at: new Date().toISOString(),
+    status: "approved",
+    current_plan_id: currentPlan.plan_id,
+    current_plan: currentPlan,
+    next_action: "Run kvdf planner prompt --from-current --json to generate the Codex prompt from the approved plan."
+  };
+}
+
+function rejectPlannerPlan(planId, reason, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const state = loadPlannerState(context.repo_root);
+  const plan = findPlannerPlan(state, planId);
+  if (!plan) throw new Error(`Planner plan not found: ${planId}`);
+  if (String(plan.status || "").toLowerCase() !== "proposed") {
+    throw new Error(`Planner plan ${planId} must be proposed before rejection.`);
+  }
+  const rejectionReason = String(reason || "").trim();
+  if (!rejectionReason) throw new Error("Missing rejection reason for planner reject.");
+  plan.status = "rejected";
+  plan.rejected_at = new Date().toISOString();
+  plan.rejection_reason = rejectionReason;
+  plan.approved_at = null;
+  plan.approved_by = null;
+  if (state.current_plan_id === planId) state.current_plan_id = null;
+  savePlannerState(context.repo_root, state);
+  return {
+    report_type: "kvdf_planner_rejected",
+    generated_at: new Date().toISOString(),
+    plan_id: planId,
+    status: "rejected",
+    rejection_reason: rejectionReason,
+    current_plan_id: state.current_plan_id || null,
+    next_action: "Run kvdf planner propose --goal \"...\" --track owner --json to create a new proposed plan."
+  };
+}
+
+function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
+  const context = buildPlannerContext(deps);
+  const state = loadPlannerState(context.repo_root);
+  const currentPlan = findCurrentPlannerPlan(state);
+  if (!currentPlan) {
+    throw new Error("No approved current planner plan exists. Run kvdf planner propose --goal \"...\" --track owner --json first.");
+  }
+  const prompt = currentPlan.codex_prompt || renderPlannerPromptFromPlan(currentPlan, context);
+  return {
+    report_type: "kvdf_planner_codex_prompt",
+    generated_at: new Date().toISOString(),
+    planner_mode: currentPlan.planner_mode,
+    track: currentPlan.track,
+    delivery_mode: currentPlan.delivery_mode,
+    plan_id: currentPlan.plan_id,
+    goal: currentPlan.goal,
+    allowed_files: currentPlan.allowed_files || [],
+    forbidden_files: currentPlan.forbidden_files || [],
+    validation_commands: currentPlan.validation_commands || [],
+    stop_condition: currentPlan.stop_condition || "",
+    task_punch: currentPlan.task_punch || null,
+    prompt
   };
 }
 
@@ -582,6 +757,8 @@ function printPlannerOutput(report, flags, deps, kind) {
       ? renderPlannerEvolutionPlan(report, deps.table)
       : kind === "task-punch"
         ? renderPlannerTaskPunchReport(report, deps.table)
+        : ["propose", "approve", "current", "reject"].includes(kind)
+          ? renderPlannerStateSummaryReport(report, deps.table)
         : renderPlannerNextReport(report, deps.table);
   console.log(rendered);
 }
@@ -591,13 +768,15 @@ function buildPlannerContext(deps = {}) {
   const evolutionFile = path.join(repoRootPath, ".kabeeri", "evolution.json");
   const tasksFile = path.join(repoRootPath, ".kabeeri", "tasks.json");
   const projectFile = path.join(repoRootPath, ".kabeeri", "project.json");
+  const plannerFile = path.join(repoRootPath, PLANNER_STATE_FILE);
   const capabilityRegistryFile = path.join(repoRootPath, "knowledge", "standard_systems", "KVDF_CANONICAL_CAPABILITY_REGISTRY.json");
   const evolutionState = fs.existsSync(evolutionFile) ? safeReadJson(evolutionFile) : { changes: [], development_priorities: [] };
   const taskState = fs.existsSync(tasksFile) ? safeReadJson(tasksFile) : { tasks: [] };
   const projectState = fs.existsSync(projectFile) ? safeReadJson(projectFile) : null;
+  const plannerState = fs.existsSync(plannerFile) ? safeReadJson(plannerFile) : null;
   const capabilityRegistry = fs.existsSync(capabilityRegistryFile) ? safeReadJson(capabilityRegistryFile) : null;
-  const resumeReport = typeof deps.buildResumeReport === "function" ? deps.buildResumeReport({ scan: false }) : null;
-  const pluginLoader = typeof deps.buildPluginLoaderReport === "function" ? deps.buildPluginLoaderReport() : null;
+  const resumeReport = safeBuild(() => (typeof deps.buildResumeReport === "function" ? deps.buildResumeReport({ scan: false }) : null));
+  const pluginLoader = safeBuild(() => (typeof deps.buildPluginLoaderReport === "function" ? deps.buildPluginLoaderReport() : null));
   const openTasksTotal = Array.isArray(taskState.tasks)
     ? taskState.tasks.filter((task) => !["owner_verified", "done", "closed", "rejected"].includes(String(task.status || "").toLowerCase())).length
     : 0;
@@ -626,6 +805,12 @@ function buildPlannerContext(deps = {}) {
         report_type: capabilityRegistry.report_type || "kvdf_canonical_capability_registry",
         registry_version: capabilityRegistry.registry_version || "1",
         area_count: Array.isArray(capabilityRegistry.areas) ? capabilityRegistry.areas.length : 0
+      } : null,
+      planner_state: plannerState ? {
+        planner_version: plannerState.planner_version || "1",
+        current_plan_id: plannerState.current_plan_id || null,
+        proposed_plans_total: Array.isArray(plannerState.plans) ? plannerState.plans.length : 0,
+        approved_plans_total: Array.isArray(plannerState.plans) ? plannerState.plans.filter((item) => String(item.status || "").toLowerCase() === "approved").length : 0
       } : null,
       plugin_loader: pluginLoader ? {
         total_plugins: pluginLoader.total_plugins || 0,
@@ -966,6 +1151,167 @@ function safeReadJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+function safeBuild(factory) {
+  try {
+    return factory();
+  } catch {
+    return null;
+  }
+}
+
+function loadPlannerState(repoRootPath) {
+  const filePath = path.join(repoRootPath || process.cwd(), PLANNER_STATE_FILE);
+  if (!fs.existsSync(filePath)) {
+    return { planner_version: "1", current_plan_id: null, plans: [] };
+  }
+  const state = safeReadJson(filePath);
+  return normalizePlannerState(state);
+}
+
+function savePlannerState(repoRootPath, state) {
+  const filePath = path.join(repoRootPath || process.cwd(), PLANNER_STATE_FILE);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(normalizePlannerState(state), null, 2)}\n`, "utf8");
+}
+
+function normalizePlannerState(state = {}) {
+  const plans = Array.isArray(state.plans) ? state.plans.map(normalizePlannerPlanRecord).filter(Boolean) : [];
+  return {
+    planner_version: String(state.planner_version || "1"),
+    current_plan_id: state.current_plan_id || null,
+    plans
+  };
+}
+
+function normalizePlannerPlanRecord(plan = {}) {
+  if (!plan || typeof plan !== "object") return null;
+  const planId = String(plan.plan_id || "").trim();
+  if (!planId) return null;
+  return {
+    plan_id: planId,
+    status: normalizePlannerStatus(plan.status),
+    planner_mode: normalizePlannerMode(plan.planner_mode),
+    track: normalizePlannerTrack(plan.track),
+    delivery_mode: String(plan.delivery_mode || "direct_main"),
+    goal: String(plan.goal || "").trim(),
+    recommended_evolution: plan.recommended_evolution || {},
+    task_punch: plan.task_punch || {},
+    codex_prompt: String(plan.codex_prompt || ""),
+    allowed_files: Array.isArray(plan.allowed_files) ? [...plan.allowed_files] : [],
+    forbidden_files: Array.isArray(plan.forbidden_files) ? [...plan.forbidden_files] : [],
+    out_of_scope: Array.isArray(plan.out_of_scope) ? [...plan.out_of_scope] : [],
+    validation_commands: Array.isArray(plan.validation_commands) ? [...plan.validation_commands] : [],
+    stop_condition: String(plan.stop_condition || ""),
+    created_at: plan.created_at || null,
+    approved_at: plan.approved_at || null,
+    approved_by: plan.approved_by || null,
+    rejected_at: plan.rejected_at || null,
+    rejection_reason: plan.rejection_reason || null,
+    plugin_context: plan.plugin_context || null,
+    pipeline: Array.isArray(plan.pipeline) ? [...plan.pipeline] : undefined
+  };
+}
+
+function buildPlannerPlanRecord({
+  planId,
+  goal,
+  mode,
+  deliveryMode,
+  evolutionPlan,
+  taskPunch,
+  codexPrompt,
+  pluginContext,
+  createdAt
+}) {
+  const plan = {
+    plan_id: planId,
+    status: "proposed",
+    planner_mode: mode,
+    track: evolutionPlan.track,
+    delivery_mode: deliveryMode,
+    goal,
+    recommended_evolution: evolutionPlan,
+    task_punch: taskPunch,
+    codex_prompt: codexPrompt,
+    allowed_files: [...(evolutionPlan.allowed_files || [])],
+    forbidden_files: [...(evolutionPlan.forbidden_files || [])],
+    out_of_scope: [...(evolutionPlan.out_of_scope || [])],
+    validation_commands: [...(evolutionPlan.validation_commands || [])],
+    stop_condition: evolutionPlan.stop_condition || "",
+    created_at: createdAt,
+    approved_at: null,
+    approved_by: null,
+    rejected_at: null,
+    rejection_reason: null
+  };
+  if (pluginContext) plan.plugin_context = pluginContext;
+  if (Array.isArray(evolutionPlan.pipeline)) plan.pipeline = [...evolutionPlan.pipeline];
+  return plan;
+}
+
+function normalizePlannerStatus(value) {
+  const status = String(value || "proposed").trim().toLowerCase();
+  return PLANNER_STATUSES.has(status) ? status : "proposed";
+}
+
+function normalizePlannerMode(value) {
+  const mode = String(value || "owner").trim().toLowerCase();
+  if (mode === "vibe" || mode === "plugin") return mode;
+  return "owner";
+}
+
+function normalizePlannerTrack(value) {
+  const track = String(value || "framework_owner").trim().toLowerCase();
+  if (track === "vibe_app_developer" || track === "plugin") return track;
+  return "framework_owner";
+}
+
+function allocatePlannerPlanId(state = {}) {
+  const existingIds = Array.isArray(state.plans) ? state.plans.map((plan) => String(plan.plan_id || "")).filter(Boolean) : [];
+  let maxIndex = 0;
+  for (const id of existingIds) {
+    const match = /^planner-plan-(\d{3,})$/i.exec(id);
+    if (!match) continue;
+    const index = Number(match[1]);
+    if (Number.isFinite(index) && index > maxIndex) maxIndex = index;
+  }
+  return `planner-plan-${String(maxIndex + 1).padStart(3, "0")}`;
+}
+
+function findPlannerPlan(state = {}, planId = "") {
+  const id = String(planId || "").trim();
+  if (!id) return null;
+  return Array.isArray(state.plans) ? state.plans.find((plan) => String(plan.plan_id || "") === id) || null : null;
+}
+
+function findCurrentPlannerPlan(state = {}) {
+  if (!state || !Array.isArray(state.plans)) return null;
+  const currentId = String(state.current_plan_id || "").trim();
+  const currentPlan = currentId ? findPlannerPlan(state, currentId) : null;
+  if (currentPlan && String(currentPlan.status || "").toLowerCase() === "approved") return currentPlan;
+  return state.plans.find((plan) => String(plan.status || "").toLowerCase() === "approved") || null;
+}
+
+function resolvePlanId(value, flags = {}, rest = []) {
+  const candidates = [value, flags.plan_id, flags.planId, flags.plan, rest.find((item) => !String(item || "").startsWith("--"))];
+  const planId = candidates.find((item) => typeof item === "string" && item.trim());
+  return planId ? String(planId).trim() : "";
+}
+
+function resolveApprovalOwner(flags = {}) {
+  return String(flags.owner || flags.approver || flags.by || "").trim();
+}
+
+function resolveRejectReason(flags = {}, rest = []) {
+  const candidates = [flags.reason, flags.message, rest.filter((item) => typeof item === "string" && !String(item).startsWith("--")).join(" ")];
+  const reason = candidates.find((item) => typeof item === "string" && item.trim());
+  return reason ? String(reason).trim() : "";
+}
+
+function isFromCurrentPlan(flags = {}) {
+  return Boolean(flags["from-current"] || flags.fromCurrent || flags.from_current);
+}
+
 function escapeQuotes(value) {
   return String(value || "").replace(/"/g, '\\"');
 }
@@ -1066,6 +1412,46 @@ function renderPlannerEvolutionPlan(report, tableRenderer) {
 
 function renderPlannerPromptReport(report) {
   return report.prompt;
+}
+
+function renderPlannerStateSummaryReport(report, tableRenderer) {
+  const rows = [];
+  if (report.plan_id) rows.push(["Plan ID", report.plan_id]);
+  if (report.status) rows.push(["Status", report.status]);
+  if (report.planner_mode) rows.push(["Planner mode", report.planner_mode]);
+  if (report.track) rows.push(["Track", report.track]);
+  if (report.delivery_mode) rows.push(["Delivery mode", report.delivery_mode]);
+  if (report.current_plan_id) rows.push(["Current plan", report.current_plan_id]);
+  if (report.rejection_reason) rows.push(["Rejection reason", report.rejection_reason]);
+  if (report.current_plan && report.current_plan.goal) rows.push(["Current goal", report.current_plan.goal]);
+  if (report.next_action) rows.push(["Next action", report.next_action]);
+  return [
+    "KVDF Planner State",
+    "",
+    tableRenderer(["Field", "Value"], rows)
+  ].join("\n");
+}
+
+function renderPlannerPromptFromPlan(plan, context) {
+  const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
+  const mode = normalizePlannerMode(plan.planner_mode);
+  const pluginContext = mode === "plugin"
+    ? (plan.plugin_context || buildPluginContext({ plugin_id: plan.recommended_evolution && plan.recommended_evolution.plugin_context && plan.recommended_evolution.plugin_context.plugin_id }, context))
+    : null;
+  const evolutionPlan = plan.recommended_evolution && Object.keys(plan.recommended_evolution).length
+    ? plan.recommended_evolution
+    : buildPlannerEvolutionPlan(goal, { mode, deliveryMode: plan.delivery_mode, pluginContext }, context);
+  const taskPunch = plan.task_punch && Array.isArray(plan.task_punch.tasks) && plan.task_punch.tasks.length
+    ? plan.task_punch
+    : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode: plan.delivery_mode, pluginContext }, context);
+  return renderCodexPrompt({
+    goal,
+    mode,
+    plan: evolutionPlan,
+    taskPunch,
+    context,
+    pluginContext
+  });
 }
 
 function renderPlannerTaskPunchReport(report, tableRenderer) {

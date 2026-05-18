@@ -101,6 +101,45 @@ This mode is for plugin development and plugin lifecycle work. The planner
 should read the plugin manifest and keep plugin runtime mount state protected
 unless the requested Evolution explicitly concerns plugin operations.
 
+## Planner Runtime State and Owner Approval Gate
+
+The Planner Layer is durable, not conversational only.
+
+The runtime state file is:
+
+- `.kabeeri/planner.json`
+
+This file stores:
+
+- proposed plans
+- approved plans
+- rejected plans
+- the current approved plan id
+- planner mode and track metadata
+- allowed and forbidden file boundaries
+- validation commands
+- stop conditions
+- approval and rejection metadata
+
+Planner output becomes executable only after Owner approval.
+
+Required progression:
+
+1. Owner direction
+2. planner propose
+3. Owner approve or reject
+4. planner prompt --from-current
+5. Codex execution
+6. validation
+
+Rules:
+
+- proposed plans are not executable
+- approved plans become the current planner source of truth
+- rejected plans remain historical and do not become the current plan
+- direct-to-main remains the default for KVDF Core Owner Track work
+- `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
+
 ## Track Rules
 
 - Owner Track owns KVDF Core and its governance.
@@ -112,9 +151,10 @@ unless the requested Evolution explicitly concerns plugin operations.
 
 ## Runtime-State Rules
 
-The planner may read runtime state, but in the MVP it should not write runtime
-state under `.kabeeri/` unless the Owner explicitly requests that behavior in a
-separate Evolution.
+The planner may read runtime state, and the planner runtime ledger stores
+proposed and approved plans under `.kabeeri/planner.json`, but it should not
+commit that runtime state unless the Owner explicitly requests that behavior in
+a separate Evolution.
 
 Planner output should stay deterministic and reproducible from the current
 context.

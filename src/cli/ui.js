@@ -469,6 +469,11 @@ Notes:
   kvdf planner next --track owner --json
   kvdf planner next --track vibe --json
   kvdf planner next --track plugin --plugin kvdf-dev --json
+  kvdf planner propose --goal "Add planner approval gate" --track owner --json
+  kvdf planner approve <plan-id> --owner local-owner --json
+  kvdf planner current --json
+  kvdf planner reject <plan-id> --reason "Not now" --json
+  kvdf planner prompt --from-current --json
   kvdf planner prompt --goal "Add planner layer" --track owner --json
   kvdf planner prompt --goal "Build app delivery slice" --track vibe --json
   kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json
@@ -513,7 +518,7 @@ Notes:
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
 
 Notes:
-  Planner is the deterministic planning layer for KVDF Core, vibe/app, and plugin track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, and generates a Codex-ready execution prompt without treating branch/PR as the default path. Use --track owner, --track vibe, or --track plugin with --plugin when you want to override auto-detected track mode.
+  Planner is the deterministic planning layer for KVDF Core, vibe/app, and plugin track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, persists proposed plans under .kabeeri/planner.json, requires Owner approval before execution prompts come from runtime state, and generates a Codex-ready execution prompt without treating branch/PR as the default path. Use --track owner, --track vibe, or --track plugin with --plugin when you want to override auto-detected track mode.
 `,
     "batch-exe": `Usage:
   kvdf batch-exe
@@ -1344,7 +1349,7 @@ function printHelp() {
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
-    "  planner next|prompt|evolution Recommend the next KVDF Core, vibe/app, or plugin Evolution and generate a Codex prompt",
+    "  planner next|prompt|evolution|propose|approve|current|reject Recommend the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate a Codex prompt",
     "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
     "  maintenance fast|slow        Run the repo-wide maintenance workflow in fast or strict mode",
     "  cleaner inspect              Run the file-by-file maintenance inspection report",
@@ -1399,7 +1404,7 @@ function printHelp() {
   ];
   const ownerCommands = [
     "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
-    "  planner next|prompt|evolution Determine the next KVDF Core, vibe/app, or plugin Evolution and generate a prompt",
+    "  planner next|prompt|evolution|propose|approve|current|reject Determine the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate a prompt",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
     "  owner init|login|status|logout Configure and use local Owner sessions",
     "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",

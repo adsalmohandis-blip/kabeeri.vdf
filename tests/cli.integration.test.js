@@ -5370,6 +5370,73 @@ test("planner evolution returns a structured owner plan and task punch", () => {
   assert.ok(plannerEvolution.prompt.includes("CODEx PROMPT — KVDF Core"));
 });
 
+test("planner propose persists a proposed plan in runtime state", () => withTempDir((dir) => {
+  const result = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(result.report_type, "kvdf_planner_proposal");
+  assert.strictEqual(result.status, "proposed");
+  assert.strictEqual(result.planner_mode, "owner");
+  assert.strictEqual(result.track, "framework_owner");
+  assert.strictEqual(result.delivery_mode, "direct_main");
+  assert.ok(result.plan_id);
+  const statePath = path.join(dir, ".kabeeri", "planner.json");
+  assert.ok(fs.existsSync(statePath));
+  const state = JSON.parse(fs.readFileSync(statePath, "utf8"));
+  assert.strictEqual(state.planner_version, "1");
+  assert.strictEqual(state.current_plan_id, null);
+  assert.strictEqual(state.plans.length, 1);
+  assert.strictEqual(state.plans[0].plan_id, result.plan_id);
+  assert.strictEqual(state.plans[0].status, "proposed");
+}));
+
+test("planner approve promotes a proposed plan and marks it current", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  const approval = JSON.parse(runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(approval.report_type, "kvdf_planner_approved");
+  assert.strictEqual(approval.plan_id, proposal.plan_id);
+  assert.strictEqual(approval.status, "approved");
+  assert.strictEqual(approval.current_plan_id, proposal.plan_id);
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
+  assert.strictEqual(state.current_plan_id, proposal.plan_id);
+  assert.strictEqual(state.plans[0].status, "approved");
+  assert.strictEqual(state.plans[0].approved_by, "local-owner");
+  assert.ok(state.plans[0].approved_at);
+}));
+
+test("planner current returns the approved plan and prompt from current reuses approved runtime state", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const current = JSON.parse(runKvdf(["planner", "current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(current.report_type, "kvdf_planner_current");
+  assert.strictEqual(current.status, "approved");
+  assert.ok(current.current_plan);
+  assert.strictEqual(current.current_plan.plan_id, proposal.plan_id);
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
+  assert.strictEqual(prompt.plan_id, proposal.plan_id);
+  assert.ok(prompt.prompt.includes("CODEx PROMPT"));
+  assert.ok(prompt.prompt.includes("Direct-to-main"));
+  assert.ok(prompt.prompt.includes("Validation:"));
+  assert.ok(prompt.prompt.includes("Stop condition:"));
+}));
+
+test("planner reject records the rejection reason and clears the current plan when needed", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Skip this planner slice", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  const rejection = JSON.parse(runKvdf(["planner", "reject", proposal.plan_id, "--reason", "Not now", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(rejection.report_type, "kvdf_planner_rejected");
+  assert.strictEqual(rejection.plan_id, proposal.plan_id);
+  assert.strictEqual(rejection.status, "rejected");
+  assert.strictEqual(rejection.rejection_reason, "Not now");
+  const state = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
+  assert.strictEqual(state.current_plan_id, null);
+  assert.strictEqual(state.plans[0].status, "rejected");
+  assert.strictEqual(state.plans[0].rejection_reason, "Not now");
+}));
+
+test("planner prompt from current fails clearly without an approved plan", () => withTempDir((dir) => {
+  const failure = runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(failure.stderr, /No approved current planner plan exists/i);
+}));
+
 test("capability surface maps capabilities to CLI command families and docs references", () => {
   const surface = JSON.parse(runKvdf(["capability", "surface", "--json"]).stdout);
   assert.strictEqual(surface.report_type, "kvdf_capability_cli_surface");

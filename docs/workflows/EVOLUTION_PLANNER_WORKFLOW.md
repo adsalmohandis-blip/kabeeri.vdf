@@ -12,10 +12,9 @@ It supports owner, vibe/app, and plugin planner modes.
 
 ```text
 Owner direction
--> planner next
--> planner evolution
--> planner task punch
--> planner prompt
+-> planner propose
+-> planner approve
+-> planner prompt --from-current
 -> Codex execution
 -> validation
 -> review
@@ -25,9 +24,9 @@ Owner direction
 Track-aware variants:
 
 ```text
-Owner direction -> planner (owner mode) -> direct-to-main KVDF Core delivery
-Owner direction -> planner (vibe mode) -> local-first app delivery and optional GitHub handoff
-Owner direction -> planner (plugin mode) -> plugin manifest/runtime/docs parity and direct-to-main delivery
+Owner direction -> planner (owner mode) -> propose -> approve -> prompt from current -> direct-to-main KVDF Core delivery
+Owner direction -> planner (vibe mode) -> propose -> approve -> prompt from current -> local-first app delivery and optional GitHub handoff
+Owner direction -> planner (plugin mode) -> propose -> approve -> prompt from current -> plugin manifest/runtime/docs parity and direct-to-main delivery
 ```
 
 ## Required Checks
@@ -77,6 +76,19 @@ Each task in the punch should include:
 - acceptance criteria
 - validation commands
 - stop condition
+
+## Planner State
+
+The Planner Layer persists proposed plans in `.kabeeri/planner.json`.
+
+Planner state is used to:
+
+- store proposed planner outputs
+- mark approved plans as the current plan
+- keep rejected plans as historical records
+- generate Codex prompts from approved runtime state with `kvdf planner prompt --from-current`
+
+Planner state is runtime-only and is not part of the normal commit set.
 
 ## Prompt Output
 
