@@ -25,6 +25,7 @@ kvdf evolution --help
 kvdf planner --help
 kvdf adr --help
 kvdf ai-run --help
+kvdf learn --help
 kvdf dashboard --help
 kvdf release --help
 kvdf github --help
@@ -1354,6 +1355,19 @@ kvdf memory summary
 ```
 
 Project memory writes append-only JSONL files under `.kabeeri/memory/` and keeps `.kabeeri/memory/memory_summary.json` updated.
+
+## AI Learning Memory
+
+```bash
+kvdf learn capture --title "Repeated stale assertion" --problem "Dashboard test still expects old markup" --fix "Update assertions to match rendered HTML" --category test_failure --track owner --json
+kvdf learn fast-path --title "Dashboard verification" --steps "node --check src/cli/commands/dashboard_site.js,npm test,npm run check" --validation "npm test,npm run check" --track owner --json
+kvdf learn list --json
+kvdf learn prompt-context --track owner --json
+```
+
+`kvdf learn` stores repeated AI execution mistakes, blockers, and fast paths in `.kabeeri/ai_learning/failure_patterns.json`. Capture records deduplicate by normalized title and problem, increment `seen_count` when the same failure is seen again, and keep track-specific prompt warnings available for later prompt injection. Fast paths record the shortest validated solution path so future prompts can bias toward the proven sequence instead of replaying the same failed loop.
+
+Use `kvdf learn prompt-context` when you want the active warning rules and fast paths for a specific track. The command is shared across owner, vibe, and plugin tracks, but the returned memory stays track-aware so the prompt guidance can be scoped instead of mixed.
 
 ## ADR And AI Run History
 

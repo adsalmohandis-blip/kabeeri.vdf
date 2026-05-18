@@ -12,6 +12,7 @@ function dispatchGovernanceCommands({ group, action, value, flags, c }) {
   if (group === "handoff") return handled(c.handoff(action, value, flags, { runPolicyGate: c.runPolicyGate, collectDashboardState: c.collectDashboardState, summarizeUsage: c.summarizeUsage, appendAudit: c.appendAudit, getEffectiveActor: c.getEffectiveActor }));
   if (group === "security") return handled(c.security(action, value, flags, { appendAudit: c.appendAudit }));
   if (group === "migration" || group === "migrate") return handled(c.migration(action, value, flags, { requireAnyRole: c.requireAnyRole, getEffectiveActor: c.getEffectiveActor, appendAudit: c.appendAudit }));
+  if (group === "learn") return handled(c.aiLearning(action, value, flags));
   return null;
 }
 

@@ -1,0 +1,116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Learning Memory State",
+  "type": "object",
+  "required": ["version", "patterns", "fast_paths"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1"
+    },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "pattern_id",
+          "title",
+          "category",
+          "problem",
+          "root_cause",
+          "fix",
+          "prevention_rule",
+          "applies_to_tracks",
+          "related_files",
+          "related_commands",
+          "seen_count",
+          "last_seen_at",
+          "status",
+          "prompt_warning"
+        ],
+        "properties": {
+          "pattern_id": { "type": "string" },
+          "title": { "type": "string" },
+          "category": {
+            "type": "string",
+            "enum": ["test_failure", "scope_violation", "runtime_state", "generated_artifact", "track_confusion", "source_control", "security", "other"]
+          },
+          "problem": { "type": "string" },
+          "root_cause": { "type": "string" },
+          "fix": { "type": "string" },
+          "prevention_rule": { "type": "string" },
+          "applies_to_tracks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["owner", "vibe", "plugin"]
+            }
+          },
+          "related_files": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "related_commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "seen_count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "last_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "resolved", "ignored"]
+          },
+          "prompt_warning": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "fast_paths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "fast_path_id",
+          "title",
+          "problem_type",
+          "steps",
+          "validation_commands",
+          "applies_to_tracks",
+          "status"
+        ],
+        "properties": {
+          "fast_path_id": { "type": "string" },
+          "title": { "type": "string" },
+          "problem_type": { "type": "string" },
+          "steps": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "validation_commands": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "applies_to_tracks": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["owner", "vibe", "plugin"]
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "ignored"]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

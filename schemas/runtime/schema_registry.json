@@ -113,6 +113,7 @@
     { "path": ".kabeeri/ai_usage/pricing_rules.json", "schema": "schemas/runtime/pricing-rules-state.schema.json" },
     { "path": ".kabeeri/ai_usage/budget_approvals.json", "schema": "schemas/runtime/budget-approvals-state.schema.json" },
     { "path": ".kabeeri/ai_usage/cost_breakdown.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
+    { "path": ".kabeeri/ai_learning/failure_patterns.json", "schema": "schemas/runtime/ai-learning-state.schema.json" },
     { "path": ".kabeeri/ai_usage/context_packs.json", "schema": "schemas/runtime/context-packs-state.schema.json" },
     { "path": ".kabeeri/ai_usage/cost_preflights.json", "schema": "schemas/runtime/cost-preflights-state.schema.json" },
     { "path": ".kabeeri/ai_usage/model_routing.json", "schema": "schemas/runtime/model-routing-state.schema.json" },

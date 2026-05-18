@@ -771,6 +771,15 @@ Notes:
   kvdf memory list --type risk
   kvdf memory summary
 `,
+    learn: `Usage:
+  kvdf learn capture --title "Repeated stale assertion" --problem "Dashboard test still expects old markup" --fix "Update assertions to match rendered HTML" --category test_failure --track owner --json
+  kvdf learn fast-path --title "Dashboard verification" --steps "node --check src/cli/commands/dashboard_site.js,npm test,npm run check" --validation "npm test,npm run check" --track owner --json
+  kvdf learn list --json
+  kvdf learn prompt-context --track owner --json
+
+Notes:
+  AI Learning Memory stores repeated AI mistakes, blockers, and fast paths in .kabeeri/ai_learning/failure_patterns.json so later prompts can inject learned warnings instead of replaying the same failed loop. The command is shared across owner, vibe, and plugin tracks.
+`,
     adr: `Usage:
   kvdf adr create --title "Use PostgreSQL" --context "Need reliable relational data" --decision "Use PostgreSQL for v1"
   kvdf adr create --title "Adopt event queue" --context "Async order emails" --decision "Use queue workers" --status approved
@@ -1393,6 +1402,7 @@ function printHelp() {
     "  workstream list|show|add     Manage workstream runtime boundaries",
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  memory add|list|summary      Manage v5 project memory records",
+    "  learn capture|fast-path|list|prompt-context Record recurring AI mistakes and fast paths",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",

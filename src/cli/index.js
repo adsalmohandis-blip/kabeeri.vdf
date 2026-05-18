@@ -19,6 +19,7 @@ const { conflict } = require("./commands/conflict");
 const { doctor, validateCommand } = require("./commands/health");
 const { deliveryMode, buildDeliveryModeRecommendation } = require("./commands/delivery");
 const { memory, buildMemorySummary } = require("./commands/memory");
+const { aiLearning } = require("./commands/ai_learning");
 const { promptPack, getPromptPackCatalog, detectFrameworkPacks, recommendFrameworkPacksForBlueprint } = require("./commands/prompt_pack");
 const { composePromptPack: composePromptPackService } = require("./services/prompt_pack");
 const questionnaireService = require("./services/questionnaire");
@@ -9936,6 +9937,7 @@ function getCommandDispatchContext() {
     acceptance,
     audit,
     memory,
+    aiLearning,
     adr,
     aiRun,
     identity,

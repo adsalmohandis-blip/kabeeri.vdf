@@ -1310,6 +1310,156 @@ test("task memory persists detailed resume context and feeds the temporary queue
   assert.match(temp.queue.slices[4].description, /npm test/i);
 }));
 
+test("ai learning memory captures repeated failure patterns and increments seen count", () => withTempDir((dir) => {
+  const captureOne = JSON.parse(runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Dashboard assertion drift",
+    "--problem",
+    "Test still expects the old dashboard markup",
+    "--fix",
+    "Update the assertion to match the rendered dashboard",
+    "--category",
+    "test_failure",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(captureOne.report_type, "ai_learning_pattern_captured");
+  assert.strictEqual(captureOne.pattern.seen_count, 1);
+  assert.strictEqual(captureOne.pattern.applies_to_tracks[0], "owner");
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "ai_learning", "failure_patterns.json")));
+
+  const captureTwo = JSON.parse(runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Dashboard assertion drift",
+    "--problem",
+    "Test still expects the old dashboard markup",
+    "--fix",
+    "Keep the assertion aligned with rendered HTML",
+    "--category",
+    "test_failure",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(captureTwo.pattern.seen_count, 2);
+  assert.match(captureTwo.pattern.prompt_warning, /dashboard assertion drift/i);
+  const persisted = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "ai_learning", "failure_patterns.json"), "utf8"));
+  assert.strictEqual(persisted.patterns.length, 1);
+  assert.strictEqual(persisted.patterns[0].seen_count, 2);
+  assert.strictEqual(persisted.patterns[0].status, "active");
+}));
+
+test("ai learning memory records fast paths, lists state, and returns track-specific prompt context", () => withTempDir((dir) => {
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Owner validation order",
+    "--problem",
+    "The owner flow forgot to run checks in order",
+    "--fix",
+    "Run validation before commit and push",
+    "--category",
+    "test_failure",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir });
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Vibe scope confusion",
+    "--problem",
+    "The app prompt mixed owner core work into app delivery",
+    "--fix",
+    "Keep app prompts local-first and app-only",
+    "--category",
+    "track_confusion",
+    "--track",
+    "vibe",
+    "--json"
+  ], { cwd: dir });
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Plugin manifest safety",
+    "--problem",
+    "Plugin work touched unrelated runtime files",
+    "--fix",
+    "Keep plugin prompts scoped to manifest, runtime, docs, schema, and tests",
+    "--category",
+    "scope_violation",
+    "--track",
+    "plugin",
+    "--json"
+  ], { cwd: dir });
+  const fastPath = JSON.parse(runKvdf([
+    "learn",
+    "fast-path",
+    "--title",
+    "Dashboard fix path",
+    "--steps",
+    "node --check src/cli/commands/dashboard_site.js,npm test,npm run check",
+    "--validation",
+    "npm test,npm run check",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(fastPath.report_type, "ai_learning_fast_path_recorded");
+  assert.deepStrictEqual(fastPath.fast_path.validation_commands, ["npm test", "npm run check"]);
+
+  const listed = JSON.parse(runKvdf(["learn", "list", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(listed.report_type, "ai_learning_memory_state");
+  assert.strictEqual(listed.patterns.length, 3);
+  assert.strictEqual(listed.fast_paths.length, 1);
+  assert.strictEqual(listed.summary.active_patterns, 3);
+  assert.strictEqual(listed.summary.active_fast_paths, 1);
+
+  const ownerContext = JSON.parse(runKvdf(["learn", "prompt-context", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(ownerContext.track, "owner");
+  assert.ok(ownerContext.prompt_warnings.some((warning) => /owner validation order/i.test(warning)));
+  assert.strictEqual(ownerContext.active_fast_paths.length, 1);
+
+  const vibeContext = JSON.parse(runKvdf(["learn", "prompt-context", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(vibeContext.track, "vibe");
+  assert.ok(vibeContext.prompt_warnings.some((warning) => /vibe scope confusion/i.test(warning)));
+
+  const pluginContext = JSON.parse(runKvdf(["learn", "prompt-context", "--track", "plugin", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pluginContext.track, "plugin");
+  assert.ok(pluginContext.prompt_warnings.some((warning) => /plugin manifest safety/i.test(warning)));
+}));
+
+test("ai learning memory writes runtime state only in the active workspace", () => withTempDir((dir) => {
+  const repoLearningStatePath = path.join(repoRoot, ".kabeeri", "ai_learning", "failure_patterns.json");
+  const repoLearningStateExistsBefore = fs.existsSync(repoLearningStatePath);
+  const capture = JSON.parse(runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Temp workspace guard",
+    "--problem",
+    "This test should only write runtime state in the temp dir",
+    "--fix",
+    "Keep the runtime file inside the temp workspace",
+    "--category",
+    "runtime_state",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(capture.report_type, "ai_learning_pattern_captured");
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "ai_learning", "failure_patterns.json")));
+  assert.strictEqual(fs.existsSync(repoLearningStatePath), repoLearningStateExistsBefore);
+}));
+
 test("dashboard state reflects canonical task statuses and next actions", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
