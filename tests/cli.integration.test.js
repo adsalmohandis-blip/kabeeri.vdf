@@ -11,6 +11,7 @@ const wordpressPlanService = require("../src/cli/services/wordpress_plans");
 const appPluginCatalog = require("../src/cli/services/app_plugin_catalog");
 const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/commands/multi_ai_communications");
 const { resolveDashboardScope } = require("../src/cli/commands/site");
+const plannerVisualRenderer = require("../plugins/planner-visual/runtime");
 const { version: packageVersion } = require("../package.json");
 
 const repoRoot = path.resolve(__dirname, "..");
@@ -94,6 +95,11 @@ function withTempDir(fn) {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+}
+
+function copyPluginBundle(dir, pluginId) {
+  fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
 }
 
 function loadPluginSmokeCases(pluginId) {
@@ -5498,6 +5504,102 @@ test("planner visual from current reuses the approved runtime plan", () => withT
   assert.strictEqual(visual.goal, "Approved visual planner");
   assert.ok(visual.markdown_report.includes("KVDF Planner Visual Model - Owner"));
 }));
+
+test("planner visual plugin is discoverable, installable, uninstallable, and renders markdown", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "planner-visual");
+
+  const initialStatus = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
+  const plannerVisualEntry = initialStatus.plugins.find((item) => item.plugin_id === "planner-visual");
+  assert.ok(plannerVisualEntry);
+  assert.strictEqual(plannerVisualEntry.status, "disabled");
+  assert.strictEqual(plannerVisualEntry.bundle_contract.status, "ready");
+
+  const statusJson = JSON.parse(runKvdf(["planner-visual", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(statusJson.report_type, "planner_visual_plugin_status");
+  assert.strictEqual(statusJson.plugin_id, "planner-visual");
+  assert.strictEqual(statusJson.status, "available");
+  assert.strictEqual(statusJson.renderer, "mermaid_text");
+
+  runKvdf(["plugins", "install", "planner-visual"], { cwd: dir });
+  const installedStatus = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(installedStatus.plugins.find((item) => item.plugin_id === "planner-visual").status, "enabled");
+
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Render planner visual", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+
+  const markdownRender = runKvdf(["planner-visual", "render", "--from-current"], { cwd: dir });
+  assert.match(markdownRender.stdout, /KVDF Planner Visual Model - Owner/);
+  assert.match(markdownRender.stdout, /```mermaid/);
+  assert.match(markdownRender.stdout, /Planning Board/);
+  assert.match(markdownRender.stdout, /Scope Map/);
+  assert.match(markdownRender.stdout, /Validation Commands/);
+  assert.match(markdownRender.stdout, /Stop Condition/);
+
+  const jsonRender = JSON.parse(runKvdf(["planner-visual", "render", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(jsonRender.report_type, "planner_visual_plugin_render");
+  assert.strictEqual(jsonRender.plugin_id, "planner-visual");
+  assert.strictEqual(jsonRender.renderer, "mermaid_text");
+  assert.match(jsonRender.rendered_markdown, /KVDF Planner Visual Model - Owner/);
+
+  runKvdf(["plugins", "uninstall", "planner-visual"], { cwd: dir });
+  const uninstalledStatus = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(uninstalledStatus.plugins.find((item) => item.plugin_id === "planner-visual").status, "disabled");
+}));
+
+test("planner visual renderers output Mermaid text without depending on a Mermaid package", () => {
+  const sample = {
+    report_type: "kvdf_planner_visual",
+    planner_mode: "owner",
+    track: "framework_owner",
+    delivery_mode: "direct_main",
+    goal: "Add visual planner",
+    recommended_evolution: { title: "Add visual planner", area: "planner", reason: "Render the plan" },
+    graph: {
+      format: "mermaid",
+      diagram: "flowchart TD\n  A[Owner Direction] --> B[Planner Proposal]\n  B --> C[Owner Approval]\n  C --> D[Direct-to-main Commit]"
+    },
+    board: {
+      columns: [
+        { id: "proposed", title: "Proposed", cards: [{ id: "a", title: "Plan" }] },
+        { id: "approved", title: "Approved", cards: [] },
+        { id: "in_progress", title: "In Progress", cards: [] },
+        { id: "blocked", title: "Blocked", cards: [] },
+        { id: "verified", title: "Verified", cards: [] },
+        { id: "completed", title: "Completed", cards: [] }
+      ]
+    },
+    scope_map: {
+      allowed_files: ["src/cli/commands/planner.js"],
+      forbidden_files: ["KVDOS/", ".kabeeri/"],
+      runtime_state: [".kabeeri/planner.json"],
+      generated_artifacts: ["docs/reports/KVDF_PLANNER_VISUAL.md"],
+      docs: ["docs/cli/CLI_COMMAND_REFERENCE.md"],
+      tests: ["tests/cli.integration.test.js"]
+    },
+    validation_commands: ["node bin/kvdf.js validate", "npm test", "npm run check"],
+    stop_condition: "Stop when the approved plan is ready."
+  };
+
+  const mermaid = plannerVisualRenderer.renderMermaidDiagram(sample);
+  const board = plannerVisualRenderer.renderPlanningBoard(sample);
+  const scope = plannerVisualRenderer.renderScopeMap(sample);
+  const markdown = plannerVisualRenderer.renderMarkdownVisualReport(sample);
+
+  assert.match(mermaid, /```mermaid/);
+  assert.match(mermaid, /Owner Direction/);
+  assert.match(board, /Planning Board/);
+  assert.match(board, /Proposed/);
+  assert.match(scope, /Scope Map/);
+  assert.match(scope, /Allowed Files/);
+  assert.match(markdown, /Validation Commands/);
+  assert.match(markdown, /Stop Condition/);
+
+  const runtimeSource = fs.readFileSync(path.join(repoRoot, "plugins", "planner-visual", "runtime", "index.js"), "utf8");
+  const mermaidSource = fs.readFileSync(path.join(repoRoot, "plugins", "planner-visual", "runtime", "mermaid_renderer.js"), "utf8");
+  assert.ok(!runtimeSource.includes("require(\"mermaid\")"));
+  assert.ok(!mermaidSource.includes("require(\"mermaid\")"));
+});
 
 test("capability surface maps capabilities to CLI command families and docs references", () => {
   const surface = JSON.parse(runKvdf(["capability", "surface", "--json"]).stdout);

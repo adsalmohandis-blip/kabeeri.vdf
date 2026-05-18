@@ -113,10 +113,14 @@ kvdf planner prompt --goal "Build app delivery slice" --track vibe --json
 kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json
 kvdf planner visual --goal "Add visual planner" --track owner --json
 kvdf planner visual --goal "Build app flow" --track vibe --json
-kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
-kvdf planner visual --from-current --json
-kvdf planner evolution --goal "Add planner layer" --track owner --json
-kvdf planner task-punch --goal "Add planner layer" --track owner --json
+  kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
+  kvdf planner visual --from-current --json
+  kvdf planner-visual status
+  kvdf planner-visual render --goal "Add visual planner" --track owner
+  kvdf planner-visual render --from-current
+  kvdf planner-visual export --goal "Build app flow" --track vibe
+  kvdf planner evolution --goal "Add planner layer" --track owner --json
+  kvdf planner task-punch --goal "Add planner layer" --track owner --json
 ```
 
 The Planner Layer is the deterministic native planning surface for KVDF Core, vibe/app, and plugin work. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, persists proposed plans under `.kabeeri/planner.json`, can generate a Codex-ready prompt from the approved current plan, and can emit a visual planning model with Mermaid, board, scope map, and markdown report output. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work. When no track is provided, the owner repo defaults to the owner planner, app work defaults to vibe planner mode, and `--plugin` selects plugin mode.
@@ -125,6 +129,19 @@ Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner appr
 Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
+
+### Planner Visual Renderer Plugin
+
+```bash
+kvdf planner-visual status
+kvdf planner-visual render --goal "Add visual planner" --track owner
+kvdf planner-visual render --from-current
+kvdf planner-visual export --goal "Build app flow" --track vibe
+kvdf plugins install planner-visual
+kvdf plugins uninstall planner-visual
+```
+
+`planner-visual` is an optional plugin that renders planner visual JSON into readable Markdown and Mermaid text. KVDF Core still owns the planner logic, runtime state, task punch, and Codex prompt generation. The plugin is only the presentation layer for the visual model, so it can be installed or removed without changing the canonical planner contract.
 
 See `docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md` for the canonical track map and session cycle summary.
 See `knowledge/governance/TRACK_ROUTING_GOVERNANCE.md` for the route and block rules that decide which track activates at entry.

@@ -1,0 +1,21 @@
+{
+  "plugin_id": "planner-visual",
+  "smoke_cases": [
+    {
+      "name": "owner render",
+      "mode": "owner",
+      "goal": "Add visual planner"
+    },
+    {
+      "name": "vibe render",
+      "mode": "vibe",
+      "goal": "Build app flow"
+    },
+    {
+      "name": "plugin render",
+      "mode": "plugin",
+      "goal": "Improve plugin docs",
+      "plugin_id": "kvdf-dev"
+    }
+  ]
+}

@@ -480,6 +480,8 @@ Notes:
   kvdf planner visual --goal "Add visual planner" --track owner --json
   kvdf planner visual --goal "Build app flow" --track vibe --json
   kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
+  kvdf planner-visual status
+  kvdf planner-visual render --goal "Add visual planner" --track owner
   kvdf planner evolution --goal "Add planner layer" --track owner --json
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
   kvdf plugins status
@@ -522,6 +524,7 @@ Notes:
 
 Notes:
   Planner is the deterministic planning layer for KVDF Core, vibe/app, and plugin track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, persists proposed plans under .kabeeri/planner.json, requires Owner approval before execution prompts come from runtime state, and can produce a visual planning model with Mermaid, board, scope map, and markdown report output. It generates Codex-ready execution prompts without treating branch/PR as the default path. Use --track owner, --track vibe, or --track plugin with --plugin when you want to override auto-detected track mode.
+  The optional planner-visual plugin renders planner visual JSON into readable Markdown and Mermaid text without changing planner logic or adding a frontend dependency.
 `,
     "batch-exe": `Usage:
   kvdf batch-exe
@@ -1401,6 +1404,7 @@ function printHelp() {
     "  migration plan|check|report   Govern migration safety and rollback readiness",
     "  github status|report|feedback|plan|label|milestone|issue Dry-run by default; use --confirm to write through gh",
     "  sync status|pull|push         Coordinate local Kabeeri state with git/GitHub and feedback counts",
+    "  planner-visual status|render|export Render planner visual JSON into Markdown/Mermaid text as an optional plugin",
     "  ecommerce status|init|questionnaire|brief|design|modules|tasks|approve|report Build ecommerce/commerce app plugins",
     "  booking status|init|questionnaire|brief|design|modules|tasks|approve|report Build booking/reservation app plugins",
     "  design list|add|snapshot|approve|audit Govern design sources before frontend implementation"
