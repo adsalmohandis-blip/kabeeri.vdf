@@ -260,7 +260,9 @@ function getPlannerRuntimeDeps() {
     readJsonFile,
     readTextFile,
     table,
-    buildEvolutionSummary: buildEvolutionSummaryService
+    buildEvolutionSummary: buildEvolutionSummaryService,
+    buildResumeReport,
+    buildPluginLoaderReport
   };
 }
 

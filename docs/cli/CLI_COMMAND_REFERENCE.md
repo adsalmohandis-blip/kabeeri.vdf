@@ -100,13 +100,17 @@ When a command is blocked, the CLI should explain whether the missing piece is a
 ## Planner Layer
 
 ```bash
-kvdf planner next --json
-kvdf planner prompt --goal "Add planner layer" --json
-kvdf planner evolution --goal "Add planner layer" --json
-kvdf planner task-punch --goal "Add planner layer" --json
+kvdf planner next --track owner --json
+kvdf planner next --track vibe --json
+kvdf planner next --track plugin --plugin kvdf-dev --json
+kvdf planner prompt --goal "Add planner layer" --track owner --json
+kvdf planner prompt --goal "Build app delivery slice" --track vibe --json
+kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json
+kvdf planner evolution --goal "Add planner layer" --track owner --json
+kvdf planner task-punch --goal "Add planner layer" --track owner --json
 ```
 
-The Planner Layer is the deterministic KVDF Core owner-track planning surface. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, and prepares a Codex-ready prompt. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work.
+The Planner Layer is the deterministic native planning surface for KVDF Core, vibe/app, and plugin work. It reads the current repository and runtime context, recommends the next governed Evolution, generates a Task Punch, and prepares a Codex-ready prompt. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work. When no track is provided, the owner repo defaults to the owner planner, app work defaults to vibe planner mode, and `--plugin` selects plugin mode.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
 

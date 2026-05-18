@@ -67,38 +67,48 @@ The planner can emit:
 - validation commands
 - a stop condition
 
-## KVDF Core Behavior
+## Planner Modes
 
-For KVDF Core work, the planner defaults to:
+The planner is a shared native capability with three deterministic modes:
 
+### Owner Track Planner
+
+- `planner_mode: owner`
 - `track: framework_owner`
 - `delivery_mode: direct_main`
 
-Branch and PR are not the default path in KVDF Core. They remain optional only
-for team, protected-repo, or risky work.
+This mode is for KVDF Core and framework-owner work. Branch and PR are not the
+default path. They remain optional only for team, protected-repo, or risky
+work.
 
-## Vibe / App Track Behavior
+### Vibe / App Track Planner
 
-The same planning idea can be used for vibe-app work, but the track stays
-separate from KVDF Core.
+- `planner_mode: vibe`
+- `track: vibe_app_developer`
+- `delivery_mode: local_first`
 
-For app-track planning:
+This mode is for application delivery work. The planner should keep app work
+inside the app workspace, keep GitHub optional, and never mix owner-track and
+app-track analysis by default.
 
-- the planner should keep app work inside the app workspace
-- the planner should not mix owner-track and app-track analysis
-- GitHub sync remains optional and local-first remains valid
+### Plugin Track Planner
 
-## Plugins Behavior
+- `planner_mode: plugin`
+- `track: plugin`
+- `delivery_mode: direct_main`
 
-Plugins are discovered separately from core planning. A plugin may contribute
-capabilities, but the planner should still keep:
+This mode is for plugin development and plugin lifecycle work. The planner
+should read the plugin manifest and keep plugin runtime mount state protected
+unless the requested Evolution explicitly concerns plugin operations.
 
-- plugin runtime behavior
-- plugin install state
-- plugin removal rules
+## Track Rules
 
-separate from core planning unless the requested Evolution explicitly concerns
-plugin development.
+- Owner Track owns KVDF Core and its governance.
+- Vibe/App Track owns product/workspace delivery.
+- Plugin Track owns plugin bundle development and lifecycle parity.
+- The planner should not silently mix one track into another.
+- The planner should use the selected or auto-detected track to shape the
+  allowed files, forbidden files, stop conditions, and prompt heading.
 
 ## Runtime-State Rules
 
@@ -126,4 +136,6 @@ rather than silently treating it as already available.
 
 KVDF Core delivery is direct-to-main by default for the solo Owner workflow.
 The planner should reflect that in every KVDF Core recommendation unless the
-Owner explicitly requests a branch or PR flow.
+Owner explicitly requests a branch or PR flow. Vibe/App delivery remains
+local-first by default, and plugin delivery should keep plugin mount/runtime
+state in scope when relevant.
