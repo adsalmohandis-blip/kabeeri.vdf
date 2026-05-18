@@ -1977,6 +1977,8 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     report.goal ? `Goal: ${report.goal}` : null,
     report.idea ? `Idea: ${report.idea}` : null
   ].filter(Boolean);
+  const mermaidBlock = extractMermaidBlock(rendered);
+  const diagramHtml = mermaidBlock ? renderFlowchartSvg(mermaidBlock) : "";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -1991,6 +1993,9 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #475569; }
     .pill { padding: 4px 10px; border-radius: 999px; background: #e8eef7; }
     main { padding: 24px 28px 40px; }
+    .diagram-shell { margin-bottom: 20px; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow-x: auto; }
+    .diagram-title { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
+    .diagram-shell svg { display: block; width: 100%; height: auto; }
     pre { white-space: pre-wrap; word-break: break-word; margin: 0; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); font-size: 14px; line-height: 1.6; }
   </style>
 </head>
@@ -2000,10 +2005,129 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     <div class="meta">${summary.map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join("")}</div>
   </header>
   <main>
+    ${diagramHtml ? `<section class="diagram-shell"><div class="diagram-title">Diagram Graph</div>${diagramHtml}</section>` : ""}
     <pre>${escapeHtml(rendered || "")}</pre>
   </main>
 </body>
 </html>`;
+}
+
+function extractMermaidBlock(rendered) {
+  const match = String(rendered || "").match(/```mermaid\s*([\s\S]*?)```/i);
+  return match ? match[1].trim() : "";
+}
+
+function renderFlowchartSvg(source) {
+  const lines = String(source || "").split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const edges = [];
+  const nodes = new Map();
+  let direction = "TD";
+  for (const line of lines) {
+    if (/^flowchart\s+/i.test(line)) {
+      const parts = line.split(/\s+/);
+      direction = (parts[1] || "TD").toUpperCase();
+      continue;
+    }
+    if (line.startsWith("subgraph ") || line === "end" || line.startsWith("%%")) continue;
+    const edgeMatch = line.match(/^([A-Za-z0-9_-]+)(?:\[(.*?)\])?\s*-\->\s*([A-Za-z0-9_-]+)(?:\[(.*?)\])?$/);
+    if (!edgeMatch) continue;
+    const from = edgeMatch[1];
+    const fromLabel = edgeMatch[2] || from;
+    const to = edgeMatch[3];
+    const toLabel = edgeMatch[4] || to;
+    edges.push([from, to]);
+    if (!nodes.has(from)) nodes.set(from, { id: from, label: fromLabel });
+    if (!nodes.has(to)) nodes.set(to, { id: to, label: toLabel });
+  }
+  if (!edges.length) return "";
+  const ordered = buildNodeOrder(edges);
+  const horizontal = direction === "LR" || direction === "RL";
+  const nodeWidth = horizontal ? 180 : 240;
+  const nodeHeight = horizontal ? 74 : 56;
+  const gapX = horizontal ? 48 : 40;
+  const gapY = horizontal ? 40 : 58;
+  const padding = 24;
+  const layout = ordered.map((id, index) => {
+    const x = horizontal ? padding + index * (nodeWidth + gapX) : padding + (index % 2) * (nodeWidth + gapX);
+    const y = horizontal ? padding + (index % 2) * (nodeHeight + gapY) : padding + index * (nodeHeight + gapY);
+    return { id, x, y };
+  });
+  const maxX = Math.max(...layout.map((item) => item.x + nodeWidth));
+  const maxY = Math.max(...layout.map((item) => item.y + nodeHeight));
+  const svgWidth = horizontal ? maxX + padding : Math.max(nodeWidth + padding * 2, maxX + padding);
+  const svgHeight = horizontal ? Math.max(nodeHeight * 2 + gapY + padding * 2, maxY + padding) : maxY + padding;
+  const nodeById = new Map(layout.map((item) => [item.id, item]));
+  const nodeMarkup = layout.map((item) => {
+    const label = nodeLabel(nodes.get(item.id) ? nodes.get(item.id).label : item.id);
+    return `
+      <g transform="translate(${item.x}, ${item.y})">
+        <rect rx="14" ry="14" width="${nodeWidth}" height="${nodeHeight}" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"></rect>
+        <text x="${nodeWidth / 2}" y="${nodeHeight / 2 - 4}" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a">${escapeXml(label.line1)}</text>
+        ${label.line2 ? `<text x="${nodeWidth / 2}" y="${nodeHeight / 2 + 14}" text-anchor="middle" font-size="12" fill="#475569">${escapeXml(label.line2)}</text>` : ""}
+      </g>`;
+  }).join("");
+  const arrowMarkup = edges.map(([from, to]) => {
+    const fromNode = nodeById.get(from);
+    const toNode = nodeById.get(to);
+    if (!fromNode || !toNode) return "";
+    const x1 = horizontal ? fromNode.x + nodeWidth : fromNode.x + nodeWidth / 2;
+    const y1 = horizontal ? fromNode.y + nodeHeight / 2 : fromNode.y + nodeHeight;
+    const x2 = horizontal ? toNode.x : toNode.x + nodeWidth / 2;
+    const y2 = horizontal ? toNode.y + nodeHeight / 2 : toNode.y;
+    const marker = "url(#kvdf-arrow)";
+    return horizontal
+      ? `<path d="M ${x1} ${y1} C ${x1 + 24} ${y1}, ${x2 - 24} ${y2}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}"></path>`
+      : `<path d="M ${x1} ${y1} C ${x1} ${y1 + 24}, ${x2} ${y2 - 24}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}"></path>`;
+  }).join("");
+  return `
+    <svg viewBox="0 0 ${svgWidth} ${svgHeight}" role="img" aria-label="Planner visual diagram">
+      <defs>
+        <marker id="kvdf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+        </marker>
+      </defs>
+      <g>${arrowMarkup}</g>
+      <g>${nodeMarkup}</g>
+    </svg>`;
+}
+
+function buildNodeOrder(edges) {
+  const order = [];
+  const seen = new Set();
+  for (const [from, to] of edges) {
+    if (!seen.has(from)) {
+      order.push(from);
+      seen.add(from);
+    }
+    if (!seen.has(to)) {
+      order.push(to);
+      seen.add(to);
+    }
+  }
+  return order;
+}
+
+function nodeLabel(id) {
+  const label = String(id || "").replace(/_/g, " ");
+  const parts = label.split(/\s+/).filter(Boolean);
+  if (parts.length <= 2) return { line1: titleCase(label), line2: "" };
+  return { line1: titleCase(parts.slice(0, 2).join(" ")), line2: titleCase(parts.slice(2).join(" ")) };
+}
+
+function titleCase(value) {
+  return String(value || "")
+    .split(/\s+/)
+    .map((word) => word ? word[0].toUpperCase() + word.slice(1) : "")
+    .join(" ");
+}
+
+function escapeXml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
 }
 
 function buildPlannerContext(deps = {}) {
