@@ -21,7 +21,7 @@ Use KVDF-led delivery when:
 
 ### Local-Only Mode
 
-Local-only mode is the default and always valid.
+Local-only mode is valid when GitHub is not used.
 
 Use it when:
 
@@ -35,6 +35,64 @@ Required outcome:
 - tasks are verified and archived
 - the parent Evolution auto-closes
 - the final handoff report is written locally
+
+### Solo Owner Direct-to-Main Mode
+
+Solo Owner Direct-to-Main Mode is the default for KVDF core development when
+the Owner is the only active framework developer.
+
+Use it when:
+
+- the target repo is `kabeeri.vdf`
+- the active work is KVDF Core / Owner Track work
+- the Owner is the only active core developer
+- no team-review or protected-branch policy is required
+- the Owner explicitly accepts direct-to-main delivery
+
+Required outcome:
+
+- the work is completed on `main`
+- required checks are run before push
+- only intended KVDF source, docs, schemas, tests, and approved generated docs
+  are committed
+- runtime state is not committed unless explicitly required by the Evolution
+- the commit is pushed directly to `origin main`
+- the workspace is clean or intentionally documented after push
+
+Standard command flow:
+
+```bash
+git rev-parse --show-toplevel
+git branch --show-current
+git status --short
+node bin/kvdf.js validate
+npm test
+npm run check
+git add -A
+git commit -m "<type>: <message>"
+git push origin main
+```
+
+### Team / Protected Repo GitHub Mode
+
+Team / Protected Repo GitHub Mode is optional.
+
+Use it when:
+
+- the Owner explicitly asks for a branch and PR
+- more than one developer is active
+- branch protection requires review
+- the change is risky or experimental
+
+Required outcome:
+
+- a branch is created from the approved Evolution slice
+- tests run before commit
+- the approved changes are committed and pushed
+- a PR is prepared or created
+- Owner review happens before merge
+- `main` is merged only after approval
+- the latest `main` is pulled before the next Evolution begins
 
 ### GitHub-Enabled Mode
 
@@ -81,22 +139,28 @@ Then confirm:
 - no cross-track implementation starts by accident
 - any ambiguity returns the work to planning
 
-## Branch, Commit, Push, PR Rules
+## Git Commit and Publishing Rules
 
-When GitHub handoff is enabled:
+For Solo Owner Direct-to-Main Mode:
+
+1. Work on `main`.
+2. Run the required checks.
+3. Commit only the intended KVDF Core changes.
+4. Do not commit `.kabeeri/` runtime state or transient execution outputs unless explicitly required.
+5. Push directly to `origin main`.
+
+For Team / Protected Repo GitHub Mode:
 
 1. Create a branch for the approved Evolution slice.
 2. Run the required tests.
 3. Commit only the intended source, docs, and deliverable artifacts.
-4. Do not commit `.kabeeri/` runtime state or transient execution outputs unless
-   the Evolution explicitly requires it.
-5. Push the branch.
-6. Prepare or create the PR.
-7. Route the PR to Owner review.
-8. Merge only after Owner approval.
-9. Pull the latest `main`.
-10. Re-validate the workspace.
-11. Start the next Evolution only after the sync is clean.
+4. Push the branch.
+5. Prepare or create the PR.
+6. Route the PR to Owner review.
+7. Merge only after Owner approval.
+8. Pull the latest `main`.
+9. Re-validate the workspace.
+10. Start the next Evolution only after the sync is clean.
 
 ## Required Final Report
 
