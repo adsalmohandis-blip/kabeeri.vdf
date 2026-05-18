@@ -1992,10 +1992,10 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.2; }
     .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #475569; }
     .pill { padding: 4px 10px; border-radius: 999px; background: #e8eef7; }
-    main { padding: 24px 28px 40px; }
-    .diagram-shell { margin-bottom: 20px; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow-x: auto; }
+    main { padding: 24px 28px 40px; display: grid; gap: 20px; }
+    .diagram-shell { margin-bottom: 20px; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow: auto; max-height: calc(100vh - 240px); }
     .diagram-title { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
-    .diagram-shell svg { display: block; width: 100%; height: auto; }
+    .diagram-shell svg { display: block; width: 100%; height: auto; min-width: min(100%, 960px); }
     pre { white-space: pre-wrap; word-break: break-word; margin: 0; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); font-size: 14px; line-height: 1.6; }
   </style>
 </head>
