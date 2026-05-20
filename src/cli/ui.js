@@ -484,6 +484,13 @@ Notes:
   kvdf planner visual --goal "Build app flow" --track vibe --json
   kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
   kvdf planner visual --goal "Add visual planner" --track owner --fullscreen
+  kvdf planner train build --track owner --goal "Improve KVDF planner" --method structured --json
+  kvdf planner train build --track vibe --app booking --idea "Build booking app" --method hybrid --json
+  kvdf planner train status --track owner --json
+  kvdf planner train next --track vibe --app booking --json
+  kvdf planner train advance --track vibe --app booking --evolution evo-0001 --status completed --json
+  kvdf planner train visual --track owner --json
+  kvdf planner train readiness --track vibe --app booking --version v1.0.0 --json
   kvdf planner pipeline --idea "Improve KVDF planner" --track owner --json
   kvdf planner pipeline --idea "Build booking app" --track vibe --json
   kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
@@ -535,10 +542,17 @@ Notes:
   kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json
   kvdf planner evolution --goal "Add planner layer" --track owner --json
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
+  kvdf planner train build --track owner --goal "Improve KVDF planner" --method structured --json
+  kvdf planner train build --track vibe --app booking --idea "Build booking app" --method hybrid --json
+  kvdf planner train status --track owner --json
+  kvdf planner train next --track vibe --app booking --json
+  kvdf planner train advance --track vibe --app booking --evolution evo-0001 --status completed --json
+  kvdf planner train visual --track owner --json
+  kvdf planner train readiness --track vibe --app booking --version v1.0.0 --json
   kvdf planner truth --json
 
 Notes:
-  Planner is the deterministic planning layer for KVDF Core, vibe/app, and plugin track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, persists proposed plans under .kabeeri/planner.json, requires Owner approval before execution prompts come from runtime state, and can produce a visual planning model with Mermaid, board, scope map, and markdown report output. It generates Codex-ready execution prompts without treating branch/PR as the default path. Use --track owner, --track vibe, or --track plugin with --plugin when you want to override auto-detected track mode.
+  Planner is the deterministic planning layer for KVDF Core, vibe/app, and plugin track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, persists proposed plans under .kabeeri/planner.json, requires Owner approval before execution prompts come from runtime state, and can produce a visual planning model with Mermaid, board, scope map, and markdown report output. It now also builds shared Roadmap Train and Evo Sprint Queue state for owner and viber tracks. It generates Codex-ready execution prompts without treating branch/PR as the default path. Use --track owner, --track vibe, or --track plugin with --plugin when you want to override auto-detected track mode.
   The optional planner-visual plugin renders planner visual JSON into readable Markdown and Mermaid text without changing planner logic or adding a frontend dependency.
   Use kvdf truth audit --json and kvdf truth feature <feature-id> --json to reconcile source-level truth against docs, runtime state, and generated snapshots before trusting a plan.
 `,

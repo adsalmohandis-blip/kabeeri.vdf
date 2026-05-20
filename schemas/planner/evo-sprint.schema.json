@@ -1,0 +1,29 @@
+{
+  "title": "KVDF Evo Sprint",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "evo_sprint_id",
+    "title",
+    "sequence",
+    "status",
+    "planning_method",
+    "evolution_ids",
+    "task_ids",
+    "depends_on",
+    "blockers",
+    "next_action"
+  ],
+  "properties": {
+    "evo_sprint_id": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "minLength": 1 },
+    "sequence": { "type": "integer", "minimum": 1 },
+    "status": { "type": "string", "enum": ["planned", "ready", "active", "completed", "blocked"] },
+    "planning_method": { "type": "string", "enum": ["auto", "structured", "agile", "hybrid"] },
+    "evolution_ids": { "type": "array", "items": { "type": "string" } },
+    "task_ids": { "type": "array", "items": { "type": "string" } },
+    "depends_on": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string" }
+  }
+}

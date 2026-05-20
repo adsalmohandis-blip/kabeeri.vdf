@@ -1,0 +1,12 @@
+{
+  "title": "KVDF Viber Release Train",
+  "type": "object",
+  "additionalProperties": true,
+  "allOf": [
+    { "$ref": "roadmap-train.schema.json" }
+  ],
+  "properties": {
+    "train_type": { "const": "viber" },
+    "track": { "const": "vibe_app_developer" }
+  }
+}

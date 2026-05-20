@@ -72,6 +72,10 @@ remain draft-only until the Owner approves the path forward. The planner must
 surface docs plan, docs status, and missing docs before it recommends the next
 Evolution.
 
+When available, planner output should also surface the shared Roadmap Train so
+the next session can resume FIFO state instead of rebuilding the queue from
+chat or generated snapshots.
+
 ## Workflow
 
 ```text

@@ -1,0 +1,12 @@
+{
+  "title": "KVDF Owner Roadmap Train",
+  "type": "object",
+  "additionalProperties": true,
+  "allOf": [
+    { "$ref": "roadmap-train.schema.json" }
+  ],
+  "properties": {
+    "train_type": { "const": "owner" },
+    "track": { "const": "framework_owner" }
+  }
+}

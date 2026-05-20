@@ -1,0 +1,31 @@
+{
+  "title": "KVDF Roadmap Train",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "train_id",
+    "train_type",
+    "track",
+    "planning_method",
+    "status",
+    "major_versions",
+    "fifo_queue",
+    "next_evolution_id",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "report_type": { "type": "string", "const": "kvdf_roadmap_train" },
+    "train_id": { "type": "string", "minLength": 1 },
+    "train_type": { "type": "string", "enum": ["owner", "viber"] },
+    "track": { "type": "string", "enum": ["framework_owner", "vibe_app_developer"] },
+    "planning_method": { "type": "string", "enum": ["auto", "structured", "agile", "hybrid"] },
+    "status": { "type": "string", "enum": ["planned", "active", "blocked", "ready", "completed", "published"] },
+    "major_versions": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "fifo_queue": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "next_evolution_id": { "type": ["string", "null"] },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  }
+}

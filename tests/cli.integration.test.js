@@ -6480,6 +6480,96 @@ test("planner prompt from current exposes planning method docs and review metada
   assert.ok(prompt.prompt.includes("Stop condition:"));
 }));
 
+test("planner train build creates an owner FIFO roadmap train with queued versions and evolutions", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "train", "build", "--track", "owner", "--goal", "Improve KVDF planner", "--method", "structured", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_roadmap_train");
+  assert.strictEqual(report.train_type, "owner");
+  assert.strictEqual(report.track, "framework_owner");
+  assert.strictEqual(report.planning_method, "structured");
+  assert.ok(Array.isArray(report.major_versions) && report.major_versions.length > 0);
+  assert.ok(Array.isArray(report.fifo_queue) && report.fifo_queue.length > 0);
+  assert.ok(report.next_evolution_id);
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "owner_roadmap_train.json")));
+}));
+
+test("planner train build creates a viber release train with app workspace runtime state", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "train", "build", "--track", "vibe", "--app", "booking", "--idea", "Build booking app", "--method", "hybrid", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_roadmap_train");
+  assert.strictEqual(report.train_type, "viber");
+  assert.strictEqual(report.track, "vibe_app_developer");
+  assert.strictEqual(report.planning_method, "hybrid");
+  assert.ok(Array.isArray(report.major_versions) && report.major_versions.length > 0);
+  assert.ok(Array.isArray(report.fifo_queue) && report.fifo_queue.length > 0);
+  assert.ok(report.next_evolution_id);
+  assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", ".kabeeri", "release_train.json")));
+}));
+
+test("planner train build preserves agile versus structured method metadata", () => withTempDir((dir) => {
+  const agile = JSON.parse(runKvdf(["planner", "train", "build", "--track", "vibe", "--app", "landing", "--idea", "Build landing page MVP", "--method", "agile", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(agile.planning_method, "agile");
+  assert.ok(agile.major_versions[0].stages[0].planning_method === "agile");
+  const structured = JSON.parse(runKvdf(["planner", "train", "build", "--track", "owner", "--goal", "Improve validation and security gates", "--method", "structured", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(structured.planning_method, "structured");
+  assert.ok(structured.major_versions[0].stages[0].gates.docs);
+  assert.ok(structured.major_versions[0].stages[0].gates.validation);
+}));
+
+test("planner train next and advance follow FIFO order", () => withTempDir((dir) => {
+  runKvdf(["planner", "train", "build", "--track", "owner", "--goal", "Improve KVDF planner", "--method", "structured", "--json"], { cwd: dir });
+  const next = JSON.parse(runKvdf(["planner", "train", "next", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(next.report_type, "kvdf_roadmap_train_next");
+  assert.ok(next.next_evolution_id);
+  assert.ok(next.next_evolution);
+  const advanced = JSON.parse(runKvdf(["planner", "train", "advance", "--track", "owner", "--evolution", next.next_evolution_id, "--status", "completed", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(advanced.report_type, "kvdf_roadmap_train_advanced");
+  assert.strictEqual(advanced.evolution_id, next.next_evolution_id);
+  const status = JSON.parse(runKvdf(["planner", "train", "status", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "kvdf_roadmap_train");
+  assert.ok(status.next_evolution_id === null || status.next_evolution_id !== next.next_evolution_id);
+}));
+
+test("planner train visual shows the full planning engine to gates chain", () => withTempDir((dir) => {
+  runKvdf(["planner", "train", "build", "--track", "owner", "--goal", "Improve KVDF planner", "--method", "structured", "--json"], { cwd: dir });
+  const visual = JSON.parse(runKvdf(["planner", "train", "visual", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_roadmap_train_visual");
+  assert.ok(visual.diagram.includes("Planning Engine"));
+  assert.ok(visual.diagram.includes("Major Versions"));
+  assert.ok(visual.diagram.includes("Version Stages"));
+  assert.ok(visual.diagram.includes("Evo Sprints"));
+  assert.ok(visual.diagram.includes("Evolutions"));
+  assert.ok(visual.diagram.includes("Tasks"));
+  assert.ok(visual.diagram.includes("Gates"));
+}));
+
+test("planner train readiness returns owner and viber gate summaries", () => withTempDir((dir) => {
+  runKvdf(["planner", "train", "build", "--track", "owner", "--goal", "Improve KVDF planner", "--method", "structured", "--json"], { cwd: dir });
+  const ownerReadiness = JSON.parse(runKvdf(["planner", "train", "readiness", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(ownerReadiness.report_type, "kvdf_roadmap_train_readiness");
+  assert.ok(ownerReadiness.gates.docs);
+  assert.ok(ownerReadiness.gates.validation);
+  runKvdf(["planner", "train", "build", "--track", "vibe", "--app", "booking", "--idea", "Build booking app", "--method", "hybrid", "--json"], { cwd: dir });
+  const vibeReadiness = JSON.parse(runKvdf(["planner", "train", "readiness", "--track", "vibe", "--app", "booking", "--version", "v1.0.0", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(vibeReadiness.report_type, "kvdf_roadmap_train_readiness");
+  assert.ok(vibeReadiness.gates.docs);
+  assert.ok(vibeReadiness.gates.evolution);
+  assert.ok(vibeReadiness.gates.publish);
+}));
+
+test("planner train commands stay safe when runtime state is missing", () => withTempDir((dir) => {
+  const status = JSON.parse(runKvdf(["planner", "train", "status", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "kvdf_roadmap_train");
+  assert.ok(status.next_action);
+  const next = JSON.parse(runKvdf(["planner", "train", "next", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(next.report_type, "kvdf_roadmap_train_next");
+  assert.ok(next.next_action);
+  const visual = JSON.parse(runKvdf(["planner", "train", "visual", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_roadmap_train_visual");
+  assert.ok(Array.isArray(visual.summary));
+  const readiness = JSON.parse(runKvdf(["planner", "train", "readiness", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(readiness.report_type, "kvdf_roadmap_train_readiness");
+  assert.ok(readiness.next_action);
+}));
+
 test("planner propose persists a proposed plan in runtime state", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const result = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);

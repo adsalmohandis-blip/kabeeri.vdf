@@ -5,6 +5,10 @@ It turns a raw idea or goal into documentation files, design artifacts, a visual
 
 The planner dashboard sync layer can then surface the approved plan, visual summary, source-control state, materialization status, and next action in live dashboard JSON and exported HTML.
 
+The same pipeline can also emit a shared Roadmap Train so owner and Viber
+tracks keep a resumable FIFO queue of versions, stages, evo sprints,
+evolutions, and task punches.
+
 ## Flow
 
 ```text

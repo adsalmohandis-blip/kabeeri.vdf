@@ -138,6 +138,13 @@ kvdf planner pipeline --idea "Build booking app" --track vibe --json
   kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
 kvdf planner pipeline --idea "Improve KVDF planner" --track owner --open --fullscreen
 kvdf planner pipeline --goal "Build app" --track vibe
+kvdf planner train build --track owner --goal "Improve KVDF planner" --method structured --json
+kvdf planner train build --track vibe --app booking --idea "Build booking app" --method hybrid --json
+kvdf planner train status --track owner --json
+kvdf planner train next --track vibe --app booking --json
+kvdf planner train advance --track vibe --app booking --evolution evo-0001 --status completed --json
+kvdf planner train visual --track owner --json
+kvdf planner train readiness --track vibe --app booking --version v1.0.0 --json
   kvdf planner-visual status
   kvdf planner-visual render --goal "Add visual planner" --track owner
   kvdf planner next --track owner --source-control git --sc-mode direct-main --json
@@ -151,6 +158,8 @@ kvdf planner pipeline --goal "Build app" --track vibe
 ```
 
 The Planner Layer is the deterministic native planning surface for KVDF Core, vibe/app, and plugin work. It reads the current repository and runtime context, recommends the next governed Evolution, chooses a planning method, generates a Task Punch, persists proposed plans under `.kabeeri/planner.json`, can review or resume planner state, can materialize draft documentation files, can generate a Codex-ready prompt from the approved current plan, and can emit a visual planning model with Mermaid, board, scope map, and markdown report output. KVDF Core defaults to direct-to-main delivery, so the planner should never imply branch/PR as the normal path. Branch and PR remain optional only for team, protected-repo, or risky work. When no track is provided, the owner repo defaults to the owner planner, app work defaults to vibe planner mode, and `--plugin` selects plugin mode.
+
+The shared Roadmap Train and Evo Sprint Queue commands let the planner persist ordered version/stage/sprint/evolution/task queues for owner and Viber tracks so the next session can resume FIFO state from JSON instead of recreating it from chat or generated reports.
 
 Planner outputs now include an explicit `source_control` object so Git, no source control, direct-to-main, branch, and branch+PR can be expressed as provider-driven modes instead of assuming GitHub is mandatory. GitHub is treated as an optional remote/provider plugin, not the same thing as Git.
 

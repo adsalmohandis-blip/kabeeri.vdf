@@ -66,6 +66,7 @@ The planner can emit:
 - a planner review report
 - a planner resume report
 - draft documentation files from the planner pipeline
+- a shared Roadmap Train / Evo Sprint Queue for owner and Viber tracks
 - a Codex-ready execution prompt
 - a visual planning model with Mermaid, planning board JSON, scope map, and
   markdown report output
@@ -102,6 +103,7 @@ The self-planning engine should also:
 - materialize draft Markdown documentation files from the planner pipeline
 - keep Owner approval as the governance gate
 - keep Codex as the executor, not the planner
+- persist train, version, evolution, and task state as JSON so the next session can resume FIFO progress without reconstructing the queue from chat
 
 Planner docs materialization must remain draft-only unless the command
 explicitly asks for file writes. It must not execute code changes or

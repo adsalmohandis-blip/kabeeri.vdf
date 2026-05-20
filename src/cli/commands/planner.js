@@ -3,6 +3,8 @@ const path = require("path");
 
 const DEFAULT_VALIDATION_COMMANDS = ["node bin/kvdf.js validate", "npm test", "npm run check"];
 const PLANNER_STATE_FILE = ".kabeeri/planner.json";
+const OWNER_ROADMAP_TRAIN_STATE_FILE = ".kabeeri/owner_roadmap_train.json";
+const VIBER_RELEASE_TRAIN_FALLBACK_FILE = ".kabeeri/viber_release_train.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 const { readGitRepositoryState } = require("../services/git_snapshot");
 const { buildAiLearningPromptContext } = require("./ai_learning");
@@ -242,7 +244,7 @@ const PLANNER_DOC_DEFINITIONS = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -395,6 +397,13 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
     return;
   }
 
+  if (mode === "train") {
+    const trainAction = normalizePlannerTrainAction(value, rest);
+    const report = buildPlannerTrainCommandReport(trainAction, value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "train");
+    return;
+  }
+
   const report = buildPlannerNextReport(request, deps);
   printPlannerOutput(report, flags, deps, "next");
 }
@@ -474,7 +483,8 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     plugin_context: planning.plugin_context,
     delivery_mode: planning.delivery_mode,
     version_control: pipeline.version_control,
-    latest_feedback: pipeline.latest_feedback || null
+    latest_feedback: pipeline.latest_feedback || null,
+    roadmap_train: pipeline.roadmap_train || null
   });
   const visualPlanning = {
     ...(pipeline.visual_planning || {}),
@@ -505,7 +515,8 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     visualSummary: visualPlanning,
     currentGate: planning.current_gate,
     versionControl: pipeline.version_control,
-    latestFeedback: pipeline.latest_feedback || null
+    latestFeedback: pipeline.latest_feedback || null,
+    roadmapTrain: pipeline.roadmap_train || null
   });
   return {
     report_type: "kvdf_planner_auto_plan",
@@ -704,7 +715,7 @@ function buildPlannerStrategy(method, mode, pipeline = null) {
   return base;
 }
 
-function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null }) {
+function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null, roadmap_train = null }) {
   const risks = [];
   const requiredFixes = [];
   let status = "pass";
@@ -783,6 +794,13 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     warnings: version_control && version_control.publish_readiness ? [...(version_control.publish_readiness.warnings || [])] : [],
     next_action: version_control && version_control.publish_readiness ? version_control.publish_readiness.next_action || "" : ""
   };
+  const trainReview = roadmap_train ? {
+    status: roadmap_train.readiness ? roadmap_train.readiness.status || roadmap_train.status || "unknown" : roadmap_train.status || "unknown",
+    next_action: roadmap_train.next_action || (roadmap_train.readiness && roadmap_train.readiness.next_action) || "Review the roadmap train.",
+    next_evolution_id: roadmap_train.next_evolution_id || null,
+    blockers: roadmap_train.readiness && Array.isArray(roadmap_train.readiness.blockers) ? [...roadmap_train.readiness.blockers] : [],
+    warnings: roadmap_train.readiness && Array.isArray(roadmap_train.readiness.warnings) ? [...roadmap_train.readiness.warnings] : []
+  } : null;
   const docsStatus = docsReview.docs_status;
   if (!hasVisual) requiredFixes.push("Generate the visual planner output before execution.");
   if (!Array.isArray(task_punches) || !task_punches.length) requiredFixes.push("Generate task punches before execution.");
@@ -830,6 +848,7 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     visual_review: visualReview,
     version_control_review: versionControlReview,
     publish_readiness_review: publishReadinessReview,
+    train_review: trainReview,
     review_status: status,
     docs_status: docsStatus,
     risks,
@@ -878,6 +897,32 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     sourceControl: currentPlan.source_control || null
   });
   const latestFeedback = readPlannerLatestFeedback(context.repo_root, currentPlan.app_slug || "");
+  const roadmapTrain = currentPlan.version_plan
+    ? buildPlannerRoadmapTrainSummary({
+      pipeline: {
+        version_plan: currentPlan.version_plan || {},
+        version_control: versionControl,
+        docs_plan: currentPlan.docs_plan || null,
+        docs_status: currentPlan.docs_status || null,
+        validation_commands: currentPlan.validation_commands || [],
+        visual_planning: currentPlan.visual_planning || currentPlan.visual || null
+      },
+      context,
+      profile: {
+        train_type: mode === "vibe" ? "viber" : "owner",
+        track: currentPlan.track || getPlannerTrack(mode),
+        mode,
+        planning_method: planningMethod || method.recommended_method,
+        app_slug: currentPlan.app_slug || ""
+      },
+      planning: {
+        planning_method: planningMethod || method.recommended_method,
+        source_control: currentPlan.source_control || null
+      },
+      goal: currentPlan.goal || "",
+      flags: {}
+    })
+    : currentPlan.roadmap_train || null;
   const review = buildPlannerReviewSummary({
     goal: currentPlan.goal,
     planner_mode: mode,
@@ -896,7 +941,8 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     current_plan: currentPlan,
     security_gate: readJsonFileIfExists(path.join(context.repo_root, ".kabeeri", "security", "security_gate_state.json")),
     version_control: versionControl,
-    latest_feedback: latestFeedback
+    latest_feedback: latestFeedback,
+    roadmap_train: roadmapTrain
   });
   return {
     report_type: "kvdf_planner_review",
@@ -1874,6 +1920,9 @@ function buildPlannerResumeReport(deps = {}) {
   const currentPlan = plannerState && Array.isArray(plannerState.plans)
     ? findCurrentPlannerPlan(plannerState)
     : null;
+  const roadmapTrainState = currentPlan
+    ? readPlannerRoadmapTrainState(repoRootPath, currentPlan.planner_mode === "vibe" ? "viber" : "owner", normalizeAppSlug(currentPlan.app_slug || ""))
+    : readPlannerRoadmapTrainState(repoRootPath, "owner", "");
   const currentEvolution = evolutionState && Array.isArray(evolutionState.changes)
     ? (evolutionState.current_change_id ? evolutionState.changes.find((item) => String(item.change_id || "") === String(evolutionState.current_change_id)) || null : null)
     : null;
@@ -1907,6 +1956,7 @@ function buildPlannerResumeReport(deps = {}) {
     docs_plan: currentPlan ? currentPlan.docs_plan || null : null,
     docs_status: currentPlan ? currentPlan.docs_status || null : null,
     version_control: versionControl,
+    roadmap_train: roadmapTrainState || null,
     latest_feedback: readPlannerLatestFeedback(repoRootPath, normalizeAppSlug(currentPlan && currentPlan.app_slug || "")) || null,
     review_status: review.status || "unknown",
     next_recommended_action: buildPlannerResumeNextAction({ currentPlan, review, securityGateState, plannerState, deliveryDecisions, dashboard, tasksState }),
@@ -2017,7 +2067,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     versionControl,
     risks: planning.method.risks,
     currentGate: planning.current_gate,
-    nextAction: plan.next_action
+    nextAction: plan.next_action,
+    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
   const review = buildPlannerReviewSummary({
     goal,
@@ -2035,7 +2086,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     plugin_context: pluginContext,
     delivery_mode: deliveryMode,
     version_control: versionControl,
-    latest_feedback: latestFeedback
+    latest_feedback: latestFeedback,
+    roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
   return {
     report_type: "kvdf_planner_codex_prompt",
@@ -2058,6 +2110,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     version_control: versionControl,
     publish_readiness: versionControl.publish_readiness || null,
     latest_feedback: latestFeedback,
+    roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
     review,
     visual_summary: visualSummary,
     task_punch: taskPunch,
@@ -2077,7 +2130,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       visualSummary,
       currentGate: planning.current_gate,
       versionControl,
-      latestFeedback
+      latestFeedback,
+      roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
     })
   };
 }
@@ -2168,7 +2222,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     plugin_context: pluginContext,
     delivery_mode: deliveryMode,
     version_control: versionControl,
-    latest_feedback: planning.pipeline && planning.pipeline.latest_feedback ? planning.pipeline.latest_feedback : readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""))
+    latest_feedback: planning.pipeline && planning.pipeline.latest_feedback ? planning.pipeline.latest_feedback : readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || "")),
+    roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
   return buildPlannerVisualPayload({
     goal,
@@ -2254,11 +2309,12 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     docsCreatedTotal: currentPlan.docs_status ? currentPlan.docs_status.existing_total || 0 : (Array.isArray(currentPlan.documentation_files) ? currentPlan.documentation_files.length : 0),
     risks: review.risks || [],
     currentGate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || "structured", sourceControl, mode),
-    nextAction: currentPlan.next_action || evolutionPlan.next_action
+    nextAction: currentPlan.next_action || evolutionPlan.next_action,
+    roadmapTrain: currentPlan.roadmap_train || null
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "" }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
@@ -2287,7 +2343,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     planningReadiness,
     risks,
     currentGate,
-    nextAction: nextAction || evolutionPlan.next_action || ""
+    nextAction: nextAction || evolutionPlan.next_action || "",
+    roadmapTrain
   });
   const report = {
     report_type: "kvdf_planner_visual",
@@ -2315,6 +2372,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     docs_created_total: docsCreatedTotal,
     docs_status_report: docsStatusReport,
     version_control: versionControl,
+    roadmap_train: roadmapTrain || null,
     risks,
     current_gate: currentGate,
     next_action: nextAction || evolutionPlan.next_action || ""
@@ -2602,7 +2660,7 @@ function buildPlannerVisualQuestionsSection({ mode, goal, planningMethod, method
   ].filter(Boolean).join("\n");
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, risks, currentGate, nextAction }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Model - Vibe/App"
     : mode === "plugin"
@@ -2654,6 +2712,7 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     versionControl && versionControl.next_version ? `- Next version: ${versionControl.next_version.version_id || versionControl.next_version.title || "unknown"}` : null,
     versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
     versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
+    roadmapTrain ? `- Roadmap train: ${roadmapTrain.status || "unknown"}${roadmapTrain.next_evolution_id ? ` (next ${roadmapTrain.next_evolution_id})` : ""}` : null,
     currentGate ? `- Current gate: ${currentGate}` : null,
     risks && risks.length ? `- Risks: ${risks.join("; ")}` : null,
     planningReadiness.feedback ? `- Latest feedback: ${planningReadiness.feedback.status || "unknown"} (${planningReadiness.feedback.executor || "unknown"})` : null,
@@ -2692,6 +2751,8 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     "",
     "## Version Control",
     ...renderIndentedObjectSection(versionControl || {}),
+    "",
+    roadmapTrain ? ["## Roadmap Train", ...renderIndentedObjectSection(roadmapTrain || {})].join("\n") : null,
     "",
     "## Scope Map",
     "### Allowed Files",
@@ -2840,7 +2901,8 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     context,
     pluginContext,
     sourceControl,
-    versionControl
+    versionControl,
+    roadmapTrain: null
   });
   const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
   const nextEvolution = visualRoadmap.next_evolution || null;
@@ -2864,6 +2926,32 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     idea: normalizedIdea
   });
   const docsStatus = buildPlannerDocsStatusSummaryFromPlan(docsPlan);
+  const roadmapTrain = mode === "owner" || mode === "vibe"
+    ? buildPlannerRoadmapTrainSummary({
+      pipeline: {
+        version_plan: versionPlan,
+        version_control: versionControl,
+        docs_plan: docsPlan,
+        docs_status: docsStatus,
+        validation_commands: firstEvolution.validation_commands || visualPlanning.validation_commands || DEFAULT_VALIDATION_COMMANDS,
+        visual_planning: visualPlanning
+      },
+      context,
+      profile: {
+        train_type: mode === "vibe" ? "viber" : "owner",
+        track: getPlannerTrack(mode),
+        mode,
+        planning_method: request.method || request.planning_method || "auto",
+        app_slug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || "")
+      },
+      planning: {
+        planning_method: request.method || request.planning_method || "auto",
+        source_control: sourceControl
+      },
+      goal: normalizedIdea,
+      flags: request
+    })
+    : null;
   const report = {
     report_type: "kvdf_idea_to_evolution_pipeline",
     generated_at: new Date().toISOString(),
@@ -2879,6 +2967,7 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     visual_planning: visualPlanning,
     version_plan: versionPlan,
     version_control: versionControl,
+    roadmap_train: roadmapTrain,
     evolutions,
     task_punches: taskPunches,
     visual_roadmap: visualRoadmap,
@@ -3441,7 +3530,8 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned",
     docsStatusReport: planning.pipeline ? planning.pipeline.docs_status : null,
     docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : 0,
-    currentGate: planning.current_gate
+    currentGate: planning.current_gate,
+    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
   const review = buildPlannerReviewSummary({
     goal,
@@ -3457,9 +3547,10 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     evolutions: [evolutionPlan],
     method: planning.method,
     plugin_context: pluginContext,
-    delivery_mode: deliveryMode
+    delivery_mode: deliveryMode,
+    roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
-  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", visualSummary: visual, currentGate: planning.current_gate });
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", visualSummary: visual, currentGate: planning.current_gate, roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
   const plan = buildPlannerPlanRecord({
@@ -3739,6 +3830,41 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
   );
   const aiLearning = buildAiLearningPromptContext(normalizePlannerMode(currentPlan.track || currentPlan.planner_mode), { include_all: true });
   const review = currentPlan.review || buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  const roadmapTrain = currentPlan.version_plan
+    ? buildPlannerRoadmapTrainSummary({
+      pipeline: {
+        version_plan: currentPlan.version_plan || {},
+        version_control: currentPlan.version_control || buildPlannerVersionControlSummary({
+          versionPlan: currentPlan.version_plan || {},
+          currentPlan,
+          versionControlState: readPlannerVersionControlState(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")),
+          context,
+          appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+          track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
+          plannerMode: normalizePlannerMode(currentPlan.planner_mode),
+          sourceControl
+        }),
+        docs_plan: currentPlan.docs_plan || null,
+        docs_status: currentPlan.docs_status || null,
+        validation_commands: currentPlan.validation_commands || [],
+        visual_planning: currentPlan.visual_planning || currentPlan.visual || null
+      },
+      context,
+      profile: {
+        train_type: normalizePlannerMode(currentPlan.planner_mode) === "vibe" ? "viber" : "owner",
+        track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
+        mode: normalizePlannerMode(currentPlan.planner_mode),
+        planning_method: currentPlan.planning_method || review.planning_method || "auto",
+        app_slug: normalizeAppSlug(currentPlan.app_slug || "")
+      },
+      planning: {
+        planning_method: currentPlan.planning_method || review.planning_method || "auto",
+        source_control: sourceControl
+      },
+      goal: currentPlan.goal || "",
+      flags: {}
+    })
+    : null;
   const prompt = renderPlannerPromptFromPlan({
     ...currentPlan,
     planning_method: currentPlan.planning_method || review.planning_method || null,
@@ -3770,7 +3896,8 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     docs_status: currentPlan.docs_status ? currentPlan.docs_status.status : (currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned"),
     review,
     task_punch: currentPlan.task_punch || null,
-    prompt
+    prompt,
+    roadmap_train: roadmapTrain
   };
 }
 
@@ -3979,7 +4106,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -4018,6 +4145,7 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     versionControl ? `- Next version: ${versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || "unknown" : "none"}` : null,
     versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
     versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
+    roadmapTrain ? `- Roadmap train: ${roadmapTrain.status || "unknown"}${roadmapTrain.next_evolution_id ? ` (next ${roadmapTrain.next_evolution_id})` : ""}` : null,
     latestFeedback ? `- Latest feedback: ${latestFeedback.status || "unknown"}${latestFeedback.summary ? ` (${latestFeedback.summary})` : ""}` : null,
     planningMethod && visualSummary ? `- Visual summary: ${visualSummary.markdown_report ? visualSummary.markdown_report.split("\n")[0] : "available"}` : null,
     "",
@@ -4175,33 +4303,22 @@ function printPlannerOutput(report, flags, deps, kind) {
     console.log(JSON.stringify(report, null, 2));
     return;
   }
-  const rendered = kind === "prompt"
-    ? renderPlannerPromptReport(report)
-    : kind === "method"
-      ? renderPlannerMethodReport(report, deps.table)
-      : kind === "auto"
-        ? renderPlannerAutoPlanReport(report, deps.table)
-        : kind === "review"
-          ? renderPlannerReviewReport(report, deps.table)
-          : kind === "resume"
-            ? renderPlannerResumeReport(report, deps.table)
-            : kind === "docs"
-              ? renderPlannerDocsMaterializationReport(report, deps.table)
-              : kind === "truth"
-                ? `${JSON.stringify(report, null, 2)}`
-    : kind === "visual"
-      ? renderPlannerVisualReport(report)
-      : kind === "pipeline"
-        ? renderPlannerPipelineReport(report, deps.table)
-      : kind === "materialize"
-        ? renderPlannerMaterializationReport(report, deps.table)
-    : kind === "evolution"
-      ? renderPlannerEvolutionPlan(report, deps.table)
-      : kind === "task-punch"
-        ? renderPlannerTaskPunchReport(report, deps.table)
-      : ["propose", "approve", "current", "reject"].includes(kind)
-          ? renderPlannerStateSummaryReport(report, deps.table)
-        : renderPlannerNextReport(report, deps.table);
+  let rendered;
+  if (kind === "prompt") rendered = renderPlannerPromptReport(report);
+  else if (kind === "method") rendered = renderPlannerMethodReport(report, deps.table);
+  else if (kind === "auto") rendered = renderPlannerAutoPlanReport(report, deps.table);
+  else if (kind === "review") rendered = renderPlannerReviewReport(report, deps.table);
+  else if (kind === "resume") rendered = renderPlannerResumeReport(report, deps.table);
+  else if (kind === "docs") rendered = renderPlannerDocsMaterializationReport(report, deps.table);
+  else if (kind === "truth") rendered = JSON.stringify(report, null, 2);
+  else if (kind === "train") rendered = renderPlannerRoadmapTrainReport(report, deps.table);
+  else if (kind === "visual") rendered = renderPlannerVisualReport(report);
+  else if (kind === "pipeline") rendered = renderPlannerPipelineReport(report, deps.table);
+  else if (kind === "materialize") rendered = renderPlannerMaterializationReport(report, deps.table);
+  else if (kind === "evolution") rendered = renderPlannerEvolutionPlan(report, deps.table);
+  else if (kind === "task-punch") rendered = renderPlannerTaskPunchReport(report, deps.table);
+  else if (["propose", "approve", "current", "reject"].includes(kind)) rendered = renderPlannerStateSummaryReport(report, deps.table);
+  else rendered = renderPlannerNextReport(report, deps.table);
   if ((kind === "visual" || kind === "pipeline")) {
     openPlannerPreview(report, rendered, kind, flags, deps);
   }
@@ -5820,6 +5937,55 @@ function renderPlannerResumeReport(report, tableRenderer) {
   ].join("\n");
 }
 
+function renderPlannerRoadmapTrainReport(report, tableRenderer) {
+  const rows = [
+    ["Train type", report.train_type || ""],
+    ["Track", report.track || ""],
+    ["Planning method", report.planning_method || ""],
+    ["Status", report.status || ""],
+    ["Next evolution", report.next_evolution_id || ""],
+    ["Next action", report.next_action || ""]
+  ];
+  const majorRows = Array.isArray(report.major_versions)
+    ? report.major_versions.map((major) => [
+      major.major_version || "",
+      major.target_version || "",
+      major.title || "",
+      major.status || ""
+    ])
+    : [];
+  const queueRows = Array.isArray(report.fifo_queue)
+    ? report.fifo_queue.map((item) => [
+      item.position || "",
+      item.major_version || "",
+      item.version_id || "",
+      item.evolution_id || "",
+      item.status || "",
+      item.blocked ? "yes" : "no"
+    ])
+    : [];
+  return [
+    "KVDF Roadmap Train",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Major versions:",
+    ...majorRows.map((row) => `- ${row[0]} -> ${row[1]} :: ${row[2]} (${row[3]})`),
+    "",
+    "FIFO queue:",
+    ...queueRows.map((row) => `- #${row[0]} ${row[1]} / ${row[2]} / ${row[3]} [${row[4]}${row[5] === "yes" ? ", blocked" : ""}]`),
+    "",
+    "Readiness:",
+    ...renderIndentedObjectSection(report.readiness || {}),
+    "",
+    "Version control:",
+    ...renderIndentedObjectSection(report.version_control || {}),
+    "",
+    "Current train:",
+    ...renderIndentedObjectSection(report.current_train || {})
+  ].join("\n");
+}
+
 function renderPlannerDocsMaterializationReport(report, tableRenderer) {
   const rows = [
     ["Planner mode", report.planner_mode || ""],
@@ -5935,6 +6101,32 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     plannerMode: mode,
     sourceControl: sourceControlState
   });
+  const roadmapTrain = plan.version_plan
+    ? buildPlannerRoadmapTrainSummary({
+      pipeline: {
+        version_plan: plan.version_plan || {},
+        version_control: versionControl,
+        docs_plan: plan.docs_plan || null,
+        docs_status: plan.docs_status || null,
+        validation_commands: plan.validation_commands || [],
+        visual_planning: plan.visual_planning || plan.visual || null
+      },
+      context,
+      profile: {
+        train_type: mode === "vibe" ? "viber" : "owner",
+        track: plan.track || getPlannerTrack(mode),
+        mode,
+        planning_method: plan.planning_method || null,
+        app_slug: normalizeAppSlug(plan.app_slug || "")
+      },
+      planning: {
+        planning_method: plan.planning_method || null,
+        source_control: sourceControlState
+      },
+      goal,
+      flags: {}
+    })
+    : null;
   return renderCodexPrompt({
     goal,
     mode,
@@ -5951,7 +6143,8 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     visualSummary: plan.visual_planning || plan.visual || null,
     currentGate: plan.current_gate || null,
     versionControl,
-    latestFeedback: plan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(plan.app_slug || ""))
+    latestFeedback: plan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(plan.app_slug || "")),
+    roadmapTrain
   });
 }
 
@@ -6002,6 +6195,7 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     : [];
   const sourceControl = report.source_control || null;
   const versionControl = report.version_control || null;
+  const roadmapTrain = report.roadmap_train || null;
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -6051,6 +6245,9 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     "",
     "## Version Control",
     ...renderIndentedObjectSection(versionControl || {}),
+    "",
+    roadmapTrain ? "## Roadmap Train" : null,
+    ...(roadmapTrain ? renderIndentedObjectSection(roadmapTrain || {}) : []),
     "",
     "## Evolutions",
     tableRenderer(["Evolution", "Title", "Version", "Source Control"], evolutionRows),
@@ -6275,6 +6472,604 @@ function buildPlannerVersionControlSummary({ versionPlan = {}, currentPlan = nul
     latest_feedback: latestFeedback,
     next_action: currentVersion ? currentVersion.next_action || publishReadiness.next_action || "Review the current version gates." : "Create or approve a Viber app version plan."
   };
+}
+
+function normalizePlannerTrainAction(value, rest = []) {
+  const candidates = [value, ...rest];
+  const action = candidates.find((item) => typeof item === "string" && item.trim() && !String(item).startsWith("--"));
+  const normalized = String(action || "build").trim().toLowerCase();
+  if (["build", "status", "next", "advance", "visual", "readiness"].includes(normalized)) return normalized;
+  return "build";
+}
+
+function resolvePlannerRoadmapTrainProfile(flags = {}, context = {}, explicitMode = null) {
+  const trainType = normalizeRoadmapTrainType(flags.track || explicitMode || "owner");
+  const mode = trainType === "viber" ? "vibe" : "owner";
+  const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || "");
+  const planningMethod = normalizePlannerMethod(flags.method || flags.planning_method || "auto");
+  return {
+    train_type: trainType,
+    track: trainType === "viber" ? "vibe_app_developer" : "framework_owner",
+    mode,
+    app_slug: appSlug,
+    planning_method: planningMethod,
+    state_path: buildPlannerRoadmapTrainStatePath(context.repo_root, trainType, appSlug),
+    default_goal: trainType === "viber" ? (flags.idea || flags.goal || "") : (flags.goal || flags.idea || "")
+  };
+}
+
+function normalizeRoadmapTrainType(value) {
+  const normalized = normalizeTrackAlias(value) || String(value || "").trim().toLowerCase();
+  if (normalized === "vibe" || normalized === "viber" || normalized === "vibe_app_developer") return "viber";
+  return "owner";
+}
+
+function normalizeRoadmapTrainStatus(value) {
+  const normalized = String(value || "planned").trim().toLowerCase();
+  if (["planned", "ready", "active", "completed", "blocked", "published"].includes(normalized)) return normalized;
+  if (normalized === "done") return "completed";
+  if (normalized === "in_progress") return "active";
+  if (normalized === "warning") return "ready";
+  return "planned";
+}
+
+function buildPlannerRoadmapTrainStatePath(repoRootPath, trainType, appSlug) {
+  const root = repoRootPath || process.cwd();
+  if (trainType === "viber") {
+    const slug = normalizeAppSlug(appSlug || "");
+    if (slug) {
+      return path.join(root, "workspaces", "apps", slug, ".kabeeri", "release_train.json");
+    }
+    return path.join(root, VIBER_RELEASE_TRAIN_FALLBACK_FILE);
+  }
+  return path.join(root, OWNER_ROADMAP_TRAIN_STATE_FILE);
+}
+
+function readPlannerRoadmapTrainState(repoRootPath, trainType, appSlug) {
+  const root = repoRootPath || process.cwd();
+  const primaryPath = buildPlannerRoadmapTrainStatePath(root, trainType, appSlug);
+  const fallbackPath = trainType === "viber" ? path.join(root, VIBER_RELEASE_TRAIN_FALLBACK_FILE) : null;
+  const filePath = fs.existsSync(primaryPath) ? primaryPath : (fallbackPath && fs.existsSync(fallbackPath) ? fallbackPath : null);
+  return filePath ? readJsonFileIfExists(filePath) : null;
+}
+
+function savePlannerRoadmapTrainState(repoRootPath, trainType, appSlug, state) {
+  const root = repoRootPath || process.cwd();
+  const filePath = buildPlannerRoadmapTrainStatePath(root, trainType, appSlug);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  if (trainType === "viber" && filePath.endsWith("release_train.json")) {
+    const fallbackPath = path.join(root, VIBER_RELEASE_TRAIN_FALLBACK_FILE);
+    fs.mkdirSync(path.dirname(fallbackPath), { recursive: true });
+    fs.writeFileSync(fallbackPath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  }
+}
+
+function buildPlannerTrainCommandReport(action, value = "", flags = {}, rest = [], deps = {}) {
+  if (action === "status") return buildPlannerRoadmapTrainStatusReport(value, flags, rest, deps);
+  if (action === "next") return buildPlannerRoadmapTrainNextReport(value, flags, rest, deps);
+  if (action === "advance") return buildPlannerRoadmapTrainAdvanceReport(value, flags, rest, deps);
+  if (action === "visual") return buildPlannerRoadmapTrainVisualReport(value, flags, rest, deps);
+  if (action === "readiness") return buildPlannerRoadmapTrainReadinessReport(value, flags, rest, deps);
+  return buildPlannerRoadmapTrainBuildReport(value, flags, rest, deps);
+}
+
+function buildPlannerRoadmapTrainBuildReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const profile = resolvePlannerRoadmapTrainProfile(flags, context, flags.track);
+  const subject = resolveGoal(value, flags, rest, profile.default_goal || "");
+  const request = {
+    ...flags,
+    mode: profile.mode,
+    track: profile.track,
+    method: profile.planning_method,
+    app: profile.app_slug,
+    app_slug: profile.app_slug,
+    idea: subject,
+    goal: subject,
+    source_control: flags.source_control || null
+  };
+  const planning = buildPlannerPlanningContext(subject, request, deps);
+  const selectedMethod = planning.planning_method || planning.method && planning.method.recommended_method || profile.planning_method || "structured";
+  const pipeline = buildIdeaToEvolutionPipelineReport(subject, {
+    ...flags,
+    mode: profile.mode,
+    method: selectedMethod,
+    deliveryMode: planning.delivery_mode,
+    pluginContext: planning.plugin_context,
+    source_control: planning.source_control,
+    app: profile.app_slug,
+    app_slug: profile.app_slug
+  }, planning.context);
+  const report = buildPlannerRoadmapTrainSummary({
+    pipeline,
+    context,
+    profile: {
+      ...profile,
+      planning_method: selectedMethod
+    },
+    planning: {
+      ...planning,
+      planning_method: selectedMethod
+    },
+    goal: subject,
+    flags
+  });
+  savePlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug, report);
+  return report;
+}
+
+function buildPlannerRoadmapTrainStatusReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const profile = resolvePlannerRoadmapTrainProfile(flags, context, flags.track);
+  const train = readPlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug);
+  if (!train) {
+    return buildEmptyPlannerRoadmapTrainReport(profile, context, "Build the roadmap train first.");
+  }
+  return refreshPlannerRoadmapTrainReport(train, profile, context);
+}
+
+function buildPlannerRoadmapTrainNextReport(value = "", flags = {}, rest = [], deps = {}) {
+  const report = buildPlannerRoadmapTrainStatusReport(value, flags, rest, deps);
+  const nextEvolution = findNextRoadmapTrainEvolution(report);
+  return {
+    report_type: "kvdf_roadmap_train_next",
+    generated_at: report.generated_at || new Date().toISOString(),
+    train_type: report.train_type,
+    track: report.track,
+    planning_method: report.planning_method,
+    current_train: report,
+    next_evolution_id: nextEvolution ? nextEvolution.evolution_id || null : null,
+    next_evolution: nextEvolution || null,
+    next_task_punch: nextEvolution && nextEvolution.task_punch_id ? {
+      task_punch_id: nextEvolution.task_punch_id,
+      task_ids: [...(nextEvolution.task_ids || [])]
+    } : null,
+    blocked: Boolean(nextEvolution && nextEvolution.status === "blocked"),
+    blockers: nextEvolution && Array.isArray(nextEvolution.blockers) ? [...nextEvolution.blockers] : [],
+    next_action: nextEvolution ? nextEvolution.next_action || "Review the next unblocked evolution." : report.next_action || "Build the roadmap train first."
+  };
+}
+
+function buildPlannerRoadmapTrainAdvanceReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const profile = resolvePlannerRoadmapTrainProfile(flags, context, flags.track);
+  const evolutionId = String(flags.evolution || flags.id || value || "").trim();
+  if (!evolutionId) throw new Error("Missing evolution id for planner train advance.");
+  const nextStatus = String(flags.status || "completed").trim().toLowerCase();
+  const train = readPlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug);
+  if (!train) return buildEmptyPlannerRoadmapTrainReport(profile, context, "Build the roadmap train first.");
+  const updated = advancePlannerRoadmapTrainState(train, evolutionId, nextStatus);
+  updated.updated_at = new Date().toISOString();
+  savePlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug, updated);
+  const refreshed = refreshPlannerRoadmapTrainReport(updated, profile, context);
+  return {
+    report_type: "kvdf_roadmap_train_advanced",
+    generated_at: refreshed.generated_at,
+    train_type: refreshed.train_type,
+    track: refreshed.track,
+    planning_method: refreshed.planning_method,
+    evolution_id: evolutionId,
+    status: nextStatus,
+    current_train: refreshed,
+    next_evolution_id: refreshed.next_evolution_id,
+    next_action: refreshed.next_action
+  };
+}
+
+function buildPlannerRoadmapTrainVisualReport(value = "", flags = {}, rest = [], deps = {}) {
+  const report = buildPlannerRoadmapTrainStatusReport(value, flags, rest, deps);
+  return {
+    report_type: "kvdf_roadmap_train_visual",
+    generated_at: report.generated_at || new Date().toISOString(),
+    train_type: report.train_type,
+    track: report.track,
+    planning_method: report.planning_method,
+    diagram: buildPlannerRoadmapTrainMermaid(report),
+    board: buildPlannerRoadmapTrainBoard(report),
+    summary: buildPlannerRoadmapTrainSummaryLines(report),
+    current_train: report,
+    next_action: report.next_action
+  };
+}
+
+function buildPlannerRoadmapTrainReadinessReport(value = "", flags = {}, rest = [], deps = {}) {
+  const report = buildPlannerRoadmapTrainStatusReport(value, flags, rest, deps);
+  return {
+    report_type: "kvdf_roadmap_train_readiness",
+    generated_at: report.generated_at || new Date().toISOString(),
+    train_type: report.train_type,
+    track: report.track,
+    planning_method: report.planning_method,
+    status: report.readiness ? report.readiness.status : "unknown",
+    gates: report.readiness ? report.readiness.gates : {},
+    blockers: report.readiness ? [...(report.readiness.blockers || [])] : [],
+    warnings: report.readiness ? [...(report.readiness.warnings || [])] : [],
+    next_action: report.readiness ? report.readiness.next_action : report.next_action,
+    current_train: report
+  };
+}
+
+function buildPlannerRoadmapTrainSummary({ pipeline, context, profile, planning, goal, flags = {} }) {
+  const versionPlan = pipeline && pipeline.version_plan ? pipeline.version_plan : { versions: [] };
+  const versionControl = pipeline && pipeline.version_control ? pipeline.version_control : buildPlannerVersionControlSummary({
+    versionPlan,
+    currentPlan: pipeline && pipeline.current_plan ? pipeline.current_plan : null,
+    versionControlState: null,
+    context,
+    appSlug: profile.app_slug,
+    track: profile.track,
+    plannerMode: profile.mode,
+    sourceControl: planning.source_control
+  });
+  const versions = Array.isArray(versionPlan.versions) ? versionPlan.versions : [];
+  const trainVersions = versions.map((version, index) => buildPlannerRoadmapTrainVersion(version, index, {
+    profile,
+    planning,
+    context,
+    pipeline,
+    versionControl
+  }));
+  const fifoQueue = flattenRoadmapTrainQueue(trainVersions);
+  const nextEvolution = fifoQueue.find((item) => ["planned", "ready", "active"].includes(String(item.status || "").toLowerCase()) && !item.blocked) || null;
+  const readiness = buildPlannerRoadmapTrainReadinessState({
+    profile,
+    planning,
+    pipeline,
+    versionControl,
+    fifoQueue,
+    trainVersions
+  });
+  const completedCount = fifoQueue.filter((item) => ["completed", "published"].includes(String(item.status || "").toLowerCase())).length;
+  const allCompleted = fifoQueue.length > 0 && completedCount === fifoQueue.length;
+  const hasBlocked = fifoQueue.some((item) => item.blocked || String(item.status || "").toLowerCase() === "blocked");
+  const now = new Date().toISOString();
+  return {
+    report_type: "kvdf_roadmap_train",
+    generated_at: now,
+    train_id: buildPlannerRoadmapTrainId(profile, goal),
+    train_type: profile.train_type,
+    track: profile.track,
+    planning_method: planning.planning_method || profile.planning_method || "auto",
+    status: readiness.status === "blocked" || hasBlocked ? "blocked" : allCompleted ? "completed" : nextEvolution ? "active" : "planned",
+    major_versions: trainVersions.map((item) => item.major_version_entry),
+    fifo_queue: fifoQueue,
+    next_evolution_id: nextEvolution ? nextEvolution.evolution_id : null,
+    created_at: now,
+    updated_at: now,
+    source_control: planning.source_control,
+    version_control: versionControl,
+    readiness,
+    next_action: nextEvolution ? nextEvolution.next_action || "Review the next unblocked evolution." : "Build the roadmap train first."
+  };
+}
+
+function buildPlannerRoadmapTrainVersion(version, index, options = {}) {
+  const profile = options.profile || {};
+  const planning = options.planning || {};
+  const pipeline = options.pipeline || {};
+  const versionControl = options.versionControl || null;
+  const versionId = String(version.version_id || `v${index + 1}`).trim();
+  const stageVersionId = versionId.endsWith(".0") ? versionId : `${versionId}.0`;
+  const evoSprintId = `evo-sprint-${String(index + 1).padStart(3, "0")}`;
+  const evolution = version.evolution || {};
+  const taskPunch = version.task_punch || {};
+  const taskIds = Array.isArray(taskPunch.tasks) ? taskPunch.tasks.map((task) => task.id).filter(Boolean) : [];
+  const stageMethod = profile.planning_method === "hybrid" && index > 0 ? "agile" : profile.planning_method || "structured";
+  const docsRequired = collectRoadmapTrainDocsRequired(profile, pipeline, version, index);
+  const evolutionStatus = normalizeRoadmapTrainStatus(evolution.status || version.status || "planned");
+  const sprintStatus = normalizeRoadmapTrainStatus(version.task_punch && taskIds.length ? (evolutionStatus === "blocked" ? "blocked" : evolutionStatus === "completed" ? "completed" : "ready") : evolutionStatus);
+  const stageStatus = normalizeRoadmapTrainStatus(evolutionStatus === "completed" && sprintStatus === "completed" ? "completed" : sprintStatus === "blocked" ? "blocked" : sprintStatus === "ready" ? "ready" : "planned");
+  const gates = buildRoadmapTrainStageGates(profile, pipeline, version, index, versionControl);
+  const evolutionEntry = {
+    evolution_id: evolution.evolution_id || `evo-${String(index + 1).padStart(4, "0")}`,
+    title: evolution.title || version.title || `Evolution ${index + 1}`,
+    sequence: index + 1,
+    version_id: stageVersionId,
+    evo_sprint_id: evoSprintId,
+    status: evolutionStatus,
+    task_punch_id: taskPunch.task_punch_id || `task-punch-${String(index + 1).padStart(4, "0")}`,
+    task_ids: [...taskIds],
+    docs_required: [...docsRequired],
+    validation_commands: Array.isArray(version.validation_commands) ? [...version.validation_commands] : [...(evolution.validation_commands || [])],
+    stop_condition: evolution.stop_condition || version.readiness_gate || "Stop if blockers remain."
+  };
+  const sprintEntry = {
+    evo_sprint_id: evoSprintId,
+    title: `${version.title || versionId} Evo Sprint`,
+    sequence: 1,
+    status: sprintStatus,
+    planning_method: stageMethod,
+    evolution_ids: [evolutionEntry.evolution_id],
+    task_ids: [...taskIds],
+    depends_on: index > 0 ? [`evo-sprint-${String(index).padStart(3, "0")}`] : [],
+    blockers: stageStatus === "blocked" ? [...gates.blockers] : [],
+    next_action: version.next_action || evolutionEntry.stop_condition || "Review the next stage."
+  };
+  const stageEntry = {
+    version_id: stageVersionId,
+    title: version.title || versionId,
+    sequence: index + 1,
+    status: stageStatus,
+    planning_method: stageMethod,
+    evo_sprints: [sprintEntry],
+    gates
+  };
+  const majorVersionEntry = {
+    major_version: versionId,
+    target_version: stageVersionId,
+    title: version.title || versionId,
+    track: profile.track,
+    status: stageStatus === "completed" ? "completed" : stageStatus === "blocked" ? "blocked" : stageStatus === "ready" ? "ready" : "planned",
+    stages: [stageEntry]
+  };
+  const queueEntry = {
+    position: index + 1,
+    major_version: majorVersionEntry.major_version,
+    version_id: stageVersionId,
+    evo_sprint_id: evoSprintId,
+    evolution_id: evolutionEntry.evolution_id,
+    title: evolutionEntry.title,
+    status: evolutionStatus,
+    blocked: stageStatus === "blocked",
+    task_ids: [...taskIds],
+    task_punch_id: evolutionEntry.task_punch_id,
+    docs_required: [...docsRequired],
+    validation_commands: [...evolutionEntry.validation_commands],
+    stop_condition: evolutionEntry.stop_condition,
+    next_action: sprintEntry.next_action
+  };
+  return {
+    major_version_entry: majorVersionEntry,
+    fifo_queue_entry: queueEntry,
+    evolution: evolutionEntry,
+    sprint: sprintEntry,
+    stage: stageEntry
+  };
+}
+
+function buildPlannerRoadmapTrainReadinessState({ profile, planning, pipeline, versionControl, fifoQueue, trainVersions }) {
+  if (profile.train_type === "viber") {
+    const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+    const readiness = currentVersion && currentVersion.publish_gate ? currentVersion.publish_gate : (versionControl && versionControl.publish_readiness ? versionControl.publish_readiness : buildEmptyVersionGate("publish"));
+    const gates = {
+      docs: currentVersion ? currentVersion.docs_gate || buildEmptyVersionGate("docs") : buildEmptyVersionGate("docs"),
+      evolution: currentVersion ? currentVersion.evolution_gate || buildEmptyVersionGate("evolution") : buildEmptyVersionGate("evolution"),
+      task: currentVersion ? currentVersion.task_gate || buildEmptyVersionGate("task") : buildEmptyVersionGate("task"),
+      validation: currentVersion ? currentVersion.validation_gate || buildEmptyVersionGate("validation") : buildEmptyVersionGate("validation"),
+      security: currentVersion ? currentVersion.security_gate || buildEmptyVersionGate("security") : buildEmptyVersionGate("security"),
+      handoff: currentVersion ? currentVersion.handoff_gate || buildEmptyVersionGate("handoff") : buildEmptyVersionGate("handoff"),
+      publish: readiness
+    };
+    return {
+      status: readiness.status === "blocked" ? "blocked" : readiness.status === "pass" ? "ready" : "warning",
+      gates,
+      blockers: collectRoadmapTrainBlockers(gates),
+      warnings: collectRoadmapTrainWarnings(gates),
+      next_action: readiness.next_action || "Review the version gates before publishing."
+    };
+  }
+  const hasDocs = Boolean(Array.isArray(pipeline.documentation_files) && pipeline.documentation_files.length);
+  const hasValidation = Boolean(Array.isArray(pipeline.validation_commands) && pipeline.validation_commands.length);
+  const hasSecurity = Boolean(versionControl && versionControl.publish_readiness && versionControl.publish_readiness.status);
+  const gates = {
+    docs: buildVersionGateState("docs", { required: true, status: hasDocs ? "pass" : "warning", evidence: hasDocs ? pipeline.documentation_files : [], warnings: hasDocs ? [] : ["Docs are not yet recorded."], next_action: hasDocs ? "Docs gate passed." : "Generate the required docs." }),
+    schemas: buildVersionGateState("schemas", { required: true, status: hasDocs ? "pass" : "warning", evidence: hasDocs ? pipeline.documentation_files.filter((item) => String(item).includes("schemas")) : [], warnings: hasDocs ? [] : ["Schema evidence is not yet recorded."], next_action: hasDocs ? "Schemas are present." : "Record schema coverage." }),
+    tests: buildVersionGateState("tests", { required: true, status: hasValidation ? "pass" : "warning", evidence: hasValidation ? pipeline.validation_commands : [], warnings: hasValidation ? [] : ["Test commands are missing."], next_action: hasValidation ? "Tests are ready." : "Add validation commands." }),
+    validation: buildVersionGateState("validation", { required: true, status: hasValidation ? "pass" : "warning", evidence: hasValidation ? pipeline.validation_commands : [], warnings: hasValidation ? [] : ["Validation evidence is missing."], next_action: hasValidation ? "Validation gate passed." : "Capture validation results." }),
+    security: buildVersionGateState("security", { required: true, status: hasSecurity ? "pass" : "warning", evidence: hasSecurity ? [versionControl.publish_readiness.status] : [], warnings: hasSecurity ? [] : ["Security readiness is not recorded."], next_action: hasSecurity ? "Security readiness is present." : "Capture the security gate summary." }),
+    source_control: buildVersionGateState("source_control", { required: true, status: planning.source_control && planning.source_control.mode ? "pass" : "warning", evidence: planning.source_control ? [summarizeSourceControl(planning.source_control)] : [], warnings: planning.source_control ? [] : ["Source control mode is not recorded."], next_action: planning.source_control ? "Source control is recorded." : "Choose a source control mode." }),
+    generated_reports: buildVersionGateState("generated_reports", { required: true, status: pipeline.visual_planning ? "pass" : "warning", evidence: pipeline.visual_planning ? ["visual planning available"] : [], warnings: pipeline.visual_planning ? [] : ["Visual planning is missing."], next_action: pipeline.visual_planning ? "Generated reports are present." : "Generate the visual roadmap." }),
+    direct_main: buildVersionGateState("direct_main", { required: true, status: planning.source_control && planning.source_control.mode === "direct_main" ? "pass" : "warning", evidence: planning.source_control ? [planning.source_control.mode || "local_only"] : [], warnings: planning.source_control && planning.source_control.mode === "direct_main" ? [] : ["Direct-to-main is not the active mode."], next_action: planning.source_control && planning.source_control.mode === "direct_main" ? "Direct-to-main readiness is present." : "Confirm the direct-main delivery mode." })
+  };
+  const status = gates.docs.status === "pass" && gates.schemas.status === "pass" && gates.tests.status === "pass" && gates.validation.status === "pass" && gates.security.status === "pass" && gates.source_control.status === "pass" && gates.generated_reports.status === "pass" && gates.direct_main.status === "pass"
+    ? "ready"
+    : [gates.docs, gates.schemas, gates.tests, gates.validation, gates.security, gates.source_control, gates.generated_reports, gates.direct_main].some((gate) => gate.status === "blocked")
+      ? "blocked"
+      : "warning";
+  return {
+    status,
+    gates,
+    blockers: collectRoadmapTrainBlockers(gates),
+    warnings: collectRoadmapTrainWarnings(gates),
+    next_action: status === "ready" ? "Owner roadmap train readiness is satisfied." : "Resolve the owner readiness gates."
+  };
+}
+
+function collectRoadmapTrainBlockers(gates = {}) {
+  return Object.values(gates).flatMap((gate) => gate && Array.isArray(gate.blockers) ? gate.blockers : []).filter(Boolean);
+}
+
+function collectRoadmapTrainWarnings(gates = {}) {
+  return Object.values(gates).flatMap((gate) => gate && Array.isArray(gate.warnings) ? gate.warnings : []).filter(Boolean);
+}
+
+function collectRoadmapTrainDocsRequired(profile, pipeline, version, index) {
+  if (profile.train_type === "owner") {
+    return ["docs", "schemas", "tests", "validation"];
+  }
+  const docs = Array.isArray(pipeline && pipeline.documentation_files) ? pipeline.documentation_files : [];
+  return docs.length ? docs.slice(0, Math.min(docs.length, index + 4)) : ["docs"];
+}
+
+function buildRoadmapTrainStageGates(profile, pipeline, version, index, versionControl) {
+  if (profile.train_type === "viber") {
+    const currentVersion = versionControl && versionControl.versions && versionControl.versions[index] ? versionControl.versions[index] : null;
+    return currentVersion ? {
+      docs: currentVersion.docs_gate || buildEmptyVersionGate("docs"),
+      evolution: currentVersion.evolution_gate || buildEmptyVersionGate("evolution"),
+      task: currentVersion.task_gate || buildEmptyVersionGate("task"),
+      validation: currentVersion.validation_gate || buildEmptyVersionGate("validation"),
+      security: currentVersion.security_gate || buildEmptyVersionGate("security"),
+      handoff: currentVersion.handoff_gate || buildEmptyVersionGate("handoff"),
+      publish: currentVersion.publish_gate || buildEmptyVersionGate("publish")
+    } : {
+      docs: buildEmptyVersionGate("docs"),
+      evolution: buildEmptyVersionGate("evolution"),
+      task: buildEmptyVersionGate("task"),
+      validation: buildEmptyVersionGate("validation"),
+      security: buildEmptyVersionGate("security"),
+      handoff: buildEmptyVersionGate("handoff"),
+      publish: buildEmptyVersionGate("publish")
+    };
+  }
+  return {
+    docs: buildVersionGateState("docs", { required: true, status: Array.isArray(pipeline.documentation_files) && pipeline.documentation_files.length ? "pass" : "warning", evidence: Array.isArray(pipeline.documentation_files) ? [...pipeline.documentation_files] : [], warnings: Array.isArray(pipeline.documentation_files) && pipeline.documentation_files.length ? [] : ["Documentation is not yet recorded."], next_action: "Generate the required docs." }),
+    schemas: buildVersionGateState("schemas", { required: true, status: Array.isArray(pipeline.documentation_files) && pipeline.documentation_files.some((item) => String(item).includes("schemas")) ? "pass" : "warning", evidence: Array.isArray(pipeline.documentation_files) ? pipeline.documentation_files.filter((item) => String(item).includes("schemas")) : [], warnings: [], next_action: "Record schema coverage." }),
+    tests: buildVersionGateState("tests", { required: true, status: Array.isArray(pipeline.validation_commands) && pipeline.validation_commands.length ? "pass" : "warning", evidence: Array.isArray(pipeline.validation_commands) ? [...pipeline.validation_commands] : [], warnings: [], next_action: "Add validation commands." }),
+    validation: buildVersionGateState("validation", { required: true, status: Array.isArray(pipeline.validation_commands) && pipeline.validation_commands.length ? "pass" : "warning", evidence: Array.isArray(pipeline.validation_commands) ? [...pipeline.validation_commands] : [], warnings: [], next_action: "Run validation and capture the result." }),
+    security: buildEmptyVersionGate("security"),
+    handoff: buildEmptyVersionGate("handoff"),
+    publish: buildEmptyVersionGate("publish")
+  };
+}
+
+function flattenRoadmapTrainQueue(trainVersions = []) {
+  return trainVersions.map((entry) => entry.fifo_queue_entry).filter(Boolean);
+}
+
+function buildPlannerRoadmapTrainId(profile, goal) {
+  const base = profile.train_type === "viber" ? (profile.app_slug || "viber-release") : "owner-roadmap";
+  const seed = String(goal || profile.default_goal || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+  return seed ? `${base}-${seed}` : `${base}-train`;
+}
+
+function advancePlannerRoadmapTrainState(train, evolutionId, nextStatus) {
+  const updated = { ...train, fifo_queue: Array.isArray(train.fifo_queue) ? train.fifo_queue.map((item) => ({ ...item })) : [], major_versions: Array.isArray(train.major_versions) ? train.major_versions.map((item) => ({ ...item, stages: Array.isArray(item.stages) ? item.stages.map((stage) => ({ ...stage, evo_sprints: Array.isArray(stage.evo_sprints) ? stage.evo_sprints.map((sprint) => ({ ...sprint })) : [] })) : [] })) : [] };
+  const queueItem = updated.fifo_queue.find((item) => String(item.evolution_id || "") === String(evolutionId));
+  if (queueItem) {
+    queueItem.status = nextStatus;
+    queueItem.blocked = nextStatus === "blocked";
+  }
+  for (const major of updated.major_versions || []) {
+    for (const stage of major.stages || []) {
+      for (const sprint of stage.evo_sprints || []) {
+        if (Array.isArray(sprint.evolution_ids) && sprint.evolution_ids.some((id) => String(id) === String(evolutionId))) {
+          sprint.status = nextStatus;
+          if (stage.status !== "blocked") stage.status = nextStatus === "completed" ? "completed" : nextStatus === "blocked" ? "blocked" : "active";
+        }
+      }
+    }
+  }
+  const remaining = updated.fifo_queue.filter((item) => !["completed", "published"].includes(String(item.status || "").toLowerCase()));
+  updated.status = remaining.length ? (remaining.some((item) => item.blocked) ? "blocked" : "active") : "completed";
+  return updated;
+}
+
+function refreshPlannerRoadmapTrainReport(train, profile, context) {
+  const updated = { ...train };
+  updated.generated_at = updated.generated_at || new Date().toISOString();
+  updated.updated_at = new Date().toISOString();
+  updated.train_type = updated.train_type || profile.train_type;
+  updated.track = updated.track || profile.track;
+  updated.planning_method = updated.planning_method || profile.planning_method;
+  updated.major_versions = Array.isArray(updated.major_versions) ? updated.major_versions : [];
+  updated.fifo_queue = Array.isArray(updated.fifo_queue) ? updated.fifo_queue : [];
+  const next = findNextRoadmapTrainEvolution(updated);
+  updated.next_evolution_id = next ? next.evolution_id : null;
+  updated.readiness = buildPlannerRoadmapTrainReadinessState({
+    profile,
+    planning: { source_control: updated.source_control || null },
+    pipeline: updated.pipeline || {},
+    versionControl: updated.version_control || null,
+    fifoQueue: updated.fifo_queue,
+      trainVersions: updated.major_versions || []
+  });
+  const queue = Array.isArray(updated.fifo_queue) ? updated.fifo_queue : [];
+  const completedCount = queue.filter((item) => ["completed", "published"].includes(String(item.status || "").toLowerCase())).length;
+  const allCompleted = queue.length > 0 && completedCount === queue.length;
+  const blocked = queue.some((item) => item.blocked || String(item.status || "").toLowerCase() === "blocked") || (updated.readiness && updated.readiness.status === "blocked");
+  updated.status = blocked ? "blocked" : allCompleted ? "completed" : next ? "active" : "planned";
+  updated.next_action = updated.readiness.next_action || updated.next_action || "Review the train and continue.";
+  return updated;
+}
+
+function buildEmptyPlannerRoadmapTrainReport(profile, context, nextAction) {
+  const now = new Date().toISOString();
+  return {
+    report_type: "kvdf_roadmap_train",
+    generated_at: now,
+    train_id: buildPlannerRoadmapTrainId(profile, nextAction),
+    train_type: profile.train_type,
+    track: profile.track,
+    planning_method: profile.planning_method || "auto",
+    status: "planned",
+    major_versions: [],
+    fifo_queue: [],
+    next_evolution_id: null,
+    created_at: now,
+    updated_at: now,
+    readiness: {
+      status: "unknown",
+      gates: {},
+      blockers: [],
+      warnings: [nextAction],
+      next_action: nextAction
+    },
+    next_action: nextAction
+  };
+}
+
+function findNextRoadmapTrainEvolution(train) {
+  if (!train || !Array.isArray(train.fifo_queue)) return null;
+  return train.fifo_queue.find((item) => ["planned", "ready", "active"].includes(String(item.status || "").toLowerCase()) && !item.blocked) || null;
+}
+
+function buildPlannerRoadmapTrainMermaid(train) {
+  const trainType = train.train_type === "viber" ? "Viber App Release Train" : "Owner Roadmap Train";
+  const nodes = [
+    "flowchart TD",
+    `  Engine["Planning Engine"] --> Major["Major Versions"]`,
+    `  Major["Major Versions"] --> Stages["Version Stages"]`,
+    `  Stages["Version Stages"] --> Sprints["Evo Sprints"]`,
+    `  Sprints["Evo Sprints"] --> Evolutions["Evolutions"]`,
+    `  Evolutions["Evolutions"] --> Tasks["Tasks"]`,
+    `  Tasks["Tasks"] --> Gates["Gates"]`
+  ];
+  const majors = Array.isArray(train.major_versions) ? train.major_versions : [];
+  majors.forEach((major, majorIndex) => {
+    const majorNode = `Major${majorIndex + 1}`;
+    nodes.push(`  Major --> ${majorNode}["${escapeMermaidLabel(major.major_version || `v${majorIndex + 1}`)}"]`);
+    (major.stages || []).forEach((stage, stageIndex) => {
+      const stageNode = `Stage${majorIndex + 1}_${stageIndex + 1}`;
+      nodes.push(`  ${majorNode} --> ${stageNode}["${escapeMermaidLabel(stage.version_id || `stage-${stageIndex + 1}`)}"]`);
+      (stage.evo_sprints || []).forEach((sprint, sprintIndex) => {
+        const sprintNode = `Sprint${majorIndex + 1}_${stageIndex + 1}_${sprintIndex + 1}`;
+        nodes.push(`  ${stageNode} --> ${sprintNode}["${escapeMermaidLabel(sprint.evo_sprint_id || `sprint-${sprintIndex + 1}`)}"]`);
+        (sprint.evolution_ids || []).forEach((evolutionId, evoIndex) => {
+          const evoNode = `Evo${majorIndex + 1}_${stageIndex + 1}_${sprintIndex + 1}_${evoIndex + 1}`;
+          nodes.push(`  ${sprintNode} --> ${evoNode}["${escapeMermaidLabel(evolutionId || `evo-${evoIndex + 1}`)}"]`);
+        });
+      });
+    });
+  });
+  nodes.push(`  Gates --> Train["${escapeMermaidLabel(trainType)}"]`);
+  return nodes.join("\n");
+}
+
+function escapeMermaidLabel(value) {
+  return String(value || "").replace(/"/g, "'");
+}
+
+function buildPlannerRoadmapTrainBoard(train) {
+  const majorVersions = Array.isArray(train.major_versions) ? train.major_versions : [];
+  return {
+    columns: [
+      { title: "Major Versions", cards: majorVersions.map((major) => ({ id: major.major_version, title: major.title || major.major_version, status: major.status })) },
+      { title: "FIFO Queue", cards: Array.isArray(train.fifo_queue) ? train.fifo_queue.map((item) => ({ id: item.evolution_id, title: item.title, status: item.status })) : [] },
+      { title: "Readiness", cards: train.readiness ? Object.entries(train.readiness.gates || {}).map(([gate, state]) => ({ id: gate, title: gate, status: state.status })) : [] }
+    ]
+  };
+}
+
+function buildPlannerRoadmapTrainSummaryLines(train) {
+  return [
+    `- Train type: ${train.train_type || "owner"}`,
+    `- Track: ${train.track || ""}`,
+    `- Planning method: ${train.planning_method || "auto"}`,
+    `- Status: ${train.status || "planned"}`,
+    `- Next evolution: ${train.next_evolution_id || "none"}`
+  ];
 }
 
 function buildPlannerVersionEntry(version = {}, options = {}) {
