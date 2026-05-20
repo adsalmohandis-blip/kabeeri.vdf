@@ -7,6 +7,7 @@ const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed
 const { readGitRepositoryState } = require("../services/git_snapshot");
 const { buildAiLearningPromptContext } = require("./ai_learning");
 const { buildDeliveryModeRecommendation } = require("./delivery");
+const { buildAppDocsPackageTemplates } = require("../workspace");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
@@ -162,6 +163,82 @@ const PLUGIN_OUT_OF_SCOPE = [
   "dashboard ownership mixing"
 ];
 
+const PLANNER_DOC_CATEGORIES = [
+  { id: "product", title: "Product", folder: "product" },
+  { id: "architecture", title: "Architecture", folder: "architecture" },
+  { id: "database", title: "Database", folder: "database" },
+  { id: "ui_ux", title: "UI/UX", folder: "ui-ux" },
+  { id: "api", title: "API", folder: "api" },
+  { id: "security", title: "Security", folder: "security" },
+  { id: "delivery", title: "Delivery", folder: "delivery" },
+  { id: "dependencies", title: "Dependencies", folder: "dependencies" }
+];
+
+const PLANNER_DOC_TEMPLATE_LIBRARY = buildAppDocsPackageTemplates({ name: "App", slug: "app" });
+
+const PLANNER_DOC_DEFINITIONS = [
+  { doc_id: "prd", title: "Product Requirements Document", filename: "PRD.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["00-overview.md", "01-vision-and-goals.md"], source_planner_stage: "idea", depends_on: [], next_action: "Draft the PRD from the app vision and goals templates." },
+  { doc_id: "brd", title: "Business Requirements Document", filename: "BRD.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["00-overview.md"], source_planner_stage: "idea", depends_on: ["prd"], next_action: "Capture the business intent and approval context." },
+  { doc_id: "srs", title: "Software Requirements Specification", filename: "SRS.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["01-vision-and-goals.md", "04-user-stories-and-jobs-to-be-done.md"], source_planner_stage: "requirements", depends_on: ["prd"], next_action: "Convert the PRD into a requirements specification." },
+  { doc_id: "frd", title: "Functional Requirements Document", filename: "FRD.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["04-user-stories-and-jobs-to-be-done.md", "24-feature-breakdown.md"], source_planner_stage: "requirements", depends_on: ["prd"], next_action: "Document the functional behavior and feature-level rules." },
+  { doc_id: "scope", title: "Scope And Non-Goals", filename: "SCOPE_AND_NON_GOALS.md", category: "product", pipeline_stage: "idea", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["02-scope-and-non-goals.md"], source_planner_stage: "idea", depends_on: ["prd"], next_action: "Clarify what is in scope and out of scope." },
+  { doc_id: "personas", title: "Users And Personas", filename: "USERS_AND_PERSONAS.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["03-users-and-personas.md"], source_planner_stage: "requirements", depends_on: ["scope"], next_action: "Describe the personas that will use the app." },
+  { doc_id: "jtbd", title: "User Stories And JTBD", filename: "USER_STORIES_AND_JTBD.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["04-user-stories-and-jobs-to-be-done.md"], source_planner_stage: "requirements", depends_on: ["personas"], next_action: "Turn user needs into stories and jobs to be done." },
+  { doc_id: "feature_breakdown", title: "Feature Breakdown", filename: "FEATURE_BREAKDOWN.md", category: "product", pipeline_stage: "requirements", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["24-feature-breakdown.md"], source_planner_stage: "requirements", depends_on: ["jtbd"], next_action: "Split the app into buildable features." },
+  { doc_id: "acceptance_criteria", title: "Acceptance Criteria", filename: "ACCEPTANCE_CRITERIA.md", category: "product", pipeline_stage: "validation", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["28-acceptance-criteria.md"], source_planner_stage: "validation", depends_on: ["feature_breakdown"], next_action: "Define how reviewers will confirm the app is done." },
+  { doc_id: "system_design", title: "System Design", filename: "SYSTEM_DESIGN.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["12-architecture-overview.md"], source_planner_stage: "system_design", depends_on: ["srs"], next_action: "Map the app architecture and runtime shape." },
+  { doc_id: "c4_context", title: "C4 Context", filename: "C4_CONTEXT.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["12-architecture-overview.md"], source_planner_stage: "system_design", depends_on: ["system_design"], next_action: "Capture the app boundary and external actors." },
+  { doc_id: "c4_container", title: "C4 Container", filename: "C4_CONTAINER.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["12-architecture-overview.md", "13-module-breakdown.md"], source_planner_stage: "system_design", depends_on: ["c4_context"], next_action: "Describe the runtime containers and deployment units." },
+  { doc_id: "c4_component", title: "C4 Component", filename: "C4_COMPONENT.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["13-module-breakdown.md"], source_planner_stage: "system_design", depends_on: ["c4_container"], next_action: "Break containers into components and responsibilities." },
+  { doc_id: "module_breakdown", title: "Module Breakdown", filename: "MODULE_BREAKDOWN.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["13-module-breakdown.md"], source_planner_stage: "system_design", depends_on: ["system_design"], next_action: "Define modules and implementation boundaries." },
+  { doc_id: "service_boundaries", title: "Service Boundaries", filename: "SERVICE_BOUNDARIES.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["14-service-boundaries.md"], source_planner_stage: "system_design", depends_on: ["module_breakdown"], next_action: "Explain how services stay isolated." },
+  { doc_id: "integration_map", title: "Integration Map", filename: "INTEGRATION_MAP.md", category: "architecture", pipeline_stage: "api_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["18-integration-map.md"], source_planner_stage: "api_design", depends_on: ["service_boundaries"], next_action: "Map internal and external integrations." },
+  { doc_id: "state_and_lifecycle", title: "State And Lifecycle", filename: "STATE_AND_LIFECYCLE.md", category: "architecture", pipeline_stage: "system_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["23-state-and-lifecycle.md"], source_planner_stage: "system_design", depends_on: ["system_design"], next_action: "Document important object state transitions." },
+  { doc_id: "erd", title: "Entity Relationship Diagram", filename: "ERD.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["20-entities-and-relationships.md"], source_planner_stage: "database_design", depends_on: ["system_design"], next_action: "Draft the entity relationships and cardinalities." },
+  { doc_id: "data_model", title: "Data Model", filename: "DATA_MODEL.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["19-data-model.md"], source_planner_stage: "database_design", depends_on: ["erd"], next_action: "Define the business objects and persistence model." },
+  { doc_id: "database_schema", title: "Database Schema", filename: "DATABASE_SCHEMA.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["22-schema-rules.md"], source_planner_stage: "database_design", depends_on: ["data_model"], next_action: "Write the table and schema rules." },
+  { doc_id: "data_dictionary", title: "Data Dictionary", filename: "DATA_DICTIONARY.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["21-data-dictionary.md"], source_planner_stage: "database_design", depends_on: ["data_model"], next_action: "List the important data fields and constraints." },
+  { doc_id: "entities_and_relationships", title: "Entities And Relationships", filename: "ENTITIES_AND_RELATIONSHIPS.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["20-entities-and-relationships.md"], source_planner_stage: "database_design", depends_on: ["data_model"], next_action: "Describe how entities connect." },
+  { doc_id: "schema_rules", title: "Schema Rules", filename: "SCHEMA_RULES.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["22-schema-rules.md"], source_planner_stage: "database_design", depends_on: ["database_schema"], next_action: "Capture schema constraints and migration safety rules." },
+  { doc_id: "migration_plan", title: "Migration Plan", filename: "MIGRATION_PLAN.md", category: "database", pipeline_stage: "database_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["22-schema-rules.md", "33-deployment-and-environments.md"], source_planner_stage: "database_design", depends_on: ["database_schema"], next_action: "Plan the data migration path." },
+  { doc_id: "backup_and_recovery", title: "Backup And Recovery", filename: "BACKUP_AND_RECOVERY.md", category: "database", pipeline_stage: "handoff", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["36-backup-and-recovery.md"], source_planner_stage: "handoff", depends_on: ["database_schema"], next_action: "Document backup and recovery expectations." },
+  { doc_id: "ui_ux_design", title: "UI/UX Design", filename: "UI_UX_DESIGN.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["05-ux-principles.md", "06-information-architecture.md", "07-user-flows.md"], source_planner_stage: "ui_ux_design", depends_on: ["personas"], next_action: "Draft the experience direction and screen model." },
+  { doc_id: "ux_principles", title: "UX Principles", filename: "UX_PRINCIPLES.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["05-ux-principles.md"], source_planner_stage: "ui_ux_design", depends_on: ["ui_ux_design"], next_action: "Capture the experience principles." },
+  { doc_id: "information_architecture", title: "Information Architecture", filename: "INFORMATION_ARCHITECTURE.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["06-information-architecture.md"], source_planner_stage: "ui_ux_design", depends_on: ["ui_ux_design"], next_action: "Describe navigation and content hierarchy." },
+  { doc_id: "user_flows", title: "User Flows", filename: "USER_FLOWS.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["07-user-flows.md"], source_planner_stage: "ui_ux_design", depends_on: ["information_architecture"], next_action: "Map the major user journeys." },
+  { doc_id: "wireframes", title: "Wireframes", filename: "WIREFRAMES.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["08-wireframes.md"], source_planner_stage: "ui_ux_design", depends_on: ["user_flows"], next_action: "Lay out the screen structure." },
+  { doc_id: "ui_specification", title: "UI Specification", filename: "UI_SPECIFICATION.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["09-ui-specification.md"], source_planner_stage: "ui_ux_design", depends_on: ["wireframes"], next_action: "Specify the interface components and states." },
+  { doc_id: "content_and_tone", title: "Content And Tone", filename: "CONTENT_AND_TONE.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["10-content-and-tone.md"], source_planner_stage: "ui_ux_design", depends_on: ["ui_specification"], next_action: "Capture voice, tone, and microcopy guidance." },
+  { doc_id: "accessibility", title: "Accessibility", filename: "ACCESSIBILITY.md", category: "ui_ux", pipeline_stage: "ui_ux_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["11-accessibility.md"], source_planner_stage: "ui_ux_design", depends_on: ["ui_specification"], next_action: "Document accessibility requirements and checks." },
+  { doc_id: "api_specification", title: "API Specification", filename: "API_SPECIFICATION.md", category: "api", pipeline_stage: "api_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["15-api-contracts.md"], source_planner_stage: "api_design", depends_on: ["integration_map"], next_action: "Draft the API surface." },
+  { doc_id: "api_contracts", title: "API Contracts", filename: "API_CONTRACTS.md", category: "api", pipeline_stage: "api_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["15-api-contracts.md"], source_planner_stage: "api_design", depends_on: ["api_specification"], next_action: "Detail payloads, status codes, and response shapes." },
+  { doc_id: "error_handling", title: "Error Handling", filename: "ERROR_HANDLING.md", category: "api", pipeline_stage: "api_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["17-error-handling.md"], source_planner_stage: "api_design", depends_on: ["api_contracts"], next_action: "Define failure and recovery behavior." },
+  { doc_id: "authentication_and_permissions", title: "Authentication And Permissions", filename: "AUTHENTICATION_AND_PERMISSIONS.md", category: "api", pipeline_stage: "security_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["16-authentication-and-permissions.md"], source_planner_stage: "security_design", depends_on: ["api_specification"], next_action: "Specify auth and permission rules." },
+  { doc_id: "integration_api_notes", title: "Integration API Notes", filename: "INTEGRATION_API_NOTES.md", category: "api", pipeline_stage: "api_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["18-integration-map.md"], source_planner_stage: "api_design", depends_on: ["api_contracts"], next_action: "Record integration-specific API notes." },
+  { doc_id: "security_design", title: "Security Design", filename: "SECURITY_DESIGN.md", category: "security", pipeline_stage: "security_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["38-security-and-privacy.md", "39-compliance-notes.md"], source_planner_stage: "security_design", depends_on: ["api_specification"], next_action: "Document the security posture." },
+  { doc_id: "threat_model", title: "Threat Model", filename: "THREAT_MODEL.md", category: "security", pipeline_stage: "security_design", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["38-security-and-privacy.md", "40-audit-and-logging.md"], source_planner_stage: "security_design", depends_on: ["security_design"], next_action: "Write the threat model and attack surface." },
+  { doc_id: "security_and_privacy", title: "Security And Privacy", filename: "SECURITY_AND_PRIVACY.md", category: "security", pipeline_stage: "security_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["38-security-and-privacy.md"], source_planner_stage: "security_design", depends_on: ["threat_model"], next_action: "Document sensitive data and privacy rules." },
+  { doc_id: "role_and_permission_matrix", title: "Role And Permission Matrix", filename: "ROLE_AND_PERMISSION_MATRIX.md", category: "security", pipeline_stage: "security_design", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["16-authentication-and-permissions.md", "41-role-and-permission-matrix.md"], source_planner_stage: "security_design", depends_on: ["security_design"], next_action: "Map roles to permissions and protected actions." },
+  { doc_id: "audit_and_logging", title: "Audit And Logging", filename: "AUDIT_AND_LOGGING.md", category: "security", pipeline_stage: "handoff", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["40-audit-and-logging.md"], source_planner_stage: "handoff", depends_on: ["security_design"], next_action: "Define audit and logging expectations." },
+  { doc_id: "compliance_notes", title: "Compliance Notes", filename: "COMPLIANCE_NOTES.md", category: "security", pipeline_stage: "handoff", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["39-compliance-notes.md"], source_planner_stage: "handoff", depends_on: ["security_design"], next_action: "Record regulatory or policy obligations." },
+  { doc_id: "planning_method", title: "Planning Method", filename: "PLANNING_METHOD.md", category: "delivery", pipeline_stage: "idea", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["01-vision-and-goals.md"], source_planner_stage: "idea", depends_on: ["prd"], next_action: "Confirm the method, rationale, and gates." },
+  { doc_id: "version_plan", title: "Version Plan", filename: "VERSION_PLAN.md", category: "delivery", pipeline_stage: "version_plan", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["27-release-plan.md"], source_planner_stage: "version_plan", depends_on: ["feature_breakdown"], next_action: "Plan versions and release slices." },
+  { doc_id: "evolutions", title: "Evolutions", filename: "EVOLUTIONS.md", category: "delivery", pipeline_stage: "evolution", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["24-feature-breakdown.md", "25-task-plan.md"], source_planner_stage: "evolution", depends_on: ["version_plan"], next_action: "List governed evolutions." },
+  { doc_id: "task_punches", title: "Task Punches", filename: "TASK_PUNCHES.md", category: "delivery", pipeline_stage: "task_punch", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["25-task-plan.md"], source_planner_stage: "task_punch", depends_on: ["evolutions"], next_action: "Break the evolutions into Codex-ready task punches." },
+  { doc_id: "implementation_order", title: "Implementation Order", filename: "IMPLEMENTATION_ORDER.md", category: "delivery", pipeline_stage: "implementation", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["26-implementation-order.md"], source_planner_stage: "implementation", depends_on: ["task_punches"], next_action: "Sequence the build order." },
+  { doc_id: "release_plan", title: "Release Plan", filename: "RELEASE_PLAN.md", category: "delivery", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["27-release-plan.md"], source_planner_stage: "handoff", depends_on: ["implementation_order"], next_action: "Describe the release path." },
+  { doc_id: "qa_checklist", title: "QA Checklist", filename: "QA_CHECKLIST.md", category: "delivery", pipeline_stage: "validation", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["30-qa-checklist.md"], source_planner_stage: "validation", depends_on: ["test_strategy"], next_action: "Write the manual QA checklist." },
+  { doc_id: "test_strategy", title: "Test Strategy", filename: "TEST_STRATEGY.md", category: "delivery", pipeline_stage: "validation", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["29-test-strategy.md"], source_planner_stage: "validation", depends_on: ["task_punches"], next_action: "Define automated and manual test coverage." },
+  { doc_id: "edge_cases", title: "Edge Cases", filename: "EDGE_CASES.md", category: "delivery", pipeline_stage: "validation", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "agile", "hybrid"], optional_for: [], source_template: ["31-edge-cases.md"], source_planner_stage: "validation", depends_on: ["test_strategy"], next_action: "List unusual scenarios and recovery behavior." },
+  { doc_id: "performance_notes", title: "Performance Notes", filename: "PERFORMANCE_NOTES.md", category: "delivery", pipeline_stage: "validation", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["32-performance-notes.md"], source_planner_stage: "validation", depends_on: ["test_strategy"], next_action: "Capture performance expectations." },
+  { doc_id: "deployment_and_environments", title: "Deployment And Environments", filename: "DEPLOYMENT_AND_ENVIRONMENTS.md", category: "delivery", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["33-deployment-and-environments.md"], source_planner_stage: "handoff", depends_on: ["release_plan"], next_action: "Describe deployment targets and configs." },
+  { doc_id: "observability_and_analytics", title: "Observability And Analytics", filename: "OBSERVABILITY_AND_ANALYTICS.md", category: "delivery", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["34-observability-and-analytics.md"], source_planner_stage: "handoff", depends_on: ["deployment_and_environments"], next_action: "Define logs, metrics, and analytics." },
+  { doc_id: "support_runbook", title: "Support Runbook", filename: "SUPPORT_RUNBOOK.md", category: "delivery", pipeline_stage: "handoff", planning_method_relevance: ["structured", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["35-support-runbook.md"], source_planner_stage: "handoff", depends_on: ["deployment_and_environments"], next_action: "Document operator support steps." },
+  { doc_id: "change_log", title: "Change Log", filename: "CHANGE_LOG.md", category: "delivery", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["37-change-log.md"], source_planner_stage: "handoff", depends_on: ["release_plan"], next_action: "Track meaningful release changes." },
+  { doc_id: "handoff", title: "Handoff", filename: "HANDOFF.md", category: "delivery", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["35-support-runbook.md", "27-release-plan.md"], source_planner_stage: "handoff", depends_on: ["support_runbook"], next_action: "Prepare the final handoff summary." },
+  { doc_id: "vendor_and_dependency_inventory", title: "Vendor And Dependency Inventory", filename: "VENDOR_AND_DEPENDENCY_INVENTORY.md", category: "dependencies", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["42-vendor-and-dependency-inventory.md"], source_planner_stage: "handoff", depends_on: ["integration_map"], next_action: "List vendors, packages, and service dependencies." }
+];
+
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
   if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
@@ -242,7 +319,8 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (mode === "docs") {
-    const report = buildPlannerDocsMaterializationReport(value, flags, rest, deps);
+    const docsAction = normalizePlannerDocsAction(value, rest);
+    const report = buildPlannerDocsCommandReport(docsAction, value, flags, rest, deps);
     printPlannerOutput(report, flags, deps, "docs");
     return;
   }
@@ -367,6 +445,8 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     planning_method: planning.method.recommended_method,
     source_control: planning.source_control,
     documentation_files: pipeline.documentation_files,
+    docs_plan: pipeline.docs_plan,
+    docs_status: pipeline.docs_status,
     visual_planning: pipeline.visual_planning,
     task_punches: pipeline.task_punches,
     evolutions: pipeline.evolutions,
@@ -380,8 +460,8 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     method_reason: planning.method.reason,
     confidence: planning.method.confidence,
     review_status: review.status,
-    docs_status: "planned",
-    docs_created_total: Array.isArray(pipeline.documentation_files) ? pipeline.documentation_files.length : 0,
+    docs_status: pipeline.docs_status ? pipeline.docs_status.status : "planned",
+    docs_created_total: pipeline.docs_status ? pipeline.docs_status.existing_total || 0 : (Array.isArray(pipeline.documentation_files) ? pipeline.documentation_files.length : 0),
     risks: planning.method.risks,
     current_gate: planning.current_gate,
     next_action: pipeline.next_action || ""
@@ -398,7 +478,7 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     planningMethod: planning.method.recommended_method,
     methodReason: planning.method.reason,
     review,
-    docsStatus: "planned",
+    docsStatus: pipeline.docs_status ? pipeline.docs_status.status : "planned",
     visualSummary: visualPlanning,
     currentGate: planning.current_gate
   });
@@ -414,6 +494,8 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     source_control: planning.source_control,
     planning_strategy: planningStrategy,
     documentation_files: pipeline.documentation_files,
+    docs_plan: pipeline.docs_plan,
+    docs_status: pipeline.docs_status,
     design_artifacts: pipeline.design_artifacts,
     version_plan: pipeline.version_plan,
     evolutions: pipeline.evolutions,
@@ -594,11 +676,18 @@ function buildPlannerStrategy(method, mode, pipeline = null) {
   return base;
 }
 
-function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null }) {
+function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null }) {
   const risks = [];
   const requiredFixes = [];
   let status = "pass";
-  const docsCount = Array.isArray(documentation_files) ? documentation_files.length : 0;
+  const docsEntries = Array.isArray(docs_status && docs_status.docs)
+    ? docs_status.docs
+    : Array.isArray(docs_plan && docs_plan.docs)
+      ? docs_plan.docs
+      : Array.isArray(documentation_files)
+        ? documentation_files
+        : [];
+  const docsCount = docsEntries.length;
   const hasVisual = Boolean(visual_planning && visual_planning.graph && visual_planning.board);
   const hasPrompt = Boolean(goal && goal.trim());
   const sourceControlMode = source_control ? String(source_control.mode || "local_only") : "local_only";
@@ -630,9 +719,12 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     risks.push("The selected planning method differs from the recommendation.");
   }
   const docsReview = {
-    status: docsCount > 0 ? "pass" : "warning",
+    status: docs_status && docs_status.status ? (docs_status.status === "missing" ? "warning" : docs_status.status) : (docsCount > 0 ? "pass" : "warning"),
     docs_count: docsCount,
-    docs_status: docsCount > 0 ? "planned" : "missing",
+    docs_status: docs_status && docs_status.status ? docs_status.status : (docsCount > 0 ? "planned" : "missing"),
+    stage_status: docs_status && docs_status.stage_status ? docs_status.stage_status : {},
+    required_total: docs_status && typeof docs_status.required_total === "number" ? docs_status.required_total : 0,
+    missing_total: docs_status && typeof docs_status.missing_total === "number" ? docs_status.missing_total : 0,
     notes: docsCount > 0 ? ["Documentation files are planned or generated."] : ["Documentation files are not yet planned."]
   };
   const securityReview = {
@@ -736,6 +828,8 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     planning_method: planningMethod || method.recommended_method,
     source_control: currentPlan.source_control,
     documentation_files: currentPlan.documentation_files || [],
+    docs_plan: currentPlan.docs_plan || null,
+    docs_status: currentPlan.docs_status || null,
     visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
     task_punches: currentPlan.task_punches || (currentPlan.task_punch ? [currentPlan.task_punch] : []),
     evolutions: currentPlan.evolutions || (currentPlan.recommended_evolution ? [currentPlan.recommended_evolution] : []),
@@ -755,6 +849,7 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     scope_review: review.scope_review,
     method_review: review.method_review,
     docs_review: review.docs_review,
+    docs_status: review.docs_status,
     security_review: review.security_review,
     source_control_review: review.source_control_review,
     task_quality_review: review.task_quality_review,
@@ -781,114 +876,690 @@ function buildPlannerResumeNextAction({ currentPlan, review, securityGateState, 
   return "Run kvdf planner prompt --from-current --json, then execute the first approved task slice.";
 }
 
-function buildPlannerDocsPlan(sourcePipeline, options = {}) {
-  const repoRootPath = options.repo_root || process.cwd();
-  const plannerMode = normalizePlannerMode(sourcePipeline.planner_mode || sourcePipeline.planner_mode || sourcePipeline.planner_mode || "owner");
-  const track = sourcePipeline.track || getPlannerTrack(plannerMode);
-  const method = sourcePipeline.planning_method || sourcePipeline.planning_method || sourcePipeline.planning_method || "structured";
-  const baseDir = plannerMode === "vibe"
-    ? path.join(repoRootPath, "workspaces", "apps", normalizeAppSlug(options.appSlug), "docs")
-    : plannerMode === "plugin"
-      ? path.join(repoRootPath, "plugins", normalizePluginId(options.pluginId) || "plugin", "docs")
-      : null;
-  const docs = buildPlannerDocsEntries({ sourcePipeline, plannerMode, track, method, baseDir, options });
+function buildPlannerDocsCatalog(options = {}) {
+  const plannerMode = normalizePlannerMode(options.plannerMode || options.track || "vibe");
+  const appSlug = normalizeAppSlug(options.appSlug || "app-draft");
+  const pluginId = normalizePluginId(options.pluginId || "plugin");
+  const docs = PLANNER_DOC_DEFINITIONS.map((definition) => ({
+    ...definition,
+    path: buildPlannerDocsPath(definition, { plannerMode, appSlug, pluginId }),
+    source_templates: Array.isArray(definition.source_template) ? [...definition.source_template] : (definition.source_template ? [definition.source_template] : [])
+  }));
+  const categories = PLANNER_DOC_CATEGORIES.map((category) => ({
+    ...category,
+    docs: docs.filter((doc) => doc.category === category.id).map((doc) => ({
+      doc_id: doc.doc_id,
+      title: doc.title,
+      path: doc.path,
+      pipeline_stage: doc.pipeline_stage
+    }))
+  }));
   return {
+    catalog_type: "kvdf_planner_docs_catalog",
+    planner_mode: plannerMode,
+    track: getPlannerTrack(plannerMode),
+    folder_categories: PLANNER_DOC_CATEGORIES.map((category) => category.id),
+    categories,
+    docs
+  };
+}
+
+function buildPlannerDocsPlan(sourcePipeline = {}, options = {}) {
+  const plannerMode = normalizePlannerMode(sourcePipeline.planner_mode || options.plannerMode || options.track || "vibe");
+  const track = sourcePipeline.track || getPlannerTrack(plannerMode);
+  const requestedMethod = normalizePlannerMethod(sourcePipeline.planning_method || options.method || "structured");
+  const idea = String(sourcePipeline.idea || sourcePipeline.goal || options.idea || options.goal || sourcePipeline.next_evolution && sourcePipeline.next_evolution.title || "KVDF Planning Idea").trim();
+  const appSlug = normalizeAppSlug(options.appSlug || sourcePipeline.app_slug || sourcePipeline.app || (plannerMode === "vibe" ? "app-draft" : "app-draft"));
+  const pluginId = normalizePluginId(options.pluginId || sourcePipeline.plugin_id || sourcePipeline.plugin_context && sourcePipeline.plugin_context.plugin_id || "plugin");
+  const catalog = buildPlannerDocsCatalog({ plannerMode, appSlug, pluginId });
+  const method = requestedMethod === "auto"
+    ? buildPlannerMethodRecommendation(idea, { mode: plannerMode, flags: { track: plannerMode }, source_control: sourcePipeline.source_control || null }, {}, "auto").recommended_method
+    : requestedMethod;
+  const heuristics = buildPlannerDocsHeuristics({ idea, plannerMode, track, method });
+  const docs = catalog.docs.map((definition) => buildPlannerDocsPlanEntry(definition, {
+    plannerMode,
+    track,
+    method,
+    idea,
+    appSlug,
+    pluginId,
+    heuristics,
+    repo_root: options.repo_root || process.cwd(),
+    dryRun: Boolean(options.dryRun),
+    force: Boolean(options.force),
+    sourcePipeline
+  }));
+  const summary = summarizePlannerDocsEntries(docs);
+  return {
+    report_type: "kvdf_planner_docs_plan",
+    generated_at: new Date().toISOString(),
     planner_mode: plannerMode,
     track,
     planning_method: method,
+    requested_method: requestedMethod,
+    idea,
+    app: plannerMode === "vibe" ? appSlug : null,
+    plugin: plannerMode === "plugin" ? pluginId : null,
+    folder_categories: catalog.folder_categories,
+    catalog,
     docs,
+    docs_plan: docs,
+    stage_status: summary.stage_status,
+    required_total: summary.required_total,
+    existing_total: summary.existing_total,
+    generated_total: summary.generated_total,
+    missing_total: summary.missing_total,
+    applied_total: summary.applied_total,
+    not_applied_total: summary.not_applied_total,
+    status: summary.status,
+    next_action: summary.next_action,
     source_pipeline: sourcePipeline
   };
 }
 
-function buildPlannerDocsEntries({ sourcePipeline, plannerMode, track, method, baseDir, options = {} }) {
-  const files = [];
-  const goal = sourcePipeline.goal || sourcePipeline.idea || sourcePipeline.next_evolution && sourcePipeline.next_evolution.title || "KVDF Planner Draft";
-  const isDryRun = Boolean(options.dryRun);
-  if (plannerMode === "vibe") {
-    const appSlug = normalizeAppSlug(options.appSlug);
-    const docsDir = path.join(options.repo_root || process.cwd(), "workspaces", "apps", appSlug, "docs");
-    files.push(
-      draftDoc(path.join(docsDir, "00-idea.md"), buildPlannerVibeDocContent("00-idea.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "01-requirements.md"), buildPlannerVibeDocContent("01-requirements.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "02-system-design.md"), buildPlannerVibeDocContent("02-system-design.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "03-database-design.md"), buildPlannerVibeDocContent("03-database-design.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "04-ui-ux-design.md"), buildPlannerVibeDocContent("04-ui-ux-design.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "05-api-design.md"), buildPlannerVibeDocContent("05-api-design.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "06-security-design.md"), buildPlannerVibeDocContent("06-security-design.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "07-version-plan.md"), buildPlannerVibeDocContent("07-version-plan.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "08-evolutions.md"), buildPlannerVibeDocContent("08-evolutions.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "09-task-punches.md"), buildPlannerVibeDocContent("09-task-punches.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "10-handoff.md"), buildPlannerVibeDocContent("10-handoff.md", { goal, sourcePipeline, plannerMode, track, method }))
-    );
-  } else if (plannerMode === "plugin") {
-    const pluginId = normalizePluginId(options.pluginId) || "plugin";
-    const docsDir = path.join(options.repo_root || process.cwd(), "plugins", pluginId, "docs");
-    files.push(
-      draftDoc(path.join(docsDir, "00-plugin-goal.md"), buildPlannerPluginDocContent("00-plugin-goal.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
-      draftDoc(path.join(docsDir, "01-manifest.md"), buildPlannerPluginDocContent("01-manifest.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
-      draftDoc(path.join(docsDir, "02-runtime.md"), buildPlannerPluginDocContent("02-runtime.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
-      draftDoc(path.join(docsDir, "03-schemas.md"), buildPlannerPluginDocContent("03-schemas.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
-      draftDoc(path.join(docsDir, "04-tests.md"), buildPlannerPluginDocContent("04-tests.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
-      draftDoc(path.join(docsDir, "05-version-plan.md"), buildPlannerPluginDocContent("05-version-plan.md", { goal, sourcePipeline, plannerMode, track, method, pluginId }))
-    );
-  } else {
-    const docsDir = options.repo_root || process.cwd();
-    files.push(
-      draftDoc(path.join(docsDir, "docs", "workflows", "PLANNER_SELF_PLANNING_ENGINE.md"), buildPlannerOwnerDocContent("docs/workflows/PLANNER_SELF_PLANNING_ENGINE.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "knowledge", "governance", "KVDF_PLANNER_LAYER.md"), buildPlannerOwnerDocContent("knowledge/governance/KVDF_PLANNER_LAYER.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "docs", "workflows", "EVOLUTION_PLANNER_WORKFLOW.md"), buildPlannerOwnerDocContent("docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "packs", "planner", "codex-execution.prompt.md"), buildPlannerOwnerDocContent("packs/planner/codex-execution.prompt.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "packs", "planner", "evolution-planner.prompt.md"), buildPlannerOwnerDocContent("packs/planner/evolution-planner.prompt.md", { goal, sourcePipeline, plannerMode, track, method })),
-      draftDoc(path.join(docsDir, "packs", "planner", "idea-to-evolution.prompt.md"), buildPlannerOwnerDocContent("packs/planner/idea-to-evolution.prompt.md", { goal, sourcePipeline, plannerMode, track, method }))
-    );
-  }
-  return files.map((entry) => ({
-    ...entry,
+function buildPlannerDocsPlanEntry(definition, options = {}) {
+  const repoRootPath = options.repo_root || process.cwd();
+  const docsPath = buildPlannerDocsPath(definition, options);
+  const relativePath = normalizeRelativePath(repoRootPath, docsPath);
+  const heuristics = options.heuristics || buildPlannerDocsHeuristics({ idea: options.idea || "", plannerMode: options.plannerMode || "vibe", track: options.track || "vibe_app_developer", method: options.method || "structured" });
+  const required = isPlannerDocRequired(definition, heuristics, options.method);
+  const relevant = isPlannerDocRelevant(definition, heuristics, options.method);
+  const fileExistsNow = fs.existsSync(docsPath);
+  const status = required
+    ? (fileExistsNow ? "generated" : "planned")
+    : (relevant ? "planned" : "not_applicable");
+  return {
+    doc_id: definition.doc_id,
+    title: definition.title,
+    path: relativePath,
+    category: definition.category,
+    pipeline_stage: definition.pipeline_stage,
+    planning_method_relevance: Array.isArray(definition.planning_method_relevance) ? [...definition.planning_method_relevance] : [],
+    required_for: Array.isArray(definition.required_for) ? [...definition.required_for] : [],
+    optional_for: Array.isArray(definition.optional_for) ? [...definition.optional_for] : [],
+    status,
+    applied: false,
+    implemented: false,
+    review_required: required || relevant,
+    source_template: Array.isArray(definition.source_template) ? definition.source_template[0] : definition.source_template || "",
+    source_templates: Array.isArray(definition.source_template) ? [...definition.source_template] : [],
+    source_planner_stage: definition.source_planner_stage || definition.pipeline_stage,
+    depends_on: Array.isArray(definition.depends_on) ? [...definition.depends_on] : [],
+    next_action: definition.next_action || "Review and complete this draft.",
+    required,
+    relevant,
+    file_exists: fileExistsNow,
+    write_path: docsPath,
+    content: buildPlannerFolderedDocMarkdown(definition, {
+      idea: options.idea || "",
+      plannerMode: options.plannerMode || "vibe",
+      track: options.track || getPlannerTrack(options.plannerMode || "vibe"),
+      method: options.method || "structured",
+      appSlug: options.appSlug || null,
+      pluginId: options.pluginId || null,
+      heuristics
+    }),
     dry_run: Boolean(options.dryRun),
     force: Boolean(options.force)
-  })).filter(Boolean);
+  };
+}
+
+function summarizePlannerDocsEntries(docs = []) {
+  const stageStatus = {};
+  let required_total = 0;
+  let existing_total = 0;
+  let generated_total = 0;
+  let missing_total = 0;
+  let applied_total = 0;
+  let not_applied_total = 0;
+  for (const doc of docs) {
+    const stage = doc.pipeline_stage || "unknown";
+    if (!stageStatus[stage]) {
+      stageStatus[stage] = { required: 0, existing: 0, generated: 0, missing: 0, applied: 0, not_applied: 0, status: "missing" };
+    }
+    if (doc.required) required_total += 1;
+    if (doc.status !== "not_applicable") not_applied_total += doc.status === "planned" ? 1 : 0;
+    if (doc.file_exists) {
+      existing_total += 1;
+      generated_total += 1;
+    }
+    if (doc.status === "missing") missing_total += 1;
+    if (doc.applied) applied_total += 1;
+    stageStatus[stage].required += doc.required ? 1 : 0;
+    stageStatus[stage].existing += doc.file_exists ? 1 : 0;
+    stageStatus[stage].generated += doc.status === "generated" ? 1 : 0;
+    stageStatus[stage].missing += doc.status === "missing" || (doc.required && !doc.file_exists) ? 1 : 0;
+    stageStatus[stage].applied += doc.applied ? 1 : 0;
+    stageStatus[stage].not_applied += doc.status === "planned" ? 1 : 0;
+    stageStatus[stage].status = stageStatus[stage].missing > 0 ? "missing" : (stageStatus[stage].not_applied > 0 ? "partial" : "complete");
+  }
+  const anyMissing = docs.some((doc) => doc.required && !doc.file_exists);
+  const anyPlanned = docs.some((doc) => doc.status === "planned");
+  const anyBlocked = docs.some((doc) => doc.status === "blocked");
+  const status = anyBlocked ? "blocked" : anyMissing ? "missing" : anyPlanned ? "partial" : "complete";
+  return {
+    stage_status: stageStatus,
+    required_total,
+    existing_total,
+    generated_total,
+    missing_total,
+    applied_total,
+    not_applied_total,
+    status,
+    next_action: anyBlocked
+      ? "Resolve the blocked docs or stage dependencies."
+      : anyMissing
+        ? "Generate the missing required docs."
+        : anyPlanned
+          ? "Review and materialize the planned docs."
+          : "Docs are complete. Apply the next stage or proceed to implementation."
+  };
+}
+
+function buildPlannerDocsStatusSummaryFromPlan(docsPlan = {}) {
+  const docs = Array.isArray(docsPlan.docs) ? docsPlan.docs : [];
+  const summary = summarizePlannerDocsEntries(docs);
+  return {
+    report_type: "kvdf_planner_docs_status",
+    generated_at: new Date().toISOString(),
+    planner_mode: docsPlan.planner_mode || null,
+    track: docsPlan.track || null,
+    planning_method: docsPlan.planning_method || null,
+    app: docsPlan.app || null,
+    plugin: docsPlan.plugin || null,
+    required_total: summary.required_total,
+    existing_total: summary.existing_total,
+    generated_total: summary.generated_total,
+    missing_total: summary.missing_total,
+    applied_total: summary.applied_total,
+    not_applied_total: summary.not_applied_total,
+    docs,
+    stage_status: summary.stage_status,
+    status: summary.status,
+    next_action: summary.next_action
+  };
+}
+
+function buildPlannerDocsHeuristics({ idea = "", plannerMode = "vibe", track = "vibe_app_developer", method = "structured" } = {}) {
+  const text = String(idea || "").toLowerCase();
+  const needsData = /payment|booking|saas|admin|dashboard|crm|database|data|tenant|subscription|order|inventory|auth|role|permission|multi-tenant|backend|api|integration|webhook/.test(text);
+  const needsApi = needsData || /api|integration|backend|webhook/.test(text);
+  const needsSecurity = needsData || /payment|admin|auth|security|privacy|tenant|permission|sso|audit|compliance/.test(text);
+  const landingMvp = /landing page|marketing site|static site|mvp|prototype/.test(text) && !needsData;
+  const methodNormalized = normalizePlannerMethod(method);
+  const isFullBuild = methodNormalized === "structured" || methodNormalized === "hybrid" || /full|saas|platform|booking|system|enterprise/.test(text);
+  const requiredDocIds = new Set();
+  const relevantDocIds = new Set();
+  const add = (ids, target = requiredDocIds) => {
+    for (const id of ids) target.add(id);
+  };
+  const productCore = ["prd", "brd", "scope", "personas", "jtbd", "feature_breakdown", "acceptance_criteria"];
+  const uiCore = ["ui_ux_design", "ux_principles", "information_architecture", "user_flows", "wireframes", "ui_specification", "content_and_tone", "accessibility"];
+  const deliveryCore = ["planning_method", "version_plan", "evolutions", "task_punches", "qa_checklist"];
+  const handoffCore = ["handoff"];
+  if (methodNormalized === "agile") {
+    add(productCore);
+    add(uiCore);
+    add(deliveryCore);
+    add(handoffCore);
+  } else {
+    add(productCore.concat(["srs", "frd", "feature_breakdown"]));
+    add(["system_design", "c4_context", "c4_container", "c4_component", "module_breakdown", "service_boundaries", "integration_map", "state_and_lifecycle"]);
+    add(uiCore);
+    add(["planning_method", "version_plan", "evolutions", "task_punches", "implementation_order", "release_plan", "qa_checklist", "test_strategy", "edge_cases", "performance_notes", "deployment_and_environments", "observability_and_analytics", "support_runbook", "change_log", "handoff"]);
+  }
+  if (needsData || isFullBuild) {
+    add(["erd", "data_model", "database_schema", "data_dictionary", "entities_and_relationships", "schema_rules", "migration_plan", "backup_and_recovery"]);
+  }
+  if (needsApi || isFullBuild) {
+    add(["api_specification", "api_contracts", "error_handling", "authentication_and_permissions", "integration_api_notes"]);
+  }
+  if (needsSecurity || isFullBuild) {
+    add(["security_design", "threat_model", "security_and_privacy", "role_and_permission_matrix", "audit_and_logging", "compliance_notes"]);
+  }
+  add(["vendor_and_dependency_inventory"], isFullBuild || needsData || needsApi || needsSecurity ? requiredDocIds : relevantDocIds);
+  if (plannerMode === "plugin") {
+    add(["vendor_and_dependency_inventory", "integration_map", "api_specification"], requiredDocIds);
+  }
+  if (landingMvp) {
+    // Keep the MVP lean; heavy docs stay deferred until the app proves it needs them.
+  }
+  return {
+    idea: String(idea || "").trim(),
+    plannerMode,
+    track,
+    method: methodNormalized,
+    needsData,
+    needsApi,
+    needsSecurity,
+    landingMvp,
+    required_doc_ids: requiredDocIds,
+    relevant_doc_ids: relevantDocIds,
+    method_alignment: {
+      method: methodNormalized,
+      planner_mode: plannerMode,
+      track,
+      needs_database: needsData,
+      needs_api: needsApi,
+      needs_security: needsSecurity,
+      landing_page_mvp: landingMvp
+    }
+  };
+}
+
+function isPlannerDocRequired(definition, heuristics, method) {
+  return heuristics.required_doc_ids.has(definition.doc_id) || (Array.isArray(definition.required_for) && definition.required_for.includes(method));
+}
+
+function isPlannerDocRelevant(definition, heuristics, method) {
+  if (isPlannerDocRequired(definition, heuristics, method)) return true;
+  if (heuristics.relevant_doc_ids.has(definition.doc_id)) return true;
+  return ["product", "ui_ux", "delivery"].includes(definition.category);
+}
+
+function buildPlannerDocsPath(definition, options = {}) {
+  const plannerMode = normalizePlannerMode(options.plannerMode || "vibe");
+  const appSlug = normalizeAppSlug(options.appSlug || "app-draft");
+  const pluginId = normalizePluginId(options.pluginId || "plugin");
+  const categoryFolder = (PLANNER_DOC_CATEGORIES.find((category) => category.id === definition.category) || {}).folder || definition.category;
+  if (plannerMode === "plugin") {
+    return path.join(options.repo_root || process.cwd(), "plugins", pluginId, "docs", categoryFolder, definition.filename);
+  }
+  return path.join(options.repo_root || process.cwd(), "workspaces", "apps", appSlug, "docs", categoryFolder, definition.filename);
+}
+
+function buildPlannerFolderedDocMarkdown(definition, options = {}) {
+  const goal = String(options.idea || options.goal || "").trim();
+  const plannerMode = options.plannerMode || "vibe";
+  const method = options.method || "structured";
+  const templates = Array.isArray(definition.source_template) ? definition.source_template : (definition.source_template ? [definition.source_template] : []);
+  const sourceTemplateLines = templates.length ? templates.map((template) => `- ${template}`).join("\n") : "- None";
+  return [
+    `# ${definition.title}`,
+    "",
+    `- Doc ID: ${definition.doc_id}`,
+    `- Category: ${definition.category}`,
+    `- Pipeline stage: ${definition.pipeline_stage}`,
+    `- Planning method: ${method}`,
+    `- Planner mode: ${plannerMode}`,
+    `- Goal: ${goal}`,
+    `- Source templates:`,
+    sourceTemplateLines,
+    "",
+    "## Draft Notes",
+    `- Source planner stage: ${definition.source_planner_stage || definition.pipeline_stage}`,
+    `- Depends on: ${(definition.depends_on || []).length ? definition.depends_on.join(", ") : "none"}`,
+    `- Next action: ${definition.next_action || "Review and refine this draft."}`,
+    "",
+    "## Reuse Notes",
+    "- This draft is reorganized from the portable app docs package templates.",
+    "- Keep the final app docs inside the app workspace."
+  ].join("\n");
+}
+
+function normalizeAppSlug(value) {
+  const slug = String(value || "app-draft").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  return slug || "app-draft";
+}
+
+function normalizePlannerDocsAction(value, rest = []) {
+  const candidate = String(value || rest[0] || "").trim().toLowerCase();
+  if (["catalog", "plan", "materialize", "status", "apply-stage", "review"].includes(candidate)) return candidate;
+  return "materialize";
+}
+
+function readPlannerDocsStatusFile(root, plannerMode, appSlug, pluginId) {
+  const filePath = buildPlannerDocsStatusFilePath(root, plannerMode, appSlug, pluginId);
+  return readJsonFileIfExists(filePath);
+}
+
+function buildPlannerDocsStatusFilePath(root, plannerMode, appSlug, pluginId) {
+  if (plannerMode === "plugin") return path.join(root, "plugins", pluginId, ".kabeeri", "planner_docs_status.json");
+  return path.join(root, "workspaces", "apps", appSlug, ".kabeeri", "planner_docs_status.json");
+}
+
+function writePlannerDocsStatusFile(filePath, report) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
+}
+
+function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], deps = {}) {
+  const action = normalizePlannerDocsAction(value, rest);
+  if (action !== "materialize" && action !== "plan") {
+    return buildPlannerDocsCommandReport(action, value, flags, rest, deps);
+  }
+  const context = buildPlannerContext(deps);
+  const sourcePipeline = isFromCurrentPlan(flags)
+    ? buildPlannerCurrentPipelineSnapshot(context, flags)
+    : buildPlannerDocsSourcePipeline(value, flags, rest, deps);
+  const plan = buildPlannerDocsPlan(sourcePipeline, {
+    repo_root: context.repo_root,
+    dryRun: resolveBooleanFlag(flags.dry_run || flags["dry-run"]),
+    force: resolveBooleanFlag(flags.force),
+    appSlug: flags.app || flags.app_slug || flags["app-slug"] || sourcePipeline.app || sourcePipeline.app_slug,
+    pluginId: flags.plugin || flags.plugin_id || sourcePipeline.plugin || sourcePipeline.plugin_id,
+    plannerMode: normalizePlannerMode(sourcePipeline.planner_mode || flags.track || flags.mode || "vibe"),
+    method: normalizePlannerMethod(flags.method || flags.planning_method || sourcePipeline.planning_method || "auto"),
+    idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
+  });
+  const result = materializePlannerDocs(plan, context);
+  return {
+    report_type: "kvdf_planner_docs_materialization",
+    generated_at: new Date().toISOString(),
+    planner_mode: plan.planner_mode,
+    track: plan.track,
+    planning_method: plan.planning_method,
+    status: "draft",
+    docs_plan: plan,
+    docs_status: result.docs_status,
+    docs_created: result.docs_created,
+    docs_updated: result.docs_updated,
+    docs_skipped: result.docs_skipped,
+    source_pipeline: result.source_pipeline,
+    next_action: "Review generated docs, then approve/materialize the first Evolution."
+  };
+}
+
+function buildPlannerDocsSourcePipeline(value, flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const idea = resolveGoal(value, flags, rest, flags.idea || flags.goal || "");
+  const mode = normalizePlannerMode(flags.track || flags.mode || (flags.plugin ? "plugin" : "vibe"));
+  const method = normalizePlannerMethod(flags.method || flags.planning_method || "auto");
+  const planning = buildPlannerPlanningContext(idea || "", { ...flags, mode, method }, deps, { methodFromFlags: true, rest, skip_pipeline: false });
+  const docsPlan = buildPlannerDocsPlan({
+    idea: idea || planning.goal || "",
+    goal: idea || planning.goal || "",
+    planner_mode: mode,
+    track: planning.track,
+    planning_method: planning.planning_method,
+    plugin_context: planning.plugin_context,
+    source_control: planning.source_control,
+    pipeline: planning.pipeline,
+    docs_plan: planning.pipeline && planning.pipeline.docs_plan ? planning.pipeline.docs_plan : null,
+    docs_status: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status : null,
+    app_slug: flags.app || flags.app_slug || flags["app-slug"],
+    plugin_id: flags.plugin || flags.plugin_id
+  }, {
+    repo_root: context.repo_root,
+    plannerMode: mode,
+    track: planning.track,
+    method: planning.planning_method,
+    appSlug: flags.app || flags.app_slug || flags["app-slug"],
+    pluginId: flags.plugin || flags.plugin_id
+  });
+  return {
+    report_type: "kvdf_planner_docs_source_pipeline",
+    generated_at: new Date().toISOString(),
+    planner_mode: mode,
+    track: planning.track,
+    planning_method: planning.planning_method,
+    goal: planning.goal,
+    idea: idea || planning.goal,
+    method_reason: planning.method.reason,
+    source_control: planning.source_control,
+    plugin_context: planning.plugin_context,
+    docs_plan: docsPlan,
+    docs_status: buildPlannerDocsStatusSummaryFromPlan(docsPlan)
+  };
 }
 
 function materializePlannerDocs(docsPlan, context = {}) {
   const created = [];
   const updated = [];
   const skipped = [];
+  const docsStatusEntries = [];
   for (const entry of docsPlan.docs || []) {
-    const exists = fs.existsSync(entry.path);
+    const absolutePath = entry.write_path || path.resolve(context.repo_root || process.cwd(), entry.path);
+    const relativePath = normalizeRelativePath(context.repo_root || process.cwd(), absolutePath);
+    const exists = fs.existsSync(absolutePath);
+    const record = { ...entry, path: relativePath };
     if (exists && !entry.force) {
-      skipped.push(normalizeRelativePath(context.repo_root, entry.path));
+      skipped.push(relativePath);
+      docsStatusEntries.push({ ...record, status: entry.status === "not_applicable" ? "not_applicable" : "generated", applied: entry.applied, implemented: entry.implemented, file_exists: true });
       continue;
     }
     if (entry.dry_run) {
-      created.push(normalizeRelativePath(context.repo_root, entry.path));
+      created.push(relativePath);
+      docsStatusEntries.push({ ...record, status: entry.status === "not_applicable" ? "not_applicable" : "planned", applied: false, implemented: false, file_exists: exists });
       continue;
     }
-    fs.mkdirSync(path.dirname(entry.path), { recursive: true });
-    fs.writeFileSync(entry.path, `${entry.content}\n`, "utf8");
-    if (exists) updated.push(normalizeRelativePath(context.repo_root, entry.path));
-    else created.push(normalizeRelativePath(context.repo_root, entry.path));
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+    fs.writeFileSync(absolutePath, `${entry.content}\n`, "utf8");
+    if (exists) updated.push(relativePath);
+    else created.push(relativePath);
+    docsStatusEntries.push({ ...record, status: "generated", applied: false, implemented: false, file_exists: true });
+  }
+  const summary = summarizePlannerDocsEntries(docsStatusEntries.length ? docsStatusEntries : docsPlan.docs || []);
+  const statusFile = buildPlannerDocsStatusFilePath(context.repo_root || process.cwd(), docsPlan.planner_mode, docsPlan.app || normalizeAppSlug("app-draft"), docsPlan.plugin || normalizePluginId("plugin"));
+  const statusReport = {
+    report_type: "kvdf_planner_docs_status",
+    generated_at: new Date().toISOString(),
+    planner_mode: docsPlan.planner_mode,
+    track: docsPlan.track,
+    planning_method: docsPlan.planning_method,
+    app: docsPlan.app || null,
+    plugin: docsPlan.plugin || null,
+    required_total: summary.required_total,
+    existing_total: summary.existing_total,
+    missing_total: summary.missing_total,
+    applied_total: summary.applied_total,
+    not_applied_total: summary.not_applied_total,
+    generated_total: summary.generated_total,
+    docs: docsStatusEntries.length ? docsStatusEntries : docsPlan.docs || [],
+    stage_status: summary.stage_status,
+    status: summary.status,
+    next_action: summary.next_action
+  };
+  if (!docsPlan.docs.some((entry) => entry.dry_run)) {
+    writePlannerDocsStatusFile(statusFile, statusReport);
   }
   return {
     docs_created: created,
     docs_updated: updated,
     docs_skipped: skipped,
-    source_pipeline: docsPlan.source_pipeline || null
+    source_pipeline: docsPlan.source_pipeline || null,
+    status_file: statusFile,
+    docs_status: statusReport
   };
 }
 
-function draftDoc(filePath, content, options = {}) {
+function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const plannerMode = normalizePlannerMode(flags.track || flags.mode || (flags.plugin ? "plugin" : "vibe"));
+  const method = normalizePlannerMethod(flags.method || flags.planning_method || "auto");
+  const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || "app-draft");
+  const pluginId = normalizePluginId(flags.plugin || flags.plugin_id || "plugin");
+  const sourcePipeline = isFromCurrentPlan(flags)
+    ? buildPlannerCurrentPipelineSnapshot(context, flags)
+    : buildPlannerDocsSourcePipeline(value, flags, rest, deps);
+  if (action === "catalog") {
+    const catalog = buildPlannerDocsCatalog({ plannerMode, appSlug, pluginId });
+    return {
+      ...catalog,
+      generated_at: new Date().toISOString(),
+      idea: sourcePipeline.idea || sourcePipeline.goal || ""
+    };
+  }
+  if (action === "plan") {
+    return buildPlannerDocsPlan(sourcePipeline, {
+      repo_root: context.repo_root,
+      appSlug,
+      pluginId,
+      plannerMode,
+      method,
+      idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
+    });
+  }
+  if (action === "status") {
+    return buildPlannerDocsStatusReport({
+      repo_root: context.repo_root,
+      plannerMode,
+      track: getPlannerTrack(plannerMode),
+      method,
+      appSlug,
+      pluginId,
+      idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
+    });
+  }
+  if (action === "apply-stage") {
+    return applyPlannerDocsStage({
+      repo_root: context.repo_root,
+      plannerMode,
+      track: getPlannerTrack(plannerMode),
+      method,
+      appSlug,
+      pluginId,
+      stage: String(flags.stage || flags.pipeline_stage || value || "").trim(),
+      idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
+    });
+  }
+  if (action === "review") {
+    return buildPlannerDocsReviewReport({
+      repo_root: context.repo_root,
+      plannerMode,
+      track: getPlannerTrack(plannerMode),
+      method,
+      appSlug,
+      pluginId,
+      idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
+    });
+  }
+  return buildPlannerDocsMaterializationReport(value, flags, rest, deps);
+}
+
+function buildPlannerDocsStatusReport(options = {}) {
+  const repoRootPath = options.repo_root || process.cwd();
+  const plannerMode = normalizePlannerMode(options.plannerMode || options.track || "vibe");
+  const track = options.track || getPlannerTrack(plannerMode);
+  const method = normalizePlannerMethod(options.method || "structured");
+  const appSlug = normalizeAppSlug(options.appSlug || "app-draft");
+  const pluginId = normalizePluginId(options.pluginId || "plugin");
+  const plan = buildPlannerDocsPlan({
+    planner_mode: plannerMode,
+    track,
+    planning_method: method,
+    idea: options.idea || "",
+    goal: options.idea || ""
+  }, { repo_root: repoRootPath, plannerMode, appSlug, pluginId, method, idea: options.idea || "" });
+  const statusFile = buildPlannerDocsStatusFilePath(repoRootPath, plannerMode, appSlug, pluginId);
+  const existingStatus = readJsonFileIfExists(statusFile);
+  const docs = (existingStatus && Array.isArray(existingStatus.docs) ? existingStatus.docs : plan.docs).map((doc) => {
+    const absolutePath = buildPlannerDocsPath(PLANNER_DOC_DEFINITIONS.find((item) => item.doc_id === doc.doc_id) || doc, { plannerMode, appSlug, pluginId, repo_root: repoRootPath });
+    const fileExistsNow = fs.existsSync(absolutePath);
+    const status = fileExistsNow ? (doc.status === "applied_to_stage" ? "applied_to_stage" : (doc.status === "reviewed" || doc.status === "approved" ? doc.status : "generated")) : (doc.required ? "missing" : "not_applicable");
+    return {
+      ...doc,
+      path: normalizeRelativePath(repoRootPath, absolutePath),
+      file_exists: fileExistsNow,
+      status,
+      applied: status === "applied_to_stage" || Boolean(doc.applied),
+      implemented: status === "approved" || Boolean(doc.implemented)
+    };
+  });
+  const summary = summarizePlannerDocsEntries(docs);
   return {
-    path: path.resolve(filePath),
-    content,
-    dry_run: Boolean(options.dry_run),
-    force: Boolean(options.force)
+    report_type: "kvdf_planner_docs_status",
+    generated_at: new Date().toISOString(),
+    track,
+    app: plannerMode === "vibe" ? appSlug : null,
+    plugin: plannerMode === "plugin" ? pluginId : null,
+    planner_mode: plannerMode,
+    planning_method: method,
+    required_total: summary.required_total,
+    existing_total: summary.existing_total,
+    missing_total: summary.missing_total,
+    applied_total: summary.applied_total,
+    not_applied_total: summary.not_applied_total,
+    generated_total: summary.generated_total,
+    docs,
+    stage_status: summary.stage_status,
+    status: summary.status,
+    next_action: summary.next_action
   };
 }
 
-function normalizeAppSlug(value) {
-  const slug = String(value || "app-draft").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
-  return slug || "app-draft";
+function applyPlannerDocsStage(options = {}) {
+  const statusReport = buildPlannerDocsStatusReport(options);
+  const stage = String(options.stage || "").trim();
+  if (!stage) {
+    return {
+      report_type: "kvdf_planner_docs_apply_stage",
+      generated_at: new Date().toISOString(),
+      track: statusReport.track,
+      app: statusReport.app,
+      plugin: statusReport.plugin,
+      planner_mode: statusReport.planner_mode,
+      planning_method: statusReport.planning_method,
+      stage,
+      status: "blocked",
+      stage_blockers: ["Missing stage. Use --stage with a valid pipeline stage."],
+      next_action: "Provide a valid stage."
+    };
+  }
+  const docs = statusReport.docs.map((doc) => {
+    if (doc.pipeline_stage !== stage) return doc;
+    if (!doc.file_exists) return { ...doc, status: "missing", applied: false };
+    return { ...doc, status: "applied_to_stage", applied: true };
+  });
+  const summary = summarizePlannerDocsEntries(docs);
+  const updated = {
+    ...statusReport,
+    docs,
+    stage_status: summary.stage_status,
+    status: summary.status,
+    next_action: summary.next_action
+  };
+  const statusFile = buildPlannerDocsStatusFilePath(options.repo_root || process.cwd(), statusReport.planner_mode, statusReport.app || normalizeAppSlug("app-draft"), statusReport.plugin || normalizePluginId("plugin"));
+  if (fs.existsSync(statusFile)) writePlannerDocsStatusFile(statusFile, updated);
+  return {
+    report_type: "kvdf_planner_docs_apply_stage",
+    generated_at: new Date().toISOString(),
+    track: statusReport.track,
+    app: statusReport.app,
+    plugin: statusReport.plugin,
+    planner_mode: statusReport.planner_mode,
+    planning_method: statusReport.planning_method,
+    stage,
+    status: summary.status === "missing" ? "blocked" : (summary.status === "complete" ? "pass" : "warning"),
+    docs,
+    stage_status: summary.stage_status,
+    next_action: summary.next_action,
+    stage_blockers: docs.filter((doc) => doc.pipeline_stage === stage && doc.required && !doc.file_exists).map((doc) => `${doc.doc_id}: missing required doc`),
+    docs_status: updated
+  };
+}
+
+function buildPlannerDocsReviewReport(options = {}) {
+  const statusReport = buildPlannerDocsStatusReport(options);
+  const missing_required_docs = statusReport.docs.filter((doc) => doc.required && !doc.file_exists).map((doc) => doc.path);
+  const not_applied_docs = statusReport.docs.filter((doc) => doc.required && doc.file_exists && doc.status !== "applied_to_stage").map((doc) => doc.path);
+  const stage_blockers = Object.entries(statusReport.stage_status || {}).filter(([, stage]) => stage.missing > 0).map(([stage, details]) => `${stage}: ${details.missing} missing required doc(s)`);
+  const method_alignment = {
+    method: statusReport.planning_method,
+    track: statusReport.track,
+    docs_ready: missing_required_docs.length === 0,
+    missing_required: missing_required_docs.length,
+    not_applied: not_applied_docs.length
+  };
+  const status = missing_required_docs.length ? "blocked" : (not_applied_docs.length || stage_blockers.length ? "warning" : "pass");
+  return {
+    report_type: "kvdf_planner_docs_review",
+    generated_at: new Date().toISOString(),
+    track: statusReport.track,
+    app: statusReport.app,
+    plugin: statusReport.plugin,
+    planning_method: statusReport.planning_method,
+    status,
+    missing_required_docs,
+    not_applied_docs,
+    stage_blockers,
+    method_alignment,
+    next_action: status === "blocked" ? "Generate the missing required docs before proceeding." : (status === "warning" ? "Apply the next stage or review the staged docs." : "Docs are ready for implementation.")
+  };
+}
+
+function buildPlannerDocsMaterializationDraftContent(definition, options = {}) {
+  return buildPlannerFolderedDocMarkdown(definition, options);
 }
 
 function normalizeRelativePath(root, filePath) {
@@ -1018,6 +1689,8 @@ function buildPlannerCurrentPipelineSnapshot(context, flags = {}) {
     source_control: currentPlan.source_control || null,
     planning_strategy: currentPlan.planning_strategy || null,
     documentation_files: currentPlan.documentation_files || [],
+    docs_plan: currentPlan.docs_plan || null,
+    docs_status: currentPlan.docs_status || null,
     design_artifacts: currentPlan.design_artifacts || null,
     version_plan: currentPlan.version_plan || null,
     evolutions: currentPlan.evolutions || (currentPlan.recommended_evolution ? [currentPlan.recommended_evolution] : []),
@@ -1082,6 +1755,8 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     planning_method: planning.method.recommended_method,
     source_control: planning.source_control,
     documentation_files: planning.pipeline.documentation_files,
+    docs_plan: planning.pipeline.docs_plan,
+    docs_status: planning.pipeline.docs_status,
     visual_planning: planning.pipeline.visual_planning,
     task_punches: planning.pipeline.task_punches,
     evolutions: planning.pipeline.evolutions,
@@ -1099,6 +1774,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     scope_review: review.scope_review,
     method_review: review.method_review,
     docs_review: review.docs_review,
+    docs_status: review.docs_status,
     security_review: review.security_review,
     source_control_review: review.source_control_review,
     task_quality_review: review.task_quality_review,
@@ -1142,6 +1818,8 @@ function buildPlannerResumeReport(deps = {}) {
     planner_mode: currentPlan ? currentPlan.planner_mode || null : null,
     delivery_mode: currentPlan ? currentPlan.delivery_mode || null : null,
     source_control: currentPlan ? currentPlan.source_control || null : null,
+    docs_plan: currentPlan ? currentPlan.docs_plan || null : null,
+    docs_status: currentPlan ? currentPlan.docs_status || null : null,
     review_status: review.status || "unknown",
     next_recommended_action: buildPlannerResumeNextAction({ currentPlan, review, securityGateState, plannerState, deliveryDecisions, dashboard, tasksState }),
     blocked: blockers.length > 0,
@@ -1176,6 +1854,8 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
     track: docsPlan.track,
     planning_method: docsPlan.planning_method,
     status: "draft",
+    docs_plan: docsPlan,
+    docs_status: result.docs_status,
     docs_created: result.docs_created,
     docs_updated: result.docs_updated,
     docs_skipped: result.docs_skipped,
@@ -1194,6 +1874,26 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const planning = buildPlannerPlanningContext(goal, request, deps, { mode, deliveryMode, pluginContext, sourceControl, skip_pipeline: true });
+  const docsPlan = buildPlannerDocsPlan({
+    idea: goal,
+    goal,
+    planner_mode: mode,
+    track: plan.track,
+    planning_method: planning.planning_method,
+    source_control: sourceControl,
+    plugin_context: pluginContext,
+    app_slug: request.app || request.app_slug || request["app-slug"],
+    plugin_id: request.plugin || request.plugin_id || (pluginContext && pluginContext.plugin_id ? pluginContext.plugin_id : null)
+  }, {
+    repo_root: context.repo_root,
+    plannerMode: mode,
+    track: plan.track,
+    method: planning.planning_method,
+    appSlug: request.app || request.app_slug || request["app-slug"],
+    pluginId: request.plugin || request.plugin_id || (pluginContext && pluginContext.plugin_id ? pluginContext.plugin_id : null),
+    idea: goal
+  });
+  const docsStatus = buildPlannerDocsStatusSummaryFromPlan(docsPlan);
   const visualSummary = buildPlannerVisualPayload({
     goal,
     mode,
@@ -1207,8 +1907,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     methodReason: planning.method.reason,
     confidence: planning.method.confidence,
     review: null,
-    docsStatus: "planned",
-    docsCreatedTotal: 0,
+    docsStatus: docsStatus.status,
+    docsCreatedTotal: docsStatus.existing_total,
     risks: planning.method.risks,
     currentGate: planning.current_gate,
     nextAction: plan.next_action
@@ -1220,6 +1920,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     planning_method: planning.method.recommended_method,
     source_control: sourceControl,
     documentation_files: [],
+    docs_plan: docsPlan,
+    docs_status: docsStatus,
     visual_planning: visualSummary,
     task_punches: [taskPunch],
     evolutions: [plan],
@@ -1243,7 +1945,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     forbidden_files: plan.forbidden_files,
     validation_commands: plan.validation_commands,
     stop_condition: plan.stop_condition,
-    docs_status: "planned",
+    docs_plan: docsPlan,
+    docs_status: docsStatus,
     review,
     visual_summary: visualSummary,
     task_punch: taskPunch,
@@ -1259,7 +1962,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       planningMethod: planning.method.recommended_method,
       methodReason: planning.method.reason,
       review,
-      docsStatus: "planned",
+      docsStatus: docsStatus.status,
       visualSummary,
       currentGate: planning.current_gate
     })
@@ -1331,6 +2034,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     planning_method: planning.planning_method,
     source_control: sourceControl,
     documentation_files: planning.pipeline ? planning.pipeline.documentation_files : [],
+    docs_plan: planning.pipeline ? planning.pipeline.docs_plan : null,
+    docs_status: planning.pipeline ? planning.pipeline.docs_status : null,
     visual_planning: null,
     task_punches: [taskPunch],
     evolutions: [evolutionPlan],
@@ -1352,8 +2057,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     methodReason: planning.method.reason,
     confidence: planning.method.confidence,
     review,
-    docsStatus: "planned",
-    docsCreatedTotal: planning.pipeline && Array.isArray(planning.pipeline.documentation_files) ? planning.pipeline.documentation_files.length : 0,
+    docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned",
+    docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : (planning.pipeline && Array.isArray(planning.pipeline.documentation_files) ? planning.pipeline.documentation_files.length : 0),
     risks: planning.method.risks,
     currentGate: planning.current_gate,
     nextAction: evolutionPlan.next_action
@@ -1404,8 +2109,8 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     methodReason: currentPlan.method_reason || "",
     confidence: currentPlan.confidence || "",
     review,
-    docsStatus: currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned",
-    docsCreatedTotal: Array.isArray(currentPlan.documentation_files) ? currentPlan.documentation_files.length : 0,
+    docsStatus: currentPlan.docs_status ? currentPlan.docs_status.status : (currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned"),
+    docsCreatedTotal: currentPlan.docs_status ? currentPlan.docs_status.existing_total || 0 : (Array.isArray(currentPlan.documentation_files) ? currentPlan.documentation_files.length : 0),
     risks: review.risks || [],
     currentGate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || "structured", sourceControl, mode),
     nextAction: currentPlan.next_action || evolutionPlan.next_action
@@ -1832,6 +2537,26 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   });
   const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
   const nextEvolution = visualRoadmap.next_evolution || null;
+  const docsPlan = buildPlannerDocsPlan({
+    idea: normalizedIdea,
+    goal: normalizedIdea,
+    planner_mode: mode,
+    track: firstEvolution.track || getPlannerTrack(mode),
+    planning_method: request.method || request.planning_method || "auto",
+    source_control: sourceControl,
+    plugin_context: pluginContext,
+    app_slug: request.app || request.app_slug || request["app-slug"],
+    plugin_id: request.plugin || request.plugin_id || (pluginContext && pluginContext.plugin_id ? pluginContext.plugin_id : null)
+  }, {
+    repo_root: context.repo_root,
+    plannerMode: mode,
+    track: firstEvolution.track || getPlannerTrack(mode),
+    method: request.method || request.planning_method || "auto",
+    appSlug: request.app || request.app_slug || request["app-slug"],
+    pluginId: request.plugin || request.plugin_id || (pluginContext && pluginContext.plugin_id ? pluginContext.plugin_id : null),
+    idea: normalizedIdea
+  });
+  const docsStatus = buildPlannerDocsStatusSummaryFromPlan(docsPlan);
   const report = {
     report_type: "kvdf_idea_to_evolution_pipeline",
     generated_at: new Date().toISOString(),
@@ -1841,6 +2566,8 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     source_control: sourceControl,
     idea: normalizedIdea,
     documentation_files: documentationFiles,
+    docs_plan: docsPlan,
+    docs_status: docsStatus,
     design_artifacts: designArtifacts,
     visual_planning: visualPlanning,
     version_plan: versionPlan,
@@ -2385,7 +3112,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
   const aiLearning = planning.ai_learning;
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
-  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl, planningMethod: planning.planning_method, methodReason: planning.method.reason, confidence: planning.method.confidence, review: planning.method.review || null, docsStatus: "planned", currentGate: planning.current_gate });
+  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl, planningMethod: planning.planning_method, methodReason: planning.method.reason, confidence: planning.method.confidence, review: planning.method.review || null, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : 0, currentGate: planning.current_gate });
   const review = buildPlannerReviewSummary({
     goal,
     planner_mode: mode,
@@ -2393,6 +3120,8 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     planning_method: planning.planning_method,
     source_control: sourceControl,
     documentation_files: planning.pipeline ? planning.pipeline.documentation_files : [],
+    docs_plan: planning.pipeline ? planning.pipeline.docs_plan : null,
+    docs_status: planning.pipeline ? planning.pipeline.docs_status : null,
     visual_planning: visual,
     task_punches: [taskPunch],
     evolutions: [evolutionPlan],
@@ -2400,7 +3129,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     plugin_context: pluginContext,
     delivery_mode: deliveryMode
   });
-  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: "planned", visualSummary: visual, currentGate: planning.current_gate });
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", visualSummary: visual, currentGate: planning.current_gate });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
   const plan = buildPlannerPlanRecord({
@@ -2420,6 +3149,8 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     confidence: planning.method.confidence,
     review,
     documentationFiles: planning.pipeline ? planning.pipeline.documentation_files : [],
+    docsPlan: planning.pipeline ? planning.pipeline.docs_plan : null,
+    docsStatus: planning.pipeline ? planning.pipeline.docs_status : null,
     designArtifacts: planning.pipeline ? planning.pipeline.design_artifacts : null,
     versionPlan: planning.pipeline ? planning.pipeline.version_plan : null,
     evolutions: planning.pipeline ? planning.pipeline.evolutions : [],
@@ -2520,6 +3251,8 @@ function buildPlannerCurrentReport(deps = {}) {
     status: "approved",
     current_plan_id: currentPlan.plan_id,
     current_plan: currentPlan,
+    docs_plan: currentPlan.docs_plan || null,
+    docs_status: currentPlan.docs_status || null,
     next_action: "Run kvdf planner prompt --from-current --json to generate the Codex prompt from the approved plan."
   };
 }
@@ -2670,6 +3403,8 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     method_reason: currentPlan.method_reason || (review.method_review ? review.method_review.reason : ""),
     review,
     documentation_files: currentPlan.documentation_files || [],
+    docs_plan: currentPlan.docs_plan || null,
+    docs_status: currentPlan.docs_status || null,
     visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
     current_gate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || review.planning_method || "structured", sourceControl, normalizePlannerMode(currentPlan.planner_mode))
   }, context, sourceControl, aiLearning);
@@ -2689,7 +3424,8 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     forbidden_files: currentPlan.forbidden_files || [],
     validation_commands: currentPlan.validation_commands || [],
     stop_condition: currentPlan.stop_condition || "",
-    docs_status: currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned",
+    docs_plan: currentPlan.docs_plan || null,
+    docs_status: currentPlan.docs_status ? currentPlan.docs_status.status : (currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned"),
     review,
     task_punch: currentPlan.task_punch || null,
     prompt
@@ -4059,6 +4795,8 @@ function normalizePlannerPlanRecord(plan = {}) {
     confidence: String(plan.confidence || ""),
     review: plan.review || null,
     documentation_files: Array.isArray(plan.documentation_files) ? [...plan.documentation_files] : [],
+    docs_plan: plan.docs_plan || null,
+    docs_status: plan.docs_status || null,
     design_artifacts: plan.design_artifacts || null,
     version_plan: plan.version_plan || null,
     evolutions: Array.isArray(plan.evolutions) ? [...plan.evolutions] : [],
@@ -4106,6 +4844,8 @@ function buildPlannerPlanRecord({
   confidence,
   review,
   documentationFiles,
+  docsPlan,
+  docsStatus,
   designArtifacts,
   versionPlan,
   evolutions,
@@ -4128,6 +4868,8 @@ function buildPlannerPlanRecord({
     confidence: confidence || "",
     review: review || null,
     documentation_files: Array.isArray(documentationFiles) ? [...documentationFiles] : [],
+    docs_plan: docsPlan || null,
+    docs_status: docsStatus || null,
     design_artifacts: designArtifacts || null,
     version_plan: versionPlan || null,
     evolutions: Array.isArray(evolutions) ? [...evolutions] : [],
