@@ -1,6 +1,6 @@
 # KVDF Workflow Instructions
 
-Updated: 2026-05-15
+Updated: 2026-05-19
 
 This document defines the shared operating instructions for three roles:
 
@@ -36,6 +36,64 @@ These rules apply to every role:
 6. If scope changes, return to planning and re-approve.
 7. If the boundary is unclear, stop and ask.
 8. Use runtime state, not chat memory, as the source of truth.
+
+## State Resync Before Planning
+
+KVDF must not generate the next Evolution from stale local files.
+
+State Resync is file-first, not GitHub-first.
+
+Before recommending or starting any next Evolution, KVDF must perform a State
+Resync and rebuild the current Evolution ledger from the current repository
+reality.
+
+The required source-of-truth priority is:
+
+For application repositories / Vibe track:
+
+1. Current app docs and requirements files
+2. Current app manifests/specs/configs
+3. Current app source structure
+4. Current app tests
+5. Local Git history if available
+6. Release/tag history if available
+7. Remote provider history such as GitHub only if enabled
+8. `.kabeeri/` runtime state as supporting state only
+9. Chat history as supporting context only
+
+For KVDF Core repository work:
+
+1. Current KVDF source files and docs
+2. Current branch and latest main
+3. Git commit history
+4. Release/tag history if available
+5. Current roadmap/docs
+6. Current manifests/specs/configs
+7. `.kabeeri/` runtime state as supporting state only
+8. GitHub only if enabled as remote/provider plugin
+9. Chat history as supporting context only
+
+Required behavior:
+
+- confirm the target repo, current repo, current branch, latest `main`, and current roadmap
+- rebuild the Evolution status map before planning
+- detect stale docs and warn the Owner
+- do not restart Evolutions that are already completed
+- treat `main`, merged PRs, release tags, and current roadmap docs as higher
+  priority than old planning drafts
+- treat `.kabeeri/tasks.json` as supporting state only, not the only source of
+  current progress
+- do not let `.kabeeri/tasks.json` overrule later git history, release tags, or
+  roadmap evidence
+- for app work, treat current app files/docs/specs/tests as the primary source of truth
+- for app work, Git and GitHub are supporting historical evidence unless the Owner explicitly chooses remote history as authoritative
+- for KVDF Core work, keep direct-to-main as the default delivery mode unless the Owner explicitly asks for branches or PRs
+- when source control is enabled and safe, sync or read the latest `main`
+- stop and ask the Owner when source-of-truth conflicts are ambiguous
+
+Planner Drift Guard means the planner must first prove that its view of
+completed, active, planned, blocked, and future-only work matches the current
+repository reality before it suggests the next Evolution.
 
 ## AI Tool Role
 
@@ -107,6 +165,28 @@ The Kabeeri developer changes Kabeeri itself.
 
 The vibe developer builds an app inside a governed workspace.
 
+### Application Source-Of-Truth Priority
+
+For Vibe/App Track work, the current application files are the primary source
+of truth.
+
+Git and GitHub must not override current app files unless the Owner explicitly
+chooses remote history as authoritative.
+
+The source-of-truth priority is:
+
+1. Current app docs and requirements files
+2. Current app manifests/specs/configs
+3. Current app source structure
+4. Current app tests
+5. Local Git history if available
+6. Release/tag history if available
+7. Remote provider history such as GitHub only if enabled
+8. `.kabeeri/` runtime state as supporting state only
+9. Chat history as supporting context only
+
+Git is historical evidence. GitHub is an optional secondary provider/plugin evidence. `.kabeeri/` is supporting runtime evidence only.
+
 ### Scope
 
 - app source code
@@ -128,6 +208,8 @@ The vibe developer builds an app inside a governed workspace.
 - Respect the surface scopes for website, mobile, admin, API, backend, or other approved app surfaces.
 - Confirm the target repo and workspace before implementation by checking the
   repo root, current branch, and working tree status.
+- Treat current app files as the primary source of truth for app-track planning
+  and implementation.
 - Implement one task at a time.
 - Stop when scope changes.
 - Keep runtime state out of commits unless the approved Evolution explicitly
@@ -149,6 +231,10 @@ The vibe developer builds an app inside a governed workspace.
 KVDF-led delivery is the workflow where KVDF keeps the local workspace as the
 source of truth, slices approved Evolutions into Tasks, and decides whether the
 handoff stops locally or continues through GitHub.
+
+For app-track delivery, current app files are the primary source of truth, and
+Git or GitHub only become authoritative when the Owner explicitly chooses
+remote history as the higher-priority source.
 
 ## Delivery Modes
 

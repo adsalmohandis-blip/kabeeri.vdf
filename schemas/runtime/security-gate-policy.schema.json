@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Security Gate Policy",
+  "type": "object",
+  "required": [
+    "security_gate_policy_version",
+    "default_required",
+    "strict_blocking",
+    "required_scopes",
+    "required_tracks",
+    "required_before",
+    "blocked_statuses",
+    "warning_statuses",
+    "missing_plugin_behavior",
+    "notes"
+  ],
+  "properties": {
+    "security_gate_policy_version": { "const": "1" },
+    "default_required": { "type": "boolean" },
+    "strict_blocking": { "type": "boolean" },
+    "required_scopes": {
+      "type": "array",
+      "items": {
+        "enum": ["task", "evolution", "handoff", "release", "workspace", "plugin"]
+      }
+    },
+    "required_tracks": {
+      "type": "array",
+      "items": {
+        "enum": ["owner", "vibe", "plugin"]
+      }
+    },
+    "required_before": {
+      "type": "array",
+      "items": {
+        "enum": ["task_complete", "evolution_closeout", "handoff", "release"]
+      }
+    },
+    "blocked_statuses": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warning_statuses": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_plugin_behavior": {
+      "enum": ["warn", "block", "ignore"]
+    },
+    "notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,4 +1,9 @@
+const fs = require("fs");
+const path = require("path");
+const { pathToFileURL } = require("url");
 const { buildPluginLoaderReport } = require("../services/plugin_loader");
+const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
+const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 const { buildPlannerVisualReport, buildPlannerVisualFromCurrentReport } = require("./planner");
 const { renderMarkdownVisualReport, buildPlannerVisualRenderArtifact } = require("../../../plugins/planner-visual/runtime");
 
@@ -27,6 +32,7 @@ function plannerVisual(action, value, flags = {}, rest = [], deps = {}) {
       ? buildPlannerVisualFromCurrentReport({}, deps)
       : buildPlannerVisualReport(resolveGoal(value, flags, rest), buildPlannerVisualRequest(flags), deps);
     const artifact = buildPlannerVisualRenderArtifact(visual, { pluginId: "planner-visual" });
+    openPlannerVisualPreview(visual, renderMarkdownVisualReport(visual), flags, deps);
     if (flags.json) console.log(JSON.stringify(artifact, null, 2));
     else console.log(renderMarkdownVisualReport(visual));
     return;
@@ -97,6 +103,37 @@ function normalizeAction(action) {
   const text = String(action || "").trim().toLowerCase();
   if (text === "add") return "render";
   return text;
+}
+
+function openPlannerVisualPreview(visual, rendered, flags = {}, deps = {}) {
+  const repoRoot = typeof deps.repoRoot === "function" ? deps.repoRoot() : process.cwd();
+  const previewDir = path.join(repoRoot, ".kabeeri", "reports");
+  const previewFile = path.join(previewDir, "planner_visual_plugin_preview.html");
+  fs.mkdirSync(previewDir, { recursive: true });
+  const html = buildMermaidPreviewHtml({
+    title: "Planner Visual Preview",
+    summary: [
+      visual.track ? `Track: ${visual.track}` : null,
+      visual.planner_mode ? `Planner mode: ${visual.planner_mode}` : null,
+      visual.delivery_mode ? `Delivery mode: ${visual.delivery_mode}` : null,
+      visual.goal ? `Goal: ${visual.goal}` : null
+    ].filter(Boolean),
+    rendered,
+    diagramSource: rendered,
+    fallbackLabel: "Planner visual markdown",
+    diagramTitle: "Diagram Graph"
+  });
+  const finalHtml = injectFullscreenShell(html, shouldLaunchFullscreen(flags) ? { fullscreen: true } : {});
+  fs.writeFileSync(previewFile, finalHtml, "utf8");
+  if (shouldOpenPreviewBrowser(flags)) {
+    const opener = typeof deps.openExternalUrl === "function" ? deps.openExternalUrl : openExternalUrl;
+    opener(pathToFileURL(previewFile).toString());
+  }
+  return {
+    report_type: "planner_visual_preview",
+    output_path: previewFile.replace(/\\/g, "/"),
+    output_url: pathToFileURL(previewFile).toString()
+  };
 }
 
 module.exports = {

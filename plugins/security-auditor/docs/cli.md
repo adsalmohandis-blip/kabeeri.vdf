@@ -16,6 +16,7 @@ kvdf plugins uninstall security-auditor
 - `scan` writes the latest scan to `.kabeeri/security/security_auditor_scans.json`.
 - `report` returns the latest scan summary and findings as JSON or text.
 - `scan` and `report` are optional plugin actions and should be enabled through `kvdf plugins install security-auditor`.
+- KVDF Core reads that scan history when building the optional security gate status surface.
 
 ## Supported Findings
 

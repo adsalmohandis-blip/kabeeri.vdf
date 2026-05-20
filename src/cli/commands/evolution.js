@@ -15,6 +15,7 @@ const {
   renderEvolutionTemporaryPrioritiesReport
 } = require("../services/evolution");
 const { buildTaskLifecycleState } = require("./task_lifecycle");
+const { buildSecurityGateState } = require("./security");
 const { readStateArray } = require("../services/state_utils");
 const { writeTextFile: writeLocalTextFile } = require("../fs_utils");
 
@@ -207,7 +208,25 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
   const baseSummary = buildEvolutionSummary(state);
 
   if (!action || action === "status" || action === "summary") {
-    const summary = { ...baseSummary, audience: mode };
+    const currentChange = state.current_change_id ? state.changes.find((item) => item.change_id === state.current_change_id) || null : null;
+    const securityGate = buildSecurityGateState({
+      track: appMode ? "vibe" : "owner",
+      scope: "evolution",
+      evolution: currentChange ? currentChange.change_id : state.current_change_id,
+      required: Boolean(
+        flags.required ||
+        flags.strict ||
+        flags["security-required"] ||
+        flags.security_required ||
+        flags["strict-security"] ||
+        (currentChange && (
+          currentChange.security_gate_required ||
+          (Array.isArray(currentChange.policy_gates) && currentChange.policy_gates.some((item) => String(item).toLowerCase() === "security"))
+        ))
+      ),
+      persist: true
+    });
+    const summary = { ...baseSummary, audience: mode, security_gate: securityGate };
     writeJsonFile(file, state);
     if (flags.json) console.log(JSON.stringify(summary, null, 2));
     else console.log(renderEvolutionSummary(summary));
@@ -1251,6 +1270,16 @@ function buildEvolutionExecutionReport(state, readJsonFile, fileExists, options 
       review_gate: currentChange.review_gate || report.current_milestone.review_gate,
       task_trash_policy: currentChange.task_trash_policy || report.current_milestone.task_trash_policy
     };
+    report.security_gate = buildSecurityGateState({
+      track: appMode ? "vibe" : "owner",
+      scope: "evolution",
+      evolution: currentChange.change_id,
+      required: Boolean(
+        currentChange.security_gate_required ||
+        (Array.isArray(currentChange.policy_gates) && currentChange.policy_gates.some((item) => String(item).toLowerCase() === "security"))
+      ),
+      persist: true
+    });
   }
 
   if (targetPriority && executionDetails) {
@@ -1314,6 +1343,7 @@ function renderEvolutionExecutionReport(report, tableRenderer = () => "") {
       ["Sync policy", report.current_milestone ? report.current_milestone.sync_policy : "n/a"],
       ["GitHub sync", report.current_milestone ? (report.current_milestone.github_sync_enabled ? "enabled" : "local-only") : "n/a"],
       ["Review gate", report.current_milestone ? report.current_milestone.review_gate : "n/a"],
+      ["Security gate", report.security_gate ? `${report.security_gate.status}${report.security_gate.required ? " (required)" : ""}` : "n/a"],
       ["Linked tasks", report.linked_task_ids.length ? report.linked_task_ids.join(", ") : "none"],
       ["Open priorities", `${report.priority_summary.open}/${report.priority_summary.total}`]
     ]),
@@ -1785,6 +1815,7 @@ function renderEvolutionSummary(summary) {
     `Restructure roadmap: ${summary.feature_restructure_work_order ? `${summary.feature_restructure_work_order.total_steps} steps` : "none"}`,
     `Capability partition matrix: ${summary.capability_partition_matrix ? `${summary.capability_partition_matrix.total_capabilities} capabilities` : "none"}`,
     `Plugin loader: ${summary.plugin_loader ? `${summary.plugin_loader.active_plugins} active plugins` : "none"}`,
+    `Security gate: ${summary.security_gate ? `${summary.security_gate.status}${summary.security_gate.required ? " (required)" : ""}` : "not recorded"}`,
     `Next priority: ${summary.next_priority ? summary.next_priority.title : "none"}`,
     `Current change: ${summary.current_change_id || "none"}`
   ].join("\n");

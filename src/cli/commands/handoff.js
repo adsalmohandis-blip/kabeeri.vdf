@@ -4,6 +4,7 @@ const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile, assertSafeName } = require("../fs_utils");
 const { table } = require("../ui");
+const { buildSecurityGateState } = require("./security");
 
 function handoff(action, value, flags = {}, deps = {}) {
   ensureWorkspace();
@@ -57,6 +58,12 @@ function handoff(action, value, flags = {}, deps = {}) {
     const state = collectDashboardState();
     const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
     const usageSummary = summarizeUsage();
+    const securityGate = buildSecurityGateState({
+      track: normalizeHandoffTrack(project.workspace_kind || audience),
+      scope: "handoff",
+      required: Boolean(flags.required || flags.strict || flags["security-required"] || flags.security_required),
+      persist: true
+    });
     const packageItem = {
       package_id: id,
       audience,
@@ -76,11 +83,12 @@ function handoff(action, value, flags = {}, deps = {}) {
     };
     writeTextFile(packageItem.files[0], buildHandoffIndex(packageItem, project));
     writeTextFile(packageItem.files[1], buildBusinessHandoffSummary(state, project));
-    writeTextFile(packageItem.files[2], buildTechnicalHandoffSummary(state, project));
+    writeTextFile(packageItem.files[2], buildTechnicalHandoffSummary(state, project, securityGate));
     writeTextFile(packageItem.files[3], buildFeatureReadinessReport(state));
     writeTextFile(packageItem.files[4], buildProductionPublishReport(state));
     writeTextFile(packageItem.files[5], buildAiCostHandoffReport(usageSummary, state));
     writeTextFile(packageItem.files[6], buildNextRoadmapReport(state));
+    packageItem.security_gate = securityGate;
     data.packages.push(packageItem);
     writeJsonFile(file, data);
     appendAudit("handoff.generated", "handoff", id, `Handoff package generated: ${outputDir}`);
@@ -101,6 +109,12 @@ function normalizeHandoffAudience(value) {
   const allowed = new Set(["client", "owner", "internal", "team"]);
   if (!allowed.has(normalized)) throw new Error("Invalid handoff audience. Use client, owner, internal, or team.");
   return normalized;
+}
+
+function normalizeHandoffTrack(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["developer_app", "vibe_app_developer", "app_developer", "vibe", "app"].includes(normalized)) return "vibe";
+  return "owner";
 }
 
 function buildHandoffIndex(packageItem, project) {
@@ -158,7 +172,7 @@ ${readyJourneys.length ? readyJourneys.map((item) => `- ${item.name} (${item.sta
 `;
 }
 
-function buildTechnicalHandoffSummary(state, project) {
+function buildTechnicalHandoffSummary(state, project, securityGate = null) {
   const technical = state.technical || {};
   return `# Technical Handoff Summary
 
@@ -178,6 +192,10 @@ function buildTechnicalHandoffSummary(state, project) {
 - Policy status: ${JSON.stringify(technical.policies || {})}
 - Context packs: ${technical.context_packs || 0}
 - Cost preflight status: ${JSON.stringify(technical.cost_preflights || {})}
+- Security gate: ${securityGate ? `${securityGate.status}${securityGate.required ? " (required)" : ""}` : "unavailable"}
+- Security plugin: ${securityGate && securityGate.plugin ? `${securityGate.plugin.installed ? "installed" : "missing"} / ${securityGate.plugin.enabled ? "enabled" : "disabled"}` : "security-auditor missing"}
+- Security findings: ${securityGate ? `blocked=${securityGate.findings_summary.blocked || 0}, warnings=${securityGate.findings_summary.warnings || 0}, files=${securityGate.findings_summary.files_scanned || 0}` : "n/a"}
+- Security next action: ${securityGate ? securityGate.next_action : "Run kvdf security gate --handoff --json"}
 
 ## Developers
 

@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Security Gate State",
+  "type": "object",
+  "required": [
+    "report_type",
+    "security_gate_version",
+    "status",
+    "plugin",
+    "track",
+    "scope",
+    "required",
+    "strict_blocking",
+    "policy_source",
+    "policy_path",
+    "last_scan",
+    "findings_summary",
+    "target",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "const": "kvdf_security_gate_state" },
+    "security_gate_version": { "const": "1" },
+    "status": {
+      "enum": ["pass", "warning", "blocked", "unavailable", "not_required"]
+    },
+    "plugin": {
+      "type": "object",
+      "required": ["plugin_id", "installed", "enabled", "available", "active"],
+      "properties": {
+        "plugin_id": { "const": "security-auditor" },
+        "installed": { "type": "boolean" },
+        "enabled": { "type": "boolean" },
+        "available": { "type": "boolean" },
+        "active": { "type": "boolean" }
+      },
+      "additionalProperties": true
+    },
+    "track": {
+      "enum": ["owner", "vibe", "plugin"]
+    },
+    "scope": {
+      "enum": ["task", "evolution", "handoff", "workspace", "manual"]
+    },
+    "required": { "type": "boolean" },
+    "strict_blocking": { "type": "boolean" },
+    "policy_source": {
+      "enum": ["default", "runtime"]
+    },
+    "policy_path": { "type": "string" },
+    "last_scan": {
+      "type": ["object", "null"],
+      "properties": {
+        "scan_id": { "type": "string" },
+        "source": { "type": "string" },
+        "status": { "type": "string" },
+        "generated_at": { "type": ["string", "null"] },
+        "track": { "type": "string" },
+        "scope": { "type": "string" },
+        "task_id": { "type": ["string", "null"] },
+        "evolution": { "type": ["string", "null"] },
+        "summary": {
+          "type": "object",
+          "properties": {
+            "blocked": { "type": "number" },
+            "warnings": { "type": "number" },
+            "files_scanned": { "type": "number" }
+          },
+          "additionalProperties": true
+        },
+        "files_scanned": { "type": "number" },
+        "findings_total": { "type": "number" },
+        "next_action": { "type": ["string", "null"] },
+        "engine": { "type": "string" },
+        "findings": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "findings_summary": {
+      "type": "object",
+      "required": ["blocked", "warnings", "files_scanned"],
+      "properties": {
+        "blocked": { "type": "number" },
+        "warnings": { "type": "number" },
+        "files_scanned": { "type": "number" }
+      },
+      "additionalProperties": true
+    },
+    "target": {
+      "type": "object",
+      "required": ["task_id", "evolution_id", "handoff_id"],
+      "properties": {
+        "task_id": { "type": ["string", "null"] },
+        "evolution_id": { "type": ["string", "null"] },
+        "handoff_id": { "type": ["string", "null"] },
+        "task_status": { "type": ["string", "null"] },
+        "evolution_status": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

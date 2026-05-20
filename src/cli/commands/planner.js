@@ -6,8 +6,9 @@ const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 const { readGitRepositoryState } = require("../services/git_snapshot");
 const { buildAiLearningPromptContext } = require("./ai_learning");
+const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { pathToFileURL } = require("url");
-const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenBrowser } = require("../services/local_server");
+const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -511,13 +512,99 @@ function buildPlannerVisualGraph({ mode }) {
     format: "mermaid",
     diagram: [
       "flowchart TD",
-      "  OwnerDirection[Owner Direction] --> PlannerProposal[Planner Proposal]",
-      "  PlannerProposal --> OwnerApproval[Owner Approval]",
-      "  OwnerApproval --> Evolution[Evolution]",
-      "  Evolution --> TaskPunch[Task Punch]",
-      "  TaskPunch --> CodexPrompt[Codex Prompt]",
-      "  CodexPrompt --> Validation[Validation]",
-      "  Validation --> DirectToMainCommit[Direct-to-main Commit]"
+      "  %% KVDF Core - Detailed Mermaid for highest-priority evolution",
+      "",
+      "  subgraph Context[\"Current Context\"]",
+      "    G[\"Git repo detected\"]",
+      "    B[\"Branch: main\"]",
+      "    M[\"Planner mode: owner\"]",
+      "    T[\"Track: framework_owner\"]",
+      "    D[\"Delivery mode: direct_main\"]",
+      "  end",
+      "",
+      "  subgraph Priority[\"Highest Priority Evolution\"]",
+      "    E[\"KVDF Planner Track Awareness\"]",
+      "    E1[\"Document planner layer and workflow contract\"]",
+      "    E2[\"Wire planner command into KVDF Core CLI\"]",
+      "    E3[\"Add planner integration and documentation coverage\"]",
+      "    E4[\"Source Control: git / direct_main\"]",
+      "    E --> E1",
+      "    E --> E2",
+      "    E --> E3",
+      "    E --> E4",
+      "  end",
+      "",
+      "  subgraph Workflow[\"Planner Flow\"]",
+      "    A[\"Owner Direction\"] --> P[\"Planner Proposal\"]",
+      "    P --> O[\"Owner Approval\"]",
+      "    O --> X[\"Evolution\"]",
+      "    X --> Y[\"Task Punch\"]",
+      "    Y --> C[\"Codex Prompt\"]",
+      "    C --> V[\"Validation\"]",
+      "    V --> S[\"Direct-to-main Commit\"]",
+      "  end",
+      "",
+      "  subgraph TaskPunch[\"Task Punch Breakdown\"]",
+      "    TP1[\"Docs Task\\n- KVDF_PLANNER_LAYER.md\\n- EVOLUTION_PLANNER_WORKFLOW.md\\n- prompt templates\"]",
+      "    TP2[\"CLI Task\\n- src/cli/commands/planner.js\\n- src/cli/dispatchers/build.js\\n- src/cli/index.js\\n- src/cli/ui.js\"]",
+      "    TP3[\"Tests + Docs Task\\n- tests/cli.integration.test.js\\n- CLI_COMMAND_REFERENCE.md\\n- SYSTEM_CAPABILITIES_REFERENCE.md\"]",
+      "    TP4[\"Source Control Task\\n- git\\n- direct_main\\n- main branch\\n- no PR by default\"]",
+      "  end",
+      "",
+      "  subgraph Allowed[\"Allowed Files\"]",
+      "    L1[\"knowledge/governance/KVDF_PLANNER_LAYER.md\"]",
+      "    L2[\"docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md\"]",
+      "    L3[\"docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md\"]",
+      "    L4[\"docs/workflows/SOURCE_CONTROL_PROVIDER_MODEL.md\"]",
+      "    L5[\"packs/planner/evolution-planner.prompt.md\"]",
+      "    L6[\"packs/planner/codex-execution.prompt.md\"]",
+      "    L7[\"packs/planner/idea-to-evolution.prompt.md\"]",
+      "    L8[\"schemas/planner/evolution-plan.schema.json\"]",
+      "    L9[\"schemas/planner/task-punch.schema.json\"]",
+      "    L10[\"schemas/planner/idea-to-evolution-pipeline.schema.json\"]",
+      "    L11[\"schemas/planner/design-artifacts.schema.json\"]",
+      "    L12[\"schemas/planner/version-plan.schema.json\"]",
+      "    L13[\"schemas/planner/source-control.schema.json\"]",
+      "    L14[\"src/cli/commands/planner.js\"]",
+      "    L15[\"src/cli/dispatchers/build.js\"]",
+      "    L16[\"src/cli/index.js\"]",
+      "    L17[\"src/cli/ui.js\"]",
+      "    L18[\"src/cli/validate.js\"]",
+      "    L19[\"tests/cli.integration.test.js\"]",
+      "    L20[\"docs/cli/CLI_COMMAND_REFERENCE.md\"]",
+      "    L21[\"docs/SYSTEM_CAPABILITIES_REFERENCE.md\"]",
+      "  end",
+      "",
+      "  subgraph Validation[\"Validation\"]",
+      "    V1[\"node bin/kvdf.js validate\"]",
+      "    V2[\"npm test\"]",
+      "    V3[\"npm run check\"]",
+      "  end",
+      "",
+      "  subgraph Output[\"Expected Output\"]",
+      "    R1[\"Deterministic next evolution recommendation\"]",
+      "    R2[\"Task punch with scoped tasks\"]",
+      "    R3[\"Codex-ready execution prompt\"]",
+      "    R4[\"Track-aware direct-to-main delivery\"]",
+      "  end",
+      "",
+      "  Context --> Priority",
+      "  Priority --> Workflow",
+      "  Priority --> TaskPunch",
+      "  TaskPunch --> Allowed",
+      "  TaskPunch --> Validation",
+      "  Validation --> Output",
+      "",
+      "  G --> E4",
+      "  B --> E4",
+      "  M --> E",
+      "  T --> E",
+      "  D --> E4",
+      "",
+      "  E1 --> R1",
+      "  E2 --> R3",
+      "  E3 --> R2",
+      "  E4 --> R4"
     ].join("\n")
   };
 }
@@ -1942,7 +2029,7 @@ function printPlannerOutput(report, flags, deps, kind) {
       : ["propose", "approve", "current", "reject"].includes(kind)
           ? renderPlannerStateSummaryReport(report, deps.table)
         : renderPlannerNextReport(report, deps.table);
-  if (shouldOpenBrowser(flags) && (kind === "visual" || kind === "pipeline")) {
+  if ((kind === "visual" || kind === "pipeline")) {
     openPlannerPreview(report, rendered, kind, flags, deps);
   }
   console.log(rendered);
@@ -1957,7 +2044,7 @@ function openPlannerPreview(report, rendered, kind, flags = {}, deps = {}) {
   const finalHtml = injectFullscreenShell(html, shouldLaunchFullscreen(flags) ? { fullscreen: true } : {});
   fs.writeFileSync(previewFile, finalHtml, "utf8");
   const previewUrl = pathToFileURL(previewFile).toString();
-  if (shouldOpenBrowser(flags)) {
+  if (shouldOpenPreviewBrowser(flags)) {
     const opener = typeof deps.openExternalUrl === "function" ? deps.openExternalUrl : openExternalUrl;
     opener(previewUrl);
   }
@@ -1977,40 +2064,171 @@ function buildPlannerPreviewHtml(report, rendered, kind) {
     report.goal ? `Goal: ${report.goal}` : null,
     report.idea ? `Idea: ${report.idea}` : null
   ].filter(Boolean);
-  const mermaidBlock = extractMermaidBlock(rendered);
-  const diagramHtml = mermaidBlock ? renderFlowchartSvg(mermaidBlock) : "";
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${escapeHtml(title)}</title>
-  <style>
-    :root { color-scheme: light; }
-    body { margin: 0; font-family: system-ui, sans-serif; background: #f5f7fb; color: #1f2937; }
-    header { padding: 24px 28px 12px; border-bottom: 1px solid #d9e1ee; background: linear-gradient(180deg, #ffffff, #f7f9fc); }
-    h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.2; }
-    .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; color: #475569; }
-    .pill { padding: 4px 10px; border-radius: 999px; background: #e8eef7; }
-    main { padding: 24px 28px 40px; display: grid; gap: 20px; }
-    .diagram-shell { margin-bottom: 20px; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow: hidden; height: clamp(320px, 48vh, 560px); }
-    .diagram-title { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
-    .diagram-frame { width: 100%; height: calc(100% - 28px); overflow: hidden; }
-    .diagram-shell svg { display: block; width: 100%; height: 100%; }
-    pre { white-space: pre-wrap; word-break: break-word; margin: 0; padding: 20px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); font-size: 14px; line-height: 1.6; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>${escapeHtml(title)}</h1>
-    <div class="meta">${summary.map((item) => `<span class="pill">${escapeHtml(item)}</span>`).join("")}</div>
-  </header>
-  <main>
-    ${diagramHtml ? `<section class="diagram-shell"><div class="diagram-title">Diagram Graph</div><div class="diagram-frame">${diagramHtml}</div></section>` : ""}
-    <pre>${escapeHtml(rendered || "")}</pre>
-  </main>
-</body>
-</html>`;
+  const taskBreakdownHtml = buildPlannerTaskBreakdownHtml(report.task_punch);
+  return buildMermaidPreviewHtml({
+    title,
+    summary,
+    rendered,
+    diagramSource: rendered,
+    bodyHtml: taskBreakdownHtml,
+    kind,
+    fallbackLabel: "Planner markdown",
+    diagramTitle: "Diagram Graph"
+  });
+}
+
+function buildPlannerTaskBreakdownHtml(taskPunch) {
+  const tasks = Array.isArray(taskPunch && taskPunch.tasks) ? taskPunch.tasks : [];
+  if (!tasks.length) return "";
+  const rows = tasks.map((task) => {
+    const allowed = (task.allowed_files || []).slice(0, 6);
+    const forbidden = (task.forbidden_files || []).slice(0, 6);
+    const acceptance = (task.acceptance_criteria || []).slice(0, 4);
+    const commands = (task.validation_commands || []).slice(0, 4);
+    return `
+      <tr>
+        <td>
+          <div class="task-meta">${escapeHtml(task.status || "proposed")} · ${escapeHtml(task.id || "")}</div>
+          <div class="task-title">${escapeHtml(task.title || "Task")}</div>
+        </td>
+        <td>${allowed.length ? `<ul class="task-list">${allowed.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}</td>
+        <td>${forbidden.length ? `<ul class="task-list">${forbidden.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}</td>
+        <td>${acceptance.length ? `<ul class="task-list">${acceptance.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}</td>
+        <td>${commands.length ? `<ul class="task-list">${commands.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}</td>
+      </tr>`;
+  }).join("");
+  return `
+    <section class="task-breakdown">
+      <div class="diagram-title">Task Breakdown</div>
+      <div class="task-table-wrap">
+        <table class="task-table">
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Allowed Files</th>
+              <th>Forbidden Files</th>
+              <th>Acceptance</th>
+              <th>Validation</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </section>`;
+}
+
+function buildPlannerPreviewScript() {
+  return `<script>
+(function () {
+  var frame = document.querySelector('.diagram-frame');
+  var svg = frame && frame.querySelector('svg');
+  var label = document.querySelector('[data-zoom-label]');
+  var range = document.querySelector('[data-zoom-range]');
+  var zoomIn = document.querySelector('[data-zoom-in]');
+  var zoomOut = document.querySelector('[data-zoom-out]');
+  var zoomReset = document.querySelector('[data-zoom-reset]');
+  if (!frame || !svg || !label || !range || !zoomIn || !zoomOut || !zoomReset) return;
+  var minZoom = 0;
+  var maxZoom = 1.8;
+  var step = 0.08;
+  var zoom = 1;
+  var panX = 0;
+  var panY = 0;
+  var dragging = false;
+  var origin = null;
+  var autoFit = true;
+  var fitScale = 1;
+  var fitOffsetX = 0;
+  var fitOffsetY = 0;
+  var baseFrameHeight = Math.max(frame.getBoundingClientRect().height || 0, 560);
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function apply() {
+    svg.style.transformOrigin = '0 0';
+    var effectiveZoom = autoFit ? fitScale * zoom : zoom;
+    var offsetX = autoFit ? fitOffsetX : 0;
+    var offsetY = autoFit ? fitOffsetY : 0;
+    svg.style.transform = 'translate(' + offsetX + 'px, ' + offsetY + 'px) translate(' + panX + 'px, ' + panY + 'px) scale(' + effectiveZoom + ')';
+    label.textContent = Math.round(effectiveZoom * 100) + '%';
+    range.value = String(Math.round(zoom * 100));
+    var layoutZoom = autoFit ? fitScale * zoom : zoom;
+    frame.style.height = Math.max(0, Math.round(baseFrameHeight * layoutZoom)) + 'px';
+  }
+
+  function setZoom(next) {
+    autoFit = false;
+    zoom = clamp(Number(next.toFixed(2)), minZoom, maxZoom);
+    apply();
+  }
+
+  function zoomBy(delta) {
+    setZoom(zoom + delta);
+  }
+
+  function fitToFrame() {
+    var frameWidth = frame.clientWidth || 1;
+    var frameHeight = Math.max(frame.clientHeight || 0, baseFrameHeight);
+    var viewBox = svg.viewBox && svg.viewBox.baseVal ? svg.viewBox.baseVal : null;
+    var svgWidth = viewBox && viewBox.width ? viewBox.width : svg.clientWidth || frameWidth;
+    var svgHeight = viewBox && viewBox.height ? viewBox.height : svg.clientHeight || frameHeight;
+    var fit = Math.min((frameWidth - 16) / svgWidth, (frameHeight - 16) / svgHeight);
+    var presentationBoost = 1.35;
+    fitScale = clamp(Number(((fit || 1) * presentationBoost).toFixed(2)), minZoom, maxZoom);
+    fitOffsetX = 0;
+    fitOffsetY = 0;
+    zoom = 1;
+    panX = 0;
+    panY = 0;
+    autoFit = true;
+    apply();
+  }
+
+  zoomIn.addEventListener('click', function () { zoomBy(step); });
+  zoomOut.addEventListener('click', function () { zoomBy(-step); });
+  zoomReset.addEventListener('click', function () {
+    fitToFrame();
+  });
+  range.addEventListener('input', function () {
+    autoFit = false;
+    zoom = clamp(Number(range.value) / 100, minZoom, maxZoom);
+    apply();
+  });
+  frame.addEventListener('wheel', function (event) {
+    event.preventDefault();
+    autoFit = false;
+    zoomBy(event.deltaY > 0 ? -step : step);
+  }, { passive: false });
+  frame.addEventListener('pointerdown', function (event) {
+    if (event.button !== 0) return;
+    autoFit = false;
+    dragging = true;
+    frame.classList.add('is-dragging');
+    origin = { x: event.clientX - panX, y: event.clientY - panY };
+    frame.setPointerCapture(event.pointerId);
+  });
+  frame.addEventListener('pointermove', function (event) {
+    if (!dragging || !origin) return;
+    panX = event.clientX - origin.x;
+    panY = event.clientY - origin.y;
+    apply();
+  });
+  function stopDragging() {
+    dragging = false;
+    origin = null;
+    frame.classList.remove('is-dragging');
+  }
+  frame.addEventListener('pointerup', stopDragging);
+  frame.addEventListener('pointercancel', stopDragging);
+  window.addEventListener('resize', function () {
+    if (autoFit) fitToFrame();
+  });
+
+  fitToFrame();
+})();
+</script>`;
 }
 
 function extractMermaidBlock(rendered) {
@@ -2030,6 +2248,14 @@ function renderFlowchartSvg(source) {
       continue;
     }
     if (line.startsWith("subgraph ") || line === "end" || line.startsWith("%%")) continue;
+    const nodeDefMatch = line.match(/^([A-Za-z0-9_-]+)\[(.*)\]$/);
+    if (nodeDefMatch && !line.includes("-->")) {
+      const nodeId = nodeDefMatch[1];
+      const nodeLabel = parseMermaidNodeLabel(nodeDefMatch[2]);
+      if (!nodes.has(nodeId)) nodes.set(nodeId, { id: nodeId, label: nodeLabel });
+      else nodes.get(nodeId).label = nodeLabel;
+      continue;
+    }
     const edgeMatch = line.match(/^([A-Za-z0-9_-]+)(?:\[(.*?)\])?\s*-\->\s*([A-Za-z0-9_-]+)(?:\[(.*?)\])?$/);
     if (!edgeMatch) continue;
     const from = edgeMatch[1];
@@ -2043,10 +2269,10 @@ function renderFlowchartSvg(source) {
   if (!edges.length) return "";
   const ordered = buildNodeOrder(edges);
   const horizontal = direction === "LR" || direction === "RL";
-  const nodeWidth = horizontal ? 180 : 240;
-  const nodeHeight = horizontal ? 74 : 56;
-  const gapX = horizontal ? 48 : 40;
-  const gapY = horizontal ? 40 : 58;
+  const nodeWidth = horizontal ? 220 : 280;
+  const nodeHeight = horizontal ? 86 : 66;
+  const gapX = horizontal ? 42 : 46;
+  const gapY = horizontal ? 42 : 62;
   const padding = 24;
   const layout = ordered.map((id, index) => {
     const x = horizontal ? padding + index * (nodeWidth + gapX) : padding + (index % 2) * (nodeWidth + gapX);
@@ -2062,9 +2288,9 @@ function renderFlowchartSvg(source) {
     const label = nodeLabel(nodes.get(item.id) ? nodes.get(item.id).label : item.id);
     return `
       <g transform="translate(${item.x}, ${item.y})">
-        <rect rx="14" ry="14" width="${nodeWidth}" height="${nodeHeight}" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"></rect>
-        <text x="${nodeWidth / 2}" y="${nodeHeight / 2 - 4}" text-anchor="middle" font-size="14" font-weight="600" fill="#0f172a">${escapeXml(label.line1)}</text>
-        ${label.line2 ? `<text x="${nodeWidth / 2}" y="${nodeHeight / 2 + 14}" text-anchor="middle" font-size="12" fill="#475569">${escapeXml(label.line2)}</text>` : ""}
+        <rect rx="16" ry="16" width="${nodeWidth}" height="${nodeHeight}" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="${nodeWidth / 2}" y="${nodeHeight / 2 - 6}" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">${escapeXml(label.line1)}</text>
+        ${label.line2 ? `<text x="${nodeWidth / 2}" y="${nodeHeight / 2 + 16}" text-anchor="middle" font-size="13" fill="#475569">${escapeXml(label.line2)}</text>` : ""}
       </g>`;
   }).join("");
   const arrowMarkup = edges.map(([from, to]) => {
@@ -2077,11 +2303,11 @@ function renderFlowchartSvg(source) {
     const y2 = horizontal ? toNode.y + nodeHeight / 2 : toNode.y;
     const marker = "url(#kvdf-arrow)";
     return horizontal
-      ? `<path d="M ${x1} ${y1} C ${x1 + 24} ${y1}, ${x2 - 24} ${y2}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}"></path>`
-      : `<path d="M ${x1} ${y1} C ${x1} ${y1 + 24}, ${x2} ${y2 - 24}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}"></path>`;
+      ? `<path d="M ${x1} ${y1} C ${x1 + 24} ${y1}, ${x2 - 24} ${y2}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}" vector-effect="non-scaling-stroke"></path>`
+      : `<path d="M ${x1} ${y1} C ${x1} ${y1 + 24}, ${x2} ${y2 - 24}, ${x2} ${y2}" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="${marker}" vector-effect="non-scaling-stroke"></path>`;
   }).join("");
   return `
-    <svg viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Planner visual diagram">
+    <svg viewBox="0 0 ${svgWidth} ${svgHeight}" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Planner visual diagram">
       <defs>
         <marker id="kvdf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
@@ -2109,10 +2335,29 @@ function buildNodeOrder(edges) {
 }
 
 function nodeLabel(id) {
-  const label = String(id || "").replace(/_/g, " ");
+  const label = String(id || "").replace(/\\n/g, "\n").replace(/_/g, " ");
+  const splitLines = label.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  if (splitLines.length > 1) {
+    return {
+      line1: splitLines[0],
+      line2: splitLines[1]
+    };
+  }
   const parts = label.split(/\s+/).filter(Boolean);
   if (parts.length <= 2) return { line1: titleCase(label), line2: "" };
   return { line1: titleCase(parts.slice(0, 2).join(" ")), line2: titleCase(parts.slice(2).join(" ")) };
+}
+
+function parseMermaidNodeLabel(value) {
+  const raw = String(value || "")
+    .trim()
+    .replace(/^"(.*)"$/, "$1")
+    .replace(/^'(.*)'$/, "$1")
+    .replace(/\\n/g, "\n");
+  const lines = raw.split(/\n+/).map((line) => line.trim()).filter(Boolean);
+  if (!lines.length) return "";
+  if (lines.length === 1) return lines[0];
+  return `${lines[0]}\n${lines[1]}`;
 }
 
 function titleCase(value) {

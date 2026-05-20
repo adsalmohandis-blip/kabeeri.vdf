@@ -10,6 +10,7 @@ It is built for:
 
 The plugin is intentionally lightweight:
 - KVDF Core owns the security gate policy.
+- KVDF Core also owns the read-only security gate status surface.
 - Security Auditor owns the scanner implementation.
 - The plugin does not require external security tools.
 - The plugin is shared across owner, vibe, and plugin tracks.

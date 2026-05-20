@@ -1606,7 +1606,24 @@ function validatePolicyState(pass, fail) {
   validateJson(".kabeeri/policies/policy_results.json", pass, fail);
   const results = safeRead(".kabeeri/policies/policy_results.json", "results");
   validatePolicyResults(results, pass, fail);
+  if (fileExists(".kabeeri/policies/security_gate_policy.json")) {
+    validateJson(".kabeeri/policies/security_gate_policy.json", pass, fail);
+    validateSecurityGatePolicy(readJsonFile(".kabeeri/policies/security_gate_policy.json"), pass, fail);
+  } else {
+    pass("security gate policy missing; default policy will be used");
+  }
   pass(`policy definitions checked (${checked})`);
+}
+
+function validateSecurityGatePolicy(policy, pass, fail) {
+  if (String(policy.security_gate_policy_version || "") !== "1") fail("security gate policy missing security_gate_policy_version");
+  if (!Array.isArray(policy.required_scopes)) fail("security gate policy required_scopes must be an array");
+  if (!Array.isArray(policy.required_tracks)) fail("security gate policy required_tracks must be an array");
+  if (!Array.isArray(policy.required_before)) fail("security gate policy required_before must be an array");
+  if (!Array.isArray(policy.blocked_statuses)) fail("security gate policy blocked_statuses must be an array");
+  if (!Array.isArray(policy.warning_statuses)) fail("security gate policy warning_statuses must be an array");
+  if (!["warn", "block", "ignore"].includes(String(policy.missing_plugin_behavior || "warn"))) fail("security gate policy missing_plugin_behavior must be warn, block, or ignore");
+  pass("security gate policy checked");
 }
 
 function validatePolicyDefinition(policy, file, pass, fail) {

@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779142128721
-- Generated at: 2026-05-18T22:08:48.721Z
+- Report ID: kvdf-cleanup-1779250006135
+- Generated at: 2026-05-20T04:06:46.135Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,10 +11,10 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            2836                                       
+Total files            2759                                       
 Total folders          13                                         
 Plugin total           15                                         
-Active plugins         9                                          
+Active plugins         8                                          
 Commands               15                                         
 Unknown folders        0                                          
 Traceability complete  no                                         
@@ -28,7 +28,7 @@ repo-structure  Keep the repository foldering map authoritative.                
 kvdf-dev        Keep the framework-development bundle aligned with its manifest, commands, docs, and runtime.  Review the kvdf-dev plugin bundle and command surface.                                
 pipeline        The packet traceability chain still needs review before execution.                             Complete traceability before starting the cleanup execution.                          
 dead-code       Review 4 file(s) flagged as dead-code candidates by the file inspection pass.                  Review dead-code candidates file by file and remove or consolidate the unused surface.
-stale-docs      Review 3 file(s) with stale wording, legacy aliases, or future-only language.                  Inspect docs one by one and refresh outdated wording, references, and status claims.  
+stale-docs      Review 4 file(s) with stale wording, legacy aliases, or future-only language.                  Inspect docs one by one and refresh outdated wording, references, and status claims.  
 spec-drift      Review 4 file(s) flagged for possible wrong-spec or drift signals.                             Compare each flagged file with the current source of truth and correct drifted specs. 
 blocked-flows   Run the workflow inspection pass to look for blocked or waiting-state deadlocks.               Resolve blocked workflow states and make finalization paths idempotent.               
 
@@ -36,14 +36,14 @@ blocked-flows   Run the workflow inspection pass to look for blocked or waiting-
 
 Folder      Files  Primary extension  Role           
 ----------  -----  -----------------  ---------------
-.kabeeri    851    .md                workspace state
+.kabeeri    853    .md                workspace state
 knowledge   464    .md                project surface
-packs       438    .md                project surface
+packs       439    .md                project surface
 plugins     387    .md                plugin bundles 
-docs        293    .md                documentation  
-workspaces  140    .json              project surface
-src         134    .js                runtime source 
-schemas     105    .md                project surface
+docs        296    .md                documentation  
+src         136    .js                runtime source 
+schemas     107    .md                project surface
+workspaces  53     .json              project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
 .gitignore  1      [no extension]     project surface
@@ -53,10 +53,10 @@ bin         1      .js                project surface
 
 Extension       Files
 --------------  -----
-.md             1675 
-.json           688  
-.js             206  
-.html           181  
+.md             1600 
+.json           683  
+.js             208  
+.html           182  
 .docx           58   
 .jsonl          15   
 .example        5    
@@ -70,9 +70,9 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            1830 
+Scanned files            1838 
 Dead code candidates     4    
-Stale docs candidates    3    
+Stale docs candidates    4    
 Spec drift candidates    4    
 Blocked flow candidates  0    
 
@@ -83,8 +83,9 @@ dead_code_candidates   docs/reports/VIBE_MAINTAINER_SUMMARY.md             16   
 dead_code_candidates   plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
 dead_code_candidates   plugins/vibe-maintainer/runtime/vibe_maintainer.js  521   ["Dead code", String(report.summary ? report.summary.dead_code_candidates || 0 : 0)],                                                                              
 stale_docs             docs/reports/KVDF_FULL_REPOSITORY_AUDIT.md          522   - The repo supports it, but old wording can still confuse users if not kept consistent.                                                                            
+stale_docs             docs/workflows/KVDF_STATE_RESYNC.md                 6     Evolution is planned. It exists to prevent stale planning drafts, outdated                                                                                         
 stale_docs             plugins/vibe-maintainer/runtime/vibe_maintainer.js  1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },
-stale_docs             tests/service.unit.test.js                          77    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           
+stale_docs             tests/service.unit.test.js                          78    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_AUDIT.md               18    Spec drift            | 0                                                                                                                                          
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_SUMMARY.md             18    Spec drift            | 0                                                                                                                                          
 spec_drift_candidates  plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
@@ -117,15 +118,15 @@ No per-file review evidence recorded.
 
 ## kvdf-dev Plugin
 
-Plugin    Status   Track            Required folders                                    Commands
---------  -------  ---------------  --------------------------------------------------  --------
-kvdf-dev  enabled  framework_owner  commands, docs, prompts, schemas, templates, tests  24      
+Plugin    Status   Track            Required folders                                             Commands
+--------  -------  ---------------  -----------------------------------------------------------  --------
+kvdf-dev  enabled  framework_owner  commands, docs, prompts, schemas, runtime, templates, tests  25      
 
 ## Recommendations
 
 - Complete the packet traceability chain before starting execution.
 - Review 4 dead-code candidates flagged by the file inspection pass.
-- Refresh 3 stale-doc candidates flagged by the file inspection pass.
+- Refresh 4 stale-doc candidates flagged by the file inspection pass.
 - Resolve 4 possible spec-drift candidates.
 - Resolve active Evolution state first: needs_follow_up.
 

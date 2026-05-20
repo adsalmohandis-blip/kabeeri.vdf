@@ -21,6 +21,11 @@ function shouldOpenBrowser(options = {}) {
   return isExplicitlyEnabled(options);
 }
 
+function shouldOpenPreviewBrowser(options = {}) {
+  if (isOpenSuppressed()) return false;
+  return isExplicitlyEnabled(options);
+}
+
 function shouldLaunchFullscreen(options = {}) {
   return options.fullscreen === true
     || options.fullscreen === "true"
@@ -39,7 +44,7 @@ function injectFullscreenShell(html, options = {}) {
   if (!shouldLaunchFullscreen(options) || typeof html !== "string") return html;
   const script = `
 <style>
-  html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+  html, body { width: 100%; min-height: 100%; margin: 0; overflow-x: hidden; overflow-y: auto; }
   body { overscroll-behavior: none; }
 </style>
 <script>
@@ -80,7 +85,14 @@ function isExplicitlyDisabled(options = {}) {
     || options.no_open === "true";
 }
 
+function isOpenSuppressed() {
+  return process.env.CI === "true"
+    || process.env.NODE_ENV === "test"
+    || process.env.KVDF_NO_OPEN === "1";
+}
+
 function openExternalUrl(url) {
+  if (isOpenSuppressed()) return;
   const { spawn } = require("child_process");
   const command = process.platform === "win32" ? "cmd" : process.platform === "darwin" ? "open" : "xdg-open";
   const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
@@ -96,5 +108,6 @@ module.exports = {
   openExternalUrl,
   shouldLaunchFullscreen,
   shouldOpenBrowser,
+  shouldOpenPreviewBrowser,
   shouldStartLocalServer
 };

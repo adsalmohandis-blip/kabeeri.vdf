@@ -31,7 +31,8 @@ const { objectLines, recordLines } = require("../src/cli/services/report_output"
 const { policyReportItem, taskReportItem } = require("../src/cli/services/report_items");
 const { appendJsonLine, readJsonLines, writeJsonLines } = require("../src/cli/services/jsonl");
 const { readStateArray, summarizeBy } = require("../src/cli/services/state_utils");
-const { buildFullscreenUrl, buildLocalServerSkipMessage, injectFullscreenShell, shouldLaunchFullscreen, shouldOpenBrowser, shouldStartLocalServer } = require("../src/cli/services/local_server");
+const { buildFullscreenUrl, buildLocalServerSkipMessage, injectFullscreenShell, shouldLaunchFullscreen, shouldOpenBrowser, shouldOpenPreviewBrowser, shouldStartLocalServer } = require("../src/cli/services/local_server");
+const { buildMermaidPreviewHtml } = require("../src/cli/services/mermaid_preview");
 const { openPlannerPreview, buildPlannerPreviewHtml } = require("../src/cli/commands/planner");
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
 const { buildBootContext } = require("../src/core/bootstrap");
@@ -420,6 +421,65 @@ test("plugin loader surfaces bundle contracts for installed plugin bundles", () 
   assert.ok(ecommerce.bundle_contract.next_exact_action.length > 0);
 });
 
+test("kvdf-dev plugin manifest documents the bundle contract and surfaces", () => {
+  const manifestPath = path.join(repoRoot(), "plugins", "kvdf-dev", "plugin.json");
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+  assert.strictEqual(manifest.plugin_id, "kvdf-dev");
+  assert.strictEqual(manifest.track, "framework_owner");
+  assert.strictEqual(manifest.command_entrypoint, "plugins/kvdf-dev/bootstrap.js");
+  assert.strictEqual(manifest.runtime_entrypoint, "plugins/kvdf-dev/runtime/index.js");
+  assert.ok(Array.isArray(manifest.required_folders));
+  assert.ok(manifest.required_folders.includes("runtime"));
+  assert.ok(manifest.required_folders.includes("tests"));
+  assert.ok(Array.isArray(manifest.command_surface));
+  assert.ok(manifest.command_surface.includes("kvdf task packet"));
+  assert.ok(manifest.command_surface.includes("kvdf plugins show kvdf-dev"));
+  assert.ok(Array.isArray(manifest.docs_surface));
+  assert.ok(manifest.docs_surface.includes("plugins/kvdf-dev/docs/index.md"));
+  assert.ok(manifest.docs_surface.includes("plugins/kvdf-dev/runtime/README.md"));
+  assert.ok(manifest.docs_surface.includes("plugins/kvdf-dev/governance/README.md"));
+});
+
+test("state resync governance docs define the no planning without resync guard", () => {
+  const workflowInstructions = fs.readFileSync(path.join(repoRoot(), "knowledge", "governance", "KVDF_WORKFLOW_INSTRUCTIONS.md"), "utf8");
+  const resyncWorkflow = fs.readFileSync(path.join(repoRoot(), "docs", "workflows", "KVDF_STATE_RESYNC.md"), "utf8");
+  const plannerWorkflow = fs.readFileSync(path.join(repoRoot(), "docs", "workflows", "EVOLUTION_PLANNER_WORKFLOW.md"), "utf8");
+  const reportTemplate = fs.readFileSync(path.join(repoRoot(), "docs", "workflows", "CURRENT_STATE_REPORT_TEMPLATE.md"), "utf8");
+  const promptPack = fs.readFileSync(path.join(repoRoot(), "packs", "planner", "state-resync.prompt.md"), "utf8");
+  const docsSiteAppJs = fs.readFileSync(path.join(repoRoot(), "docs", "site", "assets", "js", "app.js"), "utf8");
+
+  assert.match(workflowInstructions, /State Resync Before Planning/);
+  assert.match(workflowInstructions, /State Resync is file-first, not GitHub-first/);
+  assert.match(workflowInstructions, /source-of-truth priority/i);
+  assert.match(workflowInstructions, /supporting state only, not the only source of\s+current progress/);
+  assert.match(workflowInstructions, /GitHub is an optional secondary provider\/plugin evidence/);
+  assert.match(resyncWorkflow, /State Resync is file-first, not GitHub-first/);
+  assert.match(resyncWorkflow, /For application repositories \/ Vibe track/);
+  assert.match(resyncWorkflow, /For KVDF Core repository work/);
+  assert.match(resyncWorkflow, /GitHub is an optional secondary provider\/plugin when enabled/);
+  assert.match(resyncWorkflow, /Local-Only Mode/);
+  assert.match(resyncWorkflow, /Source Control Provider Modes/);
+  assert.match(resyncWorkflow, /direct-to-main/);
+  assert.match(resyncWorkflow, /Current-State Report/);
+  assert.match(resyncWorkflow, /stop and ask the Owner/);
+  assert.match(plannerWorkflow, /No Planning Without State Resync/);
+  assert.match(plannerWorkflow, /Current-State Report/);
+  assert.match(plannerWorkflow, /stale/);
+  assert.match(plannerWorkflow, /app files, docs, specs, source, and tests outrank remote-provider state/);
+  assert.match(reportTemplate, /Source Control Mode/);
+  assert.match(reportTemplate, /Primary File-State Evidence/);
+  assert.match(reportTemplate, /Future-Only Evolutions/);
+  assert.match(reportTemplate, /Evidence for recommended next Evolution/);
+  assert.match(reportTemplate, /Do-Not-Proceed Flag/);
+  assert.match(promptPack, /No Planning Without State Resync/);
+  assert.match(promptPack, /Current-State Report/);
+  assert.match(promptPack, /File-first State Summary/);
+  assert.match(promptPack, /GitHub is an optional secondary provider\/plugin/);
+  assert.match(docsSiteAppJs, /State Resync before planning/);
+  assert.match(docsSiteAppJs, /file-first source-of-truth/i);
+  assert.match(docsSiteAppJs, /GitHub is optional secondary provider\/plugin/i);
+});
+
 test("questionnaire helpers normalize answers and confidence", () => {
   assert.strictEqual(normalizeAnswerValue("  Maybe Later  "), "maybe_later");
   assert.strictEqual(inferAnswerConfidence("maybe"), "low");
@@ -771,26 +831,91 @@ test("local server helpers skip serve mode in non-interactive environments", () 
 });
 
 test("visual server helpers support no-open and fullscreen options", () => {
+  const previousCi = process.env.CI;
+  const previousNodeEnv = process.env.NODE_ENV;
+  const previousNoOpen = process.env.KVDF_NO_OPEN;
+  delete process.env.CI;
+  delete process.env.NODE_ENV;
+  delete process.env.KVDF_NO_OPEN;
+  try {
   assert.strictEqual(shouldOpenBrowser({ open: true }), true);
   assert.strictEqual(shouldOpenBrowser({ open: true, "no-open": true }), false);
+  assert.strictEqual(shouldOpenPreviewBrowser({}), false);
+  assert.strictEqual(shouldOpenPreviewBrowser({ open: true }), true);
+  assert.strictEqual(shouldOpenPreviewBrowser({ "no-open": true }), false);
   assert.strictEqual(shouldLaunchFullscreen({ fullscreen: true }), true);
   assert.match(buildFullscreenUrl("http://127.0.0.1:4188/", { fullscreen: true }), /fullscreen=1/);
   assert.match(injectFullscreenShell("<html><body>Test</body></html>", { fullscreen: true }), /requestFullscreen/);
+  } finally {
+    if (previousCi === undefined) delete process.env.CI;
+    else process.env.CI = previousCi;
+    if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+    else process.env.NODE_ENV = previousNodeEnv;
+    if (previousNoOpen === undefined) delete process.env.KVDF_NO_OPEN;
+    else process.env.KVDF_NO_OPEN = previousNoOpen;
+  }
 });
 
-test("planner visual previews can open in browser and request fullscreen", () => {
+test("shared mermaid preview shell keeps scrollable zoomable settings", () => {
+  const html = buildMermaidPreviewHtml({
+    title: "Shared Mermaid Preview",
+    summary: ["Track: owner"],
+    rendered: "# Shared\n\n```mermaid\nflowchart TD\nA[Alpha] --> B[Beta]\n```",
+    bodyHtml: "<section><h2>Notes</h2></section>",
+    fallbackLabel: "Shared markdown"
+  });
+
+  assert.match(html, /Shared Mermaid Preview/);
+  assert.match(html, /Shared markdown/);
+  assert.match(html, /overflow-y: auto/);
+  assert.match(html, /min="0"/);
+  assert.match(html, /data-zoom-in/);
+  assert.match(html, /Diagram Graph/);
+  assert.match(html, /Notes/);
+});
+
+test("planner visual previews write files and open only when explicitly requested", () => {
   withTempDir((dir) => {
     const opened = [];
-    const preview = openPlannerPreview(
-      { report_type: "kvdf_planner_visual", track: "framework_owner", planner_mode: "owner", delivery_mode: "direct_main", goal: "Preview planner" },
-      "# Planner Visual\n\n```mermaid\nflowchart TD\nA --> B\n```",
+    const previousCi = process.env.CI;
+    const previousNodeEnv = process.env.NODE_ENV;
+    const previousNoOpen = process.env.KVDF_NO_OPEN;
+    let preview;
+    delete process.env.CI;
+    delete process.env.NODE_ENV;
+    delete process.env.KVDF_NO_OPEN;
+    try {
+      preview = openPlannerPreview(
+      {
+        report_type: "kvdf_planner_visual",
+        track: "framework_owner",
+        planner_mode: "owner",
+        delivery_mode: "direct_main",
+        goal: "Preview planner",
+        task_punch: {
+          tasks: [
+            { id: "preview-docs", title: "Docs Task", status: "proposed", allowed_files: ["docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md"], validation_commands: ["node bin/kvdf.js validate"] },
+            { id: "preview-cli", title: "CLI Task", status: "proposed", allowed_files: ["src/cli/commands/planner.js"], validation_commands: ["npm test"] },
+            { id: "preview-tests", title: "Tests Task", status: "proposed", allowed_files: ["tests/cli.integration.test.js"], validation_commands: ["npm run check"] }
+          ]
+        }
+      },
+      "# Planner Visual\n\n```mermaid\nflowchart TD\nOwnerDirection[Owner Direction] --> PlannerProposal[Planner Proposal]\nPlannerProposal --> OwnerApproval[Owner Approval]\nOwnerApproval --> Evolution[Evolution]\nEvolution --> TaskPunch[Task Punch]\nTaskPunch --> DocsTask[Docs Task Planner Layer Docs]\nTaskPunch --> CLITask[CLI Task Planner CLI Wiring]\nTaskPunch --> TestsTask[Tests Task Integration Coverage]\nDocsTask --> Validation[Validation]\nCLITask --> Validation\nTestsTask --> Validation\nValidation --> DirectToMainCommit[Direct-to-main Commit]\n```",
       "visual",
-      { open: true, fullscreen: true },
+      { fullscreen: true, open: true },
       {
         repoRoot: () => dir,
         openExternalUrl: (url) => opened.push(url)
       }
     );
+    } finally {
+      if (previousCi === undefined) delete process.env.CI;
+      else process.env.CI = previousCi;
+      if (previousNodeEnv === undefined) delete process.env.NODE_ENV;
+      else process.env.NODE_ENV = previousNodeEnv;
+      if (previousNoOpen === undefined) delete process.env.KVDF_NO_OPEN;
+      else process.env.KVDF_NO_OPEN = previousNoOpen;
+    }
 
     assert.strictEqual(opened.length, 1);
     assert.match(opened[0], /^file:\/\//);
@@ -800,5 +925,11 @@ test("planner visual previews can open in browser and request fullscreen", () =>
     assert.match(html, /Planner Visual Preview/);
     assert.match(html, /requestFullscreen/);
     assert.match(html, /flowchart TD/);
+    assert.match(html, /data-zoom-in/);
+    assert.match(html, /data-zoom-range/);
+    assert.match(html, /Planner markdown/);
+    assert.match(html, /Task Breakdown/);
+    assert.match(html, /Allowed Files/);
+    assert.match(html, /Validation/);
   });
 });

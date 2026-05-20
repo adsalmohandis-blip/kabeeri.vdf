@@ -143,8 +143,8 @@ Planner outputs now include an explicit `source_control` object so Git, no sourc
 
 Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.
-Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Add `--open` to write a browser preview HTML file for the visual output, `--no-open` to keep the command stdout-only, and `--fullscreen` to request a fullscreen preview shell. The visual renderer plugin also reads the approved current plan when `--from-current` is used, so the rendered markdown stays aligned with the shared approval gate.
-Use `kvdf planner pipeline` to turn a raw idea into a documentation map, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action. It supports the same `--open`, `--no-open`, and `--fullscreen` preview behavior for browser-based inspection.
+Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Visual previews stay stdout-only by default; use `--open` to launch a browser preview, `--no-open` to force file-only output, and `--fullscreen` to request a fullscreen preview shell. The visual renderer plugin also reads the approved current plan when `--from-current` is used, so the rendered markdown stays aligned with the shared approval gate.
+Use `kvdf planner pipeline` to turn a raw idea into a documentation map, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action. It uses the same stdout-only-by-default preview behavior for visual inspection, with `--open` to launch the browser preview, `--no-open` as the opt-out, and `--fullscreen` for a fullscreen preview shell.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
 
@@ -1482,6 +1482,10 @@ kvdf security scan --include app/,routes/,config/
 kvdf security report
 kvdf security report --id security-scan-001 --output .kabeeri/security/security.md
 kvdf security gate
+kvdf security gate --json
+kvdf security gate --task task-001 --json
+kvdf security gate --evolution current --json
+kvdf security gate --handoff --json
 kvdf security list
 kvdf security show security-scan-001
 kvdf security-auditor status
@@ -1495,9 +1499,13 @@ kvdf plugins uninstall security-auditor
 
 `security scan` performs a lightweight local pattern scan for common secrets such as private keys, API keys, Stripe secret keys, GitHub tokens, AWS access keys, `.env` files, and generic secret assignments. Results are stored in `.kabeeri/security/security_scans.json`; the latest scan is also written to `.kabeeri/security/latest_security_scan.json` and `.kabeeri/security/latest_security_report.md`.
 
-`security gate` runs a scan and exits with an error if critical or high findings exist. It is intended as a pre-AI, pre-release, and pre-publish guard. It is not a replacement for a professional security scanner.
+`security gate` reports the current security gate state from the latest recorded scan and plugin readiness. Use `--task`, `--evolution current`, or `--handoff` to scope the gate to a lifecycle context. Add `--required` or `--strict` when the current invocation should override the default non-blocking policy. The gate is policy/status metadata, not the scanner itself.
+
+The Security Gate policy source is `.kabeeri/policies/security_gate_policy.json`. When that file is missing, KVDF Core uses the built-in default policy, which is non-blocking and treats the security-auditor plugin as optional unless a scope, track, or lifecycle moment explicitly requires it.
 
 `security-auditor` is the optional plugin-scoped scanner surface. It writes `.kabeeri/security/security_auditor_scans.json`, stays shared across owner/vibe/plugin tracks, and can be installed or removed without changing the core security gate policy.
+
+See `docs/workflows/SECURITY_GATE_POLICY.md` for the policy model and lifecycle enforcement rules.
 
 ## Migration Safety
 

@@ -120,7 +120,7 @@ const { serveSite } = require("./commands/site");
 const { budget } = require("./commands/budget");
 const { contextPack, preflight, modelRoute, findLatestContextPackForTask, getContextPack } = require("./commands/cost_control");
 const { handoff } = require("./commands/handoff");
-const { security, getLatestSecurityScan } = require("./commands/security");
+const { security, getLatestSecurityScan, buildSecurityGateState } = require("./commands/security");
 const { securityAuditor } = require("./commands/security_auditor");
 const { migration, getMigrationPlan, latestMigrationChecks } = require("./commands/migration");
 const { token, defaultForbiddenFiles } = require("./commands/token");
@@ -2887,6 +2887,14 @@ function task(action, id, flags, rest = []) {
         throw new Error(`Task completion blocked: verification report does not match ${taskId}.`);
       }
     }
+    const securityGate = buildTaskSecurityGateState(found, {
+      flags,
+      evolutionState,
+      project
+    });
+    if (securityGate.required && securityGate.status === "blocked") {
+      throw new Error(`Task completion blocked by security gate: ${securityGate.next_action}`);
+    }
     const finishedAt = new Date().toISOString();
     found.status = "done";
     found.completed_at = finishedAt;
@@ -2923,6 +2931,7 @@ function task(action, id, flags, rest = []) {
         path: verificationPath,
         matches_task: true
       },
+      security_gate: securityGate,
       archive_trail: archiveTrail,
       scheduler_route: schedulerRoute,
       trash_task: result.trashed_task || archiveTrail.item || null,
@@ -2943,6 +2952,7 @@ function task(action, id, flags, rest = []) {
         completed_at: finishedAt,
         completed_by: getOwnerActor(flags)
       },
+      security_gate: securityGate,
       completion_report: completionReport.report
     }, null, 2));
     return;
@@ -9803,6 +9813,46 @@ function generateVerificationReport(task, coverage = null) {
   writeTextFile(`.kabeeri/reports/${task.id}.verification.md`, `${lines.join("\n")}\n`);
 }
 
+function resolveSecurityGateTrackFromTask(task = {}, project = {}) {
+  const workspaceKind = String(project.workspace_kind || "").toLowerCase();
+  if (Array.isArray(task.app_usernames) && task.app_usernames.length) return "vibe";
+  if (workspaceKind === "developer_app") return "vibe";
+  const taskTrack = String(task.track || task.evolution_track || task.workspace_track || "").trim().toLowerCase();
+  if (["vibe_app_developer", "developer_app", "app_developer", "vibe", "app"].includes(taskTrack)) return "vibe";
+  if (["plugin", "security-auditor"].includes(taskTrack)) return "plugin";
+  return "owner";
+}
+
+function buildTaskSecurityGateState(task, options = {}) {
+  const evolutionState = options.evolutionState && typeof options.evolutionState === "object" ? options.evolutionState : null;
+  const currentChange = evolutionState && evolutionState.current_change_id && Array.isArray(evolutionState.changes)
+    ? evolutionState.changes.find((item) => item.change_id === evolutionState.current_change_id) || null
+    : null;
+  const required = Boolean(
+    options.flags && (
+      options.flags.required ||
+      options.flags.strict ||
+      options.flags["security-required"] ||
+      options.flags.security_required ||
+      options.flags["strict-security"] ||
+      options.flags.require_security_gate
+    )
+    || task.security_gate_required
+    || (Array.isArray(task.policy_gates) && task.policy_gates.some((item) => String(item).toLowerCase() === "security"))
+    || (currentChange && (
+      currentChange.security_gate_required ||
+      (Array.isArray(currentChange.policy_gates) && currentChange.policy_gates.some((item) => String(item).toLowerCase() === "security"))
+    ))
+  );
+  return buildSecurityGateState({
+    track: resolveSecurityGateTrackFromTask(task, options.project || {}),
+    scope: "task",
+    task: task.id,
+    required,
+    persist: true
+  });
+}
+
 function generateCompletionReport(task, details = {}) {
   const reportPath = `.kabeeri/reports/${task.id}.completion.json`;
   const report = {
@@ -9815,6 +9865,7 @@ function generateCompletionReport(task, details = {}) {
     completed_by: details.completed_by || task.completed_by || null,
     verification_report_path: details.verification_report_path || null,
     verification_report: details.verification_report || null,
+    security_gate: details.security_gate || null,
     archive_trail_path: ".kabeeri/task_trash.json",
     archive_trail: details.archive_trail && typeof details.archive_trail === "object" ? details.archive_trail : null,
     scheduler_route_path: ".kabeeri/task_scheduler.json",

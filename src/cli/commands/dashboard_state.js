@@ -8,6 +8,7 @@ const { readGitRepositoryState, readGitStatus } = require("../services/git_snaps
 const { readStateArray, summarizeBy } = require("../services/state_utils");
 const { readJsonLines } = require("../services/jsonl");
 const { buildTaskLifecycleState, buildTaskLifecycleBoard } = require("./task_lifecycle");
+const { buildSecurityGateState } = require("./security");
 const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
 
 function collectDashboardState(options = {}, deps = {}) {
@@ -955,6 +956,18 @@ function buildPlannerDashboardState(options = {}) {
   const sourceControl = normalizePlannerSourceControl(currentPlan ? currentPlan.source_control : null);
   const versionPlan = buildPlannerVersionPlanSummary(currentPlan);
   const pipeline = buildPlannerPipelineSummary(currentPlan);
+  const securityGate = buildSecurityGateState({
+    track: currentPlan && String(currentPlan.track || "").toLowerCase().includes("vibe") ? "vibe" : "owner",
+    scope: "workspace",
+    evolution: currentPlan ? currentPlan.evolution_change_id || currentPlan.current_change_id || null : null,
+    required: Boolean(
+      currentPlan && (
+        currentPlan.security_gate_required ||
+        (Array.isArray(currentPlan.policy_gates) && currentPlan.policy_gates.some((item) => String(item).toLowerCase() === "security"))
+      )
+    ),
+    persist: false
+  });
   const visual = currentPlan && currentPlan.visual ? {
     available: true,
     graph_format: currentPlan.visual.graph && currentPlan.visual.graph.format ? currentPlan.visual.graph.format : (currentPlan.visual.format || "mermaid"),
@@ -999,6 +1012,7 @@ function buildPlannerDashboardState(options = {}) {
     source_control: sourceControl,
     version_plan: versionPlan,
     pipeline,
+    security_gate: securityGate,
     visual,
     task_punch: pipeline.task_punch,
     materialization,
@@ -1362,7 +1376,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
       createDashboardTable("owner_core_health", "KVDF Core Health", ["Check", "Status", "Evidence", "Next Action"], coreHealthRows(context), "No core health data yet.")
     ]),
     planner: createDashboardSection("planner", "Planner", plannerWidgets(context), [
-      createDashboardTable("owner_planner", "Planner Plans", ["Plan ID", "Status", "Mode", "Track", "Delivery", "Source Control", "Approved By", "Materialized", "Next Action"], plannerRows(context), "No approved planner plans yet.")
+      createDashboardTable("owner_planner", "Planner Plans", ["Plan ID", "Status", "Mode", "Track", "Delivery", "Source Control", "Approved By", "Materialized", "Security Gate", "Next Action"], plannerRows(context), "No approved planner plans yet.")
     ]),
     evolutions: createDashboardSection("evolutions", "Evolutions", evolutionWidgets(context), [
       createDashboardTable("owner_evolutions", "Evolutions", ["Evolution ID", "Title", "Status", "Version", "Track", "Source Control Mode", "Tasks", "Open Tasks", "Materialized", "Stop Condition"], evolutionRows(context), "No owner evolutions yet."),
@@ -1391,6 +1405,8 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     ]),
     governance: createDashboardSection("governance", "Security / Migration / Governance", governanceWidgets(context), [
       createDashboardTable("owner_governance", "Governance Blockers", ["Area", "Status", "Count", "Next Action"], governanceRows(context), "No governance blockers found.")
+      ,
+      createDashboardTable("owner_security_gate_details", "Security Gate Details", ["Scope", "Status", "Plugin", "Installed", "Enabled", "Available", "Active", "Blocked", "Warnings", "Required", "Strict", "Policy Source", "Target", "Next Action"], securityGateDetailRows(buildSecurityGateDashboardState(context, { track: "owner", scope: "workspace" })), "No security gate data yet.")
     ])
   };
 
@@ -1488,6 +1504,8 @@ function buildViberDashboardState(context = {}, deps = {}) {
     ]),
     validation_readiness: createDashboardSection("validation_readiness", "Validation / Readiness", validationWidgets(context), [
       createDashboardTable("viber_validation", "Validation Table", ["Check", "Status", "Evidence", "Next Action"], validationRows(context), "No validation data yet.")
+      ,
+      createDashboardTable("viber_app_security_details", "App Security Details", ["Scope", "Status", "Plugin", "Installed", "Enabled", "Available", "Active", "Blocked", "Warnings", "Required", "Strict", "Policy Source", "Target", "Next Action"], securityGateDetailRows(buildSecurityGateDashboardState(context, { track: "vibe", scope: "handoff" })), "No app security data yet.")
     ])
   };
 
@@ -1673,6 +1691,7 @@ function plannerWidgets(context) {
   return [
     dashboardWidget("owner_planner_mode", "Planner Mode", "status", context.plannerState.current_planner_mode || "none", currentPlan ? "ok" : "empty", "framework_owner", "derived", "Keep the planner track-aware."),
     dashboardWidget("owner_planner_materialization", "Materialization Status", "status", context.plannerState.materialization ? context.plannerState.materialization.status || "unknown" : "unknown", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ok" : "warning", "framework_owner", "derived", context.plannerState.next_action || "Materialize the plan."),
+    dashboardWidget("owner_planner_security_gate", "Planner Security Gate", "status", context.plannerState.security_gate ? context.plannerState.security_gate.status : "not_recorded", context.plannerState.security_gate && context.plannerState.security_gate.status === "blocked" ? "warning" : context.plannerState.security_gate && context.plannerState.security_gate.status === "warning" ? "warning" : "ok", "framework_owner", "derived", context.plannerState.security_gate ? context.plannerState.security_gate.next_action : "Security gate is optional for planner summaries."),
     dashboardWidget("owner_pipeline_status", "Idea-to-Evolution Pipeline Status", "status", context.plannerState.pipeline && context.plannerState.pipeline.available ? "available" : "missing", context.plannerState.pipeline && context.plannerState.pipeline.available ? "ok" : "empty", "framework_owner", "derived", "Use the pipeline as the governed path to evolution."),
     dashboardWidget("owner_visual_status", "Visual Planner Availability", "status", context.plannerState.visual && context.plannerState.visual.available ? "available" : "missing", context.plannerState.visual && context.plannerState.visual.available ? "ok" : "empty", "framework_owner", "derived", "Keep the visual planner and scope map available."),
     dashboardWidget("owner_next_action_planner", "Planner Next Action", "action", context.plannerState.next_action || "Run kvdf planner propose", "ok", "framework_owner", "derived", context.plannerState.next_action || "Run kvdf planner propose.")
@@ -1690,6 +1709,7 @@ function plannerRows(context) {
     context.plannerState.source_control && context.plannerState.source_control.mode ? context.plannerState.source_control.mode : "",
     currentPlan.approved_by || currentPlan.owner || "",
     context.plannerState.materialization ? context.plannerState.materialization.status || "unknown" : "unknown",
+    context.plannerState.security_gate ? context.plannerState.security_gate.status : "not_recorded",
     context.plannerState.next_action || ""
   ]];
 }
@@ -1890,22 +1910,108 @@ function reportsRows(context) {
   ];
 }
 
+function buildSecurityGateDashboardState(context = {}, options = {}) {
+  const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
+  const required = Boolean(
+    options.required ||
+    (currentEvolution && (
+      currentEvolution.security_gate_required ||
+      (Array.isArray(currentEvolution.policy_gates) && currentEvolution.policy_gates.some((item) => String(item).toLowerCase() === "security"))
+    ))
+  );
+  try {
+    return buildSecurityGateState({
+      track: options.track || context.workspace_track || "owner",
+      scope: options.scope || "workspace",
+      evolution: currentEvolution ? currentEvolution.change_id : null,
+      required,
+      persist: false
+    });
+  } catch (error) {
+    if (!/evolution not found|current evolution not found|ambiguous current evolution/i.test(String(error && error.message ? error.message : error))) {
+      throw error;
+    }
+    const target = currentEvolution ? {
+      task_id: null,
+      evolution_id: currentEvolution.change_id || currentEvolution.evolution_id || currentEvolution.id || null,
+      handoff_id: null,
+      evolution_status: currentEvolution.status || null
+    } : { task_id: null, evolution_id: null, handoff_id: null };
+    return {
+      report_type: "security_gate_state",
+      generated_at: new Date().toISOString(),
+      track: options.track || context.workspace_track || "owner",
+      scope: options.scope || "workspace",
+      task_id: null,
+      evolution_id: target.evolution_id,
+      handoff_id: null,
+      target,
+      required,
+      strict_blocking: false,
+      status: required ? "warning" : "not_required",
+      policy_source: "default",
+      findings_summary: { blocked: 0, warnings: 0 },
+      plugin: {
+        plugin_id: "security-auditor",
+        installed: false,
+        enabled: false,
+        available: false,
+        active: false
+      },
+      next_action: "Create or materialize the current evolution before running the security gate."
+    };
+  }
+}
+
 function governanceWidgets(context) {
+  const securityGate = buildSecurityGateDashboardState(context, { track: "owner", scope: "workspace" });
   return [
     dashboardWidget("owner_policy_blocks", "Policy Blockers", "warning", countRecords((context.plannerState && context.plannerState.current_plan && context.plannerState.current_plan.policy_blocks) || []), "ok", "framework_owner", "derived", "Resolve policy blockers before merge."),
-    dashboardWidget("owner_security_blocks", "Security Blockers", "warning", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), "ok", "framework_owner", "derived", "Security blockers stay visible."),
+    dashboardWidget("owner_security_gate", "Security Gate", "status", securityGate.status, securityGate.status === "blocked" ? "warning" : securityGate.status === "warning" ? "warning" : "ok", "framework_owner", "derived", securityGate.next_action),
     dashboardWidget("owner_migration_blocks", "Migration Blockers", "warning", countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open") : []), "ok", "framework_owner", "derived", "Migration blockers stay visible."),
     dashboardWidget("owner_handoff", "Handoff Readiness", "status", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ready" : "pending", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ok" : "warning", "framework_owner", "derived", "Handoff is only ready after materialization.")
   ];
 }
 
 function governanceRows(context) {
+  const securityGate = buildSecurityGateDashboardState(context, { track: "owner", scope: "workspace" });
   return [
     ["Policy", countRecords((context.plannerState && context.plannerState.current_plan && context.plannerState.current_plan.policy_blocks) || []), countRecords((context.plannerState && context.plannerState.current_plan && context.plannerState.current_plan.policy_blocks) || []), "Run the relevant policy command."],
-    ["Security", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), "Run security checks before release."],
+    ["Security Gate", securityGate.status, securityGatePluginSummary(securityGate), securityGate.next_action],
     ["Migration", countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open") : []), countRecords(context.structuredState.risks ? context.structuredState.risks.filter((item) => item.status === "open") : []), "Resolve migration blockers before deploy."],
     ["Handoff", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? 0 : 1, context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? 0 : 1, context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "Use the handoff package." : "Materialize the plan first."]
   ];
+}
+
+function securityGatePluginSummary(securityGate) {
+  const plugin = securityGate.plugin || {};
+  return [
+    plugin.installed ? "installed" : "missing",
+    plugin.enabled ? "enabled" : "disabled",
+    plugin.available ? "available" : "unavailable",
+    plugin.active ? "active" : "inactive"
+  ].join(" / ");
+}
+
+function securityGateDetailRows(securityGate) {
+  const plugin = securityGate.plugin || {};
+  const target = securityGate.target || {};
+  return [[
+    securityGate.scope || "workspace",
+    securityGate.status || "unknown",
+    plugin.plugin_id || "security-auditor",
+    plugin.installed ? "yes" : "no",
+    plugin.enabled ? "yes" : "no",
+    plugin.available ? "yes" : "no",
+    plugin.active ? "yes" : "no",
+    String((securityGate.findings_summary && securityGate.findings_summary.blocked) || 0),
+    String((securityGate.findings_summary && securityGate.findings_summary.warnings) || 0),
+    securityGate.required ? "yes" : "no",
+    securityGate.strict_blocking ? "yes" : "no",
+    securityGate.policy_source || "default",
+    target.task_id || target.evolution_id || target.handoff_id || "workspace",
+    securityGate.next_action || "n/a"
+  ]];
 }
 
 function nextTaskPunchLabel(context) {
@@ -2181,19 +2287,23 @@ function appPluginRows(context) {
 }
 
 function validationWidgets(context) {
+  const securityGate = buildSecurityGateDashboardState(context, { track: "vibe", scope: "handoff" });
   return [
     dashboardWidget("viber_workspace_validation", "Workspace Validation", "status", "ready", "ok", "vibe_app_developer", "derived", "Keep the app workspace valid."),
     dashboardWidget("viber_task_validation", "Task Validation", "status", context.tasks.length ? "ready" : "empty", context.tasks.length ? "ok" : "warning", "vibe_app_developer", "derived", "Validate the current tasks."),
     dashboardWidget("viber_handoff_readiness", "Handoff Readiness", "status", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ready" : "pending", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ok" : "warning", "vibe_app_developer", "derived", "Handoff becomes ready after materialization."),
+    dashboardWidget("viber_app_security", "App Security Readiness", "status", securityGate.status, securityGate.status === "blocked" ? "warning" : securityGate.status === "warning" ? "warning" : "ok", "vibe_app_developer", "derived", securityGate.next_action),
     dashboardWidget("viber_migration_security", "Migration / Security Blockers", "warning", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []), "ok", "vibe_app_developer", "derived", "Resolve migration and security blockers.")
   ];
 }
 
 function validationRows(context) {
+  const securityGate = buildSecurityGateDashboardState(context, { track: "vibe", scope: "handoff" });
   return [
     ["Workspace", "ready", context.project.workspace_kind || "workspace", "Keep the app workspace valid."],
     ["Task", context.tasks.length ? "ready" : "empty", String(context.tasks.length), "Validate the current tasks."],
     ["Handoff", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "ready" : "pending", context.plannerState.materialization && context.plannerState.materialization.status === "materialized" ? "materialized" : "pending", "Materialize the plan first."],
+    ["App Security", securityGate.status, securityGatePluginSummary(securityGate), securityGate.next_action],
     ["Migration / Security", countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : []) ? "blocked" : "ready", String(countRecords(context.structuredState.gates ? context.structuredState.gates.filter((item) => item.status === "blocked") : [])), "Resolve blockers before release."]
   ];
 }

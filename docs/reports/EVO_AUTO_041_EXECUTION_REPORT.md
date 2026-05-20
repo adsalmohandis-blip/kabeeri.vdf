@@ -17,6 +17,7 @@ Merge target       main
 Sync policy        local_only                                                                                                                                    
 GitHub sync        local-only                                                                                                                                    
 Review gate        viber_review_required                                                                                                                         
+Security gate      pass                                                                                                                                          
 Linked tasks       none                                                                                                                                          
 Open priorities    0/48                                                                                                                                          
 

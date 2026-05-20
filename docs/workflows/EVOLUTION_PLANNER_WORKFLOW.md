@@ -9,6 +9,19 @@ Codex-ready prompt.
 This workflow is deterministic and local-first. It does not replace the Owner.
 It supports owner, vibe/app, and plugin planner modes.
 
+No Planning Without State Resync:
+
+- the planner must complete a State Resync before recommending the next
+  Evolution
+- the planner must output a Current-State Report first
+- the planner must not trust `.kabeeri/tasks.json` as the only source of
+  current progress
+- the planner must identify stale files before naming the next Evolution
+- the planner must include evidence for the recommended next Evolution
+- the planner must not use chat history as the final source of truth
+- GitHub must not be required for planning
+- app files, docs, specs, source, and tests outrank remote-provider state
+
 The Idea to Evolution Pipeline is the upstream planning surface that turns a
 raw idea into the file map, design artifacts, version slices, evolutions, task
 punches, visual roadmap, and source control plan that the approval gate can
@@ -17,6 +30,24 @@ review.
 Planner dashboard sync sits alongside the approval gate so dashboard state can
 show the current approved plan, visual summary, source control state,
 materialization status, and next action without becoming the source of truth.
+
+## State Resync Gate
+
+Before any next-Evolution recommendation, the planner must:
+
+- resync the current repository state
+- compare the current branch with `main`
+- inspect merged history, release tags, and roadmap/docs
+- rebuild the Evolution ledger with completed, active, planned, blocked, and
+  future-only states
+- flag stale docs when they claim an old Evolution is next
+- stop and ask the Owner when the source-of-truth order is ambiguous
+- treat `.kabeeri/tasks.json` as supporting state, not final truth
+- treat chat history as supporting context only
+- treat GitHub as optional secondary evidence only
+
+The planner can only recommend the next Evolution after the Current-State
+Report shows that the repo reality matches the proposed ledger.
 
 ## Workflow
 
@@ -98,12 +129,16 @@ For KVDF Core Owner Track work:
 - `.kabeeri/` runtime state is not part of the normal delivery commit
 - the Planner Layer is an owner-facing planning helper, not an autonomous
   planner
+- current KVDF source files and docs outrank older planning drafts
+- current branch and latest main outrank stale local runtime state
 
 For Vibe/App Track work:
 
 - local-first is the default
+- current app files, docs, specs, source, and tests are the primary source of truth
 - GitHub handoff is optional and never assumed
 - app workspace files and app-facing docs stay separate from KVDF Core by default
+- remote-provider history is secondary evidence only unless the Owner says otherwise
 
 For Plugin Track work:
 
@@ -167,4 +202,5 @@ Stop if:
 - the requested change would require runtime writes under `.kabeeri/`
 - the requested change would make branch/PR the default KVDF Core path
 - the requested change is outside the allowed planner files
+- the planner state is still stale or ambiguous
 - validation fails

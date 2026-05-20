@@ -126,7 +126,9 @@ function resolvePluginStates(manifests, state) {
     const mounted = isPluginMounted(plugin.plugin_id);
     const resolvedBundlePath = mounted ? path.relative(repoRoot(), getPluginMountPath(plugin.plugin_id)).replace(/\\/g, "/") : plugin.bundle_path;
     const validationBundlePath = path.relative(repoRoot(), path.join(repoRoot(), plugin.bundle_path)).replace(/\\/g, "/");
-    const active = explicitDisabled ? false : (explicitEnabled || plugin.enabled_by_default || mounted);
+    const runtimeEntrypoint = plugin.runtime_entrypoint || plugin.command_entrypoint || null;
+    const available = Boolean(plugin.manifest) && Boolean(runtimeEntrypoint) && fs.existsSync(path.join(repoRoot(), runtimeEntrypoint));
+    const active = Boolean(available && !explicitDisabled && (explicitEnabled || plugin.enabled_by_default || mounted));
     const bundleContract = buildPluginBundleContract({ ...plugin, enabled: active, bundle_path: resolvedBundlePath }, {
       bundle_root: validationBundlePath,
       reported_bundle_path: resolvedBundlePath,
@@ -138,11 +140,22 @@ function resolvePluginStates(manifests, state) {
       ...plugin,
       bundle_path: resolvedBundlePath,
       enabled: active,
+      installed: Boolean(plugin.manifest),
+      available,
+      active,
       status: active ? "enabled" : "disabled",
       mounted,
       bundle_contract: bundleContract
     };
   });
+}
+
+function getPluginRuntimeStatus(pluginId) {
+  if (!pluginId) return null;
+  const state = ensurePluginLoaderState();
+  const manifests = scanPluginManifests();
+  const plugins = resolvePluginStates(manifests, state);
+  return plugins.find((plugin) => plugin.plugin_id === pluginId || plugin.name === pluginId || plugin.bundle_path === pluginId) || null;
 }
 
 function buildPluginLoaderReport() {
@@ -226,6 +239,7 @@ module.exports = {
   buildCanonicalPluginLoaderState,
   scanPluginManifests,
   buildPluginLoaderReport,
+  getPluginRuntimeStatus,
   setPluginEnabled,
   renderPluginLoaderReport,
   findPluginById

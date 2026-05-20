@@ -7,6 +7,10 @@ finished delivery slice. It keeps the local workspace authoritative, keeps the
 task ledger and Evolution ledger in sync, and optionally adds a GitHub-backed
 handoff layer when the workspace is ready to publish through a branch and PR.
 
+For Vibe/App Track work, the current application files are the primary source of
+truth. Git and GitHub do not override current app files unless the Owner
+explicitly chooses remote history as authoritative.
+
 ## When To Use It
 
 Use KVDF-led delivery when:
@@ -124,6 +128,10 @@ Before any implementation begins, confirm:
 4. The evolution scope is approved.
 5. The runtime state is local-only and not part of the commit payload.
 
+For app-track work, confirm the current app docs, requirements, manifests,
+specs, source structure, and tests before looking at local Git or remote
+history.
+
 Run and inspect:
 
 ```bash
@@ -138,6 +146,24 @@ Then confirm:
 - owner-track work stays in KVDF core
 - no cross-track implementation starts by accident
 - any ambiguity returns the work to planning
+
+## App Track Source-Of-Truth Priority
+
+For Vibe/App Track work, use this priority:
+
+1. Current app docs and requirements files
+2. Current app manifests/specs/configs
+3. Current app source structure
+4. Current app tests
+5. Local Git history if available
+6. Release/tag history if available
+7. Remote provider history such as GitHub only if enabled
+8. `.kabeeri/` runtime state as supporting state only
+9. Chat history as supporting context only
+
+`.kabeeri/tasks.json` and other local runtime state are supporting evidence for
+app planning, not the final authority when the current app files show a later
+state.
 
 ## Git Commit and Publishing Rules
 

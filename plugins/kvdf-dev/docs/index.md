@@ -4,6 +4,23 @@ This bundle packages the framework-development side of KVDF as a removable
 plugin so KVDF itself stays separate from app-building plugins and app-track
 workflows.
 
+## Plugin Contract
+
+`kvdf-dev` is the framework-owner bundle for KVDF Core work.
+
+- Manifest: `plugins/kvdf-dev/plugin.json`
+- Bootstrap entrypoint: `plugins/kvdf-dev/bootstrap.js`
+- Runtime entrypoint: `plugins/kvdf-dev/runtime/index.js`
+- Primary docs: `plugins/kvdf-dev/docs/index.md`
+- Supporting docs: `plugins/kvdf-dev/commands/README.md`,
+  `plugins/kvdf-dev/runtime/README.md`, `plugins/kvdf-dev/governance/README.md`,
+  and `plugins/kvdf-dev/tests/README.md`
+
+The manifest is the contract of record for what the bundle owns. It should stay
+aligned with the files that actually exist in the plugin tree, especially the
+runtime helpers, docs surface, and command surfaces that other KVDF services
+inspect.
+
 The plugin-owned bootstrap lives in `plugins/kvdf-dev/bootstrap.js`.
 
 Use it when you need to work on:
@@ -15,6 +32,12 @@ Use it when you need to work on:
 - packet-only executor contract compilation
 - batch execution of ready KVDF tasks
 - plugin and capability split rules
+
+The runtime helpers currently cover:
+
+- task control-plane packet compilation
+- executor contract compilation from packet state
+- governed batch execution reporting
 
 Common entry points:
 
@@ -36,6 +59,7 @@ Common entry points:
 - `kvdf task executor-contract`
 - `kvdf batch-exe`
 - `kvdf task batch-run`
+- `kvdf plugins show kvdf-dev`
 - `kvdf plugins install kvdf-dev`
 - `kvdf plugins enable kvdf-dev`
 - `kvdf plugins uninstall kvdf-dev`

@@ -17,6 +17,7 @@
     "docs",
     "prompts",
     "schemas",
+    "runtime",
     "templates",
     "tests"
   ],
@@ -58,11 +59,16 @@
     "kvdf cleaner finalize",
     "kvdf plugins install kvdf-dev",
     "kvdf plugins enable kvdf-dev",
+    "kvdf plugins show kvdf-dev",
     "kvdf plugins uninstall kvdf-dev",
     "kvdf plugins disable kvdf-dev"
   ],
   "docs_surface": [
     "plugins/kvdf-dev/docs/index.md",
+    "plugins/kvdf-dev/commands/README.md",
+    "plugins/kvdf-dev/runtime/README.md",
+    "plugins/kvdf-dev/governance/README.md",
+    "plugins/kvdf-dev/tests/README.md",
     "knowledge/governance/EVOLUTION_STEWARD.md",
     "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"
   ]

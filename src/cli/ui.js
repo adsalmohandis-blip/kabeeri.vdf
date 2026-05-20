@@ -483,11 +483,11 @@ Notes:
   kvdf planner visual --goal "Add visual planner" --track owner --json
   kvdf planner visual --goal "Build app flow" --track vibe --json
   kvdf planner visual --goal "Improve plugin docs" --track plugin --plugin kvdf-dev --json
-  kvdf planner visual --goal "Add visual planner" --track owner --open --fullscreen
+  kvdf planner visual --goal "Add visual planner" --track owner --fullscreen
   kvdf planner pipeline --idea "Improve KVDF planner" --track owner --json
   kvdf planner pipeline --idea "Build booking app" --track vibe --json
   kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
-  kvdf planner pipeline --idea "Improve KVDF planner" --track owner --open --fullscreen
+  kvdf planner pipeline --idea "Improve KVDF planner" --track owner --fullscreen
   kvdf planner-visual status
   kvdf planner-visual render --goal "Add visual planner" --track owner
   kvdf planner pipeline --goal "Build app" --track vibe
@@ -497,7 +497,7 @@ Notes:
 Notes:
   Planner output includes an explicit source_control object so KVDF can express no source control,
   local-only, direct-to-main, branch, and branch+PR modes without assuming GitHub is mandatory.
-  The planner pipeline command turns a raw idea into documentation files, design artifacts, a visual planning model, a version plan, evolutions, task punches, and the next approval/materialization action. Use --open to write a browser preview for visual/planning output, --no-open to keep stdout only, and --fullscreen when you want the preview shell to request fullscreen.
+  The planner visual and pipeline commands keep stdout-only by default for visual/planning output, use --open to launch a browser preview, use --no-open to force file-only output, and use --fullscreen when you want the preview shell to request fullscreen.
   kvdf plugins status
   kvdf plugins install kvdf-dev
   kvdf plugins enable kvdf-dev
@@ -966,12 +966,15 @@ Notes:
   kvdf security scan --include app/,routes/,config/
   kvdf security report
   kvdf security report --id security-scan-001 --output .kabeeri/security/security.md
-  kvdf security gate
+  kvdf security gate --json
+  kvdf security gate --task task-001 --json
+  kvdf security gate --evolution current --json
+  kvdf security gate --handoff --json
   kvdf security list
   kvdf security show security-scan-001
 
 Notes:
-  Security scan is a lightweight KVDF secrets and privacy guard. It stores results in .kabeeri/security/security_scans.json and blocks security gate on critical/high findings.
+  Security scan is a lightweight KVDF secrets and privacy guard. It stores results in .kabeeri/security/security_scans.json. Security gate is a read-only KVDF policy/status surface that combines the latest scan state with plugin availability and readiness context.
 `,
     "security-auditor": `Usage:
   kvdf security-auditor status

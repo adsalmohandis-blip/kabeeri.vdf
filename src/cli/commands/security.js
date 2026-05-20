@@ -5,9 +5,12 @@ const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace")
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { table } = require("../ui");
 const { readStateArray, summarizeBy } = require("../services/state_utils");
+const { buildPluginLoaderReport } = require("../services/plugin_loader");
+const { buildSecurityGateState: buildSecurityGateStateService } = require("../services/security_gate");
 
 function security(action, value, flags = {}, deps = {}) {
   ensureWorkspace();
+  const root = repoRoot();
   ensureSecurityState();
   const appendAudit = deps.appendAudit || (() => {});
   const file = ".kabeeri/security/security_scans.json";
@@ -59,16 +62,20 @@ function security(action, value, flags = {}, deps = {}) {
   }
 
   if (action === "gate") {
-    const scan = runSecurityScan(flags);
-    data.scans.push(scan);
-    writeJsonFile(file, data);
-    writeJsonFile(".kabeeri/security/latest_security_scan.json", scan);
-    writeTextFile(".kabeeri/security/latest_security_report.md", buildSecurityReport(scan));
-    appendAudit("security.gate", "security", scan.scan_id, `Security gate evaluated: ${scan.status}`);
-    if (scan.status === "blocked") {
-      throw new Error(`Security gate blocked: ${scan.blockers.length} blocker finding(s). Run kvdf security report --id ${scan.scan_id}.`);
-    }
-    console.log(`Security gate passed: ${scan.scan_id}`);
+    const gate = buildSecurityGateState({
+      root,
+      track: flags.track || value || "owner",
+      scope: resolveSecurityGateScope(flags, value),
+      task: flags.task || null,
+      evolution: flags.evolution || null,
+      handoff: Boolean(flags.handoff),
+      required: resolveSecurityGateRequired(flags),
+      strict: Boolean(flags.strict || flags["strict-security"] || flags["strict_security"]),
+      persist: true
+    });
+    appendAudit("security.gate", "security", gate.last_scan ? gate.last_scan.scan_id : "security-gate", `Security gate evaluated: ${gate.status}`);
+    if (flags.json) console.log(JSON.stringify(gate, null, 2));
+    else console.log(renderSecurityGateState(gate, table));
     return;
   }
 
@@ -79,6 +86,205 @@ function ensureSecurityState() {
   fs.mkdirSync(path.join(repoRoot(), ".kabeeri", "security"), { recursive: true });
   if (!fileExists(".kabeeri/security/security_scans.json")) writeJsonFile(".kabeeri/security/security_scans.json", { scans: [] });
   if (!fileExists(".kabeeri/security/security_readiness.json")) writeJsonFile(".kabeeri/security/security_readiness.json", { checks: [] });
+}
+
+function buildSecurityGateState(options = {}) {
+  return buildSecurityGateStateService({
+    ...options,
+    root: options.root || repoRoot()
+  });
+}
+
+function normalizeSecurityGateTrack(value, fallback = "owner") {
+  const normalized = String(value || fallback || "owner").trim().toLowerCase();
+  if (["vibe", "viber", "app", "developer_app", "vibe_app_developer", "app_developer"].includes(normalized)) return "vibe";
+  if (["plugin", "security-auditor"].includes(normalized)) return "plugin";
+  if (["framework_owner", "owner_track"].includes(normalized)) return "owner";
+  return "owner";
+}
+
+function resolveSecurityGateScope(flags = {}, value = "") {
+  if (flags.task || flags["task-id"]) return "task";
+  if (flags.evolution) return "evolution";
+  if (flags.handoff || flags.package || flags.audience) return "handoff";
+  if (String(value || "").toLowerCase() === "task") return "task";
+  if (String(value || "").toLowerCase() === "evolution") return "evolution";
+  if (String(value || "").toLowerCase() === "handoff") return "handoff";
+  return "workspace";
+}
+
+function resolveSecurityGateRequired(flags = {}) {
+  return Boolean(flags.required || flags.strict || flags["security-required"] || flags.security_required || flags["strict-security"]);
+}
+
+function inferSecurityGateTrack(options = {}, root = repoRoot()) {
+  const taskId = options.task || options.task_id || null;
+  if (taskId && fileExists(".kabeeri/tasks.json")) {
+    const tasks = readJsonFile(".kabeeri/tasks.json").tasks || [];
+    const task = tasks.find((item) => item.id === taskId) || null;
+    if (task) {
+      if (Array.isArray(task.app_usernames) && task.app_usernames.length) return "vibe";
+      const track = normalizeSecurityGateTrack(task.track || task.evolution_track || task.workspace_track || "");
+      if (track) return track;
+    }
+  }
+  const evolutionId = options.evolution || options.evolution_id || null;
+  if (evolutionId && fileExists(".kabeeri/evolution.json")) {
+    const evolution = readJsonFile(".kabeeri/evolution.json");
+    const currentChange = evolution.current_change_id && Array.isArray(evolution.changes)
+      ? evolution.changes.find((item) => item.change_id === evolution.current_change_id)
+      : null;
+    if (currentChange) {
+      const track = normalizeSecurityGateTrack(currentChange.track || currentChange.audience || "");
+      if (track) return track;
+    }
+  }
+  if (fileExists(".kabeeri/project.json")) {
+    const project = readJsonFile(".kabeeri/project.json");
+    if (String(project.workspace_kind || "").toLowerCase() === "developer_app") return "vibe";
+  }
+  return path.basename(root) ? "owner" : "owner";
+}
+
+function normalizeSecurityScans(scans = [], source = "core") {
+  return (Array.isArray(scans) ? scans : []).map((scan) => normalizeSecurityScan(scan, source)).filter(Boolean);
+}
+
+function normalizeSecurityScan(scan, source) {
+  if (!scan || typeof scan !== "object") return null;
+  const summary = scan.summary && typeof scan.summary === "object"
+    ? {
+        blocked: Number(scan.summary.blocked || 0),
+        warnings: Number(scan.summary.warnings || 0),
+        files_scanned: Number(scan.summary.files_scanned || 0)
+      }
+    : {
+        blocked: Array.isArray(scan.blockers) ? scan.blockers.length : 0,
+        warnings: scan.status === "warning" ? Math.max(1, Number(scan.findings_total || (Array.isArray(scan.findings) ? scan.findings.length : 0))) : 0,
+        files_scanned: Number(scan.files_scanned || 0)
+      };
+  const findingsTotal = Number(scan.findings_total || (Array.isArray(scan.findings) ? scan.findings.length : 0) || summary.blocked + summary.warnings);
+  return {
+    scan_id: scan.scan_id || scan.id || `${source}-security-scan-${Date.now()}`,
+    source,
+    status: scan.status || "unknown",
+    generated_at: scan.generated_at || null,
+    track: normalizeSecurityGateTrack(scan.track || "owner"),
+    scope: String(scan.scope || "workspace").toLowerCase(),
+    task_id: scan.task_id || null,
+    evolution: scan.evolution || null,
+    summary,
+    files_scanned: Number(scan.files_scanned || summary.files_scanned || 0),
+    findings_total: findingsTotal,
+    next_action: scan.next_action || null,
+    engine: scan.engine || (source === "plugin" ? "security-auditor" : "core"),
+    findings: Array.isArray(scan.findings) ? scan.findings : []
+  };
+}
+
+function selectLatestSecurityScan(scans = [], options = {}) {
+  const filters = {
+    track: options.track ? normalizeSecurityGateTrack(options.track) : null,
+    scope: options.scope ? String(options.scope).toLowerCase() : null,
+    task_id: options.task || options.task_id || null,
+    evolution: resolveSecurityGateEvolutionRef(options)
+  };
+  const filtered = (Array.isArray(scans) ? scans : []).filter((scan) => {
+    if (!scan) return false;
+    if (filters.track && scan.track !== filters.track) return false;
+    if (filters.scope && scan.scope !== filters.scope) return false;
+    if (filters.task_id && scan.task_id !== filters.task_id) return false;
+    if (filters.evolution && scan.evolution !== filters.evolution) return false;
+    return true;
+  });
+  const pool = filtered.length ? filtered : scans;
+  return pool.slice().sort((left, right) => {
+    const leftTime = Date.parse(left.generated_at || "") || 0;
+    const rightTime = Date.parse(right.generated_at || "") || 0;
+    if (leftTime !== rightTime) return leftTime - rightTime;
+    return String(left.scan_id || "").localeCompare(String(right.scan_id || ""));
+  }).pop() || null;
+}
+
+function resolveSecurityGateEvolutionRef(options = {}) {
+  if (options.evolution && options.evolution !== "current") return String(options.evolution);
+  if (!fileExists(".kabeeri/evolution.json")) return null;
+  try {
+    const evolution = readJsonFile(".kabeeri/evolution.json");
+    const currentChangeId = evolution.current_change_id || null;
+    if (!currentChangeId) return null;
+    const current = Array.isArray(evolution.changes) ? evolution.changes.find((item) => item.change_id === currentChangeId) : null;
+    return current ? String(current.change_id || currentChangeId) : String(currentChangeId);
+  } catch (error) {
+    return null;
+  }
+}
+
+function summarizeSecurityGateFindings(scan) {
+  if (!scan) {
+    return { blocked: 0, warnings: 0, files_scanned: 0 };
+  }
+  return {
+    blocked: Number(scan.summary && scan.summary.blocked !== undefined ? scan.summary.blocked : (scan.status === "blocked" ? Math.max(1, scan.findings_total || 0) : 0)),
+    warnings: Number(scan.summary && scan.summary.warnings !== undefined ? scan.summary.warnings : (scan.status === "warning" ? Math.max(1, scan.findings_total || 0) : 0)),
+    files_scanned: Number(scan.summary && scan.summary.files_scanned !== undefined ? scan.summary.files_scanned : scan.files_scanned || 0)
+  };
+}
+
+function resolveSecurityGateStatus({ required, plugin, lastScan, findingsSummary }) {
+  if (!lastScan) {
+    if (required) return "blocked";
+    return plugin.enabled ? "unavailable" : "not_required";
+  }
+  if (lastScan.status === "blocked") return "blocked";
+  if (lastScan.status === "warning") return "warning";
+  if (lastScan.status === "pass") return "pass";
+  if (required) return "blocked";
+  return plugin.enabled ? "unavailable" : "not_required";
+}
+
+function resolveSecurityGateNextAction({ status, required, plugin, lastScan }) {
+  if (status === "pass") return "Security gate is clear. Continue with the current workflow.";
+  if (status === "warning") return "Review the warning findings and rerun the relevant security scan before release or handoff.";
+  if (status === "blocked") {
+    if (!plugin.installed || !plugin.enabled) {
+      return required
+        ? "Install or enable security-auditor, or run kvdf security scan, before closing the required gate."
+        : "Install or enable security-auditor to make security gate results available for this scope.";
+    }
+    return lastScan && lastScan.scan_id
+      ? `Address blocker findings and rerun the scan that produced ${lastScan.scan_id}.`
+      : "Run a security scan to capture the blocker findings and then address them.";
+  }
+  if (status === "unavailable") {
+    return plugin.installed && plugin.enabled
+      ? "Run a security scan to refresh the gate state."
+      : "Install or enable security-auditor, or run kvdf security scan, to refresh the gate state.";
+  }
+  return "Security gate is optional for this scope.";
+}
+
+function renderSecurityGateState(gate, tableRenderer = () => "") {
+  const rows = [
+    ["Status", gate.status || "unknown", gate.next_action || "n/a"],
+    ["Track", gate.track || "owner", gate.required ? "Required by policy" : "Optional for this scope"],
+    ["Scope", gate.scope || "workspace", gate.target && (gate.target.task_id || gate.target.evolution_id || gate.target.handoff_id) ? JSON.stringify(gate.target) : "No recorded target"],
+    ["Plugin", gate.plugin && gate.plugin.plugin_id ? gate.plugin.plugin_id : "security-auditor", `${gate.plugin && gate.plugin.installed ? "installed" : "missing"} / ${gate.plugin && gate.plugin.enabled ? "enabled" : "disabled"} / ${gate.plugin && gate.plugin.available ? "available" : "unavailable"} / ${gate.plugin && gate.plugin.active ? "active" : "inactive"}`],
+    ["Policy", gate.policy_source || "default", `${gate.policy_path || ".kabeeri/policies/security_gate_policy.json"}${gate.strict_blocking ? " / strict" : ""}`],
+    ["Blocked findings", String(gate.findings_summary && gate.findings_summary.blocked || 0), `Warnings: ${gate.findings_summary && gate.findings_summary.warnings || 0}`],
+    ["Files scanned", String(gate.findings_summary && gate.findings_summary.files_scanned || 0), gate.last_scan && gate.last_scan.generated_at ? gate.last_scan.generated_at : ""]
+  ];
+  return [
+    "Security Gate",
+    `Status: ${gate.status || "unknown"}`,
+    `Track: ${gate.track || "owner"}`,
+    `Scope: ${gate.scope || "workspace"}`,
+    `Required: ${gate.required ? "yes" : "no"}`,
+    `Strict blocking: ${gate.strict_blocking ? "yes" : "no"}`,
+    `Next action: ${gate.next_action || "n/a"}`,
+    "",
+    tableRenderer(["Field", "Value", "Details"], rows)
+  ].join("\n");
 }
 
 function runSecurityScan(flags = {}) {
@@ -246,5 +452,7 @@ function parseCsv(value) {
 
 module.exports = {
   security,
-  getLatestSecurityScan
+  getLatestSecurityScan,
+  buildSecurityGateState,
+  renderSecurityGateState
 };
