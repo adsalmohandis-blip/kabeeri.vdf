@@ -14,6 +14,7 @@ const {
   handleEvolutionTemporaryPriorities,
   renderEvolutionTemporaryPrioritiesReport
 } = require("../services/evolution");
+const { buildEvolutionReconciliation } = require("../services/truth_reconciler");
 const { buildTaskLifecycleState } = require("./task_lifecycle");
 const { buildSecurityGateState } = require("./security");
 const { readStateArray } = require("../services/state_utils");
@@ -189,6 +190,13 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
   } = deps;
   const mode = resolveEvolutionMode(flags);
   const appMode = mode === "app_developer";
+
+  if (action === "reconcile") {
+    const report = buildEvolutionReconciliation();
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(JSON.stringify(report, null, 2));
+    return;
+  }
 
   ensureWorkspace();
   const file = ".kabeeri/evolution.json";

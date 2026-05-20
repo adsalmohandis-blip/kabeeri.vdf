@@ -42,6 +42,7 @@ const { init: initCommand } = require("./commands/init");
 const { temp: tempCommand } = require("./commands/temp");
 const { planner: plannerCommand } = require("./commands/planner");
 const { plannerVisual: plannerVisualCommand } = require("./commands/planner_visual");
+const { truth: truthCommand } = require("./commands/truth");
 const kvdfDevBundle = require("../../plugins/kvdf-dev/bootstrap");
 const { taskScheduler, buildTaskSchedulerReport, recordTaskSchedulerRoute } = require("./commands/task_scheduler");
 const { pipeline: pipelineCommand } = require("./commands/pipeline");
@@ -9960,6 +9961,7 @@ function getCommandDispatchContext() {
     vibeCommand,
     getVibeRuntimeDeps,
     plannerCommand,
+    truthCommand,
     plannerVisualCommand,
     getPlannerRuntimeDeps,
     capability,

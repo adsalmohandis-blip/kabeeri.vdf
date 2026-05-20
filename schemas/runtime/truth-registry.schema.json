@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KVDF Truth Registry Entry",
+  "type": "object",
+  "required": ["id", "title", "source_files", "docs_files", "test_files", "schema_files", "runtime_files", "generated_files", "support_required"],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "source_files": { "type": "array", "items": { "type": "string" } },
+    "docs_files": { "type": "array", "items": { "type": "string" } },
+    "test_files": { "type": "array", "items": { "type": "string" } },
+    "schema_files": { "type": "array", "items": { "type": "string" } },
+    "runtime_files": { "type": "array", "items": { "type": "string" } },
+    "generated_files": { "type": "array", "items": { "type": "string" } },
+    "source_patterns": { "type": "array", "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] } },
+    "docs_patterns": { "type": "array", "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] } },
+    "test_patterns": { "type": "array", "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] } },
+    "runtime_patterns": { "type": "array", "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] } },
+    "generated_patterns": { "type": "array", "items": { "anyOf": [{ "type": "string" }, { "type": "object" }] } },
+    "plugin_id": { "type": ["string", "null"] },
+    "support_required": { "type": "boolean" }
+  },
+  "additionalProperties": true
+}

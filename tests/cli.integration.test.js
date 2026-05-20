@@ -104,6 +104,13 @@ function copyPluginBundle(dir, pluginId) {
   fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
 }
 
+function copyRepoFile(dir, relativePath) {
+  const source = path.join(repoRoot, relativePath);
+  const target = path.join(dir, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.copyFileSync(source, target);
+}
+
 function loadPluginSmokeCases(pluginId) {
   const smokePath = path.join(repoRoot, "plugins", pluginId, "tests", "smoke-cases.json");
   return JSON.parse(fs.readFileSync(smokePath, "utf8"));
@@ -209,7 +216,7 @@ test("root commands validate repository assets", () => {
   assert.match(runKvdf(["--version"]).stdout, new RegExp(`kvdf ${packageVersion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   assert.match(runKvdf(["--help"]).stdout, /Kabeeri VDF CLI/);
   assert.match(runKvdf(["create", "--help"]).stdout, /kvdf create --profile lite/);
-  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "cleaner", "maintenance", "vibe-maintainer", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "planner", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
+  for (const command of ["resume", "entry", "track", "guard", "conflict", "sync", "sprint", "session", "multi-ai", "acceptance", "developer", "agent", "lock", "pricing", "usage", "release", "design", "policy", "workstream", "vibe", "ask", "capture", "package", "upgrade", "cleaner", "maintenance", "vibe-maintainer", "readiness", "governance", "reports", "context-pack", "preflight", "model-route", "handoff", "security", "migration", "adr", "ai-run", "structure", "blueprint", "data-design", "evolution", "planner", "truth", "batch-exe", "pipeline", "company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos", "ecommerce", "booking", "wordpress", "docs", "source-package", "capability"]) {
     const help = runKvdf([command, "--help"]).stdout;
     assert.match(help, /Usage:/, `${command} help should include usage`);
     assert.doesNotMatch(help, /No detailed help/, `${command} should have detailed help`);
@@ -6237,6 +6244,97 @@ test("planner review and resume stay safe when runtime state is missing", () => 
   assert.ok(["pass", "warning", "blocked"].includes(review.status));
   assert.ok(Array.isArray(review.required_fixes));
   assert.ok(review.next_action);
+}));
+
+test("truth audit reports source docs runtime reconciliation data", () => {
+  const report = JSON.parse(runKvdf(["truth", "audit", "--json"]).stdout);
+  assert.strictEqual(report.report_type, "kvdf_truth_audit");
+  assert.ok(report.generated_at);
+  assert.ok(report.summary);
+  assert.ok(Array.isArray(report.findings));
+  assert.ok(report.findings.length > 0);
+  assert.ok(report.findings.some((item) => item.feature_id === "planner.docs"));
+});
+
+test("truth feature planner docs returns source docs schema and test evidence", () => {
+  const report = JSON.parse(runKvdf(["truth", "feature", "planner.docs", "--json"]).stdout);
+  assert.strictEqual(report.report_type, "kvdf_truth_feature");
+  assert.strictEqual(report.feature_id, "planner.docs");
+  assert.strictEqual(report.status, "implemented");
+  assert.ok(report.source_evidence.length > 0);
+  assert.ok(report.docs_evidence.length > 0);
+  assert.ok(report.schema_evidence.length > 0);
+  assert.ok(report.test_evidence.length > 0);
+  assert.ok(report.support_complete);
+});
+
+test("truth feature does not treat docs-only evidence as implemented", () => withTempDir((dir) => {
+  fs.mkdirSync(path.join(dir, "docs", "cli"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "docs", "cli", "CLI_COMMAND_REFERENCE.md"), "kvdf planner docs catalog --json\n", "utf8");
+  const report = JSON.parse(runKvdf(["truth", "feature", "planner.docs", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_truth_feature");
+  assert.strictEqual(report.feature_id, "planner.docs");
+  assert.strictEqual(report.status, "documented_but_not_implemented");
+  assert.strictEqual(report.source_evidence.length, 0);
+  assert.ok(report.docs_evidence.length > 0);
+}));
+
+test("planner truth detects the implemented planner surfaces without flagging them missing", () => withTempDir((dir) => {
+  copyRepoFile(dir, "src/cli/commands/planner.js");
+  const report = JSON.parse(runKvdf(["planner", "truth", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_truth");
+  const detected = new Map(report.planner_commands_detected.map((item) => [item.feature_id, item]));
+  for (const expected of ["planner.method", "planner.auto", "planner.review", "planner.resume", "planner.docs", "planner.version", "planner.feedback"]) {
+    assert.ok(detected.has(expected), `Missing planner truth detection for ${expected}`);
+    assert.notStrictEqual(detected.get(expected).status, "planned", `${expected} should not be marked planned`);
+  }
+  assert.ok(Array.isArray(report.planner_docs_detected));
+  assert.ok(Array.isArray(report.planner_schemas_detected));
+  assert.ok(Array.isArray(report.planner_tests_detected));
+  assert.strictEqual(report.status, "pass");
+}));
+
+test("evolution reconcile handles missing runtime state and detects stale or duplicate runtime links", () => withTempDir((dir) => {
+  copyRepoFile(dir, "src/cli/commands/planner.js");
+  fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "evolution.json"), JSON.stringify({
+    changes: [
+      { change_id: "evo-1", title: "Planner docs", status: "planned", task_ids: ["task-1"] },
+      { change_id: "evo-2", title: "Planner docs follow-up", status: "planned", task_ids: ["task-1"] }
+    ],
+    development_priorities: [
+      { id: "priority-1", title: "Planner docs", status: "planned" }
+    ],
+    deferred_ideas: []
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
+    tasks: [
+      { id: "task-1", title: "Planner docs slice", status: "in_progress" }
+    ]
+  }, null, 2), "utf8");
+  const report = JSON.parse(runKvdf(["evolution", "reconcile", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_evolution_reconciliation");
+  assert.ok(report.stale_planned.length > 0);
+  assert.ok(report.duplicate_task_links.length > 0);
+  assert.ok(Array.isArray(report.orphan_tasks));
+  assert.ok(Array.isArray(report.runtime_only_evolutions));
+  assert.ok(report.recommended_cleanup_actions.length > 0);
+}));
+
+test("truth audit keeps runtime-only items out of the implemented bucket", () => withTempDir((dir) => {
+  fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "evolution.json"), JSON.stringify({
+    changes: [
+      { change_id: "evo-runtime-only", title: "Ghost capability", status: "planned", task_ids: [] }
+    ],
+    development_priorities: [],
+    deferred_ideas: []
+  }, null, 2), "utf8");
+  const report = JSON.parse(runKvdf(["truth", "audit", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_truth_audit");
+  assert.ok(report.summary.runtime_only > 0);
+  assert.ok(report.findings.some((item) => item.status === "runtime_only"));
+  assert.ok(!report.findings.some((item) => item.feature_id === "ghost-capability" && item.status === "implemented"));
 }));
 
 test("planner docs catalog returns foldered catalog entries", () => withTempDir((dir) => {

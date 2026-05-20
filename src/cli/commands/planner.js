@@ -11,6 +11,7 @@ const { buildAppDocsPackageTemplates } = require("../workspace");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
+const { buildPlannerTruth: buildPlannerTruthReportService } = require("../services/truth_reconciler");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -241,7 +242,7 @@ const PLANNER_DOC_DEFINITIONS = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -335,6 +336,12 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
   if (mode === "feedback") {
     const report = buildPlannerFeedbackCommandReport(value, flags, rest, deps);
     printPlannerOutput(report, flags, deps, "feedback");
+    return;
+  }
+
+  if (mode === "truth") {
+    const report = buildPlannerTruthReportService(deps);
+    printPlannerOutput(report, flags, deps, "truth");
     return;
   }
 
@@ -1909,6 +1916,10 @@ function buildPlannerResumeReport(deps = {}) {
     dashboard,
     delivery_decisions: deliveryDecisions || null
   };
+}
+
+function buildPlannerTruthReport(deps = {}) {
+  return buildPlannerTruthReportService(deps);
 }
 
 function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], deps = {}) {
@@ -4176,6 +4187,8 @@ function printPlannerOutput(report, flags, deps, kind) {
             ? renderPlannerResumeReport(report, deps.table)
             : kind === "docs"
               ? renderPlannerDocsMaterializationReport(report, deps.table)
+              : kind === "truth"
+                ? `${JSON.stringify(report, null, 2)}`
     : kind === "visual"
       ? renderPlannerVisualReport(report)
       : kind === "pipeline"
@@ -6605,6 +6618,7 @@ module.exports = {
   buildPlannerVisualFromCurrentReport,
   buildIdeaToEvolutionPipelineReport,
   buildPlannerEvolutionPlan,
+  buildPlannerTruthReport,
   openPlannerPreview,
   buildPlannerPreviewHtml,
   renderPlannerNextReport,

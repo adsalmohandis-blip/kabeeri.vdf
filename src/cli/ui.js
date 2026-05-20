@@ -535,10 +535,20 @@ Notes:
   kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json
   kvdf planner evolution --goal "Add planner layer" --track owner --json
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
+  kvdf planner truth --json
 
 Notes:
   Planner is the deterministic planning layer for KVDF Core, vibe/app, and plugin track work. It reads the current repository and runtime context, recommends the next governed Evolution, emits a Task Punch, persists proposed plans under .kabeeri/planner.json, requires Owner approval before execution prompts come from runtime state, and can produce a visual planning model with Mermaid, board, scope map, and markdown report output. It generates Codex-ready execution prompts without treating branch/PR as the default path. Use --track owner, --track vibe, or --track plugin with --plugin when you want to override auto-detected track mode.
   The optional planner-visual plugin renders planner visual JSON into readable Markdown and Mermaid text without changing planner logic or adding a frontend dependency.
+  Use kvdf truth audit --json and kvdf truth feature <feature-id> --json to reconcile source-level truth against docs, runtime state, and generated snapshots before trusting a plan.
+`,
+    truth: `Usage:
+  kvdf truth audit --json
+  kvdf truth feature planner.docs --json
+  kvdf truth feature planner.version --json
+
+Notes:
+  Truth compares source, docs, tests, runtime state, and generated snapshots so KVDF does not treat runtime or generated files as implementation proof by themselves. Use it before trusting that a capability or evolution is actually implemented.
 `,
     "batch-exe": `Usage:
   kvdf batch-exe
@@ -1397,6 +1407,7 @@ function printHelp() {
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
   "  planner next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Recommend the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+  "  truth audit|feature          Compare source, docs, tests, runtime, and generated snapshots before trusting that a capability is implemented",
   "  planner pipeline Generate an idea-to-evolution planning package with docs, design, versions, evolutions, task punches, roadmap, and source-control guidance",
     "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
     "  maintenance fast|slow        Run the repo-wide maintenance workflow in fast or strict mode",
@@ -1456,6 +1467,7 @@ function printHelp() {
   const ownerCommands = [
     "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
   "  planner next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Determine the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+  "  truth audit|feature          Compare source, docs, tests, runtime, and generated snapshots before trusting that a capability is implemented",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
     "  owner init|login|status|logout Configure and use local Owner sessions",
     "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",

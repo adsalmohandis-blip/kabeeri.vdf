@@ -1,4 +1,5 @@
 const { dispatchSafetyCommands } = require("./dispatchers/safety");
+const { dispatchTruthCommands } = require("./dispatchers/truth");
 const { dispatchBuildCommands } = require("./dispatchers/build");
 const { dispatchReportCommands } = require("./dispatchers/reports");
 const { dispatchOpsCommands } = require("./dispatchers/ops");
@@ -8,6 +9,8 @@ function dispatchCommand({ group, action, value, flags = {}, rest = [], rawGroup
 
   const safety = dispatchSafetyCommands({ group, action, value, flags, rest, c });
   if (safety) return safety.result;
+  const truth = dispatchTruthCommands({ group, action, value, flags, rest, c });
+  if (truth) return truth.result;
   const build = dispatchBuildCommands({ group, action, value, flags, rest, rawGroup, c });
   if (build) return build.result;
   const report = dispatchReportCommands({ group, action, value, flags, c });

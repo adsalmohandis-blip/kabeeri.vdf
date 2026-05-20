@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "KVDF Truth Audit Report",
+  "type": "object",
+  "required": ["report_type", "generated_at", "status", "summary", "findings", "recommended_next_action"],
+  "properties": {
+    "report_type": { "const": "kvdf_truth_audit" },
+    "generated_at": { "type": "string" },
+    "status": { "enum": ["pass", "warning", "blocked"] },
+    "summary": {
+      "type": "object",
+      "required": ["implemented", "implemented_but_undocumented", "documented_but_not_implemented", "runtime_only", "generated_snapshot_only", "planned", "stale_planned", "stale_recommended", "duplicate_runtime_links", "unknown"],
+      "properties": {
+        "implemented": { "type": "integer", "minimum": 0 },
+        "implemented_but_undocumented": { "type": "integer", "minimum": 0 },
+        "documented_but_not_implemented": { "type": "integer", "minimum": 0 },
+        "runtime_only": { "type": "integer", "minimum": 0 },
+        "generated_snapshot_only": { "type": "integer", "minimum": 0 },
+        "planned": { "type": "integer", "minimum": 0 },
+        "stale_planned": { "type": "integer", "minimum": 0 },
+        "stale_recommended": { "type": "integer", "minimum": 0 },
+        "duplicate_runtime_links": { "type": "integer", "minimum": 0 },
+        "unknown": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "findings": { "type": "array" },
+    "recommended_next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -113,6 +113,8 @@ kvdf planner docs materialize --idea "Build booking app" --track vibe --app book
 kvdf planner docs status --track vibe --app booking --json
 kvdf planner docs apply-stage --track vibe --app booking --stage system_design --json
 kvdf planner docs review --track vibe --app booking --json
+kvdf truth audit --json
+kvdf truth feature planner.docs --json
 kvdf planner next --track owner --json
 kvdf planner next --track vibe --json
 kvdf planner next --track plugin --plugin kvdf-dev --json
@@ -154,6 +156,8 @@ Planner outputs now include an explicit `source_control` object so Git, no sourc
 
 Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
 Use `kvdf planner method` to recommend `structured`, `agile`, or `hybrid` before planning. Use `kvdf planner auto` to generate the full self-planning package, `kvdf planner review` to inspect scope, method, docs, security, source control, task quality, and visual readiness, and `kvdf planner resume` to recover the current planning context. Use `kvdf planner docs catalog|plan|materialize|status|apply-stage|review` to plan, draft, stage, and review foldered app documentation without executing or materializing work. Use `kvdf planner version status|next|gate|publish-ready|mark-published` to inspect Viber version readiness, gate health, and recorded published state without publishing anything automatically.
+Use `kvdf truth audit` and `kvdf truth feature` to compare source-level implementation evidence against runtime state, generated snapshots, and docs before trusting a report.
+Use `kvdf evolution reconcile` to compare evolution runtime state against source-level evidence and identify stale plans, duplicate task links, and runtime-only items.
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.
 Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Visual previews stay stdout-only by default; use `--open` to launch a browser preview, `--no-open` to force file-only output, and `--fullscreen` to request a fullscreen preview shell. The visual renderer plugin also reads the approved current plan when `--from-current` is used, so the rendered markdown stays aligned with the shared approval gate.
 Use `kvdf planner pipeline` to turn a raw idea into a documentation map, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action. It uses the same stdout-only-by-default preview behavior for visual inspection, with `--open` to launch the browser preview, `--no-open` as the opt-out, and `--fullscreen` for a fullscreen preview shell.
