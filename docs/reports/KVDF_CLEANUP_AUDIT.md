@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779296687696
-- Generated at: 2026-05-20T17:04:47.696Z
+- Report ID: kvdf-cleanup-1779297396027
+- Generated at: 2026-05-20T17:16:36.027Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -82,7 +82,7 @@ dead_code_candidates   docs/reports/VIBE_MAINTAINER_AUDIT.md               16   
 dead_code_candidates   docs/reports/VIBE_MAINTAINER_SUMMARY.md             16    Dead code             | 0                                                                                                                                          
 dead_code_candidates   plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
 dead_code_candidates   plugins/vibe-maintainer/runtime/vibe_maintainer.js  521   ["Dead code", String(report.summary ? report.summary.dead_code_candidates || 0 : 0)],                                                                              
-stale_docs             docs/reports/KVDF_FULL_REPOSITORY_AUDIT.md          522   - The repo supports it, but old wording can still confuse users if not kept consistent.                                                                            
+stale_docs             docs/reports/KVDF_FULL_REPOSITORY_AUDIT.md          525   - The repo supports it, but old wording can still confuse users if not kept consistent.                                                                            
 stale_docs             docs/workflows/KVDF_STATE_RESYNC.md                 6     Evolution is planned. It exists to prevent stale planning drafts, outdated                                                                                         
 stale_docs             plugins/vibe-maintainer/runtime/vibe_maintainer.js  1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },
 stale_docs             tests/service.unit.test.js                          78    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           

@@ -15,6 +15,7 @@ What is already working:
 - validation, governance, task, token, lock, and release checks
 - dashboard export and local state reporting
 - removable plugin bundles with explicit manifests
+- planner current-state, workspace boundary, stale-state, truth, train, and version readiness reports
 - tests and schema validation for the core runtime
 
 What is still evolving:
@@ -47,6 +48,8 @@ Kabeeri helps turn a product idea into:
 The goal is simple: the developer speaks naturally, the AI assistant uses Kabeeri as the project operating layer, and the project remains understandable when sessions stop and resume.
 
 The AI assistant should use the CLI directly whenever the project state, task scope, or report already exists.
+Before a new planning slice, use the file-first current-state and boundary checks
+so stale roadmap text does not outrank the live repo.
 
 ## Vibe-First By Design
 

@@ -52,6 +52,7 @@ Core rule:
 | Live dashboard | `kvdf dashboard generate/export/serve`, live API state, task tracker API, and dashboard UX audit exist. | implemented |
 | Dashboard UX governance | Role visibility, widget registry, app/workspace strategy, live-state UX rules, `kvdf dashboard ux`, and dashboard UX report exist. | implemented, can deepen |
 | Design governance | `kvdf design`, design sources, text specs, page specs, component contracts, visual reviews, audit reports, and unified governance reports exist. | implemented, can deepen |
+| Planner current-state/boundary/truth/train | File-first current-state reports, workspace boundary checks, stale-state classification, truth reconciliation, Roadmap Train / Evo Sprint queue, and version readiness reports exist. | implemented |
 | VS Code integration | Workspace task scaffold exists; full extension UI is not implemented. | partial |
 
 ## Current CLI Surface
@@ -69,6 +70,7 @@ Observed from `node bin/kvdf.js --help`:
 - intelligence history: `memory`, `adr`, `ai-run`, `audit`
 - dashboard and editor support: `dashboard`, `vscode`
 - product operations: `package`, `upgrade`, `readiness`, `governance`
+- planner and truth: `planner current-state`, `planner boundary`, `planner stale-state`, `planner truth`, `planner train`, `planner version`, `truth audit`
 - safety/release: `security`, `migration`, `handoff`, `github`, `design`
 
 ## Validation Snapshot

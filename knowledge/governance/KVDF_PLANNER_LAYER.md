@@ -203,17 +203,18 @@ Required progression:
 2. planner method or planner auto
 3. planner current-state
 4. planner boundary
-5. planner review
-6. planner docs
-7. planner propose
-8. Owner approve or reject
-9. planner current
-10. planner materialize
-11. planner prompt --from-current
-12. planner visual --from-current
-13. Codex execution
-14. validation
-15. planner complete
+5. planner truth audit or planner truth
+6. planner review
+7. planner docs
+8. planner propose
+9. Owner approve or reject
+10. planner current
+11. planner materialize
+12. planner prompt --from-current
+13. planner visual --from-current
+14. Codex execution
+15. validation
+16. planner complete
 
 Rules:
 
@@ -225,11 +226,17 @@ Rules:
 - completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
 - current-state and boundary reports should be read before any write-capable planner action
+- truth reconciliation should be read whenever runtime or generated reports may
+  be stale
 - planner docs catalog/plan/status/review output should carry the foldered app documentation model forward
 - `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
 - `.kabeeri/tasks.json` is supporting state, not final truth
 - chat history is supporting context only
 - GitHub is optional secondary evidence, not the primary source of truth
+- current-state reports must be rebuilt from the live repo/workspace before
+  recommending the next Evolution
+- the shared Roadmap Train / Evo Sprint Queue should resume FIFO state instead
+  of being rebuilt from chat or generated snapshots
 
 ## Planner Review And Resume
 

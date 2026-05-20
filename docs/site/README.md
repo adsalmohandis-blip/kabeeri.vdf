@@ -24,6 +24,10 @@ then validate the generated pages, page contracts, and localized content
 together. Treat `docs/site/generate-pages.js`, `docs/site/site-manifest.json`,
 and `docs/site/page-contracts.json` as the generated artifacts that reflect the
 current docs surface rather than the place to invent new guidance by hand.
+The planner and workflow pages now explain file-first State Resync, current-state
+reports, workspace boundary checks, truth reconciliation, Roadmap Train / Evo
+Sprint queue state, and version-to-publish readiness before any write-capable
+planning step.
 The same docs-site build also emits a deep publishing coverage report in
 `docs/reports/DOCS_SITE_DEEP_PUBLISHING_COVERAGE.json` so the published
 families stay visible from CLI and validation. The generator also writes a
@@ -69,6 +73,9 @@ The site is organized around developer-facing capability docs and covers:
 - Vibe-first workflow
 - task governance
 - app boundary governance
+- file-first State Resync, current-state, and workspace boundary policy
+- canonical truth reconciliation and stale-state detection
+- planner Roadmap Train / Evo Sprint queue and version readiness
 - workstreams and execution scope
 - prompt packs
 - WordPress development and WordPress plugin development

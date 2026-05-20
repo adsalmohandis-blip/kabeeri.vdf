@@ -34,10 +34,13 @@ The main audit conclusion is that KVDF is already a multi-layered platform:
 - plugin subsystem
 - docs generation/reporting layer
 - `.kabeeri/` runtime governance layer
+- file-first current-state / workspace-boundary / truth-reconciliation layer
+- Roadmap Train / Evo Sprint queue for owner and app tracks
 
 The main cleanup risks are not lack of capability, but rather:
 - source/docs/report drift
 - legacy wording around branch/PR vs direct-to-main
+- stale roadmap and report claims that need current-state reconciliation before planning
 - dirty generated report artifacts
 - large and partially monolithic command routing
 - mixed historical planning documents in `ROADMAP.md` and `CHANGELOG.md`
@@ -590,4 +593,3 @@ The main thing left is not to invent more mechanics, but to tighten the boundari
 - reduce docs/source drift
 - make plugin surfaces easier to audit
 - keep owner-track and app-track language consistent
-

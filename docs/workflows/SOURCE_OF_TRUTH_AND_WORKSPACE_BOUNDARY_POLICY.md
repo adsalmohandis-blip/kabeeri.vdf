@@ -64,6 +64,10 @@ live repository and workspace. The report should identify:
 - stale runtime items
 - next safe action
 
+The current-state report is the file-first gate that should be read before any
+new write-capable planning action. If the report or the companion truth audit
+shows a stale recommendation, the planner should stop and reconcile first.
+
 ## Stale State Classification
 
 KVDF should classify stale items as:

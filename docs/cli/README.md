@@ -29,6 +29,7 @@ It is still an early MVP, but it can already:
 - add/list/summarize project memory decisions, assumptions, constraints, risks, and deferred features
 - create/list/status business features and user journeys
 - use optional Vibe-first commands to turn natural language into suggested task cards
+  - rebuild current-state, workspace-boundary, stale-state, truth, train, and version-ready reports before planning
   - generate compiled Vibe briefs with product, UI/UX, system, and data sections plus next actions to reduce session resume time and AI token waste
   - select UI/UX and software-design references with explicit screen and module plans before implementation
 - compile questionnaire intake plans that include explicit module plans, delivery maps, and task-generation contracts before task creation
@@ -82,6 +83,7 @@ It is still an early MVP, but it can already:
 - configure local GitHub sync settings
 - sync GitHub labels, milestones, issues, and releases through `gh` when `--confirm` is provided
 - generate release checks, release notes, and release checklists from v3/v4 plans
+- surface planner truth/current-state/boundary reports for file-first resync before planning
 - run Multi-AI scenario reviews for governed workspaces
 ```
 

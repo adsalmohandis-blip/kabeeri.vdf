@@ -24,6 +24,7 @@ Kabeeri VDF currently has:
 - common prompt layer and React Native Expo Pack v0.2.0 with mobile API contract and accessibility/performance prompts.
 - design source governance, unified Design Governance reports, and dashboard UX governance.
 - package and upgrade checks.
+- planner current-state, boundary, stale-state, truth reconciliation, Roadmap Train / Evo Sprint queue, and version readiness.
 
 ## Guardrails
 

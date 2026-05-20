@@ -15,6 +15,8 @@ KVDF must reconcile current source-level evidence before it claims a capability 
 - Runtime state alone never proves implementation.
 - Generated reports are snapshots, not canonical truth.
 - A capability is implemented only when source evidence exists.
+- `kvdf planner current-state --json` and `kvdf planner boundary --json` are
+  preflight reports, not implementation proof.
 - KVDF should mark runtime-only, documented-only, and stale-planned items clearly instead of promoting them to implemented.
 - When source, docs, runtime, and snapshots conflict in a way that is ambiguous, KVDF must stop and ask the Owner.
 
