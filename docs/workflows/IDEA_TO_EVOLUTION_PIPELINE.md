@@ -58,6 +58,22 @@ The pipeline reuses the Planner visual model so the plan can be rendered as:
 The dashboard sync layer can render the planner summary as an empty-state-safe
 Planner / Pipeline section without becoming the source of truth.
 
+## Planner Method And Docs Materialization
+
+The pipeline is now fed by the self-planning engine:
+
+- `kvdf planner method` chooses `auto`, `structured`, `agile`, or `hybrid`
+- `kvdf planner auto` generates the planning strategy, docs map, design
+  artifacts, versions, evolutions, task punches, visuals, review summary, and
+  Codex prompt
+- `kvdf planner review` checks scope, method, docs, security, source control,
+  task quality, and visual readiness
+- `kvdf planner docs` materializes draft Markdown docs before execution
+
+The pipeline still does not execute work or materialize Evolutions on its own.
+It prepares the governed package that the Owner can review, approve, and then
+materialize.
+
 ## Source Control
 
 The pipeline carries the explicit `source_control` object so plan output can describe:

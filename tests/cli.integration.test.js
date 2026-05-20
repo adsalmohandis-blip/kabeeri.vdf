@@ -6149,6 +6149,144 @@ test("planner evolution returns a structured owner plan and task punch", () => {
   assert.ok(plannerEvolution.prompt.includes("CODEx PROMPT — KVDF Core"));
 });
 
+test("planner method recommends a planning method for secure database app work", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "method", "--goal", "Build secure database app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_method_recommendation");
+  assert.strictEqual(report.planner_mode, "vibe");
+  assert.ok(["structured", "hybrid"].includes(report.recommended_method));
+  assert.ok(report.reason);
+  assert.ok(["low", "medium", "high"].includes(report.confidence));
+  assert.ok(Array.isArray(report.method_rules_matched));
+  assert.ok(report.method_rules_matched.length > 0);
+  assert.ok(report.delivery_recommendation);
+}));
+
+test("planner auto returns a complete owner plan without touching KVDOS", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "auto", "--goal", "Improve KVDF dashboard lifecycle", "--track", "owner", "--method", "auto", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_auto_plan");
+  assert.strictEqual(report.planner_mode, "owner");
+  assert.ok(["structured", "hybrid"].includes(report.planning_method));
+  assert.ok(report.codex_prompt.includes("CODEx PROMPT — KVDF Core"));
+  assert.ok(report.review);
+  assert.ok(Array.isArray(report.documentation_files));
+  assert.ok(Array.isArray(report.evolutions));
+  assert.ok(Array.isArray(report.task_punches));
+  assert.ok(report.visual_planning);
+  assert.ok(report.source_pipeline);
+  assert.ok(report.source_pipeline.evolutions.length > 0);
+  assert.ok(report.source_pipeline.evolutions[0].forbidden_files.some((item) => /KVDOS/.test(item)));
+}));
+
+test("planner auto returns a vibe planning package with lifecycle stages and documentation", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "auto", "--goal", "Build booking app", "--track", "vibe", "--method", "auto", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_auto_plan");
+  assert.strictEqual(report.planner_mode, "vibe");
+  assert.ok(["hybrid", "structured", "agile"].includes(report.planning_method));
+  assert.ok(report.source_pipeline.pipeline.includes("request"));
+  assert.ok(report.source_pipeline.pipeline.includes("handoff"));
+  assert.ok(report.documentation_files.length > 0);
+  assert.ok(report.design_artifacts.system_design);
+  assert.ok(report.version_plan.versions.length > 0);
+  assert.ok(report.evolutions.length > 0);
+  assert.ok(report.task_punches.length > 0);
+}));
+
+test("planner auto returns a structured plugin plan with plugin parity guidance", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "planner-visual");
+  const report = JSON.parse(runKvdf(["planner", "auto", "--goal", "Improve planner visual plugin", "--track", "plugin", "--plugin", "planner-visual", "--method", "auto", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_auto_plan");
+  assert.strictEqual(report.planner_mode, "plugin");
+  assert.strictEqual(report.planning_method, "structured");
+  assert.strictEqual(report.source_pipeline.plugin_context.plugin_id, "planner-visual");
+  assert.ok(report.source_pipeline.documentation_files.some((item) => item.includes("plugins/planner-visual/docs/")));
+  assert.ok(report.source_pipeline.evolutions[0].allowed_files.some((item) => item.includes("plugins/planner-visual")));
+  assert.ok(report.source_pipeline.evolutions[0].forbidden_files.some((item) => item.includes("KVDOS")));
+}));
+
+test("planner review and resume expose current-state planning metadata", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Review planner state", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const review = JSON.parse(runKvdf(["planner", "review", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "kvdf_planner_review");
+  assert.strictEqual(review.planner_mode, "owner");
+  assert.ok(review.scope_review);
+  assert.ok(review.method_review);
+  assert.ok(review.docs_review);
+  assert.ok(review.source_control_review);
+  assert.ok(review.task_quality_review);
+  assert.ok(review.visual_review);
+  const resume = JSON.parse(runKvdf(["planner", "resume", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(resume.report_type, "kvdf_planner_resume");
+  assert.ok(resume.current_plan);
+  assert.ok(resume.next_recommended_action);
+  assert.strictEqual(typeof resume.blocked, "boolean");
+}));
+
+test("planner review and resume stay safe when runtime state is missing", () => withTempDir((dir) => {
+  const resume = JSON.parse(runKvdf(["planner", "resume", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(resume.report_type, "kvdf_planner_resume");
+  assert.strictEqual(resume.current_plan, null);
+  assert.ok(resume.next_recommended_action);
+  assert.strictEqual(resume.blocked, true);
+  assert.ok(resume.blockers.length > 0);
+  const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Missing state review", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "kvdf_planner_review");
+  assert.ok(["pass", "warning", "blocked"].includes(review.status));
+  assert.ok(Array.isArray(review.required_fixes));
+  assert.ok(review.next_action);
+}));
+
+test("planner docs dry run reports proposed markdown files without writing them", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "--idea", "Build booking app", "--track", "vibe", "--method", "auto", "--dry-run", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
+  assert.strictEqual(report.status, "draft");
+  assert.ok(report.docs_created.length > 0);
+  assert.ok(report.docs_created.some((item) => item.includes("workspaces/apps/app-draft/docs/00-idea.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "workspaces", "apps", "app-draft", "docs", "00-idea.md")));
+}));
+
+test("planner docs materialization creates vibe workspace drafts only", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "--idea", "Build booking app", "--track", "vibe", "--method", "auto", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
+  assert.strictEqual(report.status, "draft");
+  assert.ok(report.docs_created.some((item) => item.includes("workspaces/apps/booking/docs/")));
+  assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "00-idea.md")));
+  assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "10-handoff.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "docs", "workflows", "PLANNER_SELF_PLANNING_ENGINE.md")));
+}));
+
+test("planner docs materialization creates plugin drafts only under the selected plugin", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "planner-visual");
+  const report = JSON.parse(runKvdf(["planner", "docs", "--idea", "Improve planner visual plugin", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
+  assert.ok(report.docs_created.every((item) => item.startsWith("plugins/planner-visual/docs/")));
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "00-plugin-goal.md")));
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "05-version-plan.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "00-idea.md")));
+}));
+
+test("planner prompt from current exposes planning method docs and review metadata", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Prompt planner state", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(prompt.planning_method);
+  assert.ok(prompt.docs_status);
+  assert.ok(Array.isArray(prompt.validation_commands));
+  assert.ok(Array.isArray(prompt.allowed_files));
+  assert.ok(Array.isArray(prompt.forbidden_files));
+  assert.ok(prompt.stop_condition);
+  assert.ok(prompt.review);
+  assert.ok(prompt.prompt.includes("Planning method:"));
+  assert.ok(prompt.prompt.includes("Docs status:"));
+  assert.ok(prompt.prompt.includes("Security gate:"));
+  assert.ok(prompt.prompt.includes("Allowed files:"));
+  assert.ok(prompt.prompt.includes("Forbidden files:"));
+  assert.ok(prompt.prompt.includes("Stop condition:"));
+}));
+
 test("planner propose persists a proposed plan in runtime state", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const result = JSON.parse(runKvdf(["planner", "propose", "--goal", "Add planner approval gate", "--track", "owner", "--json"], { cwd: dir }).stdout);

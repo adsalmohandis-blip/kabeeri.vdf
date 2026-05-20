@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Docs Materialization",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "planner_mode",
+    "track",
+    "planning_method",
+    "status",
+    "docs_created",
+    "docs_updated",
+    "docs_skipped",
+    "source_pipeline",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_planner_docs_materialization"
+    },
+    "generated_at": { "type": "string" },
+    "planner_mode": { "type": "string", "enum": ["owner", "vibe", "plugin"] },
+    "track": { "type": "string", "enum": ["framework_owner", "vibe_app_developer", "plugin"] },
+    "planning_method": { "type": "string", "enum": ["structured", "agile", "hybrid", "auto"] },
+    "status": { "type": "string", "enum": ["draft"] },
+    "docs_created": { "type": "array", "items": { "type": "string" } },
+    "docs_updated": { "type": "array", "items": { "type": "string" } },
+    "docs_skipped": { "type": "array", "items": { "type": "string" } },
+    "source_pipeline": { "type": ["object", "null"] },
+    "next_action": { "type": "string", "minLength": 1 }
+  }
+}

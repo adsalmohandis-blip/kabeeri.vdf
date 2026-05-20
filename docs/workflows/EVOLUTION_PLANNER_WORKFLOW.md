@@ -49,6 +49,27 @@ Before any next-Evolution recommendation, the planner must:
 The planner can only recommend the next Evolution after the Current-State
 Report shows that the repo reality matches the proposed ledger.
 
+## Self-Planning Engine
+
+The planner should use the self-planning sequence before it recommends the next
+Evolution:
+
+1. `kvdf planner method`
+2. `kvdf planner auto`
+3. `kvdf planner review`
+4. `kvdf planner docs`
+5. `kvdf planner resume`
+6. `kvdf planner propose`
+7. `kvdf planner approve`
+8. `kvdf planner current`
+9. `kvdf planner materialize`
+10. `kvdf planner prompt --from-current`
+11. `kvdf planner visual --from-current`
+
+The planner remains the planning authority, but it does not execute code
+changes automatically. Owner approval still gates execution, and draft docs
+remain draft-only until the Owner approves the path forward.
+
 ## Workflow
 
 ```text
@@ -97,6 +118,17 @@ Before execution, the planner should surface:
 - acceptance criteria
 - validation commands
 - stop condition
+
+The planner should also surface:
+
+- planning method
+- method reason
+- docs status
+- review warnings
+- source-control mode
+- security gate state when available
+- visual planning summary
+- next approved action
 
 ## Source Control Selection
 

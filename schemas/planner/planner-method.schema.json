@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Method Recommendation",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "goal",
+    "planner_mode",
+    "track",
+    "recommended_method",
+    "reason",
+    "confidence",
+    "method_rules_matched",
+    "delivery_recommendation",
+    "risks",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_planner_method_recommendation"
+    },
+    "generated_at": { "type": "string" },
+    "goal": { "type": "string", "minLength": 1 },
+    "planner_mode": { "type": "string", "enum": ["owner", "vibe", "plugin"] },
+    "track": { "type": "string", "enum": ["framework_owner", "vibe_app_developer", "plugin"] },
+    "recommended_method": { "type": "string", "enum": ["structured", "agile", "hybrid"] },
+    "reason": { "type": "string", "minLength": 1 },
+    "confidence": { "type": "string", "enum": ["low", "medium", "high"] },
+    "method_rules_matched": { "type": "array", "items": { "type": "string" } },
+    "delivery_recommendation": { "type": "object" },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string", "minLength": 1 }
+  }
+}

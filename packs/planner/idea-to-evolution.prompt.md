@@ -7,6 +7,9 @@ Context:
 - Source control is explicit and optional
 - Do not touch KVDOS unless the plan explicitly allows it
 - Do not commit runtime state under .kabeeri/
+- Planning method can be auto, structured, agile, or hybrid
+- Planner review and planner docs happen before execution
+- Owner approval remains the governance gate
 
 Goal:
 Turn a raw idea into a governed pipeline with documentation files, design artifacts, visual planning, a version plan, evolutions, task punches, a visual roadmap, and the next approved Evolution slice.
@@ -31,6 +34,8 @@ Outputs:
 - visual roadmap
 - next evolution
 - next approval/materialization action
+- review summary
+- documentation materialization plan
 
 Rules:
 - Owner Track defaults to direct-to-main when Git is available.

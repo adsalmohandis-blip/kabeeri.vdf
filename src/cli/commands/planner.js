@@ -6,6 +6,7 @@ const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 const { readGitRepositoryState } = require("../services/git_snapshot");
 const { buildAiLearningPromptContext } = require("./ai_learning");
+const { buildDeliveryModeRecommendation } = require("./delivery");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
@@ -26,10 +27,14 @@ const OWNER_ALLOWED_FILES = [
   "knowledge/governance/KVDF_PLANNER_LAYER.md",
   "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md",
   "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
+  "docs/workflows/PLANNER_SELF_PLANNING_ENGINE.md",
   "docs/workflows/SOURCE_CONTROL_PROVIDER_MODEL.md",
   "packs/planner/evolution-planner.prompt.md",
   "packs/planner/codex-execution.prompt.md",
   "packs/planner/idea-to-evolution.prompt.md",
+  "schemas/planner/planner-method.schema.json",
+  "schemas/planner/planner-review.schema.json",
+  "schemas/planner/planner-docs-materialization.schema.json",
   "schemas/planner/evolution-plan.schema.json",
   "schemas/planner/task-punch.schema.json",
   "schemas/planner/idea-to-evolution-pipeline.schema.json",
@@ -159,7 +164,7 @@ const PLUGIN_OUT_OF_SCOPE = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -187,6 +192,12 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
     return;
   }
 
+  if (mode === "resume") {
+    const report = buildPlannerResumeReport(deps);
+    printPlannerOutput(report, flags, deps, "current");
+    return;
+  }
+
   if (mode === "reject") {
     const planId = resolvePlanId(value, flags, rest);
     if (!planId) throw new Error("Missing plan id for planner reject.");
@@ -207,6 +218,32 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
     const planId = isFromCurrentPlan(flags) ? null : resolvePlanId(value, flags, rest);
     const report = materializePlannerPlan(planId, flags, deps);
     printPlannerOutput(report, flags, deps, "materialize");
+    return;
+  }
+
+  if (mode === "method") {
+    const goal = resolveGoal(value, flags, rest, "");
+    const report = buildPlannerMethodReport(goal, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "method");
+    return;
+  }
+
+  if (mode === "auto") {
+    const goal = resolveGoal(value, flags, rest, "");
+    const report = buildPlannerAutoPlanReport(goal, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "auto");
+    return;
+  }
+
+  if (mode === "review") {
+    const report = buildPlannerReviewReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "review");
+    return;
+  }
+
+  if (mode === "docs") {
+    const report = buildPlannerDocsMaterializationReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "docs");
     return;
   }
 
@@ -295,6 +332,858 @@ function buildPlannerNextReport(request = {}, deps = {}) {
   return report;
 }
 
+function buildPlannerMethodReport(goal, flags = {}, rest = [], deps = {}) {
+  const planning = buildPlannerPlanningContext(goal, { flags, ...flags }, deps, { methodFromFlags: true, rest });
+  return {
+    report_type: "kvdf_planner_method_recommendation",
+    generated_at: new Date().toISOString(),
+    goal: planning.goal,
+    planner_mode: planning.mode,
+    track: planning.track,
+    recommended_method: planning.method.recommended_method,
+    reason: planning.method.reason,
+    confidence: planning.method.confidence,
+    method_rules_matched: planning.method.method_rules_matched,
+    delivery_recommendation: planning.method.delivery_recommendation,
+    risks: planning.method.risks,
+    next_action: `Run kvdf planner auto --goal "${escapeQuotes(planning.goal)}" --track ${planning.mode} --method ${planning.method.recommended_method} --json`
+  };
+}
+
+function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
+  const planning = buildPlannerPlanningContext(goal, { flags, ...flags }, deps, { methodFromFlags: true, rest });
+  const pipeline = buildIdeaToEvolutionPipelineReport(planning.goal, {
+    ...flags,
+    mode: planning.mode,
+    deliveryMode: planning.delivery_mode,
+    pluginContext: planning.plugin_context,
+    source_control: planning.source_control
+  }, planning.context);
+  const planningStrategy = buildPlannerStrategy(planning.method.recommended_method, planning.mode, pipeline);
+  const review = buildPlannerReviewSummary({
+    goal: planning.goal,
+    planner_mode: planning.mode,
+    track: pipeline.track,
+    planning_method: planning.method.recommended_method,
+    source_control: planning.source_control,
+    documentation_files: pipeline.documentation_files,
+    visual_planning: pipeline.visual_planning,
+    task_punches: pipeline.task_punches,
+    evolutions: pipeline.evolutions,
+    method: planning.method,
+    plugin_context: planning.plugin_context,
+    delivery_mode: planning.delivery_mode
+  });
+  const visualPlanning = {
+    ...(pipeline.visual_planning || {}),
+    planning_method: planning.method.recommended_method,
+    method_reason: planning.method.reason,
+    confidence: planning.method.confidence,
+    review_status: review.status,
+    docs_status: "planned",
+    docs_created_total: Array.isArray(pipeline.documentation_files) ? pipeline.documentation_files.length : 0,
+    risks: planning.method.risks,
+    current_gate: planning.current_gate,
+    next_action: pipeline.next_action || ""
+  };
+  const codexPrompt = renderCodexPrompt({
+    goal: planning.goal,
+    mode: planning.mode,
+    plan: pipeline.version_plan && pipeline.version_plan.versions && pipeline.version_plan.versions[0] ? pipeline.version_plan.versions[0].evolution : pipeline.evolutions[0],
+    taskPunch: pipeline.task_punches && pipeline.task_punches[0] ? pipeline.task_punches[0] : {},
+    context: planning.context,
+    pluginContext: planning.plugin_context,
+    sourceControl: planning.source_control,
+    aiLearning: planning.ai_learning,
+    planningMethod: planning.method.recommended_method,
+    methodReason: planning.method.reason,
+    review,
+    docsStatus: "planned",
+    visualSummary: visualPlanning,
+    currentGate: planning.current_gate
+  });
+  return {
+    report_type: "kvdf_planner_auto_plan",
+    generated_at: new Date().toISOString(),
+    planner_mode: planning.mode,
+    track: pipeline.track,
+    planning_method: planning.method.recommended_method,
+    method_reason: planning.method.reason,
+    confidence: planning.method.confidence,
+    goal: planning.goal,
+    source_control: planning.source_control,
+    planning_strategy: planningStrategy,
+    documentation_files: pipeline.documentation_files,
+    design_artifacts: pipeline.design_artifacts,
+    version_plan: pipeline.version_plan,
+    evolutions: pipeline.evolutions,
+    task_punches: pipeline.task_punches,
+    visual_planning: visualPlanning,
+    review,
+    codex_prompt: codexPrompt,
+    validation_commands: pipeline.validation_commands || [],
+    stop_condition: pipeline.stop_condition || "",
+    next_evolution: pipeline.next_evolution || null,
+    source_pipeline: pipeline,
+    approval_required: true,
+    next_action: "Review the auto plan, then run kvdf planner propose/approve/materialize or kvdf planner docs."
+  };
+}
+
+function buildPlannerPlanningContext(goal, request = {}, deps = {}, options = {}) {
+  const isResolvedRequest = request && typeof request === "object" && Object.prototype.hasOwnProperty.call(request, "mode") && Object.prototype.hasOwnProperty.call(request, "deliveryMode") && Object.prototype.hasOwnProperty.call(request, "recommended_evolution") && Object.prototype.hasOwnProperty.call(request, "context");
+  const resolved = isResolvedRequest
+    ? request
+    : resolvePlannerRequest({ action: options.action || "auto", value: goal, flags: request.flags || request, rest: options.rest || [] }, deps);
+  const flags = request.flags || request || {};
+  const mode = normalizePlannerMode(resolved.mode || request.mode || flags.mode || normalizeTrackAlias(flags.track) || "owner");
+  const planningMethodInput = normalizePlannerMethod(
+    readPlannerFlag(flags, "method", "planning-method", "planning_method") ||
+    request.method ||
+    request.planning_method ||
+    request["planning-method"] ||
+    "auto"
+  );
+  const method = buildPlannerMethodRecommendation(goal || resolved.goal, {
+    ...request,
+    flags,
+    mode,
+    deliveryMode: resolved.deliveryMode,
+    pluginContext: mode === "plugin" && (resolved.plugin_id || flags.plugin) ? buildPluginContext({ plugin_id: resolved.plugin_id || flags.plugin }, resolved.context) : null,
+    source_control: resolved.source_control
+  }, resolved.context, planningMethodInput);
+  const selectedMethod = planningMethodInput === "auto" ? method.recommended_method : planningMethodInput;
+  const pluginContext = mode === "plugin" ? (resolved.plugin_id ? buildPluginContext({ plugin_id: resolved.plugin_id }, resolved.context) : (flags.plugin ? buildPluginContext({ plugin_id: flags.plugin }, resolved.context) : null)) : null;
+  const sourceControl = resolved.source_control || buildPlannerSourceControl({ flags }, resolved.context, mode, resolved.deliveryMode, pluginContext);
+  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
+  const currentGate = buildPlannerCurrentGate(selectedMethod, sourceControl, mode);
+  const pipeline = options.skip_pipeline ? null : buildIdeaToEvolutionPipelineReport(goal || resolved.goal, {
+    ...flags,
+    mode,
+    deliveryMode: resolved.deliveryMode,
+    pluginContext,
+    source_control: sourceControl
+  }, resolved.context);
+  return {
+    ...resolved,
+    mode,
+    flags,
+    goal: goal || resolved.goal,
+    method: {
+      ...method,
+      requested_method: planningMethodInput,
+      selected_method: selectedMethod
+    },
+    planning_method: selectedMethod,
+    method_input: planningMethodInput,
+    plugin_context: pluginContext,
+    source_control: sourceControl,
+    ai_learning: aiLearning,
+    current_gate: currentGate,
+    pipeline,
+    track: getPlannerTrack(mode)
+  };
+}
+
+function buildPlannerMethodRecommendation(goal, request = {}, context = {}, explicitMethod = "auto") {
+  const mode = request.mode || resolvePlannerMode(request, context);
+  const track = getPlannerTrack(mode);
+  const text = String(goal || request.goal || request.idea || "").toLowerCase();
+  const deliveryRecommendation = buildDeliveryModeRecommendation(goal || request.goal || request.idea || "", request.flags || request);
+  const methodRulesMatched = [];
+  let structuredScore = 0;
+  let agileScore = 0;
+  let hybridScore = 0;
+  const addRule = (rule, weights = { structured: 0, agile: 0, hybrid: 0 }) => {
+    methodRulesMatched.push(rule);
+    structuredScore += weights.structured || 0;
+    agileScore += weights.agile || 0;
+    hybridScore += weights.hybrid || 0;
+  };
+  const has = (pattern) => pattern.test(text);
+
+  if (mode === "plugin") {
+    addRule("plugin_track_structured_default", { structured: 5 });
+  } else if (mode === "owner") {
+    addRule("owner_track_prefers_structured_or_hybrid", { structured: 2, hybrid: 1 });
+  } else if (mode === "vibe") {
+    addRule("vibe_track_prefers_hybrid_or_agile", { hybrid: 2, agile: 1 });
+  }
+
+  if (has(/security|database|schema|source control|source-control|core|plugin-loader|migration|integration|enterprise|release|architecture|api|backend|compliance|audit|governance|sso|permissions|regulatory/)) {
+    addRule("hardening_integration_or_core_work", { structured: 4 });
+  }
+  if (has(/ui|ux|design|content|prototype|mvp|iterate|feedback|small|quick|landing|single screen|copy|blog|marketing/)) {
+    addRule("iteration_or_small_scope_work", { agile: 3 });
+  }
+  if (has(/build|full|app|product|system|end-to-end|dashboard|booking|commerce|platform|suite|workflow/)) {
+    addRule("full_product_or_system_build", { hybrid: 4 });
+  }
+  if (has(/unclear|idea|brainstorm|explore|discover|research|not sure|unknown scope|rough/)) {
+    addRule("unclear_scope_needs_hybrid", { hybrid: 4 });
+  }
+  if (mode === "vibe" && has(/small|quick|ui|content|copy|single|simple|one screen|landing/)) {
+    addRule("vibe_small_iteration_agile", { agile: 4 });
+  }
+  if (mode === "vibe" && has(/build|full app|product|system|booking|commerce|dashboard|platform/)) {
+    addRule("vibe_full_product_hybrid", { hybrid: 5 });
+  }
+  if (mode === "plugin") {
+    addRule("plugin_manifest_runtime_docs_tests_parity", { structured: 2 });
+  }
+  if (!methodRulesMatched.length) {
+    addRule("safe_default", { structured: 1, hybrid: 1 });
+  }
+
+  let recommended_method = "structured";
+  let scoreSnapshot = { structured: structuredScore, agile: agileScore, hybrid: hybridScore };
+  if (hybridScore >= structuredScore && hybridScore >= agileScore) recommended_method = "hybrid";
+  else if (agileScore > structuredScore) recommended_method = "agile";
+  if (mode === "plugin") recommended_method = "structured";
+  if (mode === "owner" && recommended_method === "agile") recommended_method = "hybrid";
+  if (mode === "vibe" && recommended_method === "structured" && /build|full|product|system|booking|commerce|dashboard|platform/.test(text)) recommended_method = "hybrid";
+  if (mode === "vibe" && recommended_method === "structured" && /ui|content|copy|small|quick|landing/.test(text)) recommended_method = "agile";
+  if (mode === "owner" && /security|database|schema|source control|plugin-loader|core|enterprise|integration/.test(text)) recommended_method = "structured";
+  if (/unclear|idea|brainstorm|explore|discover|research|full|product|system|build/.test(text) && mode !== "plugin" && recommended_method === "structured") {
+    recommended_method = "hybrid";
+  }
+
+  const total = Math.max(structuredScore + agileScore + hybridScore, 1);
+  const margin = Math.max(structuredScore, agileScore, hybridScore) - sortedMethodScores(scoreSnapshot)[1];
+  const confidence = margin >= 4 ? "high" : margin >= 2 ? "medium" : "low";
+  const reasonMap = {
+    structured: "Structured planning is recommended because the request benefits from upfront docs, acceptance gates, and controlled validation.",
+    agile: "Agile planning is recommended because the request benefits from smaller iterations and faster feedback.",
+    hybrid: "Hybrid planning is recommended because the request needs a structured foundation first, then agile execution slices."
+  };
+  const risks = [];
+  if (recommended_method === "agile" && has(/security|database|schema|source control|core|integration|enterprise|release/)) risks.push("Agile may under-plan a scope that benefits from stronger upfront structure.");
+  if (recommended_method === "structured" && has(/ui|content|copy|prototype|small|quick|feedback/)) risks.push("Structured planning may over-specify a small iteration that needs faster feedback.");
+  if (recommended_method === "hybrid") risks.push("Hybrid requires disciplined transitions from foundation to slices.");
+  return {
+    recommended_method,
+    reason: reasonMap[recommended_method],
+    confidence,
+    method_rules_matched: methodRulesMatched,
+    delivery_recommendation: deliveryRecommendation,
+    risks
+  };
+}
+
+function buildPlannerStrategy(method, mode, pipeline = null) {
+  const base = {
+    method,
+    mode,
+    foundation: method === "hybrid" ? "structured" : method,
+    execution: method === "hybrid" ? "agile" : method,
+    review_gates: method === "agile" ? ["lightweight feedback", "task punch review"] : ["requirements", "design", "acceptance gates", "validation"],
+    notes: []
+  };
+  if (method === "hybrid") {
+    base.notes.push("Use a structured foundation first, then move into agile evolutions.");
+  }
+  if (mode === "plugin") {
+    base.notes.push("Keep plugin manifest, runtime, docs, schemas, and tests in parity.");
+  }
+  if (mode === "vibe") {
+    base.notes.push("Keep app docs and handoff artifacts file-first and local-first.");
+  }
+  if (pipeline && Array.isArray(pipeline.pipeline)) {
+    base.pipeline = [...pipeline.pipeline];
+  }
+  return base;
+}
+
+function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null }) {
+  const risks = [];
+  const requiredFixes = [];
+  let status = "pass";
+  const docsCount = Array.isArray(documentation_files) ? documentation_files.length : 0;
+  const hasVisual = Boolean(visual_planning && visual_planning.graph && visual_planning.board);
+  const hasPrompt = Boolean(goal && goal.trim());
+  const sourceControlMode = source_control ? String(source_control.mode || "local_only") : "local_only";
+  const sourceControlReview = {
+    status: source_control ? "pass" : "warning",
+    summary: source_control ? summarizeSourceControl(source_control) : "No source control context recorded.",
+    notes: source_control ? (source_control.notes || []) : ["Source control context is not available."]
+  };
+  const scopeReview = {
+    status: planner_mode ? "pass" : "blocked",
+    track,
+    planner_mode,
+    notes: []
+  };
+  if (!goal) {
+    status = "blocked";
+    requiredFixes.push("Provide a goal or current plan before proceeding.");
+  }
+  const methodReview = {
+    status: planning_method ? "pass" : "blocked",
+    planning_method,
+    recommended_method: method ? method.recommended_method : planning_method,
+    reason: method ? method.reason : "",
+    notes: []
+  };
+  if (method && method.recommended_method && planning_method && method.recommended_method !== planning_method) {
+    methodReview.status = "warning";
+    methodReview.notes.push(`Recommended ${method.recommended_method} but selected ${planning_method}.`);
+    risks.push("The selected planning method differs from the recommendation.");
+  }
+  const docsReview = {
+    status: docsCount > 0 ? "pass" : "warning",
+    docs_count: docsCount,
+    docs_status: docsCount > 0 ? "planned" : "missing",
+    notes: docsCount > 0 ? ["Documentation files are planned or generated."] : ["Documentation files are not yet planned."]
+  };
+  const securityReview = {
+    status: security_gate ? security_gate.status || "unknown" : "not_recorded",
+    next_action: security_gate ? security_gate.next_action || "" : "Security gate not recorded for this plan.",
+    notes: security_gate ? [security_gate.next_action || "Security gate data is available."] : ["Security gate state is optional and not recorded."]
+  };
+  const taskQualityReview = {
+    status: Array.isArray(task_punches) && task_punches.length ? "pass" : "warning",
+    notes: Array.isArray(task_punches) && task_punches.length ? ["Task punches are available."] : ["Task punches are missing."],
+    task_punches: Array.isArray(task_punches) ? task_punches.length : 0
+  };
+  const visualReview = {
+    status: hasVisual ? "pass" : "warning",
+    notes: hasVisual ? ["Visual planner output is present."] : ["Visual planner output is missing."],
+    review_status: hasVisual ? "pass" : "warning"
+  };
+  const docsStatus = docsReview.docs_status;
+  if (!hasVisual) requiredFixes.push("Generate the visual planner output before execution.");
+  if (!Array.isArray(task_punches) || !task_punches.length) requiredFixes.push("Generate task punches before execution.");
+  if (sourceControlMode === "none") {
+    sourceControlReview.status = "warning";
+    sourceControlReview.notes.push("Source control is local-only or unavailable.");
+  }
+  if (planner_mode === "owner" && track !== "framework_owner") {
+    status = "blocked";
+    requiredFixes.push("Owner track must resolve to framework_owner.");
+  }
+  if (planner_mode === "vibe" && track !== "vibe_app_developer") {
+    status = "blocked";
+    requiredFixes.push("Vibe track must resolve to vibe_app_developer.");
+  }
+  if (planner_mode === "plugin" && track !== "plugin") {
+    status = "blocked";
+    requiredFixes.push("Plugin track must resolve to plugin.");
+  }
+  if (security_gate && security_gate.status === "blocked") {
+    status = "blocked";
+    requiredFixes.push(security_gate.next_action || "Address security gate blockers.");
+  }
+  if (status !== "blocked" && (methodReview.status === "warning" || docsReview.status === "warning" || sourceControlReview.status === "warning" || visualReview.status === "warning")) {
+    status = "warning";
+  }
+  if (status === "pass" && !hasPrompt) {
+    status = "warning";
+    risks.push("Goal text is missing from the planner review.");
+  }
+  return {
+    plan_id: current_plan && current_plan.plan_id ? current_plan.plan_id : null,
+    status,
+    planner_mode,
+    planning_method,
+    scope_review: scopeReview,
+    method_review: methodReview,
+    docs_review: docsReview,
+    security_review: securityReview,
+    source_control_review: sourceControlReview,
+    task_quality_review: taskQualityReview,
+    visual_review: visualReview,
+    review_status: status,
+    docs_status: docsStatus,
+    risks,
+    required_fixes: uniqueList(requiredFixes),
+    next_action: status === "blocked"
+      ? (requiredFixes[0] || "Resolve the blocked planning checks.")
+      : status === "warning"
+        ? "Review the warnings, then decide whether to approve or materialize."
+        : "Planner review passed. Proceed to approval or materialization."
+  };
+}
+
+function buildPlannerBlockedReviewReport(message, context) {
+  return {
+    report_type: "kvdf_planner_review",
+    generated_at: new Date().toISOString(),
+    plan_id: null,
+    status: "blocked",
+    planner_mode: null,
+    planning_method: null,
+    scope_review: { status: "blocked", notes: [message] },
+    method_review: { status: "blocked", notes: [message] },
+    docs_review: { status: "blocked", notes: [message] },
+    security_review: { status: "blocked", notes: [message] },
+    source_control_review: { status: "blocked", notes: [message] },
+    task_quality_review: { status: "blocked", notes: [message] },
+    visual_review: { status: "blocked", notes: [message] },
+    risks: [message],
+    required_fixes: [message],
+    next_action: message
+  };
+}
+
+function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
+  const mode = normalizePlannerMode(currentPlan.planner_mode);
+  const planningMethod = currentPlan.planning_method || currentPlan.review && currentPlan.review.planning_method || null;
+  const method = buildPlannerMethodRecommendation(currentPlan.goal || "", { mode, flags: {}, source_control: currentPlan.source_control }, context, planningMethod || "auto");
+  const review = buildPlannerReviewSummary({
+    goal: currentPlan.goal,
+    planner_mode: mode,
+    track: currentPlan.track || getPlannerTrack(mode),
+    planning_method: planningMethod || method.recommended_method,
+    source_control: currentPlan.source_control,
+    documentation_files: currentPlan.documentation_files || [],
+    visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
+    task_punches: currentPlan.task_punches || (currentPlan.task_punch ? [currentPlan.task_punch] : []),
+    evolutions: currentPlan.evolutions || (currentPlan.recommended_evolution ? [currentPlan.recommended_evolution] : []),
+    method,
+    plugin_context: currentPlan.plugin_context || null,
+    delivery_mode: currentPlan.delivery_mode || getDeliveryMode(mode),
+    current_plan: currentPlan,
+    security_gate: readJsonFileIfExists(path.join(context.repo_root, ".kabeeri", "security", "security_gate_state.json"))
+  });
+  return {
+    report_type: "kvdf_planner_review",
+    generated_at: new Date().toISOString(),
+    plan_id: currentPlan.plan_id || null,
+    status: review.status,
+    planner_mode: mode,
+    planning_method: review.planning_method,
+    scope_review: review.scope_review,
+    method_review: review.method_review,
+    docs_review: review.docs_review,
+    security_review: review.security_review,
+    source_control_review: review.source_control_review,
+    task_quality_review: review.task_quality_review,
+    visual_review: review.visual_review,
+    risks: review.risks,
+    required_fixes: review.required_fixes,
+    next_action: review.next_action
+  };
+}
+
+function buildPlannerCurrentGate(method, sourceControl, mode) {
+  if (!sourceControl || sourceControl.mode === "local_only" || sourceControl.provider === "none") return "owner_approval_gate";
+  if (mode === "vibe") return "app_delivery_gate";
+  if (mode === "plugin") return "plugin_parity_gate";
+  return method === "hybrid" ? "structured_foundation_gate" : "owner_approval_gate";
+}
+
+function buildPlannerResumeNextAction({ currentPlan, review, securityGateState, plannerState, deliveryDecisions, dashboard, tasksState }) {
+  if (!plannerState) return "Run kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json to create planner runtime state.";
+  if (!currentPlan) return "Run kvdf planner propose --goal \"...\" --track owner|vibe|plugin --json, then approve the recommended plan.";
+  if (review && review.status === "blocked") return review.required_fixes && review.required_fixes.length ? review.required_fixes[0] : "Resolve the blocked review items.";
+  if (securityGateState && securityGateState.status === "blocked") return securityGateState.next_action || "Resolve the blocked security gate.";
+  if (currentPlan.materialization_status !== "materialized") return "Run kvdf planner materialize --from-current --json to create Evolution and Task Punch runtime records.";
+  return "Run kvdf planner prompt --from-current --json, then execute the first approved task slice.";
+}
+
+function buildPlannerDocsPlan(sourcePipeline, options = {}) {
+  const repoRootPath = options.repo_root || process.cwd();
+  const plannerMode = normalizePlannerMode(sourcePipeline.planner_mode || sourcePipeline.planner_mode || sourcePipeline.planner_mode || "owner");
+  const track = sourcePipeline.track || getPlannerTrack(plannerMode);
+  const method = sourcePipeline.planning_method || sourcePipeline.planning_method || sourcePipeline.planning_method || "structured";
+  const baseDir = plannerMode === "vibe"
+    ? path.join(repoRootPath, "workspaces", "apps", normalizeAppSlug(options.appSlug), "docs")
+    : plannerMode === "plugin"
+      ? path.join(repoRootPath, "plugins", normalizePluginId(options.pluginId) || "plugin", "docs")
+      : null;
+  const docs = buildPlannerDocsEntries({ sourcePipeline, plannerMode, track, method, baseDir, options });
+  return {
+    planner_mode: plannerMode,
+    track,
+    planning_method: method,
+    docs,
+    source_pipeline: sourcePipeline
+  };
+}
+
+function buildPlannerDocsEntries({ sourcePipeline, plannerMode, track, method, baseDir, options = {} }) {
+  const files = [];
+  const goal = sourcePipeline.goal || sourcePipeline.idea || sourcePipeline.next_evolution && sourcePipeline.next_evolution.title || "KVDF Planner Draft";
+  const isDryRun = Boolean(options.dryRun);
+  if (plannerMode === "vibe") {
+    const appSlug = normalizeAppSlug(options.appSlug);
+    const docsDir = path.join(options.repo_root || process.cwd(), "workspaces", "apps", appSlug, "docs");
+    files.push(
+      draftDoc(path.join(docsDir, "00-idea.md"), buildPlannerVibeDocContent("00-idea.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "01-requirements.md"), buildPlannerVibeDocContent("01-requirements.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "02-system-design.md"), buildPlannerVibeDocContent("02-system-design.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "03-database-design.md"), buildPlannerVibeDocContent("03-database-design.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "04-ui-ux-design.md"), buildPlannerVibeDocContent("04-ui-ux-design.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "05-api-design.md"), buildPlannerVibeDocContent("05-api-design.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "06-security-design.md"), buildPlannerVibeDocContent("06-security-design.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "07-version-plan.md"), buildPlannerVibeDocContent("07-version-plan.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "08-evolutions.md"), buildPlannerVibeDocContent("08-evolutions.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "09-task-punches.md"), buildPlannerVibeDocContent("09-task-punches.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "10-handoff.md"), buildPlannerVibeDocContent("10-handoff.md", { goal, sourcePipeline, plannerMode, track, method }))
+    );
+  } else if (plannerMode === "plugin") {
+    const pluginId = normalizePluginId(options.pluginId) || "plugin";
+    const docsDir = path.join(options.repo_root || process.cwd(), "plugins", pluginId, "docs");
+    files.push(
+      draftDoc(path.join(docsDir, "00-plugin-goal.md"), buildPlannerPluginDocContent("00-plugin-goal.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
+      draftDoc(path.join(docsDir, "01-manifest.md"), buildPlannerPluginDocContent("01-manifest.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
+      draftDoc(path.join(docsDir, "02-runtime.md"), buildPlannerPluginDocContent("02-runtime.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
+      draftDoc(path.join(docsDir, "03-schemas.md"), buildPlannerPluginDocContent("03-schemas.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
+      draftDoc(path.join(docsDir, "04-tests.md"), buildPlannerPluginDocContent("04-tests.md", { goal, sourcePipeline, plannerMode, track, method, pluginId })),
+      draftDoc(path.join(docsDir, "05-version-plan.md"), buildPlannerPluginDocContent("05-version-plan.md", { goal, sourcePipeline, plannerMode, track, method, pluginId }))
+    );
+  } else {
+    const docsDir = options.repo_root || process.cwd();
+    files.push(
+      draftDoc(path.join(docsDir, "docs", "workflows", "PLANNER_SELF_PLANNING_ENGINE.md"), buildPlannerOwnerDocContent("docs/workflows/PLANNER_SELF_PLANNING_ENGINE.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "knowledge", "governance", "KVDF_PLANNER_LAYER.md"), buildPlannerOwnerDocContent("knowledge/governance/KVDF_PLANNER_LAYER.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "docs", "workflows", "EVOLUTION_PLANNER_WORKFLOW.md"), buildPlannerOwnerDocContent("docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "packs", "planner", "codex-execution.prompt.md"), buildPlannerOwnerDocContent("packs/planner/codex-execution.prompt.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "packs", "planner", "evolution-planner.prompt.md"), buildPlannerOwnerDocContent("packs/planner/evolution-planner.prompt.md", { goal, sourcePipeline, plannerMode, track, method })),
+      draftDoc(path.join(docsDir, "packs", "planner", "idea-to-evolution.prompt.md"), buildPlannerOwnerDocContent("packs/planner/idea-to-evolution.prompt.md", { goal, sourcePipeline, plannerMode, track, method }))
+    );
+  }
+  return files.map((entry) => ({
+    ...entry,
+    dry_run: Boolean(options.dryRun),
+    force: Boolean(options.force)
+  })).filter(Boolean);
+}
+
+function materializePlannerDocs(docsPlan, context = {}) {
+  const created = [];
+  const updated = [];
+  const skipped = [];
+  for (const entry of docsPlan.docs || []) {
+    const exists = fs.existsSync(entry.path);
+    if (exists && !entry.force) {
+      skipped.push(normalizeRelativePath(context.repo_root, entry.path));
+      continue;
+    }
+    if (entry.dry_run) {
+      created.push(normalizeRelativePath(context.repo_root, entry.path));
+      continue;
+    }
+    fs.mkdirSync(path.dirname(entry.path), { recursive: true });
+    fs.writeFileSync(entry.path, `${entry.content}\n`, "utf8");
+    if (exists) updated.push(normalizeRelativePath(context.repo_root, entry.path));
+    else created.push(normalizeRelativePath(context.repo_root, entry.path));
+  }
+  return {
+    docs_created: created,
+    docs_updated: updated,
+    docs_skipped: skipped,
+    source_pipeline: docsPlan.source_pipeline || null
+  };
+}
+
+function draftDoc(filePath, content, options = {}) {
+  return {
+    path: path.resolve(filePath),
+    content,
+    dry_run: Boolean(options.dry_run),
+    force: Boolean(options.force)
+  };
+}
+
+function normalizeAppSlug(value) {
+  const slug = String(value || "app-draft").trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  return slug || "app-draft";
+}
+
+function normalizeRelativePath(root, filePath) {
+  if (!root) return filePath.replace(/\\/g, "/");
+  return path.relative(root, filePath).replace(/\\/g, "/");
+}
+
+function buildPlannerVibeDocContent(fileName, { goal, sourcePipeline, plannerMode, track, method }) {
+  return buildPlannerDraftMarkdown({
+    title: `KVDF Planner Draft - ${fileName.replace(/\.md$/i, "")}`,
+    goal,
+    plannerMode,
+    track,
+    method,
+    sourcePipeline,
+    includeDesign: true
+  });
+}
+
+function buildPlannerPluginDocContent(fileName, { goal, sourcePipeline, plannerMode, track, method, pluginId }) {
+  return buildPlannerDraftMarkdown({
+    title: `Plugin Draft - ${fileName.replace(/\.md$/i, "")}`,
+    goal,
+    plannerMode,
+    track,
+    method,
+    sourcePipeline,
+    pluginId,
+    includeDesign: true
+  });
+}
+
+function buildPlannerOwnerDocContent(fileName, { goal, sourcePipeline, plannerMode, track, method }) {
+  return buildPlannerDraftMarkdown({
+    title: `KVDF Planner Draft - ${fileName.replace(/\.md$/i, "")}`,
+    goal,
+    plannerMode,
+    track,
+    method,
+    sourcePipeline,
+    includeDesign: true
+  });
+}
+
+function buildPlannerDraftMarkdown({ title, goal, plannerMode, track, method, sourcePipeline, pluginId = null, includeDesign = false }) {
+  const docs = sourcePipeline.documentation_files || [];
+  const review = sourcePipeline.review || null;
+  const visual = sourcePipeline.visual_planning || null;
+  const design = sourcePipeline.design_artifacts || {};
+  const versionPlan = sourcePipeline.version_plan || {};
+  const evolutions = sourcePipeline.evolutions || [];
+  const taskPunches = sourcePipeline.task_punches || [];
+  const lines = [
+    `# ${title}`,
+    "",
+    `- Goal: ${goal || ""}`,
+    `- Planning method: ${method || ""}`,
+    `- Method reason: ${sourcePipeline.method_reason || sourcePipeline.method && sourcePipeline.method.reason || ""}`,
+    `- Planner mode: ${plannerMode || ""}`,
+    `- Track: ${track || ""}`,
+    pluginId ? `- Plugin: ${pluginId}` : null,
+    `- Source control: ${sourcePipeline.source_control ? summarizeSourceControl(sourcePipeline.source_control) : "none"}`,
+    "",
+    "## Visual Planning Summary",
+    visual && visual.markdown_report ? visual.markdown_report : "- None",
+    "",
+    "## Documentation Status",
+    docs.length ? docs.map((item) => `- ${item}`).join("\n") : "- None",
+    "",
+    "## Review Status",
+    review ? `- ${review.status || "unknown"}${review.required_fixes && review.required_fixes.length ? `: ${review.required_fixes.join("; ")}` : ""}` : "- None",
+    "",
+    "## Validation Commands",
+    ...(sourcePipeline.validation_commands || DEFAULT_VALIDATION_COMMANDS).map((command) => `- ${command}`),
+    "",
+    "## Stop Condition",
+    sourcePipeline.stop_condition || "",
+    "",
+    "## Next Evolution",
+    sourcePipeline.next_evolution ? `- ${sourcePipeline.next_evolution.title || sourcePipeline.next_evolution.evolution_id || ""}` : "- None"
+  ].filter(Boolean);
+  if (includeDesign) {
+    lines.push(
+      "",
+      "## System Design",
+      ...renderIndentedObjectSection(design.system_design || {}),
+      "",
+      "## Database Design",
+      ...renderIndentedObjectSection(design.database_design || {}),
+      "",
+      "## UI/UX Design",
+      ...renderIndentedObjectSection(design.ui_ux_design || {}),
+      "",
+      "## API Design",
+      ...renderIndentedObjectSection(design.api_design || {}),
+      "",
+      "## Security Design",
+      ...renderIndentedObjectSection(design.security_design || {}),
+      "",
+      "## Version Plan",
+      ...renderIndentedObjectSection(versionPlan || {}),
+      "",
+      "## Evolutions",
+      ...(evolutions.length ? evolutions.map((evolution) => `- ${evolution.title || evolution.evolution_id || ""}`) : ["- None"]),
+      "",
+      "## Task Punches",
+      ...(taskPunches.length ? taskPunches.map((taskPunch) => `- ${taskPunch.title || taskPunch.evolution_id || ""}`) : ["- None"])
+    );
+  }
+  return lines.join("\n");
+}
+
+function buildPlannerCurrentPipelineSnapshot(context, flags = {}) {
+  const state = loadPlannerState(context.repo_root);
+  const currentPlan = findCurrentPlannerPlan(state);
+  if (!currentPlan) return buildPlannerBlockedReviewReport("No approved current planner plan exists.", context);
+  const review = buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  return {
+    report_type: "kvdf_planner_auto_plan",
+    generated_at: new Date().toISOString(),
+    planner_mode: currentPlan.planner_mode,
+    track: currentPlan.track,
+    planning_method: currentPlan.planning_method || review.planning_method || "structured",
+    method_reason: currentPlan.method_reason || "",
+    confidence: currentPlan.confidence || "medium",
+    goal: currentPlan.goal || "",
+    source_control: currentPlan.source_control || null,
+    planning_strategy: currentPlan.planning_strategy || null,
+    documentation_files: currentPlan.documentation_files || [],
+    design_artifacts: currentPlan.design_artifacts || null,
+    version_plan: currentPlan.version_plan || null,
+    evolutions: currentPlan.evolutions || (currentPlan.recommended_evolution ? [currentPlan.recommended_evolution] : []),
+    task_punches: currentPlan.task_punches || (currentPlan.task_punch ? [currentPlan.task_punch] : []),
+    visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
+    review,
+    codex_prompt: currentPlan.codex_prompt || renderPlannerPromptFromPlan(currentPlan, context, currentPlan.source_control || null, buildAiLearningPromptContext(normalizePlannerMode(currentPlan.planner_mode), { include_all: true })),
+    approval_required: true,
+    next_action: "Review the approved current plan, then run kvdf planner prompt --from-current --json."
+  };
+}
+
+function readJsonFileIfExists(filePath) {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    return safeReadJson(filePath);
+  } catch {
+    return null;
+  }
+}
+
+function readDashboardState(dashboardDir) {
+  if (!fs.existsSync(dashboardDir)) return null;
+  const result = {};
+  for (const entry of fs.readdirSync(dashboardDir)) {
+    const filePath = path.join(dashboardDir, entry);
+    if (fs.statSync(filePath).isFile() && entry.endsWith(".json")) {
+      result[entry] = readJsonFileIfExists(filePath);
+    }
+  }
+  return Object.keys(result).length ? result : null;
+}
+
+function sortedMethodScores(scoreSnapshot) {
+  return Object.values(scoreSnapshot).sort((left, right) => right - left);
+}
+
+function uniqueList(items = []) {
+  return Array.from(new Set((Array.isArray(items) ? items : []).filter((item) => item !== null && item !== undefined && String(item).trim()))).map((item) => String(item));
+}
+
+function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
+  const fromCurrent = isFromCurrentPlan(flags);
+  if (fromCurrent) {
+    const context = buildPlannerContext(deps);
+    const state = loadPlannerState(context.repo_root);
+    const currentPlan = findCurrentPlannerPlan(state);
+    if (!currentPlan) {
+      return buildPlannerBlockedReviewReport("No approved current planner plan exists.", context);
+    }
+    return buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  }
+  const goal = resolveGoal(value, flags, rest, "");
+  if (!goal) {
+    return buildPlannerBlockedReviewReport("Missing goal for planner review.", buildPlannerContext(deps));
+  }
+  const planning = buildPlannerPlanningContext(goal, { flags, ...flags }, deps, { methodFromFlags: true, rest });
+  const review = buildPlannerReviewSummary({
+    goal: planning.goal,
+    planner_mode: planning.mode,
+    track: planning.track,
+    planning_method: planning.method.recommended_method,
+    source_control: planning.source_control,
+    documentation_files: planning.pipeline.documentation_files,
+    visual_planning: planning.pipeline.visual_planning,
+    task_punches: planning.pipeline.task_punches,
+    evolutions: planning.pipeline.evolutions,
+    method: planning.method,
+    plugin_context: planning.plugin_context,
+    delivery_mode: planning.delivery_mode
+  });
+  return {
+    report_type: "kvdf_planner_review",
+    generated_at: new Date().toISOString(),
+    plan_id: null,
+    status: review.status,
+    planner_mode: planning.mode,
+    planning_method: review.planning_method,
+    scope_review: review.scope_review,
+    method_review: review.method_review,
+    docs_review: review.docs_review,
+    security_review: review.security_review,
+    source_control_review: review.source_control_review,
+    task_quality_review: review.task_quality_review,
+    visual_review: review.visual_review,
+    risks: review.risks,
+    required_fixes: review.required_fixes,
+    next_action: review.next_action
+  };
+}
+
+function buildPlannerResumeReport(deps = {}) {
+  const context = buildPlannerContext(deps);
+  const repoRootPath = context.repo_root;
+  const plannerState = readJsonFileIfExists(path.join(repoRootPath, ".kabeeri", "planner.json"));
+  const evolutionState = readJsonFileIfExists(path.join(repoRootPath, ".kabeeri", "evolution.json"));
+  const tasksState = readJsonFileIfExists(path.join(repoRootPath, ".kabeeri", "tasks.json"));
+  const dashboardDir = path.join(repoRootPath, ".kabeeri", "dashboard");
+  const dashboard = readDashboardState(dashboardDir);
+  const deliveryDecisions = readJsonFileIfExists(path.join(repoRootPath, ".kabeeri", "delivery_decisions.json"));
+  const securityGateState = readJsonFileIfExists(path.join(repoRootPath, ".kabeeri", "security", "security_gate_state.json"));
+  const currentPlan = plannerState && Array.isArray(plannerState.plans)
+    ? findCurrentPlannerPlan(plannerState)
+    : null;
+  const currentEvolution = evolutionState && Array.isArray(evolutionState.changes)
+    ? (evolutionState.current_change_id ? evolutionState.changes.find((item) => String(item.change_id || "") === String(evolutionState.current_change_id)) || null : null)
+    : null;
+  const currentTaskPunch = currentPlan ? currentPlan.task_punch || null : null;
+  const review = currentPlan ? buildPlannerReviewFromCurrentPlan(currentPlan, context) : buildPlannerBlockedReviewReport("No approved current planner plan exists.", context);
+  const blockers = [];
+  if (!plannerState) blockers.push("Planner runtime state is missing.");
+  if (!currentPlan) blockers.push("No approved current planner plan exists.");
+  if (review.status === "blocked") blockers.push(...(review.required_fixes || []));
+  if (securityGateState && securityGateState.status === "blocked") blockers.push(`Security gate blocked: ${securityGateState.next_action || "review required"}`);
+  return {
+    report_type: "kvdf_planner_resume",
+    generated_at: new Date().toISOString(),
+    current_plan: currentPlan || null,
+    current_evolution: currentEvolution || null,
+    current_task_punch: currentTaskPunch || null,
+    planning_method: currentPlan ? currentPlan.planning_method || currentPlan.review && currentPlan.review.planning_method || null : null,
+    planner_mode: currentPlan ? currentPlan.planner_mode || null : null,
+    delivery_mode: currentPlan ? currentPlan.delivery_mode || null : null,
+    source_control: currentPlan ? currentPlan.source_control || null : null,
+    review_status: review.status || "unknown",
+    next_recommended_action: buildPlannerResumeNextAction({ currentPlan, review, securityGateState, plannerState, deliveryDecisions, dashboard, tasksState }),
+    blocked: blockers.length > 0,
+    blockers,
+    security_gate: securityGateState || null,
+    dashboard,
+    delivery_decisions: deliveryDecisions || null
+  };
+}
+
+function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const fromCurrent = isFromCurrentPlan(flags);
+  const currentPlan = fromCurrent ? findCurrentPlannerPlan(loadPlannerState(context.repo_root)) : null;
+  const goal = resolveGoal(value, flags, rest, currentPlan ? currentPlan.goal || "" : "");
+  const planning = buildPlannerPlanningContext(goal || (currentPlan ? currentPlan.goal || "" : ""), { ...flags, method: flags.method || flags.planning_method || "auto" }, deps, { methodFromFlags: true, rest, skip_pipeline: true });
+  const sourcePipeline = fromCurrent && currentPlan
+    ? buildPlannerCurrentPipelineSnapshot(context, flags)
+    : buildPlannerAutoPlanReport(planning.goal, flags, rest, deps);
+  const docsPlan = buildPlannerDocsPlan(sourcePipeline, {
+    repo_root: context.repo_root,
+    dryRun: resolveBooleanFlag(flags.dry_run || flags["dry-run"]),
+    force: resolveBooleanFlag(flags.force),
+    appSlug: flags.app || flags.app_slug || flags["app-slug"],
+    pluginId: flags.plugin || flags.plugin_id
+  });
+  const result = materializePlannerDocs(docsPlan, context);
+  return {
+    report_type: "kvdf_planner_docs_materialization",
+    generated_at: new Date().toISOString(),
+    planner_mode: docsPlan.planner_mode,
+    track: docsPlan.track,
+    planning_method: docsPlan.planning_method,
+    status: "draft",
+    docs_created: result.docs_created,
+    docs_updated: result.docs_updated,
+    docs_skipped: result.docs_skipped,
+    source_pipeline: result.source_pipeline,
+    next_action: "Review generated docs, then approve/materialize the first Evolution."
+  };
+}
+
 function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   const context = buildPlannerContext(deps);
   const mode = resolvePlannerMode(request, context);
@@ -304,6 +1193,40 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const planning = buildPlannerPlanningContext(goal, request, deps, { mode, deliveryMode, pluginContext, sourceControl, skip_pipeline: true });
+  const visualSummary = buildPlannerVisualPayload({
+    goal,
+    mode,
+    deliveryMode,
+    evolutionPlan: plan,
+    taskPunch,
+    context,
+    pluginContext,
+    sourceControl,
+    planningMethod: planning.method.recommended_method,
+    methodReason: planning.method.reason,
+    confidence: planning.method.confidence,
+    review: null,
+    docsStatus: "planned",
+    docsCreatedTotal: 0,
+    risks: planning.method.risks,
+    currentGate: planning.current_gate,
+    nextAction: plan.next_action
+  });
+  const review = buildPlannerReviewSummary({
+    goal,
+    planner_mode: mode,
+    track: plan.track,
+    planning_method: planning.method.recommended_method,
+    source_control: sourceControl,
+    documentation_files: [],
+    visual_planning: visualSummary,
+    task_punches: [taskPunch],
+    evolutions: [plan],
+    method: planning.method,
+    plugin_context: pluginContext,
+    delivery_mode: deliveryMode
+  });
   return {
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
@@ -312,13 +1235,34 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     delivery_mode: deliveryMode,
     source_control: sourceControl,
     ai_learning: aiLearning,
+    planning_method: planning.method.recommended_method,
+    method_reason: planning.method.reason,
+    confidence: planning.method.confidence,
     goal,
     allowed_files: plan.allowed_files,
     forbidden_files: plan.forbidden_files,
     validation_commands: plan.validation_commands,
     stop_condition: plan.stop_condition,
+    docs_status: "planned",
+    review,
+    visual_summary: visualSummary,
     task_punch: taskPunch,
-    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl, aiLearning })
+    prompt: renderCodexPrompt({
+      goal,
+      mode,
+      plan,
+      taskPunch,
+      context,
+      pluginContext,
+      sourceControl,
+      aiLearning,
+      planningMethod: planning.method.recommended_method,
+      methodReason: planning.method.reason,
+      review,
+      docsStatus: "planned",
+      visualSummary,
+      currentGate: planning.current_gate
+    })
   };
 }
 
@@ -371,14 +1315,29 @@ function buildPlannerTaskPunchReport(goal, request = {}, deps = {}) {
 }
 
 function buildPlannerVisualReport(goal, request = {}, deps = {}) {
-  const context = buildPlannerContext(deps);
-  const mode = resolvePlannerMode(request, context);
-  const deliveryMode = getDeliveryMode(mode);
-  const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
-  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
+  const planning = buildPlannerPlanningContext(goal, request, deps);
+  const context = planning.context;
+  const mode = planning.mode;
+  const deliveryMode = planning.deliveryMode;
+  const pluginContext = planning.plugin_context;
+  const sourceControl = planning.source_control;
+  const aiLearning = planning.ai_learning;
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const review = buildPlannerReviewSummary({
+    goal,
+    planner_mode: mode,
+    track: evolutionPlan.track,
+    planning_method: planning.planning_method,
+    source_control: sourceControl,
+    documentation_files: planning.pipeline ? planning.pipeline.documentation_files : [],
+    visual_planning: null,
+    task_punches: [taskPunch],
+    evolutions: [evolutionPlan],
+    method: planning.method,
+    plugin_context: pluginContext,
+    delivery_mode: deliveryMode
+  });
   return buildPlannerVisualPayload({
     goal,
     mode,
@@ -388,7 +1347,16 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     context,
     pluginContext,
     sourceControl,
-    aiLearning
+    aiLearning,
+    planningMethod: planning.planning_method,
+    methodReason: planning.method.reason,
+    confidence: planning.method.confidence,
+    review,
+    docsStatus: "planned",
+    docsCreatedTotal: planning.pipeline && Array.isArray(planning.pipeline.documentation_files) ? planning.pipeline.documentation_files.length : 0,
+    risks: planning.method.risks,
+    currentGate: planning.current_gate,
+    nextAction: evolutionPlan.next_action
   });
 }
 
@@ -418,6 +1386,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   const taskPunch = currentPlan.task_punch && Array.isArray(currentPlan.task_punch.tasks) && currentPlan.task_punch.tasks.length
     ? currentPlan.task_punch
     : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext }, context);
+  const review = currentPlan.review || buildPlannerReviewFromCurrentPlan(currentPlan, context);
   if (currentPlan.visual && currentPlan.visual.report_type === "kvdf_planner_visual" && currentPlan.visual.source_control) {
     return currentPlan.visual;
   }
@@ -430,16 +1399,26 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     context,
     pluginContext,
     currentPlan,
-    sourceControl
+    sourceControl,
+    planningMethod: currentPlan.planning_method || review.planning_method || null,
+    methodReason: currentPlan.method_reason || "",
+    confidence: currentPlan.confidence || "",
+    review,
+    docsStatus: currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned",
+    docsCreatedTotal: Array.isArray(currentPlan.documentation_files) ? currentPlan.documentation_files.length : 0,
+    risks: review.risks || [],
+    currentGate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || "structured", sourceControl, mode),
+    nextAction: currentPlan.next_action || evolutionPlan.next_action
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsCreatedTotal = 0, risks = [], currentGate = null, nextAction = "" }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
   const validationCommands = [...(evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS)];
   const stopCondition = evolutionPlan.stop_condition || buildPlannerStopCondition(mode, context, pluginContext);
+  const reviewStatus = review ? review.status || "unknown" : (currentPlan && currentPlan.review && currentPlan.review.status) || "warning";
   const markdownReport = buildPlannerVisualMarkdown({
     goal,
     mode,
@@ -450,7 +1429,15 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     scopeMap,
     validationCommands,
     stopCondition,
-    sourceControl
+    sourceControl,
+    planningMethod,
+    methodReason,
+    reviewStatus,
+    docsStatus,
+    docsCreatedTotal,
+    risks,
+    currentGate,
+    nextAction: nextAction || evolutionPlan.next_action || ""
   });
   const report = {
     report_type: "kvdf_planner_visual",
@@ -468,7 +1455,16 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     validation_commands: validationCommands,
     stop_condition: stopCondition,
     recommended_evolution: evolutionPlan,
-    task_punch: taskPunch
+    task_punch: taskPunch,
+    planning_method: planningMethod,
+    method_reason: methodReason,
+    confidence: confidence || (review ? review.review_status || review.status || "unknown" : "unknown"),
+    review_status: reviewStatus,
+    docs_status: docsStatus,
+    docs_created_total: docsCreatedTotal,
+    risks,
+    current_gate: currentGate,
+    next_action: nextAction || evolutionPlan.next_action || ""
   };
   if (pluginContext) report.plugin_context = pluginContext;
   return report;
@@ -718,7 +1714,7 @@ function buildPlannerVisualLegend() {
   };
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, risks, currentGate, nextAction }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Model - Vibe/App"
     : mode === "plugin"
@@ -750,6 +1746,13 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     "",
     `- Track: ${evolutionPlan.track}`,
     `- Delivery mode: ${deliveryMode}`,
+    planningMethod ? `- Planning Method: ${planningMethod}` : null,
+    planningMethod ? `- Why this method: ${methodReason || ""}` : null,
+    reviewStatus ? `- Review status: ${reviewStatus}` : null,
+    docsStatus ? `- Documentation status: ${docsStatus}` : null,
+    `- Docs created total: ${docsCreatedTotal || 0}`,
+    currentGate ? `- Current gate: ${currentGate}` : null,
+    risks && risks.length ? `- Risks: ${risks.join("; ")}` : null,
     `- Proposed Evolution: ${evolutionPlan.title}`,
     "",
     "## Mermaid Graph",
@@ -793,16 +1796,21 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     `## Stop Condition`,
     stopCondition,
     "",
+    "## Next Approved Action",
+    nextAction || evolutionPlan.next_action || ""
+    ,
     `## Goal`,
     goal
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   const context = buildPlannerContext(deps);
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
-  const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
+  const pluginContext = mode === "plugin"
+    ? (request.pluginContext || (request.plugin_id || request.plugin ? buildPluginContext({ plugin_id: request.plugin_id || request.plugin }, context) : buildPluginContext(request, context)))
+    : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
   const normalizedIdea = String(idea || request.idea || request.goal || "").trim() || "KVDF Planning Idea";
   const documentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
@@ -877,10 +1885,13 @@ function buildIdeaToEvolutionDocumentationFiles(mode, pluginContext) {
   return [
     "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
     "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md",
+    "docs/workflows/PLANNER_SELF_PLANNING_ENGINE.md",
     "docs/workflows/SOURCE_CONTROL_PROVIDER_MODEL.md",
     "knowledge/governance/KVDF_PLANNER_LAYER.md",
     "docs/cli/CLI_COMMAND_REFERENCE.md",
     "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
+    "packs/planner/codex-execution.prompt.md",
+    "packs/planner/evolution-planner.prompt.md",
     "packs/planner/idea-to-evolution.prompt.md",
     "schemas/planner/idea-to-evolution-pipeline.schema.json",
     "schemas/planner/design-artifacts.schema.json",
@@ -1365,16 +2376,31 @@ function renderIndentedObjectSection(value, indent = "- ", nestedIndent = "  - "
 }
 
 function buildPlannerProposalReport(goal, request = {}, deps = {}) {
-  const context = buildPlannerContext(deps);
-  const mode = resolvePlannerMode(request, context);
-  const deliveryMode = getDeliveryMode(mode);
-  const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
-  const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
-  const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
+  const planning = buildPlannerPlanningContext(goal, request, deps);
+  const context = planning.context;
+  const mode = planning.mode;
+  const deliveryMode = planning.deliveryMode;
+  const pluginContext = planning.plugin_context;
+  const sourceControl = planning.source_control;
+  const aiLearning = planning.ai_learning;
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
-  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl });
-  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning });
+  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl, planningMethod: planning.planning_method, methodReason: planning.method.reason, confidence: planning.method.confidence, review: planning.method.review || null, docsStatus: "planned", currentGate: planning.current_gate });
+  const review = buildPlannerReviewSummary({
+    goal,
+    planner_mode: mode,
+    track: evolutionPlan.track,
+    planning_method: planning.planning_method,
+    source_control: sourceControl,
+    documentation_files: planning.pipeline ? planning.pipeline.documentation_files : [],
+    visual_planning: visual,
+    task_punches: [taskPunch],
+    evolutions: [evolutionPlan],
+    method: planning.method,
+    plugin_context: pluginContext,
+    delivery_mode: deliveryMode
+  });
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: "planned", visualSummary: visual, currentGate: planning.current_gate });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
   const plan = buildPlannerPlanRecord({
@@ -1388,7 +2414,18 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     codexPrompt,
     pluginContext,
     sourceControl,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    planningMethod: planning.planning_method,
+    methodReason: planning.method.reason,
+    confidence: planning.method.confidence,
+    review,
+    documentationFiles: planning.pipeline ? planning.pipeline.documentation_files : [],
+    designArtifacts: planning.pipeline ? planning.pipeline.design_artifacts : null,
+    versionPlan: planning.pipeline ? planning.pipeline.version_plan : null,
+    evolutions: planning.pipeline ? planning.pipeline.evolutions : [],
+    taskPunches: planning.pipeline ? planning.pipeline.task_punches : [],
+    visualPlanning: visual,
+    sourcePipeline: planning.pipeline
   });
   state.plans.push(plan);
   savePlannerState(context.repo_root, state);
@@ -1401,6 +2438,16 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     track: evolutionPlan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    planning_method: planning.planning_method,
+    method_reason: planning.method.reason,
+    confidence: planning.method.confidence,
+    review,
+    documentation_files: planning.pipeline ? planning.pipeline.documentation_files : [],
+    design_artifacts: planning.pipeline ? planning.pipeline.design_artifacts : null,
+    version_plan: planning.pipeline ? planning.pipeline.version_plan : null,
+    evolutions: planning.pipeline ? planning.pipeline.evolutions : [],
+    task_punches: planning.pipeline ? planning.pipeline.task_punches : [],
+    visual_planning: visual,
     visual,
     next_action: `Review and approve with kvdf planner approve ${planId}.`
   };
@@ -1432,7 +2479,15 @@ function approvePlannerPlan(planId, approvedBy, deps = {}) {
     taskPunch: plan.task_punch && Array.isArray(plan.task_punch.tasks) && plan.task_punch.tasks.length ? plan.task_punch : buildPlannerTaskPunch(plan.recommended_evolution && Object.keys(plan.recommended_evolution).length ? plan.recommended_evolution : buildPlannerEvolutionPlan(plan.goal || "Approved planner plan", { mode: plan.planner_mode, deliveryMode: plan.delivery_mode || getDeliveryMode(plan.planner_mode), pluginContext }, context), { mode: plan.planner_mode, deliveryMode: plan.delivery_mode || getDeliveryMode(plan.planner_mode), pluginContext }, context),
     context,
     pluginContext,
-    currentPlan: plan
+    currentPlan: plan,
+    planningMethod: plan.planning_method || null,
+    methodReason: plan.method_reason || "",
+    confidence: plan.confidence || "",
+    review: plan.review || null,
+    docsStatus: plan.documentation_files && plan.documentation_files.length ? "draft" : "planned",
+    docsCreatedTotal: Array.isArray(plan.documentation_files) ? plan.documentation_files.length : 0,
+    risks: plan.review && Array.isArray(plan.review.risks) ? plan.review.risks : [],
+    currentGate: plan.current_gate || buildPlannerCurrentGate(plan.planning_method || "structured", plan.source_control || null, plan.planner_mode)
   });
   state.current_plan_id = planId;
   savePlannerState(context.repo_root, state);
@@ -1608,7 +2663,16 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     normalizePlannerMode(currentPlan.planner_mode) === "plugin" ? currentPlan.plugin_context || null : null
   );
   const aiLearning = buildAiLearningPromptContext(normalizePlannerMode(currentPlan.track || currentPlan.planner_mode), { include_all: true });
-  const prompt = renderPlannerPromptFromPlan(currentPlan, context, sourceControl, aiLearning);
+  const review = currentPlan.review || buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  const prompt = renderPlannerPromptFromPlan({
+    ...currentPlan,
+    planning_method: currentPlan.planning_method || review.planning_method || null,
+    method_reason: currentPlan.method_reason || (review.method_review ? review.method_review.reason : ""),
+    review,
+    documentation_files: currentPlan.documentation_files || [],
+    visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
+    current_gate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || review.planning_method || "structured", sourceControl, normalizePlannerMode(currentPlan.planner_mode))
+  }, context, sourceControl, aiLearning);
   return {
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
@@ -1619,10 +2683,14 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     ai_learning: aiLearning,
     plan_id: currentPlan.plan_id,
     goal: currentPlan.goal,
+    planning_method: currentPlan.planning_method || review.planning_method || null,
+    method_reason: currentPlan.method_reason || "",
     allowed_files: currentPlan.allowed_files || [],
     forbidden_files: currentPlan.forbidden_files || [],
     validation_commands: currentPlan.validation_commands || [],
     stop_condition: currentPlan.stop_condition || "",
+    docs_status: currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned",
+    review,
     task_punch: currentPlan.task_punch || null,
     prompt
   };
@@ -1833,7 +2901,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -1860,6 +2928,16 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "Goal:",
     goal,
     "",
+    planningMethod ? "Planning method:" : null,
+    planningMethod ? `- Selected: ${planningMethod}` : null,
+    planningMethod ? `- Reason: ${methodReason || ""}` : null,
+    planningMethod ? `- Current gate: ${currentGate || ""}` : null,
+    planningMethod ? `- Docs status: ${docsStatus || "planned"}` : null,
+    planningMethod && review ? `- Review status: ${review.status || "unknown"}` : null,
+    planningMethod && review && Array.isArray(review.required_fixes) && review.required_fixes.length ? `- Review warnings: ${review.required_fixes.join("; ")}` : null,
+    planningMethod && review && review.security_review ? `- Security gate: ${review.security_review.status || "unknown"}${review.security_review.next_action ? ` (${review.security_review.next_action})` : ""}` : null,
+    planningMethod && visualSummary ? `- Visual summary: ${visualSummary.markdown_report ? visualSummary.markdown_report.split("\n")[0] : "available"}` : null,
+    "",
     "Scope:",
     "Allowed files:",
     ...allowedFiles.map((item) => `- ${item}`),
@@ -1878,7 +2956,7 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     ...commitLines,
     "",
     `Stop condition: ${plan.stop_condition}`
-  ].join("\\n");
+  ].filter(Boolean).join("\\n");
 }
 
 function buildAiLearningPromptLines(aiLearning) {
@@ -2016,6 +3094,16 @@ function printPlannerOutput(report, flags, deps, kind) {
   }
   const rendered = kind === "prompt"
     ? renderPlannerPromptReport(report)
+    : kind === "method"
+      ? renderPlannerMethodReport(report, deps.table)
+      : kind === "auto"
+        ? renderPlannerAutoPlanReport(report, deps.table)
+        : kind === "review"
+          ? renderPlannerReviewReport(report, deps.table)
+          : kind === "resume"
+            ? renderPlannerResumeReport(report, deps.table)
+            : kind === "docs"
+              ? renderPlannerDocsMaterializationReport(report, deps.table)
     : kind === "visual"
       ? renderPlannerVisualReport(report)
       : kind === "pipeline"
@@ -2966,6 +4054,17 @@ function normalizePlannerPlanRecord(plan = {}) {
     recommended_evolution: plan.recommended_evolution || {},
     task_punch: plan.task_punch || {},
     codex_prompt: String(plan.codex_prompt || ""),
+    planning_method: String(plan.planning_method || ""),
+    method_reason: String(plan.method_reason || ""),
+    confidence: String(plan.confidence || ""),
+    review: plan.review || null,
+    documentation_files: Array.isArray(plan.documentation_files) ? [...plan.documentation_files] : [],
+    design_artifacts: plan.design_artifacts || null,
+    version_plan: plan.version_plan || null,
+    evolutions: Array.isArray(plan.evolutions) ? [...plan.evolutions] : [],
+    task_punches: Array.isArray(plan.task_punches) ? [...plan.task_punches] : [],
+    visual_planning: plan.visual_planning || null,
+    source_pipeline: plan.source_pipeline || null,
     allowed_files: Array.isArray(plan.allowed_files) ? [...plan.allowed_files] : [],
     forbidden_files: Array.isArray(plan.forbidden_files) ? [...plan.forbidden_files] : [],
     out_of_scope: Array.isArray(plan.out_of_scope) ? [...plan.out_of_scope] : [],
@@ -3001,7 +4100,18 @@ function buildPlannerPlanRecord({
   codexPrompt,
   pluginContext,
   sourceControl,
-  createdAt
+  createdAt,
+  planningMethod,
+  methodReason,
+  confidence,
+  review,
+  documentationFiles,
+  designArtifacts,
+  versionPlan,
+  evolutions,
+  taskPunches,
+  visualPlanning,
+  sourcePipeline
 }) {
   const plan = {
     plan_id: planId,
@@ -3013,6 +4123,17 @@ function buildPlannerPlanRecord({
     recommended_evolution: evolutionPlan,
     task_punch: taskPunch,
     codex_prompt: codexPrompt,
+    planning_method: planningMethod || "",
+    method_reason: methodReason || "",
+    confidence: confidence || "",
+    review: review || null,
+    documentation_files: Array.isArray(documentationFiles) ? [...documentationFiles] : [],
+    design_artifacts: designArtifacts || null,
+    version_plan: versionPlan || null,
+    evolutions: Array.isArray(evolutions) ? [...evolutions] : [],
+    task_punches: Array.isArray(taskPunches) ? [...taskPunches] : [],
+    visual_planning: visualPlanning || null,
+    source_pipeline: sourcePipeline || null,
     allowed_files: [...(evolutionPlan.allowed_files || [])],
     forbidden_files: [...(evolutionPlan.forbidden_files || [])],
     out_of_scope: [...(evolutionPlan.out_of_scope || [])],
@@ -3295,6 +4416,12 @@ function normalizePlannerMode(value) {
   return "owner";
 }
 
+function normalizePlannerMethod(value) {
+  const method = String(value || "auto").trim().toLowerCase();
+  if (method === "structured" || method === "agile" || method === "hybrid") return method;
+  return "auto";
+}
+
 function normalizePlannerTrack(value) {
   const track = String(value || "framework_owner").trim().toLowerCase();
   if (track === "vibe_app_developer" || track === "plugin") return track;
@@ -3464,6 +4591,170 @@ function renderPlannerPromptReport(report) {
   return report.prompt;
 }
 
+function renderPlannerMethodReport(report, tableRenderer) {
+  const rows = [
+    ["Planner mode", report.planner_mode || ""],
+    ["Track", report.track || ""],
+    ["Recommended method", report.recommended_method || ""],
+    ["Confidence", report.confidence || ""],
+    ["Next action", report.next_action || ""]
+  ];
+  return [
+    "KVDF Planner Method Recommendation",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Method rules matched:",
+    ...(report.method_rules_matched || []).map((item) => `- ${item}`),
+    "",
+    "Risks:",
+    ...(report.risks || []).map((item) => `- ${item}`),
+    "",
+    "Delivery recommendation:",
+    ...renderIndentedObjectSection(report.delivery_recommendation || {})
+  ].join("\n");
+}
+
+function renderPlannerAutoPlanReport(report, tableRenderer) {
+  const rows = [
+    ["Planner mode", report.planner_mode || ""],
+    ["Track", report.track || ""],
+    ["Planning method", report.planning_method || ""],
+    ["Confidence", report.confidence || ""],
+    ["Approval required", report.approval_required ? "yes" : "no"],
+    ["Next action", report.next_action || ""]
+  ];
+  return [
+    "KVDF Planner Auto Plan",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Planning strategy:",
+    ...renderIndentedObjectSection(report.planning_strategy || {}),
+    "",
+    "Documentation files:",
+    ...(report.documentation_files || []).map((item) => `- ${item}`),
+    "",
+    "Review:",
+    ...renderIndentedObjectSection(report.review || {}),
+    "",
+    "Visual planning:",
+    ...renderIndentedObjectSection(report.visual_planning || {}),
+    "",
+    "Validation Commands:",
+    ...(report.validation_commands || []).map((item) => `- ${item}`),
+    "",
+    "Stop Condition:",
+    report.stop_condition || "",
+    "",
+    "Codex Prompt:",
+    report.codex_prompt || ""
+  ].join("\n");
+}
+
+function renderPlannerReviewReport(report, tableRenderer) {
+  const rows = [
+    ["Status", report.status || ""],
+    ["Planner mode", report.planner_mode || ""],
+    ["Planning method", report.planning_method || ""],
+    ["Next action", report.next_action || ""]
+  ];
+  return [
+    "KVDF Planner Review",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Scope review:",
+    ...renderIndentedObjectSection(report.scope_review || {}),
+    "",
+    "Method review:",
+    ...renderIndentedObjectSection(report.method_review || {}),
+    "",
+    "Docs review:",
+    ...renderIndentedObjectSection(report.docs_review || {}),
+    "",
+    "Security review:",
+    ...renderIndentedObjectSection(report.security_review || {}),
+    "",
+    "Source control review:",
+    ...renderIndentedObjectSection(report.source_control_review || {}),
+    "",
+    "Task quality review:",
+    ...renderIndentedObjectSection(report.task_quality_review || {}),
+    "",
+    "Visual review:",
+    ...renderIndentedObjectSection(report.visual_review || {}),
+    "",
+    "Risks:",
+    ...(report.risks || []).map((item) => `- ${item}`),
+    "",
+    "Required fixes:",
+    ...(report.required_fixes || []).map((item) => `- ${item}`)
+  ].join("\n");
+}
+
+function renderPlannerResumeReport(report, tableRenderer) {
+  const rows = [
+    ["Planner mode", report.planner_mode || ""],
+    ["Planning method", report.planning_method || ""],
+    ["Delivery mode", report.delivery_mode || ""],
+    ["Review status", report.review_status || ""],
+    ["Blocked", report.blocked ? "yes" : "no"],
+    ["Next recommended action", report.next_recommended_action || ""]
+  ];
+  return [
+    "KVDF Planner Resume",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Current plan:",
+    ...renderIndentedObjectSection(report.current_plan || {}),
+    "",
+    "Current evolution:",
+    ...renderIndentedObjectSection(report.current_evolution || {}),
+    "",
+    "Current task punch:",
+    ...renderIndentedObjectSection(report.current_task_punch || {}),
+    "",
+    "Blockers:",
+    ...(report.blockers || []).map((item) => `- ${item}`),
+    "",
+    "Security gate:",
+    ...renderIndentedObjectSection(report.security_gate || {}),
+    "",
+    "Dashboard:",
+    ...renderIndentedObjectSection(report.dashboard || {})
+  ].join("\n");
+}
+
+function renderPlannerDocsMaterializationReport(report, tableRenderer) {
+  const rows = [
+    ["Planner mode", report.planner_mode || ""],
+    ["Track", report.track || ""],
+    ["Planning method", report.planning_method || ""],
+    ["Status", report.status || ""]
+  ];
+  return [
+    "KVDF Planner Docs Materialization",
+    "",
+    tableRenderer(["Field", "Value"], rows),
+    "",
+    "Docs created:",
+    ...(report.docs_created || []).map((item) => `- ${item}`),
+    "",
+    "Docs updated:",
+    ...(report.docs_updated || []).map((item) => `- ${item}`),
+    "",
+    "Docs skipped:",
+    ...(report.docs_skipped || []).map((item) => `- ${item}`),
+    "",
+    "Source pipeline:",
+    ...renderIndentedObjectSection(report.source_pipeline || {}),
+    "",
+    `Next action: ${report.next_action || ""}`
+  ].join("\n");
+}
+
 function renderPlannerVisualReport(report) {
   return report.markdown_report;
 }
@@ -3549,7 +4840,13 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     context,
     pluginContext,
     sourceControl: sourceControlState,
-    aiLearning
+    aiLearning,
+    planningMethod: plan.planning_method || null,
+    methodReason: plan.method_reason || "",
+    review: plan.review || null,
+    docsStatus: plan.documentation_files && plan.documentation_files.length ? "draft" : "planned",
+    visualSummary: plan.visual_planning || plan.visual || null,
+    currentGate: plan.current_gate || null
   });
 }
 

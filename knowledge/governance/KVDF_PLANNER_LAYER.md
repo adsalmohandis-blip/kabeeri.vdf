@@ -61,6 +61,11 @@ The planner can emit:
 
 - a recommended next Evolution
 - a Task Punch
+- a planning method recommendation
+- a self-planning auto plan with docs, review, and visual context
+- a planner review report
+- a planner resume report
+- draft documentation files from the planner pipeline
 - a Codex-ready execution prompt
 - a visual planning model with Mermaid, planning board JSON, scope map, and
   markdown report output
@@ -68,6 +73,39 @@ The planner can emit:
 - acceptance criteria
 - validation commands
 - a stop condition
+
+## Planner Method And Self-Planning Engine
+
+Supported methods:
+
+- `auto`
+- `structured`
+- `agile`
+- `hybrid`
+
+Method guidance:
+
+- `structured` for architecture-heavy, database-heavy, security-sensitive,
+  integration-heavy, enterprise, framework/core/plugin, and release-critical
+  work
+- `agile` for UI iteration, content, prototype, MVP discovery, unclear
+  requirements, and small iterative app work
+- `hybrid` for full app, product, or system builds
+- `auto` when KVDF should choose the method and explain why
+
+The self-planning engine should also:
+
+- review plan quality before execution
+- resume from planner, evolution, task, runtime, dashboard, and source-control
+  state
+- generate strong Codex-ready prompts automatically
+- materialize draft Markdown documentation files from the planner pipeline
+- keep Owner approval as the governance gate
+- keep Codex as the executor, not the planner
+
+Planner docs materialization must remain draft-only unless the command
+explicitly asks for file writes. It must not execute code changes or
+materialize an Evolution automatically.
 
 ## Planner Modes
 
@@ -157,15 +195,18 @@ Planner output becomes executable only after Owner approval.
 Required progression:
 
 1. Owner direction
-2. planner propose
-3. Owner approve or reject
-4. planner current
-5. planner materialize
-6. planner prompt --from-current
-7. planner visual --from-current
-8. Codex execution
-9. validation
-10. planner complete
+2. planner method or planner auto
+3. planner review
+4. planner docs
+5. planner propose
+6. Owner approve or reject
+7. planner current
+8. planner materialize
+9. planner prompt --from-current
+10. planner visual --from-current
+11. Codex execution
+12. validation
+13. planner complete
 
 Rules:
 
@@ -177,6 +218,40 @@ Rules:
 - completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
 - `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
+- `.kabeeri/tasks.json` is supporting state, not final truth
+- chat history is supporting context only
+- GitHub is optional secondary evidence, not the primary source of truth
+
+## Planner Review And Resume
+
+`kvdf planner review` checks:
+
+- track correctness
+- Owner, Vibe, or Plugin boundary fit
+- source-control mode fit
+- security gate state when available
+- docs status
+- task punch quality
+- visual planning output
+- Codex prompt strength
+
+`kvdf planner resume` restores the current planner context from runtime state
+and should explain the next recommended action even when some runtime files are
+missing.
+
+## Planner Docs Materialization
+
+`kvdf planner docs` creates draft Markdown documentation from the planner
+pipeline.
+
+Rules:
+
+- Owner track writes only to owner/core documentation surfaces.
+- Vibe track writes only to app workspace documentation surfaces.
+- Plugin track writes only to the selected plugin documentation surfaces.
+- Existing files are skipped unless `--force` is passed.
+- `--dry-run` reports proposed docs without writing files.
+- The command must not execute or materialize Evolutions automatically.
 
 ## Planner Materialization Stage
 

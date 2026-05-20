@@ -1396,7 +1396,7 @@ function printHelp() {
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
-  "  planner next|prompt|evolution|propose|approve|current|reject|visual|pipeline Recommend the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+  "  planner next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Recommend the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, materialize draft docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
   "  planner pipeline Generate an idea-to-evolution planning package with docs, design, versions, evolutions, task punches, roadmap, and source-control guidance",
     "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
     "  maintenance fast|slow        Run the repo-wide maintenance workflow in fast or strict mode",
@@ -1455,7 +1455,7 @@ function printHelp() {
   ];
   const ownerCommands = [
     "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
-    "  planner next|prompt|evolution|propose|approve|current|reject|visual|pipeline Determine the next KVDF Core, vibe/app, or plugin Evolution, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+  "  planner next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Determine the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, materialize draft docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
     "  owner init|login|status|logout Configure and use local Owner sessions",
     "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",

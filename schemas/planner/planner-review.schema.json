@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Review",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "status",
+    "planner_mode",
+    "planning_method",
+    "scope_review",
+    "method_review",
+    "docs_review",
+    "security_review",
+    "source_control_review",
+    "task_quality_review",
+    "visual_review",
+    "risks",
+    "required_fixes",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_planner_review"
+    },
+    "generated_at": { "type": "string" },
+    "plan_id": { "type": ["string", "null"] },
+    "status": { "type": "string", "enum": ["pass", "warning", "blocked"] },
+    "planner_mode": { "type": ["string", "null"], "enum": ["owner", "vibe", "plugin", null] },
+    "planning_method": { "type": ["string", "null"], "enum": ["structured", "agile", "hybrid", null] },
+    "scope_review": { "type": "object" },
+    "method_review": { "type": "object" },
+    "docs_review": { "type": "object" },
+    "security_review": { "type": "object" },
+    "source_control_review": { "type": "object" },
+    "task_quality_review": { "type": "object" },
+    "visual_review": { "type": "object" },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "required_fixes": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string", "minLength": 1 }
+  }
+}

@@ -9,6 +9,14 @@ Context:
 - Do not commit runtime state under .kabeeri/
 - The Owner is the only active KVDF Core developer
 - Codex is the executor, not the planner
+- Planning method: {{planning_method}}
+- Method reason: {{method_reason}}
+- Docs status: {{docs_status}}
+- Review status: {{review_status}}
+- Review warnings: {{review_warnings}}
+- Source control: {{source_control}}
+- Security gate: {{security_gate}}
+- Visual planning: {{visual_planning}}
 
 Goal:
 {{goal}}
