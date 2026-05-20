@@ -14,6 +14,9 @@ const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 const { buildPlannerTruth: buildPlannerTruthReportService } = require("../services/truth_reconciler");
+const { reconcileRuntimeTruth } = require("../services/truth_registry");
+const { buildCurrentStateReport: buildCurrentStateReportService, buildStaleStateReport: buildStaleStateReportService } = require("../services/source_truth");
+const { buildWorkspaceBoundaryReport: buildWorkspaceBoundaryReportService } = require("../services/workspace_boundary");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -244,7 +247,7 @@ const PLANNER_DOC_DEFINITIONS = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "current-state", "boundary", "stale-state", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -269,6 +272,24 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
   if (mode === "current") {
     const report = buildPlannerCurrentReport(deps);
     printPlannerOutput(report, flags, deps, "current");
+    return;
+  }
+
+  if (mode === "current-state") {
+    const report = buildPlannerCurrentStateReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "current-state");
+    return;
+  }
+
+  if (mode === "boundary") {
+    const report = buildPlannerWorkspaceBoundaryReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "boundary");
+    return;
+  }
+
+  if (mode === "stale-state") {
+    const report = buildPlannerStaleStateReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "stale-state");
     return;
   }
 
@@ -436,7 +457,7 @@ function buildPlannerNextReport(request = {}, deps = {}) {
   };
   if (mode === "vibe") report.pipeline = [...VIBE_PIPELINE];
   if (mode === "plugin") report.plugin_context = pluginContext;
-  return report;
+  return attachPlannerCurrentStateSummary(report, context, request);
 }
 
 function buildPlannerMethodReport(goal, flags = {}, rest = [], deps = {}) {
@@ -518,7 +539,7 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     latestFeedback: pipeline.latest_feedback || null,
     roadmapTrain: pipeline.roadmap_train || null
   });
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_auto_plan",
     generated_at: new Date().toISOString(),
     planner_mode: planning.mode,
@@ -548,7 +569,11 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     source_pipeline: pipeline,
     approval_required: true,
     next_action: "Review the auto plan, then run kvdf planner propose/approve/materialize or kvdf planner docs."
-  };
+  }, planning.context, {
+    track: planning.mode,
+    app: planning.pipeline && planning.pipeline.app || flags.app || flags.app_slug || flags["app-slug"] || "",
+    plugin: planning.plugin_context && planning.plugin_context.plugin_id || flags.plugin || flags.plugin_id || ""
+  });
 }
 
 function buildPlannerPlanningContext(goal, request = {}, deps = {}, options = {}) {
@@ -862,7 +887,7 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
 }
 
 function buildPlannerBlockedReviewReport(message, context) {
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_review",
     generated_at: new Date().toISOString(),
     plan_id: null,
@@ -879,7 +904,7 @@ function buildPlannerBlockedReviewReport(message, context) {
     risks: [message],
     required_fixes: [message],
     next_action: message
-  };
+  }, context, {});
 }
 
 function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
@@ -944,7 +969,7 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     latest_feedback: latestFeedback,
     roadmap_train: roadmapTrain
   });
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_review",
     generated_at: new Date().toISOString(),
     plan_id: currentPlan.plan_id || null,
@@ -964,7 +989,10 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     risks: review.risks,
     required_fixes: review.required_fixes,
     next_action: review.next_action
-  };
+  }, context, {
+    track: currentPlan.track || getPlannerTrack(mode),
+    app: normalizeAppSlug(currentPlan.app_slug || "")
+  });
 }
 
 function buildPlannerCurrentGate(method, sourceControl, mode) {
@@ -1336,21 +1364,37 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
     return buildPlannerDocsCommandReport(action, value, flags, rest, deps);
   }
   const context = buildPlannerContext(deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
   const sourcePipeline = isFromCurrentPlan(flags)
     ? buildPlannerCurrentPipelineSnapshot(context, flags)
     : buildPlannerDocsSourcePipeline(value, flags, rest, deps);
+  const plannerMode = normalizePlannerMode(flags.track || sourcePipeline.planner_mode || flags.mode || "vibe");
+  const explicitAppSlug = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
+  const explicitPluginId = String(flags.plugin || flags.plugin_id || "").trim();
+  const appSlug = explicitAppSlug ? normalizeAppSlug(explicitAppSlug) : (sourcePipeline.app || sourcePipeline.app_slug ? normalizeAppSlug(sourcePipeline.app || sourcePipeline.app_slug) : "app-draft");
+  const pluginId = explicitPluginId ? normalizePluginId(explicitPluginId) : (sourcePipeline.plugin || sourcePipeline.plugin_id ? normalizePluginId(sourcePipeline.plugin || sourcePipeline.plugin_id) : "plugin");
+  if (plannerMode === "vibe" && !explicitAppSlug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing app slug for planner docs materialization. Use --app or --app-slug, or add --dry-run to preview the docs plan.");
+    error.current_state = currentState;
+    throw error;
+  }
+  if (plannerMode === "plugin" && !explicitPluginId && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing plugin id for planner docs materialization. Use --plugin or add --dry-run to preview the docs plan.");
+    error.current_state = currentState;
+    throw error;
+  }
   const plan = buildPlannerDocsPlan(sourcePipeline, {
     repo_root: context.repo_root,
     dryRun: resolveBooleanFlag(flags.dry_run || flags["dry-run"]),
     force: resolveBooleanFlag(flags.force),
-    appSlug: flags.app || flags.app_slug || flags["app-slug"] || sourcePipeline.app || sourcePipeline.app_slug,
-    pluginId: flags.plugin || flags.plugin_id || sourcePipeline.plugin || sourcePipeline.plugin_id,
-    plannerMode: normalizePlannerMode(sourcePipeline.planner_mode || flags.track || flags.mode || "vibe"),
+    appSlug,
+    pluginId,
+    plannerMode,
     method: normalizePlannerMethod(flags.method || flags.planning_method || sourcePipeline.planning_method || "auto"),
     idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
   });
   const result = materializePlannerDocs(plan, context);
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_docs_materialization",
     generated_at: new Date().toISOString(),
     planner_mode: plan.planner_mode,
@@ -1364,7 +1408,7 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
     docs_skipped: result.docs_skipped,
     source_pipeline: result.source_pipeline,
     next_action: "Review generated docs, then approve/materialize the first Evolution."
-  };
+  }, context, { track: plan.planner_mode, app: appSlug, plugin: pluginId });
 }
 
 function buildPlannerDocsSourcePipeline(value, flags = {}, rest = [], deps = {}) {
@@ -1474,11 +1518,25 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
   const context = buildPlannerContext(deps);
   const plannerMode = normalizePlannerMode(flags.track || flags.mode || (flags.plugin ? "plugin" : "vibe"));
   const method = normalizePlannerMethod(flags.method || flags.planning_method || "auto");
-  const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || "app-draft");
-  const pluginId = normalizePluginId(flags.plugin || flags.plugin_id || "plugin");
+  const explicitAppSlug = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
+  const explicitPluginId = String(flags.plugin || flags.plugin_id || "").trim();
+  const appSlug = explicitAppSlug ? normalizeAppSlug(explicitAppSlug) : "app-draft";
+  const pluginId = explicitPluginId ? normalizePluginId(explicitPluginId) : "plugin";
   const sourcePipeline = isFromCurrentPlan(flags)
     ? buildPlannerCurrentPipelineSnapshot(context, flags)
     : buildPlannerDocsSourcePipeline(value, flags, rest, deps);
+  if (action === "materialize") {
+    const requiresWrite = !resolveBooleanFlag(flags.dry_run || flags["dry-run"]);
+    const materializeMode = normalizePlannerMode(flags.track || sourcePipeline.planner_mode || flags.mode || plannerMode);
+    const hasAppSlug = Boolean(String(flags.app || flags.app_slug || flags["app-slug"] || "").trim());
+    const hasPluginId = Boolean(String(flags.plugin || flags.plugin_id || "").trim());
+    if (requiresWrite && materializeMode === "vibe" && !hasAppSlug) {
+      throw new Error("Missing app slug for planner docs materialization. Use --app or --app-slug, or add --dry-run to preview the docs plan.");
+    }
+    if (requiresWrite && materializeMode === "plugin" && !hasPluginId) {
+      throw new Error("Missing plugin id for planner docs materialization. Use --plugin or add --dry-run to preview the docs plan.");
+    }
+  }
   if (action === "catalog") {
     const catalog = buildPlannerDocsCatalog({ plannerMode, appSlug, pluginId });
     return {
@@ -1488,7 +1546,7 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
     };
   }
   if (action === "plan") {
-    return buildPlannerDocsPlan(sourcePipeline, {
+    const report = buildPlannerDocsPlan(sourcePipeline, {
       repo_root: context.repo_root,
       appSlug,
       pluginId,
@@ -1496,9 +1554,10 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
       method,
       idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
     });
+    return attachPlannerCurrentStateSummary(report, context, { track: plannerMode, app: appSlug, plugin: pluginId });
   }
   if (action === "status") {
-    return buildPlannerDocsStatusReport({
+    const report = buildPlannerDocsStatusReport({
       repo_root: context.repo_root,
       plannerMode,
       track: getPlannerTrack(plannerMode),
@@ -1507,6 +1566,7 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
       pluginId,
       idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
     });
+    return attachPlannerCurrentStateSummary(report, context, { track: plannerMode, app: appSlug, plugin: pluginId });
   }
   if (action === "apply-stage") {
     return applyPlannerDocsStage({
@@ -1521,7 +1581,7 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
     });
   }
   if (action === "review") {
-    return buildPlannerDocsReviewReport({
+    const report = buildPlannerDocsReviewReport({
       repo_root: context.repo_root,
       plannerMode,
       track: getPlannerTrack(plannerMode),
@@ -1530,6 +1590,7 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
       pluginId,
       idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
     });
+    return attachPlannerCurrentStateSummary(report, context, { track: plannerMode, app: appSlug, plugin: pluginId });
   }
   return buildPlannerDocsMaterializationReport(value, flags, rest, deps);
 }
@@ -1943,7 +2004,7 @@ function buildPlannerResumeReport(deps = {}) {
   if (!currentPlan) blockers.push("No approved current planner plan exists.");
   if (review.status === "blocked") blockers.push(...(review.required_fixes || []));
   if (securityGateState && securityGateState.status === "blocked") blockers.push(`Security gate blocked: ${securityGateState.next_action || "review required"}`);
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_resume",
     generated_at: new Date().toISOString(),
     current_plan: currentPlan || null,
@@ -1965,7 +2026,10 @@ function buildPlannerResumeReport(deps = {}) {
     security_gate: securityGateState || null,
     dashboard,
     delivery_decisions: deliveryDecisions || null
-  };
+  }, context, {
+    track: currentPlan ? currentPlan.track : null,
+    app: currentPlan ? currentPlan.app_slug || "" : ""
+  });
 }
 
 function buildPlannerTruthReport(deps = {}) {
@@ -1981,15 +2045,32 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
   const sourcePipeline = fromCurrent && currentPlan
     ? buildPlannerCurrentPipelineSnapshot(context, flags)
     : buildPlannerAutoPlanReport(planning.goal, flags, rest, deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  const plannerMode = normalizePlannerMode(flags.track || sourcePipeline.planner_mode || flags.mode || "vibe");
+  const explicitAppSlug = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
+  const explicitPluginId = String(flags.plugin || flags.plugin_id || "").trim();
+  const appSlug = explicitAppSlug ? normalizeAppSlug(explicitAppSlug) : (sourcePipeline.app || sourcePipeline.app_slug ? normalizeAppSlug(sourcePipeline.app || sourcePipeline.app_slug) : "app-draft");
+  const pluginId = explicitPluginId ? normalizePluginId(explicitPluginId) : (sourcePipeline.plugin || sourcePipeline.plugin_id ? normalizePluginId(sourcePipeline.plugin || sourcePipeline.plugin_id) : "plugin");
+  if (plannerMode === "vibe" && !explicitAppSlug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing app slug for planner docs materialization. Use --app or --app-slug, or add --dry-run to preview the docs plan.");
+    error.current_state = currentState;
+    throw error;
+  }
+  if (plannerMode === "plugin" && !explicitPluginId && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing plugin id for planner docs materialization. Use --plugin or add --dry-run to preview the docs plan.");
+    error.current_state = currentState;
+    throw error;
+  }
   const docsPlan = buildPlannerDocsPlan(sourcePipeline, {
     repo_root: context.repo_root,
     dryRun: resolveBooleanFlag(flags.dry_run || flags["dry-run"]),
     force: resolveBooleanFlag(flags.force),
-    appSlug: flags.app || flags.app_slug || flags["app-slug"],
-    pluginId: flags.plugin || flags.plugin_id
+    appSlug,
+    pluginId,
+    plannerMode
   });
   const result = materializePlannerDocs(docsPlan, context);
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_docs_materialization",
     generated_at: new Date().toISOString(),
     planner_mode: docsPlan.planner_mode,
@@ -2003,7 +2084,7 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
     docs_skipped: result.docs_skipped,
     source_pipeline: result.source_pipeline,
     next_action: "Review generated docs, then approve/materialize the first Evolution."
-  };
+  }, context, { track: plannerMode, app: appSlug, plugin: pluginId });
 }
 
 function buildPlannerPromptReport(goal, request = {}, deps = {}) {
@@ -2089,7 +2170,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     latest_feedback: latestFeedback,
     roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
     planner_mode: mode,
@@ -2133,7 +2214,11 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       latestFeedback,
       roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
     })
-  };
+  }, context, {
+    track: mode,
+    app: request.app || request.app_slug || request["app-slug"] || "",
+    plugin: pluginContext ? pluginContext.plugin_id : (request.plugin || request.plugin_id || "")
+  });
 }
 
 function buildPlannerEvolutionReport(goal, request = {}, deps = {}) {
@@ -2979,7 +3064,11 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   };
   if (mode === "vibe") report.pipeline = [...VIBE_PIPELINE];
   if (pluginContext) report.plugin_context = pluginContext;
-  return report;
+  return attachPlannerCurrentStateSummary(report, context, {
+    track: mode,
+    app: request.app || request.app_slug || request["app-slug"] || "",
+    plugin: pluginContext ? pluginContext.plugin_id : (request.plugin || request.plugin_id || "")
+  });
 }
 
 function buildIdeaToEvolutionDocumentationFiles(mode, pluginContext) {
@@ -3659,15 +3748,15 @@ function buildPlannerCurrentReport(deps = {}) {
   const state = loadPlannerState(context.repo_root);
   const currentPlan = findCurrentPlannerPlan(state);
   if (!currentPlan) {
-    return {
+    return attachPlannerCurrentStateSummary({
       report_type: "kvdf_planner_current",
       generated_at: new Date().toISOString(),
       status: "empty",
       current_plan: null,
       next_action: "Run kvdf planner propose --goal \"...\" --track owner, vibe, or plugin --json to create a proposed plan."
-    };
+    }, context, {});
   }
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_current",
     generated_at: new Date().toISOString(),
     status: "approved",
@@ -3687,7 +3776,138 @@ function buildPlannerCurrentReport(deps = {}) {
     }),
     latest_feedback: currentPlan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")) || null,
     next_action: "Run kvdf planner prompt --from-current --json to generate the Codex prompt from the approved plan."
+  }, context, { track: currentPlan.track || normalizePlannerMode(currentPlan.planner_mode), app: normalizeAppSlug(currentPlan.app_slug || "") });
+}
+
+function buildPlannerCurrentStateReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  return currentState;
+}
+
+function buildPlannerWorkspaceBoundaryReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  return {
+    report_type: "kvdf_workspace_boundary_report",
+    generated_at: currentState.generated_at,
+    status: currentState.write_policy && currentState.write_policy.can_write ? "pass" : "blocked",
+    target_track: currentState.track ? currentState.track.target_track : normalizeTrackAlias(flags.track) || "unknown",
+    target_workspace: currentState.workspace ? currentState.workspace.root || currentState.workspace.kind || "unknown" : "unknown",
+    workspace: currentState.workspace || null,
+    repo: currentState.repo || null,
+    allowed_paths: currentState.allowed_paths || [],
+    forbidden_paths: currentState.forbidden_paths || [],
+    source_of_truth: currentState.source_of_truth || {},
+    stale_state: currentState.stale_state || {},
+    next_action: currentState.next_action || "Confirm the target workspace before planning or writing.",
+    current_state_summary: currentState
   };
+}
+
+function buildPlannerStaleStateReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const cwd = context.execution_cwd || context.repo_root;
+  const report = buildStaleStateReportService({ cwd });
+  const runtimeRecon = reconcileRuntimeTruth(cwd);
+  const runtimeEvolution = readJsonFileIfExists(path.join(cwd, ".kabeeri", "evolution.json"));
+  const runtimePriorityItems = Array.isArray(runtimeEvolution && runtimeEvolution.development_priorities)
+    ? runtimeEvolution.development_priorities
+      .filter((item) => ["planned", "recommended", "future", "deferred", "suggested"].includes(String(item.status || "").toLowerCase()))
+      .map((item) => ({
+        id: item.id || item.priority || item.title || "priority",
+        title: item.title || item.id || "priority",
+        classification: "stale_planned",
+        reason: "Runtime priority should not outrank source-level evidence."
+      }))
+    : [];
+  const runtimeWarnings = [
+    ...(runtimeRecon.stale_planned || []),
+    ...(runtimeRecon.stale_recommended || []),
+    ...(runtimeRecon.runtime_only_evolutions || [])
+  ];
+  if (report.status !== "warning" && (runtimeWarnings.length || runtimePriorityItems.length)) {
+    return {
+      report_type: "kvdf_stale_state_report",
+      generated_at: report.generated_at || new Date().toISOString(),
+      status: "warning",
+      stale_plans: [
+        ...(runtimeRecon.stale_planned || []),
+        ...(runtimeRecon.stale_recommended || []),
+        ...runtimePriorityItems
+      ],
+      stale_reports: report.stale_reports || [],
+      stale_runtime_items: runtimeRecon.runtime_only_evolutions || [],
+      superseded_items: [
+        ...(runtimeRecon.stale_planned || []),
+        ...(runtimeRecon.stale_recommended || []),
+        ...runtimePriorityItems
+      ],
+      historical_items: report.historical_items || [],
+      next_action: "Review the stale roadmap, runtime, and generated report items before trusting the next plan.",
+      current_state_summary: buildPlannerCurrentStateSummary(context, flags)
+    };
+  }
+  return {
+    ...report,
+    current_state_summary: buildPlannerCurrentStateSummary(context, flags)
+  };
+}
+
+function buildPlannerCurrentStateSummary(context, flags = {}, options = {}) {
+  const currentPlan = findCurrentPlannerPlan(loadPlannerState(context.repo_root));
+  const cwd = options.cwd || context.execution_cwd || context.repo_root;
+  const useRepoPlan = cwd === context.repo_root;
+  const explicitAppSlug = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
+  const explicitPluginId = String(flags.plugin || flags.plugin_id || "").trim();
+  const report = buildCurrentStateReportService({
+    cwd,
+    targetTrack: normalizeTrackAlias(flags.track) || (useRepoPlan && currentPlan ? currentPlan.track : null),
+    appSlug: explicitAppSlug ? normalizeAppSlug(explicitAppSlug) : (useRepoPlan && currentPlan ? normalizeAppSlug(currentPlan.app_slug || "") : null),
+    pluginId: explicitPluginId ? normalizePluginId(explicitPluginId) : (useRepoPlan && currentPlan && currentPlan.plugin_id ? normalizePluginId(currentPlan.plugin_id) : null)
+  });
+  return {
+    ...report,
+    current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
+    current_plan_status: currentPlan ? currentPlan.status || null : null
+  };
+}
+
+function attachPlannerCurrentStateSummary(report, context, flags = {}) {
+  return {
+    ...report,
+    current_state_summary: buildPlannerCurrentStateSummary(context, flags)
+  };
+}
+
+function assertPlannerWriteBoundary(context, flags = {}, options = {}) {
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  const plannerMode = normalizePlannerMode(flags.track || options.track || currentState.track && currentState.track.active_track);
+  const targetWorkspace = currentState.workspace ? currentState.workspace.kind : "unknown";
+  const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || options.appSlug || "");
+  const pluginId = normalizePluginId(flags.plugin || flags.plugin_id || options.pluginId || "");
+  const expectedWorkspace = plannerMode === "owner"
+    ? "kvdf_core"
+    : plannerMode === "plugin"
+      ? "plugin"
+      : "viber_app";
+  const ambiguous = targetWorkspace === "unknown"
+    || (plannerMode === "vibe" && !appSlug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"]))
+    || (plannerMode === "plugin" && !pluginId && !resolveBooleanFlag(flags.dry_run || flags["dry-run"]))
+    || (expectedWorkspace !== "kvdf_core" && targetWorkspace !== expectedWorkspace);
+  if (ambiguous && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const reason = targetWorkspace === "unknown"
+      ? "Workspace identity is ambiguous."
+      : plannerMode === "vibe" && !appSlug
+        ? "Missing app slug for Viber/app workspace materialization."
+        : plannerMode === "plugin" && !pluginId
+          ? "Missing plugin id for plugin workspace materialization."
+          : `Target workspace ${targetWorkspace} does not match the requested track ${plannerMode}.`;
+    const error = new Error(reason);
+    error.current_state = currentState;
+    throw error;
+  }
+  return currentState;
 }
 
 function rejectPlannerPlan(planId, reason, flags = {}, deps = {}) {
@@ -3876,7 +4096,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
     current_gate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || review.planning_method || "structured", sourceControl, normalizePlannerMode(currentPlan.planner_mode))
   }, context, sourceControl, aiLearning);
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
     planner_mode: currentPlan.planner_mode,
@@ -3898,7 +4118,11 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     task_punch: currentPlan.task_punch || null,
     prompt,
     roadmap_train: roadmapTrain
-  };
+  }, context, {
+    track: currentPlan.track || normalizePlannerMode(currentPlan.planner_mode),
+    app: normalizeAppSlug(currentPlan.app_slug || ""),
+    plugin: currentPlan.plugin_context && currentPlan.plugin_context.plugin_id ? currentPlan.plugin_context.plugin_id : ""
+  });
 }
 
 function buildPlannerEvolutionPlan(goal, request = {}, context = {}) {
@@ -4318,6 +4542,7 @@ function printPlannerOutput(report, flags, deps, kind) {
   else if (kind === "evolution") rendered = renderPlannerEvolutionPlan(report, deps.table);
   else if (kind === "task-punch") rendered = renderPlannerTaskPunchReport(report, deps.table);
   else if (["propose", "approve", "current", "reject"].includes(kind)) rendered = renderPlannerStateSummaryReport(report, deps.table);
+  else if (["current-state", "boundary", "stale-state"].includes(kind)) rendered = JSON.stringify(report, null, 2);
   else rendered = renderPlannerNextReport(report, deps.table);
   if ((kind === "visual" || kind === "pipeline")) {
     openPlannerPreview(report, rendered, kind, flags, deps);
@@ -4690,6 +4915,7 @@ function buildPlannerContext(deps = {}) {
   const currentTrack = resumeReport && resumeReport.primary_track ? resumeReport.primary_track.id : inferTrackFromWorkspace(repoRootPath);
   return {
     repo_root: repoRootPath,
+    execution_cwd: process.cwd(),
     current_track: currentTrack,
     source: {
       report_type: "kvdf_planner_context",
@@ -6321,7 +6547,7 @@ function buildPlannerVersionStatusReport(versionId, flags = {}, rest = [], deps 
     plannerMode: normalizePlannerMode(normalizeTrackAlias(flags.track) || (currentPlan ? currentPlan.planner_mode : "vibe")),
     sourceControl: currentPlan ? currentPlan.source_control || null : null
   });
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_viber_version_status",
     generated_at: new Date().toISOString(),
     track: control.track,
@@ -6332,7 +6558,7 @@ function buildPlannerVersionStatusReport(versionId, flags = {}, rest = [], deps 
     next_evolution: control.next_evolution || {},
     publish_readiness: control.publish_readiness || {},
     next_action: control.next_action || "Run kvdf planner pipeline --idea \"...\" --track vibe --json to generate a version plan."
-  };
+  }, context, { track: flags.track || control.track || null, app: appSlug });
 }
 
 function buildPlannerVersionNextReport(versionId, flags = {}, rest = [], deps = {}) {
@@ -6347,7 +6573,8 @@ function buildPlannerVersionNextReport(versionId, flags = {}, rest = [], deps = 
     next_task_punch: report.next_version && report.next_version.task_punch ? report.next_version.task_punch : {},
     blocked: Boolean(report.publish_readiness && report.publish_readiness.status === "blocked"),
     blockers: collectVersionBlockers(report.publish_readiness, report.current_version),
-    next_action: report.next_action
+    next_action: report.next_action,
+    current_state_summary: report.current_state_summary || null
   };
 }
 
@@ -6383,7 +6610,8 @@ function buildPlannerVersionGateReport(versionId, flags = {}, rest = [], deps = 
     gates,
     blockers: currentVersion ? [...(currentVersion.blockers || [])] : [],
     warnings: currentVersion ? [...(currentVersion.warnings || [])] : [],
-    next_action: selectedGate.next_action || statusReport.next_action
+    next_action: selectedGate.next_action || statusReport.next_action,
+    current_state_summary: statusReport.current_state_summary || null
   };
 }
 
@@ -6402,7 +6630,8 @@ function buildPlannerVersionPublishReadyReport(versionId, flags = {}, rest = [],
     blockers: collectVersionBlockers(publishReadiness, currentVersion),
     warnings: collectVersionWarnings(publishReadiness, currentVersion),
     publish_target: currentVersion && currentVersion.publish_target ? currentVersion.publish_target : inferPublishTarget(currentVersion, statusReport),
-    next_action: status === "ready" ? "Publishing is ready. Use an explicit external publish command or mark it published manually." : "Resolve the blocked gates before publishing."
+    next_action: status === "ready" ? "Publishing is ready. Use an explicit external publish command or mark it published manually." : "Resolve the blocked gates before publishing.",
+    current_state_summary: statusReport.current_state_summary || null
   };
 }
 
@@ -6410,12 +6639,24 @@ function buildPlannerVersionMarkPublishedReport(versionId, flags = {}, rest = []
   const note = String(flags.note || flags.message || rest.filter((item) => typeof item === "string" && !String(item).startsWith("--")).join(" ")).trim();
   if (!note) throw new Error("Missing note for planner version mark-published.");
   const force = resolveBooleanFlag(flags.force);
+  const context = buildPlannerContext(deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
+    error.current_state = currentState;
+    throw error;
+  }
   const readiness = buildPlannerVersionPublishReadyReport(versionId, flags, rest, deps);
   if (readiness.status === "blocked" && !force) {
     throw new Error(`Version ${versionId} is not publish-ready. Use --force to record the published state anyway.`);
   }
-  const context = buildPlannerContext(deps);
   const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || readiness.app || "");
+  const activeTrack = currentState.track && currentState.track.active_track ? currentState.track.active_track : normalizeTrackAlias(flags.track);
+  if (!appSlug && (activeTrack === "vibe_app_developer" || activeTrack === "vibe") && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing app slug for planner version mark-published. Use --app or --app-slug.");
+    error.current_state = currentState;
+    throw error;
+  }
   const current = readPlannerVersionControlState(context.repo_root, appSlug);
   const record = {
     report_type: "kvdf_viber_version_published",
@@ -6438,7 +6679,7 @@ function buildPlannerVersionMarkPublishedReport(versionId, flags = {}, rest = []
   current.publish_target = record.publish_target;
   current.latest_record = record;
   savePlannerVersionControlState(context.repo_root, appSlug, current);
-  return record;
+  return attachPlannerCurrentStateSummary(record, context, { track: flags.track || "vibe", app: appSlug });
 }
 
 function buildPlannerVersionControlSummary({ versionPlan = {}, currentPlan = null, versionControlState = null, context = {}, appSlug = "", versionId = "", track = "vibe_app_developer", plannerMode = "vibe", sourceControl = null } = {}) {
@@ -6570,6 +6811,17 @@ function buildPlannerRoadmapTrainBuildReport(value = "", flags = {}, rest = [], 
     source_control: flags.source_control || null
   };
   const planning = buildPlannerPlanningContext(subject, request, deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
+    error.current_state = currentState;
+    throw error;
+  }
+  if (profile.train_type === "viber" && !profile.app_slug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing app slug for Viber roadmap train build. Use --app or --app-slug.");
+    error.current_state = currentState;
+    throw error;
+  }
   const selectedMethod = planning.planning_method || planning.method && planning.method.recommended_method || profile.planning_method || "structured";
   const pipeline = buildIdeaToEvolutionPipelineReport(subject, {
     ...flags,
@@ -6596,7 +6848,10 @@ function buildPlannerRoadmapTrainBuildReport(value = "", flags = {}, rest = [], 
     flags
   });
   savePlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug, report);
-  return report;
+  return attachPlannerCurrentStateSummary(report, context, {
+    track: profile.mode,
+    app: profile.app_slug
+  });
 }
 
 function buildPlannerRoadmapTrainStatusReport(value = "", flags = {}, rest = [], deps = {}) {
@@ -6604,9 +6859,15 @@ function buildPlannerRoadmapTrainStatusReport(value = "", flags = {}, rest = [],
   const profile = resolvePlannerRoadmapTrainProfile(flags, context, flags.track);
   const train = readPlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug);
   if (!train) {
-    return buildEmptyPlannerRoadmapTrainReport(profile, context, "Build the roadmap train first.");
+    return attachPlannerCurrentStateSummary(buildEmptyPlannerRoadmapTrainReport(profile, context, "Build the roadmap train first."), context, {
+      track: profile.mode,
+      app: profile.app_slug
+    });
   }
-  return refreshPlannerRoadmapTrainReport(train, profile, context);
+  return attachPlannerCurrentStateSummary(refreshPlannerRoadmapTrainReport(train, profile, context), context, {
+    track: profile.mode,
+    app: profile.app_slug
+  });
 }
 
 function buildPlannerRoadmapTrainNextReport(value = "", flags = {}, rest = [], deps = {}) {
@@ -6638,12 +6899,28 @@ function buildPlannerRoadmapTrainAdvanceReport(value = "", flags = {}, rest = []
   if (!evolutionId) throw new Error("Missing evolution id for planner train advance.");
   const nextStatus = String(flags.status || "completed").trim().toLowerCase();
   const train = readPlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug);
-  if (!train) return buildEmptyPlannerRoadmapTrainReport(profile, context, "Build the roadmap train first.");
+  if (!train) {
+    return attachPlannerCurrentStateSummary(buildEmptyPlannerRoadmapTrainReport(profile, context, "Build the roadmap train first."), context, {
+      track: profile.mode,
+      app: profile.app_slug
+    });
+  }
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
+    error.current_state = currentState;
+    throw error;
+  }
+  if (profile.train_type === "viber" && !profile.app_slug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error("Missing app slug for Viber roadmap train advance. Use --app or --app-slug.");
+    error.current_state = currentState;
+    throw error;
+  }
   const updated = advancePlannerRoadmapTrainState(train, evolutionId, nextStatus);
   updated.updated_at = new Date().toISOString();
   savePlannerRoadmapTrainState(context.repo_root, profile.train_type, profile.app_slug, updated);
   const refreshed = refreshPlannerRoadmapTrainReport(updated, profile, context);
-  return {
+  return attachPlannerCurrentStateSummary({
     report_type: "kvdf_roadmap_train_advanced",
     generated_at: refreshed.generated_at,
     train_type: refreshed.train_type,
@@ -6654,7 +6931,7 @@ function buildPlannerRoadmapTrainAdvanceReport(value = "", flags = {}, rest = []
     current_train: refreshed,
     next_evolution_id: refreshed.next_evolution_id,
     next_action: refreshed.next_action
-  };
+  }, context, { track: profile.mode, app: profile.app_slug });
 }
 
 function buildPlannerRoadmapTrainVisualReport(value = "", flags = {}, rest = [], deps = {}) {
@@ -6686,7 +6963,8 @@ function buildPlannerRoadmapTrainReadinessReport(value = "", flags = {}, rest = 
     blockers: report.readiness ? [...(report.readiness.blockers || [])] : [],
     warnings: report.readiness ? [...(report.readiness.warnings || [])] : [],
     next_action: report.readiness ? report.readiness.next_action : report.next_action,
-    current_train: report
+    current_train: report,
+    current_state_summary: report.current_state_summary || null
   };
 }
 
@@ -7358,6 +7636,12 @@ function readPlannerLatestFeedback(repoRootPath, appSlug) {
 
 function buildPlannerFeedbackCommandReport(value = "", flags = {}, rest = [], deps = {}) {
   const context = buildPlannerContext(deps);
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
+  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
+    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
+    error.current_state = currentState;
+    throw error;
+  }
   const plannerState = loadPlannerState(context.repo_root);
   const currentPlan = isFromCurrentPlan(flags) ? findCurrentPlannerPlan(plannerState) : findPlannerPlan(plannerState, flags.plan || flags.plan_id || value);
   const planId = currentPlan ? currentPlan.plan_id : normalizeVersionId(flags.plan || flags.plan_id || value || "feedback");
@@ -7392,7 +7676,10 @@ function buildPlannerFeedbackCommandReport(value = "", flags = {}, rest = [], de
     if (currentPlan) currentPlan.latest_feedback = record;
     savePlannerState(context.repo_root, plannerState);
   }
-  return record;
+  return attachPlannerCurrentStateSummary(record, context, {
+    track: currentPlan ? currentPlan.track : normalizeTrackAlias(flags.track),
+    app: currentPlan ? currentPlan.app_slug || "" : ""
+  });
 }
 function escapeHtml(value) {
   return String(value ?? "")
@@ -7407,6 +7694,9 @@ module.exports = {
   planner,
   buildPlannerNextReport,
   buildPlannerPromptReport,
+  buildPlannerCurrentStateReport,
+  buildPlannerWorkspaceBoundaryReport,
+  buildPlannerStaleStateReport,
   buildPlannerEvolutionReport,
   buildPlannerTaskPunchReport,
   buildPlannerVisualReport,

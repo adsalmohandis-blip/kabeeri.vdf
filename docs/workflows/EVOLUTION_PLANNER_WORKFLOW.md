@@ -14,6 +14,8 @@ No Planning Without State Resync:
 - the planner must complete a State Resync before recommending the next
   Evolution
 - the planner must output a Current-State Report first
+- the planner must confirm the workspace boundary before any write-capable
+  action
 - the planner must not trust `.kabeeri/tasks.json` as the only source of
   current progress
 - the planner must identify stale files before naming the next Evolution
@@ -45,6 +47,10 @@ Before any next-Evolution recommendation, the planner must:
 - treat `.kabeeri/tasks.json` as supporting state, not final truth
 - treat chat history as supporting context only
 - treat GitHub as optional secondary evidence only
+- treat `kvdf planner current-state --json` as the file-first rebuild of the
+  live repo/workspace summary
+- treat `kvdf planner boundary --json` as the write-boundary check for the
+  selected track
 
 The planner can only recommend the next Evolution after the Current-State
 Report shows that the repo reality matches the proposed ledger.
@@ -57,14 +63,16 @@ Evolution:
 1. `kvdf planner method`
 2. `kvdf planner auto`
 3. `kvdf planner review`
-4. `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
-5. `kvdf planner resume`
-6. `kvdf planner propose`
-7. `kvdf planner approve`
-8. `kvdf planner current`
-9. `kvdf planner materialize`
-10. `kvdf planner prompt --from-current`
-11. `kvdf planner visual --from-current`
+4. `kvdf planner current-state`
+5. `kvdf planner boundary`
+6. `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
+7. `kvdf planner resume`
+8. `kvdf planner propose`
+9. `kvdf planner approve`
+10. `kvdf planner current`
+11. `kvdf planner materialize`
+12. `kvdf planner prompt --from-current`
+13. `kvdf planner visual --from-current`
 
 The planner remains the planning authority, but it does not execute code
 changes automatically. Owner approval still gates execution, and draft docs
@@ -129,6 +137,8 @@ The planner should also surface:
 
 - planning method
 - method reason
+- current-state summary
+- write boundary summary
 - docs status
 - review warnings
 - source-control mode

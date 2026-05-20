@@ -62,6 +62,9 @@ The planner can emit:
 - a recommended next Evolution
 - a Task Punch
 - a planning method recommendation
+- a Current-State Report
+- a workspace boundary report
+- a stale-state report
 - a self-planning auto plan with docs, review, and visual context
 - a planner review report
 - a planner resume report
@@ -198,17 +201,19 @@ Required progression:
 
 1. Owner direction
 2. planner method or planner auto
-3. planner review
-4. planner docs
-5. planner propose
-6. Owner approve or reject
-7. planner current
-8. planner materialize
-9. planner prompt --from-current
-10. planner visual --from-current
-11. Codex execution
-12. validation
-13. planner complete
+3. planner current-state
+4. planner boundary
+5. planner review
+6. planner docs
+7. planner propose
+8. Owner approve or reject
+9. planner current
+10. planner materialize
+11. planner prompt --from-current
+12. planner visual --from-current
+13. Codex execution
+14. validation
+15. planner complete
 
 Rules:
 
@@ -219,6 +224,7 @@ Rules:
 - approved plans remain current until they are completed or explicitly rejected
 - completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
+- current-state and boundary reports should be read before any write-capable planner action
 - planner docs catalog/plan/status/review output should carry the foldered app documentation model forward
 - `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
 - `.kabeeri/tasks.json` is supporting state, not final truth

@@ -6246,6 +6246,68 @@ test("planner review and resume stay safe when runtime state is missing", () => 
   assert.ok(review.next_action);
 }));
 
+test("planner current-state and owner boundary reports expose file-first workspace policy", () => {
+  const currentState = JSON.parse(runKvdf(["planner", "current-state", "--json"]).stdout);
+  assert.strictEqual(currentState.report_type, "kvdf_current_state_report");
+  assert.strictEqual(currentState.workspace.kind, "kvdf_core");
+  assert.strictEqual(currentState.track.active_track, "framework_owner");
+  assert.ok(currentState.allowed_paths.includes("src/cli/"));
+  assert.ok(currentState.forbidden_paths.includes("KVDOS/"));
+
+  const boundary = JSON.parse(runKvdf(["planner", "boundary", "--track", "owner", "--json"]).stdout);
+  assert.strictEqual(boundary.report_type, "kvdf_workspace_boundary_report");
+  assert.ok(boundary.allowed_paths.includes("src/cli/"));
+  assert.ok(boundary.forbidden_paths.includes("KVDOS/"));
+  assert.ok(boundary.current_state_summary);
+  assert.strictEqual(boundary.current_state_summary.report_type, "kvdf_current_state_report");
+});
+
+test("planner boundary uses app workspace paths for vibe track and blocks core paths", () => withTempDir((dir) => {
+  const boundary = JSON.parse(runKvdf(["planner", "boundary", "--track", "vibe", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(boundary.report_type, "kvdf_workspace_boundary_report");
+  assert.strictEqual(boundary.status, "pass");
+  assert.strictEqual(boundary.target_track, "vibe_app_developer");
+  assert.ok(boundary.allowed_paths.some((item) => item.startsWith("workspaces/apps/booking/")));
+  assert.ok(boundary.forbidden_paths.includes("src/cli/"));
+  assert.ok(boundary.forbidden_paths.includes("KVDOS/"));
+}));
+
+test("planner boundary blocks when workspace identity is ambiguous", () => withTempDir((dir) => {
+  const boundary = JSON.parse(runKvdf(["planner", "boundary", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(boundary.report_type, "kvdf_workspace_boundary_report");
+  assert.strictEqual(boundary.status, "blocked");
+  assert.strictEqual(boundary.workspace.kind, "unknown");
+  assert.ok(boundary.next_action);
+}));
+
+test("planner stale-state classifies stale plans and generated report snapshots in a temp workspace", () => withTempDir((dir) => {
+  fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "evolution.json"), JSON.stringify({
+    changes: [],
+    development_priorities: [
+      { id: "owner-dashboard-planner", title: "Planner Docs", status: "planned" }
+    ],
+    deferred_ideas: []
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({ tasks: [] }, null, 2), "utf8");
+  fs.mkdirSync(path.join(dir, "docs", "reports"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "docs", "reports", "old-report.md"), "# snapshot", "utf8");
+  const report = JSON.parse(runKvdf(["planner", "stale-state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_stale_state_report");
+  assert.strictEqual(report.status, "warning");
+  assert.ok(report.stale_plans.some((item) => item.id === "owner-dashboard-planner"));
+  assert.ok(report.stale_reports.some((item) => item.path === "docs/reports/old-report.md"));
+  assert.ok(Array.isArray(report.historical_items));
+  assert.ok(Array.isArray(report.stale_runtime_items));
+}));
+
+test("planner next includes current-state summary for the live repo", () => {
+  const next = JSON.parse(runKvdf(["planner", "next", "--goal", "Check current state flow", "--track", "owner", "--json"]).stdout);
+  assert.strictEqual(next.report_type, "kvdf_planner_next");
+  assert.ok(next.current_state_summary);
+  assert.strictEqual(next.current_state_summary.report_type, "kvdf_current_state_report");
+});
+
 test("truth audit reports source docs runtime reconciliation data", () => {
   const report = JSON.parse(runKvdf(["truth", "audit", "--json"]).stdout);
   assert.strictEqual(report.report_type, "kvdf_truth_audit");
@@ -6446,6 +6508,23 @@ test("planner docs review reports missing and not-applied docs", () => withTempD
   assert.ok(Array.isArray(review.stage_blockers));
   assert.ok(["pass", "warning", "blocked"].includes(review.status));
   assert.ok(review.next_action);
+}));
+
+test("planner docs materialization writes the expected foldered app UI UX doc path", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
+  assert.ok(report.docs_created.includes("workspaces/apps/booking/docs/ui-ux/UI_UX_DESIGN.md"));
+  assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "ui-ux", "UI_UX_DESIGN.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "docs", "ui-ux", "UI_UX_DESIGN.md")));
+}));
+
+test("planner docs materialization requires an app slug for vibe track unless dry-run", () => withTempDir((dir) => {
+  const failure = runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--method", "hybrid", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(failure.stderr, /Missing app slug/i);
+  const dryRun = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--method", "hybrid", "--dry-run", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(dryRun.report_type, "kvdf_planner_docs_materialization");
+  assert.strictEqual(dryRun.status, "draft");
+  assert.ok(Array.isArray(dryRun.docs_created));
 }));
 
 test("planner docs materialization creates plugin drafts only under the selected plugin", () => withTempDir((dir) => {

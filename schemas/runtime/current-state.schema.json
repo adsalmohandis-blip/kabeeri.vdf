@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Current State Report",
+  "type": "object",
+  "required": [
+    "report_type",
+    "generated_at",
+    "repo",
+    "workspace",
+    "track",
+    "source_of_truth",
+    "allowed_paths",
+    "forbidden_paths",
+    "write_policy",
+    "stale_state",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "const": "kvdf_current_state_report" },
+    "generated_at": { "type": "string" },
+    "repo": { "type": "object", "additionalProperties": true },
+    "workspace": { "type": "object", "additionalProperties": true },
+    "track": { "type": "object", "additionalProperties": true },
+    "source_of_truth": { "type": "object", "additionalProperties": true },
+    "current_state": { "type": "object", "additionalProperties": true },
+    "allowed_paths": { "type": "array", "items": { "type": "string" } },
+    "forbidden_paths": { "type": "array", "items": { "type": "string" } },
+    "write_policy": { "type": "object", "additionalProperties": true },
+    "stale_state": { "type": "object", "additionalProperties": true },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

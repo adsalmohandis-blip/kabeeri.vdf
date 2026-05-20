@@ -106,6 +106,9 @@ kvdf planner method --goal "Build secure database app" --track vibe --json
 kvdf planner auto --goal "Build booking app" --track vibe --method auto --json
 kvdf planner review --from-current --json
 kvdf planner resume --json
+kvdf planner current-state --json
+kvdf planner boundary --track owner --json
+kvdf planner stale-state --json
 kvdf planner docs --idea "Build booking app" --track vibe --method auto --json
 kvdf planner docs catalog --json
 kvdf planner docs plan --idea "Build booking app" --track vibe --method hybrid --json
@@ -164,7 +167,7 @@ The shared Roadmap Train and Evo Sprint Queue commands let the planner persist o
 Planner outputs now include an explicit `source_control` object so Git, no source control, direct-to-main, branch, and branch+PR can be expressed as provider-driven modes instead of assuming GitHub is mandatory. GitHub is treated as an optional remote/provider plugin, not the same thing as Git.
 
 Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
-Use `kvdf planner method` to recommend `structured`, `agile`, or `hybrid` before planning. Use `kvdf planner auto` to generate the full self-planning package, `kvdf planner review` to inspect scope, method, docs, security, source control, task quality, and visual readiness, and `kvdf planner resume` to recover the current planning context. Use `kvdf planner docs catalog|plan|materialize|status|apply-stage|review` to plan, draft, stage, and review foldered app documentation without executing or materializing work. Use `kvdf planner version status|next|gate|publish-ready|mark-published` to inspect Viber version readiness, gate health, and recorded published state without publishing anything automatically.
+Use `kvdf planner method` to recommend `structured`, `agile`, or `hybrid` before planning. Use `kvdf planner current-state` to rebuild the live repo/workspace summary, `kvdf planner boundary` to check the target write boundary, `kvdf planner stale-state` to classify stale roadmap and report files, `kvdf planner auto` to generate the full self-planning package, `kvdf planner review` to inspect scope, method, docs, security, source control, task quality, and visual readiness, and `kvdf planner resume` to recover the current planning context. Use `kvdf planner docs catalog|plan|materialize|status|apply-stage|review` to plan, draft, stage, and review foldered app documentation without executing or materializing work. Use `kvdf planner version status|next|gate|publish-ready|mark-published` to inspect Viber version readiness, gate health, and recorded published state without publishing anything automatically.
 Use `kvdf truth audit` and `kvdf truth feature` to compare source-level implementation evidence against runtime state, generated snapshots, and docs before trusting a report.
 Use `kvdf evolution reconcile` to compare evolution runtime state against source-level evidence and identify stale plans, duplicate task links, and runtime-only items.
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.

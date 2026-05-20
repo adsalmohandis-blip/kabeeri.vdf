@@ -487,10 +487,10 @@ function buildPlannerTruthReport() {
   };
 }
 
-function reconcileRuntimeTruth() {
-  const runtimePlanner = safeJson(".kabeeri/planner.json");
-  const runtimeEvolution = safeJson(".kabeeri/evolution.json");
-  const runtimeTasks = safeJson(".kabeeri/tasks.json");
+function reconcileRuntimeTruth(cwd = repoRoot()) {
+  const runtimePlanner = safeJson(".kabeeri/planner.json", cwd);
+  const runtimeEvolution = safeJson(".kabeeri/evolution.json", cwd);
+  const runtimeTasks = safeJson(".kabeeri/tasks.json", cwd);
   const implementedFeatures = TRUTH_FEATURES.filter((feature) => classifyFeature(feature).status === "implemented");
   const implementedTitles = implementedFeatures.map((feature) => feature.title.toLowerCase());
   const runtimeItems = extractRuntimeItems(runtimePlanner, runtimeEvolution);
@@ -603,6 +603,19 @@ function extractRuntimeItems(runtimePlanner, runtimeEvolution) {
       });
     }
   }
+  if (runtimeEvolution && Array.isArray(runtimeEvolution.development_priorities)) {
+    for (const priority of runtimeEvolution.development_priorities) {
+      items.push({
+        id: priority.id || priority.priority || priority.title || "priority",
+        title: priority.title || priority.id || "priority",
+        summary: priority.summary || priority.notes && priority.notes.map((item) => item.text).join(" ") || "",
+        description: priority.description || "",
+        status: priority.status || "unknown",
+        kind: "priority",
+        source: ".kabeeri/evolution.json"
+      });
+    }
+  }
   if (runtimeEvolution && Array.isArray(runtimeEvolution.deferred_ideas)) {
     for (const idea of runtimeEvolution.deferred_ideas) {
       items.push({
@@ -677,9 +690,9 @@ function collectGeneratedSnapshotOnlyItems(runtimePlanner, runtimeEvolution) {
   return items;
 }
 
-function safeJson(relativePath) {
+function safeJson(relativePath, cwd = repoRoot()) {
   try {
-    const fullPath = path.join(repoRoot(), relativePath);
+    const fullPath = path.join(cwd, relativePath);
     if (!fs.existsSync(fullPath)) return {};
     return JSON.parse(fs.readFileSync(fullPath, "utf8"));
   } catch {

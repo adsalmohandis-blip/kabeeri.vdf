@@ -3,6 +3,10 @@
 The Idea to Evolution Pipeline is the next planning layer above the shared Planner Runtime Approval Gate.
 It turns a raw idea or goal into documentation files, design artifacts, a visual planning model, a version plan, governed evolutions, task punches, a visual roadmap, and the next approved Evolution slice.
 
+Before any write-capable step, the pipeline should also consume the Current-State
+Report and workspace boundary summary so stale roadmap snapshots do not outrank
+the live repository state.
+
 The planner dashboard sync layer can then surface the approved plan, visual summary, source-control state, materialization status, and next action in live dashboard JSON and exported HTML.
 
 The same pipeline can also emit a shared Roadmap Train so owner and Viber
@@ -13,6 +17,8 @@ evolutions, and task punches.
 
 ```text
 Idea
+-> Current-State Report
+-> Workspace Boundary Check
 -> Documentation Files
 -> System Design
 -> Database Design

@@ -1420,7 +1420,7 @@ function printHelp() {
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",
-  "  planner next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Recommend the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+  "  planner current-state|boundary|stale-state|next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Rebuild current repo/workspace state, check workspace boundaries, classify stale roadmap/report/runtime files, recommend the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
   "  truth audit|feature          Compare source, docs, tests, runtime, and generated snapshots before trusting that a capability is implemented",
   "  planner pipeline Generate an idea-to-evolution planning package with docs, design, versions, evolutions, task punches, roadmap, and source-control guidance",
     "  cleaner cleanup              Run the repo-wide cleanup audit and approval workflow",
@@ -1480,7 +1480,7 @@ function printHelp() {
   ];
   const ownerCommands = [
     "  evolution plan|status|report Govern Kabeeri framework updates and dependent tasks",
-  "  planner next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Determine the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
+    "  planner current-state|boundary|stale-state|next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Rebuild current repo/workspace state, check workspace boundaries, classify stale roadmap/report/runtime files, determine the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
   "  truth audit|feature          Compare source, docs, tests, runtime, and generated snapshots before trusting that a capability is implemented",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
     "  owner init|login|status|logout Configure and use local Owner sessions",
