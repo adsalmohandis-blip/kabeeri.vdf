@@ -2175,6 +2175,7 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     confidence: planning.method.confidence,
     review,
     docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned",
+    docsStatusReport: planning.pipeline ? planning.pipeline.docs_status : null,
     docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : (planning.pipeline && Array.isArray(planning.pipeline.documentation_files) ? planning.pipeline.documentation_files.length : 0),
     risks: planning.method.risks,
     currentGate: planning.current_gate,
@@ -2238,6 +2239,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     confidence: currentPlan.confidence || "",
     review,
     docsStatus: currentPlan.docs_status ? currentPlan.docs_status.status : (currentPlan.documentation_files && currentPlan.documentation_files.length ? "draft" : "planned"),
+    docsStatusReport: currentPlan.docs_status || null,
     docsCreatedTotal: currentPlan.docs_status ? currentPlan.docs_status.existing_total || 0 : (Array.isArray(currentPlan.documentation_files) ? currentPlan.documentation_files.length : 0),
     risks: review.risks || [],
     currentGate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || "structured", sourceControl, mode),
@@ -2245,10 +2247,11 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "" }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "" }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
+  const planningReadiness = buildPlannerVisualReadinessSummary({ versionControl, docsStatus, docsStatusReport, review, currentPlan, mode, planningMethod, repoRoot: context && context.repo_root ? context.repo_root : null });
   const validationCommands = [...(evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS)];
   const stopCondition = evolutionPlan.stop_condition || buildPlannerStopCondition(mode, context, pluginContext);
   const reviewStatus = review ? review.status || "unknown" : (currentPlan && currentPlan.review && currentPlan.review.status) || "warning";
@@ -2268,7 +2271,9 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     reviewStatus,
     docsStatus,
     docsCreatedTotal,
+    docsStatusReport,
     versionControl,
+    planningReadiness,
     risks,
     currentGate,
     nextAction: nextAction || evolutionPlan.next_action || ""
@@ -2295,7 +2300,9 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     confidence: confidence || (review ? review.review_status || review.status || "unknown" : "unknown"),
     review_status: reviewStatus,
     docs_status: docsStatus,
+    planning_readiness: planningReadiness,
     docs_created_total: docsCreatedTotal,
+    docs_status_report: docsStatusReport,
     version_control: versionControl,
     risks,
     current_gate: currentGate,
@@ -2549,7 +2556,42 @@ function buildPlannerVisualLegend() {
   };
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, versionControl, risks, currentGate, nextAction }) {
+function buildPlannerVisualQuestionsSection({ mode, goal, planningMethod, methodReason }) {
+  const normalizedMode = String(mode || "owner").toLowerCase();
+  const baseQuestions = [
+    "- Clarify planning goal and acceptance criteria before task execution.",
+    "- Confirm source-of-truth file set before mutation: current app docs/specs/config/tests for app, manifest/schema for plugin, or core docs for owner."
+  ];
+  const modeQuestions = normalizedMode === "vibe"
+    ? [
+      "- Define app boundaries and out-of-scope items.",
+      "- Confirm required data model/API/auth/payment/security scope before versioning.",
+      "- Confirm whether workspace docs are draft-only or ready-to-implement."
+    ]
+    : normalizedMode === "plugin"
+      ? [
+        "- Confirm plugin manifest and runtime compatibility requirements.",
+        "- Confirm schema/docs/test parity expectations before implementation.",
+        "- Confirm plugin mount and uninstall behavior assumptions."
+      ]
+      : [
+        "- Confirm exactly which KVDF Core files are in-scope.",
+        "- Confirm direct-to-main policy and approval boundaries.",
+        "- Confirm whether this request is design-only or execution-ready."
+      ];
+  return [
+    "## Questions and Clarification",
+    `- Mode: ${normalizedMode}`,
+    `- Goal: ${goal}`,
+    `- Planning Method: ${planningMethod || "auto"}`,
+    methodReason ? `- Method reason: ${methodReason}` : null,
+    "- Clarifications and assumptions:",
+    ...baseQuestions.map((item) => `  ${item}`),
+    ...modeQuestions.map((item) => `  ${item}`)
+  ].filter(Boolean).join("\n");
+}
+
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, risks, currentGate, nextAction }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Model - Vibe/App"
     : mode === "plugin"
@@ -2562,6 +2604,16 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
   const generatedArtifacts = (scopeMap.generated_artifacts || []).map((item) => `- ${item}`).join("\n");
   const docs = (scopeMap.docs || []).map((item) => `- ${item}`).join("\n");
   const tests = (scopeMap.tests || []).map((item) => `- ${item}`).join("\n");
+  const gateRows = planningReadiness.gate_status ? [
+    `- Docs: ${planningReadiness.gate_status.docs || "unknown"}`,
+    `- Evolution: ${planningReadiness.gate_status.evolution || "unknown"}`,
+    `- Task: ${planningReadiness.gate_status.task || "unknown"}`,
+    `- Validation: ${planningReadiness.gate_status.validation || "unknown"}`,
+    `- Security: ${planningReadiness.gate_status.security || "unknown"}`,
+    `- Handoff: ${planningReadiness.gate_status.handoff || "unknown"}`,
+    `- Publish: ${planningReadiness.gate_status.publish || "unknown"}`
+  ] : [];
+  const stageRows = docsStatusReport && docsStatusReport.stage_status ? Object.entries(docsStatusReport.stage_status).map(([stage, item]) => `- ${stage}: ${item.status || "missing"} (required ${item.required || 0}, existing ${item.existing || 0}, missing ${item.missing || 0}, applied ${item.applied || 0})`) : [];
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -2583,6 +2635,7 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     `- Delivery mode: ${deliveryMode}`,
     planningMethod ? `- Planning Method: ${planningMethod}` : null,
     planningMethod ? `- Why this method: ${methodReason || ""}` : null,
+    planningMethod ? `- Method confidence: ${planningReadiness.planning_method_confidence || "unknown"}` : null,
     reviewStatus ? `- Review status: ${reviewStatus}` : null,
     docsStatus ? `- Documentation status: ${docsStatus}` : null,
     `- Docs created total: ${docsCreatedTotal || 0}`,
@@ -2592,7 +2645,21 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
     currentGate ? `- Current gate: ${currentGate}` : null,
     risks && risks.length ? `- Risks: ${risks.join("; ")}` : null,
+    planningReadiness.feedback ? `- Latest feedback: ${planningReadiness.feedback.status || "unknown"} (${planningReadiness.feedback.executor || "unknown"})` : null,
     `- Proposed Evolution: ${evolutionPlan.title}`,
+    "",
+    "## Planner Readiness",
+    `- Version status: ${planningReadiness.version_status || "unknown"}`,
+    `- Current stage: ${planningReadiness.current_stage || "planning"}`,
+    planningReadiness.next_action ? `- Next action: ${planningReadiness.next_action}` : null,
+    "",
+    "## Gate Matrix",
+    gateRows.length ? gateRows.join("\n") : "- Gate details not available",
+    planningReadiness.gate_blockers && planningReadiness.gate_blockers.length ? `- Blockers: ${planningReadiness.gate_blockers.join("; ")}` : "- Blockers: none",
+    planningReadiness.gate_warnings && planningReadiness.gate_warnings.length ? `- Warnings: ${planningReadiness.gate_warnings.join("; ")}` : "- Warnings: none",
+    "",
+    "## Stage Readiness",
+    stageRows.length ? stageRows.join("\n") : "- Stage status not available",
     "",
     "## Mermaid Graph",
     "```mermaid",
@@ -2601,6 +2668,13 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     "",
     "## Planning Board",
     boardSummary,
+    "",
+    buildPlannerVisualQuestionsSection({
+      mode,
+      goal,
+      planningMethod,
+      methodReason
+    }),
     "",
     "## Source Control",
     sourceControlLines || "- None",
@@ -2644,6 +2718,80 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     `## Goal`,
     goal
   ].filter(Boolean).join("\n");
+}
+
+function buildPlannerVisualReadinessSummary({ versionControl = null, docsStatus = "planned", docsStatusReport = null, review = null, currentPlan = null, mode = "owner", planningMethod = null, repoRoot = null }) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const latestFeedback = versionControl && versionControl.latest_feedback
+    ? versionControl.latest_feedback
+    : readPlannerLatestFeedback(repoRoot || process.cwd(), currentPlan && currentPlan.app_slug ? currentPlan.app_slug : "");
+  const gates = {
+    docs: currentVersion && currentVersion.docs_gate ? currentVersion.docs_gate : buildEmptyVersionGate("docs"),
+    evolution: currentVersion && currentVersion.evolution_gate ? currentVersion.evolution_gate : buildEmptyVersionGate("evolution"),
+    task: currentVersion && currentVersion.task_gate ? currentVersion.task_gate : buildEmptyVersionGate("task"),
+    validation: currentVersion && currentVersion.validation_gate ? currentVersion.validation_gate : buildEmptyVersionGate("validation"),
+    security: currentVersion && currentVersion.security_gate ? currentVersion.security_gate : buildEmptyVersionGate("security"),
+    handoff: currentVersion && currentVersion.handoff_gate ? currentVersion.handoff_gate : buildEmptyVersionGate("handoff"),
+    publish: currentVersion && currentVersion.publish_gate ? currentVersion.publish_gate : buildEmptyVersionGate("publish")
+  };
+  const gateStatus = {};
+  const gateBlockers = [];
+  const gateWarnings = [];
+  for (const [key, value] of Object.entries(gates)) {
+    gateStatus[key] = value.status || "unknown";
+    if (Array.isArray(value.blockers)) gateBlockers.push(...value.blockers);
+    if (Array.isArray(value.warnings)) gateWarnings.push(...value.warnings);
+  }
+  const docsSummary = docsStatusReport && docsStatusReport.stage_status ? docsStatusReport.stage_status : {};
+  const stageStatus = {};
+  for (const [stage, details] of Object.entries(docsSummary)) {
+    stageStatus[stage] = {
+      required: Number(details.required || 0),
+      existing: Number(details.existing || 0),
+      missing: Number(details.missing || 0),
+      applied: Number(details.applied || 0),
+      not_applied: Number(details.not_applied || 0),
+      status: details.status || "missing"
+    };
+  }
+  const modeLower = String(mode || "owner").toLowerCase();
+  return {
+    mode: modeLower,
+    version_status: currentVersion && currentVersion.status ? currentVersion.status : "planned",
+    planning_method: planningMethod || currentPlan && currentPlan.planning_method || null,
+    planning_method_confidence: currentPlan && currentPlan.confidence ? currentPlan.confidence : "",
+    method_rules_matched: Array.isArray(currentPlan && currentPlan.method_rules_matched) ? currentPlan.method_rules_matched : [],
+    stage_status: stageStatus,
+    gate_status: gateStatus,
+    gate_blockers: gateBlockers,
+    gate_warnings: gateWarnings,
+    review_status: review ? review.status || "unknown" : "unknown",
+    source_control_mode: versionControl && versionControl.source_control_mode ? versionControl.source_control_mode : null,
+    docs_readiness: docsStatus,
+    current_stage: determinePlannerReadinessStage(currentVersion, docsStatus, versionControl),
+    blocked: gateBlockers.length > 0 || (currentVersion && currentVersion.status === "blocked"),
+    feedback: latestFeedback ? {
+      status: latestFeedback.status || "unknown",
+      executor: latestFeedback.executor || "unknown",
+      summary: latestFeedback.summary || "",
+      changed_files: Array.isArray(latestFeedback.changed_files) ? latestFeedback.changed_files : []
+    } : null,
+    warnings: Array.from(new Set(gateWarnings)).slice(0, 20),
+    next_action: currentVersion && currentVersion.next_action
+      ? currentVersion.next_action
+      : versionControl && versionControl.publish_readiness && versionControl.publish_readiness.next_action
+        ? versionControl.publish_readiness.next_action
+        : "Review and align gates before execution."
+  };
+}
+
+function determinePlannerReadinessStage(currentVersion, docsStatus = "planned", versionControl = null) {
+  if (docsStatus === "missing") return "documentation";
+  if (versionControl && versionControl.publish_readiness && versionControl.publish_readiness.status === "ready") return "publish_ready";
+  if (currentVersion && currentVersion.status === "blocked") return "blocked";
+  if (currentVersion && currentVersion.status === "handoff_ready") return "handoff";
+  if (currentVersion && currentVersion.status === "in_progress") return "in_progress";
+  return "planning";
 }
 
 function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
@@ -3266,7 +3414,24 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
   const aiLearning = planning.ai_learning;
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
-  const visual = buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, sourceControl, planningMethod: planning.planning_method, methodReason: planning.method.reason, confidence: planning.method.confidence, review: planning.method.review || null, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : 0, currentGate: planning.current_gate });
+  const visual = buildPlannerVisualPayload({
+    goal,
+    mode,
+    deliveryMode,
+    evolutionPlan,
+    taskPunch,
+    context,
+    pluginContext,
+    sourceControl,
+    planningMethod: planning.planning_method,
+    methodReason: planning.method.reason,
+    confidence: planning.method.confidence,
+    review: planning.method.review || null,
+    docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned",
+    docsStatusReport: planning.pipeline ? planning.pipeline.docs_status : null,
+    docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : 0,
+    currentGate: planning.current_gate
+  });
   const review = buildPlannerReviewSummary({
     goal,
     planner_mode: mode,
@@ -3369,6 +3534,7 @@ function approvePlannerPlan(planId, approvedBy, deps = {}) {
     methodReason: plan.method_reason || "",
     confidence: plan.confidence || "",
     review: plan.review || null,
+    docsStatusReport: plan.docs_status || null,
     docsStatus: plan.documentation_files && plan.documentation_files.length ? "draft" : "planned",
     docsCreatedTotal: Array.isArray(plan.documentation_files) ? plan.documentation_files.length : 0,
     risks: plan.review && Array.isArray(plan.review.risks) ? plan.review.risks : [],

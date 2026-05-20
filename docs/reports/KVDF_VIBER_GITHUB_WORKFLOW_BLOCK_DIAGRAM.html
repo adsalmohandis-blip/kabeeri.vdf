@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KVDF Viber GitHub Workflow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+      :root {
+        --bg: #080c18;
+        --panel: #121a31;
+        --text: #e8ecff;
+        --muted: #9ab0d0;
+        --success: #86efac;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 15% 5%, #1e2d57 0%, #0a1223 40%, #060b15 100%);
+        color: var(--text);
+      }
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+      .panel {
+        background: rgba(18, 26, 49, 0.82);
+        border: 1px solid rgba(122, 139, 255, 0.45);
+        border-radius: 14px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+      }
+      .title {
+        margin: 0 0 8px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 0;
+      }
+      .note {
+        color: var(--success);
+        margin: 10px 0 0;
+      }
+      .diagram {
+        margin-top: 12px;
+      }
+      .status {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .hidden { display: none; }
+      .error {
+        color: #ffc7d0;
+        background: #43121f;
+        border: 1px solid #ff7c96;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="panel">
+        <h1 class="title">Viber GitHub Delivery Flow</h1>
+        <p class="lead">How a Viber app is built in KVDF when GitHub is used as the source-control provider.</p>
+        <div class="status" id="status">Loading Mermaid...</div>
+        <div class="diagram">
+          <div class="mermaid" id="kvdf-viber-github-diagram">
+            flowchart TD
+              A["1. App Idea / Request"] --> B["2. Clarify Scope and Constraints"]
+              B --> C{"3. Is plan app-boundary clear?"}
+              C -->|No| B2["Collect more questions and block execution"]
+              B2 --> B
+              C -->|Yes| D["4. Confirm app workspace and source-of-truth files"]
+              D --> E["5. GitHub mode decision<br/>local-only | direct_main | branch | branch-pr"]
+              E --> F["6. Read current repo state<br/>branch, status, logs, tags, remote"]
+              F --> G["7. Planner method recommendation<br/>structured / agile / hybrid"]
+              G --> H{"8. Method selected"}
+              H -->|Structured| I["Build docs plan + version plan + gates"]
+              H -->|Agile| J["Build lightweight plan + evolution slices"]
+              H -->|Hybrid| K["Build structured foundation + agile execution"]
+              I --> L["9. Generate docs and task punches"]
+              J --> L
+              K --> L
+              L --> M["10. Validate docs, architecture, app workspace paths"]
+              M --> N{"11. Docs/status gates pass?"}
+              N -->|No| O["Adjust docs/evidence, re-run review"]
+              O --> L
+              N -->|Yes| P["12. Owner review + approval gate"]
+              P --> Q{"13. Approved?"}
+              Q -->|No| O
+              Q -->|Yes| R["14. Materialize plan/evolutions/tasks<br/>into local workspace"]
+              R --> S["15. Execute implementation<br/>(no auto-commit yet]"]
+              S --> T["16. Capture execution feedback + checks"]
+              T --> U{"17. Validation pass?"}
+              U -->|No| V["Record blockers, fix, feedback loop"]
+              V --> S
+              U -->|Yes| W["18. Run version gates"]
+              W --> X["Docs Gate"]
+              X --> Y["Evolution Gate"]
+              Y --> Z["Task Gate"]
+              Z --> AA["Validation Gate"]
+              AA --> AB["Security Gate"]
+              AB --> AC["Handoff Gate"]
+              AC --> AD{"19. All required gates clear?"}
+              AD -->|No| V
+              AD -->|Yes| AE["20. Publish readiness check"]
+              AE --> AF{"21. Publish target"}
+              AF -->|github_release| AG["Explicit owner action: publish externally"]
+              AF -->|local_handoff| AH["Manual handoff package created"]
+              AF -->|custom| AI["Record custom release path"]
+              AG --> AJ["22. Mark published (manual)"]
+              AH --> AJ
+              AI --> AJ
+              AJ --> AK["23. Update visual/dashboards and next evolution"]
+
+              classDef step fill:#15203f,stroke:#7fc0ff,color:#eff6ff
+              classDef decision fill:#1f2937,stroke:#f59e0b,color:#ffedd5
+              classDef gate fill:#3f3f46,stroke:#a3e635,color:#f8fafc
+              classDef final fill:#0f3f2f,stroke:#4ade80,color:#d1fae5
+              class A,B,D,E,F,G,H,I,J,K,L,M,P,R,S,T,W,X,Y,Z,AA,AB,AC,AE,AK step
+              class C,N,Q,U,AD,AF decision
+              class X,Y,Z,AA,AB,AC gate
+              class AJ final
+              class O,V warning
+              classDef warning fill:#3c1020,stroke:#f87171,color:#fee2e2
+          </div>
+          <div id="diagramError" class="error hidden"></div>
+        </div>
+      </section>
+    </div>
+    <script>
+      (function () {
+        const status = document.getElementById('status');
+        const errorBox = document.getElementById('diagramError');
+        status.textContent = "Rendering diagram...";
+        if (!window.mermaid) {
+          errorBox.textContent = "Mermaid failed to load. Check network/CDN access.";
+          errorBox.classList.remove("hidden");
+          status.textContent = "Render failed.";
+          return;
+        }
+        try {
+          mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'loose',
+            theme: 'dark',
+            flowchart: { htmlLabels: true, useMaxWidth: true }
+          });
+          mermaid.run({
+            nodes: [document.getElementById('kvdf-viber-github-diagram')]
+          }).then(() => {
+            status.textContent = "Diagram rendered.";
+          }).catch((error) => {
+            errorBox.textContent = "Mermaid render failed: " + (error && error.message ? error.message : String(error));
+            errorBox.classList.remove("hidden");
+            status.textContent = "Render failed.";
+          });
+        } catch (error) {
+          errorBox.textContent = "Unable to initialize Mermaid: " + (error && error.message ? error.message : String(error));
+          errorBox.classList.remove("hidden");
+          status.textContent = "Render failed.";
+        }
+      })();
+    </script>
+  </body>
+</html>

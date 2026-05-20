@@ -6615,6 +6615,12 @@ test("planner visual builds an owner-track Mermaid board and scope map", () => {
   assert.ok(visual.markdown_report.includes("```mermaid"));
   assert.ok(visual.markdown_report.includes("Planning Board"));
   assert.ok(visual.markdown_report.includes("Source Control"));
+  assert.ok(visual.planning_readiness);
+  assert.ok(visual.planning_readiness.version_status);
+  assert.ok(visual.planning_readiness.gate_status);
+  assert.ok(visual.markdown_report.includes("## Planner Readiness"));
+  assert.ok(visual.markdown_report.includes("## Gate Matrix"));
+  assert.ok(visual.markdown_report.includes("## Stage Readiness"));
 });
 
 test("planner visual builds a vibe-track local-first visual pipeline", () => {
@@ -6651,6 +6657,11 @@ test("planner visual renders a readable markdown report", () => {
   assert.match(visual.stdout, /KVDF Planner Visual Model - Owner/);
   assert.match(visual.stdout, /```mermaid/);
   assert.match(visual.stdout, /Owner Direction/);
+  assert.match(visual.stdout, /## Questions and Clarification/);
+  assert.match(visual.stdout, /## Planner Readiness/);
+  assert.match(visual.stdout, /## Gate Matrix/);
+  assert.match(visual.stdout, /## Stage Readiness/);
+  assert.match(visual.stdout, /Clarifications and assumptions:/);
 });
 
 test("planner visual from current reuses the approved runtime plan", () => withTempDir((dir) => {

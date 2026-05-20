@@ -122,6 +122,34 @@
       "type": "string",
       "minLength": 1
     },
+    "planning_readiness": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "mode": { "type": "string" },
+        "version_status": { "type": "string" },
+        "current_stage": { "type": "string" },
+        "stage_status": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "gate_status": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "gate_blockers": { "type": "array", "items": { "type": "string" } },
+        "gate_warnings": { "type": "array", "items": { "type": "string" } },
+        "review_status": { "type": "string" },
+        "next_action": { "type": "string" }
+      }
+    },
+    "docs_status_report": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "docs_status": {
+      "type": "string"
+    },
     "markdown_report": {
       "type": "string",
       "minLength": 1

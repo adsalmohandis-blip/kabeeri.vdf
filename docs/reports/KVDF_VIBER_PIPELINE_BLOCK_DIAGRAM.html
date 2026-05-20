@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>KVDF Viber Pipeline Block Diagram</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+      :root {
+        --bg: #0a1020;
+        --panel: #111a2e;
+        --text: #e8edff;
+        --muted: #9aa8c3;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 20% 0%, #1b2a4e 0%, #09111f 45%, #050913 100%);
+        color: var(--text);
+      }
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px 20px 40px;
+      }
+      .header {
+        background: rgba(17, 26, 46, 0.9);
+        border: 1px solid rgba(111, 125, 255, 0.45);
+        border-radius: 14px;
+        padding: 16px 20px;
+        margin-bottom: 18px;
+      }
+      .panel {
+        background: rgba(17, 26, 46, 0.78);
+        border-radius: 14px;
+        border: 1px solid rgba(111, 125, 255, 0.45);
+        padding: 14px 16px;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .diagram-wrap {
+        margin-top: 14px;
+      }
+      .hidden {
+        display: none;
+      }
+      .error {
+        color: #ffc7c7;
+        background: #341f2b;
+        border: 1px solid #ff7b95;
+        padding: 12px 14px;
+        border-radius: 10px;
+        margin-top: 12px;
+      }
+      .fallback {
+        padding: 14px;
+        border: 1px dashed rgba(111, 125, 255, 0.65);
+        border-radius: 12px;
+        margin-top: 12px;
+        color: var(--muted);
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+      .note {
+        margin-top: 12px;
+        color: #8ecf9f;
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <section class="header">
+        <h1>KVDF Viber Pipeline</h1>
+        <p>Single block view of the Viber/App development pipeline with planning, gates, and publish readiness.</p>
+        <div class="status" id="status">Loading Mermaid...</div>
+      </section>
+
+      <section class="panel">
+        <h2>Viber Pipeline</h2>
+        <div id="diagramError" class="error hidden"></div>
+        <div class="diagram-wrap">
+          <div class="mermaid" id="kvdf-viber-pipeline-diagram">
+            flowchart TD
+              A["1. App Idea / Request"] --> B["2. Workspace & Source Sync"]
+              A --> BQ["Q. Questions / Clarification<br/>Ask clarifying questions, capture constraints,<br/>and lock initial scope"]
+              BQ --> B2["2a. Confirm Scope and Constraints"]
+              B --> C["3. Track Detection (vibe_app_developer)"]
+              B2 --> C
+              C --> D["4. Generate Plan<br/>State Resync + Method Recommendation"]
+              D --> E["5. Docs Plan + Catalog"]
+              E --> F["6. Docs Materialization"]
+              F --> G["7. Evolve Planner<br/>versions / tasks / milestones"]
+              G --> H["8. Task Punch Generation"]
+              H --> I["9. Owner/Gate Review"]
+              I -->|Approve| J["10. Execute safely"]
+              I -->|Needs Change| E
+              J --> K["11. Feedback + Validation"]
+              K --> L{"12. Gate check"}
+              L -->|All pass| M["13. Handoff / Security / Publish readiness"]
+              L -->|Needs Fix| N["14. Blocker resolution"]
+              N --> I
+              M --> O["15. Dashboard + Visual + Next Action"]
+              O --> P{"16. Next version/evolution"}
+              P -->|Continue| A
+              P -->|Stop| Q["17. Finalized / Published state"]
+
+              classDef step fill:#14213d,stroke:#93c5fd,color:#eff6ff
+              classDef decision fill:#1e293b,stroke:#f59e0b,color:#ffedd5
+              classDef gate fill:#3a3a3a,stroke:#a1a1aa,color:#f8fafc
+              class A,B,BQ,B2,C,D,E,F,G,H,I,J,K,L,M,N,O,Q step
+              class L,P decision
+              class P gate
+              %% Q block explains intent discovery before committing to the plan
+          </div>
+
+          <noscript>
+            <div class="fallback">
+              JavaScript is disabled in this view. Please enable it to render the diagram.
+            </div>
+          </noscript>
+
+          <div class="fallback">
+            <pre>
+Viber pipeline (simple):
+1) App idea and workspace sync
+2) Plan generation for the app track
+3) Documentation plan and docs creation
+4) Version/evolution/task output
+5) Review + execution + feedback
+6) Gate evaluation + security checks
+7) Handoff and publish readiness
+8) Dashboard + next version/action
+Questions block:
+Q) Ask clarifying questions, capture constraints, and lock the initial scope
+            </pre>
+          </div>
+        </div>
+        <div class="note">Keep the loop simple: plan → build → validate → gate → publish readiness → next step.</div>
+      </section>
+    </div>
+
+    <script>
+      (function () {
+        const status = document.getElementById('status');
+        const errorBox = document.getElementById('diagramError');
+        status.textContent = 'Preparing Mermaid renderer...';
+
+        function showError(message) {
+          errorBox.textContent = message;
+          errorBox.classList.remove('hidden');
+          status.textContent = 'Mermaid rendering encountered an issue.';
+        }
+
+        if (!window.mermaid) {
+          showError('Mermaid library is not available. Check network or CDN access.');
+          return;
+        }
+
+        try {
+          mermaid.initialize({
+            startOnLoad: false,
+            securityLevel: 'loose',
+            theme: 'dark',
+            flowchart: {
+              useMaxWidth: true,
+              htmlLabels: true
+            }
+          });
+          status.textContent = 'Rendering diagram...';
+          mermaid.run({
+            nodes: [document.getElementById('kvdf-viber-pipeline-diagram')]
+          })
+            .then(() => {
+              status.textContent = 'Diagram rendered successfully.';
+            })
+            .catch((error) => {
+              const message = error && error.message ? error.message : String(error);
+              showError('Mermaid render failed: ' + message);
+            });
+        } catch (error) {
+          const message = error && error.message ? error.message : String(error);
+          showError('Unable to initialize Mermaid: ' + message);
+        }
+      })();
+    </script>
+  </body>
+</html>

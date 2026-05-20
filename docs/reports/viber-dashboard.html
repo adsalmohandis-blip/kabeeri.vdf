@@ -1,0 +1,1454 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KVDF Viber Dashboard</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%); }
+    header { background: linear-gradient(135deg, #0f766e, #134e4a); color: white; padding: 28px; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    h1, h2, h3 { margin: 0 0 12px; }
+    p { margin: 0 0 12px; }
+    .subtle { color: #d7e8e4; }
+    .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.16); }
+    .section { background: white; border: 1px solid #d9dee7; border-radius: 12px; padding: 18px; margin-bottom: 18px; }
+    .widget-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 12px 0 16px; }
+    .widget { display: flex; flex-direction: column; gap: 6px; min-height: 122px; border: 1px solid #e7ebf0; border-radius: 10px; padding: 12px 14px; background: #fbfcfe; }
+    .widget-title { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #52606d; margin-bottom: 0; }
+    .widget-value { font-size: 15px; line-height: 1.45; font-weight: 700; color: #0f172a; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+    .widget--metric .widget-value { font-size: 30px; line-height: 1.05; }
+    .widget--status .widget-value { font-size: 16px; }
+    .widget--action { min-height: 148px; }
+    .widget--action .widget-value { font-size: 13px; line-height: 1.5; font-weight: 600; -webkit-line-clamp: 5; }
+    .widget-note { font-size: 11px; color: #52606d; margin-top: auto; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .widget-status { display: inline-block; margin-top: 8px; font-size: 12px; border-radius: 999px; padding: 3px 8px; background: #e8f1f8; color: #334e68; }
+    .widget-status.warning { background: #fff4d6; color: #8a5b00; }
+    .widget-status.blocked { background: #fde2e1; color: #9b1c1c; }
+    .table-shell { border: 1px solid #d9dee7; border-radius: 12px; overflow: hidden; background: white; margin-top: 12px; }
+    .table-toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; align-items: flex-start; padding: 12px 14px; border-bottom: 1px solid #e7ebf0; background: #f8fafc; }
+    .table-toolbar-title h3 { margin: 0; font-size: 15px; }
+    .table-summary { margin-top: 4px; font-size: 12px; color: #5f6b7a; }
+    .table-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+    .table-control { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #52606d; }
+    .table-control input,
+    .table-control select { min-width: 150px; border: 1px solid #cdd6e0; border-radius: 8px; padding: 8px 10px; background: white; font: inherit; color: #1f2933; }
+    .table-wrap { width: 100%; overflow-x: auto; }
+    table { width: max-content; min-width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; border-bottom: 1px solid #e7ebf0; padding: 9px 10px; font-size: 13px; vertical-align: top; word-break: break-word; }
+    th { white-space: nowrap; word-break: normal; }
+    th { background: #eef2f7; position: sticky; top: 0; z-index: 1; }
+    .table-pagination { display: flex; justify-content: space-between; gap: 12px; align-items: center; padding: 10px 14px; border-top: 1px solid #e7ebf0; background: #fff; }
+    .table-pagination-summary { font-size: 12px; color: #5f6b7a; }
+    .table-pagination-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .table-pagination-controls button { border: 1px solid #cdd6e0; border-radius: 8px; padding: 7px 12px; background: #fff; color: #1f2933; font: inherit; cursor: pointer; }
+    .table-pagination-controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .empty-state { color: #5f6b7a; font-style: italic; }
+    .section-help { color: #5f6b7a; font-size: 13px; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KVDF Viber Dashboard</h1>
+    <p class="subtle">Viber/App Track</p>
+    <div class="meta">
+      <span class="pill">Planner: owner / direct_main</span>
+      <span class="pill">Track: vibe_app_developer</span>
+      <span class="pill">Next: Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</span>
+    </div>
+    <p class="subtle">Blocked cross-track data: kvdf_core_owner_data</p>
+  </header>
+  <main>
+    
+    <section class="section">
+      <h2>Command Center</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Current Track</div>
+      <div class="widget-value">vibe_app_developer</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Stay on app/product delivery work.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Current App / Workspace</div>
+      <div class="widget-value">none</div>
+      <div class="widget-status ">empty</div>
+      <div class="widget-note">Create or link an app workspace.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Current Idea / Request</div>
+      <div class="widget-value">Owner dashboard planner</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Current Planner Plan</div>
+      <div class="widget-value">Owner dashboard planner</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Review the approved plan.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Next App Evolution</div>
+      <div class="widget-value">Owner dashboard planner</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</div>
+    </article>
+  
+    <article class="widget widget--action">
+      <div class="widget-title">Next Task Punch</div>
+      <div class="widget-value">No task punch yet</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Run kvdf planner materialize --from-current --json.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Local-first Handoff Status</div>
+      <div class="widget-value">direct_main</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep app delivery local-first unless a remote is explicitly enabled.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Active Blockers</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Resolve app blockers before releasing.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Questionnaire Gaps</div>
+      <div class="widget-value">19</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Close intake gaps before design.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Pipeline Gaps</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the idea-to-evolution pipeline explicit.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Viber Command Center</h3>
+          <div class="table-summary" data-table-summary>9 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Metric</th><th>Value</th><th>Next Action</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>Current App / Workspace</td><td>none</td><td>Create or link an app workspace.</td></tr><tr data-kvdf-table-row><td>Current Idea / Request</td><td>Owner dashboard planner</td><td>Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</td></tr><tr data-kvdf-table-row><td>Current Planner Plan</td><td>planner-plan-002</td><td>Review the approved plan.</td></tr><tr data-kvdf-table-row><td>Next App Evolution</td><td>Owner dashboard planner</td><td>Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</td></tr><tr data-kvdf-table-row><td>Next Task Punch</td><td>No task punch yet</td><td>Run kvdf planner materialize --from-current --json.</td></tr><tr data-kvdf-table-row><td>Local-first Handoff</td><td>direct_main</td><td>Keep app delivery local-first unless a remote is explicitly enabled.</td></tr><tr data-kvdf-table-row><td>Active Blockers</td><td>0</td><td>Continue delivery.</td></tr><tr data-kvdf-table-row><td>Questionnaire Gaps</td><td>19</td><td>Close intake gaps before design.</td></tr><tr data-kvdf-table-row><td>Pipeline Gaps</td><td>0</td><td>Pipeline is populated.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Idea-to-Evolution Pipeline</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Idea Captured</div>
+      <div class="widget-value">Owner dashboard planner</div>
+      <div class="widget-status ">empty</div>
+      <div class="widget-note">Keep the original idea visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Documentation Files</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">empty</div>
+      <div class="widget-note">Document the app before implementation.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">System Design Status</div>
+      <div class="widget-value">missing</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">System design stays app-focused.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Database Design Status</div>
+      <div class="widget-value">missing</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Database design stays app-focused.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">UI/UX Design Status</div>
+      <div class="widget-value">missing</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">UI/UX planning stays app-focused.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Visual Planning Status</div>
+      <div class="widget-value">available</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the visual planner and board available.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Version Plan Status</div>
+      <div class="widget-value">available</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Version plans stay app-focused.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Next Evolution Status</div>
+      <div class="widget-value">Owner dashboard planner</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Pipeline Stage Table</h3>
+          <div class="table-summary" data-table-summary>11 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Stage</th><th>Status</th><th>Output</th><th>Next Action</th><th>Owner</th><th>Runtime/Doc Path</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>idea</td><td>captured</td><td>Owner dashboard planner</td><td>Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>documentation_files</td><td>missing</td><td>0</td><td>Create or refresh app docs.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>system_design</td><td>missing</td><td>missing</td><td>Complete the system design artifact.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>database_design</td><td>missing</td><td>missing</td><td>Complete the database design artifact.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>ui_ux_design</td><td>missing</td><td>missing</td><td>Complete the UI/UX design artifact.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>visual_planning</td><td>ready</td><td>mermaid</td><td>Refresh the visual planner.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>version_plan</td><td>ready</td><td></td><td>Approve the version plan.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>evolutions</td><td>missing</td><td>103</td><td>Create app evolutions.</td><td>app</td><td>.kabeeri/evolution.json</td></tr><tr data-kvdf-table-row><td>task_punches</td><td>missing</td><td>1</td><td>Prepare the first task punch.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>next_evolution</td><td>ready</td><td>Owner dashboard planner</td><td>Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</td><td>app</td><td>.kabeeri/planner.json</td></tr><tr data-kvdf-table-row><td>handoff</td><td>direct_main</td><td>direct_main</td><td>Keep the handoff local-first.</td><td>app</td><td>.kabeeri/planner.json</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Questionnaire / Intake</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">Questions Total</div>
+      <div class="widget-value">166</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Capture the unanswered questions.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Answers Total</div>
+      <div class="widget-value">25</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Record the answers before design.</div>
+    </article>
+  
+    <article class="widget widget--warning">
+      <div class="widget-title">Missing Answers</div>
+      <div class="widget-value">19</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Close the missing answer gaps.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Review Status</div>
+      <div class="widget-value">reviewable</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Review the intake coverage.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Approval Status</div>
+      <div class="widget-value">pending</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Approve intake before moving forward.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Questions</h3>
+          <div class="table-summary" data-table-summary>166 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Question ID</th><th>Area</th><th>Status</th><th>Answered</th><th>Required Action</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.financial_accuracy</td><td>security, qa, product_business</td><td>missing</td><td>no</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.approval_workflows</td><td>security, qa, product_business</td><td>missing</td><td>no</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.role_granularity</td><td>security, qa, product_business</td><td>missing</td><td>no</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.data_migration</td><td>security, qa, product_business</td><td>missing</td><td>no</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.product.blueprint_confirmation</td><td>product_business, mvp_scope</td><td>ready</td><td>yes</td><td>The product blueprint determines modules, pages, database entities, workstreams, and risks.</td></tr><tr data-kvdf-table-row><td>adaptive.delivery.mode_confirmation</td><td>kabeeri_control_layer, mvp_scope</td><td>ready</td><td>yes</td><td>The delivery mode changes planning depth, approval gates, sprint/phase records, and task slicing.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.backend</td><td>backend, api_layer, technology_governance</td><td>ready</td><td>yes</td><td>Framework choice selects prompt packs, folder rules, migrations, testing style, and execution scope.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.frontend</td><td>public_frontend, admin_frontend, technology_governance</td><td>ready</td><td>yes</td><td>Frontend stack affects routing, components, state, SEO/GEO, visual QA, and prompt pack selection.</td></tr><tr data-kvdf-table-row><td>adaptive.framework.mobile</td><td>mobile, technology_governance</td><td>ready</td><td>yes</td><td>Mobile stack affects offline state, push notifications, app versions, deep links, permissions, and release handoff.</td></tr><tr data-kvdf-table-row><td>adaptive.database.engine</td><td>database, multi_tenancy</td><td>ready</td><td>yes</td><td>Database engine and tenancy shape migrations, constraints, indexing, data isolation, backups, and reporting.</td></tr><tr data-kvdf-table-row><td>adaptive.database.workflow_entities</td><td>database, product_business</td><td>ready</td><td>yes</td><td>Confirmed entities reduce database redesign and keep tasks aligned with the real business workflow.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.experience_pattern</td><td>ui_ux_design, public_frontend, admin_frontend</td><td>ready</td><td>yes</td><td>The UI pattern controls component groups, page templates, SEO/GEO needs, dashboard density, and mobile ergonomics.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.design_source</td><td>ui_ux_design, design_governance</td><td>ready</td><td>yes</td><td>Design governance blocks frontend implementation until design source, text spec, and visual expectations are clear.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.public_admin_split</td><td>public_frontend, admin_frontend, ui_ux_design</td><td>ready</td><td>yes</td><td>The public/admin split changes navigation, component reuse, density, and the task structure for frontend work.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.responsive_priority</td><td>public_frontend, admin_frontend, accessibility</td><td>ready</td><td>yes</td><td>Responsive priority affects page composition, breakpoints, components, and which frontend tasks are generated first.</td></tr><tr data-kvdf-table-row><td>adaptive.ui.accessibility_target</td><td>accessibility, ui_ux_design</td><td>ready</td><td>yes</td><td>Accessibility target determines keyboard support, contrast, semantic structure, and QA coverage for frontend tasks.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.payment_security</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.inventory_consistency</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.seo</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr><tr data-kvdf-table-row><td>adaptive.risk.checkout_conversion</td><td>security, qa, product_business</td><td>ready</td><td>yes</td><td>Blueprint risks should become acceptance criteria, policy checks, or explicit deferrals.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Product / App Design</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Product Blueprint</div>
+      <div class="widget-value">missing</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Keep the app blueprint explicit.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">App Type</div>
+      <div class="widget-value">app</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the app type visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Modules Count</div>
+      <div class="widget-value">1</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track app modules in the design state.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Surfaces Count</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track the app's surfaced areas.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">User Journeys Count</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the app journey count visible.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Module Table</h3>
+          <div class="table-summary" data-table-summary>3 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Module</th><th>Purpose</th><th>Workstream</th><th>Status</th><th>Related Tasks</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>App Workspace</td><td>Current app/product workspace</td><td>vibe_app_developer</td><td>empty</td><td></td></tr><tr data-kvdf-table-row><td>Blueprint</td><td>Selected blueprint set</td><td>vibe_app_developer</td><td>missing</td><td></td></tr><tr data-kvdf-table-row><td>Data Design</td><td>Database planning context</td><td>vibe_app_developer</td><td>ready</td><td>data-context-1778282397957</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Journey Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Journey</th><th>Status</th><th>Ready</th><th>Related Features</th><th>Related Tasks</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>No journeys yet</td><td>empty</td><td>no</td><td></td><td></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>System Design</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Architecture Readiness</div>
+      <div class="widget-value">missing</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Keep the architecture explicit.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Integrations</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track the current app integrations.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Boundaries</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Maintain clear app boundaries.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Risks</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Surface app risks early.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>System Design</h3>
+          <div class="table-summary" data-table-summary>3 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Component</th><th>Responsibility</th><th>Dependencies</th><th>Risks</th><th>Status</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>Application Shell</td><td>App workspace and request intake</td><td>app workspace, questionnaire</td><td>missing</td><td>Keep app delivery separate from owner work.</td></tr><tr data-kvdf-table-row><td>Planner</td><td>Approved app plan and pipeline</td><td>planner.json</td><td>approved</td><td>Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</td></tr><tr data-kvdf-table-row><td>Design</td><td>System and UI design artifacts</td><td>.kabeeri/data_design.json</td><td>ready</td><td>Keep design artifacts current.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Database Design</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">Entities Count</div>
+      <div class="widget-value">1</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep entity counts visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Relationships Count</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track relationships through the database plan.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Migrations Needed</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Plan migrations before release.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Persistence Status</div>
+      <div class="widget-value">missing</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Keep persistence visible.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Entity Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Entity</th><th>Fields/Notes</th><th>Relationships</th><th>Migration</th><th>Status</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>data-context-1778282397957</td><td>organizations, branches, users, roles, permissions, role_permissions, user_roles, settings, files, notifications, audit_logs, activity_logs, api_keys, sessions, customers, products, product_variants, product_translations, prices, carts, cart_items, orders, order_items, payments, invoices, invoice_items, shipments, returns, return_items, refunds, coupons, warehouses, stock_balances, stock_movements, stock_reservations, stock_transfers, stock_transfer_items, batches, serial_numbers, devices, push_tokens, app_versions, app_sessions, deep_links, sync_logs, user_preferences, daily_sales_summary, monthly_revenue_summary, product_sales_summary, branch_performance_summary, article_daily_stats, report_definitions, report_exports, integrations, integration_logs, webhooks, outbox_events, idempotency_keys, external_ids</td><td>core, commerce, inventory, mobile, analytics, integration</td><td>Every table has a primary key., Important relationships have foreign keys., Tenant-owned tables include organization_id when SaaS or multi-company is possible., Tables have created_at and updated_at where appropriate., Soft delete is used only on suitable master data., Money uses decimal or integer minor units, never float., Orders, invoices, payments, tax, and published content preserve snapshots or revisions., Inventory uses stock_movements as the source of truth., Important operations have audit_logs and status_history., High-volume screens have indexes, pagination, and read-model strategy., Reports use summaries/read models when operational joins become expensive., Sensitive data is separated, hashed, encrypted, or delegated to providers., Payments, inventory, wallets, bookings, and external webhooks use transactions and idempotency., Outbox events and integration logs exist for async/provider work., Migrations, backup, restore testing, timezone, archiving, and ERD are planned before implementation.</td><td>ready</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>UI/UX Design</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">Screens / Pages</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the screen count visible.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Visual State</div>
+      <div class="widget-value">mermaid</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the visual planning state available.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Accessibility Target</div>
+      <div class="widget-value">WCAG-aware</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep accessibility explicit.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Design Decisions Pending</div>
+      <div class="widget-value">19</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Close design decisions before implementation.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Screen/Page Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Screen</th><th>Purpose</th><th>Components</th><th>Status</th><th>Related Tasks</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>none</td><td>No blueprint yet.</td><td></td><td>ready</td><td></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Version Plan</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Current Version</div>
+      <div class="widget-value">none</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the current version visible.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Next Version</div>
+      <div class="widget-value">none</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Plan the next release version.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Evolutions Total</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Count the current evolution slices.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Current Evolution</div>
+      <div class="widget-value">Add milestone-based viber evolution workflow with optional GitHub sync an...</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the current evolution visible.</div>
+    </article>
+  
+    <article class="widget widget--warning">
+      <div class="widget-title">Future-only Evolutions</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep future-only evolutions out of scope.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Version Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Version</th><th>Goal</th><th>Included Evolutions</th><th>Excluded Scope</th><th>Readiness Gate</th><th>Source Control Mode</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>none</td><td>Current version</td><td></td><td></td><td></td><td>direct_main</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Evolutions</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">Open Evolutions</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep evolutions track-aligned.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Current Evolution</div>
+      <div class="widget-value">Add milestone-based viber evolution workflow with optional GitHub sync an...</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Completed / Archived Evolutions</div>
+      <div class="widget-value">103</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Preserve archive history.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Auto-closeout Status</div>
+      <div class="widget-value">ready</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Use the closeout policy consistently.</div>
+    </article>
+  
+    <article class="widget widget--warning">
+      <div class="widget-title">Future-only Blocked Items</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep future-only items out of the current plan.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Evolution Table</h3>
+          <div class="table-summary" data-table-summary>103 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Evolution ID</th><th>Title</th><th>Version</th><th>Status</th><th>Tasks</th><th>Next Action</th><th>Stop Condition</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>evo-001</td><td>Make Evolution Steward the autonomous framework development backlog and k...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>0</td></tr><tr data-kvdf-table-row><td>evo-002</td><td>Add deferred development ideas backlog linked to Evolution Steward and sh...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>6</td></tr><tr data-kvdf-table-row><td>evo-003</td><td>Add temporary execution priorities list that decomposes the active main p...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>8</td></tr><tr data-kvdf-table-row><td>evo-004</td><td>Add durable execution-grade task descriptions to priority and deferred li...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>6</td></tr><tr data-kvdf-table-row><td>evo-005</td><td>Plugin-first AI entry and owner/app track split: enforce a single CLI ent...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>10</td></tr><tr data-kvdf-table-row><td>evo-006</td><td>Plugin-first CLI-only architecture, Arabic docs site, vibe-to-task pipeline, and commerce/reservation plugin finalization</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>38</td></tr><tr data-kvdf-table-row><td>evo-007</td><td>CLI control-plane completion, kvdf-dev extraction, and remaining plugin/runtime hardening</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>38</td></tr><tr data-kvdf-table-row><td>evo-scorecard-architecture</td><td>Tighten Kabeeri architecture and reduce track drift</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>4</td></tr><tr data-kvdf-table-row><td>evo-scorecard-ai_usability</td><td>Make the AI/CLI operating contract more explicit and uniform</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-scorecard-plugin_system</td><td>Keep all standalone plugins on the same bundle contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-scorecard-task_governance</td><td>Keep task packet, executor contract, and coverage strictly aligned</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>4</td></tr><tr data-kvdf-table-row><td>evo-scorecard-docs_consistency</td><td>Generate docs from command metadata and reduce CLI/docs drift</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-scorecard-maintainability</td><td>Extract remaining command helpers into smaller shared services</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-014</td><td>Canonical Paths</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-015</td><td>Canonical Paths</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-016</td><td>Alias Drift</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-017</td><td>Foldering Contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-018</td><td>Track Boundaries</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-019</td><td>Live vs Historical Surfaces</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-020</td><td>Command Registry Source of Truth</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-021</td><td>Next-Action Wording</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-022</td><td>JSON Output Shape</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-023</td><td>Alias Noise</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-024</td><td>Machine-Readable Flow</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-025</td><td>AI Boundary Clarity</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-026</td><td>Bundle Contract Shape</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-027</td><td>Install / Uninstall Lifecycle</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-028</td><td>Plugin State Consistency</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-029</td><td>Business-Type Pack Parity</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-030</td><td>Plugin Runtime Completeness</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-031</td><td>Task Packet</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-032</td><td>Executor Contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-033</td><td>Coverage</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-034</td><td>Verification</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-035</td><td>Archive Trail</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-036</td><td>Generated Docs</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-037</td><td>Hand-Written Guidance</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-038</td><td>Historical Reports</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-039</td><td>Capability Map Alignment</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-040</td><td>Runtime-Doc Drift</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-041</td><td>Repeated Command Logic</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-042</td><td>Shared Service Extraction</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-043</td><td>Command Layer Size</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-044</td><td>Ownership Boundaries</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-045</td><td>Helper Reuse</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-046</td><td>Kabeeri is a governed AI development system</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-047</td><td>CLI is the execution contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-048</td><td>.kabeeri/ is the source of truth</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-049</td><td>AI reasons, CLI enforces</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-050</td><td>CLI Engine</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-051</td><td>AI/CLI Operating Contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-052</td><td>Workspace State</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-053</td><td>Session Track Router</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-054</td><td>Project Intake and Profile Router</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-055</td><td>Delivery Mode Advisor</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-056</td><td>Blueprint and Data Design</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-057</td><td>Questionnaires</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-058</td><td>Prompt Packs</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-059</td><td>Task Tracking and Governance</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-060</td><td>Task Packet</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-061</td><td>Executor Contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-062</td><td>Batch Execution</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-063</td><td>Plugin System</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-064</td><td>App Builder Plugins</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-065</td><td>Multi-AI Governance</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-066</td><td>Evolution Steward</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-067</td><td>Dashboard</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-068</td><td>Reports and Traceability</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-069</td><td>Validation and Schemas</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-070</td><td>Policy Gates</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-071</td><td>Design Governance</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-072</td><td>AI Cost Control</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-073</td><td>Handoff and Release</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-074</td><td>Entry and routing</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-075</td><td>Workspace state</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-076</td><td>Planning and intake</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-077</td><td>Governance and safety</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-078</td><td>Execution and task control</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-079</td><td>Plugins and optional compilers</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-080</td><td>Dashboard and reporting</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-081</td><td>Validation and schemas</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-082</td><td>Handoff and release</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-083</td><td>Evolution and improvement loop</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-084</td><td>Relationship patterns and cross-module trust</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-085</td><td>AI -&gt; CLI</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-086</td><td>CLI -&gt; Workspace</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-087</td><td>Questionnaire -&gt; Tasks</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-088</td><td>Task Packet -&gt; Executor Contract</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-089</td><td>Plugin Loader -&gt; Plugin Bundles</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-090</td><td>Dashboard -&gt; Reports</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-091</td><td>Validation -&gt; Runtime State</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-092</td><td>Policy Gates -&gt; Release/GitHub</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-093</td><td>Multi-AI -&gt; Evolution</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-094</td><td>Docs -&gt; Command Registry</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>2</td></tr><tr data-kvdf-table-row><td>evo-095</td><td>App Builder Plugins -&gt; Business-Type Packs</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>1</td></tr><tr data-kvdf-table-row><td>evo-096</td><td>Task Governance -&gt; Handoff/Release</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-097</td><td>App Docs Standard and Reconstruction Mode for portable UI/UX, system desi...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>6</td></tr><tr data-kvdf-table-row><td>evo-098</td><td>Cleanup: kvdf cleanup 1778958578201</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>7</td></tr><tr data-kvdf-table-row><td>evo-099</td><td>Cleanup: kvdf cleanup 1778971671365</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>7</td></tr><tr data-kvdf-table-row><td>evo-100</td><td>Add core documentation standard system for KVDF</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-101</td><td>Add viber task-by-task workspace-only actor flow</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-102</td><td>Improve viber questionnaire workflow and question clarity</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>3</td></tr><tr data-kvdf-table-row><td>evo-103</td><td>Add milestone-based viber evolution workflow with optional GitHub sync an...</td><td>done</td><td></td><td>vibe_app_developer</td><td>direct_main</td><td>9</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Task Punch / Execution</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">Task Punch Total</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the task punch visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Proposed Tasks</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Review proposed tasks.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Approved Tasks</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Execute approved tasks.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">In Progress Tasks</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep in-progress work visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Verified Tasks</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track verification.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Archived Tasks</div>
+      <div class="widget-value">389</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Archived tasks remain in trash.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Task Punch Table</h3>
+          <div class="table-summary" data-table-summary>71 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Task ID</th><th>Title</th><th>Status</th><th>Evolution</th><th>Allowed Files</th><th>Forbidden Files</th><th>Acceptance</th><th>Validation</th><th>Stop Condition</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>task-001</td><td>Evolution Steward: establish a single boot path and reversible plugin loader</td><td>done</td><td></td><td>bin/kvdf.js, src/core/, src/cli/, src/tracks/, .kabeeri/plugins.json, plugins/kvdf-dev/, workspaces/</td><td></td><td>The CLI boots from one shared entry path., Plugin loading is manifest-driven, explicit, and reversible., The shared runtime still works when optional owner plugins are disabled.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-002</td><td>Evolution Steward: route owner, app, shared, and blocked commands through track-aware help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, cli/CLI_COMMAND_REFERENCE.md, docs/cli/, docs/site/assets/js/app.js</td><td></td><td>Owner, app, and shared command groups are clearly separated., Help output explains which track should use each command., Blocked commands explain the missing track or plugin and suggest the next command.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-003</td><td>Evolution Steward: persist resumable task memory, session split state, and archive state</td><td>done</td><td></td><td>.kabeeri/tasks.json, .kabeeri/task_trash.json, .kabeeri/session_track.json, src/cli/commands/resume.js, src/cli/commands/session.js, knowledge/task_tracking/, knowledge/task_tracking/TASK_GOVERNANCE.md</td><td></td><td>Task memory and resume data survive owner/app track transitions., Task archive and trash state remain coherent after the restructure., Task source, acceptance criteria, and session trace all point at the active change.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-004</td><td>Evolution Steward: version plugin, workspace, and folder-layout schemas</td><td>done</td><td></td><td>schemas/runtime/, schemas/runtime/schema_registry.json, src/cli/validate.js, .kabeeri/plugins.json, .kabeeri/session_track.json</td><td></td><td>Plugin manifests, workspace boundaries, and folder-layout rules have schema coverage., Versioned validation catches drift before the workspace is treated as healthy., Schema changes are explicit and tied to the new plugin-first layout.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-005</td><td>Evolution Steward: publish readiness and governance reports with actionable blockers</td><td>done</td><td></td><td>.kabeeri/reports/, src/cli/index.js, docs/internal/LIVE_JSON_REPORTS.md, docs/reports/</td><td></td><td>Readiness and governance reports explain plugin state, track boundaries, and remaining cleanup., Reports include blockers, warnings, and next actions instead of only a pass/fail summary., CLI and generated files show the same report state.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-006</td><td>Evolution Steward: convert vibe requests and questionnaire answers into detailed product, UI/UX, system-design, and data briefs</td><td>done</td><td></td><td>src/cli/commands/vibe.js, src/cli/commands/questionnaire.js, src/cli/commands/blueprint.js, src/cli/commands/data_design.js, knowledge/questionnaires/, knowledge/standard_systems/, knowledge/design_system/, .kabeeri/product_blueprints.json, .kabeeri/data_design.json, .kabeeri/design_sources/, docs/reports/</td><td></td><td>A natural-language vibe request is converted into a structured intake record before implementation starts., The intake can emit a product brief, UI/UX brief, system-design brief, and data brief that agree with the questionnaire answers., Missing answers are kept visible and do not silently disappear into chat memory., The generated briefs are compact enough for AI reuse but detailed enough to drive the next stage.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-007</td><td>Evolution Steward: select UI/UX and software-design references, then produce a screen and module plan</td><td>done</td><td></td><td>knowledge/design_sources/, knowledge/design_system/ui_ux_reference/, knowledge/design_system/software_design_reference/, knowledge/design_system/business_ui_patterns/, knowledge/design_system/ui_flows/, knowledge/design_system/rtl_arabic_ui/, knowledge/standard_systems/UI_UX_DESIGN_BLUEPRINT.json, docs/reports/</td><td></td><td>The task names the primary UI/UX reference patterns used for the product instead of assuming a generic interface., The task names the primary software-design reference patterns used for the product instead of inventing a custom architecture from scratch., The output maps reference choices to screens, flows, modules, and non-functional design rules., The task does not duplicate the module compiler or the actual implementation work.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-008</td><td>Evolution Steward: translate briefs into module breakdowns and Agile or Structured delivery maps</td><td>done</td><td></td><td>knowledge/standard_systems/, knowledge/delivery_modes/, .kabeeri/agile.json, .kabeeri/structured.json, .kabeeri/product_blueprints.json, .kabeeri/data_design.json, .kabeeri/dashboard/agile_state.json, .kabeeri/dashboard/structured_state.json, docs/reports/</td><td></td><td>The brief is decomposed into module boundaries instead of jumping directly to task cards., The same project can be mapped into either Agile or Structured execution without losing the source trace., The delivery map captures dependencies, phases or sprints, gating points, and risk flags., The task does not invent tasks before the module and delivery picture is stable.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-009</td><td>Evolution Steward: synthesize detailed proposed tasks from modules, briefs, and delivery decisions</td><td>done</td><td></td><td>.kabeeri/tasks.json, knowledge/task_tracking/, src/cli/commands/task_lifecycle.js, src/cli/commands/task_assessment.js, src/cli/commands/task_coverage.js, src/cli/commands/task_scheduler.js, docs/reports/</td><td></td><td>The generated task cards point back to the briefs, modules, and delivery decision that created them., Each task has a clear included scope, excluded scope, and verification path., Dependencies are explicit so the AI does not reorder work by guesswork., The tasks are small enough to approve without collapsing the whole project into one unit.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-010</td><td>Evolution Steward: package task batches into approval-ready execution gates and traceability checks</td><td>done</td><td></td><td>.kabeeri/tasks.json, .kabeeri/task_scheduler.json, knowledge/task_tracking/, src/cli/commands/task_lifecycle.js, src/cli/commands/task_assessment.js, src/cli/commands/task_scheduler.js, src/cli/validate.js, docs/reports/</td><td></td><td>The task batch explains why the work is ready for approval or why it is still blocked., The batch output contains the source, scope, dependencies, and verification expectations for every proposed task., The approval package is small enough for Owner review without rereading the original chat., The batch does not silently promote tasks to execution before the gate is passed.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-011</td><td>Evolution Steward: migrate legacy docs and command-reference folders out of the root</td><td>done</td><td></td><td>cli/, docs/cli/, docs/reports/, docs/site/, README.md</td><td></td><td>Legacy root-level docs and command references have canonical replacement homes., The repository root no longer presents competing documentation sources., Compatibility paths are clearly marked as migration bridges, not preferred locations.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-012</td><td>Evolution Steward: make features removable through plugin registry toggles</td><td>done</td><td></td><td>.kabeeri/plugins.json, plugins/, src/cli/, knowledge/governance/, docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md</td><td></td><td>Registry toggles can enable or disable a feature bundle explicitly., Removing a plugin bundle removes the feature cleanly and predictably., The system documents which features are removable and why.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-013</td><td>Evolution Steward: split docs into owner, app, cli, and plugin homes</td><td>done</td><td></td><td>docs/owner/, docs/app/, docs/cli/, docs/plugins/, docs/site/</td><td></td><td>Each audience has one obvious docs home., Owner, app, cli, and plugin pages no longer overlap in purpose., The docs tree makes the track split obvious at a glance.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-014</td><td>Evolution Steward: split knowledge into governance, track, and prompt homes</td><td>done</td><td></td><td>knowledge/governance/, knowledge/task_tracking/, knowledge/vibe_ux/, knowledge/ai_cost_control/</td><td></td><td>Governance knowledge, track knowledge, and prompt knowledge have separate homes., The meaning of each knowledge folder is obvious to AI and humans., Knowledge content is not duplicated across unrelated folders.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-015</td><td>Evolution Steward: add plugin loading reports and registry visibility</td><td>done</td><td></td><td>.kabeeri/reports/, src/cli/, plugins/, .kabeeri/plugins.json</td><td></td><td>Reports show which plugins are active, disabled, or missing., The registry state is visible without opening plugin files directly., Plugin health and availability can be reviewed from CLI output.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-016</td><td>Evolution Steward: add layout migration reports and cleanup progress</td><td>done</td><td></td><td>docs/reports/, .kabeeri/reports/, docs/site/, cli/</td><td></td><td>Reports show which folder migrations are complete and which are still pending., Cleanup progress is resumable from the report state itself., The remaining work is visible without re-reading the migration plan.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-017</td><td>Evolution Steward: add direct AI entry and credit-saving guidance for the full pipeline</td><td>done</td><td></td><td>knowledge/vibe_ux/, packs/prompt_packs/, README.md, README_AR.md, docs/cli/, docs/site/assets/js/app.js, docs/reports/</td><td></td><td>The first response to a vibe request points to a short CLI path rather than a long file hunt., Prompt guidance tells the AI which stage of the pipeline it is in and what artifact should come next., Context reuse lowers repeated explanation when the AI moves from intake to briefs to tasks.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-018</td><td>Evolution Steward: make the docs site Arabic-first with English fallback and localized developer entry pages</td><td>done</td><td></td><td>docs/site/generate-pages.js, docs/site/index.html, docs/site/assets/js/app.js, docs/site/README.md, docs/site/pages/ar/, docs/site/pages/en/</td><td></td><td>Arabic is the default entry language for the docs site., English remains available as a secondary language for the same pages., Navigation, search, and landing content feel localized for Arabic readers., The developer entry points clearly separate owner-track and app-track content.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-019</td><td>Evolution Steward: cover plugin loading and routing with integration tests</td><td>done</td><td></td><td>tests/, src/cli/index.js, src/cli/ui.js, .kabeeri/plugins.json</td><td></td><td>Integration tests cover plugin enable/disable and command routing together., Blocked help or blocked commands behave consistently in the user flow., The test suite confirms the CLI keeps track-aware routing stable.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-020</td><td>Evolution Steward: cover folder layout and docs migration with tests</td><td>done</td><td></td><td>tests/, docs/, knowledge/, cli/, docs/site/</td><td></td><td>Tests confirm docs and knowledge live in canonical homes., Legacy folders are detected when they drift back into use., The new structure is protected by automated checks.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-086</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-087</td><td>Evolution Steward: update runtime schemas and validation</td><td>done</td><td></td><td>schemas/runtime/, schemas/runtime/schema_registry.json, src/cli/validate.js</td><td></td><td>New or changed runtime state has schema coverage., `kvdf validate runtime-schemas` can validate the state.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-088</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability and cover purpose workflow and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-089</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-090</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-091</td><td>Evolution Steward: update readiness/governance reports</td><td>done</td><td></td><td>.kabeeri/reports/, src/cli/index.js, docs/internal/LIVE_JSON_REPORTS.md</td><td></td><td>Live reports summarize the update state., Action items show unfinished dependent work.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-092</td><td>Evolution Steward: update AI context and prompt guidance</td><td>done</td><td></td><td>knowledge/vibe_ux/, packs/prompt_packs/, README.md, README_AR.md</td><td></td><td>AI assistants know how the capability affects their workflow., Prompt/context guidance avoids bypassing Kabeeri governance.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-093</td><td>Evolution Steward: update runtime implementation</td><td>done</td><td></td><td>src/cli/, src/cli/workspace.js</td><td></td><td>Runtime behavior implements the requested Kabeeri capability., The implementation updates live state instead of relying on chat memory.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-094</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability and cover purpose workflow and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-095</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-096</td><td>Evolution Steward: update task tracking integration</td><td>done</td><td></td><td>.kabeeri/tasks.json, knowledge/task_tracking/, knowledge/task_tracking/TASK_GOVERNANCE.md</td><td></td><td>The update creates or links follow-up tasks., Task source and acceptance criteria identify the framework change.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-097</td><td>Evolution Steward: update runtime schemas and validation</td><td>done</td><td></td><td>schemas/runtime/, schemas/runtime/schema_registry.json, src/cli/validate.js</td><td></td><td>New or changed runtime state has schema coverage., `kvdf validate runtime-schemas` can validate the state.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-098</td><td>Evolution Steward: update readiness/governance reports</td><td>done</td><td></td><td>.kabeeri/reports/, src/cli/index.js, docs/internal/LIVE_JSON_REPORTS.md</td><td></td><td>Live reports summarize the update state., Action items show unfinished dependent work.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-099</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-100</td><td>Evolution Steward: update readiness/governance reports</td><td>done</td><td></td><td>.kabeeri/reports/, src/cli/index.js, docs/internal/LIVE_JSON_REPORTS.md</td><td></td><td>Live reports summarize the update state., Action items show unfinished dependent work.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-101</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-102</td><td>Evolution Steward: update capabilities reference</td><td>done</td><td></td><td>docs/SYSTEM_CAPABILITIES_REFERENCE.md, docs/site/assets/js/app.js</td><td></td><td>The central capability map lists the new or changed capability., Docs site capability pages expose the capability to developers.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-103</td><td>Evolution Steward: update runtime implementation</td><td>done</td><td></td><td>src/cli/, src/cli/workspace.js</td><td></td><td>Runtime behavior implements the requested Kabeeri capability., The implementation updates live state instead of relying on chat memory.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-104</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-105</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-111</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-112</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-113</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-114</td><td>Evolution Steward: update dashboard and live JSON surfaces</td><td>done</td><td></td><td>docs/reports/dashboard/, src/cli/index.js, .kabeeri/dashboard/</td><td></td><td>Dashboard state includes the update where operationally useful., The state can be refreshed after the change.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-115</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-116</td><td>Evolution Steward: update readiness/governance reports</td><td>done</td><td></td><td>.kabeeri/reports/, src/cli/index.js, docs/internal/LIVE_JSON_REPORTS.md</td><td></td><td>Live reports summarize the update state., Action items show unfinished dependent work.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-117</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-118</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-119</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-120</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-121</td><td>Evolution Steward: update AI context and prompt guidance</td><td>done</td><td></td><td>knowledge/vibe_ux/, packs/prompt_packs/, README.md, README_AR.md</td><td></td><td>AI assistants know how the capability affects their workflow., Prompt/context guidance avoids bypassing Kabeeri governance.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-122</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-123</td><td>Evolution Steward: update AI context and prompt guidance</td><td>done</td><td></td><td>knowledge/vibe_ux/, packs/prompt_packs/, README.md, README_AR.md</td><td></td><td>AI assistants know how the capability affects their workflow., Prompt/context guidance avoids bypassing Kabeeri governance.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-124</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-125</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-126</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-057</td><td>Evolution Steward: update runtime implementation</td><td>done</td><td></td><td>src/cli/, src/cli/workspace.js</td><td></td><td>Runtime behavior implements the requested Kabeeri capability., The implementation updates live state instead of relying on chat memory.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-058</td><td>Evolution Steward: update task tracking integration</td><td>done</td><td></td><td>.kabeeri/tasks.json, knowledge/task_tracking/, knowledge/task_tracking/TASK_GOVERNANCE.md</td><td></td><td>The update creates or links follow-up tasks., Task source and acceptance criteria identify the framework change.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-059</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability and cover purpose workflow and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-060</td><td>Evolution Steward: update capabilities reference</td><td>done</td><td></td><td>docs/SYSTEM_CAPABILITIES_REFERENCE.md, docs/site/assets/js/app.js</td><td></td><td>The central capability map lists the new or changed capability., Docs site capability pages expose the capability to developers.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-061</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-062</td><td>Evolution Steward: update changelog and owner state</td><td>done</td><td></td><td>CHANGELOG.md, OWNER_DEVELOPMENT_STATE.md</td><td></td><td>CHANGELOG records the framework change., Owner development state is updated when the change affects future continuation.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-063</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-064</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-065</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-066</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-067</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-068</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-069</td><td>Evolution Steward: update CLI surface and help</td><td>done</td><td></td><td>src/cli/index.js, src/cli/ui.js, docs/cli/CLI_COMMAND_REFERENCE.md</td><td></td><td>The kvdf command surface is documented., Command help explains when and why to use the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-070</td><td>Evolution Steward: update human documentation</td><td>done</td><td></td><td>docs/, knowledge/</td><td></td><td>Human docs explain the capability, purpose, workflow, and source of truth., Arabic/English documentation is updated where the site exposes the capability.</td><td></td><td></td></tr><tr data-kvdf-table-row><td>task-071</td><td>Evolution Steward: update automated tests</td><td>done</td><td></td><td>tests/</td><td></td><td>Integration tests cover the new command/state behavior., `npm test` passes.</td><td></td><td></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Source Control / Handoff</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Source Control Enabled</div>
+      <div class="widget-value">yes</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Expose the track's source control mode.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Source Control Mode</div>
+      <div class="widget-value">direct_main</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep delivery local-first.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Branching / PR</div>
+      <div class="widget-value">no branching / no PR</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Show branching only when enabled.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Handoff Package</div>
+      <div class="widget-value">available</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Handoff package status stays visible.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">GitHub Optional Status</div>
+      <div class="widget-value">optional</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">GitHub remains optional.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Source Control Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Provider</th><th>Remote</th><th>Mode</th><th>Branching</th><th>PR</th><th>Current Branch</th><th>Notes</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>git,none,direct_main,disabled,disabled,main,main,Git repository detected on main. Git direct-to-main is the default for KVDF Core owner-track planning. Viber/App dashboards default to local-first delivery and keep Git optional. Branching and pull requests stay optional unless the selected plan enables them.</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Handoff Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Handoff ID</th><th>Status</th><th>Evidence</th><th>Next Action</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>planner-plan-002</td><td>materialized</td><td>owner-dashboard-planner-docs, owner-dashboard-planner-cli, owner-dashboard-planner-tests</td><td>Run kvdf planner prompt --from-current --json, then execute the first approved task slice.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>AI Cost Control</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">App AI Cost</div>
+      <div class="widget-value">0.012</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep AI cost visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Tokens by Task</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track tokens by task.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Tracked AI</div>
+      <div class="widget-value">0.012</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Tracked work stays visible.</div>
+    </article>
+  
+    <article class="widget widget--metric">
+      <div class="widget-title">Untracked AI</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status warning">warning</div>
+      <div class="widget-note">Untracked work needs review.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>AI Usage Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Task</th><th>Evolution</th><th>Events</th><th>Tokens</th><th>Cost</th><th>Provider</th><th>Model</th><th>Tracked</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>task-001</td><td>1</td><td></td><td>0.012</td><td>unknown</td><td>unknown</td><td>yes</td><td></td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>App Plugins / Integrations</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--metric">
+      <div class="widget-title">Plugins Used by App</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track the plugins used by the app.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">App-Builder Plugin Status</div>
+      <div class="widget-value">available</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep app-builder status visible.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Integration Readiness</div>
+      <div class="widget-value">direct_main</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Track integration readiness.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>App Plugin Table</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Plugin</th><th>Enabled</th><th>Purpose</th><th>Runtime Entrypoint</th><th>Status</th><th>Gaps</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>app-builder</td><td>no</td><td>App builder plugin</td><td>src/cli</td><td>missing</td><td>No plugin registry state yet.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+    <section class="section">
+      <h2>Validation / Readiness</h2>
+      <div class="widget-grid">
+        
+    <article class="widget widget--status">
+      <div class="widget-title">Workspace Validation</div>
+      <div class="widget-value">ready</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Keep the app workspace valid.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Task Validation</div>
+      <div class="widget-value">ready</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Validate the current tasks.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">Handoff Readiness</div>
+      <div class="widget-value">ready</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Handoff becomes ready after materialization.</div>
+    </article>
+  
+    <article class="widget widget--status">
+      <div class="widget-title">App Security Readiness</div>
+      <div class="widget-value">pass</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Security evidence is available, but the gate is optional for this scope.</div>
+    </article>
+  
+    <article class="widget widget--warning">
+      <div class="widget-title">Migration / Security Blockers</div>
+      <div class="widget-value">0</div>
+      <div class="widget-status ">ok</div>
+      <div class="widget-note">Resolve migration and security blockers.</div>
+    </article>
+  
+      </div>
+      
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>Validation Table</h3>
+          <div class="table-summary" data-table-summary>5 rows</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Check</th><th>Status</th><th>Evidence</th><th>Next Action</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>Workspace</td><td>ready</td><td>workspace</td><td>Keep the app workspace valid.</td></tr><tr data-kvdf-table-row><td>Task</td><td>ready</td><td>71</td><td>Validate the current tasks.</td></tr><tr data-kvdf-table-row><td>Handoff</td><td>ready</td><td>materialized</td><td>Materialize the plan first.</td></tr><tr data-kvdf-table-row><td>App Security</td><td>pass</td><td>installed / enabled / available / active</td><td>Security evidence is available, but the gate is optional for this scope.</td></tr><tr data-kvdf-table-row><td>Migration / Security</td><td>ready</td><td>0</td><td>Resolve blockers before release.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    <div class="table-shell" data-kvdf-table-shell>
+      <div class="table-toolbar">
+        <div class="table-toolbar-title">
+          <h3>App Security Details</h3>
+          <div class="table-summary" data-table-summary>1 row</div>
+        </div>
+        <div class="table-controls">
+          <label class="table-control">
+            <span>Search</span>
+            <input type="search" data-table-search placeholder="Filter rows">
+          </label>
+          <label class="table-control">
+            <span>Rows shown</span>
+            <select data-table-page-size>
+              <option value="5">5</option>
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="all">All</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table data-kvdf-table>
+          <thead><tr><th>Scope</th><th>Status</th><th>Plugin</th><th>Installed</th><th>Enabled</th><th>Available</th><th>Active</th><th>Blocked</th><th>Warnings</th><th>Required</th><th>Strict</th><th>Policy Source</th><th>Target</th><th>Next Action</th></tr></thead>
+          <tbody><tr data-kvdf-table-row><td>handoff</td><td>pass</td><td>security-auditor</td><td>yes</td><td>yes</td><td>yes</td><td>yes</td><td>0</td><td>0</td><td>no</td><td>no</td><td>default</td><td>evo-103</td><td>Security evidence is available, but the gate is optional for this scope.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-pagination">
+        <div class="table-pagination-summary" data-table-page-summary>Showing all rows</div>
+        <div class="table-pagination-controls">
+          <button type="button" data-table-prev>Previous</button>
+          <button type="button" data-table-next>Next</button>
+        </div>
+      </div>
+    </div>
+  
+    </section>
+  
+  </main>
+  
+  <script>
+  (function () {
+    function normalize(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+    function clampPage(page, totalPages) {
+      if (!Number.isFinite(page) || page < 1) return 1;
+      if (page > totalPages) return totalPages;
+      return page;
+    }
+    function initShell(shell) {
+      var table = shell.querySelector("table");
+      var rows = table ? Array.prototype.slice.call(table.querySelectorAll("tbody tr[data-kvdf-table-row]")) : [];
+      var search = shell.querySelector("[data-table-search]");
+      var pageSizeSelect = shell.querySelector("[data-table-page-size]");
+      var prevButton = shell.querySelector("[data-table-prev]");
+      var nextButton = shell.querySelector("[data-table-next]");
+      var summary = shell.querySelector("[data-table-summary]");
+      var pageSummary = shell.querySelector("[data-table-page-summary]");
+      var allRowsLabel = "all";
+      var state = { query: "", page: 1, pageSize: rows.length > 10 ? 10 : "all" };
+      var emptyRow = table ? table.querySelector("tbody tr[data-kvdf-table-empty]") : null;
+
+      function getVisibleRows() {
+        if (!rows.length) return [];
+        if (!state.query) return rows.slice();
+        return rows.filter(function (row) {
+          return normalize(row.textContent).indexOf(state.query) !== -1;
+        });
+      }
+
+      function getPageSize(total) {
+        if (state.pageSize === allRowsLabel) return total || 1;
+        var parsed = Number(state.pageSize || 10);
+        if (!Number.isFinite(parsed) || parsed < 1) return 10;
+        return parsed;
+      }
+
+      function update() {
+        var visibleRows = getVisibleRows();
+        var total = visibleRows.length;
+        var pageSize = getPageSize(total);
+        var totalPages = Math.max(1, Math.ceil(total / pageSize));
+        state.page = clampPage(state.page, totalPages);
+        var start = total ? (state.page - 1) * pageSize : 0;
+        var end = total ? Math.min(start + pageSize, total) : 0;
+
+        rows.forEach(function (row) { row.hidden = true; });
+        if (emptyRow) emptyRow.hidden = total !== 0;
+        visibleRows.forEach(function (row, index) {
+          row.hidden = index < start || index >= end;
+        });
+
+        if (summary) {
+          summary.textContent = total ? total + " row" + (total === 1 ? "" : "s") : "No records";
+        }
+        if (pageSummary) {
+          pageSummary.textContent = total
+            ? "Showing " + (start + 1) + "-" + end + " of " + total + " row" + (total === 1 ? "" : "s")
+            : "No rows to show";
+        }
+        if (prevButton) prevButton.disabled = state.page <= 1 || total === 0;
+        if (nextButton) nextButton.disabled = state.page >= totalPages || total === 0;
+      }
+
+      if (search) {
+        search.addEventListener("input", function () {
+          state.query = normalize(search.value);
+          state.page = 1;
+          update();
+        });
+      }
+      if (pageSizeSelect) {
+        pageSizeSelect.addEventListener("change", function () {
+          state.pageSize = pageSizeSelect.value === allRowsLabel ? allRowsLabel : Number(pageSizeSelect.value);
+          state.page = 1;
+          update();
+        });
+        if (rows.length <= 10) {
+          pageSizeSelect.value = allRowsLabel;
+          state.pageSize = allRowsLabel;
+        }
+      }
+      if (prevButton) {
+        prevButton.addEventListener("click", function () {
+          state.page = clampPage(state.page - 1, Math.max(1, Math.ceil(getVisibleRows().length / getPageSize(getVisibleRows().length))));
+          update();
+        });
+      }
+      if (nextButton) {
+        nextButton.addEventListener("click", function () {
+          state.page = state.page + 1;
+          update();
+        });
+      }
+      update();
+    }
+    Array.prototype.slice.call(document.querySelectorAll("[data-kvdf-table-shell]")).forEach(initShell);
+  })();
+  </script>
+
+</body>
+</html>

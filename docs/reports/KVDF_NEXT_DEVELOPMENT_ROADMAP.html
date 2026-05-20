@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KVDF Development Roadmap</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <style>
+      :root {
+        --bg: #0b1220;
+        --card: #ffffff;
+        --muted: #e5edf5;
+        --ink: #0f172a;
+        --accent: #0ea5e9;
+        --line: #cbd5e1;
+      }
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--ink);
+        background: radial-gradient(circle at top right, #f1f5f9, #e2e8f0 55%, #f8fafc);
+      }
+      .page {
+        max-width: 1100px;
+        margin: 0 auto;
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+        padding: 26px;
+        border: 1px solid #dbeafe;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 28px;
+      }
+      h2 {
+        margin-top: 24px;
+        font-size: 18px;
+      }
+      p, li {
+        line-height: 1.6;
+      }
+      .note {
+        background: #eff6ff;
+        border-left: 4px solid var(--accent);
+        padding: 10px 14px;
+        border-radius: 10px;
+        margin: 12px 0;
+        color: #1e293b;
+      }
+      .mermaid-wrap {
+        margin-top: 20px;
+        background: #0f172a;
+        border: 1px solid #1e293b;
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .lane {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 16px;
+        margin-top: 18px;
+      }
+      .lane h3 {
+        margin: 0 0 8px;
+        color: #0f172a;
+      }
+      .lane ul {
+        margin: 8px 0 0 20px;
+      }
+      .status {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #0f172a;
+        background: #eef2ff;
+        border: 1px solid #c7d2fe;
+        border-radius: 10px;
+        padding: 8px 10px;
+      }
+      .error {
+        margin-top: 10px;
+        color: #7f1d1d;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        padding: 8px 10px;
+        display: none;
+      }
+      .error.visible {
+        display: block;
+      }
+      .fallback {
+        display: none;
+        white-space: pre-wrap;
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px dashed #c7d2fe;
+        background: #f8fafc;
+      }
+      .fallback.visible {
+        display: block;
+      }
+      .roadmap-svg {
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>KVDF Development Roadmap</h1>
+      <p class="note">
+        Current base: planner visual strengthening is complete (readiness + gates + stage sections). Next, we'll implement feedback and version-to-publish control.
+      </p>
+      <div id="kvdf-roadmap-status" class="status">Checking roadmap diagram status...</div>
+      <div id="kvdf-roadmap-error" class="error">Mermaid diagram could not be rendered.</div>
+      <h2>Execution sequence</h2>
+      <div id="kvdf-roadmap-mermaid" class="mermaid-wrap">
+        <div class="mermaid roadmap-svg">
+          flowchart TD
+            S0["Current State<br/>Planner visual readiness hardening is complete"]
+            S0 --> S1["1) Stabilize baseline<br/>node --check + npm test + npm run check"]
+            S1 --> S2["2) Phase 1: Planner Execution Feedback Loop"]
+            S2 --> S2a["Add planner feedback command and flags"]
+            S2 --> S2b["Persist <code>planner_feedback_&lt;id&gt;.json</code> in <code>.kabeeri/reports</code>"]
+            S2 --> S2c["Integrate feedback into review / resume / visual"]
+            S2 --> S2d["Add and extend integration tests"]
+            S2 --> S3["3) Validate and commit Phase 1"]
+            S3 --> S4["3) Phase 2: Viber Version-to-Publish Loop"]
+            S4 --> S4a["Add version state and gate model"]
+            S4 --> S4b["Add commands: status / next / gate / publish-ready / mark-published"]
+            S4 --> S4c["Never publish automatically; mark published explicitly"]
+            S4 --> S5["4) Integrate readiness into planner review / resume / visual / prompt"]
+            S5 --> S6["5) Hardening + docs + schema"]
+            S6 --> S7["6) Update schemas and command docs"]
+            S6 --> S8["7) Add focused integration tests"]
+            S6 --> S9["8) Final validation and push"]
+        </div>
+      </div>
+      <pre id="kvdf-roadmap-fallback" class="fallback">Execution sequence (fallback):
+Current state: planner visual readiness hardening is complete
+1) Stabilize baseline: node --check + npm test + npm run check
+2) Phase 1: Planner Execution Feedback Loop
+3) Add planner feedback command and flags
+4) Persist planner_feedback_&lt;id&gt;.json in .kabeeri/reports
+5) Integrate feedback into review / resume / visual
+6) Add and extend integration tests
+7) Phase 2: Viber Version-to-Publish Loop
+8) Add version state and gate model
+9) Add commands: status / next / gate / publish-ready / mark-published
+10) Never publish automatically; mark published explicitly
+11) Integrate readiness into review / resume / visual / prompt
+12) Hardening + docs + schema + final validation
+      </pre>
+
+      <div class="lane">
+        <h3>Phase 1 details</h3>
+        <ul>
+          <li>Add: <code>kvdf planner feedback --from-current --json</code></li>
+          <li>Add: <code>kvdf planner feedback --plan &lt;plan-id&gt; --summary ... --checks ... --status ... --json</code></li>
+          <li>Store runtime event only; no source file mutation</li>
+        </ul>
+      </div>
+
+      <div class="lane">
+        <h3>Phase 2 details</h3>
+        <ul>
+          <li>Plan for versions and gate states:
+            <ul>
+              <li>docs</li>
+              <li>evolution</li>
+              <li>task</li>
+              <li>validation</li>
+              <li>security</li>
+              <li>handoff</li>
+              <li>publish</li>
+            </ul>
+          </li>
+          <li>Add explicit publish-readiness reporting before any release action</li>
+        </ul>
+      </div>
+
+      <div class="lane">
+        <h3>Validation checklist for each phase</h3>
+        <ul>
+          <li><code>node --check src/cli/commands/planner.js</code></li>
+          <li><code>node bin/kvdf.js validate</code> (if schema touched)</li>
+          <li><code>npm test</code></li>
+          <li><code>npm run check</code></li>
+        </ul>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        const status = document.getElementById("kvdf-roadmap-status");
+        const error = document.getElementById("kvdf-roadmap-error");
+        const fallback = document.getElementById("kvdf-roadmap-fallback");
+        try {
+          if (!window.mermaid) {
+            throw new Error("Mermaid library is not available.");
+          }
+          mermaid.initialize({ startOnLoad: true, securityLevel: "loose" });
+          status.textContent = "Roadmap diagram rendered.";
+          if (fallback) fallback.classList.remove("visible");
+        } catch (renderError) {
+          const message = renderError && renderError.message ? renderError.message : String(renderError || "Unknown error");
+          status.textContent = "Roadmap diagram rendering failed; using fallback.";
+          if (error) {
+            error.textContent = "Mermaid rendering failed: " + message;
+            error.classList.add("visible");
+          }
+          if (fallback) fallback.classList.add("visible");
+        }
+        if (status && status.textContent.includes("failed") && fallback && !fallback.classList.contains("visible")) {
+          fallback.classList.add("visible");
+        }
+      })();
+    </script>
+  </body>
+</html>

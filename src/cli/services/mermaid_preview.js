@@ -15,6 +15,8 @@ function buildMermaidPreviewHtml({
   const mermaidBlock = extractMermaidBlock(diagramSource || rendered);
   const diagramHtml = mermaidBlock ? renderFlowchartSvg(mermaidBlock) : "";
   const previewScript = mermaidBlock ? buildMermaidPreviewScript() : "";
+  const hasDiagramSource = Boolean(mermaidBlock);
+  const noDiagramMessage = hasDiagramSource ? "Mermaid source was found, but the diagram could not be rendered. Review the fallback markdown below." : "No Mermaid source was found in this output.";
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -33,6 +35,10 @@ function buildMermaidPreviewHtml({
     main > * + * { margin-top: 16px; }
     .diagram-shell { padding: 18px; border-radius: 16px; background: #ffffff; border: 1px solid #d9e1ee; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06); overflow: hidden; min-height: 0; display: flex; flex-direction: column; }
     .diagram-title { margin: 0 0 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; }
+    .status { margin: 0; font-size: 14px; color: #0f172a; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 10px; padding: 8px 10px; }
+    .status b { font-weight: 650; }
+    .error { margin-top: 10px; color: #7f1d1d; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 8px 10px; }
+    .error.hidden { display: none; }
     .diagram-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
     .diagram-toolbar button { appearance: none; border: 1px solid #cbd5e1; background: #f8fafc; color: #0f172a; border-radius: 10px; padding: 6px 10px; font-size: 13px; cursor: pointer; }
     .diagram-toolbar button:hover { background: #eef2ff; border-color: #a5b4fc; }
@@ -49,9 +55,11 @@ function buildMermaidPreviewHtml({
 <body>
   <header>
     <h1>${escapeXml(title)}</h1>
+    <p class="status" id="kvdf-preview-status"><b>Status:</b> ${hasDiagramSource ? "Diagram source detected." : "No Mermaid source detected."} Rendering fallback.</p>
     <div class="meta">${summary.map((item) => `<span class="pill">${escapeXml(item)}</span>`).join("")}</div>
   </header>
   <main>
+    <section class="error hidden" id="kvdf-preview-error">${escapeXml(noDiagramMessage)}</section>
     ${diagramHtml ? `
     <section class="diagram-shell">
       <div class="diagram-title">${escapeXml(diagramTitle)}</div>
@@ -70,9 +78,28 @@ function buildMermaidPreviewHtml({
       <pre>${escapeXml(rendered || "")}</pre>
     </details>
   </main>
+  ${buildMermaidPreviewStatusScript(hasDiagramSource, !!diagramHtml)}
   ${previewScript}
 </body>
 </html>`;
+}
+
+function buildMermaidPreviewStatusScript(hasSource, hasRenderedDiagram) {
+  return `<script>
+(function () {
+  var status = document.getElementById("kvdf-preview-status");
+  var error = document.getElementById("kvdf-preview-error");
+  if (!status || !error) return;
+  var fallbackMessage = hasSource ? "No diagram was rendered; showing fallback markdown only." : "No Mermaid source was found; showing fallback markdown only.";
+  if (hasRenderedDiagram) {
+    status.innerHTML = "<b>Status:</b> Diagram rendered as an embedded SVG.";
+    return;
+  }
+  status.innerHTML = "<b>Status:</b> Diagram unavailable.";
+  error.classList.remove("hidden");
+  error.textContent = fallbackMessage;
+})();
+</script>`;
 }
 
 function buildMermaidPreviewScript() {
