@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779250006135
-- Generated at: 2026-05-20T04:06:46.135Z
+- Report ID: kvdf-cleanup-1779271786862
+- Generated at: 2026-05-20T10:09:46.862Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            2759                                       
+Total files            2770                                       
 Total folders          13                                         
 Plugin total           15                                         
 Active plugins         8                                          
@@ -40,9 +40,9 @@ Folder      Files  Primary extension  Role
 knowledge   464    .md                project surface
 packs       439    .md                project surface
 plugins     387    .md                plugin bundles 
-docs        296    .md                documentation  
+docs        300    .md                documentation  
 src         136    .js                runtime source 
-schemas     107    .md                project surface
+schemas     114    .md                project surface
 workspaces  53     .json              project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
@@ -53,8 +53,8 @@ bin         1      .js                project surface
 
 Extension       Files
 --------------  -----
-.md             1600 
-.json           683  
+.md             1604 
+.json           690  
 .js             208  
 .html           182  
 .docx           58   
@@ -70,7 +70,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            1838 
+Scanned files            1849 
 Dead code candidates     4    
 Stale docs candidates    4    
 Spec drift candidates    4    

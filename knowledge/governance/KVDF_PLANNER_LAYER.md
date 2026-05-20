@@ -217,6 +217,7 @@ Rules:
 - approved plans remain current until they are completed or explicitly rejected
 - completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
+- planner docs catalog/plan/status/review output should carry the foldered app documentation model forward
 - `.kabeeri/planner.json` is runtime state and must not be committed unless a separate Evolution explicitly requires it
 - `.kabeeri/tasks.json` is supporting state, not final truth
 - chat history is supporting context only
@@ -241,8 +242,8 @@ missing.
 
 ## Planner Docs Materialization
 
-`kvdf planner docs` creates draft Markdown documentation from the planner
-pipeline.
+`kvdf planner docs catalog|plan|materialize|status|apply-stage|review` creates
+and governs foldered draft Markdown documentation from the planner pipeline.
 
 Rules:
 
@@ -252,6 +253,7 @@ Rules:
 - Existing files are skipped unless `--force` is passed.
 - `--dry-run` reports proposed docs without writing files.
 - The command must not execute or materialize Evolutions automatically.
+- docs status is planned/generated/applied_to_stage/reviewed/approved/not_applicable/missing
 
 ## Planner Materialization Stage
 

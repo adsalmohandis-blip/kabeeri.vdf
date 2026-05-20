@@ -68,7 +68,8 @@ The pipeline is now fed by the self-planning engine:
   Codex prompt
 - `kvdf planner review` checks scope, method, docs, security, source control,
   task quality, and visual readiness
-- `kvdf planner docs` materializes draft Markdown docs before execution
+- `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
+  materializes and governs draft Markdown docs before execution
 
 The pipeline still does not execute work or materialize Evolutions on its own.
 It prepares the governed package that the Owner can review, approve, and then

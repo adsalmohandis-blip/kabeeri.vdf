@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Docs Status",
+  "type": "object",
+  "required": ["report_type", "planner_mode", "track", "planning_method", "status", "docs"],
+  "properties": {
+    "report_type": { "const": "kvdf_planner_docs_status" },
+    "planner_mode": { "type": "string" },
+    "track": { "type": "string" },
+    "planning_method": { "type": "string" },
+    "app": { "type": ["string", "null"] },
+    "plugin": { "type": ["string", "null"] },
+    "required_total": { "type": "number" },
+    "existing_total": { "type": "number" },
+    "generated_total": { "type": "number" },
+    "missing_total": { "type": "number" },
+    "applied_total": { "type": "number" },
+    "not_applied_total": { "type": "number" },
+    "status": { "type": "string" },
+    "docs": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "stage_status": { "type": "object" },
+    "next_action": { "type": "string" }
+  }
+}
+

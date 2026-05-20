@@ -1282,6 +1282,7 @@ function defaultWorkstreams() {
 }
 
 module.exports = {
+  buildAppDocsPackageTemplates,
   createWorkspace,
   defaultWorkstreams,
   ensureWorkspace,

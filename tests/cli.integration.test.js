@@ -6213,12 +6213,14 @@ test("planner review and resume expose current-state planning metadata", () => w
   assert.ok(review.scope_review);
   assert.ok(review.method_review);
   assert.ok(review.docs_review);
+  assert.ok(review.docs_status);
   assert.ok(review.source_control_review);
   assert.ok(review.task_quality_review);
   assert.ok(review.visual_review);
   const resume = JSON.parse(runKvdf(["planner", "resume", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(resume.report_type, "kvdf_planner_resume");
   assert.ok(resume.current_plan);
+  assert.ok(resume.docs_status);
   assert.ok(resume.next_recommended_action);
   assert.strictEqual(typeof resume.blocked, "boolean");
 }));
@@ -6237,33 +6239,125 @@ test("planner review and resume stay safe when runtime state is missing", () => 
   assert.ok(review.next_action);
 }));
 
-test("planner docs dry run reports proposed markdown files without writing them", () => withTempDir((dir) => {
-  const report = JSON.parse(runKvdf(["planner", "docs", "--idea", "Build booking app", "--track", "vibe", "--method", "auto", "--dry-run", "--json"], { cwd: dir }).stdout);
-  assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
-  assert.strictEqual(report.status, "draft");
-  assert.ok(report.docs_created.length > 0);
-  assert.ok(report.docs_created.some((item) => item.includes("workspaces/apps/app-draft/docs/00-idea.md")));
-  assert.ok(!fs.existsSync(path.join(dir, "workspaces", "apps", "app-draft", "docs", "00-idea.md")));
+test("planner docs catalog returns foldered catalog entries", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "catalog", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.catalog_type, "kvdf_planner_docs_catalog");
+  assert.deepStrictEqual(report.folder_categories, ["product", "architecture", "database", "ui_ux", "api", "security", "delivery", "dependencies"]);
+  const docIds = report.docs.map((doc) => doc.doc_id);
+  for (const expected of ["prd", "erd", "system_design", "database_schema", "ui_ux_design", "api_specification", "security_design", "version_plan", "evolutions", "task_punches"]) {
+    assert.ok(docIds.includes(expected), `Missing catalog doc ${expected}`);
+  }
 }));
 
-test("planner docs materialization creates vibe workspace drafts only", () => withTempDir((dir) => {
-  const report = JSON.parse(runKvdf(["planner", "docs", "--idea", "Build booking app", "--track", "vibe", "--method", "auto", "--app", "booking", "--json"], { cwd: dir }).stdout);
+test("planner docs plan marks structured vibe docs as required when the app needs secure data", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build booking app with payments and admin", "--track", "vibe", "--method", "structured", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_plan");
+  assert.strictEqual(report.planning_method, "structured");
+  const docsById = new Map(report.docs.map((doc) => [doc.doc_id, doc]));
+  for (const expected of ["prd", "srs", "erd", "database_schema", "api_specification", "security_design", "ui_ux_design", "version_plan", "evolutions", "task_punches"]) {
+    assert.ok(docsById.has(expected), `Missing required doc ${expected}`);
+    assert.ok(["planned", "generated"].includes(docsById.get(expected).status), `Unexpected status for ${expected}`);
+  }
+  assert.strictEqual(docsById.get("erd").pipeline_stage, "database_design");
+  assert.strictEqual(docsById.get("database_schema").pipeline_stage, "database_design");
+  assert.ok(report.stage_status.database_design);
+}));
+
+test("planner docs plan keeps agile landing page docs light and defers heavy docs", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build landing page MVP", "--track", "vibe", "--method", "agile", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_plan");
+  const docsById = new Map(report.docs.map((doc) => [doc.doc_id, doc]));
+  for (const expected of ["prd", "scope", "personas", "jtbd", "feature_breakdown", "acceptance_criteria", "ui_ux_design", "version_plan", "evolutions", "task_punches"]) {
+    assert.ok(["planned", "generated"].includes(docsById.get(expected).status), `Unexpected agile status for ${expected}`);
+  }
+  for (const deferred of ["erd", "database_schema", "api_specification", "security_design", "threat_model"]) {
+    assert.strictEqual(docsById.get(deferred).status, "not_applicable", `${deferred} should be deferred for a landing page MVP`);
+  }
+}));
+
+test("planner docs plan keeps hybrid booking app docs as structured foundation plus agile execution", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build SaaS booking app", "--track", "vibe", "--method", "hybrid", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_plan");
+  const docsById = new Map(report.docs.map((doc) => [doc.doc_id, doc]));
+  for (const required of ["prd", "srs", "system_design", "ui_ux_design", "version_plan", "evolutions", "task_punches"]) {
+    assert.ok(["planned", "generated"].includes(docsById.get(required).status), `Missing hybrid requirement ${required}`);
+  }
+  assert.ok(["planned", "generated"].includes(docsById.get("erd").status));
+  assert.ok(["planned", "generated"].includes(docsById.get("database_schema").status));
+  assert.ok(report.stage_status.system_design);
+  assert.ok(report.stage_status.database_design);
+}));
+
+test("planner docs materialization writes foldered app docs without touching KVDF Core docs", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
   assert.strictEqual(report.status, "draft");
-  assert.ok(report.docs_created.some((item) => item.includes("workspaces/apps/booking/docs/")));
-  assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "00-idea.md")));
-  assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "10-handoff.md")));
+  for (const relative of [
+    "workspaces/apps/booking/docs/product/PRD.md",
+    "workspaces/apps/booking/docs/architecture/SYSTEM_DESIGN.md",
+    "workspaces/apps/booking/docs/database/ERD.md",
+    "workspaces/apps/booking/docs/database/DATABASE_SCHEMA.md",
+    "workspaces/apps/booking/docs/ui-ux/UI_UX_DESIGN.md",
+    "workspaces/apps/booking/docs/api/API_SPECIFICATION.md",
+    "workspaces/apps/booking/docs/security/SECURITY_DESIGN.md",
+    "workspaces/apps/booking/docs/delivery/VERSION_PLAN.md",
+    "workspaces/apps/booking/docs/delivery/EVOLUTIONS.md",
+    "workspaces/apps/booking/docs/delivery/TASK_PUNCHES.md"
+  ]) {
+    assert.ok(fs.existsSync(path.join(dir, relative)), `Missing materialized doc ${relative}`);
+  }
   assert.ok(!fs.existsSync(path.join(dir, "docs", "workflows", "PLANNER_SELF_PLANNING_ENGINE.md")));
+}));
+
+test("planner docs materialization skips existing docs unless forced", () => withTempDir((dir) => {
+  const first = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir }).stdout);
+  assert.ok(first.docs_created.length > 0);
+  const second = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir }).stdout);
+  assert.ok(second.docs_skipped.length > 0);
+  const forced = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--force", "--json"], { cwd: dir }).stdout);
+  assert.ok(forced.docs_updated.length > 0);
+}));
+
+test("planner docs status reports counts and stage state", () => withTempDir((dir) => {
+  runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir });
+  const status = JSON.parse(runKvdf(["planner", "docs", "status", "--track", "vibe", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "kvdf_planner_docs_status");
+  assert.ok(status.required_total > 0);
+  assert.ok(status.existing_total > 0);
+  assert.ok(status.missing_total >= 0);
+  assert.ok(status.applied_total >= 0);
+  assert.ok(status.stage_status.system_design);
+  assert.ok(["partial", "complete", "missing", "blocked"].includes(status.status));
+}));
+
+test("planner docs apply-stage marks materialized docs as applied when the stage exists", () => withTempDir((dir) => {
+  runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir });
+  const result = JSON.parse(runKvdf(["planner", "docs", "apply-stage", "--track", "vibe", "--app", "booking", "--stage", "system_design", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(result.report_type, "kvdf_planner_docs_apply_stage");
+  assert.ok(result.docs.some((doc) => doc.pipeline_stage === "system_design" && doc.applied));
+  assert.ok(result.stage_status.system_design);
+  assert.ok(["pass", "warning"].includes(result.status));
+}));
+
+test("planner docs review reports missing and not-applied docs", () => withTempDir((dir) => {
+  runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--json"], { cwd: dir });
+  const review = JSON.parse(runKvdf(["planner", "docs", "review", "--track", "vibe", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "kvdf_planner_docs_review");
+  assert.ok(Array.isArray(review.missing_required_docs));
+  assert.ok(Array.isArray(review.not_applied_docs));
+  assert.ok(Array.isArray(review.stage_blockers));
+  assert.ok(["pass", "warning", "blocked"].includes(review.status));
+  assert.ok(review.next_action);
 }));
 
 test("planner docs materialization creates plugin drafts only under the selected plugin", () => withTempDir((dir) => {
   copyPluginBundle(dir, "planner-visual");
-  const report = JSON.parse(runKvdf(["planner", "docs", "--idea", "Improve planner visual plugin", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
+  const report = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Improve planner visual plugin", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
   assert.ok(report.docs_created.every((item) => item.startsWith("plugins/planner-visual/docs/")));
-  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "00-plugin-goal.md")));
-  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "05-version-plan.md")));
-  assert.ok(!fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "00-idea.md")));
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "product", "PRD.md")));
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "delivery", "VERSION_PLAN.md")));
+  assert.ok(!fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "product", "PRD.md")));
 }));
 
 test("planner prompt from current exposes planning method docs and review metadata", () => withTempDir((dir) => {
@@ -6279,6 +6373,7 @@ test("planner prompt from current exposes planning method docs and review metada
   assert.ok(Array.isArray(prompt.forbidden_files));
   assert.ok(prompt.stop_condition);
   assert.ok(prompt.review);
+  assert.ok(prompt.docs_status);
   assert.ok(prompt.prompt.includes("Planning method:"));
   assert.ok(prompt.prompt.includes("Docs status:"));
   assert.ok(prompt.prompt.includes("Security gate:"));
@@ -6580,6 +6675,10 @@ test("planner pipeline builds an owner-track idea to evolution package", () => w
   assert.strictEqual(pipeline.source_control.mode, "direct_main");
   assert.ok(Array.isArray(pipeline.documentation_files));
   assert.ok(pipeline.documentation_files.includes("docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md"));
+  assert.ok(pipeline.docs_plan);
+  assert.ok(pipeline.docs_status);
+  assert.strictEqual(pipeline.docs_plan.report_type, "kvdf_planner_docs_plan");
+  assert.strictEqual(pipeline.docs_status.report_type, "kvdf_planner_docs_status");
   assert.ok(pipeline.design_artifacts);
   assert.ok(pipeline.design_artifacts.system_design);
   assert.ok(pipeline.design_artifacts.database_design);
@@ -6613,6 +6712,8 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.design_artifacts.system_design);
   assert.ok(pipeline.design_artifacts.database_design);
   assert.ok(pipeline.design_artifacts.ui_ux_design);
+  assert.ok(pipeline.docs_plan);
+  assert.ok(pipeline.docs_status);
   assert.ok(pipeline.version_plan);
   assert.ok(Array.isArray(pipeline.version_plan.versions));
   assert.ok(Array.isArray(pipeline.evolutions));
@@ -6634,6 +6735,8 @@ test("planner pipeline builds a plugin package with plugin context and isolated 
   assert.strictEqual(pipeline.source_control.mode, "direct_main");
   assert.ok(Array.isArray(pipeline.documentation_files));
   assert.ok(pipeline.documentation_files.some((item) => item.includes("plugins/planner-visual/docs/")));
+  assert.ok(pipeline.docs_plan);
+  assert.ok(pipeline.docs_status);
   assert.ok(Array.isArray(pipeline.evolutions));
   assert.ok(pipeline.evolutions.every((evolution) => evolution.track === "plugin"));
   assert.ok(pipeline.evolutions.every((evolution) => evolution.allowed_files.some((item) => item.includes("plugins/planner-visual"))));

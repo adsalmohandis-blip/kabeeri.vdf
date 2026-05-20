@@ -34,7 +34,7 @@ Recommended sequence:
 1. `kvdf planner method`
 2. `kvdf planner auto`
 3. `kvdf planner review`
-4. `kvdf planner docs`
+4. `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
 5. `kvdf planner resume`
 6. `kvdf planner prompt --from-current`
 7. `kvdf planner visual --from-current`
@@ -47,8 +47,8 @@ complete and the current state is explained in a Current-State Report.
 
 ## Documentation Materialization
 
-`kvdf planner docs` creates draft Markdown documentation from the planner
-pipeline.
+`kvdf planner docs catalog|plan|materialize|status|apply-stage|review` creates
+and governs foldered draft Markdown documentation from the planner pipeline.
 
 Rules:
 
@@ -58,6 +58,8 @@ Rules:
 - Existing files are skipped unless `--force` is passed.
 - `--dry-run` reports proposed docs without writing files.
 - The command must not materialize Evolutions or execute code changes.
+- docs status is tracked as planned, generated, applied_to_stage, reviewed,
+  approved, not_applicable, or missing
 
 ## Planner Review
 

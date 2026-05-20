@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Docs Catalog",
+  "type": "object",
+  "required": ["catalog_type", "planner_mode", "track", "folder_categories", "categories", "docs"],
+  "properties": {
+    "catalog_type": { "const": "kvdf_planner_docs_catalog" },
+    "planner_mode": { "type": "string" },
+    "track": { "type": "string" },
+    "folder_categories": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "categories": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "docs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/doc" }
+    }
+  },
+  "$defs": {
+    "doc": {
+      "type": "object",
+      "required": ["doc_id", "title", "path", "category", "pipeline_stage"],
+      "properties": {
+        "doc_id": { "type": "string" },
+        "title": { "type": "string" },
+        "path": { "type": "string" },
+        "category": { "type": "string" },
+        "pipeline_stage": { "type": "string" }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,49 @@
+# Viber Documentation Pipeline
+
+The Viber Dev Pipeline uses docs as part of the delivery contract. Docs are
+planned, generated, reviewed, approved, and applied to stage before execution.
+
+## Stage-Doc Mapping
+
+- `idea`: PRD or BRD draft
+- `requirements`: PRD, SRS, FRD, scope, personas, stories
+- `system_design`: system design and C4 docs when relevant
+- `database_design`: ERD and schema docs when data is persistent
+- `ui_ux_design`: UI/UX, IA, flows, wireframes, UI spec
+- `api_design`: API spec and integration notes when the app has a backend
+- `security_design`: security design and threat model for auth, payment, tenant,
+  admin, or sensitive apps
+- `version_plan`: version plan
+- `evolution`: evolutions
+- `task_punch`: task punches
+- `validation`: test strategy and QA checklist
+- `handoff`: handoff, release, support, security, and dependency docs
+
+## Method Alignment
+
+- `structured`: stricter upfront docs and gates
+- `agile`: lighter docs, faster feedback, smaller slices
+- `hybrid`: structured foundation first, then agile execution slices
+- `auto`: KVDF chooses the method and explains why
+
+## Docs Lifecycle
+
+1. Plan required docs
+2. Materialize draft docs into the app workspace
+3. Mark docs as applied to stage when the stage uses them
+4. Review docs completeness and alignment
+5. Approve docs with the Owner gate
+
+## Output Expectations
+
+Planner and pipeline output should surface:
+
+- docs plan
+- docs status
+- missing required docs
+- stale docs
+- next action
+- stop condition
+
+Docs live in the app workspace, not in KVDF Core docs.
+

@@ -57,7 +57,7 @@ Evolution:
 1. `kvdf planner method`
 2. `kvdf planner auto`
 3. `kvdf planner review`
-4. `kvdf planner docs`
+4. `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
 5. `kvdf planner resume`
 6. `kvdf planner propose`
 7. `kvdf planner approve`
@@ -68,7 +68,9 @@ Evolution:
 
 The planner remains the planning authority, but it does not execute code
 changes automatically. Owner approval still gates execution, and draft docs
-remain draft-only until the Owner approves the path forward.
+remain draft-only until the Owner approves the path forward. The planner must
+surface docs plan, docs status, and missing docs before it recommends the next
+Evolution.
 
 ## Workflow
 

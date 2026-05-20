@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kabeeri.vdf/schemas/planner/viber-version-control.schema.json",
+  "title": "KVDF Viber Version Control",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["report_type", "versions"],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_viber_version_control"
+    },
+    "generated_at": {
+      "type": "string"
+    },
+    "app": {
+      "type": ["string", "null"]
+    },
+    "track": {
+      "type": ["string", "null"]
+    },
+    "planner_mode": {
+      "type": ["string", "null"]
+    },
+    "planning_method": {
+      "type": ["string", "null"]
+    },
+    "source_control_mode": {
+      "type": ["string", "null"]
+    },
+    "versions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "version_id": { "type": ["string", "null"] },
+          "title": { "type": ["string", "null"] },
+          "app": { "type": ["string", "null"] },
+          "track": { "type": ["string", "null"] },
+          "planning_method": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"] },
+          "source_control_mode": { "type": ["string", "null"] },
+          "included_evolutions": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "task_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "current_version": {
+      "type": ["object", "null"]
+    },
+    "next_version": {
+      "type": ["object", "null"]
+    },
+    "next_evolution": {
+      "type": ["object", "null"]
+    },
+    "publish_readiness": {
+      "type": ["object", "null"]
+    },
+    "latest_feedback": {
+      "type": ["object", "null"]
+    },
+    "next_action": {
+      "type": "string"
+    }
+  }
+}

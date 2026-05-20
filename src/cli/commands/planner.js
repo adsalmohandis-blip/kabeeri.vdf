@@ -241,7 +241,7 @@ const PLANNER_DOC_DEFINITIONS = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "evolution", "task-punch", "visual", "pipeline", "propose", "approve", "current", "reject", "complete", "materialize"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -322,6 +322,19 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
     const docsAction = normalizePlannerDocsAction(value, rest);
     const report = buildPlannerDocsCommandReport(docsAction, value, flags, rest, deps);
     printPlannerOutput(report, flags, deps, "docs");
+    return;
+  }
+
+  if (mode === "version") {
+    const versionAction = normalizePlannerVersionAction(value, rest);
+    const report = buildPlannerVersionCommandReport(versionAction, value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "version");
+    return;
+  }
+
+  if (mode === "feedback") {
+    const report = buildPlannerFeedbackCommandReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "feedback");
     return;
   }
 
@@ -452,7 +465,9 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     evolutions: pipeline.evolutions,
     method: planning.method,
     plugin_context: planning.plugin_context,
-    delivery_mode: planning.delivery_mode
+    delivery_mode: planning.delivery_mode,
+    version_control: pipeline.version_control,
+    latest_feedback: pipeline.latest_feedback || null
   });
   const visualPlanning = {
     ...(pipeline.visual_planning || {}),
@@ -462,6 +477,7 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     review_status: review.status,
     docs_status: pipeline.docs_status ? pipeline.docs_status.status : "planned",
     docs_created_total: pipeline.docs_status ? pipeline.docs_status.existing_total || 0 : (Array.isArray(pipeline.documentation_files) ? pipeline.documentation_files.length : 0),
+    version_control: pipeline.version_control || null,
     risks: planning.method.risks,
     current_gate: planning.current_gate,
     next_action: pipeline.next_action || ""
@@ -480,7 +496,9 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     review,
     docsStatus: pipeline.docs_status ? pipeline.docs_status.status : "planned",
     visualSummary: visualPlanning,
-    currentGate: planning.current_gate
+    currentGate: planning.current_gate,
+    versionControl: pipeline.version_control,
+    latestFeedback: pipeline.latest_feedback || null
   });
   return {
     report_type: "kvdf_planner_auto_plan",
@@ -506,6 +524,9 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     validation_commands: pipeline.validation_commands || [],
     stop_condition: pipeline.stop_condition || "",
     next_evolution: pipeline.next_evolution || null,
+    version_control: pipeline.version_control || null,
+    publish_readiness: pipeline.version_control ? pipeline.version_control.publish_readiness || null : null,
+    latest_feedback: pipeline.latest_feedback || null,
     source_pipeline: pipeline,
     approval_required: true,
     next_action: "Review the auto plan, then run kvdf planner propose/approve/materialize or kvdf planner docs."
@@ -676,7 +697,7 @@ function buildPlannerStrategy(method, mode, pipeline = null) {
   return base;
 }
 
-function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null }) {
+function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null }) {
   const risks = [];
   const requiredFixes = [];
   let status = "pass";
@@ -742,6 +763,19 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     notes: hasVisual ? ["Visual planner output is present."] : ["Visual planner output is missing."],
     review_status: hasVisual ? "pass" : "warning"
   };
+  const versionControlReview = {
+    status: version_control ? (version_control.publish_readiness && version_control.publish_readiness.status === "blocked" ? "warning" : "pass") : "warning",
+    current_version: version_control && version_control.current_version ? version_control.current_version.version_id || version_control.current_version.title || "" : "",
+    next_version: version_control && version_control.next_version ? version_control.next_version.version_id || version_control.next_version.title || "" : "",
+    publish_readiness: version_control ? version_control.publish_readiness || null : null,
+    notes: version_control ? ["Version control summary is available."] : ["Version control summary is missing."]
+  };
+  const publishReadinessReview = {
+    status: version_control && version_control.publish_readiness ? version_control.publish_readiness.status || "unknown" : "unknown",
+    blockers: version_control && version_control.publish_readiness ? [...(version_control.publish_readiness.blockers || [])] : [],
+    warnings: version_control && version_control.publish_readiness ? [...(version_control.publish_readiness.warnings || [])] : [],
+    next_action: version_control && version_control.publish_readiness ? version_control.publish_readiness.next_action || "" : ""
+  };
   const docsStatus = docsReview.docs_status;
   if (!hasVisual) requiredFixes.push("Generate the visual planner output before execution.");
   if (!Array.isArray(task_punches) || !task_punches.length) requiredFixes.push("Generate task punches before execution.");
@@ -772,6 +806,9 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     status = "warning";
     risks.push("Goal text is missing from the planner review.");
   }
+  if (latest_feedback && latest_feedback.status && latest_feedback.status !== "pass") {
+    risks.push(`Latest feedback status: ${latest_feedback.status}`);
+  }
   return {
     plan_id: current_plan && current_plan.plan_id ? current_plan.plan_id : null,
     status,
@@ -784,6 +821,8 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     source_control_review: sourceControlReview,
     task_quality_review: taskQualityReview,
     visual_review: visualReview,
+    version_control_review: versionControlReview,
+    publish_readiness_review: publishReadinessReview,
     review_status: status,
     docs_status: docsStatus,
     risks,
@@ -821,6 +860,17 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
   const mode = normalizePlannerMode(currentPlan.planner_mode);
   const planningMethod = currentPlan.planning_method || currentPlan.review && currentPlan.review.planning_method || null;
   const method = buildPlannerMethodRecommendation(currentPlan.goal || "", { mode, flags: {}, source_control: currentPlan.source_control }, context, planningMethod || "auto");
+  const versionControl = buildPlannerVersionControlSummary({
+    versionPlan: currentPlan.version_plan || {},
+    currentPlan,
+    versionControlState: readPlannerVersionControlState(context.repo_root, currentPlan.app_slug || ""),
+    context,
+    appSlug: currentPlan.app_slug || "",
+    track: currentPlan.track || getPlannerTrack(mode),
+    plannerMode: mode,
+    sourceControl: currentPlan.source_control || null
+  });
+  const latestFeedback = readPlannerLatestFeedback(context.repo_root, currentPlan.app_slug || "");
   const review = buildPlannerReviewSummary({
     goal: currentPlan.goal,
     planner_mode: mode,
@@ -837,7 +887,9 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     plugin_context: currentPlan.plugin_context || null,
     delivery_mode: currentPlan.delivery_mode || getDeliveryMode(mode),
     current_plan: currentPlan,
-    security_gate: readJsonFileIfExists(path.join(context.repo_root, ".kabeeri", "security", "security_gate_state.json"))
+    security_gate: readJsonFileIfExists(path.join(context.repo_root, ".kabeeri", "security", "security_gate_state.json")),
+    version_control: versionControl,
+    latest_feedback: latestFeedback
   });
   return {
     report_type: "kvdf_planner_review",
@@ -854,6 +906,8 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context) {
     source_control_review: review.source_control_review,
     task_quality_review: review.task_quality_review,
     visual_review: review.visual_review,
+    version_control_review: review.version_control_review,
+    publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
     required_fixes: review.required_fixes,
     next_action: review.next_action
@@ -1748,6 +1802,17 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     return buildPlannerBlockedReviewReport("Missing goal for planner review.", buildPlannerContext(deps));
   }
   const planning = buildPlannerPlanningContext(goal, { flags, ...flags }, deps, { methodFromFlags: true, rest });
+  const versionControl = buildPlannerVersionControlSummary({
+    versionPlan: planning.pipeline && planning.pipeline.version_plan ? planning.pipeline.version_plan : {},
+    currentPlan: null,
+    versionControlState: readPlannerVersionControlState(buildPlannerContext(deps).repo_root, normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || "")),
+    context: planning.context,
+    appSlug: normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || ""),
+    track: planning.track,
+    plannerMode: planning.mode,
+    sourceControl: planning.source_control
+  });
+  const latestFeedback = readPlannerLatestFeedback(buildPlannerContext(deps).repo_root, normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || ""));
   const review = buildPlannerReviewSummary({
     goal: planning.goal,
     planner_mode: planning.mode,
@@ -1762,7 +1827,9 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     evolutions: planning.pipeline.evolutions,
     method: planning.method,
     plugin_context: planning.plugin_context,
-    delivery_mode: planning.delivery_mode
+    delivery_mode: planning.delivery_mode,
+    version_control: versionControl,
+    latest_feedback: latestFeedback
   });
   return {
     report_type: "kvdf_planner_review",
@@ -1779,6 +1846,8 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     source_control_review: review.source_control_review,
     task_quality_review: review.task_quality_review,
     visual_review: review.visual_review,
+    version_control_review: review.version_control_review,
+    publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
     required_fixes: review.required_fixes,
     next_action: review.next_action
@@ -1803,6 +1872,16 @@ function buildPlannerResumeReport(deps = {}) {
     : null;
   const currentTaskPunch = currentPlan ? currentPlan.task_punch || null : null;
   const review = currentPlan ? buildPlannerReviewFromCurrentPlan(currentPlan, context) : buildPlannerBlockedReviewReport("No approved current planner plan exists.", context);
+  const versionControl = currentPlan ? buildPlannerVersionControlSummary({
+    versionPlan: currentPlan.version_plan || {},
+    currentPlan,
+    versionControlState: readPlannerVersionControlState(repoRootPath, normalizeAppSlug(currentPlan.app_slug || "")),
+    context,
+    appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+    track: currentPlan.track || "framework_owner",
+    plannerMode: currentPlan.planner_mode || "owner",
+    sourceControl: currentPlan.source_control || null
+  }) : null;
   const blockers = [];
   if (!plannerState) blockers.push("Planner runtime state is missing.");
   if (!currentPlan) blockers.push("No approved current planner plan exists.");
@@ -1820,6 +1899,8 @@ function buildPlannerResumeReport(deps = {}) {
     source_control: currentPlan ? currentPlan.source_control || null : null,
     docs_plan: currentPlan ? currentPlan.docs_plan || null : null,
     docs_status: currentPlan ? currentPlan.docs_status || null : null,
+    version_control: versionControl,
+    latest_feedback: readPlannerLatestFeedback(repoRootPath, normalizeAppSlug(currentPlan && currentPlan.app_slug || "")) || null,
     review_status: review.status || "unknown",
     next_recommended_action: buildPlannerResumeNextAction({ currentPlan, review, securityGateState, plannerState, deliveryDecisions, dashboard, tasksState }),
     blocked: blockers.length > 0,
@@ -1894,6 +1975,19 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     idea: goal
   });
   const docsStatus = buildPlannerDocsStatusSummaryFromPlan(docsPlan);
+  const versionControl = planning.pipeline && planning.pipeline.version_control
+    ? planning.pipeline.version_control
+    : buildPlannerVersionControlSummary({
+      versionPlan: planning.pipeline && planning.pipeline.version_plan ? planning.pipeline.version_plan : {},
+      currentPlan: null,
+      versionControlState: null,
+      context,
+      appSlug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""),
+      track: plan.track,
+      plannerMode: mode,
+      sourceControl
+    });
+  const latestFeedback = planning.pipeline && planning.pipeline.latest_feedback ? planning.pipeline.latest_feedback : readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""));
   const visualSummary = buildPlannerVisualPayload({
     goal,
     mode,
@@ -1909,6 +2003,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     review: null,
     docsStatus: docsStatus.status,
     docsCreatedTotal: docsStatus.existing_total,
+    versionControl,
     risks: planning.method.risks,
     currentGate: planning.current_gate,
     nextAction: plan.next_action
@@ -1927,7 +2022,9 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     evolutions: [plan],
     method: planning.method,
     plugin_context: pluginContext,
-    delivery_mode: deliveryMode
+    delivery_mode: deliveryMode,
+    version_control: versionControl,
+    latest_feedback: latestFeedback
   });
   return {
     report_type: "kvdf_planner_codex_prompt",
@@ -1947,6 +2044,9 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     stop_condition: plan.stop_condition,
     docs_plan: docsPlan,
     docs_status: docsStatus,
+    version_control: versionControl,
+    publish_readiness: versionControl.publish_readiness || null,
+    latest_feedback: latestFeedback,
     review,
     visual_summary: visualSummary,
     task_punch: taskPunch,
@@ -1964,7 +2064,9 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       review,
       docsStatus: docsStatus.status,
       visualSummary,
-      currentGate: planning.current_gate
+      currentGate: planning.current_gate,
+      versionControl,
+      latestFeedback
     })
   };
 }
@@ -2027,6 +2129,18 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
   const aiLearning = planning.ai_learning;
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const versionControl = planning.pipeline && planning.pipeline.version_control
+    ? planning.pipeline.version_control
+    : buildPlannerVersionControlSummary({
+      versionPlan: planning.pipeline && planning.pipeline.version_plan ? planning.pipeline.version_plan : {},
+      currentPlan: null,
+      versionControlState: null,
+      context,
+      appSlug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""),
+      track: evolutionPlan.track,
+      plannerMode: mode,
+      sourceControl
+    });
   const review = buildPlannerReviewSummary({
     goal,
     planner_mode: mode,
@@ -2041,7 +2155,9 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     evolutions: [evolutionPlan],
     method: planning.method,
     plugin_context: pluginContext,
-    delivery_mode: deliveryMode
+    delivery_mode: deliveryMode,
+    version_control: versionControl,
+    latest_feedback: planning.pipeline && planning.pipeline.latest_feedback ? planning.pipeline.latest_feedback : readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""))
   });
   return buildPlannerVisualPayload({
     goal,
@@ -2052,6 +2168,7 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     context,
     pluginContext,
     sourceControl,
+    versionControl,
     aiLearning,
     planningMethod: planning.planning_method,
     methodReason: planning.method.reason,
@@ -2092,6 +2209,16 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     ? currentPlan.task_punch
     : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext }, context);
   const review = currentPlan.review || buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  const versionControl = currentPlan.version_control || buildPlannerVersionControlSummary({
+    versionPlan: currentPlan.version_plan || {},
+    currentPlan,
+    versionControlState: readPlannerVersionControlState(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")),
+    context,
+    appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+    track: currentPlan.track || getPlannerTrack(mode),
+    plannerMode: mode,
+    sourceControl
+  });
   if (currentPlan.visual && currentPlan.visual.report_type === "kvdf_planner_visual" && currentPlan.visual.source_control) {
     return currentPlan.visual;
   }
@@ -2105,6 +2232,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     pluginContext,
     currentPlan,
     sourceControl,
+    versionControl,
     planningMethod: currentPlan.planning_method || review.planning_method || null,
     methodReason: currentPlan.method_reason || "",
     confidence: currentPlan.confidence || "",
@@ -2117,7 +2245,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsCreatedTotal = 0, risks = [], currentGate = null, nextAction = "" }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "" }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
@@ -2140,6 +2268,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     reviewStatus,
     docsStatus,
     docsCreatedTotal,
+    versionControl,
     risks,
     currentGate,
     nextAction: nextAction || evolutionPlan.next_action || ""
@@ -2167,6 +2296,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     review_status: reviewStatus,
     docs_status: docsStatus,
     docs_created_total: docsCreatedTotal,
+    version_control: versionControl,
     risks,
     current_gate: currentGate,
     next_action: nextAction || evolutionPlan.next_action || ""
@@ -2419,7 +2549,7 @@ function buildPlannerVisualLegend() {
   };
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, risks, currentGate, nextAction }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, versionControl, risks, currentGate, nextAction }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Model - Vibe/App"
     : mode === "plugin"
@@ -2456,6 +2586,10 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     reviewStatus ? `- Review status: ${reviewStatus}` : null,
     docsStatus ? `- Documentation status: ${docsStatus}` : null,
     `- Docs created total: ${docsCreatedTotal || 0}`,
+    versionControl && versionControl.current_version ? `- Current version: ${versionControl.current_version.version_id || versionControl.current_version.title || "unknown"}` : null,
+    versionControl && versionControl.next_version ? `- Next version: ${versionControl.next_version.version_id || versionControl.next_version.title || "unknown"}` : null,
+    versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
+    versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
     currentGate ? `- Current gate: ${currentGate}` : null,
     risks && risks.length ? `- Risks: ${risks.join("; ")}` : null,
     `- Proposed Evolution: ${evolutionPlan.title}`,
@@ -2470,6 +2604,9 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     "",
     "## Source Control",
     sourceControlLines || "- None",
+    "",
+    "## Version Control",
+    ...renderIndentedObjectSection(versionControl || {}),
     "",
     "## Scope Map",
     "### Allowed Files",
@@ -2521,6 +2658,16 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   const documentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
   const designArtifacts = buildIdeaToEvolutionDesignArtifacts(normalizedIdea, mode, context, pluginContext, sourceControl);
   const versionPlan = buildIdeaToEvolutionVersionPlan(normalizedIdea, mode, deliveryMode, context, pluginContext, sourceControl);
+  const versionControl = buildPlannerVersionControlSummary({
+    versionPlan,
+    currentPlan: null,
+    versionControlState: null,
+    context,
+    appSlug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""),
+    track: getPlannerTrack(mode),
+    plannerMode: mode,
+    sourceControl
+  });
   const evolutions = versionPlan.versions.map((version) => version.evolution);
   const taskPunches = versionPlan.versions.map((version) => version.task_punch);
   const firstEvolution = evolutions[0] || buildPlannerEvolutionPlan(normalizedIdea, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
@@ -2533,7 +2680,8 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     taskPunch: firstTaskPunch,
     context,
     pluginContext,
-    sourceControl
+    sourceControl,
+    versionControl
   });
   const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
   const nextEvolution = visualRoadmap.next_evolution || null;
@@ -2571,10 +2719,12 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     design_artifacts: designArtifacts,
     visual_planning: visualPlanning,
     version_plan: versionPlan,
+    version_control: versionControl,
     evolutions,
     task_punches: taskPunches,
     visual_roadmap: visualRoadmap,
     next_evolution: nextEvolution,
+    publish_readiness: versionControl.publish_readiness || null,
     validation_commands: firstEvolution.validation_commands || visualPlanning.validation_commands || DEFAULT_VALIDATION_COMMANDS,
     stop_condition: firstEvolution.stop_condition || visualPlanning.stop_condition || "",
     next_action: "Review the pipeline plan, then approve/materialize the first Evolution."
@@ -3020,6 +3170,7 @@ function renderPlannerPipelineReport(report, tableRenderer) {
   const uiUxDesign = designArtifacts.ui_ux_design || {};
   const apiDesign = designArtifacts.api_design || {};
   const securityDesign = designArtifacts.security_design || {};
+  const versionControl = report.version_control || null;
   return [
     "# KVDF Idea to Evolution Pipeline",
     "",
@@ -3052,6 +3203,9 @@ function renderPlannerPipelineReport(report, tableRenderer) {
     "",
     "## Version Plan",
     tableRenderer(["Version", "Title", "Readiness Gate", "Source Control"], versionRows),
+    "",
+    "## Version Control",
+    ...renderIndentedObjectSection(versionControl || {}),
     "",
     "## Evolutions",
     tableRenderer(["Evolution", "Title", "Version", "Source Control"], evolutionRows),
@@ -3253,6 +3407,17 @@ function buildPlannerCurrentReport(deps = {}) {
     current_plan: currentPlan,
     docs_plan: currentPlan.docs_plan || null,
     docs_status: currentPlan.docs_status || null,
+    version_control: currentPlan.version_control || buildPlannerVersionControlSummary({
+      versionPlan: currentPlan.version_plan || {},
+      currentPlan,
+      versionControlState: readPlannerVersionControlState(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")),
+      context,
+      appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+      track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
+      plannerMode: normalizePlannerMode(currentPlan.planner_mode),
+      sourceControl: currentPlan.source_control || null
+    }),
+    latest_feedback: currentPlan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")) || null,
     next_action: "Run kvdf planner prompt --from-current --json to generate the Codex prompt from the approved plan."
   };
 }
@@ -3637,7 +3802,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -3672,6 +3837,11 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     planningMethod && review ? `- Review status: ${review.status || "unknown"}` : null,
     planningMethod && review && Array.isArray(review.required_fixes) && review.required_fixes.length ? `- Review warnings: ${review.required_fixes.join("; ")}` : null,
     planningMethod && review && review.security_review ? `- Security gate: ${review.security_review.status || "unknown"}${review.security_review.next_action ? ` (${review.security_review.next_action})` : ""}` : null,
+    versionControl ? `- Current version: ${versionControl.current_version ? versionControl.current_version.version_id || versionControl.current_version.title || "unknown" : "none"}` : null,
+    versionControl ? `- Next version: ${versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || "unknown" : "none"}` : null,
+    versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
+    versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
+    latestFeedback ? `- Latest feedback: ${latestFeedback.status || "unknown"}${latestFeedback.summary ? ` (${latestFeedback.summary})` : ""}` : null,
     planningMethod && visualSummary ? `- Visual summary: ${visualSummary.markdown_report ? visualSummary.markdown_report.split("\n")[0] : "available"}` : null,
     "",
     "Scope:",
@@ -4772,7 +4942,8 @@ function normalizePlannerState(state = {}) {
   return {
     planner_version: String(state.planner_version || "1"),
     current_plan_id: state.current_plan_id || null,
-    plans
+    plans,
+    latest_feedback: state.latest_feedback || null
   };
 }
 
@@ -4823,7 +4994,8 @@ function normalizePlannerPlanRecord(plan = {}) {
     materialized_task_ids: Array.isArray(plan.materialized_task_ids) ? [...plan.materialized_task_ids] : [],
     materialization_report_path: plan.materialization_report_path || null,
     plugin_context: plan.plugin_context || null,
-    pipeline: Array.isArray(plan.pipeline) ? [...plan.pipeline] : undefined
+    pipeline: Array.isArray(plan.pipeline) ? [...plan.pipeline] : undefined,
+    latest_feedback: plan.latest_feedback || null
   };
 }
 
@@ -5574,6 +5746,16 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
   const taskPunch = plan.task_punch && Array.isArray(plan.task_punch.tasks) && plan.task_punch.tasks.length
     ? plan.task_punch
     : buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode: plan.delivery_mode, pluginContext }, context);
+  const versionControl = buildPlannerVersionControlSummary({
+    versionPlan: plan.version_plan || {},
+    currentPlan: plan,
+    versionControlState: readPlannerVersionControlState(context.repo_root, normalizeAppSlug(plan.app_slug || "")),
+    context,
+    appSlug: normalizeAppSlug(plan.app_slug || ""),
+    track: plan.track || getPlannerTrack(mode),
+    plannerMode: mode,
+    sourceControl: sourceControlState
+  });
   return renderCodexPrompt({
     goal,
     mode,
@@ -5588,7 +5770,9 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     review: plan.review || null,
     docsStatus: plan.documentation_files && plan.documentation_files.length ? "draft" : "planned",
     visualSummary: plan.visual_planning || plan.visual || null,
-    currentGate: plan.current_gate || null
+    currentGate: plan.current_gate || null,
+    versionControl,
+    latestFeedback: plan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(plan.app_slug || ""))
   });
 }
 
@@ -5638,6 +5822,7 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     ])
     : [];
   const sourceControl = report.source_control || null;
+  const versionControl = report.version_control || null;
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -5685,6 +5870,9 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     "## Version Plan",
     tableRenderer(["Version", "Title", "Readiness Gate", "Source Control"], versionRows),
     "",
+    "## Version Control",
+    ...renderIndentedObjectSection(versionControl || {}),
+    "",
     "## Evolutions",
     tableRenderer(["Evolution", "Title", "Version", "Source Control"], evolutionRows),
     "",
@@ -5711,6 +5899,527 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
   ].join("\n");
 }
 
+function normalizePlannerVersionAction(value, rest = []) {
+  const candidates = [value, ...rest];
+  const action = candidates.find((item) => typeof item === "string" && item.trim() && !String(item).startsWith("--"));
+  const normalized = String(action || "status").trim().toLowerCase();
+  if (["status", "next", "gate", "publish-ready", "publish_ready", "mark-published", "mark_published"].includes(normalized)) {
+    return normalized.replace(/_/g, "-");
+  }
+  return "status";
+}
+
+function buildPlannerVersionCommandReport(action, value = "", flags = {}, rest = [], deps = {}) {
+  const versionId = normalizeVersionId(flags.version || flags.version_id || flags.id || value || "");
+  if (action === "mark-published") {
+    return buildPlannerVersionMarkPublishedReport(versionId, flags, rest, deps);
+  }
+  if (action === "publish-ready") {
+    return buildPlannerVersionPublishReadyReport(versionId, flags, rest, deps);
+  }
+  if (action === "gate") {
+    return buildPlannerVersionGateReport(versionId, flags, rest, deps);
+  }
+  if (action === "next") {
+    return buildPlannerVersionNextReport(versionId, flags, rest, deps);
+  }
+  return buildPlannerVersionStatusReport(versionId, flags, rest, deps);
+}
+
+function buildPlannerVersionStatusReport(versionId, flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || "");
+  const plannerState = loadPlannerState(context.repo_root);
+  const currentPlan = findCurrentPlannerPlan(plannerState);
+  const sourcePipeline = currentPlan ? (currentPlan.source_pipeline || currentPlan) : null;
+  const versionPlan = currentPlan && currentPlan.version_plan ? currentPlan.version_plan : (sourcePipeline && sourcePipeline.version_plan ? sourcePipeline.version_plan : null);
+  const versionControlState = readPlannerVersionControlState(context.repo_root, appSlug);
+  const control = buildPlannerVersionControlSummary({
+    versionPlan,
+    currentPlan,
+    versionControlState,
+    context,
+    appSlug,
+    versionId,
+    track: normalizeTrackAlias(flags.track) || (currentPlan ? currentPlan.track : null) || (appSlug ? "vibe_app_developer" : "framework_owner"),
+    plannerMode: normalizePlannerMode(normalizeTrackAlias(flags.track) || (currentPlan ? currentPlan.planner_mode : "vibe")),
+    sourceControl: currentPlan ? currentPlan.source_control || null : null
+  });
+  return {
+    report_type: "kvdf_viber_version_status",
+    generated_at: new Date().toISOString(),
+    track: control.track,
+    app: control.app,
+    versions: control.versions,
+    current_version: control.current_version || {},
+    next_version: control.next_version || {},
+    next_evolution: control.next_evolution || {},
+    publish_readiness: control.publish_readiness || {},
+    next_action: control.next_action || "Run kvdf planner pipeline --idea \"...\" --track vibe --json to generate a version plan."
+  };
+}
+
+function buildPlannerVersionNextReport(versionId, flags = {}, rest = [], deps = {}) {
+  const report = buildPlannerVersionStatusReport(versionId, flags, rest, deps);
+  return {
+    report_type: "kvdf_viber_next_version",
+    generated_at: report.generated_at,
+    app: report.app,
+    current_version: report.current_version || {},
+    next_version: report.next_version || {},
+    next_evolution: report.next_evolution || {},
+    next_task_punch: report.next_version && report.next_version.task_punch ? report.next_version.task_punch : {},
+    blocked: Boolean(report.publish_readiness && report.publish_readiness.status === "blocked"),
+    blockers: collectVersionBlockers(report.publish_readiness, report.current_version),
+    next_action: report.next_action
+  };
+}
+
+function buildPlannerVersionGateReport(versionId, flags = {}, rest = [], deps = {}) {
+  const gate = String(flags.gate || flags["version-gate"] || "all").trim().toLowerCase();
+  const statusReport = buildPlannerVersionStatusReport(versionId, flags, rest, deps);
+  const currentVersion = findVersionEntry(statusReport, versionId);
+  const gates = currentVersion ? {
+    docs: currentVersion.docs_gate || buildEmptyVersionGate("docs"),
+    evolution: currentVersion.evolution_gate || buildEmptyVersionGate("evolution"),
+    task: currentVersion.task_gate || buildEmptyVersionGate("task"),
+    validation: currentVersion.validation_gate || buildEmptyVersionGate("validation"),
+    security: currentVersion.security_gate || buildEmptyVersionGate("security"),
+    handoff: currentVersion.handoff_gate || buildEmptyVersionGate("handoff"),
+    publish: currentVersion.publish_gate || buildEmptyVersionGate("publish")
+  } : {
+    docs: buildEmptyVersionGate("docs"),
+    evolution: buildEmptyVersionGate("evolution"),
+    task: buildEmptyVersionGate("task"),
+    validation: buildEmptyVersionGate("validation"),
+    security: buildEmptyVersionGate("security"),
+    handoff: buildEmptyVersionGate("handoff"),
+    publish: buildEmptyVersionGate("publish")
+  };
+  const selectedGate = gate === "all" ? aggregateVersionGateStatus(gates) : (gates[gate] || buildEmptyVersionGate(gate));
+  return {
+    report_type: "kvdf_viber_version_gate",
+    generated_at: statusReport.generated_at,
+    app: statusReport.app,
+    version_id: versionId,
+    gate,
+    status: selectedGate.status || "unknown",
+    gates,
+    blockers: currentVersion ? [...(currentVersion.blockers || [])] : [],
+    warnings: currentVersion ? [...(currentVersion.warnings || [])] : [],
+    next_action: selectedGate.next_action || statusReport.next_action
+  };
+}
+
+function buildPlannerVersionPublishReadyReport(versionId, flags = {}, rest = [], deps = {}) {
+  const statusReport = buildPlannerVersionStatusReport(versionId, flags, rest, deps);
+  const currentVersion = findVersionEntry(statusReport, versionId);
+  const publishReadiness = currentVersion ? (currentVersion.publish_gate || buildEmptyVersionGate("publish")) : buildEmptyVersionGate("publish");
+  const status = publishReadiness.status === "blocked" ? "blocked" : publishReadiness.status === "pass" ? "ready" : "warning";
+  return {
+    report_type: "kvdf_viber_publish_readiness",
+    generated_at: statusReport.generated_at,
+    app: statusReport.app,
+    version_id: versionId,
+    status,
+    gates: currentVersion ? currentVersion : {},
+    blockers: collectVersionBlockers(publishReadiness, currentVersion),
+    warnings: collectVersionWarnings(publishReadiness, currentVersion),
+    publish_target: currentVersion && currentVersion.publish_target ? currentVersion.publish_target : inferPublishTarget(currentVersion, statusReport),
+    next_action: status === "ready" ? "Publishing is ready. Use an explicit external publish command or mark it published manually." : "Resolve the blocked gates before publishing."
+  };
+}
+
+function buildPlannerVersionMarkPublishedReport(versionId, flags = {}, rest = [], deps = {}) {
+  const note = String(flags.note || flags.message || rest.filter((item) => typeof item === "string" && !String(item).startsWith("--")).join(" ")).trim();
+  if (!note) throw new Error("Missing note for planner version mark-published.");
+  const force = resolveBooleanFlag(flags.force);
+  const readiness = buildPlannerVersionPublishReadyReport(versionId, flags, rest, deps);
+  if (readiness.status === "blocked" && !force) {
+    throw new Error(`Version ${versionId} is not publish-ready. Use --force to record the published state anyway.`);
+  }
+  const context = buildPlannerContext(deps);
+  const appSlug = normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || readiness.app || "");
+  const current = readPlannerVersionControlState(context.repo_root, appSlug);
+  const record = {
+    report_type: "kvdf_viber_version_published",
+    generated_at: new Date().toISOString(),
+    app: appSlug || readiness.app || null,
+    version_id: versionId,
+    status: "published",
+    published_at: new Date().toISOString(),
+    note,
+    force: Boolean(force),
+    publish_target: readiness.publish_target || "unknown",
+    next_action: "Update the dashboard and continue the next version."
+  };
+  current.app = record.app;
+  current.version_id = versionId;
+  current.status = "published";
+  current.published_at = record.published_at;
+  current.note = note;
+  current.force = Boolean(force);
+  current.publish_target = record.publish_target;
+  current.latest_record = record;
+  savePlannerVersionControlState(context.repo_root, appSlug, current);
+  return record;
+}
+
+function buildPlannerVersionControlSummary({ versionPlan = {}, currentPlan = null, versionControlState = null, context = {}, appSlug = "", versionId = "", track = "vibe_app_developer", plannerMode = "vibe", sourceControl = null } = {}) {
+  const versions = Array.isArray(versionPlan.versions) ? versionPlan.versions.map((version, index) => buildPlannerVersionEntry(version, {
+    index,
+    currentPlan,
+    context,
+    sourceControl,
+    appSlug,
+    versionControlState
+  })) : [];
+  const stateCurrentId = versionControlState && (versionControlState.version_id || versionControlState.current_version_id || versionControlState.current_version && versionControlState.current_version.version_id) || null;
+  const currentVersion = stateCurrentId ? versions.find((item) => item.version_id === stateCurrentId) : versions[0] || null;
+  const nextVersion = currentVersion ? versions[versions.findIndex((item) => item.version_id === currentVersion.version_id) + 1] || null : versions[0] || null;
+  const nextEvolution = nextVersion && nextVersion.evolution ? nextVersion.evolution : (currentVersion && currentVersion.evolution ? currentVersion.evolution : null);
+  const publishReadiness = currentVersion ? currentVersion.publish_gate || buildEmptyVersionGate("publish") : buildEmptyVersionGate("publish");
+  const latestFeedback = readPlannerLatestFeedback(context.repo_root, appSlug);
+  return {
+    report_type: "kvdf_viber_version_control",
+    generated_at: new Date().toISOString(),
+    app: appSlug || versionControlState && versionControlState.app || null,
+    track,
+    planner_mode: plannerMode,
+    planning_method: currentPlan ? currentPlan.planning_method || null : null,
+    source_control_mode: sourceControl ? sourceControl.mode || null : null,
+    versions,
+    current_version: currentVersion || null,
+    next_version: nextVersion || null,
+    next_evolution: nextEvolution || null,
+    publish_readiness: publishReadiness,
+    latest_feedback: latestFeedback,
+    next_action: currentVersion ? currentVersion.next_action || publishReadiness.next_action || "Review the current version gates." : "Create or approve a Viber app version plan."
+  };
+}
+
+function buildPlannerVersionEntry(version = {}, options = {}) {
+  const currentPlan = options.currentPlan || null;
+  const context = options.context || {};
+  const sourceControl = options.sourceControl || null;
+  const versionControlState = options.versionControlState || null;
+  const versionPlanItem = version || {};
+  const docsStatus = currentPlan && currentPlan.docs_status ? currentPlan.docs_status : null;
+  const tasks = versionPlanItem.task_punch && Array.isArray(versionPlanItem.task_punch.tasks) ? versionPlanItem.task_punch.tasks : [];
+  const taskIds = tasks.map((task) => task.id).filter(Boolean);
+  const evolution = versionPlanItem.evolution || (Array.isArray(versionPlanItem.included_evolutions) && versionPlanItem.included_evolutions.length ? { evolution_id: versionPlanItem.included_evolutions[0], title: versionPlanItem.title } : null);
+  const docsGate = buildVersionGateState("docs", {
+    required: true,
+    evidence: docsStatus ? [docsStatus.status || "planned"] : [],
+    blockers: docsStatus && docsStatus.status === "missing" ? ["documentation missing"] : [],
+    warnings: docsStatus && ["planned", "generated"].includes(docsStatus.status) ? ["docs not yet applied"] : [],
+    next_action: docsStatus && docsStatus.next_action ? docsStatus.next_action : "Generate and apply the required docs."
+  });
+  const evolutionGate = buildVersionGateState("evolution", {
+    required: true,
+    evidence: evolution ? [evolution.evolution_id || versionPlanItem.version_id] : [],
+    blockers: evolution ? [] : ["missing evolution"],
+    warnings: [],
+    next_action: evolution ? "Keep the current evolution in sync with the version." : "Create the first evolution for this version."
+  });
+  const taskGate = buildVersionTaskGate(versionPlanItem, context, taskIds);
+  const validationGate = buildVersionGateState("validation", {
+    required: true,
+    evidence: Array.isArray(versionPlanItem.validation_commands) ? versionPlanItem.validation_commands : [],
+    blockers: [],
+    warnings: Array.isArray(versionPlanItem.validation_commands) && versionPlanItem.validation_commands.length ? ["validation evidence not recorded yet"] : ["no validation commands recorded"],
+    next_action: "Run the validation commands and capture the result."
+  });
+  const securityGate = buildVersionSecurityGate(versionPlanItem, options);
+  const handoffGate = buildVersionHandoffGate(versionPlanItem, options);
+  const publishGate = buildVersionPublishGate(versionPlanItem, { docsGate, evolutionGate, taskGate, validationGate, securityGate, handoffGate, sourceControl, versionControlState });
+  const blockers = collectVersionBlockers(publishGate, { version_id: versionPlanItem.version_id, title: versionPlanItem.title });
+  const warnings = collectVersionWarnings(publishGate, { version_id: versionPlanItem.version_id, title: versionPlanItem.title });
+  const status = deriveVersionStatus({
+    versionPlanItem,
+    docsGate,
+    evolutionGate,
+    taskGate,
+    validationGate,
+    securityGate,
+    handoffGate,
+    publishGate,
+    currentPlan,
+    versionControlState
+  });
+  return {
+    version_id: versionPlanItem.version_id || "",
+    title: versionPlanItem.title || "",
+    app: options.appSlug || null,
+    track: currentPlan ? currentPlan.track || null : null,
+    planning_method: currentPlan ? currentPlan.planning_method || null : null,
+    status,
+    source_control_mode: versionPlanItem.source_control_mode || sourceControl && sourceControl.mode || null,
+    included_evolutions: Array.isArray(versionPlanItem.included_evolutions) ? [...versionPlanItem.included_evolutions] : [],
+    task_ids: [...taskIds],
+    docs_gate: docsGate,
+    evolution_gate: evolutionGate,
+    task_gate: taskGate,
+    validation_gate: validationGate,
+    security_gate: securityGate,
+    handoff_gate: handoffGate,
+    publish_gate: publishGate,
+    blockers,
+    warnings,
+    next_action: versionPlanItem.next_action || publishGate.next_action || "Review the version gates and continue."
+  };
+}
+
+function buildVersionGateState(name, data = {}) {
+  const status = String(data.status || (data.blockers && data.blockers.length ? "blocked" : data.warnings && data.warnings.length ? "warning" : "unknown")).toLowerCase();
+  return {
+    gate: name,
+    status,
+    required: data.required !== false,
+    evidence: Array.isArray(data.evidence) ? [...data.evidence] : [],
+    blockers: Array.isArray(data.blockers) ? [...data.blockers] : [],
+    warnings: Array.isArray(data.warnings) ? [...data.warnings] : [],
+    next_action: data.next_action || "Review the gate."
+  };
+}
+
+function buildVersionTaskGate(versionPlanItem, context, taskIds = []) {
+  const tasks = Array.isArray(context.task_state && context.task_state.tasks) ? context.task_state.tasks : [];
+  const relatedEvolutionId = versionPlanItem.evolution && versionPlanItem.evolution.evolution_id ? versionPlanItem.evolution.evolution_id : null;
+  const related = taskIds.length ? tasks.filter((task) => taskIds.includes(task.id) || (relatedEvolutionId && task.evolution_change_id === relatedEvolutionId)) : [];
+  if (!related.length) {
+    return buildVersionGateState("task", {
+      required: true,
+      status: "warning",
+      evidence: [],
+      warnings: ["task punch has not been recorded yet"],
+      next_action: "Create and execute the task punch for this version."
+    });
+  }
+  const inProgress = related.filter((task) => ["assigned", "in_progress", "review"].includes(String(task.status || "").toLowerCase()));
+  const complete = related.filter((task) => ["owner_verified", "done", "closed", "completed"].includes(String(task.status || "").toLowerCase()));
+  if (inProgress.length) {
+    return buildVersionGateState("task", {
+      required: true,
+      evidence: related.map((task) => `${task.id}:${task.status}`),
+      warnings: inProgress.map((task) => `${task.id} is ${task.status}`),
+      next_action: "Finish or verify the remaining task slices."
+    });
+  }
+  if (complete.length === related.length) {
+    return buildVersionGateState("task", {
+      required: true,
+      status: "pass",
+      evidence: related.map((task) => `${task.id}:${task.status}`),
+      next_action: "Task gate passed."
+    });
+  }
+  return buildVersionGateState("task", {
+    required: true,
+    evidence: related.map((task) => `${task.id}:${task.status}`),
+    warnings: ["task evidence exists but is not fully complete"],
+    next_action: "Resolve the remaining task statuses."
+  });
+}
+
+function buildVersionSecurityGate(versionPlanItem, options = {}) {
+  const securityGateState = options.securityGateState || readJsonFileIfExists(path.join(options.context ? options.context.repo_root : process.cwd(), ".kabeeri", "security", "security_gate_state.json"));
+  if (securityGateState && securityGateState.status) {
+    return buildVersionGateState("security", {
+      required: true,
+      status: securityGateState.status,
+      evidence: [securityGateState.next_action || securityGateState.status],
+      blockers: securityGateState.status === "blocked" ? [securityGateState.next_action || "Security gate blocked"] : [],
+      warnings: securityGateState.status === "warning" ? [securityGateState.next_action || "Security gate warning"] : [],
+      next_action: securityGateState.next_action || "Review the security gate."
+    });
+  }
+  return buildVersionGateState("security", {
+    required: false,
+    status: "not_applicable",
+    evidence: ["No security gate state found."],
+    next_action: "No security gate evidence is recorded."
+  });
+}
+
+function buildVersionHandoffGate(versionPlanItem, options = {}) {
+  const handoffState = options.handoffState || readJsonFileIfExists(path.join(options.context ? options.context.repo_root : process.cwd(), ".kabeeri", "handoff", "packages.json"));
+  const hasEvidence = Boolean(handoffState && ((Array.isArray(handoffState.packages) && handoffState.packages.length) || (handoffState.current && handoffState.current.package_id)));
+  if (hasEvidence || (versionPlanItem && versionPlanItem.version_id)) {
+    return buildVersionGateState("handoff", {
+      required: true,
+      status: hasEvidence ? "pass" : "warning",
+      evidence: hasEvidence ? ["handoff evidence available"] : ["handoff package not recorded"],
+      warnings: hasEvidence ? [] : ["handoff readiness not yet recorded"],
+      next_action: hasEvidence ? "Handoff gate passed." : "Prepare the handoff package."
+    });
+  }
+  return buildVersionGateState("handoff", {
+    required: true,
+    status: "warning",
+    evidence: [],
+    warnings: ["handoff package missing"],
+    next_action: "Create the handoff package before publishing."
+  });
+}
+
+function buildVersionPublishGate(versionPlanItem, options = {}) {
+  const gates = [options.docsGate, options.evolutionGate, options.taskGate, options.validationGate, options.securityGate, options.handoffGate].filter(Boolean);
+  const blockers = gates.flatMap((gate) => gate.blockers || []);
+  const warnings = gates.flatMap((gate) => gate.warnings || []);
+  const mode = options.sourceControl ? String(options.sourceControl.mode || "").toLowerCase() : "";
+  const publishTarget = mode === "direct_main" ? "github_release" : mode === "branch_pr" ? "custom" : "local_handoff";
+  if (blockers.length) {
+    return buildVersionGateState("publish", {
+      required: true,
+      status: "blocked",
+      evidence: gates.map((gate) => `${gate.gate}:${gate.status}`),
+      blockers,
+      warnings,
+      next_action: "Resolve the blocked gates before publishing."
+    });
+  }
+  if (warnings.length) {
+    return buildVersionGateState("publish", {
+      required: true,
+      status: "warning",
+      evidence: gates.map((gate) => `${gate.gate}:${gate.status}`),
+      blockers: [],
+      warnings,
+      next_action: "Review the warnings before publishing."
+    });
+  }
+  return buildVersionGateState("publish", {
+    required: true,
+    status: "pass",
+    evidence: gates.map((gate) => `${gate.gate}:${gate.status}`),
+    next_action: publishTarget === "github_release" ? "Publish externally only when explicitly approved." : "Record the local handoff before the next version."
+  });
+}
+
+function buildEmptyVersionGate(name) {
+  return buildVersionGateState(name, { status: "unknown", required: true, evidence: [], blockers: [], warnings: [], next_action: "Review the gate." });
+}
+
+function deriveVersionStatus({ docsGate, evolutionGate, taskGate, validationGate, securityGate, handoffGate, publishGate, currentPlan, versionControlState }) {
+  const explicit = versionControlState && String(versionControlState.status || "").toLowerCase();
+  if (explicit === "published") return "published";
+  const gates = [docsGate, evolutionGate, taskGate, validationGate, securityGate, handoffGate, publishGate];
+  if (gates.some((gate) => gate && gate.status === "blocked")) return "blocked";
+  if (publishGate && publishGate.status === "pass") return "publish_ready";
+  if (handoffGate && handoffGate.status === "pass") return "handoff_ready";
+  if (securityGate && securityGate.status === "pass") return "security_passed";
+  if (validationGate && validationGate.status === "pass") return "validated";
+  if (taskGate && taskGate.status === "pass") return "tasks_done";
+  if (taskGate && ["warning", "pass"].includes(taskGate.status) && taskGate.evidence && taskGate.evidence.some((item) => /assigned|in_progress|review/.test(item))) return "in_progress";
+  if (currentPlan && String(currentPlan.status || "").toLowerCase() === "approved") return "approved";
+  if (docsGate && ["pass", "warning"].includes(docsGate.status)) return "docs_ready";
+  return "planned";
+}
+
+function aggregateVersionGateStatus(gates = {}) {
+  const values = Object.values(gates).filter(Boolean);
+  if (values.some((gate) => gate.status === "blocked")) return buildVersionGateState("all", { status: "blocked", blockers: collectVersionBlockers(null, null, values) });
+  if (values.some((gate) => gate.status === "warning")) return buildVersionGateState("all", { status: "warning", warnings: collectVersionWarnings(null, null, values) });
+  if (values.every((gate) => gate.status === "pass")) return buildVersionGateState("all", { status: "pass", evidence: values.flatMap((gate) => gate.evidence || []) });
+  return buildVersionGateState("all", { status: "unknown" });
+}
+
+function collectVersionBlockers(gate, currentVersion, gates = []) {
+  if (Array.isArray(gates) && gates.length) return gates.flatMap((item) => item.blockers || []);
+  return [...(gate && gate.blockers ? gate.blockers : []), ...(currentVersion && currentVersion.blockers ? currentVersion.blockers : [])];
+}
+
+function collectVersionWarnings(gate, currentVersion, gates = []) {
+  if (Array.isArray(gates) && gates.length) return gates.flatMap((item) => item.warnings || []);
+  return [...(gate && gate.warnings ? gate.warnings : []), ...(currentVersion && currentVersion.warnings ? currentVersion.warnings : [])];
+}
+
+function inferPublishTarget(currentVersion, report) {
+  const mode = report && report.source_control_mode ? String(report.source_control_mode).toLowerCase() : "";
+  if (mode === "direct_main") return "github_release";
+  if (mode === "branch_pr") return "custom";
+  return "local_handoff";
+}
+
+function findVersionEntry(report, versionId) {
+  if (!report || !Array.isArray(report.versions)) return null;
+  const id = normalizeVersionId(versionId);
+  if (id) return report.versions.find((version) => normalizeVersionId(version.version_id) === id) || null;
+  return report.current_version || report.versions[0] || null;
+}
+
+function normalizeVersionId(value) {
+  return String(value || "").trim();
+}
+
+function buildPlannerVersionFilePath(repoRootPath, appSlug) {
+  const slug = normalizeAppSlug(appSlug || "app-draft");
+  return path.join(repoRootPath || process.cwd(), "workspaces", "apps", slug, ".kabeeri", "version_control.json");
+}
+
+function readPlannerVersionControlState(repoRootPath, appSlug) {
+  const appPath = buildPlannerVersionFilePath(repoRootPath, appSlug);
+  const rootPath = path.join(repoRootPath || process.cwd(), ".kabeeri", "version_control.json");
+  const filePath = fs.existsSync(appPath) ? appPath : rootPath;
+  return readJsonFileIfExists(filePath) || { report_type: "kvdf_viber_version_control", versions: [] };
+}
+
+function savePlannerVersionControlState(repoRootPath, appSlug, state) {
+  const filePath = buildPlannerVersionFilePath(repoRootPath, appSlug);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+  const rootPath = path.join(repoRootPath || process.cwd(), ".kabeeri", "version_control.json");
+  fs.mkdirSync(path.dirname(rootPath), { recursive: true });
+  fs.writeFileSync(rootPath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
+}
+
+function readPlannerLatestFeedback(repoRootPath, appSlug) {
+  const feedbackDir = path.join(repoRootPath || process.cwd(), ".kabeeri", "reports");
+  if (!fs.existsSync(feedbackDir)) return null;
+  const files = fs.readdirSync(feedbackDir).filter((file) => /^planner_feedback_.+\.json$/i.test(file)).sort().reverse();
+  if (!files.length) return null;
+  return readJsonFileIfExists(path.join(feedbackDir, files[0]));
+}
+
+function buildPlannerFeedbackCommandReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const plannerState = loadPlannerState(context.repo_root);
+  const currentPlan = isFromCurrentPlan(flags) ? findCurrentPlannerPlan(plannerState) : findPlannerPlan(plannerState, flags.plan || flags.plan_id || value);
+  const planId = currentPlan ? currentPlan.plan_id : normalizeVersionId(flags.plan || flags.plan_id || value || "feedback");
+  const summary = String(flags.summary || flags.message || rest.filter((item) => typeof item === "string" && !String(item).startsWith("--")).join(" ")).trim();
+  const checks = String(flags.checks || flags["check"] || "").split(",").map((item) => item.trim()).filter(Boolean);
+  const status = String(flags.status || "warning").toLowerCase();
+  const changedFiles = String(flags.changed_files || flags["changed-files"] || "").split(",").map((item) => item.trim()).filter(Boolean);
+  const docsUpdated = String(flags.docs_updated || flags["docs-updated"] || "").split(",").map((item) => item.trim()).filter(Boolean);
+  const tasksAffected = String(flags.tasks || flags["tasks-affected"] || "").split(",").map((item) => item.trim()).filter(Boolean);
+  const feedbackId = `planner-feedback-${Date.now()}`;
+  const record = {
+    report_type: "kvdf_planner_execution_feedback",
+    generated_at: new Date().toISOString(),
+    plan_id: planId,
+    status: ["pass", "warning", "blocked"].includes(status) ? status : "warning",
+    executor: String(flags.executor || flags.by || "manual").trim().toLowerCase(),
+    summary,
+    checks,
+    changed_files: changedFiles,
+    check_results: Array.isArray(flags.check_results) ? flags.check_results : [],
+    docs_updated: docsUpdated,
+    tasks_affected: tasksAffected,
+    evolution_affected: flags.evolution || flags.evolution_id || null,
+    stop_condition_met: resolveBooleanFlag(flags["stop-condition-met"] || flags.stop_condition_met),
+    next_action: flags.next_action || "Review the feedback and continue with the next governed action."
+  };
+  const reportPath = path.join(context.repo_root, ".kabeeri", "reports", `${feedbackId}.json`);
+  fs.mkdirSync(path.dirname(reportPath), { recursive: true });
+  fs.writeFileSync(reportPath, `${JSON.stringify(record, null, 2)}\n`, "utf8");
+  if (plannerState) {
+    plannerState.latest_feedback = record;
+    if (currentPlan) currentPlan.latest_feedback = record;
+    savePlannerState(context.repo_root, plannerState);
+  }
+  return record;
+}
 function escapeHtml(value) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")

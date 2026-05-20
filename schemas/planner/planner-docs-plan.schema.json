@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Planner Docs Plan",
+  "type": "object",
+  "required": ["report_type", "planner_mode", "track", "planning_method", "docs"],
+  "properties": {
+    "report_type": { "const": "kvdf_planner_docs_plan" },
+    "planner_mode": { "type": "string" },
+    "track": { "type": "string" },
+    "planning_method": { "type": "string" },
+    "idea": { "type": "string" },
+    "app": { "type": ["string", "null"] },
+    "plugin": { "type": ["string", "null"] },
+    "folder_categories": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "docs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/doc" }
+    }
+  },
+  "$defs": {
+    "doc": {
+      "type": "object",
+      "required": ["doc_id", "title", "path", "category", "pipeline_stage", "status"],
+      "properties": {
+        "doc_id": { "type": "string" },
+        "title": { "type": "string" },
+        "path": { "type": "string" },
+        "category": { "type": "string" },
+        "pipeline_stage": { "type": "string" },
+        "status": { "type": "string" },
+        "required": { "type": "boolean" },
+        "relevant": { "type": "boolean" },
+        "applied": { "type": "boolean" },
+        "implemented": { "type": "boolean" },
+        "review_required": { "type": "boolean" },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    }
+  }
+}
+
