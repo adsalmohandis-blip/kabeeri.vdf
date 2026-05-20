@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KVDOS Development Visual Diagrams</title>
+  <style>
+    :root{
+      --bg:#07111f;
+      --panel:#101d34;
+      --panel2:#152546;
+      --line:#2a3b5d;
+      --text:#ecf2ff;
+      --muted:#a7b6d3;
+      --accent:#67e8f9;
+      --accent2:#a78bfa;
+      --ok:#4ade80;
+      --warn:#fbbf24;
+      --bad:#fb7185;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      padding:28px;
+      color:var(--text);
+      background:
+        radial-gradient(circle at 12% 0%, rgba(103,232,249,.13), transparent 24%),
+        radial-gradient(circle at 86% 8%, rgba(167,139,250,.16), transparent 22%),
+        linear-gradient(180deg, #06101d 0%, #091425 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    .wrap{max-width:1480px;margin:0 auto}
+    .hero{
+      display:grid;
+      grid-template-columns:1.7fr .95fr;
+      gap:18px;
+      margin-bottom:18px;
+    }
+    .card{
+      background:rgba(16,29,52,.94);
+      border:1px solid rgba(167,182,211,.16);
+      border-radius:20px;
+      box-shadow:0 24px 70px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .hero-main{padding:28px}
+    .eyebrow{
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(103,232,249,.08);
+      color:var(--accent);
+      font-size:.82rem;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    h1{
+      margin:14px 0 10px;
+      font-size:2.5rem;
+      line-height:1.04;
+      letter-spacing:-.04em;
+    }
+    .lede{margin:0;color:var(--muted);max-width:920px;line-height:1.6}
+    .chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+    .chip{
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(21,37,70,.92);
+      border:1px solid rgba(167,182,211,.12);
+      font-size:.88rem;
+    }
+    .hero-side{
+      display:grid;
+      grid-template-rows:repeat(4,1fr);
+      gap:12px;
+    }
+    .metric{padding:18px;min-height:100px;display:flex;flex-direction:column;justify-content:space-between}
+    .metric .label{color:var(--muted);font-size:.84rem}
+    .metric .value{font-size:1.14rem;font-weight:700;margin-top:6px;line-height:1.35}
+    .metric .sub{color:var(--muted);font-size:.88rem;line-height:1.4;margin-top:6px}
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(12,1fr);
+      gap:18px;
+    }
+    .section{padding:22px}
+    .section h2{margin:0 0 12px;font-size:1.16rem;letter-spacing:-.02em}
+    .section p{margin:0;color:var(--muted);line-height:1.6}
+    .full{grid-column:1/-1}
+    .span-6{grid-column:span 6}
+    .span-7{grid-column:span 7}
+    .span-5{grid-column:span 5}
+    .section-note{margin-top:6px;color:var(--muted);font-size:.92rem}
+
+    .flow{
+      display:grid;
+      grid-template-columns:1fr 52px 1fr 52px 1fr 52px 1fr;
+      gap:12px;
+      align-items:center;
+      margin-top:16px;
+    }
+    .node{
+      padding:16px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(21,37,70,.96), rgba(16,29,52,.96));
+      border:1px solid rgba(167,182,211,.12);
+      min-height:118px;
+    }
+    .node b{display:block;margin-bottom:7px;font-size:.98rem}
+    .node span{display:block;color:var(--muted);line-height:1.5;font-size:.9rem}
+    .arrow{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:var(--accent);
+      font-size:1.7rem;
+      opacity:.92;
+    }
+    .lane-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .lane{
+      padding:15px;
+      border-radius:16px;
+      background:rgba(21,37,70,.74);
+      border:1px solid rgba(167,182,211,.12);
+    }
+    .lane .k{font-size:.82rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+    .lane .v{font-size:1.02rem;font-weight:700;margin-top:7px;line-height:1.35}
+    .lane .d{color:var(--muted);margin-top:8px;font-size:.9rem;line-height:1.45}
+
+    .roadmap{
+      display:grid;
+      gap:12px;
+      margin-top:14px;
+    }
+    .roadstep{
+      display:grid;
+      grid-template-columns:110px 1fr 180px;
+      gap:12px;
+      align-items:stretch;
+    }
+    .code{
+      padding:16px;
+      border-radius:16px;
+      background:rgba(103,232,249,.08);
+      border:1px solid rgba(103,232,249,.16);
+      color:var(--accent);
+      text-align:center;
+      font-weight:800;
+      letter-spacing:.02em;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height:78px;
+    }
+    .step{
+      padding:16px;
+      border-radius:16px;
+      background:rgba(21,37,70,.78);
+      border:1px solid rgba(167,182,211,.12);
+    }
+    .step b{display:block;margin-bottom:6px}
+    .step span{display:block;color:var(--muted);line-height:1.45}
+    .tag{
+      padding:16px;
+      border-radius:16px;
+      background:rgba(21,37,70,.64);
+      border:1px solid rgba(167,182,211,.12);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      color:var(--muted);
+      font-size:.92rem;
+      line-height:1.4;
+    }
+
+    .state-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:12px;
+      margin-top:14px;
+    }
+    .state{
+      padding:14px;
+      border-radius:16px;
+      background:rgba(21,37,70,.74);
+      border:1px solid rgba(167,182,211,.12);
+      min-height:110px;
+    }
+    .state .k{color:var(--muted);font-size:.82rem;text-transform:uppercase;letter-spacing:.04em}
+    .state .v{font-size:1rem;font-weight:700;margin-top:7px;line-height:1.4}
+    .state .d{color:var(--muted);margin-top:8px;font-size:.88rem;line-height:1.45}
+    .ok .v{color:var(--ok)}
+    .warn .v{color:var(--warn)}
+    .bad .v{color:var(--bad)}
+
+    .matrix{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:12px;
+      margin-top:14px;
+    }
+    .matrix-card{
+      padding:16px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(21,37,70,.95), rgba(16,29,52,.95));
+      border:1px solid rgba(167,182,211,.12);
+    }
+    .matrix-card .title{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:10px;
+      font-weight:700;
+    }
+    .badge{
+      padding:5px 9px;
+      border-radius:999px;
+      background:rgba(103,232,249,.08);
+      border:1px solid rgba(103,232,249,.16);
+      color:var(--accent);
+      font-size:.78rem;
+      white-space:nowrap;
+    }
+    .bullet{
+      margin:0;
+      padding-left:18px;
+      color:var(--muted);
+      line-height:1.55;
+    }
+    .bullet li{margin:6px 0}
+
+    .footer{
+      margin-top:18px;
+      color:var(--muted);
+      font-size:.84rem;
+      text-align:right;
+    }
+    @media (max-width: 1180px){
+      .hero{grid-template-columns:1fr}
+      .flow{grid-template-columns:1fr;gap:10px}
+      .arrow{transform:rotate(90deg);min-height:20px}
+      .span-6,.span-7,.span-5{grid-column:1/-1}
+      .state-grid,.matrix{grid-template-columns:repeat(2,1fr)}
+      .roadstep{grid-template-columns:90px 1fr}
+      .tag{grid-column:1/-1}
+    }
+    @media (max-width: 720px){
+      body{padding:16px}
+      h1{font-size:1.82rem}
+      .state-grid,.matrix{grid-template-columns:1fr}
+      .roadstep{grid-template-columns:1fr}
+      .code,.tag{min-height:auto}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <div class="card hero-main">
+        <div class="eyebrow">KVDOS visual report</div>
+        <h1>KVDOS development, shown as diagrams</h1>
+        <p class="lede">
+          This version of the report turns the KVDOS story into visual blocks: product boundary, publish path,
+          implementation evidence, current-state gaps, and the missing evo ledger.
+        </p>
+        <div class="chips">
+          <span class="chip">SaaS + Local Runner + Enterprise</span>
+          <span class="chip">app.kvdos.yaml source of truth</span>
+          <span class="chip">.kvdos runtime state</span>
+          <span class="chip">desktop verification passed</span>
+          <span class="chip">no KVDOS evo ledger found here</span>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="card metric">
+          <div class="label">Product model</div>
+          <div class="value">SaaS + Local Runner + Enterprise</div>
+          <div class="sub">The commercial shape described by the KVDOS spec.</div>
+        </div>
+        <div class="card metric">
+          <div class="label">Source of truth</div>
+          <div class="value">app.kvdos.yaml</div>
+          <div class="sub">KVDOS is spec-driven, not `.kabeeri/` driven.</div>
+        </div>
+        <div class="card metric">
+          <div class="label">Runtime state</div>
+          <div class="value">.kvdos/</div>
+          <div class="sub">Commercial runtime state is rooted separately from KVDF.</div>
+        </div>
+        <div class="card metric">
+          <div class="label">Desktop status</div>
+          <div class="value">Launch verified</div>
+          <div class="sub">The repaired Windows toolchain runs `KVDOS Desktop.exe`.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card section full">
+        <h2>1) KVDOS boundary diagram</h2>
+        <div class="section-note">The commercial product is centered on the CLI and spec file, then expands into the product surfaces and commercial controls.</div>
+        <div class="flow">
+          <div class="node">
+            <b>kvdos CLI</b>
+            <span>User entrypoint, product commands, and local execution surface.</span>
+          </div>
+          <div class="arrow">-&gt;</div>
+          <div class="node">
+            <b>app.kvdos.yaml</b>
+            <span>Source of truth for product definition, behavior, and packaging metadata.</span>
+          </div>
+          <div class="arrow">-&gt;</div>
+          <div class="node">
+            <b>Core runtime</b>
+            <span>State, workflow orchestration, agents, approvals, quality gates, and sandboxing.</span>
+          </div>
+          <div class="arrow">-&gt;</div>
+          <div class="node">
+            <b>Commercial surfaces</b>
+            <span>Studio, Runner, Cloud, licensing, subscriptions, registry, marketplace, enterprise.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section span-6">
+        <h2>2) Planned from scratch to publish</h2>
+        <div class="roadmap">
+          <div class="roadstep">
+            <div class="code">01</div>
+            <div class="step">
+              <b>Boundary and naming</b>
+              <span>Lock KVDOS as a distinct commercial product with its own runtime root, spec file, and CLI identity.</span>
+            </div>
+            <div class="tag">definition phase</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">02</div>
+            <div class="step">
+              <b>Core platform</b>
+              <span>Build the contract layer, orchestrator, task control plane, and agent execution model.</span>
+            </div>
+            <div class="tag">architecture phase</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">03</div>
+            <div class="step">
+              <b>Product surfaces</b>
+              <span>Ship Studio, Runner, and Cloud so the same system works locally and in hosted mode.</span>
+            </div>
+            <div class="tag">experience phase</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">04</div>
+            <div class="step">
+              <b>Commercial controls</b>
+              <span>Add licensing, subscriptions, registry, marketplace, and enterprise governance.</span>
+            </div>
+            <div class="tag">monetization phase</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">05</div>
+            <div class="step">
+              <b>Publishability</b>
+              <span>Validate packaging, launchability, repeatable release checks, and operational docs.</span>
+            </div>
+            <div class="tag">release phase</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section span-6">
+        <h2>3) Implemented already</h2>
+        <div class="lane-grid">
+          <div class="lane">
+            <div class="k">docs</div>
+            <div class="v">Boundary docs exist</div>
+            <div class="d">KVDOS relationship and open-core strategy are documented.</div>
+          </div>
+          <div class="lane">
+            <div class="k">spec</div>
+            <div class="v">Technical spec exists</div>
+            <div class="d">The full KVDOS technical specification defines the commercial model.</div>
+          </div>
+          <div class="lane">
+            <div class="k">toolchain</div>
+            <div class="v">Windows build path verified</div>
+            <div class="d">The repaired Visual Studio / MSVC environment passes verification.</div>
+          </div>
+          <div class="lane">
+            <div class="k">desktop</div>
+            <div class="v">Executable launches</div>
+            <div class="d">`KVDOS Desktop.exe` opens the read-only preview UI successfully.</div>
+          </div>
+          <div class="lane">
+            <div class="k">roadmap</div>
+            <div class="v">Packaging milestones documented</div>
+            <div class="d">Milestones `v1.7` through `v1.9.2` are already described.</div>
+          </div>
+          <div class="lane">
+            <div class="k">boundary</div>
+            <div class="v">KVDOS separated from KVDF</div>
+            <div class="d">The repo documents that KVDOS is commercial and separate from the open-core side.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section full">
+        <h2>4) Current state snapshot</h2>
+        <div class="section-note">Green is verified, amber is present but incomplete, and red is still missing in this workspace.</div>
+        <div class="state-grid">
+          <div class="state ok">
+            <div class="k">product definition</div>
+            <div class="v">Defined</div>
+            <div class="d">KVDOS is framed as a separate commercial product.</div>
+          </div>
+          <div class="state ok">
+            <div class="k">desktop launch</div>
+            <div class="v">Verified</div>
+            <div class="d">Executable launch and preview UI are confirmed.</div>
+          </div>
+          <div class="state warn">
+            <div class="k">workspace linkage</div>
+            <div class="v">No live KVDOS repo here</div>
+            <div class="d">This workspace only contains KVDOS docs and evidence.</div>
+          </div>
+          <div class="state warn">
+            <div class="k">evolution ledger</div>
+            <div class="v">Missing</div>
+            <div class="d">No KVDOS evo queue or `evo-*` catalog was found here.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section full">
+        <h2>5) Next versions, evolutions, and task punches</h2>
+        <div class="section-note">GitHub history now confirms that `v1.11` and `v1.11.1` are complete, so `v1.11.2` is the next candidate slice rather than a stale next-step guess.</div>
+        <div class="roadmap">
+          <div class="roadstep">
+            <div class="code">v1.9.2</div>
+            <div class="step">
+              <b>Evolution: Windows architecture / target diagnosis</b>
+              <span>Inspect host and target settings, artifact headers, and build output to explain the launch failure.</span>
+            </div>
+            <div class="tag">done as forensic work</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.9.3</div>
+            <div class="step">
+              <b>Evolution: artifact path fix</b>
+              <span>Rebuild cleanly, inspect the release tree, and confirm whether a launchable executable exists.</span>
+            </div>
+            <div class="tag">blocked</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.9.4</div>
+            <div class="step">
+              <b>Evolution: Cargo vs Tauri output comparison</b>
+              <span>Compare direct Cargo output with Tauri-wrapped output to isolate the bad binary source.</span>
+            </div>
+            <div class="tag">blocked</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.9.5</div>
+            <div class="step">
+              <b>Evolution: app binary target repair</b>
+              <span>Restore a valid PE executable that starts with `MZ` and launches cleanly on Windows.</span>
+            </div>
+            <div class="tag">blocked</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.10</div>
+            <div class="step">
+              <b>Evolution: portable preview packaging</b>
+              <span>Define artifact handling, CI trust boundaries, and the rules for sharing preview builds.</span>
+            </div>
+            <div class="tag">done</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.11</div>
+            <div class="step">
+              <b>Evolution: installer vs portable decision</b>
+              <span>Completed. The distribution model now prefers the temporary GitHub Actions artifact for internal / Owner preview only.</span>
+            </div>
+            <div class="tag">done</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.11.1</div>
+            <div class="step">
+              <b>Evolution: Owner Preview launch validation</b>
+              <span>Completed. The repaired local Windows preview launches successfully and remains read-only.</span>
+            </div>
+            <div class="tag">done</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.11.2</div>
+            <div class="step">
+              <b>Evolution: internal portable preview artifact workflow</b>
+              <span>Use the CI artifact for internal preview validation while installer, signing, and auto-updater work stay deferred.</span>
+            </div>
+            <div class="tag">next candidate</div>
+          </div>
+          <div class="roadstep">
+            <div class="code">v1.12</div>
+            <div class="step">
+              <b>Evolution: signing and update planning</b>
+              <span>Prepare code-signing and update strategy before any beta distribution claim.</span>
+            </div>
+            <div class="tag">planned</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section span-7">
+        <h2>6) What is still missing for a real publish path</h2>
+        <div class="matrix">
+          <div class="matrix-card">
+            <div class="title">Core runtime <span class="badge">not in workspace</span></div>
+            <ul class="bullet">
+              <li>Live KVDOS runtime repository</li>
+              <li>Task queue and execution state</li>
+              <li>Current release automation</li>
+            </ul>
+          </div>
+          <div class="matrix-card">
+            <div class="title">Commercial stack <span class="badge">not built here</span></div>
+            <ul class="bullet">
+              <li>Licensing and subscriptions</li>
+              <li>Registry / marketplace</li>
+              <li>Enterprise feature controls</li>
+            </ul>
+          </div>
+          <div class="matrix-card">
+            <div class="title">Operational readiness <span class="badge">partial</span></div>
+            <ul class="bullet">
+              <li>Repeatable release pipeline</li>
+              <li>Production observability</li>
+              <li>Published operating docs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card section span-5">
+        <h2>7) Evo / punch note</h2>
+        <p>
+          No live KVDOS evo ledger is available in this workspace, so the report cannot show runtime `evo-*`
+          identifiers without inventing them. The GitHub-backed roadmap evidence is the reliable source for the
+          current next slice.
+        </p>
+        <div class="lane-grid">
+          <div class="lane">
+            <div class="k">ledger</div>
+            <div class="v">Not live here</div>
+            <div class="d">No active KVDOS evolution queue was found in this workspace.</div>
+          </div>
+          <div class="lane">
+            <div class="k">task punch</div>
+            <div class="v">Roadmap-based</div>
+            <div class="d">Task punches are inferred from the merged roadmap and launch-validation PR history.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">KVDOS visual report generated from the available product boundary, technical spec, and desktop verification artifacts.</div>
+  </div>
+</body>
+</html>
