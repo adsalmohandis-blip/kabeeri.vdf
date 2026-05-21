@@ -7540,6 +7540,11 @@ test("planner prompt blocks vibe execution until version and evolution gates are
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.planner_mode, "vibe");
   assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
+  assert.ok(prompt.prompt.includes("Current stage:"));
+  assert.ok(prompt.prompt.includes("Transition allowed:"));
+  assert.ok(prompt.prompt.includes("Blocked by:"));
+  assert.ok(prompt.prompt.includes("Required before next:"));
+  assert.ok(prompt.prompt.includes("Stage transition next action:"));
   assert.ok(prompt.prompt.includes("Version/evolution gates: blocked"));
   assert.ok(prompt.prompt.includes("Execution gates: blocked"));
   assert.ok(prompt.prompt.includes("Security gate:"));
@@ -7849,6 +7854,13 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.deepStrictEqual(pipeline.viber_pipeline.stage_groups.intake, ["idea", "questionnaire_generation", "questionnaire_answers", "answer_completeness_check"]);
   assert.strictEqual(pipeline.viber_pipeline.execution_allowed, false);
   assert.ok(Array.isArray(pipeline.viber_pipeline.stages));
+  assert.ok(pipeline.viber_pipeline.stage_transition);
+  assert.strictEqual(pipeline.viber_pipeline.stage_transition.current_stage, "idea");
+  assert.strictEqual(pipeline.viber_pipeline.stage_transition.next_stage, "questionnaire_generation");
+  assert.strictEqual(pipeline.viber_pipeline.stage_transition.transition_allowed, true);
+  assert.ok(Array.isArray(pipeline.viber_pipeline.stage_transition.required_before_next));
+  assert.ok(pipeline.viber_pipeline.stage_transition.required_before_next.some((item) => /raw idea/i.test(item) || /questionnaire/i.test(item)));
+  assert.match(pipeline.viber_pipeline.stage_transition.next_action, /questionnaire/i);
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "questionnaire_generation"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "brief_approval"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_architecture" && stage.status === "blocked"));
@@ -7871,7 +7883,7 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "handoff_gate" && stage.status === "blocked"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "source_control_gate" && stage.status === "complete"));
   assert.ok(Array.isArray(pipeline.viber_pipeline.execution_blockers));
-  assert.strictEqual(pipeline.viber_pipeline.next_stage, "security_gate");
+  assert.strictEqual(pipeline.viber_pipeline.next_stage, "questionnaire_generation");
   assert.ok(Array.isArray(pipeline.documentation_folders));
   const folderIds = pipeline.documentation_folders.map((folder) => folder.folder_id);
   assert.ok(folderIds.includes("product"));
@@ -7942,7 +7954,109 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.evolutions.every((evolution) => evolution.track === "vibe_app_developer"));
   assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
   assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/evolution.js"))));
-})); 
+}));
+
+test("planner pipeline inspect reads individual Viber stages in read-only mode", () => withTempDir((dir) => {
+  const idea = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "idea", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(idea.report_type, "kvdf_viber_pipeline_stage_inspection");
+  assert.strictEqual(idea.track, "vibe_app_developer");
+  assert.strictEqual(idea.current_stage, "idea");
+  assert.strictEqual(idea.stage, "idea");
+  assert.strictEqual(idea.stage_order, 1);
+  assert.strictEqual(idea.stage_group, "intake");
+  assert.ok(idea.transition);
+  assert.ok(Array.isArray(idea.evidence.source_files_inspected));
+
+  const questionnaireAnswers = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "questionnaire_answers", "--json"], { cwd: dir }).stdout);
+  assert.ok(["missing", "blocked", "planned"].includes(questionnaireAnswers.status));
+  assert.strictEqual(questionnaireAnswers.transition.transition_allowed, false);
+  assert.ok(questionnaireAnswers.blockers.some((item) => /answer/i.test(item)));
+
+  const briefApproval = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "brief_approval", "--json"], { cwd: dir }).stdout);
+  assert.ok(["missing", "blocked", "planned"].includes(briefApproval.status));
+  assert.strictEqual(briefApproval.transition.transition_allowed, false);
+  assert.ok(briefApproval.blockers.some((item) => /brief/i.test(item) || /approve/i.test(item)));
+
+  const systemDesign = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "system_design", "--json"], { cwd: dir }).stdout);
+  assert.ok(["missing", "blocked", "planned", "ready"].includes(systemDesign.status));
+  assert.strictEqual(systemDesign.transition.transition_allowed, false);
+  assert.ok(systemDesign.blockers.some((item) => /system design/i.test(item) || /architecture/i.test(item)));
+
+  const versionPlan = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "version_plan", "--json"], { cwd: dir }).stdout);
+  assert.ok(["missing", "blocked", "planned"].includes(versionPlan.status));
+  assert.strictEqual(versionPlan.transition.transition_allowed, false);
+  assert.ok(versionPlan.blockers.some((item) => /version plan/i.test(item) || /approval/i.test(item)));
+
+  const evolutionOrder = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "evolution_order_validation", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(evolutionOrder.transition.transition_allowed, false);
+  assert.ok(evolutionOrder.blockers.some((item) => /boundary/i.test(item) || /workspace/i.test(item) || /task generation/i.test(item)));
+
+  const sourceControlPlan = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "source_control_plan", "--source-control", "none", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(sourceControlPlan.planning_method, "hybrid");
+  assert.ok(Array.isArray(sourceControlPlan.dependencies.required_gates));
+  assert.ok(sourceControlPlan.dependencies.required_gates.some((item) => /source_control\.mode/i.test(item)));
+  assert.ok(!/GitHub/i.test(sourceControlPlan.transition.next_action));
+
+  const execution = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "execution", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(execution.transition.transition_allowed, false);
+  assert.ok(execution.blockers.length > 0);
+  assert.ok(/blocked|complete/i.test(execution.next_action));
+}));
+
+test("planner pipeline inspect returns the full ordered Viber stage list with --all", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--all", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_viber_pipeline_stage_inspection");
+  assert.strictEqual(report.current_stage, "all");
+  assert.ok(Array.isArray(report.stages));
+  assert.strictEqual(report.stages.length, 36);
+  assert.deepStrictEqual(report.stages.map((stage) => stage.stage), [
+    "idea",
+    "questionnaire_generation",
+    "questionnaire_answers",
+    "answer_completeness_check",
+    "brief_generation",
+    "brief_review",
+    "brief_approval",
+    "state_resync",
+    "current_state_report",
+    "app_boundary",
+    "documentation_architecture",
+    "documentation_folders",
+    "documentation_files",
+    "system_design",
+    "database_design",
+    "ui_ux_design",
+    "source_control_plan",
+    "security_plan",
+    "version_plan",
+    "evolutions",
+    "evolution_order_validation",
+    "task_punches",
+    "task_punch_review",
+    "approval",
+    "materialization",
+    "codex_prompt",
+    "security_gate",
+    "handoff_gate",
+    "source_control_gate",
+    "execution",
+    "validation",
+    "security_scan",
+    "handoff",
+    "dashboard_update",
+    "learning_capture",
+    "closeout"
+  ]);
+  assert.ok(report.stages.every((stage, index) => stage.stage_order === index + 1));
+  assert.ok(report.stages.every((stage) => stage.transition && typeof stage.transition.transition_allowed === "boolean"));
+}));
+
+test("planner pipeline inspect renders a readable markdown stage report", () => withTempDir((dir) => {
+  const output = runKvdf(["planner", "pipeline", "inspect", "--track", "vibe", "--stage", "idea"], { cwd: dir }).stdout;
+  assert.match(output, /# KVDF Viber Pipeline Stage Inspection/);
+  assert.match(output, /## Stage/);
+  assert.match(output, /## Transition/);
+}));
 
 test("planner pipeline marks agile low-risk database docs not applicable when the work is simple", () => {
   const agile = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Improve landing page copy", "--track", "vibe", "--method", "agile", "--json"]).stdout);

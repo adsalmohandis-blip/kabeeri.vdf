@@ -97,6 +97,12 @@ The pipeline still does not execute work or materialize Evolutions on its own.
 It prepares the governed package that the Owner can review, approve, and then
 materialize.
 
+For Viber/App Track, the pipeline now also exposes a stage-transition view so
+the next ordered stage, the current blocked stage, and the required-before-next
+evidence are visible before Codex can proceed. That means the pipeline can
+describe the transition from idea -> questionnaire -> brief -> docs/design ->
+version/evolution -> task punch -> execution without skipping safety gates.
+
 ## Source Control
 
 The pipeline carries the explicit `source_control` object so plan output can describe:
