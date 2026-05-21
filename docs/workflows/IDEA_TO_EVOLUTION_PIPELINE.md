@@ -53,6 +53,7 @@ Idea
 - `kvdf planner pipeline --track vibe` should expose `execution_allowed`, `execution_blockers`, `next_stage`, and a `viber_pipeline` summary so the app track stays file-first and local-first.
 - `documentation_folders` is the primary Viber docs model, while `documentation_files` remains the compatibility flattening view for legacy surfaces.
 - Planner foldered docs map back to the canonical portable app-doc package through a portable docs mapping, so the numbered long-term app docs remain the durable source of truth.
+- `version_evolution_gates` should make the version plan, evolutions, order validation, task punches, and task punch review explicit so the pipeline cannot jump from design to execution too early.
 - Viber prompts must not tell Codex to edit app source files until the pipeline is execution-ready.
 - GitHub stays optional, and KVDF Core files stay out of the app track by default.
 - `kvdf evolution validate-order --app <app-name>` must pass before app task

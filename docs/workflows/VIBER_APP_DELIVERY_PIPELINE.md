@@ -148,6 +148,15 @@ The current-state report, design docs, version plan, evolutions, task punches,
 approval, materialization, and security gates must all be ready before Codex
 execution is allowed.
 
+The pipeline also enforces a version-and-evolution gate sequence after docs
+and design readiness:
+
+- version plan approval comes before evolutions
+- approved evolutions come before task punches
+- evolution order validation comes before task punches
+- task punch review comes before materialization
+- materialization comes before Codex execution
+
 The pipeline also exposes a planning authority level:
 
 - placeholder: raw idea or incomplete questionnaire / brief state
@@ -163,3 +172,5 @@ The pipeline also exposes a planning authority level:
 - It must not require GitHub.
 - It must not make branch or PR the default delivery shape.
 - It must not let Viber/App work edit KVDF Core files by default.
+- It must not let version or evolution planning skip the approval and review
+  gates.

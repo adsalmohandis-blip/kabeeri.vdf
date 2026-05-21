@@ -7454,6 +7454,15 @@ test("planner prompt from current allows vibe execution only after approval and 
   assert.doesNotMatch(prompt.prompt, /Do not edit app source files yet/i);
 }));
 
+test("planner prompt blocks vibe execution until version and evolution gates are ready", () => withTempDir((dir) => {
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.planner_mode, "vibe");
+  assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
+  assert.ok(prompt.prompt.includes("Version/evolution gates: blocked"));
+  assert.ok(prompt.prompt.includes("Next version/evolution action:"));
+  assert.doesNotMatch(prompt.prompt, /edit app source files/i);
+}));
+
 test("planner materialize preserves plugin context and keeps unrelated plugins out of scope", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize plugin plan", "--track", "plugin", "--plugin", "kvdf-dev", "--json"], { cwd: dir }).stdout);
@@ -7693,6 +7702,13 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.strictEqual(pipeline.viber_pipeline.docs_design_gates.version_plan.status, "blocked");
   assert.ok(Array.isArray(pipeline.viber_pipeline.docs_design_gates.blockers));
   assert.ok(pipeline.viber_pipeline.docs_design_gates.blockers.length > 0);
+  assert.ok(pipeline.viber_pipeline.version_evolution_gates);
+  assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.version_plan.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.evolutions.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.evolution_order_validation.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.task_punches.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.task_punch_review.status, "blocked");
   assert.ok(pipeline.viber_pipeline.questionnaire);
   assert.strictEqual(pipeline.viber_pipeline.questionnaire.status, "missing");
   assert.ok(pipeline.viber_pipeline.brief);

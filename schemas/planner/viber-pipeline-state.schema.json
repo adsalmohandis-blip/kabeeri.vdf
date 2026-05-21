@@ -14,6 +14,7 @@
     "questionnaire",
     "brief",
     "docs_design_gates",
+    "version_evolution_gates",
     "documentation_folders",
     "documentation_files",
     "portable_docs_mapping",
@@ -137,6 +138,41 @@
         "database_design": { "$ref": "#/$defs/docsDesignGate" },
         "ui_ux_design": { "$ref": "#/$defs/docsDesignGate" },
         "version_plan": { "$ref": "#/$defs/docsDesignGate" },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "next_action": { "type": "string" }
+      }
+    },
+    "version_evolution_gates": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "status",
+        "version_plan",
+        "evolutions",
+        "evolution_order_validation",
+        "task_punches",
+        "task_punch_review",
+        "blockers",
+        "warnings",
+        "next_action"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["ready", "warning", "blocked"]
+        },
+        "version_plan": { "$ref": "#/$defs/versionEvolutionGate" },
+        "evolutions": { "$ref": "#/$defs/versionEvolutionGate" },
+        "evolution_order_validation": { "$ref": "#/$defs/versionEvolutionGate" },
+        "task_punches": { "$ref": "#/$defs/versionEvolutionGate" },
+        "task_punch_review": { "$ref": "#/$defs/versionEvolutionGate" },
         "blockers": {
           "type": "array",
           "items": { "type": "object", "additionalProperties": true }
@@ -384,6 +420,27 @@
         "existing_docs": { "type": "array", "items": { "type": "string" } },
         "missing_docs": { "type": "array", "items": { "type": "string" } },
         "applied_docs": { "type": "array", "items": { "type": "string" } },
+        "next_action": { "type": "string" }
+      }
+    },
+    "versionEvolutionGate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["gate", "status", "required", "source", "items_total", "approved_total", "blocked_total", "missing_items", "blocking_errors", "warnings", "next_action"],
+      "properties": {
+        "gate": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["missing", "planned", "generated", "reviewed", "approved", "blocked", "deferred", "not_applicable", "unknown"]
+        },
+        "required": { "type": "boolean" },
+        "source": { "type": "string", "enum": ["pipeline", "docs_status", "runtime", "derived", "missing"] },
+        "items_total": { "type": "integer", "minimum": 0 },
+        "approved_total": { "type": "integer", "minimum": 0 },
+        "blocked_total": { "type": "integer", "minimum": 0 },
+        "missing_items": { "type": "array", "items": { "type": "string" } },
+        "blocking_errors": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } },
         "next_action": { "type": "string" }
       }
     }
