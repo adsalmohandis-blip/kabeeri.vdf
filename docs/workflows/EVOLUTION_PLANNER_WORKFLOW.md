@@ -56,6 +56,13 @@ Before any next-Evolution recommendation, the planner must:
 The planner can only recommend the next Evolution after the Current-State
 Report shows that the repo reality matches the proposed ledger.
 
+For Viber/App Track, the planner also emits a Viber Planning-to-Task
+Execution Pipeline. That pipeline stays file-first and local-first by default
+and must stay blocked until the current-state evidence, documentation map,
+design artifacts, visual planning, version plan, evolutions, task punches, and
+approval/materialization gates are complete. The planner prompt must switch to
+the next planning stage only whenever `execution_allowed` is false.
+
 ## Self-Planning Engine
 
 The planner should use the self-planning sequence before it recommends the next

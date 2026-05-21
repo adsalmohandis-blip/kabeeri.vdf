@@ -854,12 +854,21 @@ function buildPlannerVersionPlanSummary(plan = null) {
 }
 
 function buildPlannerPipelineSummary(plan = null) {
-  const pipeline = plan && plan.pipeline ? plan.pipeline : null;
+  const pipeline = plan && (plan.pipeline || plan.source_pipeline || plan.sourcePipeline) ? (plan.pipeline || plan.source_pipeline || plan.sourcePipeline) : null;
+  const viberPipeline = pipeline && pipeline.viber_pipeline ? pipeline.viber_pipeline : (plan && plan.viber_pipeline ? plan.viber_pipeline : null);
   const rawVersionPlan = plan && plan.version_plan ? plan.version_plan : null;
   const taskPunch = plan && plan.task_punch ? plan.task_punch : null;
   const visual = plan && plan.visual ? plan.visual : null;
   const designArtifacts = pipeline && pipeline.design_artifacts ? pipeline.design_artifacts : {};
   const versionPlan = rawVersionPlan || null;
+  const stages = Array.isArray(viberPipeline && viberPipeline.stages) ? viberPipeline.stages : [];
+  const fallbackStageCount = plan && (plan.recommended_evolution || plan.task_punch || (Array.isArray(plan.task_punches) && plan.task_punches.length) || plan.source_pipeline) ? 1 : 0;
+  const stagesTotal = stages.length || fallbackStageCount;
+  const completeStages = stages.filter((stage) => ["complete", "ready", "approved", "materialized"].includes(String(stage && stage.status || "").toLowerCase())).length;
+  const blockedStages = stages.filter((stage) => String(stage && stage.status || "").toLowerCase() === "blocked").length;
+  const nextStage = viberPipeline && viberPipeline.next_stage
+    ? viberPipeline.next_stage
+    : stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(String(stage && stage.status || "").toLowerCase()))?.stage || "unknown";
   return {
     available: Boolean(pipeline),
     idea: pipeline && pipeline.idea ? pipeline.idea : (plan && plan.goal) || (plan && plan.recommended_evolution && plan.recommended_evolution.title) || "",
@@ -875,6 +884,25 @@ function buildPlannerPipelineSummary(plan = null) {
     evolutions_total: Array.isArray(pipeline && pipeline.evolutions) ? pipeline.evolutions.length : Array.isArray(plan && plan.evolutions) ? plan.evolutions.length : 0,
     task_punches_total: Array.isArray(pipeline && pipeline.task_punches) ? pipeline.task_punches.length : taskPunch ? 1 : 0,
     next_evolution: pipeline && pipeline.next_evolution ? pipeline.next_evolution : (plan && plan.recommended_evolution) || {},
+    viber_pipeline: viberPipeline ? {
+      report_type: viberPipeline.report_type || "kvdf_viber_planning_to_task_pipeline",
+      track: viberPipeline.track || "vibe_app_developer",
+      delivery_mode: viberPipeline.delivery_mode || null,
+      source_of_truth: viberPipeline.source_of_truth || "file_first",
+      stages_total: stagesTotal,
+      complete_total: completeStages,
+      blocked_total: blockedStages,
+      next_stage: nextStage,
+      execution_allowed: Boolean(viberPipeline.execution_allowed),
+      next_action: viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : viberPipeline.next_action || "",
+      source_control_mode: viberPipeline.source_control ? viberPipeline.source_control.mode || null : null
+    } : null,
+    stages_total: stagesTotal,
+    complete_total: completeStages,
+    blocked_total: blockedStages,
+    execution_allowed: Boolean(viberPipeline && viberPipeline.execution_allowed),
+    next_stage: nextStage,
+    next_action: viberPipeline && viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : plan && plan.next_action || "",
     visual: visual ? {
       available: true,
       graph_format: visual.graph && visual.graph.format ? visual.graph.format : (visual.format || "mermaid"),
@@ -2280,6 +2308,8 @@ function nextTaskPunchAction(context) {
 function pipelineWidgets(context) {
   const pipeline = context.plannerState.pipeline || {};
   return [
+    dashboardWidget("viber_pipeline_readiness", "Pipeline Readiness", "status", pipeline.execution_allowed ? "ready" : (pipeline.blocked_total ? "blocked" : "warning"), pipeline.execution_allowed ? "ok" : pipeline.blocked_total ? "blocked" : "warning", "vibe_app_developer", "derived", pipeline.next_action || "Keep the Viber pipeline gated."),
+    dashboardWidget("viber_next_stage", "Next Stage", "status", pipeline.next_stage || "unknown", pipeline.next_stage ? "ok" : "warning", "vibe_app_developer", "derived", "Advance the next blocked or planned stage."),
     dashboardWidget("viber_idea", "Idea Captured", "status", pipeline.idea || context.plannerState.current_plan && context.plannerState.current_plan.goal || "none", pipeline.available ? "ok" : "empty", "vibe_app_developer", "derived", "Keep the original idea visible."),
     dashboardWidget("viber_docs", "Documentation Files", "metric", pipeline.documentation_files_total || 0, pipeline.available ? "ok" : "empty", "vibe_app_developer", "derived", "Document the app before implementation."),
     dashboardWidget("viber_system_design", "System Design Status", "status", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ok" : "warning", "vibe_app_developer", "derived", "System design stays app-focused."),
@@ -2295,6 +2325,8 @@ function pipelineRows(context) {
   const pipeline = context.plannerState.pipeline || {};
   const visual = context.plannerState.visual || {};
   return [
+    ["execution_allowed", pipeline.execution_allowed ? "ready" : "blocked", pipeline.execution_allowed ? "yes" : "no", pipeline.next_action || "", "app", ".kabeeri/planner.json"],
+    ["next_stage", pipeline.next_stage || "unknown", pipeline.next_stage || "unknown", pipeline.next_action || "", "app", ".kabeeri/planner.json"],
     ["idea", pipeline.idea ? "captured" : "missing", pipeline.idea || "", context.plannerState.next_action || "", "app", ".kabeeri/planner.json"],
     ["documentation_files", pipeline.documentation_files_total || 0 ? "ready" : "missing", String(pipeline.documentation_files_total || 0), "Create or refresh app docs.", "app", ".kabeeri/planner.json"],
     ["system_design", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "system design present" : "missing", "Complete the system design artifact.", "app", ".kabeeri/planner.json"],

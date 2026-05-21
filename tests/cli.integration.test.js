@@ -4929,6 +4929,12 @@ test("dashboard state exposes vibe planner summaries after approval", () => with
   assert.strictEqual(state.planner.source_control.mode, "local_only");
   assert.ok(state.planner.guidance.summary.includes("Local-first"));
   assert.ok(state.planner.guidance.notes.some((note) => /KVDF Core edits/i.test(note)));
+  assert.ok(state.planner.pipeline);
+  assert.ok(typeof state.planner.pipeline.execution_allowed === "boolean");
+  assert.ok(state.planner.pipeline.next_stage);
+  assert.ok(state.planner.pipeline.stages_total >= 1);
+  assert.ok(state.sections.idea_to_evolution_pipeline.widgets.some((widget) => widget.id === "viber_pipeline_readiness"));
+  assert.ok(state.sections.idea_to_evolution_pipeline.widgets.some((widget) => widget.id === "viber_next_stage"));
 }));
 
 test("dashboard route aliases resolve owner and viber dashboards", () => {
@@ -6399,6 +6405,16 @@ test("planner prompts reflect the selected source control mode", () => {
   assert.match(branchPr.prompt, /Owner review/);
 });
 
+test("planner prompt blocks vibe execution until the pipeline is ready", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.planner_mode, "vibe");
+  assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
+  assert.ok(prompt.prompt.includes("Execution allowed: no"));
+  assert.ok(prompt.prompt.includes("Complete the next planning stage only."));
+  assert.doesNotMatch(prompt.prompt, /edit app source files yet/i);
+}));
+
 test("planner prompts include AI learning context when learning exists and omit it when empty", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const emptyPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Fresh owner plan", "--track", "owner", "--json"], { cwd: dir }).stdout);
@@ -7182,6 +7198,19 @@ test("planner materialize creates local-first vibe runtime records without defau
   assert.ok(plannerTasks.every((task) => !task.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
 }));
 
+test("planner prompt from current allows vibe execution only after approval and materialization", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Current vibe execution", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  runKvdf(["planner", "materialize", proposal.plan_id, "--json"], { cwd: dir });
+  runKvdf(["planner", "state", "resync", "--track", "vibe", "--json"], { cwd: dir });
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.planner_mode, "vibe");
+  assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
+  assert.ok(prompt.prompt.includes("Execution allowed: yes"));
+  assert.ok(prompt.prompt.includes("Task execution can start."));
+  assert.doesNotMatch(prompt.prompt, /Do not edit app source files yet/i);
+}));
+
 test("planner materialize preserves plugin context and keeps unrelated plugins out of scope", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize plugin plan", "--track", "plugin", "--plugin", "kvdf-dev", "--json"], { cwd: dir }).stdout);
@@ -7291,6 +7320,24 @@ test("planner visual builds a vibe-track local-first visual pipeline", () => {
   assert.ok(visual.markdown_report.includes("Current app files/docs/specs are primary for app-track planning."));
 });
 
+test("planner visual includes Viber pipeline execution readiness and blockers", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--source-control", "none", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.planner_mode, "vibe");
+  assert.ok(visual.viber_pipeline);
+  assert.strictEqual(visual.viber_pipeline.track, "vibe_app_developer");
+  assert.strictEqual(visual.viber_pipeline.delivery_mode, "local_first");
+  assert.strictEqual(visual.viber_pipeline.source_of_truth, "file_first");
+  assert.strictEqual(visual.execution_allowed, false);
+  assert.ok(Array.isArray(visual.execution_blockers));
+  assert.ok(visual.next_stage);
+  assert.ok(Array.isArray(visual.stage_timeline));
+  assert.ok(visual.stage_timeline.some((stage) => stage.stage === "idea"));
+  assert.ok(visual.stage_timeline.some((stage) => stage.stage === "handoff"));
+  assert.ok(visual.markdown_report.includes("## Viber Pipeline"));
+  assert.ok(visual.markdown_report.includes("Execution allowed: no"));
+}));
+
 test("planner visual builds a plugin-track visual parity model", () => {
   // repo root already contains git metadata; no extra fixture needed
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Improve plugin docs", "--track", "plugin", "--plugin", "kvdf-dev", "--json"]).stdout);
@@ -7382,6 +7429,22 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(Array.isArray(pipeline.pipeline));
   assert.ok(pipeline.pipeline.includes("request"));
   assert.ok(pipeline.pipeline.includes("handoff"));
+  assert.ok(pipeline.viber_pipeline);
+  assert.strictEqual(pipeline.viber_pipeline.report_type, "kvdf_viber_planning_to_task_pipeline");
+  assert.strictEqual(pipeline.viber_pipeline.track, "vibe_app_developer");
+  assert.strictEqual(pipeline.viber_pipeline.delivery_mode, "local_first");
+  assert.strictEqual(pipeline.viber_pipeline.source_of_truth, "file_first");
+  assert.strictEqual(pipeline.viber_pipeline.execution_allowed, false);
+  assert.ok(Array.isArray(pipeline.viber_pipeline.stages));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_files"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "system_design"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "database_design"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "ui_ux_design"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "version_plan"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "evolutions"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "task_punches"));
+  assert.ok(Array.isArray(pipeline.viber_pipeline.execution_blockers));
+  assert.ok(fs.existsSync(path.join(repoRoot, "schemas", "planner", "viber-pipeline-state.schema.json")));
   assert.ok(pipeline.design_artifacts);
   assert.ok(pipeline.design_artifacts.system_design);
   assert.ok(pipeline.design_artifacts.database_design);

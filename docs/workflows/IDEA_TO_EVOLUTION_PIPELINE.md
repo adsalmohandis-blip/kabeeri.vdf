@@ -49,6 +49,10 @@ Idea
 - Delivery mode defaults to local-first.
 - The pipeline focuses on app workspace docs, system design, database design, UI/UX design, and handoff artifacts.
 - GitHub handoff remains optional and never becomes the default path.
+- The Viber Planning-to-Task Execution Pipeline is gated: raw ideas must first become a Current-State Report, documentation map, system design, database design, UI/UX design, visual planning, version plan, evolutions, task punches, and approval/materialization before Codex execution is allowed.
+- `kvdf planner pipeline --track vibe` should expose `execution_allowed`, `execution_blockers`, `next_stage`, and a `viber_pipeline` summary so the app track stays file-first and local-first.
+- Viber prompts must not tell Codex to edit app source files until the pipeline is execution-ready.
+- GitHub stays optional, and KVDF Core files stay out of the app track by default.
 
 ### Plugin Track
 

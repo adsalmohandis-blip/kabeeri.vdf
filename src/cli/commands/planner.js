@@ -136,6 +136,29 @@ const VIBE_PIPELINE = [
   "handoff"
 ];
 
+const VIBER_PIPELINE_STAGE_ORDER = [
+  "idea",
+  "state_resync",
+  "current_state_report",
+  "documentation_files",
+  "system_design",
+  "database_design",
+  "ui_ux_design",
+  "visual_planning",
+  "version_plan",
+  "evolutions",
+  "task_punches",
+  "approval",
+  "materialization",
+  "codex_prompt",
+  "execution",
+  "validation",
+  "security",
+  "handoff",
+  "dashboard_update",
+  "learning_capture"
+];
+
 const PLUGIN_ALLOWED_FILES_GENERIC = [
   "plugins/<plugin-id>/plugin.json",
   "plugins/<plugin-id>/README.md",
@@ -250,7 +273,7 @@ const PLANNER_DOC_DEFINITIONS = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "current-state", "boundary", "stale-state", "reject", "complete", "materialize", "guard"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "current-state", "boundary", "stale-state", "reject", "complete", "materialize", "guard", "state", "state-resync"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
@@ -259,6 +282,12 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
   if (mode === "guard") {
     const report = buildPlannerGuardReport(value, flags, rest, deps);
     printPlannerOutput(report, flags, deps, "guard");
+    return;
+  }
+
+  if (mode === "state" || mode === "state-resync") {
+    const report = buildPlannerCurrentStateReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "current-state");
     return;
   }
 
@@ -2162,7 +2191,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     risks: planning.method.risks,
     currentGate: planning.current_gate,
     nextAction: plan.next_action,
-    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
+    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
+    planningPipeline: planning.pipeline
   });
   const review = buildPlannerReviewSummary({
     goal,
@@ -2225,7 +2255,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       currentGate: planning.current_gate,
       versionControl,
       latestFeedback,
-      roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
+      roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
+      pipelineState: visualSummary.viber_pipeline || null
     })
   }, context, {
     track: mode,
@@ -2416,7 +2447,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
@@ -2442,6 +2473,26 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     pluginContext,
     risks
   });
+  const viberPipeline = mode === "vibe"
+    ? buildViberPipelineState({
+      idea: goal,
+      mode,
+      deliveryMode,
+      sourceControl,
+      stateResync,
+      docsPlan: currentPlan && currentPlan.docs_plan ? currentPlan.docs_plan : planningPipeline && planningPipeline.docs_plan ? planningPipeline.docs_plan : null,
+      docsStatus: planningPipeline && planningPipeline.docs_status ? planningPipeline.docs_status : docsStatus,
+      designArtifacts: planningPipeline && planningPipeline.design_artifacts ? planningPipeline.design_artifacts : null,
+      visualPlanning: planningPipeline && planningPipeline.visual_planning ? planningPipeline.visual_planning : null,
+      versionPlan: planningPipeline && planningPipeline.version_plan ? planningPipeline.version_plan : null,
+      versionControl,
+      evolutions: planningPipeline && Array.isArray(planningPipeline.evolutions) ? planningPipeline.evolutions : [],
+      taskPunches: planningPipeline && Array.isArray(planningPipeline.task_punches) ? planningPipeline.task_punches : [],
+      currentPlan,
+      taskPunch,
+      pluginContext
+    })
+    : null;
   const validationCommands = [...(evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS)];
   const stopCondition = buildPlannerVisualStopCondition({
     base: evolutionPlan.stop_condition || buildPlannerStopCondition(mode, context, pluginContext),
@@ -2471,7 +2522,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     risks,
     currentGate,
     nextAction: nextAction || evolutionPlan.next_action || "",
-    roadmapTrain
+    roadmapTrain,
+    viberPipeline
   });
   const report = {
     report_type: "kvdf_planner_visual",
@@ -2495,6 +2547,9 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     stage_timeline: executionReadiness.stage_timeline,
     dashboard_summary: executionReadiness.dashboard_summary,
     warnings: executionReadiness.warnings,
+    execution_allowed: viberPipeline ? viberPipeline.execution_allowed : null,
+    execution_blockers: viberPipeline ? viberPipeline.execution_blockers : [],
+    next_stage: viberPipeline ? viberPipeline.next_stage : null,
     validation_commands: validationCommands,
     stop_condition: stopCondition,
     recommended_evolution: evolutionPlan,
@@ -2512,7 +2567,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     risks,
     current_gate: currentGate,
     next_action: nextAction || evolutionPlan.next_action || "",
-    state_resync: stateResync || null
+    state_resync: stateResync || null,
+    viber_pipeline: viberPipeline
   };
   if (pluginContext) report.plugin_context = pluginContext;
   return report;
@@ -3346,7 +3402,7 @@ function determinePlannerVisualSourceOfTruth({ mode = "owner", stateResync = nul
   return "unknown";
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Execution Readiness - Vibe/App"
     : mode === "plugin"
@@ -3416,6 +3472,13 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     `- Planning lifecycle method: ${lifecycle.method || "manual"}`,
     `- Planning lifecycle confidence: ${lifecycle.confidence || "low"}`,
     lifecycle.reason ? `- Planning lifecycle reason: ${lifecycle.reason}` : null,
+    viberPipeline && mode === "vibe" ? "" : null,
+    viberPipeline && mode === "vibe" ? "## Viber Pipeline" : null,
+    viberPipeline && mode === "vibe" ? `- Execution allowed: ${viberPipeline.execution_allowed ? "yes" : "no"}` : null,
+    viberPipeline && mode === "vibe" ? `- Next stage: ${viberPipeline.next_stage || "unknown"}` : null,
+    viberPipeline && mode === "vibe" ? `- Next action: ${viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : "Complete the next planning stage."}` : null,
+    viberPipeline && mode === "vibe" && Array.isArray(viberPipeline.execution_blockers) && viberPipeline.execution_blockers.length ? "- Blockers:" : null,
+    viberPipeline && mode === "vibe" && Array.isArray(viberPipeline.execution_blockers) && viberPipeline.execution_blockers.length ? viberPipeline.execution_blockers.map((blocker) => `  - ${blocker.message || blocker.id || "blocked"}`).join("\n") : null,
     "",
     "## Planning Lifecycle",
     `- Method: ${lifecycle.method || "manual"}`,
@@ -3626,20 +3689,6 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   const taskPunches = versionPlan.versions.map((version) => version.task_punch);
   const firstEvolution = evolutions[0] || buildPlannerEvolutionPlan(normalizedIdea, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
   const firstTaskPunch = taskPunches[0] || buildPlannerTaskPunch(firstEvolution, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
-  const visualPlanning = buildPlannerVisualPayload({
-    goal: normalizedIdea,
-    mode,
-    deliveryMode,
-    evolutionPlan: firstEvolution,
-    taskPunch: firstTaskPunch,
-    context,
-    pluginContext,
-    sourceControl,
-    versionControl,
-    roadmapTrain: null
-  });
-  const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
-  const nextEvolution = visualRoadmap.next_evolution || null;
   const docsPlan = buildPlannerDocsPlan({
     idea: normalizedIdea,
     goal: normalizedIdea,
@@ -3660,6 +3709,39 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     idea: normalizedIdea
   });
   const docsStatus = buildPlannerDocsStatusSummaryFromPlan(docsPlan);
+  const visualPlanning = buildPlannerVisualPayload({
+    goal: normalizedIdea,
+    mode,
+    deliveryMode,
+    evolutionPlan: firstEvolution,
+    taskPunch: firstTaskPunch,
+    context,
+    pluginContext,
+    sourceControl,
+    versionControl,
+    roadmapTrain: null
+  });
+  const viberPipeline = mode === "vibe"
+    ? buildViberPipelineState({
+      idea: normalizedIdea,
+      mode,
+      deliveryMode,
+      sourceControl,
+      stateResync,
+      docsPlan,
+      docsStatus,
+      designArtifacts,
+      visualPlanning,
+      versionPlan,
+      versionControl,
+      evolutions,
+      taskPunches,
+      taskPunch: firstTaskPunch,
+      pluginContext
+    })
+    : null;
+  const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
+  const nextEvolution = visualRoadmap.next_evolution || null;
   const roadmapTrain = mode === "owner" || mode === "vibe"
     ? buildPlannerRoadmapTrainSummary({
       pipeline: {
@@ -3714,12 +3796,329 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     state_resync_required: !stateResync.fresh
   };
   if (mode === "vibe") report.pipeline = [...VIBE_PIPELINE];
+  if (viberPipeline) {
+    report.viber_pipeline = viberPipeline;
+    report.execution_allowed = viberPipeline.execution_allowed;
+    report.execution_blockers = viberPipeline.execution_blockers;
+    report.next_stage = viberPipeline.next_stage;
+  }
   if (pluginContext) report.plugin_context = pluginContext;
   return attachPlannerCurrentStateSummary(report, context, {
     track: mode,
     app: request.app || request.app_slug || request["app-slug"] || "",
     plugin: pluginContext ? pluginContext.plugin_id : (request.plugin || request.plugin_id || "")
   });
+}
+
+function buildViberPipelineState({
+  idea = "",
+  mode = "vibe",
+  deliveryMode = "local_first",
+  sourceControl = null,
+  stateResync = null,
+  docsPlan = null,
+  docsStatus = null,
+  designArtifacts = null,
+  visualPlanning = null,
+  versionPlan = null,
+  versionControl = null,
+  evolutions = [],
+  taskPunches = [],
+  currentPlan = null,
+  taskPunch = null,
+  executionAllowedOverride = null,
+  pluginContext = null
+} = {}) {
+  const normalizedIdea = String(idea || "").trim() || "Viber Planning Idea";
+  const freshness = String(stateResync && stateResync.state_freshness || "unknown").trim().toLowerCase();
+  const stateFresh = Boolean(stateResync && stateResync.fresh && freshness === "current");
+  const docsStatusValue = String(docsStatus && typeof docsStatus === "object" ? docsStatus.status || "" : docsStatus || "unknown").trim().toLowerCase();
+  const docsReady = ["generated", "applied_to_stage", "ready", "current", "draft", "approved"].includes(docsStatusValue);
+  const hasSystemDesign = Boolean(designArtifacts && designArtifacts.system_design);
+  const hasDatabaseDesign = Boolean(designArtifacts && designArtifacts.database_design);
+  const hasUiUxDesign = Boolean(designArtifacts && designArtifacts.ui_ux_design);
+  const hasVisualPlanning = Boolean(visualPlanning && visualPlanning.graph && visualPlanning.board);
+  const hasVersionPlan = Boolean(versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length);
+  const hasEvolutions = Array.isArray(evolutions) && evolutions.length > 0;
+  const hasTaskPunches = Array.isArray(taskPunches) && taskPunches.length > 0;
+  const currentPlanStatus = String(currentPlan && currentPlan.status || "").trim().toLowerCase();
+  const materializationStatus = String(currentPlan && (currentPlan.materialization_status || "") || "").trim().toLowerCase();
+  const approvedOrMaterialized = ["approved", "materialized", "completed"].includes(currentPlanStatus) || ["materialized", "approved"].includes(materializationStatus);
+  const securityGate = versionControl && versionControl.current_version && versionControl.current_version.security_gate ? versionControl.current_version.security_gate : null;
+  const securityPass = Boolean(securityGate && securityGate.status === "pass");
+  const securityBlocked = Boolean(securityGate && securityGate.status === "blocked");
+  const executionAllowed = executionAllowedOverride !== null
+    ? Boolean(executionAllowedOverride)
+    : stateFresh && docsReady && hasSystemDesign && hasDatabaseDesign && hasUiUxDesign && hasVisualPlanning && hasVersionPlan && hasEvolutions && hasTaskPunches && approvedOrMaterialized && !securityBlocked;
+  const sourceControlSummary = buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, executionAllowed);
+  const stageReport = buildViberPipelineStages({
+    idea: normalizedIdea,
+    stateResync,
+    deliveryMode,
+    docsPlan,
+    docsStatusValue,
+    docsReady,
+    designArtifacts,
+    visualPlanning,
+    versionPlan,
+    versionControl,
+    evolutions,
+    taskPunches,
+    currentPlan,
+    taskPunch,
+    sourceControl: sourceControlSummary,
+    pluginContext,
+    executionAllowed,
+    securityPass,
+    securityBlocked
+  });
+  const stages = Array.isArray(stageReport) ? stageReport : Array.isArray(stageReport && stageReport.stages) ? stageReport.stages : [];
+  const blockers = stages
+    .filter((stage) => stage.status === "blocked")
+    .map((stage, index) => ({
+      id: `${stage.stage}-blocked-${index + 1}`,
+      severity: "blocker",
+      area: pipelineStageToArea(stage.stage),
+      message: stage.blockers && stage.blockers.length ? stage.blockers[0] : `${stage.stage} is blocked.`,
+      next_action: stage.next_action || `Resolve the ${stage.stage} blocker.`
+    }));
+  const warnings = stages.flatMap((stage) => Array.isArray(stage.warnings) ? stage.warnings : []);
+  const nextStage = stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(stage.status)) || stages[stages.length - 1] || null;
+  const readinessStatus = blockers.length ? "blocked" : warnings.length ? "warning" : executionAllowed ? "ready" : "warning";
+  const readinessNextAction = blockers.length
+    ? blockers[0].next_action
+    : executionAllowed
+      ? "Run kvdf planner prompt --from-current --json, then execute the approved task punch."
+      : nextStage && nextStage.next_action
+        ? nextStage.next_action
+        : "Complete the current planning stage before execution.";
+  return {
+    report_type: "kvdf_viber_planning_to_task_pipeline",
+    track: "vibe_app_developer",
+    delivery_mode: deliveryMode,
+    source_of_truth: "file_first",
+    source_control: sourceControlSummary,
+    idea: normalizedIdea,
+    stages,
+    readiness: {
+      status: readinessStatus,
+      blocked_total: blockers.length,
+      warnings_total: warnings.length,
+      next_action: readinessNextAction
+    },
+    execution_allowed: executionAllowed,
+    execution_blockers: blockers,
+    next_stage: nextStage ? nextStage.stage : "execution",
+    forbidden_files: Array.isArray(currentPlan && currentPlan.forbidden_files) && currentPlan.forbidden_files.length
+      ? [...currentPlan.forbidden_files]
+      : [...VIBE_FORBIDDEN_FILES],
+    allowed_files: Array.isArray(currentPlan && currentPlan.allowed_files) ? [...currentPlan.allowed_files] : [],
+    docs_status: docsStatusValue,
+    docs_plan: docsPlan || null,
+    design_artifacts: designArtifacts || null,
+    visual_planning: visualPlanning || null,
+    version_plan: versionPlan || null,
+    version_control: versionControl || null,
+    evolutions: Array.isArray(evolutions) ? evolutions : [],
+    task_punches: Array.isArray(taskPunches) ? taskPunches : [],
+    current_plan_status: currentPlanStatus || null,
+    current_plan_materialization_status: materializationStatus || null,
+    next_action: readinessNextAction,
+    cloud_ready: false,
+    consent_required: true,
+    owner_approved_for_cloud: false,
+    anonymized: true,
+    sensitive_items_removed: 0,
+    dataset_tags: [],
+    training_eligible: false,
+    plugin_context: pluginContext || null
+  };
+}
+
+function buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, executionAllowed) {
+  const base = sourceControl || buildPlannerSourceControl({ flags: { "source-control": "none", "sc-mode": "none" } }, { git_state: { available: false, is_repo: false, root: null, current_branch: null } }, "vibe", "local_first", null);
+  const normalizedMode = normalizeSourceControlMode(base.mode || (mode === "vibe" ? "local_only" : "direct_main")) || (mode === "vibe" ? "local_only" : "direct_main");
+  const remoteProvider = String(base.remote_provider || "none");
+  const provider = String(base.provider || "none");
+  const branchingEnabled = Boolean(base.branching_enabled) && normalizedMode !== "local_only";
+  const prEnabled = Boolean(base.pr_enabled) && normalizedMode === "branch_pr";
+  let nextSourceControlAction = "Keep the pipeline file-first and local-first until approval and materialization are complete.";
+  if (normalizedMode === "local_only") {
+    nextSourceControlAction = "Keep the changes local; branch, PR, commit, and push are not required for this Viber pipeline.";
+  } else if (normalizedMode === "direct_main") {
+    nextSourceControlAction = executionAllowed
+      ? "Validate, then commit and push to main only after the plan is approved and materialized."
+      : "Validate first, then commit and push to main only after approval and materialization."
+      ;
+  } else if (normalizedMode === "branch_pr") {
+    nextSourceControlAction = remoteProvider === "github"
+      ? "Create a branch, push it, and prepare the GitHub PR only after approval and materialization."
+      : "Create a branch, push it, and prepare the PR only after approval and materialization.";
+  } else if (normalizedMode === "branch") {
+    nextSourceControlAction = "Create a branch after approval and materialization; PR remains optional.";
+  }
+  return {
+    enabled: Boolean(base.enabled) && normalizedMode !== "local_only" && provider !== "none",
+    provider,
+    remote_provider: remoteProvider,
+    provider_plugin: remoteProvider === "github" ? "github" : (remoteProvider === "custom" ? base.provider_plugin || null : null),
+    mode: normalizedMode,
+    branching_enabled: branchingEnabled,
+    pr_enabled: prEnabled,
+    branch_name: base.branch_name || null,
+    pr_title: base.pr_title || null,
+    handoff_requires_pr: normalizedMode === "branch_pr",
+    next_source_control_action: nextSourceControlAction,
+    default_branch: base.default_branch || "main",
+    current_branch: base.current_branch || null,
+    requires_owner_approval: true,
+    replaceable_provider: true,
+    notes: Array.isArray(base.notes) ? [...base.notes] : []
+  };
+}
+
+function buildViberPipelineStages({
+  idea = "",
+  stateResync = null,
+  deliveryMode = "local_first",
+  docsPlan = null,
+  docsStatusValue = "unknown",
+  docsReady = false,
+  designArtifacts = null,
+  visualPlanning = null,
+  versionPlan = null,
+  versionControl = null,
+  evolutions = [],
+  taskPunches = [],
+  currentPlan = null,
+  taskPunch = null,
+  sourceControl = null,
+  pluginContext = null,
+  executionAllowed = false,
+  securityPass = false,
+  securityBlocked = false
+} = {}) {
+  const currentPlanStatus = String(currentPlan && currentPlan.status || "").trim().toLowerCase();
+  const materializationStatus = String(currentPlan && (currentPlan.materialization_status || "") || "").trim().toLowerCase();
+  const approvalsStatus = ["approved", "materialized", "completed"].includes(currentPlanStatus) ? "approved" : "planned";
+  const materializedStatus = materializationStatus === "materialized" ? "materialized" : approvalsStatus === "approved" ? "ready" : "planned";
+  const completedState = stateResync && stateResync.fresh ? "complete" : "blocked";
+  const currentStateReportStatus = stateResync && stateResync.report ? (stateResync.fresh ? "complete" : "warning") : "blocked";
+  const docsStageStatus = docsReady ? "ready" : docsStatusValue === "missing" ? "blocked" : "planned";
+  const designStatus = (item) => item ? "ready" : "planned";
+  const executionStageStatus = executionAllowed ? "ready" : "blocked";
+  const securityStageStatus = securityBlocked ? "blocked" : (securityPass ? "ready" : "planned");
+  const stageState = (stage, status, outputs = [], blockers = [], warnings = [], nextAction = "", required = true) => ({
+    stage,
+    status,
+    required,
+    outputs: Array.isArray(outputs) ? outputs : [],
+    blockers: Array.isArray(blockers) ? blockers : [],
+    warnings: Array.isArray(warnings) ? warnings : [],
+    next_action: nextAction || ""
+  });
+  const docsOutputs = [
+    docsReady ? "Documentation files are available." : "Documentation files are pending.",
+    stateResync && stateResync.report ? "Current-state report available." : "Current-state report missing."
+  ];
+  const systemDesignOutputs = designArtifacts && designArtifacts.system_design && Array.isArray(designArtifacts.system_design.architecture_overview)
+    ? [...designArtifacts.system_design.architecture_overview]
+    : ["System design pending."];
+  const databaseOutputs = designArtifacts && designArtifacts.database_design && Array.isArray(designArtifacts.database_design.entities)
+    ? [...designArtifacts.database_design.entities]
+    : ["Database design pending."];
+  const uiUxOutputs = designArtifacts && designArtifacts.ui_ux_design && Array.isArray(designArtifacts.ui_ux_design.surfaces)
+    ? [...designArtifacts.ui_ux_design.surfaces]
+    : ["UI/UX design pending."];
+  const versionOutputs = Array.isArray(versionPlan && versionPlan.versions) && versionPlan.versions.length
+    ? versionPlan.versions.map((version) => version.version_id || version.title || "version")
+    : ["Version plan pending."];
+  const evolutionOutputs = Array.isArray(evolutions) && evolutions.length
+    ? evolutions.map((evolution) => evolution.evolution_id || evolution.title || "evolution")
+    : ["Evolution slice pending."];
+  const taskOutputs = Array.isArray(taskPunches) && taskPunches.length
+    ? taskPunches.flatMap((item) => Array.isArray(item.tasks) ? item.tasks.map((task) => task.title || task.id || "task") : [])
+    : Array.isArray(taskPunch && taskPunch.tasks) ? taskPunch.tasks.map((task) => task.title || task.id || "task") : ["Task punch pending."];
+  const stages = [
+    stageState("idea", "complete", [idea || "Raw request captured."], [], [], "Confirm the request before planning."),
+    stageState("state_resync", completedState, [stateResync && stateResync.state_freshness ? `State freshness: ${stateResync.state_freshness}` : "State freshness unknown."], stateResync && stateResync.state_freshness === "current" ? [] : ["Run state resync before execution."], stateResync && stateResync.reasons ? stateResync.reasons.map((item) => String(item)) : [], stateResync && stateResync.fresh ? "Current-state evidence is fresh." : "Run kvdf state resync --track vibe --json."),
+    stageState("current_state_report", currentStateReportStatus, [stateResync && stateResync.report_type ? stateResync.report_type : "kvdf_current_state_report"], stateResync && stateResync.report ? [] : ["Current-state report is missing."], stateResync && Array.isArray(stateResync.reasons) ? stateResync.reasons.map((item) => String(item)) : [], stateResync && stateResync.report ? "Review the current-state report before planning further." : "Generate the current-state report."),
+    stageState("documentation_files", docsStageStatus, docsOutputs, docsReady ? [] : ["Documentation files are missing or unconfirmed."], docsReady ? [] : ["Current docs must be file-first and complete."], docsReady ? "Docs are ready for planning." : "Create or refresh the documentation file map."),
+    stageState("system_design", designStatus(designArtifacts && designArtifacts.system_design), systemDesignOutputs, designArtifacts && designArtifacts.system_design ? [] : ["System design is missing."], [], designArtifacts && designArtifacts.system_design ? "System design is ready." : "Create the system design."),
+    stageState("database_design", designStatus(designArtifacts && designArtifacts.database_design), databaseOutputs, designArtifacts && designArtifacts.database_design ? [] : ["Database design is missing."], [], designArtifacts && designArtifacts.database_design ? "Database design is ready." : "Create the database design."),
+    stageState("ui_ux_design", designStatus(designArtifacts && designArtifacts.ui_ux_design), uiUxOutputs, designArtifacts && designArtifacts.ui_ux_design ? [] : ["UI/UX design is missing."], [], designArtifacts && designArtifacts.ui_ux_design ? "UI/UX design is ready." : "Create the UI/UX design."),
+    stageState("visual_planning", visualPlanning ? "ready" : "planned", visualPlanning && visualPlanning.graph ? ["Mermaid visual model available."] : ["Visual planning pending."], visualPlanning ? [] : ["Visual planning is missing."], [], visualPlanning ? "Visual planning is ready." : "Create the visual planning model."),
+    stageState("version_plan", versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length ? "ready" : "planned", versionOutputs, versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length ? [] : ["Version plan is missing."], [], versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length ? "Version plan is ready." : "Create the version plan."),
+    stageState("evolutions", Array.isArray(evolutions) && evolutions.length ? "ready" : "planned", evolutionOutputs, Array.isArray(evolutions) && evolutions.length ? [] : ["Evolutions are missing."], [], Array.isArray(evolutions) && evolutions.length ? "Evolutions are ready." : "Create the governed evolutions."),
+    stageState("task_punches", Array.isArray(taskPunches) && taskPunches.length ? "ready" : "planned", taskOutputs, Array.isArray(taskPunches) && taskPunches.length ? [] : ["Task punches are missing."], [], Array.isArray(taskPunches) && taskPunches.length ? "Task punches are ready." : "Create the Codex-ready task punches."),
+    stageState("approval", approvalsStatus, [currentPlanStatus || "proposed"], approvalsStatus === "approved" ? [] : ["The plan is not approved yet."], [], approvalsStatus === "approved" ? "Approval is recorded." : "Approve the plan before execution."),
+    stageState("materialization", materializedStatus, [materializationStatus || "not_materialized"], materializedStatus === "materialized" ? [] : ["The plan is not materialized yet."], [], materializedStatus === "materialized" ? "Materialization is complete." : "Materialize the approved plan."),
+    stageState("codex_prompt", executionAllowed ? "ready" : "blocked", [executionAllowed ? "Codex execution can start." : "Codex execution remains blocked."], executionAllowed ? [] : ["Planning/design/materialization must happen before Codex execution."], executionAllowed ? [] : ["Use the next planning stage only."], executionAllowed ? "Generate the execution prompt." : "Do not prompt Codex for execution yet."),
+    stageState("execution", executionAllowed ? "ready" : "blocked", [executionAllowed ? "Task execution can start." : "Task execution is blocked."], executionAllowed ? [] : ["Execution is not allowed yet."], executionAllowed ? [] : ["Keep the app implementation untouched for now."], executionAllowed ? "Execute the approved task punch." : "Complete the next planning stage only."),
+    stageState("validation", executionAllowed ? "ready" : "planned", executionAllowed ? [...DEFAULT_VALIDATION_COMMANDS] : ["Validation waits for execution readiness."], executionAllowed ? [] : ["Validation follows execution readiness."], [], executionAllowed ? "Run validation after execution." : "Plan validation after execution readiness."),
+    stageState("security", securityStageStatus, [securityPass ? "Security gate is passing." : securityBlocked ? "Security gate is blocked." : "Security gate is pending."], securityBlocked ? ["Security gate blocks execution."] : [], securityPass ? [] : ["Security readiness is not yet confirmed."], securityPass ? "Security is ready." : "Review the security gate."),
+    stageState("handoff", executionAllowed ? "ready" : "planned", [sourceControl && sourceControl.mode ? `Source control mode: ${sourceControl.mode}` : "Source control mode not set."], executionAllowed ? [] : ["Handoff waits for execution readiness."], [], executionAllowed ? "Prepare the handoff." : "Prepare the handoff after execution readiness."),
+    stageState("dashboard_update", executionAllowed ? "ready" : "planned", ["Owner and Viber dashboards should reflect the latest readiness state."], executionAllowed ? [] : ["Dashboard updates wait for execution readiness."], [], executionAllowed ? "Refresh the dashboards." : "Refresh dashboards after readiness is met."),
+    stageState("learning_capture", executionAllowed ? "ready" : "planned", ["Capture AI learning from execution and handoff."], executionAllowed ? [] : ["Learning capture waits for execution and handoff."], [], executionAllowed ? "Capture the learning after handoff." : "Capture learning after the next safe execution stage.")
+  ];
+  const nextStage = stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(stage.status)) || stages[stages.length - 1] || { stage: "execution" };
+  const blockedCount = stages.filter((stage) => stage.status === "blocked").length;
+  const warningCount = stages.reduce((count, stage) => count + (Array.isArray(stage.warnings) ? stage.warnings.length : 0), 0);
+  return {
+    report_type: "kvdf_viber_planning_to_task_pipeline",
+    track: "vibe_app_developer",
+    delivery_mode: deliveryMode,
+    source_of_truth: "file_first",
+    source_control: sourceControl,
+    stages,
+    readiness: {
+      status: blockedCount ? "blocked" : warningCount ? "warning" : executionAllowed ? "ready" : "warning",
+      blocked_total: blockedCount,
+      warnings_total: warningCount,
+      next_action: blockedCount
+        ? stages.find((stage) => stage.status === "blocked")?.next_action || "Resolve the first blocked stage."
+        : executionAllowed
+          ? "Run kvdf planner prompt --from-current --json, then execute the approved task punch."
+          : nextStage.next_action || "Complete the next planning stage."
+    },
+    execution_allowed: executionAllowed,
+    execution_blockers: stages.filter((stage) => stage.status === "blocked").map((stage) => ({
+      id: `${stage.stage}-blocked`,
+      severity: "blocker",
+      area: pipelineStageToArea(stage.stage),
+      message: stage.blockers && stage.blockers.length ? stage.blockers[0] : `${stage.stage} is blocked.`,
+      next_action: stage.next_action || `Resolve the ${stage.stage} blocker.`
+    })),
+    next_stage: nextStage.stage || "execution",
+    forbidden_files: [...VIBE_FORBIDDEN_FILES],
+    allowed_files: [],
+    docs_status: docsStatusValue,
+    docs_plan: docsPlan || null,
+    design_artifacts: designArtifacts || null,
+    visual_planning: visualPlanning || null,
+    version_plan: versionPlan || null,
+    version_control: versionControl || null,
+    evolutions: Array.isArray(evolutions) ? evolutions : [],
+    task_punches: Array.isArray(taskPunches) ? taskPunches : [],
+    cloud_ready: false,
+    consent_required: true,
+    owner_approved_for_cloud: false,
+    anonymized: true,
+    sensitive_items_removed: 0,
+    dataset_tags: [],
+    training_eligible: false,
+    plugin_context: pluginContext || null
+  };
+}
+
+function pipelineStageToArea(stage) {
+  if (stage === "state_resync" || stage === "current_state_report") return "state_resync";
+  if (["documentation_files", "system_design", "database_design", "ui_ux_design", "visual_planning", "version_plan", "evolutions", "task_punches", "approval", "materialization", "codex_prompt", "execution", "validation", "dashboard_update", "learning_capture"].includes(stage)) {
+    return "task";
+  }
+  if (stage === "security") return "security";
+  if (stage === "handoff") return "handoff";
+  return "docs";
 }
 
 function buildIdeaToEvolutionDocumentationFiles(mode, pluginContext) {
@@ -4123,6 +4522,7 @@ function buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode) {
 
 function renderPlannerPipelineReport(report, tableRenderer) {
   const sourceControl = report.source_control;
+  const viberPipeline = report.viber_pipeline || null;
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -4160,6 +4560,15 @@ function renderPlannerPipelineReport(report, tableRenderer) {
   const apiDesign = designArtifacts.api_design || {};
   const securityDesign = designArtifacts.security_design || {};
   const versionControl = report.version_control || null;
+  const viberStageRows = viberPipeline && Array.isArray(viberPipeline.stages)
+    ? viberPipeline.stages.map((stage) => [
+      stage.stage || "",
+      stage.status || "unknown",
+      Array.isArray(stage.blockers) && stage.blockers.length ? stage.blockers.join("; ") : "",
+      Array.isArray(stage.warnings) && stage.warnings.length ? stage.warnings.join("; ") : "",
+      stage.next_action || ""
+    ])
+    : [];
   return [
     "# KVDF Idea to Evolution Pipeline",
     "",
@@ -4167,6 +4576,12 @@ function renderPlannerPipelineReport(report, tableRenderer) {
     `- Planner mode: ${report.planner_mode || ""}`,
     `- Delivery mode: ${report.delivery_mode || ""}`,
     `- Idea: ${report.idea || ""}`,
+    "",
+    viberPipeline ? "## Viber Planning-to-Task Pipeline" : null,
+    viberPipeline ? `- Execution allowed: ${viberPipeline.execution_allowed ? "yes" : "no"}` : null,
+    viberPipeline ? `- Next stage: ${viberPipeline.next_stage || "unknown"}` : null,
+    viberPipeline ? `- Next action: ${viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : "Complete the next planning stage."}` : null,
+    viberPipeline ? tableRenderer(["Stage", "Status", "Blockers", "Warnings", "Next Action"], viberStageRows) : null,
     "",
     "## Documentation Files",
     ...(report.documentation_files || []).map((item) => `- ${item}`),
@@ -5050,7 +5465,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -5059,7 +5474,17 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
   const allowedFiles = plan.allowed_files || [];
   const forbiddenFiles = plan.forbidden_files || [];
   const validationCommands = plan.validation_commands || [];
-  const taskLines = (taskPunch.tasks || []).map((task, index) => `${index + 1}. ${task.title}`);
+  const viberPipeline = mode === "vibe"
+    ? pipelineState || (visualSummary && visualSummary.viber_pipeline ? visualSummary.viber_pipeline : null)
+    : null;
+  const executionReady = Boolean(viberPipeline && (viberPipeline.execution_allowed || String(viberPipeline.current_plan_materialization_status || "").toLowerCase() === "materialized" || String(viberPipeline.current_plan_status || "").toLowerCase() === "approved"));
+  const taskLines = viberPipeline && !executionReady
+    ? [
+      "1. Complete the next planning stage only.",
+      `2. Next stage: ${viberPipeline.next_stage || "approval"}`,
+      "3. Keep the app implementation untouched for now."
+    ]
+    : (taskPunch.tasks || []).map((task, index) => `${index + 1}. ${task.title}`);
   const contextLines = buildPromptContextLines(mode, pluginContext, sourceControl);
   const aiLearningLines = buildAiLearningPromptSection(aiLearning, {
     state_resync: buildPlannerStateResyncSummary({ repo_root: repoRoot() }, { track: mode, plugin: pluginContext ? pluginContext.plugin_id : null })
@@ -5067,6 +5492,20 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
   const commitLines = buildPromptCommitLines(mode, plan, pluginContext, sourceControl);
   const pipelineLines = mode === "vibe"
     ? ["", "Pipeline:", ...VIBE_PIPELINE.map((step) => `- ${step}`)]
+    : [];
+  const viberPipelineLines = viberPipeline
+    ? [
+      "",
+      "Viber Pipeline Readiness:",
+      `- Status: ${viberPipeline.readiness ? viberPipeline.readiness.status : "unknown"}`,
+      `- Execution allowed: ${executionReady ? "yes" : "no"}`,
+      ...(executionReady ? ["- Task execution can start."] : []),
+      `- Next stage: ${viberPipeline.next_stage || "unknown"}`,
+      `- Next action: ${viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : "Complete the next planning stage."}`,
+      ...(Array.isArray(viberPipeline.execution_blockers) && viberPipeline.execution_blockers.length
+        ? ["- Blockers:", ...viberPipeline.execution_blockers.map((blocker) => `  - ${blocker.message || blocker.id || "blocked"}`)]
+        : [])
+    ]
     : [];
   return [
     heading,
@@ -5094,6 +5533,7 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     roadmapTrain ? `- Roadmap train: ${roadmapTrain.status || "unknown"}${roadmapTrain.next_evolution_id ? ` (next ${roadmapTrain.next_evolution_id})` : ""}` : null,
     latestFeedback ? `- Latest feedback: ${latestFeedback.status || "unknown"}${latestFeedback.summary ? ` (${latestFeedback.summary})` : ""}` : null,
     planningMethod && visualSummary ? `- Visual summary: ${visualSummary.markdown_report ? visualSummary.markdown_report.split("\n")[0] : "available"}` : null,
+    ...(viberPipelineLines.length ? viberPipelineLines : []),
     "",
     "Scope:",
     "Allowed files:",
@@ -7003,6 +7443,7 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
 function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null) {
   const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(plan.planner_mode);
+  const sourcePipeline = plan.source_pipeline || plan.sourcePipeline || null;
   const pluginContext = mode === "plugin"
     ? (plan.plugin_context || buildPluginContext({ plugin_id: plan.recommended_evolution && plan.recommended_evolution.plugin_context && plan.recommended_evolution.plugin_context.plugin_id }, context))
     : null;
@@ -7055,6 +7496,27 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
       flags: {}
     })
     : null;
+  const pipelineState = mode === "vibe"
+    ? buildViberPipelineState({
+      idea: goal,
+      mode,
+      deliveryMode: plan.delivery_mode || getDeliveryMode(mode),
+      sourceControl: sourceControlState,
+      stateResync: buildPlannerStateResyncSummary(context, { track: mode, app: normalizeAppSlug(plan.app_slug || ""), plugin: pluginContext ? pluginContext.plugin_id : "" }),
+      docsPlan: sourcePipeline && sourcePipeline.docs_plan ? sourcePipeline.docs_plan : (plan.docs_plan || null),
+      docsStatus: sourcePipeline && sourcePipeline.docs_status ? sourcePipeline.docs_status : (plan.docs_status || (plan.documentation_files && plan.documentation_files.length ? "draft" : "planned")),
+      designArtifacts: sourcePipeline && sourcePipeline.design_artifacts ? sourcePipeline.design_artifacts : (plan.pipeline && plan.pipeline.design_artifacts ? plan.pipeline.design_artifacts : (plan.design_artifacts || null)),
+      visualPlanning: sourcePipeline && sourcePipeline.visual_planning ? sourcePipeline.visual_planning : (plan.visual_planning || plan.visual || (plan.pipeline && plan.pipeline.visual_planning ? plan.pipeline.visual_planning : null)),
+      versionPlan: sourcePipeline && sourcePipeline.version_plan ? sourcePipeline.version_plan : (plan.version_plan || (plan.pipeline && plan.pipeline.version_plan ? plan.pipeline.version_plan : null)),
+      versionControl,
+      evolutions: sourcePipeline && Array.isArray(sourcePipeline.evolutions) ? sourcePipeline.evolutions : (plan.evolutions || (plan.pipeline && Array.isArray(plan.pipeline.evolutions) ? plan.pipeline.evolutions : [])),
+      taskPunches: sourcePipeline && Array.isArray(sourcePipeline.task_punches) ? sourcePipeline.task_punches : (plan.task_punches || (plan.pipeline && Array.isArray(plan.pipeline.task_punches) ? plan.pipeline.task_punches : [])),
+      currentPlan: plan,
+      taskPunch,
+      pluginContext,
+      executionAllowedOverride: String(plan.materialization_status || plan.status || "").toLowerCase() === "materialized" || Boolean(plan.materialized_at)
+    })
+    : null;
   return renderCodexPrompt({
     goal,
     mode,
@@ -7067,12 +7529,13 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     planningMethod: plan.planning_method || null,
     methodReason: plan.method_reason || "",
     review: plan.review || null,
-    docsStatus: plan.documentation_files && plan.documentation_files.length ? "draft" : "planned",
-    visualSummary: plan.visual_planning || plan.visual || null,
+    docsStatus: sourcePipeline && sourcePipeline.docs_status ? sourcePipeline.docs_status : (plan.documentation_files && plan.documentation_files.length ? "draft" : "planned"),
+    visualSummary: sourcePipeline && sourcePipeline.visual_planning ? sourcePipeline.visual_planning : (plan.visual_planning || plan.visual || null),
     currentGate: plan.current_gate || null,
     versionControl,
     latestFeedback: plan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(plan.app_slug || "")),
-    roadmapTrain
+    roadmapTrain,
+    pipelineState
   });
 }
 

@@ -73,6 +73,8 @@ The planner can emit:
 - a Codex-ready execution prompt
 - a visual planning model with Mermaid, planning board JSON, scope map, and
   markdown report output
+- a Viber Planning-to-Task Execution Pipeline with execution gating,
+  state-freshness, and source-control posture
 - allowed and forbidden file lists
 - acceptance criteria
 - validation commands
@@ -371,6 +373,9 @@ Rules:
 - Planner outputs should expose the `source_control` object so prompts, visual
   reports, materialization, and documentation all agree on the same delivery
   mode.
+- Viber/App planning must also expose the Viber Planning-to-Task Execution
+  Pipeline summary so the prompt and dashboard layers can keep execution
+  blocked until the plan is approved and materialized.
 
 ## Track Rules
 

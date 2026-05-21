@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Viber Planning-to-Task Pipeline",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "track",
+    "delivery_mode",
+    "source_of_truth",
+    "stages",
+    "readiness",
+    "execution_allowed",
+    "execution_blockers",
+    "next_stage"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_viber_planning_to_task_pipeline"
+    },
+    "track": {
+      "type": "string",
+      "const": "vibe_app_developer"
+    },
+    "delivery_mode": {
+      "type": "string",
+      "enum": ["local_first", "direct_main", "local_only", "branch", "branch_pr"]
+    },
+    "source_of_truth": {
+      "type": "string",
+      "enum": ["file_first"]
+    },
+    "source_control": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "provider": { "type": "string" },
+        "remote_provider": { "type": "string" },
+        "provider_plugin": { "type": ["string", "null"] },
+        "mode": { "type": "string" },
+        "branching_enabled": { "type": "boolean" },
+        "pr_enabled": { "type": "boolean" },
+        "branch_name": { "type": ["string", "null"] },
+        "pr_title": { "type": ["string", "null"] },
+        "handoff_requires_pr": { "type": "boolean" },
+        "next_source_control_action": { "type": "string" }
+      }
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["stage", "status", "required", "outputs", "blockers", "warnings", "next_action"],
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "idea",
+              "state_resync",
+              "current_state_report",
+              "documentation_files",
+              "system_design",
+              "database_design",
+              "ui_ux_design",
+              "visual_planning",
+              "version_plan",
+              "evolutions",
+              "task_punches",
+              "approval",
+              "materialization",
+              "codex_prompt",
+              "execution",
+              "validation",
+              "security",
+              "handoff",
+              "dashboard_update",
+              "learning_capture"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["missing", "planned", "ready", "approved", "materialized", "blocked", "complete", "unknown"]
+          },
+          "required": { "type": "boolean" },
+          "outputs": { "type": "array", "items": { "type": "string" } },
+          "blockers": { "type": "array", "items": { "type": "string" } },
+          "warnings": { "type": "array", "items": { "type": "string" } },
+          "next_action": { "type": "string" }
+        }
+      }
+    },
+    "readiness": {
+      "type": "object",
+      "required": ["status", "blocked_total", "warnings_total", "next_action"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["ready", "warning", "blocked"]
+        },
+        "blocked_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "warnings_total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_action": {
+          "type": "string"
+        }
+      }
+    },
+    "execution_allowed": {
+      "type": "boolean"
+    },
+    "execution_blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "area", "message", "next_action"],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["blocker", "warning"] },
+          "area": {
+            "type": "string",
+            "enum": ["state_resync", "docs", "task", "validation", "security", "handoff", "publish", "source_control"]
+          },
+          "message": { "type": "string" },
+          "next_action": { "type": "string" }
+        }
+      }
+    },
+    "next_stage": {
+      "type": "string"
+    }
+  }
+}
