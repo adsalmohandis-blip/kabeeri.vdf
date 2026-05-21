@@ -504,6 +504,12 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (mode === "pipeline") {
+    if (String(value || "").trim().toLowerCase() === "inspect") {
+      const report = buildIdeaToEvolutionPipelineReport("", request, deps);
+      const inspection = buildViberPipelineStageInspectionReport(report, flags, request, deps);
+      printPlannerOutput(inspection, flags, deps, "pipeline-inspect");
+      return;
+    }
     const idea = resolveGoal(value, flags, rest, request.recommended_evolution.title);
     if (!idea) throw new Error("Missing idea for planner pipeline.");
     const report = buildIdeaToEvolutionPipelineReport(idea, request, deps);
@@ -5446,6 +5452,577 @@ function buildViberPipelineStageTransitionState({
   };
 }
 
+const VIBER_STAGE_INSPECTION_ALLOWED_STATUSES = new Set([
+  "complete",
+  "ready",
+  "approved",
+  "materialized",
+  "generated",
+  "reviewed",
+  "applied_to_stage",
+  "deferred",
+  "not_applicable"
+]);
+
+function normalizeViberPipelineStageName(stage) {
+  return String(stage || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function getViberPipelineStageInspectionIndex(stage) {
+  return VIBER_PIPELINE_STAGE_ORDER.indexOf(normalizeViberPipelineStageName(stage));
+}
+
+function getViberPipelineStageInspectionGroup(stage) {
+  const normalized = normalizeViberPipelineStageName(stage);
+  const entry = Object.entries(VIBER_PIPELINE_STAGE_GROUPS).find(([, items]) => Array.isArray(items) && items.includes(normalized));
+  return entry ? entry[0] : "planning";
+}
+
+function getViberPipelineStageInspectionPreviousStages(stage) {
+  const index = getViberPipelineStageInspectionIndex(stage);
+  if (index <= 0) return [];
+  return [VIBER_PIPELINE_STAGE_ORDER[index - 1]];
+}
+
+function getViberPipelineStageInspectionRequiredGates(stage, pipeline = {}) {
+  const normalized = normalizeViberPipelineStageName(stage);
+  const sourceControlMode = String(pipeline.source_control && pipeline.source_control.mode || "local_only");
+  const planningMethod = String(pipeline.planning_method || "hybrid");
+  const securityScanStatus = String(pipeline.execution_gates && pipeline.execution_gates.security_gate && pipeline.execution_gates.security_gate.status || "").toLowerCase();
+  const executionAllowed = Boolean(pipeline.execution_allowed);
+  const base = {
+    idea: ["goal/request"],
+    questionnaire_generation: ["questionnaire plan"],
+    questionnaire_answers: ["generated questions", "questionnaire answers"],
+    answer_completeness_check: ["questionnaire coverage"],
+    brief_generation: ["complete questionnaire answers"],
+    brief_review: ["brief draft"],
+    brief_approval: ["brief review", "explicit confirmation"],
+    state_resync: ["approved brief", "state resync freshness"],
+    current_state_report: ["fresh state resync report"],
+    app_boundary: ["current-state report", "workspace boundary"],
+    documentation_architecture: ["docs plan", "planner docs catalog"],
+    documentation_folders: ["planner foldered docs package"],
+    documentation_files: ["documentation_folders compatibility output"],
+    system_design: ["docs/architecture/SYSTEM_DESIGN.md", "MODULE_BREAKDOWN.md", "SERVICE_BOUNDARIES.md"],
+    database_design: ["docs/database/DATA_MODEL.md", "DATABASE_SCHEMA.md", "ENTITIES_AND_RELATIONSHIPS.md"],
+    ui_ux_design: ["docs/ui-ux/UI_UX_DESIGN.md", "USER_FLOWS.md", "UI_SPECIFICATION.md"],
+    source_control_plan: ["source_control.mode"],
+    security_plan: ["security design", "security planning"],
+    version_plan: ["docs/delivery/VERSION_PLAN.md", "version_control"],
+    evolutions: ["approved version plan", "ordered evolutions"],
+    evolution_order_validation: ["viber evolution ordering validation"],
+    task_punches: ["approved ordered evolutions", "evolution order validation"],
+    task_punch_review: ["task punch review"],
+    approval: ["explicit approval"],
+    materialization: ["approved plan", "task punch review"],
+    codex_prompt: ["materialized plan"],
+    security_gate: ["security scan evidence", "security readiness"],
+    handoff_gate: ["handoff plan", "task review"],
+    source_control_gate: ["source_control.mode"],
+    execution: ["security_gate", "handoff_gate", "source_control_gate"],
+    validation: ["execution evidence", "validation commands"],
+    security_scan: ["security scan evidence"],
+    handoff: ["security scan", "handoff evidence"],
+    dashboard_update: ["dashboard refresh"],
+    learning_capture: ["ai learning capture"],
+    closeout: ["learning capture"]
+  };
+  const gates = base[normalized] ? [...base[normalized]] : [];
+  if (normalized === "database_design" && planningMethod === "agile") gates.push("agile deferral policy");
+  if (normalized === "source_control_plan" && sourceControlMode === "local_only") gates.push("local-only source control");
+  if (normalized === "source_control_gate") gates.push(sourceControlMode);
+  if (normalized === "security_gate") gates.push(securityScanStatus || "security scan status unknown");
+  if (normalized === "execution") {
+    gates.push(executionAllowed ? "execution allowed" : "execution blocked");
+  }
+  return uniqueList(gates);
+}
+
+function getViberPipelineStageInspectionEvidence(stage, pipeline = {}) {
+  const normalized = normalizeViberPipelineStageName(stage);
+  const baseDocs = [
+    "docs/workflows/VIBER_APP_DELIVERY_PIPELINE.md",
+    "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
+    "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md"
+  ];
+  const sourceFiles = ["src/cli/commands/planner.js"];
+  const runtimeFiles = [];
+  const docs = [...baseDocs];
+  const addDocs = (...items) => docs.push(...items.filter(Boolean));
+  const addSource = (...items) => sourceFiles.push(...items.filter(Boolean));
+  const addRuntime = (...items) => runtimeFiles.push(...items.filter(Boolean));
+
+  const addQuestionnaireEvidence = () => {
+    addSource("src/cli/commands/questionnaire.js", "src/cli/services/questionnaire.js");
+    addRuntime(".kabeeri/questionnaires/adaptive_intake_plan.json", ".kabeeri/questionnaires/questionnaire_questions.md", ".kabeeri/questionnaires/answers.json", ".kabeeri/questionnaires/coverage_matrix.json", ".kabeeri/questionnaires/missing_answers_report.json");
+    addDocs("docs/cli/CLI_COMMAND_REFERENCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md");
+  };
+
+  const addStateEvidence = () => {
+    addSource("src/cli/commands/state_resync.js", "src/cli/services/git_snapshot.js");
+    addRuntime(".kabeeri/state_resync/current_state_report.json", ".kabeeri/state_resync/state_resync_history.json");
+    addDocs("docs/workflows/KVDF_STATE_RESYNC.md", "docs/workflows/CURRENT_STATE_REPORT_TEMPLATE.md");
+  };
+
+  const addBoundaryEvidence = () => {
+    addSource("src/cli/services/app_workspace_contract.js", "src/cli/workspace.js");
+    addRuntime(".kabeeri/project.json", ".kabeeri/app_workspaces.json");
+  };
+
+  const addDocsEvidence = () => {
+    addSource("src/cli/commands/planner.js");
+    addRuntime(".kabeeri/planner.json");
+    addDocs("docs/workflows/VIBER_APP_DELIVERY_PIPELINE.md", "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md", "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md");
+  };
+
+  const addArchitectureEvidence = () => {
+    addDocs("workspaces/apps/app-draft/docs/architecture/SYSTEM_DESIGN.md", "workspaces/apps/app-draft/docs/architecture/MODULE_BREAKDOWN.md", "workspaces/apps/app-draft/docs/architecture/SERVICE_BOUNDARIES.md");
+  };
+
+  const addDatabaseEvidence = () => {
+    addDocs("workspaces/apps/app-draft/docs/database/DATA_MODEL.md", "workspaces/apps/app-draft/docs/database/DATABASE_SCHEMA.md", "workspaces/apps/app-draft/docs/database/ENTITIES_AND_RELATIONSHIPS.md");
+  };
+
+  const addUiUxEvidence = () => {
+    addDocs("workspaces/apps/app-draft/docs/ui-ux/UI_UX_DESIGN.md", "workspaces/apps/app-draft/docs/ui-ux/USER_FLOWS.md", "workspaces/apps/app-draft/docs/ui-ux/UI_SPECIFICATION.md");
+  };
+
+  const addPlanningEvidence = () => {
+    addDocs("docs/workflows/SOURCE_CONTROL_PROVIDER_MODEL.md", "docs/workflows/VIBER_VERSION_TO_PUBLISH_CONTROL.md", "docs/workflows/VIBER_EVOLUTION_ORDERING_POLICY.md");
+    addRuntime(".kabeeri/evolution.json", ".kabeeri/reports/pipeline_enforcement.json", ".kabeeri/tasks.json");
+  };
+
+  const addTaskingEvidence = () => {
+    addSource("src/cli/commands/task_lifecycle.js", "src/cli/services/task_trash.js");
+    addRuntime(".kabeeri/tasks.json", ".kabeeri/planner.json", ".kabeeri/task_assessments.json");
+    addDocs("docs/workflows/VIBER_TASK_ARCHIVE_POLICY.md", "docs/cli/CLI_COMMAND_REFERENCE.md");
+  };
+
+  const addExecutionEvidence = () => {
+    addSource("src/cli/commands/security.js", "src/cli/commands/handoff.js", "src/cli/commands/task_scheduler.js");
+    addRuntime(".kabeeri/security/security_gate_state.json", ".kabeeri/security/latest_security_scan.json", ".kabeeri/reports/task_batch_run.json");
+  };
+
+  const addFeedbackEvidence = () => {
+    addSource("src/cli/commands/dashboard_state.js");
+    addRuntime(".kabeeri/dashboard/viber_dashboard_state.json", ".kabeeri/ai_learning/failure_patterns.json", ".kabeeri/ai_learning/fast_paths.json");
+    addDocs("knowledge/ai_learning/AI_LEARNING_MEMORY.md", "knowledge/ai_learning/shared_patterns.json", "knowledge/ai_learning/shared_fast_paths.json");
+  };
+
+  switch (normalized) {
+    case "idea":
+      addSource("src/cli/commands/planner.js");
+      addDocs("docs/cli/CLI_COMMAND_REFERENCE.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md");
+      break;
+    case "questionnaire_generation":
+    case "questionnaire_answers":
+    case "answer_completeness_check":
+    case "brief_generation":
+    case "brief_review":
+    case "brief_approval":
+      addQuestionnaireEvidence();
+      break;
+    case "state_resync":
+    case "current_state_report":
+      addStateEvidence();
+      break;
+    case "app_boundary":
+      addStateEvidence();
+      addBoundaryEvidence();
+      break;
+    case "documentation_architecture":
+    case "documentation_folders":
+    case "documentation_files":
+      addDocsEvidence();
+      break;
+    case "system_design":
+      addDocsEvidence();
+      addArchitectureEvidence();
+      break;
+    case "database_design":
+      addDocsEvidence();
+      addDatabaseEvidence();
+      break;
+    case "ui_ux_design":
+      addDocsEvidence();
+      addUiUxEvidence();
+      break;
+    case "source_control_plan":
+      addDocsEvidence();
+      addPlanningEvidence();
+      break;
+    case "security_plan":
+      addDocsEvidence();
+      addPlanningEvidence();
+      addSource("src/cli/commands/security_auditor.js");
+      addDocs("workspaces/apps/app-draft/docs/security/SECURITY_DESIGN.md", "workspaces/apps/app-draft/docs/security/THREAT_MODEL.md", "workspaces/apps/app-draft/docs/security/SECURITY_AND_PRIVACY.md", "workspaces/apps/app-draft/docs/security/ROLE_AND_PERMISSION_MATRIX.md");
+      break;
+    case "version_plan":
+    case "evolutions":
+    case "evolution_order_validation":
+      addDocsEvidence();
+      addPlanningEvidence();
+      break;
+    case "task_punches":
+    case "task_punch_review":
+    case "approval":
+    case "materialization":
+    case "codex_prompt":
+      addDocsEvidence();
+      addPlanningEvidence();
+      addTaskingEvidence();
+      break;
+    case "security_gate":
+    case "handoff_gate":
+    case "source_control_gate":
+    case "execution":
+    case "validation":
+    case "security_scan":
+    case "handoff":
+      addDocsEvidence();
+      addPlanningEvidence();
+      addTaskingEvidence();
+      addExecutionEvidence();
+      break;
+    case "dashboard_update":
+    case "learning_capture":
+    case "closeout":
+      addDocsEvidence();
+      addPlanningEvidence();
+      addTaskingEvidence();
+      addExecutionEvidence();
+      addFeedbackEvidence();
+      break;
+    default:
+      addDocsEvidence();
+      break;
+  }
+
+  return {
+    source_files_inspected: uniqueList(sourceFiles),
+    runtime_files_inspected: uniqueList(runtimeFiles),
+    docs_inspected: uniqueList(docs)
+  };
+}
+
+function buildViberPipelineStageInspectionFromPipeline(pipeline = {}, stageInput = "", options = {}) {
+  const stageName = normalizeViberPipelineStageName(stageInput);
+  const stageIndex = getViberPipelineStageInspectionIndex(stageName);
+  if (stageIndex < 0) {
+    throw new Error(`Unknown Viber pipeline stage: ${stageInput}`);
+  }
+  const stages = Array.isArray(pipeline.stages) ? pipeline.stages : [];
+  const stageRecord = stages.find((stage) => normalizeViberPipelineStageName(stage.stage) === stageName) || null;
+  const previousStage = stageIndex > 0 ? VIBER_PIPELINE_STAGE_ORDER[stageIndex - 1] : null;
+  const nextStage = stageIndex < VIBER_PIPELINE_STAGE_ORDER.length - 1 ? VIBER_PIPELINE_STAGE_ORDER[stageIndex + 1] : null;
+  const planningMethod = String(pipeline.planning_method || "hybrid");
+  const planningAuthority = pipeline.planning_authority || {
+    level: "placeholder",
+    reason: "Planning authority is not yet established."
+  };
+  const status = stageRecord ? String(stageRecord.status || "unknown") : "unknown";
+  const allowed = VIBER_STAGE_INSPECTION_ALLOWED_STATUSES.has(status);
+  const blockedBy = uniqueList([
+    ...(Array.isArray(stageRecord && stageRecord.blockers) ? stageRecord.blockers : []),
+    ...(!allowed ? [stageRecord && stageRecord.next_action ? stageRecord.next_action : `${formatViberPipelineStageTitle(stageName)} is not ready yet.`] : [])
+  ]);
+  const warnings = uniqueList(Array.isArray(stageRecord && stageRecord.warnings) ? stageRecord.warnings : []);
+  const requiredBeforeNext = uniqueList([
+    ...(stageRecord && stageRecord.next_action ? [stageRecord.next_action] : []),
+    ...(allowed ? [] : [`Complete ${formatViberPipelineStageTitle(stageName)} before moving forward.`])
+  ]);
+  const requiredGates = getViberPipelineStageInspectionRequiredGates(stageName, pipeline);
+  const evidence = getViberPipelineStageInspectionEvidence(stageName, pipeline, options);
+  const explicitIdea = Boolean(options && options.ideaProvided);
+  const pipelineIdea = String(pipeline.idea || "").trim();
+  const ideaProvided = Boolean(explicitIdea || (pipelineIdea && pipelineIdea !== "Viber Planning Idea"));
+  let finalStatus = status;
+  let finalBlockedBy = blockedBy;
+  let finalTransitionAllowed = allowed && finalBlockedBy.length === 0;
+  let finalNextAction = stageRecord && stageRecord.next_action ? stageRecord.next_action : `Advance to ${nextStage ? formatViberPipelineStageTitle(nextStage) : "closeout"}.`;
+
+  if (stageName === "idea" && !ideaProvided) {
+    finalStatus = "missing";
+    finalTransitionAllowed = false;
+    finalBlockedBy = ["Provide the idea/request first."];
+    finalNextAction = "Provide the idea/request.";
+  }
+
+  if (stageName === "questionnaire_answers" && !(pipeline.questionnaire && Number(pipeline.questionnaire.answers_total || 0) > 0)) {
+    finalStatus = finalStatus === "complete" ? "blocked" : finalStatus;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Questionnaire answers are missing."];
+    finalTransitionAllowed = false;
+    finalNextAction = "Record the remaining questionnaire answers before moving on.";
+  }
+
+  if (stageName === "brief_approval" && !(pipeline.brief && pipeline.brief.approved)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["The brief is not approved yet."];
+    finalNextAction = "Review and approve the brief before continuing.";
+  }
+
+  if (stageName === "state_resync" && !(pipeline.state_resync && pipeline.state_resync.fresh)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["State Resync is stale or missing."];
+    finalNextAction = "Run kvdf state resync --track vibe --json.";
+  }
+
+  if (stageName === "system_design") {
+    const systemDesignReady = pipeline.docs_design_gates && pipeline.docs_design_gates.system_design && ["generated", "reviewed", "approved", "applied_to_stage"].includes(String(pipeline.docs_design_gates.system_design.status || "").toLowerCase());
+    if (!systemDesignReady) {
+      finalTransitionAllowed = false;
+      if (!finalBlockedBy.length) finalBlockedBy = ["System design docs are missing or not ready."];
+      finalNextAction = "Generate or review the system design before moving to database design.";
+    }
+  }
+
+  if (stageName === "database_design") {
+    const databaseGate = pipeline.docs_design_gates && pipeline.docs_design_gates.database_design;
+    const dbStatus = String(databaseGate && databaseGate.status || "").toLowerCase();
+    const databaseReady = ["generated", "reviewed", "approved", "applied_to_stage", "deferred", "not_applicable"].includes(dbStatus);
+    if (!databaseReady) {
+      finalTransitionAllowed = false;
+      if (!finalBlockedBy.length) finalBlockedBy = ["Database design docs are missing or not ready."];
+      finalNextAction = planningMethod === "agile"
+        ? "Mark the database design deferred or not applicable for this low-risk agile slice."
+        : "Create the database design before moving to UI/UX design.";
+    }
+  }
+
+  if (stageName === "version_plan") {
+    const versionReady = pipeline.version_evolution_gates && ["generated", "reviewed", "approved", "materialized"].includes(String(pipeline.version_evolution_gates.version_plan && pipeline.version_evolution_gates.version_plan.status || "").toLowerCase());
+    if (!versionReady) {
+      finalTransitionAllowed = false;
+      if (!finalBlockedBy.length) finalBlockedBy = ["Version plan is missing or not approved."];
+      finalNextAction = "Create or approve the version plan before authorizing evolutions.";
+    }
+  }
+
+  if (stageName === "evolution_order_validation") {
+    const evolutionReady = pipeline.version_evolution_gates && pipeline.version_evolution_gates.evolution_order_validation && pipeline.version_evolution_gates.evolution_order_validation.task_generation_allowed;
+    if (!evolutionReady) {
+      finalTransitionAllowed = false;
+      if (!finalBlockedBy.length) finalBlockedBy = ["Evolution ordering has not passed validation."];
+      finalNextAction = pipeline.version_evolution_gates && pipeline.version_evolution_gates.evolution_order_validation && pipeline.version_evolution_gates.evolution_order_validation.next_action
+        ? pipeline.version_evolution_gates.evolution_order_validation.next_action
+        : "Validate the ordered evolutions before creating task punches.";
+    }
+  }
+
+  if (stageName === "task_punches") {
+    const punchesReady = pipeline.version_evolution_gates && pipeline.version_evolution_gates.task_punches && ["generated", "reviewed", "approved", "materialized"].includes(String(pipeline.version_evolution_gates.task_punches.status || "").toLowerCase());
+    if (!punchesReady) {
+      finalTransitionAllowed = false;
+      if (!finalBlockedBy.length) finalBlockedBy = ["Task punches are not yet ready."];
+      finalNextAction = "Create task punches only after evolution order validation passes.";
+    }
+  }
+
+  if (stageName === "task_punch_review") {
+    const reviewReady = pipeline.version_evolution_gates && pipeline.version_evolution_gates.task_punch_review && ["reviewed", "approved", "materialized"].includes(String(pipeline.version_evolution_gates.task_punch_review.status || "").toLowerCase());
+    if (!reviewReady) {
+      finalTransitionAllowed = false;
+      if (!finalBlockedBy.length) finalBlockedBy = ["Task punch review is not complete."];
+      finalNextAction = "Review the task punches before approval.";
+    }
+  }
+
+  if (stageName === "approval" && !(pipeline.current_plan_status && ["approved", "materialized", "completed"].includes(String(pipeline.current_plan_status || "").toLowerCase()))) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Explicit approval has not been recorded."];
+    finalNextAction = "Approve the brief and ordered plan before materialization.";
+  }
+
+  if (stageName === "materialization" && !(pipeline.current_plan_materialization_status && String(pipeline.current_plan_materialization_status || "").toLowerCase() === "materialized")) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["The approved plan has not been materialized."];
+    finalNextAction = "Materialize the approved plan before generating a Codex prompt.";
+  }
+
+  if (stageName === "codex_prompt" && !(pipeline.current_plan_materialization_status && String(pipeline.current_plan_materialization_status || "").toLowerCase() === "materialized")) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Codex execution requires a materialized plan."];
+    finalNextAction = "Materialize the approved plan before prompting Codex.";
+  }
+
+  if (stageName === "security_gate" && !(pipeline.execution_gates && pipeline.execution_gates.security_gate && ["ready", "passed"].includes(String(pipeline.execution_gates.security_gate.status || "").toLowerCase()))) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Security gate has not passed."];
+    finalNextAction = pipeline.execution_gates && pipeline.execution_gates.security_gate && pipeline.execution_gates.security_gate.next_action ? pipeline.execution_gates.security_gate.next_action : "Resolve the security gate before execution.";
+  }
+
+  if (stageName === "handoff_gate" && !(pipeline.execution_gates && pipeline.execution_gates.handoff_gate && String(pipeline.execution_gates.handoff_gate.status || "").toLowerCase() === "passed")) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Handoff gate has not passed."];
+    finalNextAction = pipeline.execution_gates && pipeline.execution_gates.handoff_gate && pipeline.execution_gates.handoff_gate.next_action ? pipeline.execution_gates.handoff_gate.next_action : "Prepare the handoff gate before execution.";
+  }
+
+  if (stageName === "source_control_gate" && !(pipeline.execution_gates && pipeline.execution_gates.source_control_gate && String(pipeline.execution_gates.source_control_gate.status || "").toLowerCase() === "ready")) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Source control gate is not ready."];
+    finalNextAction = pipeline.execution_gates && pipeline.execution_gates.source_control_gate && pipeline.execution_gates.source_control_gate.next_action ? pipeline.execution_gates.source_control_gate.next_action : "Confirm the source-control mode before execution.";
+  }
+
+  if (stageName === "execution" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = Array.isArray(pipeline.execution_blockers) && pipeline.execution_blockers.length
+      ? pipeline.execution_blockers.map((blocker) => blocker.message || "Execution is blocked.")
+      : ["Execution is blocked until the pipeline gates pass."];
+    finalNextAction = pipeline.next_action || "Complete the next blocked stage only.";
+  }
+
+  if (stageName === "validation" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Validation follows execution evidence."];
+    finalNextAction = Array.isArray(pipeline.validation_commands) && pipeline.validation_commands.length
+      ? `Run ${pipeline.validation_commands.join(" then ")} after execution.`
+      : "Complete execution before validation.";
+  }
+
+  if (stageName === "security_scan" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Security scan follows execution evidence."];
+    finalNextAction = "Complete execution before security scan.";
+  }
+
+  if (stageName === "handoff" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Handoff follows execution evidence."];
+    finalNextAction = "Complete execution before handoff.";
+  }
+
+  if (stageName === "dashboard_update" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Dashboard update follows handoff."];
+    finalNextAction = "Complete the handoff first.";
+  }
+
+  if (stageName === "learning_capture" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Learning capture follows handoff."];
+    finalNextAction = "Complete the handoff first.";
+  }
+
+  if (stageName === "closeout" && !Boolean(pipeline.execution_allowed)) {
+    finalTransitionAllowed = false;
+    if (!finalBlockedBy.length) finalBlockedBy = ["Closeout is the final stage."];
+    finalNextAction = "Complete the earlier stages first.";
+  }
+
+  return {
+    report_type: "kvdf_viber_pipeline_stage_inspection",
+    track: pipeline.track || "vibe_app_developer",
+    current_stage: stageName,
+    stage: stageName,
+    stage_order: stageIndex + 1,
+    stage_group: getViberPipelineStageInspectionGroup(stageName),
+    label: formatViberPipelineStageTitle(stageName),
+    status: finalStatus,
+    required: Boolean(stageRecord ? stageRecord.required : true),
+    planning_method: planningMethod,
+    planning_authority: {
+      level: planningAuthority.level || "placeholder",
+      reason: planningAuthority.reason || "Planning authority is not yet established."
+    },
+    evidence: {
+      ...evidence,
+      summary: stageRecord && Array.isArray(stageRecord.outputs) && stageRecord.outputs.length
+        ? stageRecord.outputs.join(" ")
+        : stageRecord && stageRecord.next_action
+          ? stageRecord.next_action
+          : `${formatViberPipelineStageTitle(stageName)} inspection completed.`
+    },
+    dependencies: {
+      previous_stage: previousStage || "none",
+      required_previous_stages: getViberPipelineStageInspectionPreviousStages(stageName),
+      required_gates: requiredGates
+    },
+    blockers: finalBlockedBy,
+    warnings,
+    transition: {
+      next_stage: nextStage || "none",
+      transition_allowed: finalTransitionAllowed,
+      blocked_by: finalBlockedBy,
+      required_before_next: requiredBeforeNext,
+      next_action: finalNextAction
+    },
+    next_action: finalNextAction
+  };
+}
+
+function buildViberPipelineStageInspectionCollection(pipeline = {}, stageNames = [], options = {}) {
+  const inspections = stageNames.map((stage) => buildViberPipelineStageInspectionFromPipeline(pipeline, stage, options));
+  return {
+    report_type: "kvdf_viber_pipeline_stage_inspection",
+    track: pipeline.track || "vibe_app_developer",
+    current_stage: "all",
+    planning_method: pipeline.planning_method || "hybrid",
+    planning_authority: pipeline.planning_authority || {
+      level: "placeholder",
+      reason: "Planning authority is not yet established."
+    },
+    stages: inspections,
+    evidence: {
+      source_files_inspected: uniqueList(inspections.flatMap((item) => Array.isArray(item.evidence && item.evidence.source_files_inspected) ? item.evidence.source_files_inspected : [])),
+      runtime_files_inspected: uniqueList(inspections.flatMap((item) => Array.isArray(item.evidence && item.evidence.runtime_files_inspected) ? item.evidence.runtime_files_inspected : [])),
+      docs_inspected: uniqueList(inspections.flatMap((item) => Array.isArray(item.evidence && item.evidence.docs_inspected) ? item.evidence.docs_inspected : [])),
+      summary: `Inspected ${inspections.length} Viber pipeline stage(s).`
+    },
+    dependencies: {
+      previous_stage: "see stages",
+      required_previous_stages: uniqueList(inspections.flatMap((item) => Array.isArray(item.dependencies && item.dependencies.required_previous_stages) ? item.dependencies.required_previous_stages : [])),
+      required_gates: uniqueList(inspections.flatMap((item) => Array.isArray(item.dependencies && item.dependencies.required_gates) ? item.dependencies.required_gates : []))
+    },
+    blockers: uniqueList(inspections.flatMap((item) => Array.isArray(item.blockers) ? item.blockers : [])),
+    warnings: uniqueList(inspections.flatMap((item) => Array.isArray(item.warnings) ? item.warnings : [])),
+    transition: {
+      next_stage: inspections.length ? inspections[0].transition.next_stage : "none",
+      transition_allowed: inspections.every((item) => item.transition.transition_allowed),
+      blocked_by: uniqueList(inspections.flatMap((item) => Array.isArray(item.transition.blocked_by) ? item.transition.blocked_by : [])),
+      required_before_next: uniqueList(inspections.flatMap((item) => Array.isArray(item.transition.required_before_next) ? item.transition.required_before_next : [])),
+      next_action: inspections.length ? inspections[0].transition.next_action : "Inspect the requested stage."
+    },
+    next_action: inspections.length ? inspections[0].next_action : "Inspect the requested stage."
+  };
+}
+
+function buildViberPipelineStageInspectionReport(report = {}, flags = {}, request = {}, deps = {}) {
+  const pipeline = report && report.viber_pipeline ? report.viber_pipeline : null;
+  if (!pipeline) {
+    throw new Error("Viber pipeline inspection is only available for track vibe.");
+  }
+  const inspectAll = resolveBooleanFlag(flags.all || flags["all"]);
+  const stageInput = String(flags.stage || flags["stage"] || "").trim();
+  if (!inspectAll && !stageInput) {
+    throw new Error("Missing stage for planner pipeline inspect.");
+  }
+  const ideaProvided = Boolean(String(report.idea || report.goal || "").trim());
+  const stageNames = inspectAll ? [...VIBER_PIPELINE_STAGE_ORDER] : [stageInput];
+  const result = inspectAll
+    ? buildViberPipelineStageInspectionCollection(pipeline, stageNames, { ideaProvided })
+    : buildViberPipelineStageInspectionFromPipeline(pipeline, stageInput, { ideaProvided });
+  return {
+    ...result,
+    track: pipeline.track || "vibe_app_developer",
+    planning_method: pipeline.planning_method || "hybrid",
+    planning_authority: pipeline.planning_authority || {
+      level: "placeholder",
+      reason: "Planning authority is not yet established."
+    },
+    source_control: report.source_control || pipeline.source_control || null,
+    execution_allowed: Boolean(pipeline.execution_allowed),
+    execution_blockers: Array.isArray(pipeline.execution_blockers) ? [...pipeline.execution_blockers] : [],
+    docs_design_gates: pipeline.docs_design_gates || null,
+    version_evolution_gates: pipeline.version_evolution_gates || null,
+    execution_gates: pipeline.execution_gates || null,
+    stage_transition: pipeline.stage_transition || null,
+    readiness: pipeline.readiness || null,
+    next_stage: pipeline.next_stage || null,
+    next_action: result.next_action || pipeline.next_action || "Inspect the requested stage."
+  };
+}
+
 function buildViberPipelineStageOrderState({
   idea = "",
   mode = "vibe",
@@ -6583,6 +7160,82 @@ function renderPlannerPipelineReport(report, tableRenderer) {
   ].join("\n").replace(/\n{3,}/g, "\n\n");
 }
 
+function renderPlannerPipelineStageInspectionReport(report, tableRenderer) {
+  const stages = Array.isArray(report.stages) ? report.stages : [];
+  const isCollection = stages.length > 0;
+  const headerLines = [
+    "# KVDF Viber Pipeline Stage Inspection",
+    "",
+    `- Track: ${report.track || "vibe_app_developer"}`,
+    `- Planning method: ${report.planning_method || "hybrid"}`,
+    `- Planning authority: ${report.planning_authority ? report.planning_authority.level || "placeholder" : "placeholder"}`,
+    `- Mode: read-only`,
+    `- Scope: ${isCollection ? "all stages" : report.stage || "unknown"}`,
+    `- Transition allowed: ${report.transition && report.transition.transition_allowed ? "yes" : "no"}`,
+    `- Next action: ${report.next_action || (report.transition && report.transition.next_action) || "Inspect the requested stage."}`,
+    ""
+  ];
+  if (isCollection) {
+    const rows = stages.map((stage) => [
+      stage.stage || "",
+      String(stage.stage_order || ""),
+      stage.stage_group || "",
+      stage.status || "unknown",
+      stage.transition && stage.transition.transition_allowed ? "yes" : "no",
+      stage.next_action || ""
+    ]);
+    return [
+      ...headerLines,
+      "## Stage List",
+      tableRenderer(["Stage", "Order", "Group", "Status", "Transition Allowed", "Next Action"], rows),
+      "",
+      "## Evidence",
+      `- Source files inspected: ${report.evidence && Array.isArray(report.evidence.source_files_inspected) && report.evidence.source_files_inspected.length ? report.evidence.source_files_inspected.join("; ") : "none"}`,
+      `- Runtime files inspected: ${report.evidence && Array.isArray(report.evidence.runtime_files_inspected) && report.evidence.runtime_files_inspected.length ? report.evidence.runtime_files_inspected.join("; ") : "none"}`,
+      `- Docs inspected: ${report.evidence && Array.isArray(report.evidence.docs_inspected) && report.evidence.docs_inspected.length ? report.evidence.docs_inspected.join("; ") : "none"}`,
+      `- Summary: ${report.evidence && report.evidence.summary ? report.evidence.summary : "Stage inspection completed."}`
+    ].filter((line) => line !== null && line !== undefined && line !== "").join("\n").replace(/\n{3,}/g, "\n\n");
+  }
+  const stage = report || {};
+  const evidence = stage.evidence || {};
+  const dependencies = stage.dependencies || {};
+  const transition = stage.transition || {};
+  return [
+    ...headerLines,
+    "## Stage",
+    `- Stage: ${stage.stage || "unknown"}`,
+    `- Stage order: ${stage.stage_order || "unknown"}`,
+    `- Stage group: ${stage.stage_group || "unknown"}`,
+    `- Label: ${stage.label || "unknown"}`,
+    `- Status: ${stage.status || "unknown"}`,
+    `- Required: ${stage.required ? "yes" : "no"}`,
+    "",
+    "## Evidence",
+    `- Source files inspected: ${Array.isArray(evidence.source_files_inspected) && evidence.source_files_inspected.length ? evidence.source_files_inspected.join("; ") : "none"}`,
+    `- Runtime files inspected: ${Array.isArray(evidence.runtime_files_inspected) && evidence.runtime_files_inspected.length ? evidence.runtime_files_inspected.join("; ") : "none"}`,
+    `- Docs inspected: ${Array.isArray(evidence.docs_inspected) && evidence.docs_inspected.length ? evidence.docs_inspected.join("; ") : "none"}`,
+    `- Summary: ${evidence.summary || "Stage inspection completed."}`,
+    "",
+    "## Dependencies",
+    `- Previous stage: ${dependencies.previous_stage || "none"}`,
+    `- Required previous stages: ${Array.isArray(dependencies.required_previous_stages) && dependencies.required_previous_stages.length ? dependencies.required_previous_stages.join("; ") : "none"}`,
+    `- Required gates: ${Array.isArray(dependencies.required_gates) && dependencies.required_gates.length ? dependencies.required_gates.join("; ") : "none"}`,
+    "",
+    "## Blockers",
+    ...(Array.isArray(stage.blockers) && stage.blockers.length ? stage.blockers.map((item) => `- ${item}`) : ["- none"]),
+    "",
+    "## Warnings",
+    ...(Array.isArray(stage.warnings) && stage.warnings.length ? stage.warnings.map((item) => `- ${item}`) : ["- none"]),
+    "",
+    "## Transition",
+    `- Next stage: ${transition.next_stage || "none"}`,
+    `- Transition allowed: ${transition.transition_allowed ? "yes" : "no"}`,
+    `- Blocked by: ${Array.isArray(transition.blocked_by) && transition.blocked_by.length ? transition.blocked_by.join("; ") : "none"}`,
+    `- Required before next: ${Array.isArray(transition.required_before_next) && transition.required_before_next.length ? transition.required_before_next.join("; ") : "none"}`,
+    `- Next action: ${transition.next_action || stage.next_action || "Inspect the requested stage."}`
+  ].join("\n").replace(/\n{3,}/g, "\n\n");
+}
+
 function renderIndentedObjectSection(value, indent = "- ", nestedIndent = "  - ") {
   if (!value || typeof value !== "object") return ["- None"];
   const lines = [];
@@ -7701,6 +8354,7 @@ function printPlannerOutput(report, flags, deps, kind) {
   else if (kind === "train") rendered = renderPlannerRoadmapTrainReport(report, deps.table);
   else if (kind === "visual") rendered = renderPlannerVisualReport(report);
   else if (kind === "pipeline") rendered = renderPlannerPipelineReport(report, deps.table);
+  else if (kind === "pipeline-inspect") rendered = renderPlannerPipelineStageInspectionReport(report, deps.table);
   else if (kind === "materialize") rendered = renderPlannerMaterializationReport(report, deps.table);
   else if (kind === "evolution") rendered = renderPlannerEvolutionPlan(report, deps.table);
   else if (kind === "task-punch") rendered = renderPlannerTaskPunchReport(report, deps.table);
@@ -10913,6 +11567,7 @@ module.exports = {
   buildPlannerVisualReport,
   buildPlannerVisualFromCurrentReport,
   buildIdeaToEvolutionPipelineReport,
+  buildViberPipelineStageInspectionReport,
   buildPlannerEvolutionPlan,
   buildPlannerTruthReport,
   openPlannerPreview,
@@ -10922,5 +11577,6 @@ module.exports = {
   renderPlannerPromptReport,
   renderPlannerTaskPunchReport,
   renderPlannerPipelineReport,
+  renderPlannerPipelineStageInspectionReport,
   renderPlannerVisualReport
 };

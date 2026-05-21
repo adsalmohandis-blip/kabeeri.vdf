@@ -140,6 +140,8 @@ kvdf planner visual --goal "Add visual planner" --track owner --open --fullscree
   kvdf planner visual --from-current --json
 kvdf planner pipeline --idea "Improve KVDF planner" --track owner --json
 kvdf planner pipeline --idea "Build booking app" --track vibe --json
+kvdf planner pipeline inspect --track vibe --stage questionnaire_answers --json
+kvdf planner pipeline inspect --track vibe --all --json
   kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
   kvdf planner pipeline --idea "Improve KVDF planner" --track owner --open --fullscreen
   kvdf planner pipeline --goal "Build app" --track vibe
@@ -179,6 +181,8 @@ Use `kvdf evolution reconcile` to compare evolution runtime state against source
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.
 Use `kvdf planner visual` to generate an execution-readiness visual report with Planning Lifecycle, gate matrix, blockers, publish readiness, execution feedback, stage timeline, Mermaid graph, planning board, scope map, and markdown output. It supports Owner, Vibe, and Plugin tracks. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Visual previews stay stdout-only by default; use `--open` to launch a browser preview, `--no-open` to force file-only output, and `--fullscreen` to request a fullscreen preview shell. KVDF does not auto-publish, and publish or handoff requires Owner approval or a configured delivery gate.
 Use `kvdf planner pipeline` to turn a raw idea into a documentation folder map, a derived documentation file compatibility list, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action. It uses the same stdout-only-by-default preview behavior for visual inspection, with `--open` to launch the browser preview, `--no-open` as the opt-out, and `--fullscreen` for a fullscreen preview shell. For Viber/App Track, it also exposes a `viber_pipeline` summary with `execution_allowed`, `execution_blockers`, `stage_transition`, `next_stage`, `documentation_folders`, `portable_docs_mapping`, `version_evolution_gates`, and `execution_gates` so raw ideas cannot jump directly into Codex execution.
+
+Use `kvdf planner pipeline inspect` to inspect a single Viber pipeline stage or the full ordered list without executing anything. It is read-only, it does not generate task punches, and it surfaces what evidence was inspected, what blockers remain, what must happen before the stage can pass, and whether transition to the next stage is allowed.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
 
