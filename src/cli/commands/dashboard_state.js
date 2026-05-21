@@ -854,12 +854,21 @@ function buildPlannerVersionPlanSummary(plan = null) {
 }
 
 function buildPlannerPipelineSummary(plan = null) {
-  const pipeline = plan && plan.pipeline ? plan.pipeline : null;
+  const pipeline = plan && (plan.pipeline || plan.source_pipeline || plan.sourcePipeline) ? (plan.pipeline || plan.source_pipeline || plan.sourcePipeline) : null;
+  const viberPipeline = pipeline && pipeline.viber_pipeline ? pipeline.viber_pipeline : (plan && plan.viber_pipeline ? plan.viber_pipeline : null);
   const rawVersionPlan = plan && plan.version_plan ? plan.version_plan : null;
   const taskPunch = plan && plan.task_punch ? plan.task_punch : null;
   const visual = plan && plan.visual ? plan.visual : null;
   const designArtifacts = pipeline && pipeline.design_artifacts ? pipeline.design_artifacts : {};
   const versionPlan = rawVersionPlan || null;
+  const stages = Array.isArray(viberPipeline && viberPipeline.stages) ? viberPipeline.stages : [];
+  const fallbackStageCount = plan && (plan.recommended_evolution || plan.task_punch || (Array.isArray(plan.task_punches) && plan.task_punches.length) || plan.source_pipeline) ? 1 : 0;
+  const stagesTotal = stages.length || fallbackStageCount;
+  const completeStages = stages.filter((stage) => ["complete", "ready", "approved", "materialized"].includes(String(stage && stage.status || "").toLowerCase())).length;
+  const blockedStages = stages.filter((stage) => String(stage && stage.status || "").toLowerCase() === "blocked").length;
+  const nextStage = viberPipeline && viberPipeline.next_stage
+    ? viberPipeline.next_stage
+    : stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(String(stage && stage.status || "").toLowerCase()))?.stage || "unknown";
   return {
     available: Boolean(pipeline),
     idea: pipeline && pipeline.idea ? pipeline.idea : (plan && plan.goal) || (plan && plan.recommended_evolution && plan.recommended_evolution.title) || "",
@@ -875,6 +884,25 @@ function buildPlannerPipelineSummary(plan = null) {
     evolutions_total: Array.isArray(pipeline && pipeline.evolutions) ? pipeline.evolutions.length : Array.isArray(plan && plan.evolutions) ? plan.evolutions.length : 0,
     task_punches_total: Array.isArray(pipeline && pipeline.task_punches) ? pipeline.task_punches.length : taskPunch ? 1 : 0,
     next_evolution: pipeline && pipeline.next_evolution ? pipeline.next_evolution : (plan && plan.recommended_evolution) || {},
+    viber_pipeline: viberPipeline ? {
+      report_type: viberPipeline.report_type || "kvdf_viber_planning_to_task_pipeline",
+      track: viberPipeline.track || "vibe_app_developer",
+      delivery_mode: viberPipeline.delivery_mode || null,
+      source_of_truth: viberPipeline.source_of_truth || "file_first",
+      stages_total: stagesTotal,
+      complete_total: completeStages,
+      blocked_total: blockedStages,
+      next_stage: nextStage,
+      execution_allowed: Boolean(viberPipeline.execution_allowed),
+      next_action: viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : viberPipeline.next_action || "",
+      source_control_mode: viberPipeline.source_control ? viberPipeline.source_control.mode || null : null
+    } : null,
+    stages_total: stagesTotal,
+    complete_total: completeStages,
+    blocked_total: blockedStages,
+    execution_allowed: Boolean(viberPipeline && viberPipeline.execution_allowed),
+    next_stage: nextStage,
+    next_action: viberPipeline && viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : plan && plan.next_action || "",
     visual: visual ? {
       available: true,
       graph_format: visual.graph && visual.graph.format ? visual.graph.format : (visual.format || "mermaid"),
@@ -1346,9 +1374,229 @@ function buildDashboardSourceControl(dashboardType, plannerState, deps = {}) {
   };
 }
 
+function readDashboardAiLearningSummary() {
+  const localState = fileExists(".kabeeri/ai_learning/failure_patterns.json")
+    ? readJsonFile(".kabeeri/ai_learning/failure_patterns.json")
+    : { patterns: [], fast_paths: [], shared_patterns: [], shared_fast_paths: [] };
+  const sharedState = fileExists("knowledge/ai_learning/shared_patterns.json")
+    ? readJsonFile("knowledge/ai_learning/shared_patterns.json")
+    : { shared_patterns: [], shared_fast_paths: [] };
+  const localPatterns = Array.isArray(localState.patterns) ? localState.patterns : [];
+  const localFastPaths = Array.isArray(localState.fast_paths) ? localState.fast_paths : [];
+  const sharedPatterns = Array.isArray(localState.shared_patterns) && localState.shared_patterns.length
+    ? localState.shared_patterns
+    : Array.isArray(sharedState.shared_patterns)
+      ? sharedState.shared_patterns
+      : [];
+  const sharedFastPaths = Array.isArray(localState.shared_fast_paths) && localState.shared_fast_paths.length
+    ? localState.shared_fast_paths
+    : Array.isArray(sharedState.shared_fast_paths)
+      ? sharedState.shared_fast_paths
+      : [];
+  const activeWarnings = [...localPatterns, ...sharedPatterns].filter((item) => String(item && item.status || "").toLowerCase() === "active");
+  const activeFastPaths = [...localFastPaths, ...sharedFastPaths].filter((item) => String(item && item.status || "").toLowerCase() === "active");
+  const total = localPatterns.length + localFastPaths.length + sharedPatterns.length + sharedFastPaths.length;
+  return {
+    status: total > 0 ? "ok" : "empty",
+    local_patterns_total: localPatterns.length,
+    local_fast_paths_total: localFastPaths.length,
+    shared_patterns_total: sharedPatterns.length,
+    shared_fast_paths_total: sharedFastPaths.length,
+    active_warning_total: activeWarnings.length,
+    active_fast_path_total: activeFastPaths.length,
+    next_action: total > 0
+      ? "Review the active learning warnings and fast paths before planning."
+      : "Capture or promote learning so prompt context stays useful."
+  };
+}
+
+function buildDashboardReadinessStageTimeline(visual = null) {
+  const stages = ["idea", "requirements", "design", "implementation", "validation", "handoff"];
+  const stageMap = new Map(Array.isArray(visual && visual.stage_timeline) ? visual.stage_timeline.map((item) => [item.stage, item]) : []);
+  return stages.map((stage) => {
+    const item = stageMap.get(stage) || {};
+    return {
+      stage,
+      status: item.status || "unknown",
+      outputs: Array.isArray(item.outputs) ? item.outputs : [],
+      next_action: item.next_action || `Advance the ${stage} stage.`
+    };
+  });
+}
+
+function buildDashboardReadinessState(context = {}, dashboardType = "owner") {
+  const plannerState = context.plannerState || {};
+  const visual = plannerState.visual || null;
+  const plannerMode = dashboardType === "viber" ? "vibe" : "owner";
+  const sourceControlMode = context.sourceControl && context.sourceControl.mode
+    ? context.sourceControl.mode
+    : dashboardType === "viber"
+      ? "local_first"
+      : "direct_main";
+  const planningLifecycle = visual && visual.planning_lifecycle ? visual.planning_lifecycle : {
+    method: "manual",
+    confidence: "low",
+    reason: "No planner visual model is available yet.",
+    current_version: null,
+    next_version: null,
+    current_evolution: null,
+    next_evolution: null,
+    state_freshness: "unknown",
+    source_of_truth: "unknown"
+  };
+  const gateMatrix = visual && visual.gate_matrix ? visual.gate_matrix : {
+    state_resync: { gate: "state_resync", status: "unknown", summary: "No state resync evidence is available yet.", blockers: [], warnings: [], next_action: `Run kvdf state resync --track ${plannerMode} --json.` },
+    docs: { gate: "docs", status: "unknown", summary: "No planner visual docs gate is available yet.", blockers: [], warnings: [], next_action: "Generate or inspect planner docs." },
+    evolution: { gate: "evolution", status: "unknown", summary: "No planner evolution gate is available yet.", blockers: [], warnings: [], next_action: "Review the approved evolution." },
+    task: { gate: "task", status: "unknown", summary: "No planner task gate is available yet.", blockers: [], warnings: [], next_action: "Review task readiness." },
+    validation: { gate: "validation", status: "unknown", summary: "No validation gate is available yet.", blockers: [], warnings: [], next_action: "Run validation checks." },
+    security: { gate: "security", status: "unknown", summary: "No security gate is available yet.", blockers: [], warnings: [], next_action: "Review security readiness." },
+    handoff: { gate: "handoff", status: "unknown", summary: "No handoff gate is available yet.", blockers: [], warnings: [], next_action: "Prepare handoff readiness." },
+    publish: { gate: "publish", status: "unknown", summary: "No publish gate is available yet.", blockers: [], warnings: [], next_action: "Confirm publish readiness." }
+  };
+  const blockers = Array.isArray(visual && visual.blockers) ? visual.blockers.map((item) => ({ ...item })) : [];
+  const warnings = Array.isArray(visual && visual.warnings) ? visual.warnings.map((item) => String(item)) : [];
+  const publishReadiness = visual && visual.publish_readiness ? visual.publish_readiness : {
+    status: "blocked",
+    score: 0,
+    label: "Publish readiness unavailable",
+    auto_publish: false,
+    rule: "KVDF must not auto-publish.",
+    next_action: `Run kvdf state resync --track ${plannerMode} --json, then kvdf planner visual --track ${plannerMode} --json.`
+  };
+  const executionFeedback = visual && visual.execution_feedback ? visual.execution_feedback : {
+    status: "none",
+    executor: null,
+    checks_run: [],
+    changed_files: [],
+    warnings: [],
+    stop_condition: "No execution feedback has been recorded yet.",
+    updated_at: null
+  };
+  const stageTimeline = buildDashboardReadinessStageTimeline(visual);
+  const readinessLabel = blockers.some((item) => item.severity === "blocker")
+    ? "blocked"
+    : warnings.length > 0
+      ? "warning"
+      : planningLifecycle.state_freshness === "current" || publishReadiness.status === "ready"
+        ? "ready"
+        : "unknown";
+  const blockedTotal = blockers.filter((item) => item.severity === "blocker").length + Object.values(gateMatrix).filter((gate) => gate && gate.status === "blocked").length;
+  const warningsTotal = warnings.length + blockers.filter((item) => item.severity === "warning").length + Object.values(gateMatrix).filter((gate) => gate && gate.status === "warning").length;
+  const nextSafeAction = planningLifecycle.state_freshness !== "current" || blockedTotal > 0
+    ? `Run kvdf state resync --track ${plannerMode} --json, then kvdf planner visual --track ${plannerMode} --json.`
+    : publishReadiness.next_action || plannerState.next_action || "Continue with the next governed action.";
+  return {
+    summary: {
+      state_freshness: planningLifecycle.state_freshness || "unknown",
+      readiness_label: readinessLabel,
+      blocked_total: blockedTotal,
+      warnings_total: warningsTotal,
+      next_safe_action: nextSafeAction,
+      planner_mode: plannerMode,
+      track: dashboardType === "viber" ? "vibe_app_developer" : "framework_owner",
+      source_control_mode: sourceControlMode,
+      auto_publish: false
+    },
+    planning_lifecycle: planningLifecycle,
+    gate_matrix: gateMatrix,
+    blockers,
+    warnings,
+    readiness_summary: visual && visual.readiness_summary ? visual.readiness_summary : {
+      docs_status: "unknown",
+      task_status: "unknown",
+      evolution_status: "unknown",
+      validation_status: "unknown",
+      security_status: "unknown",
+      handoff_status: "unknown"
+    },
+    publish_readiness: { ...publishReadiness, auto_publish: false },
+    execution_feedback: { ...executionFeedback, status: executionFeedback.status || "none" },
+    stage_timeline: stageTimeline,
+    security_status: visual && visual.readiness_summary ? visual.readiness_summary.security_status || "unknown" : "unknown",
+    ai_learning_status: readDashboardAiLearningSummary(),
+    dashboard_summary: {
+      version_to_publish_summary: visual && visual.dashboard_summary ? visual.dashboard_summary.version_to_publish_summary || {} : {},
+      gate_summary: visual && visual.dashboard_summary ? visual.dashboard_summary.gate_summary || {} : {},
+      readiness_label: readinessLabel,
+      blocked_total: blockedTotal,
+      warnings_total: warningsTotal
+    }
+  };
+}
+
+function buildDashboardReadinessWidgets(readiness, dashboardType = "owner") {
+  const track = dashboardType === "viber" ? "vibe_app_developer" : "framework_owner";
+  const source = "planner_visual";
+  return [
+    dashboardWidget(`${dashboardType}_state_freshness`, dashboardType === "viber" ? "App State Freshness" : "State Freshness", "status", readiness.summary.state_freshness, readiness.summary.state_freshness === "current" ? "ok" : readiness.summary.state_freshness === "stale" ? "warning" : "unknown", track, source, readiness.summary.next_safe_action),
+    dashboardWidget(`${dashboardType}_planner_readiness`, dashboardType === "viber" ? "Pipeline Readiness" : "Planner Readiness", "status", readiness.summary.readiness_label, readiness.summary.readiness_label === "blocked" ? "blocked" : readiness.summary.readiness_label === "warning" ? "warning" : readiness.summary.readiness_label === "ready" ? "ok" : "unknown", track, source, readiness.summary.next_safe_action),
+    dashboardWidget(`${dashboardType}_gate_blocks`, "Gate Blocks", "metric", readiness.summary.blocked_total, readiness.summary.blocked_total > 0 ? "blocked" : "ok", track, source, readiness.summary.next_safe_action),
+    dashboardWidget(`${dashboardType}_security_status`, "Security Status", "status", readiness.security_status, readiness.security_status === "blocked" ? "blocked" : readiness.security_status === "warning" ? "warning" : readiness.security_status === "pass" ? "ok" : "unknown", track, source, readiness.gate_matrix.security ? readiness.gate_matrix.security.next_action : readiness.summary.next_safe_action),
+    dashboardWidget(`${dashboardType}_publish_readiness`, dashboardType === "viber" ? "Handoff / Publish Readiness" : "Publish / Direct-main Readiness", "status", readiness.publish_readiness.label || readiness.publish_readiness.status, readiness.publish_readiness.status === "blocked" ? "blocked" : readiness.publish_readiness.status === "warning" ? "warning" : "ok", track, source, readiness.publish_readiness.next_action || readiness.summary.next_safe_action),
+    dashboardWidget(`${dashboardType}_ai_learning`, "AI Learning Context", "status", readiness.ai_learning_status.status, readiness.ai_learning_status.status === "empty" || readiness.ai_learning_status.status === "unknown" ? "unknown" : readiness.ai_learning_status.status === "warning" ? "warning" : "ok", track, source, readiness.ai_learning_status.next_action),
+    dashboardWidget(`${dashboardType}_next_safe_action`, "Next Safe Action", "action", readiness.summary.next_safe_action, readiness.summary.readiness_label === "blocked" ? "blocked" : readiness.summary.readiness_label === "warning" ? "warning" : "ok", track, source, readiness.summary.next_safe_action)
+  ];
+}
+
+function buildReadinessGateRows(readiness) {
+  return Object.values(readiness.gate_matrix || {}).map((gate) => [
+    gate.gate || "",
+    gate.status || "unknown",
+    Array.isArray(gate.blockers) && gate.blockers.length ? gate.blockers.join("; ") : "none",
+    Array.isArray(gate.warnings) && gate.warnings.length ? gate.warnings.join("; ") : "none",
+    gate.next_action || ""
+  ]);
+}
+
+function buildReadinessBlockerRows(readiness) {
+  const rows = Array.isArray(readiness.blockers) ? readiness.blockers.map((item) => [
+    item.severity || "warning",
+    item.area || "",
+    item.message || "",
+    item.next_action || ""
+  ]) : [];
+  return rows.length ? rows : [["info", "dashboard", "No immediate blockers found.", "Continue with the next governed task."]];
+}
+
+function buildReadinessPublishRows(readiness) {
+  const item = readiness.publish_readiness || {};
+  return [[
+    item.status || "unknown",
+    String(item.score ?? 0),
+    item.label || "",
+    item.auto_publish ? "true" : "false",
+    item.rule || "KVDF must not auto-publish.",
+    item.next_action || ""
+  ]];
+}
+
+function buildReadinessExecutionFeedbackRows(readiness) {
+  const item = readiness.execution_feedback || {};
+  return [[
+    item.status || "none",
+    item.executor || "n/a",
+    Array.isArray(item.checks_run) ? item.checks_run.join("; ") : "",
+    Array.isArray(item.changed_files) ? item.changed_files.join("; ") : "",
+    Array.isArray(item.warnings) && item.warnings.length ? item.warnings.join("; ") : "none",
+    item.stop_condition || "",
+    item.updated_at || ""
+  ]];
+}
+
+function buildReadinessStageRows(readiness) {
+  return (Array.isArray(readiness.stage_timeline) ? readiness.stage_timeline : []).map((stage) => [
+    stage.stage || "",
+    stage.status || "unknown",
+    Array.isArray(stage.outputs) && stage.outputs.length ? stage.outputs.join("; ") : "none",
+    stage.next_action || ""
+  ]);
+}
+
 function buildOwnerDashboardState(context = {}, deps = {}) {
   const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
   const currentPlan = context.plannerPlan || null;
+  const readiness = buildDashboardReadinessState(context, "owner");
   const commandCenterWidgets = [
     dashboardWidget("owner_current_track", "Current Track", "status", "framework_owner", "ok", "framework_owner", "derived", "Stay on KVDF Core work."),
     dashboardWidget("owner_current_plan", "Current Planner Plan", "status", currentPlan ? currentPlan.title || currentPlan.goal || currentPlan.plan_id : "none", currentPlan ? "ok" : "empty", "framework_owner", "derived", currentPlan ? "Review the approved plan." : "Create or approve an owner plan."),
@@ -1361,6 +1609,13 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
   ];
 
   const sections = {
+    readiness: createDashboardSection("readiness", "Readiness Overview", buildDashboardReadinessWidgets(readiness, "owner"), [
+      createDashboardTable("owner_readiness_gates", "Gate Matrix", ["Gate", "Status", "Blockers", "Warnings", "Next Action"], buildReadinessGateRows(readiness), "No readiness gates available."),
+      createDashboardTable("owner_readiness_blockers", "Blockers", ["Severity", "Area", "Message", "Next Action"], buildReadinessBlockerRows(readiness), "No blockers available."),
+      createDashboardTable("owner_publish_readiness", "Publish Readiness", ["Status", "Score", "Label", "Auto Publish", "Rule", "Next Action"], buildReadinessPublishRows(readiness), "No publish readiness available."),
+      createDashboardTable("owner_execution_feedback", "Execution Feedback", ["Status", "Executor", "Checks Run", "Changed Files", "Warnings", "Stop Condition", "Updated At"], buildReadinessExecutionFeedbackRows(readiness), "No execution feedback available."),
+      createDashboardTable("owner_stage_timeline", "Stage Timeline", ["Stage", "Status", "Outputs", "Next Action"], buildReadinessStageRows(readiness), "No stage timeline available.")
+    ]),
     command_center: createDashboardSection("command_center", "Command Center", commandCenterWidgets, [
       createDashboardTable("owner_command_center", "Owner Command Center", ["Metric", "Value", "Next Action"], [
         ["Current Track", "framework_owner", "Stay on KVDF Core work."],
@@ -1422,6 +1677,14 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     blocked_cross_track_data: ["viber_app_workspace_data"],
     source_control: context.sourceControl,
     planner: context.plannerState,
+    readiness: readiness.summary,
+    gate_matrix: readiness.gate_matrix,
+    blockers: readiness.blockers,
+    publish_readiness: readiness.publish_readiness,
+    execution_feedback: readiness.execution_feedback,
+    stage_timeline: readiness.stage_timeline,
+    security_status: readiness.security_status,
+    ai_learning_status: readiness.ai_learning_status,
     task_tracker: context.task_tracker_state,
     next_action: context.plannerState.next_action || "Run kvdf planner propose",
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
@@ -1435,6 +1698,7 @@ function buildViberDashboardState(context = {}, deps = {}) {
   const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
   const currentPlan = context.plannerPlan || null;
   const currentApp = context.apps.find((app) => resolveWorkspaceTrack(app.workspace_kind || app.track || app.audience || "") === "vibe_app_developer") || context.apps[0] || {};
+  const readiness = buildDashboardReadinessState(context, "viber");
   const commandCenterWidgets = [
     dashboardWidget("viber_current_track", "Current Track", "status", "vibe_app_developer", "ok", "vibe_app_developer", "derived", "Stay on app/product delivery work."),
     dashboardWidget("viber_current_workspace", "Current App / Workspace", "status", currentApp.name || currentApp.username || context.project.name || "none", currentApp.username || currentApp.name ? "ok" : "empty", "vibe_app_developer", "derived", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."),
@@ -1449,6 +1713,13 @@ function buildViberDashboardState(context = {}, deps = {}) {
   ];
 
   const sections = {
+    readiness: createDashboardSection("readiness", "Readiness Overview", buildDashboardReadinessWidgets(readiness, "viber"), [
+      createDashboardTable("viber_readiness_gates", "Gate Matrix", ["Gate", "Status", "Blockers", "Warnings", "Next Action"], buildReadinessGateRows(readiness), "No readiness gates available."),
+      createDashboardTable("viber_readiness_blockers", "Blockers", ["Severity", "Area", "Message", "Next Action"], buildReadinessBlockerRows(readiness), "No blockers available."),
+      createDashboardTable("viber_publish_readiness", "Handoff / Publish Readiness", ["Status", "Score", "Label", "Auto Publish", "Rule", "Next Action"], buildReadinessPublishRows(readiness), "No publish readiness available."),
+      createDashboardTable("viber_execution_feedback", "Execution Feedback", ["Status", "Executor", "Checks Run", "Changed Files", "Warnings", "Stop Condition", "Updated At"], buildReadinessExecutionFeedbackRows(readiness), "No execution feedback available."),
+      createDashboardTable("viber_stage_timeline", "Stage Timeline", ["Stage", "Status", "Outputs", "Next Action"], buildReadinessStageRows(readiness), "No stage timeline available.")
+    ]),
     command_center: createDashboardSection("command_center", "Command Center", commandCenterWidgets, [
       createDashboardTable("viber_command_center", "Viber Command Center", ["Metric", "Value", "Next Action"], [
         ["Current App / Workspace", currentApp.name || currentApp.username || "none", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."],
@@ -1521,6 +1792,14 @@ function buildViberDashboardState(context = {}, deps = {}) {
     blocked_cross_track_data: ["kvdf_core_owner_data"],
     source_control: context.sourceControl,
     planner: context.plannerState,
+    readiness: readiness.summary,
+    gate_matrix: readiness.gate_matrix,
+    blockers: readiness.blockers,
+    publish_readiness: readiness.publish_readiness,
+    execution_feedback: readiness.execution_feedback,
+    stage_timeline: readiness.stage_timeline,
+    security_status: readiness.security_status,
+    ai_learning_status: readiness.ai_learning_status,
     task_tracker: context.task_tracker_state,
     next_action: context.plannerState.next_action || "Run kvdf planner propose",
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
@@ -2029,6 +2308,8 @@ function nextTaskPunchAction(context) {
 function pipelineWidgets(context) {
   const pipeline = context.plannerState.pipeline || {};
   return [
+    dashboardWidget("viber_pipeline_readiness", "Pipeline Readiness", "status", pipeline.execution_allowed ? "ready" : (pipeline.blocked_total ? "blocked" : "warning"), pipeline.execution_allowed ? "ok" : pipeline.blocked_total ? "blocked" : "warning", "vibe_app_developer", "derived", pipeline.next_action || "Keep the Viber pipeline gated."),
+    dashboardWidget("viber_next_stage", "Next Stage", "status", pipeline.next_stage || "unknown", pipeline.next_stage ? "ok" : "warning", "vibe_app_developer", "derived", "Advance the next blocked or planned stage."),
     dashboardWidget("viber_idea", "Idea Captured", "status", pipeline.idea || context.plannerState.current_plan && context.plannerState.current_plan.goal || "none", pipeline.available ? "ok" : "empty", "vibe_app_developer", "derived", "Keep the original idea visible."),
     dashboardWidget("viber_docs", "Documentation Files", "metric", pipeline.documentation_files_total || 0, pipeline.available ? "ok" : "empty", "vibe_app_developer", "derived", "Document the app before implementation."),
     dashboardWidget("viber_system_design", "System Design Status", "status", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ok" : "warning", "vibe_app_developer", "derived", "System design stays app-focused."),
@@ -2044,6 +2325,8 @@ function pipelineRows(context) {
   const pipeline = context.plannerState.pipeline || {};
   const visual = context.plannerState.visual || {};
   return [
+    ["execution_allowed", pipeline.execution_allowed ? "ready" : "blocked", pipeline.execution_allowed ? "yes" : "no", pipeline.next_action || "", "app", ".kabeeri/planner.json"],
+    ["next_stage", pipeline.next_stage || "unknown", pipeline.next_stage || "unknown", pipeline.next_action || "", "app", ".kabeeri/planner.json"],
     ["idea", pipeline.idea ? "captured" : "missing", pipeline.idea || "", context.plannerState.next_action || "", "app", ".kabeeri/planner.json"],
     ["documentation_files", pipeline.documentation_files_total || 0 ? "ready" : "missing", String(pipeline.documentation_files_total || 0), "Create or refresh app docs.", "app", ".kabeeri/planner.json"],
     ["system_design", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "ready" : "missing", pipeline.design_artifacts && pipeline.design_artifacts.system_design ? "system design present" : "missing", "Complete the system design artifact.", "app", ".kabeeri/planner.json"],

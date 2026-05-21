@@ -73,6 +73,11 @@ The planner can emit:
 - a Codex-ready execution prompt
 - a visual planning model with Mermaid, planning board JSON, scope map, and
   markdown report output
+- a Viber Planning-to-Task Execution Pipeline with execution gating,
+  state-freshness, and source-control posture
+- a generic Viber evolution ordering validator that blocks task generation when
+  slices are draft, misordered, future-only without approval, or missing the
+  required boundary/discovery/safety sequence
 - allowed and forbidden file lists
 - acceptance criteria
 - validation commands
@@ -315,7 +320,9 @@ approved or materialized.
 
 The pipeline output can include:
 
-- documentation file maps
+- documentation folder maps
+- documentation file maps as a compatibility view
+- portable docs mappings back to the canonical numbered app package
 - system design
 - database design
 - UI/UX design
@@ -336,6 +343,14 @@ Track behavior:
   KVDF Core edits out of scope unless the Owner explicitly approves them.
 - Plugin Track keeps plugin manifest, runtime, docs, schemas, and tests in
   parity while protecting unrelated plugins and plugin-link runtime state.
+- Planner-generated foldered docs are the stage-driven planning view, while
+  the portable numbered app docs remain the canonical durable product package.
+- `documentation_folders` should be the primary planner docs surface and
+  `documentation_files` should stay as a compatibility flattening view.
+- The Viber pipeline stage order is fixed and gated: questionnaire, brief,
+  state resync, boundary, docs, design, version, evolutions, task punches,
+  approval, materialization, execution, validation, handoff, dashboard update,
+  learning capture, and closeout.
 
 The pipeline is still governed by the same approval gate:
 
@@ -371,6 +386,9 @@ Rules:
 - Planner outputs should expose the `source_control` object so prompts, visual
   reports, materialization, and documentation all agree on the same delivery
   mode.
+- Viber/App planning must also expose the Viber Planning-to-Task Execution
+  Pipeline summary so the prompt and dashboard layers can keep execution
+  blocked until the plan is approved and materialized.
 
 ## Track Rules
 

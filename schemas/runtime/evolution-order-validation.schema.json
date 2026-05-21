@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Evolution Order Validation Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "app",
+    "track",
+    "source_files_inspected",
+    "detected_evolution_slices",
+    "detected_categories",
+    "current_order",
+    "expected_order",
+    "approval_status",
+    "blocking_errors",
+    "warnings",
+    "suggested_corrected_order",
+    "task_generation_allowed",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "kvdf_evolution_order_validation"
+    },
+    "app": {
+      "type": "string"
+    },
+    "track": {
+      "type": "string",
+      "const": "vibe_app_developer"
+    },
+    "source_files_inspected": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "detected_evolution_slices": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["slice_id", "categories"],
+        "properties": {
+          "slice_id": { "type": "string" },
+          "title": { "type": "string" },
+          "status": { "type": "string" },
+          "approval_status": { "type": "string" },
+          "categories": { "type": "array", "items": { "type": "string" } },
+          "primary_category": { "type": ["string", "null"] },
+          "inferred": { "type": "boolean" },
+          "future_only": { "type": "boolean" },
+          "source": {}
+        }
+      }
+    },
+    "detected_categories": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "current_order": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "expected_order": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "approval_status": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "blocking_errors": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "suggested_corrected_order": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "task_generation_allowed": {
+      "type": "boolean"
+    },
+    "next_action": {
+      "type": "string"
+    },
+    "policy": {
+      "type": "object"
+    }
+  }
+}

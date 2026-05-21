@@ -56,6 +56,20 @@ Before any next-Evolution recommendation, the planner must:
 The planner can only recommend the next Evolution after the Current-State
 Report shows that the repo reality matches the proposed ledger.
 
+For Viber/App Track, the planner also emits a Viber Planning-to-Task
+Execution Pipeline. That pipeline stays file-first and local-first by default
+and must stay blocked until the current-state evidence, documentation map,
+design artifacts, visual planning, version plan, evolutions, task punches, and
+approval/materialization gates are complete. The planner prompt must switch to
+the next planning stage only whenever `execution_allowed` is false.
+Before `kvdf questionnaire generate-tasks --app <app-name>` can create app
+task punches, KVDF must also pass `kvdf evolution validate-order --app
+<app-name>`, which enforces category-based Viber evolution ordering and blocks
+draft, misordered, or future-only slices from becoming executable work. The
+planner pipeline must also surface the Viber stage-order contract so Codex only
+executes after the questionnaire, brief, state resync, docs, design, version,
+evolution, approval, materialization, and safety gates are ready.
+
 ## Self-Planning Engine
 
 The planner should use the self-planning sequence before it recommends the next

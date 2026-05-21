@@ -78,6 +78,30 @@
         "source_of_truth": { "type": "string", "enum": ["file_first", "runtime_only", "git_supported", "remote_supported", "unknown"] }
       }
     },
+    "viber_pipeline": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
+    "execution_allowed": {
+      "type": ["boolean", "null"]
+    },
+    "execution_blockers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "area", "message", "next_action"],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "type": "string", "enum": ["blocker", "warning"] },
+          "area": { "type": "string" },
+          "message": { "type": "string" },
+          "next_action": { "type": "string" }
+        }
+      }
+    },
+    "next_stage": {
+      "type": ["string", "null"]
+    },
     "gate_matrix": {
       "type": "object",
       "required": ["state_resync", "docs", "evolution", "task", "validation", "security", "handoff", "publish"],

@@ -9,6 +9,7 @@ const { plannerVisual } = require("../src/cli/commands/planner_visual");
 const evolutionService = require("../src/cli/services/evolution");
 const wordpressStateService = require("../src/cli/services/wordpress");
 const wordpressPlanService = require("../src/cli/services/wordpress_plans");
+const { buildAppDocsPackageTemplates } = require("../src/cli/workspace");
 const appPluginCatalog = require("../src/cli/services/app_plugin_catalog");
 const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/commands/multi_ai_communications");
 const { resolveDashboardScope } = require("../src/cli/commands/site");
@@ -126,6 +127,82 @@ function copyRepoFile(dir, relativePath) {
   const target = path.join(dir, relativePath);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.copyFileSync(source, target);
+}
+
+function writeJsonFixture(dir, relativePath, data) {
+  const target = path.join(dir, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+}
+
+function seedViberEvolutionOrderFixture(dir, { appSlug = "storefront-web", slices = [] } = {}) {
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+
+  const appRoot = path.join(dir, "workspaces", "apps", appSlug);
+  fs.mkdirSync(path.join(appRoot, "docs"), { recursive: true });
+  fs.mkdirSync(path.join(appRoot, "src"), { recursive: true });
+  fs.mkdirSync(path.join(appRoot, "tests"), { recursive: true });
+  fs.writeFileSync(path.join(appRoot, "README.md"), `# ${appSlug}\n`, "utf8");
+  fs.writeFileSync(path.join(appRoot, "package.json"), JSON.stringify({ name: appSlug, private: true, version: "0.0.0" }, null, 2), "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "00-executive-summary.md"), "# Executive Summary\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "01-overview.md"), "# Overview\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "05-ux-principles.md"), "# UX Principles\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "12-architecture-overview.md"), "# Architecture Overview\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "src", "index.js"), "module.exports = {};\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "tests", "app.test.js"), "const assert = require('assert');\nassert.ok(true);\n", "utf8");
+
+  writeJsonFixture(dir, ".kabeeri/design_sources/sources.json", {
+    sources: [
+      {
+        source_id: "source-001",
+        title: "App docs",
+        source_mode: "manual",
+        recorded_at: new Date().toISOString()
+      }
+    ]
+  });
+
+  writeJsonFixture(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json", {
+    current_plan_id: "questionnaire-intake-001",
+    plans: [
+      {
+        plan_id: "questionnaire-intake-001",
+        approval_status: "approved",
+        review_status: "reviewed",
+        require_all_answers: true,
+        generated_questions: [],
+        created_at: new Date().toISOString()
+      }
+    ]
+  });
+  writeJsonFixture(dir, ".kabeeri/questionnaires/answers.json", { answers: [] });
+  writeJsonFixture(dir, ".kabeeri/evolution.json", {
+    changes: slices,
+    impact_plans: [],
+    current_change_id: null
+  });
+}
+
+function makeViberEvolutionSlice(changeId, category, overrides = {}) {
+  return {
+    change_id: changeId,
+    title: `${category} slice`,
+    description: `${category} slice`,
+    status: "approved",
+    approval_status: "approved",
+    audience: "vibe_app_developer",
+    track: "vibe_app_developer",
+    categories: [category],
+    ...overrides
+  };
+}
+
+function readViberEvolutionOrderReport(dir, slices = [], flags = {}) {
+  const appSlug = flags.appSlug || "storefront-web";
+  seedViberEvolutionOrderFixture(dir, { appSlug, slices });
+  const args = ["evolution", "validate-order", "--app", appSlug, "--json"];
+  if (flags.extraArgs) args.push(...flags.extraArgs);
+  return JSON.parse(runKvdf(args, { cwd: dir }).stdout);
 }
 
 function loadPluginSmokeCases(pluginId) {
@@ -3356,6 +3433,169 @@ test("questionnaire task generation emits explicit frontend UI decision tasks", 
   assert.ok(uiTasks.every((task) => Array.isArray(task.acceptance_criteria) && task.acceptance_criteria.some((item) => /responsive priority/i.test(item))));
 }));
 
+test("viber evolution ordering validate-order passes on the default generic sequence", () => withTempDir((dir) => {
+  const report = readViberEvolutionOrderReport(dir, [
+    makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+    makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+    makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+    makeViberEvolutionSlice("cloud-001", "cloud_commercial_control"),
+    makeViberEvolutionSlice("license-001", "local_license_gate"),
+    makeViberEvolutionSlice("release-001", "release_access"),
+    makeViberEvolutionSlice("safety-001", "safety_quality"),
+    makeViberEvolutionSlice("execution-001", "execution_review"),
+    makeViberEvolutionSlice("packaging-001", "release_packaging"),
+    makeViberEvolutionSlice("bridge-001", "bridge_evolution", { future_only: true, approved_for_active_release: true })
+  ]);
+  assert.strictEqual(report.report_type, "kvdf_evolution_order_validation");
+  assert.strictEqual(report.task_generation_allowed, true);
+  assert.strictEqual(report.approval_status.task_generation, "allowed");
+  assert.deepStrictEqual(report.current_order, [
+    "boundary_stabilization",
+    "discovery_spec",
+    "tasking_approval",
+    "cloud_commercial_control",
+    "local_license_gate",
+    "release_access",
+    "safety_quality",
+    "execution_review",
+    "release_packaging",
+    "bridge_evolution"
+  ]);
+  assert.ok(report.expected_order.includes("bridge_evolution"));
+  assert.ok(report.source_files_inspected.some((item) => item.includes("workspaces/apps/storefront-web/docs/00-executive-summary.md")));
+  assert.strictEqual(report.approval_status.source_of_truth_map, "present");
+  assert.match(report.next_action, /kvdf questionnaire generate-tasks --app storefront-web/);
+}));
+
+test("viber evolution ordering fails when boundary stabilization is missing", () => withTempDir((dir) => {
+  const report = readViberEvolutionOrderReport(dir, [
+    makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+    makeViberEvolutionSlice("tasking-001", "tasking_approval")
+  ]);
+  assert.strictEqual(report.task_generation_allowed, false);
+  assert.ok(report.blocking_errors.some((item) => /boundary_stabilization must be the first slice/i.test(item)));
+  const human = runKvdf(["evolution", "validate-order", "--app", "storefront-web"], { cwd: dir });
+  assert.match(human.stdout, /Evolution order validation failed\./);
+  assert.match(human.stdout, /boundary_stabilization must be the first slice/);
+  assert.match(human.stdout, /Suggested fix:/);
+}));
+
+test("viber evolution ordering blocks unsafe category order variants", () => {
+  const cases = [
+    {
+      name: "tasking before discovery",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec")
+      ],
+      error: /discovery_spec must come before tasking_approval/i
+    },
+    {
+      name: "execution before safety",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("execution-001", "execution_review"),
+        makeViberEvolutionSlice("safety-001", "safety_quality")
+      ],
+      error: /execution_review appears before safety_quality/i
+    },
+    {
+      name: "packaging before execution",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("safety-001", "safety_quality"),
+        makeViberEvolutionSlice("packaging-001", "release_packaging"),
+        makeViberEvolutionSlice("execution-001", "execution_review")
+      ],
+      error: /release_packaging appears before execution_review/i
+    },
+    {
+      name: "packaging before safety",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("packaging-001", "release_packaging"),
+        makeViberEvolutionSlice("safety-001", "safety_quality"),
+        makeViberEvolutionSlice("execution-001", "execution_review")
+      ],
+      error: /release_packaging appears before safety_quality/i
+    },
+    {
+      name: "release access before license gate",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("release-001", "release_access"),
+        makeViberEvolutionSlice("license-001", "local_license_gate"),
+        makeViberEvolutionSlice("safety-001", "safety_quality"),
+        makeViberEvolutionSlice("execution-001", "execution_review"),
+        makeViberEvolutionSlice("packaging-001", "release_packaging")
+      ],
+      error: /local_license_gate appears after release_access/i
+    },
+    {
+      name: "unapproved slice",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec", { status: "draft", approval_status: "draft" })
+      ],
+      error: /Unapproved or draft evolution slices cannot be used for task generation/i
+    },
+    {
+      name: "future-only slice mixed into active release",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("future-001", "bridge_evolution", { status: "future_only", approval_status: "future_only", future_only: true })
+      ],
+      error: /Future-only slices are mixed into the active release without explicit approval/i
+    }
+  ];
+
+  for (const item of cases) {
+    withTempDir((dir) => {
+      const report = readViberEvolutionOrderReport(dir, item.slices, { appSlug: "storefront-web" });
+      assert.strictEqual(report.task_generation_allowed, false, item.name);
+      assert.ok(report.blocking_errors.some((error) => item.error.test(error)), item.name);
+    });
+  }
+});
+
+test("cloud commercial control can precede local license gate when both are present", () => withTempDir((dir) => {
+  const report = readViberEvolutionOrderReport(dir, [
+    makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+    makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+    makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+    makeViberEvolutionSlice("cloud-001", "cloud_commercial_control"),
+    makeViberEvolutionSlice("license-001", "local_license_gate"),
+    makeViberEvolutionSlice("release-001", "release_access"),
+    makeViberEvolutionSlice("safety-001", "safety_quality"),
+    makeViberEvolutionSlice("execution-001", "execution_review"),
+    makeViberEvolutionSlice("packaging-001", "release_packaging")
+  ]);
+  assert.strictEqual(report.task_generation_allowed, true);
+  assert.ok(report.current_order.indexOf("cloud_commercial_control") < report.current_order.indexOf("local_license_gate"));
+}));
+
+test("questionnaire generate-tasks blocks when evolution ordering fails", () => withTempDir((dir) => {
+  seedViberEvolutionOrderFixture(dir, {
+    slices: [
+      makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+      makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+      makeViberEvolutionSlice("discovery-001", "discovery_spec")
+    ]
+  });
+  const failure = runKvdf(["questionnaire", "generate-tasks", "--app", "storefront-web"], { cwd: dir, expectFailure: true });
+  assert.match(failure.stderr, /Evolution order validation failed\./);
+  assert.match(failure.stderr, /discovery_spec must come before tasking_approval/);
+}));
+
 test("questionnaire flow exposes a direct start path and operator notes", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const flow = JSON.parse(runKvdf(["questionnaire", "flow", "--json"], { cwd: dir }).stdout);
@@ -4791,6 +5031,16 @@ test("dashboard export creates static html and owner dashboard output", () => wi
   assert.ok(state.sections.ai_cost_control);
   assert.ok(state.sections.app_plugins);
   assert.ok(state.sections.validation_readiness);
+  assert.ok(state.sections.readiness);
+  assert.ok(state.tables.viber_readiness_gates);
+  assert.ok(state.tables.viber_readiness_blockers);
+  assert.ok(state.tables.viber_publish_readiness);
+  assert.ok(state.tables.viber_execution_feedback);
+  assert.ok(state.tables.viber_stage_timeline);
+  assert.strictEqual(state.publish_readiness.auto_publish, false);
+  assert.ok(state.readiness);
+  assert.ok(state.readiness.state_freshness);
+  assert.ok(state.readiness.next_safe_action);
   assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "core_health"));
   assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "workflows"));
   assert.ok(!Object.prototype.hasOwnProperty.call(state.sections, "native_capabilities"));
@@ -4810,6 +5060,8 @@ test("dashboard export creates static html and owner dashboard output", () => wi
   assert.match(html, /KVDF Viber Dashboard/);
   assert.match(html, /Viber\/App Track/);
   assert.match(html, /Idea-to-Evolution Pipeline/);
+  assert.match(html, /Readiness Overview/);
+  assert.match(html, /Gate Matrix/);
   assert.match(html, /Questionnaire \/ Intake/);
   assert.match(html, /Validation \/ Readiness/);
   assert.doesNotMatch(html, /KVDF Owner Dashboard/);
@@ -4917,6 +5169,12 @@ test("dashboard state exposes vibe planner summaries after approval", () => with
   assert.strictEqual(state.planner.source_control.mode, "local_only");
   assert.ok(state.planner.guidance.summary.includes("Local-first"));
   assert.ok(state.planner.guidance.notes.some((note) => /KVDF Core edits/i.test(note)));
+  assert.ok(state.planner.pipeline);
+  assert.ok(typeof state.planner.pipeline.execution_allowed === "boolean");
+  assert.ok(state.planner.pipeline.next_stage);
+  assert.ok(state.planner.pipeline.stages_total >= 1);
+  assert.ok(state.sections.idea_to_evolution_pipeline.widgets.some((widget) => widget.id === "viber_pipeline_readiness"));
+  assert.ok(state.sections.idea_to_evolution_pipeline.widgets.some((widget) => widget.id === "viber_next_stage"));
 }));
 
 test("dashboard route aliases resolve owner and viber dashboards", () => {
@@ -4936,9 +5194,21 @@ test("dashboard owner and viber export the separated dashboard products", () => 
   const viberHtml = fs.readFileSync(path.join(dir, "viber-dashboard.html"), "utf8");
   assert.match(ownerHtml, /KVDF Owner Dashboard/);
   assert.match(ownerHtml, /Owner Track \/ KVDF Core/);
+  assert.match(ownerHtml, /Readiness Overview/);
+  assert.match(ownerHtml, /Gate Matrix/);
+  assert.match(ownerHtml, /Blockers/);
+  assert.match(ownerHtml, /Publish Readiness/);
+  assert.match(ownerHtml, /Execution Feedback/);
+  assert.match(ownerHtml, /Stage Timeline/);
   assert.doesNotMatch(ownerHtml, /KVDF Viber Dashboard/);
   assert.match(viberHtml, /KVDF Viber Dashboard/);
   assert.match(viberHtml, /Viber\/App Track/);
+  assert.match(viberHtml, /Readiness Overview/);
+  assert.match(viberHtml, /Gate Matrix/);
+  assert.match(viberHtml, /Blockers/);
+  assert.match(viberHtml, /Handoff \/ Publish Readiness/);
+  assert.match(viberHtml, /Execution Feedback/);
+  assert.match(viberHtml, /Stage Timeline/);
   assert.doesNotMatch(viberHtml, /KVDF Owner Dashboard/);
 }));
 
@@ -5131,6 +5401,72 @@ test("owner and viber dashboards include security gate widgets", () => withTempD
   assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_app_security"));
   assert.ok(viberDashboard.sections.validation_readiness.tables.find((table) => table.id === "viber_validation").rows.some((row) => row[0] === "App Security"));
   assert.ok(viberDashboard.sections.validation_readiness.tables.find((table) => table.id === "viber_app_security_details").rows.some((row) => row[1] === "not_required"));
+}));
+
+test("owner and viber dashboards expose planner execution readiness views", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const ownerDashboard = JSON.parse(runKvdf(["dashboard", "owner", "state", "--json"], { cwd: dir }).stdout);
+  const viberDashboard = JSON.parse(runKvdf(["dashboard", "viber", "state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(ownerDashboard.report_type, "kvdf_owner_dashboard_state");
+  assert.strictEqual(viberDashboard.report_type, "kvdf_viber_dashboard_state");
+  assert.ok(ownerDashboard.sections.readiness);
+  assert.ok(viberDashboard.sections.readiness);
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_state_freshness"));
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_planner_readiness"));
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_gate_blocks"));
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_security_status"));
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_publish_readiness"));
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_ai_learning"));
+  assert.ok(ownerDashboard.widgets.some((widget) => widget.id === "owner_next_safe_action"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_state_freshness"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_planner_readiness"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_gate_blocks"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_security_status"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_publish_readiness"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_ai_learning"));
+  assert.ok(viberDashboard.widgets.some((widget) => widget.id === "viber_next_safe_action"));
+  assert.ok(ownerDashboard.tables.owner_readiness_gates);
+  assert.ok(ownerDashboard.tables.owner_readiness_blockers);
+  assert.ok(ownerDashboard.tables.owner_publish_readiness);
+  assert.ok(ownerDashboard.tables.owner_execution_feedback);
+  assert.ok(ownerDashboard.tables.owner_stage_timeline);
+  assert.ok(viberDashboard.tables.viber_readiness_gates);
+  assert.ok(viberDashboard.tables.viber_readiness_blockers);
+  assert.ok(viberDashboard.tables.viber_publish_readiness);
+  assert.ok(viberDashboard.tables.viber_execution_feedback);
+  assert.ok(viberDashboard.tables.viber_stage_timeline);
+  assert.strictEqual(ownerDashboard.publish_readiness.auto_publish, false);
+  assert.strictEqual(viberDashboard.publish_readiness.auto_publish, false);
+  assert.strictEqual(ownerDashboard.readiness.auto_publish, false);
+  assert.strictEqual(viberDashboard.readiness.auto_publish, false);
+  assert.strictEqual(ownerDashboard.readiness.track, "framework_owner");
+  assert.strictEqual(viberDashboard.readiness.track, "vibe_app_developer");
+  assert.strictEqual(ownerDashboard.readiness.planner_mode, "owner");
+  assert.strictEqual(viberDashboard.readiness.planner_mode, "vibe");
+  assert.ok(ownerDashboard.readiness.source_control_mode);
+  assert.ok(viberDashboard.readiness.source_control_mode);
+  assert.ok(!JSON.stringify(ownerDashboard).includes("KVDF Viber Dashboard"));
+  assert.ok(!JSON.stringify(viberDashboard).includes("KVDF Owner Dashboard"));
+}));
+
+test("dashboard readiness state degrades safely when planner security and learning state are missing", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  fs.rmSync(path.join(dir, ".kabeeri", "planner.json"), { force: true });
+  fs.rmSync(path.join(dir, ".kabeeri", "evolution.json"), { force: true });
+  fs.rmSync(path.join(dir, ".kabeeri", "security", "security_scans.json"), { force: true });
+  fs.rmSync(path.join(dir, ".kabeeri", "ai_learning", "failure_patterns.json"), { force: true });
+  const ownerDashboard = JSON.parse(runKvdf(["dashboard", "owner", "state", "--json"], { cwd: dir }).stdout);
+  const viberDashboard = JSON.parse(runKvdf(["dashboard", "viber", "state", "--json"], { cwd: dir }).stdout);
+  assert.ok(["unknown", "warning"].includes(ownerDashboard.readiness.state_freshness));
+  assert.ok(["unknown", "warning"].includes(viberDashboard.readiness.state_freshness));
+  assert.ok(["unknown", "warning", "blocked"].includes(ownerDashboard.readiness.readiness_label));
+  assert.ok(["unknown", "warning", "blocked"].includes(viberDashboard.readiness.readiness_label));
+  assert.strictEqual(ownerDashboard.security_status, "unknown");
+  assert.strictEqual(viberDashboard.security_status, "unknown");
+  assert.ok(["empty", "unknown"].includes(ownerDashboard.ai_learning_status.status));
+  assert.ok(["empty", "unknown"].includes(viberDashboard.ai_learning_status.status));
+  assert.match(ownerDashboard.readiness.next_safe_action, /kvdf state resync --track owner --json/i);
+  assert.match(viberDashboard.readiness.next_safe_action, /kvdf state resync --track vibe --json/i);
 }));
 
 test("security governance scans reports and blocks gates", () => withTempDir((dir) => {
@@ -6309,6 +6645,17 @@ test("planner prompts reflect the selected source control mode", () => {
   assert.match(branchPr.prompt, /Owner review/);
 });
 
+test("planner prompt blocks vibe execution until the pipeline is ready", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.planner_mode, "vibe");
+  assert.ok(prompt.prompt.includes("Viber Pipeline Stage Order"));
+  assert.ok(prompt.prompt.includes("Execution allowed: no"));
+  assert.ok(prompt.prompt.includes("Execution is blocked until the pipeline gates pass."));
+  assert.ok(prompt.prompt.includes("Complete the next planning stage only."));
+  assert.doesNotMatch(prompt.prompt, /edit app source files yet/i);
+}));
+
 test("planner prompts include AI learning context when learning exists and omit it when empty", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const emptyPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Fresh owner plan", "--track", "owner", "--json"], { cwd: dir }).stdout);
@@ -6685,7 +7032,7 @@ test("truth audit keeps runtime-only items out of the implemented bucket", () =>
 test("planner docs catalog returns foldered catalog entries", () => withTempDir((dir) => {
   const report = JSON.parse(runKvdf(["planner", "docs", "catalog", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.catalog_type, "kvdf_planner_docs_catalog");
-  assert.deepStrictEqual(report.folder_categories, ["product", "architecture", "database", "ui_ux", "api", "security", "delivery", "dependencies"]);
+  assert.deepStrictEqual(report.folder_categories, ["product", "architecture", "database", "ui-ux", "api", "security", "delivery", "dependencies"]);
   const docIds = report.docs.map((doc) => doc.doc_id);
   for (const expected of ["prd", "erd", "system_design", "database_schema", "ui_ux_design", "api_specification", "security_design", "version_plan", "evolutions", "task_punches"]) {
     assert.ok(docIds.includes(expected), `Missing catalog doc ${expected}`);
@@ -7092,6 +7439,19 @@ test("planner materialize creates local-first vibe runtime records without defau
   assert.ok(plannerTasks.every((task) => !task.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
 }));
 
+test("planner prompt from current allows vibe execution only after approval and materialization", () => withTempDir((dir) => {
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Current vibe execution", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  runKvdf(["planner", "materialize", proposal.plan_id, "--json"], { cwd: dir });
+  runKvdf(["planner", "state", "resync", "--track", "vibe", "--json"], { cwd: dir });
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.planner_mode, "vibe");
+  assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
+  assert.ok(prompt.prompt.includes("Execution allowed: yes"));
+  assert.ok(prompt.prompt.includes("Task execution can start."));
+  assert.doesNotMatch(prompt.prompt, /Do not edit app source files yet/i);
+}));
+
 test("planner materialize preserves plugin context and keeps unrelated plugins out of scope", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Materialize plugin plan", "--track", "plugin", "--plugin", "kvdf-dev", "--json"], { cwd: dir }).stdout);
@@ -7201,6 +7561,27 @@ test("planner visual builds a vibe-track local-first visual pipeline", () => {
   assert.ok(visual.markdown_report.includes("Current app files/docs/specs are primary for app-track planning."));
 });
 
+test("planner visual includes Viber pipeline execution readiness and blockers", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--source-control", "none", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.planner_mode, "vibe");
+  assert.ok(visual.viber_pipeline);
+  assert.strictEqual(visual.viber_pipeline.track, "vibe_app_developer");
+  assert.strictEqual(visual.viber_pipeline.delivery_mode, "local_first");
+  assert.strictEqual(visual.viber_pipeline.source_of_truth, "file_first");
+  assert.strictEqual(visual.viber_pipeline.report_type, "kvdf_viber_pipeline_stage_order");
+  assert.strictEqual(visual.viber_pipeline.planning_method, "hybrid");
+  assert.ok(visual.viber_pipeline.stage_order.includes("questionnaire_generation"));
+  assert.strictEqual(visual.execution_allowed, false);
+  assert.ok(Array.isArray(visual.execution_blockers));
+  assert.ok(visual.next_stage);
+  assert.ok(Array.isArray(visual.stage_timeline));
+  assert.ok(visual.stage_timeline.some((stage) => stage.stage === "idea"));
+  assert.ok(visual.stage_timeline.some((stage) => stage.stage === "handoff"));
+  assert.ok(visual.markdown_report.includes("## Viber Pipeline"));
+  assert.ok(visual.markdown_report.includes("Execution allowed: no"));
+}));
+
 test("planner visual builds a plugin-track visual parity model", () => {
   // repo root already contains git metadata; no extra fixture needed
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Improve plugin docs", "--track", "plugin", "--plugin", "kvdf-dev", "--json"]).stdout);
@@ -7292,6 +7673,138 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(Array.isArray(pipeline.pipeline));
   assert.ok(pipeline.pipeline.includes("request"));
   assert.ok(pipeline.pipeline.includes("handoff"));
+  assert.ok(pipeline.viber_pipeline);
+  assert.strictEqual(pipeline.viber_pipeline.report_type, "kvdf_viber_pipeline_stage_order");
+  assert.strictEqual(pipeline.viber_pipeline.track, "vibe_app_developer");
+  assert.strictEqual(pipeline.viber_pipeline.delivery_mode, "local_first");
+  assert.strictEqual(pipeline.viber_pipeline.source_of_truth, "file_first");
+  assert.strictEqual(pipeline.viber_pipeline.planning_method, "hybrid");
+  assert.ok(pipeline.viber_pipeline.method_policy);
+  assert.strictEqual(pipeline.viber_pipeline.method_policy.method, "hybrid");
+  assert.ok(pipeline.viber_pipeline.planning_authority);
+  assert.strictEqual(pipeline.viber_pipeline.planning_authority.level, "placeholder");
+  assert.ok(pipeline.viber_pipeline.questionnaire);
+  assert.strictEqual(pipeline.viber_pipeline.questionnaire.status, "missing");
+  assert.ok(pipeline.viber_pipeline.brief);
+  assert.strictEqual(pipeline.viber_pipeline.brief.status, "missing");
+  assert.ok(Array.isArray(pipeline.viber_pipeline.stage_order));
+  assert.deepStrictEqual(pipeline.viber_pipeline.stage_order, [
+    "idea",
+    "questionnaire_generation",
+    "questionnaire_answers",
+    "answer_completeness_check",
+    "brief_generation",
+    "brief_review",
+    "brief_approval",
+    "state_resync",
+    "current_state_report",
+    "app_boundary",
+    "documentation_architecture",
+    "documentation_folders",
+    "documentation_files",
+    "system_design",
+    "database_design",
+    "ui_ux_design",
+    "source_control_plan",
+    "security_plan",
+    "version_plan",
+    "evolutions",
+    "evolution_order_validation",
+    "task_punches",
+    "task_punch_review",
+    "approval",
+    "materialization",
+    "codex_prompt",
+    "security_gate",
+    "handoff_gate",
+    "source_control_gate",
+    "execution",
+    "validation",
+    "security_scan",
+    "handoff",
+    "dashboard_update",
+    "learning_capture",
+    "closeout"
+  ]);
+  assert.ok(pipeline.viber_pipeline.stages.every((stage, index) => stage.order === index + 1));
+  assert.deepStrictEqual(pipeline.viber_pipeline.stage_groups.intake, ["idea", "questionnaire_generation", "questionnaire_answers", "answer_completeness_check"]);
+  assert.strictEqual(pipeline.viber_pipeline.execution_allowed, false);
+  assert.ok(Array.isArray(pipeline.viber_pipeline.stages));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "questionnaire_generation"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "brief_approval"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_architecture"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_folders"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_files"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "system_design"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "database_design"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "ui_ux_design"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "source_control_plan"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "security_plan"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "version_plan"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "evolutions"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "evolution_order_validation"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "task_punches"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "task_punch_review"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "materialization"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "codex_prompt"));
+  assert.ok(Array.isArray(pipeline.viber_pipeline.execution_blockers));
+  assert.ok(Array.isArray(pipeline.documentation_folders));
+  const folderIds = pipeline.documentation_folders.map((folder) => folder.folder_id);
+  assert.ok(folderIds.includes("product"));
+  assert.ok(folderIds.includes("architecture"));
+  assert.ok(folderIds.includes("database"));
+  assert.ok(folderIds.includes("ui-ux"));
+  assert.ok(folderIds.includes("api"));
+  assert.ok(folderIds.includes("security"));
+  assert.ok(folderIds.includes("delivery"));
+  assert.ok(folderIds.includes("dependencies"));
+  const uiUxFolder = pipeline.documentation_folders.find((folder) => folder.folder_id === "ui-ux");
+  const architectureFolder = pipeline.documentation_folders.find((folder) => folder.folder_id === "architecture");
+  const databaseFolder = pipeline.documentation_folders.find((folder) => folder.folder_id === "database");
+  assert.ok(uiUxFolder);
+  assert.ok(architectureFolder);
+  assert.ok(databaseFolder);
+  assert.ok(uiUxFolder.files.some((file) => file.doc_id === "ui_ux_design"));
+  assert.ok(uiUxFolder.files.some((file) => file.path.includes("docs/ui-ux/UI_UX_DESIGN.md")));
+  assert.ok(architectureFolder.files.some((file) => file.doc_id === "system_design"));
+  assert.ok(architectureFolder.files.some((file) => file.path.includes("docs/architecture/SYSTEM_DESIGN.md")));
+  assert.ok(databaseFolder.files.some((file) => file.doc_id === "data_model"));
+  assert.ok(databaseFolder.files.some((file) => file.path.includes("docs/database/DATA_MODEL.md")));
+  assert.ok(Array.isArray(pipeline.portable_docs_mapping));
+  const uiUxMapping = pipeline.portable_docs_mapping.find((mapping) => mapping.planner_doc.includes("docs/ui-ux/UI_UX_DESIGN.md"));
+  const systemMapping = pipeline.portable_docs_mapping.find((mapping) => mapping.planner_doc.includes("docs/architecture/SYSTEM_DESIGN.md"));
+  const dataMapping = pipeline.portable_docs_mapping.find((mapping) => mapping.planner_doc.includes("docs/database/DATA_MODEL.md"));
+  const securityMapping = pipeline.portable_docs_mapping.find((mapping) => mapping.planner_doc.includes("docs/security/SECURITY_DESIGN.md"));
+  const versionMapping = pipeline.portable_docs_mapping.find((mapping) => mapping.planner_doc.includes("docs/delivery/VERSION_PLAN.md"));
+  const punchMapping = pipeline.portable_docs_mapping.find((mapping) => mapping.planner_doc.includes("docs/delivery/TASK_PUNCHES.md"));
+  assert.ok(uiUxMapping);
+  assert.ok(systemMapping);
+  assert.ok(dataMapping);
+  assert.ok(securityMapping);
+  assert.ok(versionMapping);
+  assert.ok(punchMapping);
+  assert.ok(uiUxMapping.canonical_docs.some((item) => item.endsWith("05-ux-principles.md")));
+  assert.ok(uiUxMapping.canonical_docs.some((item) => item.endsWith("06-information-architecture.md")));
+  assert.ok(uiUxMapping.canonical_docs.some((item) => item.endsWith("09-ui-specification.md")));
+  assert.ok(systemMapping.canonical_docs.some((item) => item.endsWith("12-architecture-overview.md")));
+  assert.ok(systemMapping.canonical_docs.some((item) => item.endsWith("13-module-breakdown.md")));
+  assert.ok(systemMapping.canonical_docs.some((item) => item.endsWith("14-service-boundaries.md")));
+  assert.ok(dataMapping.canonical_docs.some((item) => item.endsWith("19-data-model.md")));
+  assert.ok(dataMapping.canonical_docs.some((item) => item.endsWith("20-entities-and-relationships.md")));
+  assert.ok(dataMapping.canonical_docs.some((item) => item.endsWith("21-data-dictionary.md")));
+  assert.ok(securityMapping.canonical_docs.some((item) => item.endsWith("38-security-and-privacy.md")));
+  assert.ok(securityMapping.canonical_docs.some((item) => item.endsWith("16-authentication-and-permissions.md")));
+  assert.ok(securityMapping.canonical_docs.some((item) => item.endsWith("41-role-and-permission-matrix.md")));
+  assert.ok(versionMapping.canonical_docs.some((item) => item.endsWith("28-release-plan.md")));
+  assert.ok(versionMapping.canonical_docs.some((item) => item.endsWith("27-implementation-order.md")));
+  assert.ok(punchMapping.canonical_docs.some((item) => item.endsWith("26-task-plan.md")));
+  assert.ok(punchMapping.canonical_docs.some((item) => item.endsWith("27-implementation-order.md")));
+  assert.ok(punchMapping.canonical_docs.some((item) => item.endsWith("31-qa-checklist.md")));
+  assert.ok(pipeline.documentation_files.some((item) => item.includes("docs/ui-ux/UI_UX_DESIGN.md")));
+  assert.ok(pipeline.documentation_files.some((item) => item.includes("docs/architecture/SYSTEM_DESIGN.md")));
+  assert.ok(pipeline.documentation_files.some((item) => item.includes("docs/database/DATA_MODEL.md")));
+  assert.ok(pipeline.documentation_files.some((item) => item.includes("docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md")));
+  assert.ok(fs.existsSync(path.join(repoRoot, "schemas", "planner", "viber-pipeline-state.schema.json")));
   assert.ok(pipeline.design_artifacts);
   assert.ok(pipeline.design_artifacts.system_design);
   assert.ok(pipeline.design_artifacts.database_design);
@@ -7306,6 +7819,78 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
   assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/evolution.js"))));
 }));
+
+test("planner pipeline supports source-control modes without making GitHub mandatory", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const localOnly = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "none", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(localOnly.viber_pipeline.source_control.mode, "local_only");
+  assert.strictEqual(localOnly.viber_pipeline.source_control.branching_enabled, false);
+  assert.strictEqual(localOnly.viber_pipeline.source_control.pr_enabled, false);
+  assert.match(localOnly.viber_pipeline.source_control.next_source_control_action, /local/i);
+
+  const directMain = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--sc-mode", "direct-main", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(directMain.viber_pipeline.source_control.mode, "direct_main");
+  assert.strictEqual(directMain.viber_pipeline.source_control.branching_enabled, false);
+  assert.strictEqual(directMain.viber_pipeline.source_control.pr_enabled, false);
+  assert.match(directMain.viber_pipeline.source_control.next_source_control_action, /commit and push to main/i);
+
+  const branch = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--sc-mode", "branch", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(branch.viber_pipeline.source_control.mode, "branch");
+  assert.strictEqual(branch.viber_pipeline.source_control.branching_enabled, true);
+  assert.strictEqual(branch.viber_pipeline.source_control.pr_enabled, false);
+  assert.match(branch.viber_pipeline.source_control.next_source_control_action, /branch/i);
+
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const branchPr = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(branchPr.viber_pipeline.source_control.mode, "branch_pr");
+  assert.strictEqual(branchPr.viber_pipeline.source_control.remote_provider, "github");
+  assert.strictEqual(branchPr.viber_pipeline.source_control.provider_plugin, "github");
+  assert.strictEqual(branchPr.viber_pipeline.source_control.branching_enabled, true);
+  assert.strictEqual(branchPr.viber_pipeline.source_control.pr_enabled, true);
+  assert.match(branchPr.viber_pipeline.source_control.next_source_control_action, /GitHub PR/i);
+}));
+
+test("planner pipeline exposes structured agile and hybrid planning policies", () => {
+  const structured = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Enterprise vibe app", "--track", "vibe", "--method", "structured", "--json"]).stdout);
+  assert.strictEqual(structured.viber_pipeline.planning_method, "structured");
+  assert.strictEqual(structured.viber_pipeline.method_policy.method, "structured");
+  assert.strictEqual(structured.viber_pipeline.method_policy.foundation_depth, "full");
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("system_design"));
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("database_design"));
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("ui_ux_design"));
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("security_plan"));
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("version_plan"));
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("evolutions"));
+  assert.ok(structured.viber_pipeline.method_policy.required_stage_overrides.includes("task_punches"));
+
+  const agile = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Small vibe tweak", "--track", "vibe", "--method", "agile", "--json"]).stdout);
+  assert.strictEqual(agile.viber_pipeline.planning_method, "agile");
+  assert.strictEqual(agile.viber_pipeline.method_policy.method, "agile");
+  assert.strictEqual(agile.viber_pipeline.method_policy.execution_style, "small_iteration");
+  assert.ok(agile.viber_pipeline.method_policy.required_stage_overrides.includes("questionnaire_generation"));
+  assert.ok(agile.viber_pipeline.method_policy.required_stage_overrides.includes("brief_approval"));
+  assert.ok(agile.viber_pipeline.method_policy.required_stage_overrides.includes("security_gate"));
+
+  const hybrid = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Build booking app", "--track", "vibe", "--json"]).stdout);
+  assert.strictEqual(hybrid.viber_pipeline.planning_method, "hybrid");
+  assert.strictEqual(hybrid.viber_pipeline.method_policy.method, "hybrid");
+  assert.strictEqual(hybrid.viber_pipeline.method_policy.execution_style, "evolution_slice");
+  assert.strictEqual(hybrid.viber_pipeline.planning_authority.level, "placeholder");
+});
+
+test("portable app docs standard remains canonical and numbered", () => {
+  const standardMd = fs.readFileSync(path.join(repoRoot, "knowledge", "governance", "APP_DOCS_STANDARD.md"), "utf8");
+  assert.ok(standardMd.includes("Portable app docs:"));
+  assert.ok(standardMd.includes("Planner Foldered Docs Bridge"));
+  assert.ok(standardMd.includes("documentation_folders"));
+  const templates = buildAppDocsPackageTemplates({ name: "App", slug: "app" });
+  const readmeTemplate = templates.find((template) => template.path === "README.md");
+  assert.ok(readmeTemplate);
+  assert.ok(readmeTemplate.content.includes("docs/00-overview.md"));
+  assert.ok(readmeTemplate.content.includes("docs/05-ux-principles.md"));
+  assert.ok(readmeTemplate.content.includes("docs/12-architecture-overview.md"));
+  assert.ok(readmeTemplate.content.includes("docs/19-data-model.md"));
+});
 
 test("planner pipeline builds a plugin package with plugin context and isolated scope", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
