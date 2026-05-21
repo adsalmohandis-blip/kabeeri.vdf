@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI UX Intelligence Checklist",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "checklist",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_checklist" },
+    "checklist": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "title", "category", "severity", "required"],
+        "properties": {
+          "check_id": { "type": "string" },
+          "title": { "type": "string" },
+          "category": {
+            "enum": ["accessibility", "responsive", "interaction", "content", "layout", "forms", "dashboard", "performance"]
+          },
+          "severity": { "enum": ["info", "warning", "blocker"] },
+          "required": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "next_action": { "type": "string" }
+  }
+}

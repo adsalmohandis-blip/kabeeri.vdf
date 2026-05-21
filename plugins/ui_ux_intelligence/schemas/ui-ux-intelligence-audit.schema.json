@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI UX Intelligence Audit",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "status",
+    "target",
+    "findings",
+    "summary",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_audit" },
+    "status": { "enum": ["pass", "warning", "blocked"] },
+    "target": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["warnings", "blockers"],
+      "properties": {
+        "warnings": { "type": "integer" },
+        "blockers": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "next_action": { "type": "string" }
+  }
+}

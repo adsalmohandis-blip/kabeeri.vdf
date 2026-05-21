@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI UX Intelligence Design System",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "style",
+    "colors",
+    "typography",
+    "spacing",
+    "components",
+    "layout_patterns",
+    "motion_rules",
+    "accessibility",
+    "anti_patterns",
+    "pre_delivery_checklist"
+  ],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_design_system" },
+    "style": { "type": "object" },
+    "colors": { "type": "object" },
+    "typography": { "type": "object" },
+    "spacing": { "type": "object" },
+    "components": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "layout_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "motion_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "accessibility": { "type": "object" },
+    "anti_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "pre_delivery_checklist": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

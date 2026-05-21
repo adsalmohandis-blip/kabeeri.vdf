@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI UX Intelligence Recommendation",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "input",
+    "detected_product_type",
+    "recommended_style",
+    "recommended_palette_mood",
+    "recommended_typography_mood",
+    "recommended_layout_patterns",
+    "recommended_components",
+    "ux_rules",
+    "anti_patterns_to_avoid",
+    "accessibility_notes",
+    "responsive_notes",
+    "confidence",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_recommendation" },
+    "input": { "type": "string" },
+    "detected_product_type": { "type": "string" },
+    "recommended_style": { "type": "string" },
+    "recommended_palette_mood": { "type": "string" },
+    "recommended_typography_mood": { "type": "string" },
+    "recommended_layout_patterns": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommended_components": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "ux_rules": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "anti_patterns_to_avoid": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "accessibility_notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "responsive_notes": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "confidence": { "enum": ["low", "medium", "high"] },
+    "next_action": { "type": "string" }
+  }
+}

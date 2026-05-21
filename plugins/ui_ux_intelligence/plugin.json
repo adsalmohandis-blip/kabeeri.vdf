@@ -1,0 +1,38 @@
+{
+  "plugin_id": "ui_ux_intelligence",
+  "name": "UI UX Intelligence",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/ui_ux_intelligence/runtime/index.js",
+  "command_entrypoint": "plugins/ui_ux_intelligence/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "design",
+  "plugin_type": "ui_ux_advisor",
+  "enabled_by_default": false,
+  "description": "Standalone optional UI/UX intelligence plugin for design-system recommendations, accessibility checks, UX anti-pattern detection, and Viber app UI/UX documentation support.",
+  "required_folders": [
+    "runtime",
+    "data",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "command_surface": [
+    "kvdf ui-ux-intelligence status",
+    "kvdf ui-ux-intelligence source-status",
+    "kvdf ui-ux-intelligence search",
+    "kvdf ui-ux-intelligence recommend",
+    "kvdf ui-ux-intelligence design-system",
+    "kvdf ui-ux-intelligence checklist",
+    "kvdf ui-ux-intelligence docs",
+    "kvdf ui-ux-intelligence audit",
+    "kvdf plugins install ui_ux_intelligence",
+    "kvdf plugins uninstall ui_ux_intelligence"
+  ],
+  "docs_surface": [
+    "plugins/ui_ux_intelligence/docs/index.md",
+    "plugins/ui_ux_intelligence/docs/cli.md"
+  ]
+}

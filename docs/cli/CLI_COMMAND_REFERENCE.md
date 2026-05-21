@@ -36,6 +36,7 @@ kvdf multi-ai --help
 kvdf conflict --help
 kvdf source-package --help
 kvdf security-auditor --help
+kvdf ui-ux-intelligence --help
 kvdf truth --help
 ```
 
@@ -198,6 +199,23 @@ kvdf plugins uninstall planner-visual
 ```
 
 `planner-visual` is an optional plugin that renders planner visual JSON into readable Markdown and Mermaid text. KVDF Core still owns the planner logic, runtime state, task punch, and Codex prompt generation. The plugin is only the presentation layer for the visual model, so it can be installed or removed without changing the canonical planner contract. KVDF does not auto-publish.
+
+### UI UX Intelligence Plugin
+
+```bash
+kvdf ui-ux-intelligence status
+kvdf ui-ux-intelligence source-status
+kvdf ui-ux-intelligence search --idea "Build booking app for clinics"
+kvdf ui-ux-intelligence recommend --idea "Build booking app for clinics"
+kvdf ui-ux-intelligence design-system --idea "Build ecommerce app"
+kvdf ui-ux-intelligence checklist --idea "Build dashboard app"
+kvdf ui-ux-intelligence docs --idea "Build booking app" --track vibe --app booking
+kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md
+kvdf plugins install ui_ux_intelligence
+kvdf plugins uninstall ui_ux_intelligence
+```
+
+`ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides product detection, design-system recommendations, checklists, and docs support for Viber apps. Phase 1 uses a flat `_temp_meta/` staging contract inside the plugin folder; the plugin does not depend on external GitHub repositories or paid APIs.
 
 `kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed. For Viber/App Track, the same command is also the execution-readiness gate, so the generated prompt and visual report stay blocked until the plan is approved and materialized. The Viber pipeline now surfaces `docs_design_gates` for documentation architecture, folder materialization, file compatibility, system design, database design, UI/UX design, and version-plan readiness, plus `version_evolution_gates` for version plan, evolution ordering, task-punch readiness, and task-punch review. The Viber docs model treats foldered planner docs as primary and the portable numbered docs package as canonical long-term product knowledge.
 

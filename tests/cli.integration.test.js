@@ -6,6 +6,7 @@ const util = require("util");
 const { run } = require("../src/cli");
 const { release } = require("../src/cli/commands/release");
 const { plannerVisual } = require("../src/cli/commands/planner_visual");
+const { buildPluginLoaderReport } = require("../src/cli/services/plugin_loader");
 const evolutionService = require("../src/cli/services/evolution");
 const wordpressStateService = require("../src/cli/services/wordpress");
 const wordpressPlanService = require("../src/cli/services/wordpress_plans");
@@ -26,9 +27,45 @@ const PLUGIN_BUNDLE_DIRS = {
   "kvdf-dev": "kvdf_dev",
   "news-website": "news_website",
   "planner-visual": "planner_visual",
+  "ui_ux_intelligence": "ui_ux_intelligence",
   "security-auditor": "security_auditor",
   "vibe-maintainer": "vibe_maintainer"
 };
+
+const UI_UX_INTELLIGENCE_FLAT_FILES = [
+  "products.csv",
+  "styles.csv",
+  "colors.csv",
+  "typography.csv",
+  "ui-reasoning.csv",
+  "ux-guidelines.csv",
+  "charts.csv",
+  "landing.csv",
+  "icons.csv",
+  "app-interface.csv",
+  "react-performance.csv",
+  "angular.csv",
+  "astro.csv",
+  "flutter.csv",
+  "html-tailwind.csv",
+  "jetpack-compose.csv",
+  "laravel.csv",
+  "nextjs.csv",
+  "nuxt-ui.csv",
+  "nuxtjs.csv",
+  "react-native.csv",
+  "react.csv",
+  "shadcn.csv",
+  "svelte.csv",
+  "swiftui.csv",
+  "threejs.csv",
+  "vue.csv",
+  "core.py",
+  "search.py",
+  "design_system.py",
+  "quick-reference.md",
+  "skill-content.md"
+];
 
 function getPluginBundleDir(pluginId) {
   return PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
@@ -8268,6 +8305,79 @@ test("planner visual plugin is discoverable, installable, uninstallable, and ren
   const uninstalledStatus = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(uninstalledStatus.plugins.find((item) => item.plugin_id === "planner-visual").status, "disabled");
 }));
+
+test("ui_ux_intelligence plugin is discoverable and the status command is available", () => {
+  const report = buildPluginLoaderReport();
+  const plugin = report.plugins.find((item) => item.plugin_id === "ui_ux_intelligence");
+  assert.ok(plugin);
+  assert.strictEqual(plugin.plugin_id, "ui_ux_intelligence");
+  assert.strictEqual(plugin.removable, true);
+  assert.strictEqual(plugin.enabled_by_default, false);
+
+  const status = JSON.parse(runKvdf(["ui-ux-intelligence", "status", "--json"]).stdout);
+  assert.strictEqual(status.report_type, "ui_ux_intelligence_status");
+  assert.strictEqual(status.plugin_id, "ui_ux_intelligence");
+  assert.strictEqual(status.status, "available");
+  assert.strictEqual(status.standalone, true);
+  assert.strictEqual(status.external_github_dependency, false);
+  assert.strictEqual(status.catalog_ready, false);
+  assert.ok(status.capabilities.includes("source-status"));
+  assert.ok(status.capabilities.includes("recommend"));
+});
+
+test("ui_ux_intelligence source-status handles missing and flat staging files", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+
+  const missingStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(missingStatus.report_type, "ui_ux_intelligence_source_status");
+  assert.strictEqual(missingStatus.layout, "flat");
+  assert.strictEqual(missingStatus.temp_meta_ignored, true);
+  assert.strictEqual(missingStatus.status, "missing");
+  assert.strictEqual(missingStatus.found_files_total, 0);
+  assert.ok(missingStatus.next_action.includes("_temp_meta"));
+
+  const sourceRoot = path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta");
+  fs.mkdirSync(sourceRoot, { recursive: true });
+  for (const fileName of UI_UX_INTELLIGENCE_FLAT_FILES) {
+    fs.writeFileSync(path.join(sourceRoot, fileName), `sample for ${fileName}\n`, "utf8");
+  }
+
+  const readyStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(readyStatus.status, "ready");
+  assert.strictEqual(readyStatus.expected_files_total, 32);
+  assert.strictEqual(readyStatus.found_files_total, 32);
+  assert.strictEqual(readyStatus.missing_files.length, 0);
+  assert.strictEqual(readyStatus.unexpected_files.length, 0);
+  assert.ok(readyStatus.data_files.includes("products.csv"));
+  assert.ok(readyStatus.stack_files.includes("react.csv"));
+  assert.ok(readyStatus.reference_logic_files.includes("core.py"));
+  assert.ok(readyStatus.reference_doc_files.includes("quick-reference.md"));
+
+  fs.writeFileSync(path.join(sourceRoot, "notes.txt"), "unexpected file\n", "utf8");
+  const partialStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(partialStatus.status, "partial");
+  assert.ok(partialStatus.unexpected_files.includes("notes.txt"));
+}));
+
+test("ui_ux_intelligence runtime stays offline and does not depend on an external repository", () => {
+  const runtimeFiles = [
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "index.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "catalog.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "search_engine.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "recommender.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "design_system.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "checklist.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "docs_adapter.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "audit.js")
+  ];
+  for (const file of runtimeFiles) {
+    const source = fs.readFileSync(file, "utf8");
+    assert.ok(!/github\.com/i.test(source), `${path.basename(file)} should not reference external GitHub repositories`);
+    assert.ok(!/\bfetch\s*\(/i.test(source), `${path.basename(file)} should not depend on fetch()`);
+    assert.ok(!/\baxios\b/i.test(source), `${path.basename(file)} should not depend on axios`);
+  }
+});
 
 test("planner-visual render writes the shared mermaid browser preview without opening it", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });

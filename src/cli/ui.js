@@ -127,6 +127,11 @@ function normalizeCommandName(command) {
     database: "data-design",
     "data-design": "data-design",
     "database-design": "data-design",
+    "ui-ux-intelligence": "ui-ux-intelligence",
+    ui_ux_intelligence: "ui-ux-intelligence",
+    "uiux-intelligence": "ui-ux-intelligence",
+    uiux: "ui-ux-intelligence",
+    "ui-ux": "ui-ux-intelligence",
     evolve: "evolution",
     evolution: "evolution",
     "evolution-steward": "evolution",
@@ -1404,6 +1409,21 @@ Notes:
 
 Notes:
   Booking Builder is a removable app-track plugin for reservation systems. Its live runtime state is stored in .kabeeri/booking.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
+`,
+    "ui-ux-intelligence": `Usage:
+  kvdf ui-ux-intelligence status
+  kvdf ui-ux-intelligence source-status
+  kvdf ui-ux-intelligence search --idea "Build booking app for clinics"
+  kvdf ui-ux-intelligence recommend --idea "Build booking app for clinics"
+  kvdf ui-ux-intelligence design-system --idea "Build ecommerce app"
+  kvdf ui-ux-intelligence checklist --idea "Build dashboard app"
+  kvdf ui-ux-intelligence docs --idea "Build booking app" --track vibe --app booking
+  kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md
+  kvdf plugins install ui_ux_intelligence
+  kvdf plugins uninstall ui_ux_intelligence
+
+Notes:
+  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, and flat _temp_meta source staging. It does not depend on external GitHub repositories.
 `
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
@@ -1471,6 +1491,7 @@ function printHelp() {
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
+    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit Optional UI/UX intelligence plugin",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",

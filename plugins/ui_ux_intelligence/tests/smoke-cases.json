@@ -1,0 +1,17 @@
+{
+  "plugin_id": "ui_ux_intelligence",
+  "smoke_cases": [
+    {
+      "command": "kvdf ui-ux-intelligence status --json",
+      "expect_report_type": "ui_ux_intelligence_status"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence source-status --json",
+      "expect_report_type": "ui_ux_intelligence_source_status"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence recommend --idea \"Build booking app for clinics\" --json",
+      "expect_report_type": "ui_ux_intelligence_recommendation"
+    }
+  ]
+}

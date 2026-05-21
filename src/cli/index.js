@@ -57,6 +57,7 @@ const { blog } = require("./commands/blog");
 const { ecommerceMobileApp } = require("./commands/ecommerce_mobile_app");
 const { crm } = require("./commands/crm");
 const { pos } = require("./commands/pos");
+const { uiUxIntelligence } = require("./commands/ui_ux_intelligence");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
 const { booking: bookingCommand } = require("./commands/booking");
@@ -362,6 +363,12 @@ function run(argv) {
   }
 
   assertTrackSurfaceAllowed(group, action, getActiveTrackSurface());
+  if (["ui-ux-intelligence", "ui_ux_intelligence", "uiux-intelligence", "uiux", "ui-ux"].includes(group)) {
+    return uiUxIntelligence(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
   // Legacy router surface markers retained for conflict-scan compatibility.
   // router:resume group === "resume"
   // router:guard group === "guard"
