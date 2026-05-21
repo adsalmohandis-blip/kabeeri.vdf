@@ -1487,6 +1487,147 @@ test("ai learning memory supports combined all-track prompt context and expanded
   assert.ok(allContext.prompt_warnings.some((warning) => /execution loop warning/i.test(warning)));
 }));
 
+test("ai learning exchange exports sanitized packages imports candidates and promotes approved shared learning", () => withTempDir((dir) => {
+  const patternCapture = JSON.parse(runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Shared prompt warning",
+    "--problem",
+    "The planner prompt forgot the current AI learning warning",
+    "--fix",
+    "Inject the active warning into the prompt context",
+    "--category",
+    "track_confusion",
+    "--track",
+    "vibe",
+    "--json"
+  ], { cwd: dir }).stdout);
+
+  const fastPathCapture = JSON.parse(runKvdf([
+    "learn",
+    "fast-path",
+    "--title",
+    "Planner verification",
+    "--steps",
+    "run prompt-context,inspect warnings,update prompt",
+    "--validation",
+    "npm test",
+    "--track",
+    "vibe",
+    "--json"
+  ], { cwd: dir }).stdout);
+
+  const exportPath = path.join(dir, "docs", "kvdf-learning", "learning-export.json");
+  const exported = JSON.parse(runKvdf([
+    "learn",
+    "export",
+    "--track",
+    "vibe",
+    "--output",
+    "docs/kvdf-learning/learning-export.json",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(exported.report_type, "kvdf_ai_learning_export");
+  assert.strictEqual(exported.cloud_ready, false);
+  assert.strictEqual(exported.consent_required, true);
+  assert.strictEqual(exported.anonymized, true);
+  assert.ok(exported.patterns.length >= 1);
+  assert.ok(exported.fast_paths.length >= 1);
+  assert.ok(exported.promotion_candidates.length >= 2);
+  assert.ok(fs.existsSync(exportPath));
+  assert.ok(fs.existsSync(exportPath.replace(/\.json$/, ".md")));
+
+  const repoHarvestPath = path.join(repoRoot, ".kabeeri", "learning_harvest", "candidates.json");
+  assert.strictEqual(fs.existsSync(repoHarvestPath), false);
+
+  const imported = JSON.parse(runKvdf([
+    "learn",
+    "import",
+    "--track",
+    "owner",
+    "--from",
+    "docs/kvdf-learning/learning-export.json",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(imported.report_type, "ai_learning_import");
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "learning_harvest", "candidates.json")));
+  assert.ok(imported.candidates.length >= 2);
+  assert.match(imported.next_action, /kvdf learn review --json/);
+
+  const review = JSON.parse(runKvdf(["learn", "review", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "ai_learning_harvest_review");
+  assert.ok(review.candidates.some((candidate) => candidate.classification === "reusable" || candidate.classification === "needs_review"));
+
+  const patternCandidate = review.candidates.find((candidate) => candidate.item_type === "pattern");
+  const fastPathCandidate = review.candidates.find((candidate) => candidate.item_type === "fast-path");
+  assert.ok(patternCandidate);
+  assert.ok(fastPathCandidate);
+
+  const promoteBlocked = runKvdf(["learn", "promote", patternCandidate.candidate_id, "--confirm", "--track", "vibe", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(promoteBlocked.stderr, /owner-track only/i);
+
+  const reject = JSON.parse(runKvdf([
+    "learn",
+    "reject",
+    fastPathCandidate.candidate_id,
+    "--track",
+    "owner",
+    "--reason",
+    "App-specific workaround",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(reject.report_type, "ai_learning_candidate_rejected");
+  assert.strictEqual(reject.candidate.rejected, true);
+  assert.strictEqual(reject.candidate.rejection_reason, "App-specific workaround");
+
+  const promoteNeedsConfirm = runKvdf(["learn", "promote", patternCandidate.candidate_id, "--track", "owner", "--json"], { cwd: dir, expectFailure: true });
+  assert.match(promoteNeedsConfirm.stderr, /Missing --confirm/i);
+
+  const promotion = JSON.parse(runKvdf([
+    "learn",
+    "promote",
+    patternCandidate.candidate_id,
+    "--confirm",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir }).stdout);
+  assert.strictEqual(promotion.report_type, "ai_learning_promotion");
+  assert.ok(promotion.promotion.cloud_ready_metadata);
+  assert.strictEqual(promotion.promotion.cloud_ready_metadata.cloud_ready, false);
+  assert.ok(promotion.state.shared_patterns.length >= 1);
+
+  const shared = JSON.parse(runKvdf(["learn", "shared", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(shared.report_type, "ai_learning_shared_learning_state");
+  assert.ok(shared.shared_patterns.some((item) => item.approved_by === "owner"));
+
+  const plannerPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Re-use the shared warning", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.ok(plannerPrompt.ai_learning);
+  assert.ok(plannerPrompt.ai_learning.prompt_warnings.some((warning) => /shared prompt warning/i.test(warning)));
+
+  const cacheHome = path.join(dir, "home");
+  const cacheUpdate = JSON.parse(runKvdf([
+    "learn",
+    "cache",
+    "update",
+    "--from-export",
+    "docs/kvdf-learning/learning-export.json",
+    "--track",
+    "owner",
+    "--json"
+  ], { cwd: dir, env: { HOME: cacheHome, USERPROFILE: cacheHome } }).stdout);
+  assert.strictEqual(cacheUpdate.report_type, "kvdf_ai_learning_cache");
+  assert.ok(fs.existsSync(path.join(cacheHome, ".kabeeri", "learning", "shared_patterns.json")));
+
+  const cacheList = JSON.parse(runKvdf(["learn", "cache", "list", "--track", "owner", "--json"], { cwd: dir, env: { HOME: cacheHome, USERPROFILE: cacheHome } }).stdout);
+  assert.strictEqual(cacheList.report_type, "kvdf_ai_learning_cache");
+  assert.ok(cacheList.summary.shared_patterns_total >= 1);
+
+  assert.ok(patternCapture.pattern.pattern_id);
+  assert.ok(fastPathCapture.fast_path.fast_path_id);
+}));
+
 test("ai learning memory writes runtime state only in the active workspace", () => withTempDir((dir) => {
   const repoLearningStatePath = path.join(repoRoot, ".kabeeri", "ai_learning", "failure_patterns.json");
   const repoLearningStateExistsBefore = fs.existsSync(repoLearningStatePath);
@@ -1509,6 +1650,12 @@ test("ai learning memory writes runtime state only in the active workspace", () 
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "ai_learning", "failure_patterns.json")));
   assert.strictEqual(fs.existsSync(repoLearningStatePath), repoLearningStateExistsBefore);
 }));
+
+test("ai learning plugin bundle is discoverable in plugin status", () => {
+  const report = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: repoRoot }).stdout);
+  assert.strictEqual(report.report_type, "plugin_loader_status");
+  assert.ok(report.plugins.some((plugin) => plugin.plugin_id === "ai-learning"));
+});
 
 test("ai learning memory auto-syncs into planner prompts, resume guidance, and prompt packs", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });

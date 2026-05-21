@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Learning Exchange Harvest State",
+  "type": "object",
+  "required": ["version", "candidates"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "1"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "title", "classification", "generalized_problem", "generalized_fix", "prevention_rule", "prompt_warning", "applies_to_tracks", "cloud_ready", "training_eligible", "owner_approved_for_cloud", "approved", "rejected"],
+        "properties": {
+          "candidate_id": { "type": "string" },
+          "source_export_id": { "type": "string" },
+          "item_type": { "type": "string", "enum": ["pattern", "fast-path"] },
+          "title": { "type": "string" },
+          "classification": {
+            "type": "string",
+            "enum": ["reusable", "app_specific", "sensitive", "noisy", "needs_review", "cloud_candidate", "not_cloud_safe"]
+          },
+          "generalized_problem": { "type": "string" },
+          "generalized_fix": { "type": "string" },
+          "prevention_rule": { "type": "string" },
+          "prompt_warning": { "type": "string" },
+          "applies_to_tracks": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["owner", "vibe", "plugin"] }
+          },
+          "cloud_ready": { "type": "boolean" },
+          "training_eligible": { "type": "boolean" },
+          "owner_approved_for_cloud": { "type": "boolean" },
+          "approved": { "type": "boolean" },
+          "approved_at": { "type": "string", "format": "date-time" },
+          "approved_by": { "type": "string" },
+          "rejected": { "type": "boolean" },
+          "rejected_at": { "type": "string", "format": "date-time" },
+          "rejection_reason": { "type": "string" },
+          "app_slug": { "type": "string" },
+          "source": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

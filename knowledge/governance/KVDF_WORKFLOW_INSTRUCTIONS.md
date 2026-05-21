@@ -37,6 +37,16 @@ These rules apply to every role:
 7. If the boundary is unclear, stop and ask.
 8. Use runtime state, not chat memory, as the source of truth.
 
+## KVDF Core Authority Rules
+
+KVDF Core defines the shared rules that every track must respect:
+
+- Viber/App work must never edit KVDF Core source files, docs, schemas, or runtime surfaces.
+- Core track boundaries are enforced before any planner or materialization step runs.
+- Planner prompt-context hooks may reuse AI learning warnings, but the core rules stay authoritative.
+- GitHub stays optional and secondary; local files and local Git evidence come first.
+- `.kabeeri/` supports runtime evidence, but it never outranks current source files or current Core code.
+
 ## State Resync Before Planning
 
 KVDF must not generate the next Evolution from stale local files.
@@ -84,11 +94,13 @@ Required behavior:
 - treat `.kabeeri/tasks.json` as supporting state only, not the only source of
   current progress
 - treat `.kabeeri/` runtime state as supporting state only, not implementation truth
+- treat AI learning runtime as supporting memory that can be promoted, exported, or imported, but not as the source of Core authority
 - do not let `.kabeeri/tasks.json` overrule later git history, release tags, or
   roadmap evidence
 - for app work, treat current app files/docs/specs/tests as the primary source of truth
 - for app work, Git and GitHub are supporting historical evidence unless the Owner explicitly chooses remote history as authoritative
 - for KVDF Core work, keep direct-to-main as the default delivery mode unless the Owner explicitly asks for branches or PRs
+- for KVDF Core work, let Planner prompt-context read AI learning warnings, but never let prompt history override current source evidence
 - when source control is enabled and safe, sync or read the latest `main`
 - stop and ask the Owner when source-of-truth conflicts are ambiguous
 

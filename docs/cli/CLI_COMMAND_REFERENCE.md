@@ -1398,11 +1398,22 @@ Project memory writes append-only JSONL files under `.kabeeri/memory/` and keeps
 ```bash
 kvdf learn capture --title "Repeated stale assertion" --problem "Dashboard test still expects old markup" --fix "Update assertions to match rendered HTML" --category test_failure --track owner --json
 kvdf learn fast-path --title "Dashboard verification" --steps "node --check src/cli/commands/dashboard_site.js,npm test,npm run check" --validation "npm test,npm run check" --track owner --json
+kvdf learn export --track vibe --output docs/kvdf-learning/learning-export.json --json
+kvdf learn import --track owner --from docs/kvdf-learning/learning-export.json --json
+kvdf learn review --track owner --json
+kvdf learn promote learning-candidate-001 --confirm --track owner --json
+kvdf learn reject learning-candidate-002 --reason "App-specific" --track owner --json
+kvdf learn shared --json
+kvdf learn cache update --from-export docs/kvdf-learning/learning-export.json --json
+kvdf learn cache list --json
+kvdf learn metadata --json
 kvdf learn list --json
 kvdf learn prompt-context --track owner --json
 ```
 
-`kvdf learn` stores repeated AI execution mistakes, blockers, and fast paths in `.kabeeri/ai_learning/failure_patterns.json`. Capture records deduplicate by normalized title and problem, increment `seen_count` when the same failure is seen again, and keep track-specific prompt warnings available for later prompt injection. Fast paths record the shortest validated solution path so future prompts can bias toward the proven sequence instead of replaying the same failed loop.
+`kvdf learn` stores repeated AI execution mistakes, blockers, fast paths, and prompt warnings in the current workspace's `.kabeeri/ai_learning/failure_patterns.json`. Capture records deduplicate by normalized title and problem, increment `seen_count` when the same failure is seen again, and keep track-specific prompt warnings available for later prompt injection. Fast paths record the shortest validated solution path so future prompts can bias toward the proven sequence instead of replaying the same failed loop. Export creates a sanitized portable package plus Markdown summary, import writes review candidates into `.kabeeri/learning_harvest/candidates.json`, `review` classifies imported candidates, `promote` moves approved reusable learning into `knowledge/ai_learning/shared_patterns.json` or `shared_fast_paths.json`, `reject` records rejection reasons, and `cache` updates the user's local global learning cache under `~/.kabeeri/learning/` without dirtying the repo. `metadata` prepares future cloud-provider metadata without requiring a remote provider.
+
+Viber/app track can capture local learning and export portable packages, but only Owner track may review or promote candidates into KVDF Core shared knowledge. GitHub is optional secondary evidence, not the source of truth, and chat history never outranks current file-state evidence.
 
 Supported learning categories include `test_failure`, `scope_violation`, `runtime_state`, `generated_artifact`, `track_confusion`, `source_control`, `security`, `dashboard_confusion`, `execution_loop`, and `other`.
 
@@ -1412,7 +1423,7 @@ The memory is auto-synced into the prompt generators that KVDF already uses:
 - `kvdf resume` and resume guidance
 - prompt-pack composition for AI/task capture flows
 
-Use `kvdf learn prompt-context` when you want the active warning rules and fast paths for a specific track. The command is shared across owner, vibe, and plugin tracks, but the returned memory stays track-aware so the prompt guidance can be scoped instead of mixed. Pass `--track all` when you want the combined active prompt context across every supported track.
+Use `kvdf learn prompt-context` when you want the active warning rules and fast paths for a specific track. The command is shared across owner, vibe, and plugin tracks, but the returned memory stays track-aware so the prompt guidance can be scoped instead of mixed. Shared learning is also injected into the prompt context so promoted patterns remain visible to Planner prompt generation. Pass `--track all` when you want the combined active prompt context across every supported track.
 
 ## ADR And AI Run History
 

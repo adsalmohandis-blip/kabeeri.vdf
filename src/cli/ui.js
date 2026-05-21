@@ -812,11 +812,20 @@ Notes:
     learn: `Usage:
   kvdf learn capture --title "Repeated stale assertion" --problem "Dashboard test still expects old markup" --fix "Update assertions to match rendered HTML" --category test_failure --track owner --json
   kvdf learn fast-path --title "Dashboard verification" --steps "node --check src/cli/commands/dashboard_site.js,npm test,npm run check" --validation "npm test,npm run check" --track owner --json
+  kvdf learn export --track vibe --output docs/kvdf-learning/learning-export.json --json
+  kvdf learn import --track owner --from docs/kvdf-learning/learning-export.json --json
+  kvdf learn review --track owner --json
+  kvdf learn promote learning-candidate-001 --confirm --track owner --json
+  kvdf learn reject learning-candidate-002 --reason "App-specific" --track owner --json
+  kvdf learn shared --json
+  kvdf learn cache update --from-export docs/kvdf-learning/learning-export.json --json
+  kvdf learn cache list --json
+  kvdf learn metadata --json
   kvdf learn list --json
   kvdf learn prompt-context --track owner --json
 
 Notes:
-  AI Learning Memory stores repeated AI mistakes, blockers, and fast paths in .kabeeri/ai_learning/failure_patterns.json so later prompts can inject learned warnings instead of replaying the same failed loop. The command is shared across owner, vibe, and plugin tracks.
+  AI Learning Memory stores repeated AI mistakes, blockers, fast paths, shared learning, promotions, cache exports, and cloud-ready metadata in .kabeeri/ai_learning/failure_patterns.json so later prompts can inject learned warnings instead of replaying the same failed loop. The command is shared across owner, vibe, and plugin tracks, while the optional ai-learning plugin formalizes export/import, review, promotion, rejection, and cache workflows.
 `,
     adr: `Usage:
   kvdf adr create --title "Use PostgreSQL" --context "Need reliable relational data" --decision "Use PostgreSQL for v1"
@@ -1459,7 +1468,7 @@ function printHelp() {
     "  workstream list|show|add     Manage workstream runtime boundaries",
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  memory add|list|summary      Manage v5 project memory records",
-    "  learn capture|fast-path|list|prompt-context Record recurring AI mistakes and fast paths",
+    "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",
