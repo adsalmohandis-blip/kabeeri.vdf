@@ -63,6 +63,9 @@ docs/design gates, visual planning, version plan, evolutions, task punches, and
 approval/materialization gates are complete. The planner prompt must switch to
 the next planning stage only whenever `execution_allowed` is false, and it
 must surface `docs_design_gates` when docs or design readiness is the blocker.
+It must also surface `version_evolution_gates` so version-plan approval,
+evolution approval, order validation, task punch generation, and task punch
+review stay ordered before materialization.
 Before `kvdf questionnaire generate-tasks --app <app-name>` can create app
 task punches, KVDF must also pass `kvdf evolution validate-order --app
 <app-name>`, which enforces category-based Viber evolution ordering and blocks
