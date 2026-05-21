@@ -177,7 +177,7 @@ Use `kvdf planner method` to recommend `structured`, `agile`, or `hybrid` before
 Use `kvdf truth audit` and `kvdf truth feature` to compare source-level implementation evidence against runtime state, generated snapshots, and docs before trusting a report.
 Use `kvdf evolution reconcile` to compare evolution runtime state against source-level evidence and identify stale plans, duplicate task links, and runtime-only items.
 Use `kvdf planner materialize --from-current` to turn an approved plan into durable Evolution and Task Punch runtime records without executing the tasks yet.
-Use `kvdf planner visual` to generate a Mermaid graph, planning board, scope map, and markdown report. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Visual previews stay stdout-only by default; use `--open` to launch a browser preview, `--no-open` to force file-only output, and `--fullscreen` to request a fullscreen preview shell. The visual renderer plugin also reads the approved current plan when `--from-current` is used, so the rendered markdown stays aligned with the shared approval gate.
+Use `kvdf planner visual` to generate an execution-readiness visual report with Planning Lifecycle, gate matrix, blockers, publish readiness, execution feedback, stage timeline, Mermaid graph, planning board, scope map, and markdown output. It supports Owner, Vibe, and Plugin tracks. Use `kvdf planner visual --from-current` when you want the visual model to come from the approved runtime plan instead of a fresh proposal. Visual previews stay stdout-only by default; use `--open` to launch a browser preview, `--no-open` to force file-only output, and `--fullscreen` to request a fullscreen preview shell. KVDF does not auto-publish, and publish or handoff requires Owner approval or a configured delivery gate.
 Use `kvdf planner pipeline` to turn a raw idea into a documentation map, design artifacts, a visual planning model, a version plan, evolutions, task punches, a visual roadmap, and the next approval/materialization action. It uses the same stdout-only-by-default preview behavior for visual inspection, with `--open` to launch the browser preview, `--no-open` as the opt-out, and `--fullscreen` for a fullscreen preview shell.
 
 The planner is intentionally not autonomous. It does not replace Owner approval, and it does not write runtime state under `.kabeeri/` in the MVP.
@@ -193,7 +193,7 @@ kvdf plugins install planner-visual
 kvdf plugins uninstall planner-visual
 ```
 
-`planner-visual` is an optional plugin that renders planner visual JSON into readable Markdown and Mermaid text. KVDF Core still owns the planner logic, runtime state, task punch, and Codex prompt generation. The plugin is only the presentation layer for the visual model, so it can be installed or removed without changing the canonical planner contract.
+`planner-visual` is an optional plugin that renders planner visual JSON into readable Markdown and Mermaid text. KVDF Core still owns the planner logic, runtime state, task punch, and Codex prompt generation. The plugin is only the presentation layer for the visual model, so it can be installed or removed without changing the canonical planner contract. KVDF does not auto-publish.
 
 `kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed.
 

@@ -7165,12 +7165,21 @@ test("planner visual builds an owner-track Mermaid board and scope map", () => {
   assert.ok(visual.markdown_report.includes("```mermaid"));
   assert.ok(visual.markdown_report.includes("Planning Board"));
   assert.ok(visual.markdown_report.includes("Source Control"));
-  assert.ok(visual.planning_readiness);
-  assert.ok(visual.planning_readiness.version_status);
-  assert.ok(visual.planning_readiness.gate_status);
-  assert.ok(visual.markdown_report.includes("## Planner Readiness"));
+  assert.ok(visual.planning_lifecycle);
+  assert.ok(visual.planning_lifecycle.method);
+  assert.ok(visual.gate_matrix);
+  assert.ok(visual.publish_readiness);
+  assert.strictEqual(visual.publish_readiness.auto_publish, false);
+  assert.ok(Array.isArray(visual.stage_timeline));
+  assert.ok(Array.isArray(visual.blockers));
+  assert.ok(visual.source_control.remote_provider !== "github");
+  assert.ok(visual.markdown_report.includes("## Planning Lifecycle"));
   assert.ok(visual.markdown_report.includes("## Gate Matrix"));
-  assert.ok(visual.markdown_report.includes("## Stage Readiness"));
+  assert.ok(visual.markdown_report.includes("## Blockers"));
+  assert.ok(visual.markdown_report.includes("## Publish Readiness"));
+  assert.ok(visual.markdown_report.includes("## Execution Feedback"));
+  assert.ok(visual.markdown_report.includes("## Stage Timeline"));
+  assert.ok(visual.markdown_report.includes("KVDF does not auto-publish."));
 });
 
 test("planner visual builds a vibe-track local-first visual pipeline", () => {
@@ -7186,6 +7195,10 @@ test("planner visual builds a vibe-track local-first visual pipeline", () => {
   assert.ok(visual.graph.diagram.includes("Handoff"));
   assert.ok(visual.scope_map.allowed_files.some((item) => item.includes("workspaces/apps/")));
   assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes("src/cli/commands/planner.js")));
+  assert.ok(visual.planning_lifecycle);
+  assert.strictEqual(visual.publish_readiness.auto_publish, false);
+  assert.ok(Array.isArray(visual.stage_timeline));
+  assert.ok(visual.markdown_report.includes("Current app files/docs/specs are primary for app-track planning."));
 });
 
 test("planner visual builds a plugin-track visual parity model", () => {
@@ -7200,18 +7213,26 @@ test("planner visual builds a plugin-track visual parity model", () => {
   assert.ok(visual.graph.diagram.includes("Install/Uninstall Check"));
   assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes(".kabeeri/plugin-links/")));
   assert.ok(visual.scope_map.forbidden_files.some((item) => item.includes("plugins/*/runtime/")));
+  assert.ok(visual.gate_matrix);
+  assert.ok(Array.isArray(visual.stage_timeline));
+  assert.strictEqual(visual.publish_readiness.auto_publish, false);
 });
 
 test("planner visual renders a readable markdown report", () => {
   const visual = runKvdf(["planner", "visual", "--goal", "Add visual planner", "--track", "owner"]);
-  assert.match(visual.stdout, /KVDF Planner Visual Model - Owner/);
+  assert.match(visual.stdout, /KVDF Planner Visual Execution Readiness - Owner/);
   assert.match(visual.stdout, /```mermaid/);
   assert.match(visual.stdout, /Owner Direction/);
-  assert.match(visual.stdout, /## Questions and Clarification/);
-  assert.match(visual.stdout, /## Planner Readiness/);
+  assert.match(visual.stdout, /## State Freshness/);
+  assert.match(visual.stdout, /## Planning Lifecycle/);
   assert.match(visual.stdout, /## Gate Matrix/);
-  assert.match(visual.stdout, /## Stage Readiness/);
+  assert.match(visual.stdout, /## Blockers/);
+  assert.match(visual.stdout, /## Publish Readiness/);
+  assert.match(visual.stdout, /## Execution Feedback/);
+  assert.match(visual.stdout, /## Stage Timeline/);
   assert.match(visual.stdout, /Clarifications and assumptions:/);
+  assert.match(visual.stdout, /KVDF does not auto-publish./);
+  assert.match(visual.stdout, /GitHub is optional and not required for state authority./);
 });
 
 test("planner visual from current reuses the approved runtime plan", () => withTempDir((dir) => {
@@ -7223,7 +7244,9 @@ test("planner visual from current reuses the approved runtime plan", () => withT
   assert.strictEqual(visual.planner_mode, "owner");
   assert.strictEqual(visual.goal, "Approved visual planner");
   assert.strictEqual(visual.source_control.mode, "direct_main");
-  assert.ok(visual.markdown_report.includes("KVDF Planner Visual Model - Owner"));
+  assert.ok(visual.markdown_report.includes("KVDF Planner Visual Execution Readiness - Owner"));
+  assert.ok(visual.publish_readiness);
+  assert.strictEqual(visual.publish_readiness.auto_publish, false);
 }));
 
 test("planner pipeline builds an owner-track idea to evolution package", () => withTempDir((dir) => {

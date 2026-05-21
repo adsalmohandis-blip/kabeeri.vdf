@@ -2290,6 +2290,7 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
   const pluginContext = planning.plugin_context;
   const sourceControl = planning.source_control;
   const aiLearning = planning.ai_learning;
+  const stateResync = buildPlannerStateResyncSummary(context, request, { track: mode, pluginId: pluginContext ? pluginContext.plugin_id : null });
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const versionControl = planning.pipeline && planning.pipeline.version_control
@@ -2334,6 +2335,7 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     sourceControl,
     versionControl,
     aiLearning,
+    stateResync,
     planningMethod: planning.planning_method,
     methodReason: planning.method.reason,
     confidence: planning.method.confidence,
@@ -2367,6 +2369,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   const pluginContext = mode === "plugin"
     ? (currentPlan.plugin_context || buildPluginContext({ plugin_id: currentPlan.recommended_evolution && currentPlan.recommended_evolution.plugin_context && currentPlan.recommended_evolution.plugin_context.plugin_id }, context))
     : null;
+  const stateResync = buildPlannerStateResyncSummary(context, request, { track: mode, pluginId: pluginContext ? pluginContext.plugin_id : null });
   const evolutionPlan = currentPlan.recommended_evolution && Object.keys(currentPlan.recommended_evolution).length
     ? currentPlan.recommended_evolution
     : buildPlannerEvolutionPlan(goal, { mode, deliveryMode, pluginContext }, context);
@@ -2398,6 +2401,7 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     currentPlan,
     sourceControl,
     versionControl,
+    stateResync,
     planningMethod: currentPlan.planning_method || review.planning_method || null,
     methodReason: currentPlan.method_reason || "",
     confidence: currentPlan.confidence || "",
@@ -2412,13 +2416,37 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
   const planningReadiness = buildPlannerVisualReadinessSummary({ versionControl, docsStatus, docsStatusReport, review, currentPlan, mode, planningMethod, repoRoot: context && context.repo_root ? context.repo_root : null });
+  const executionReadiness = buildPlannerVisualExecutionReadiness({
+    goal,
+    mode,
+    deliveryMode,
+    evolutionPlan,
+    taskPunch,
+    currentPlan,
+    sourceControl,
+    versionControl,
+    planningReadiness,
+    docsStatus,
+    docsStatusReport,
+    review,
+    currentGate,
+    nextAction,
+    roadmapTrain,
+    stateResync,
+    context,
+    pluginContext,
+    risks
+  });
   const validationCommands = [...(evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS)];
-  const stopCondition = evolutionPlan.stop_condition || buildPlannerStopCondition(mode, context, pluginContext);
+  const stopCondition = buildPlannerVisualStopCondition({
+    base: evolutionPlan.stop_condition || buildPlannerStopCondition(mode, context, pluginContext),
+    blockers: executionReadiness.blockers
+  });
   const reviewStatus = review ? review.status || "unknown" : (currentPlan && currentPlan.review && currentPlan.review.status) || "warning";
   const markdownReport = buildPlannerVisualMarkdown({
     goal,
@@ -2439,6 +2467,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     docsStatusReport,
     versionControl,
     planningReadiness,
+    executionReadiness,
     risks,
     currentGate,
     nextAction: nextAction || evolutionPlan.next_action || "",
@@ -2457,6 +2486,15 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     scope_map: scopeMap,
     legend: buildPlannerVisualLegend(),
     markdown_report: markdownReport,
+    planning_lifecycle: executionReadiness.planning_lifecycle,
+    gate_matrix: executionReadiness.gate_matrix,
+    blockers: executionReadiness.blockers,
+    readiness_summary: executionReadiness.readiness_summary,
+    publish_readiness: executionReadiness.publish_readiness,
+    execution_feedback: executionReadiness.execution_feedback,
+    stage_timeline: executionReadiness.stage_timeline,
+    dashboard_summary: executionReadiness.dashboard_summary,
+    warnings: executionReadiness.warnings,
     validation_commands: validationCommands,
     stop_condition: stopCondition,
     recommended_evolution: evolutionPlan,
@@ -2473,7 +2511,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     roadmap_train: roadmapTrain || null,
     risks,
     current_gate: currentGate,
-    next_action: nextAction || evolutionPlan.next_action || ""
+    next_action: nextAction || evolutionPlan.next_action || "",
+    state_resync: stateResync || null
   };
   if (pluginContext) report.plugin_context = pluginContext;
   return report;
@@ -2758,12 +2797,561 @@ function buildPlannerVisualQuestionsSection({ mode, goal, planningMethod, method
   ].filter(Boolean).join("\n");
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null }) {
+function buildPlannerVisualGateState(gate, status, summary, blockers = [], warnings = [], nextAction = "") {
+  return {
+    gate,
+    status,
+    summary,
+    blockers: Array.isArray(blockers) ? [...blockers] : [],
+    warnings: Array.isArray(warnings) ? [...warnings] : [],
+    next_action: nextAction || ""
+  };
+}
+
+function buildPlannerVisualExecutionReadiness({
+  goal,
+  mode,
+  deliveryMode,
+  evolutionPlan,
+  taskPunch,
+  currentPlan = null,
+  sourceControl = null,
+  versionControl = null,
+  planningReadiness = {},
+  docsStatus = "planned",
+  docsStatusReport = null,
+  review = null,
+  currentGate = null,
+  nextAction = "",
+  roadmapTrain = null,
+  stateResync = null,
+  context = {},
+  pluginContext = null,
+  risks = []
+}) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const nextVersion = versionControl && versionControl.next_version ? versionControl.next_version : null;
+  const currentEvolution = currentPlan && currentPlan.recommended_evolution && currentPlan.recommended_evolution.evolution_id
+    ? currentPlan.recommended_evolution.evolution_id
+    : evolutionPlan && evolutionPlan.evolution_id
+      ? evolutionPlan.evolution_id
+      : null;
+  const nextEvolution = nextVersion && nextVersion.evolution && nextVersion.evolution.evolution_id
+    ? nextVersion.evolution.evolution_id
+    : evolutionPlan && evolutionPlan.evolution_id
+      ? evolutionPlan.evolution_id
+      : currentEvolution;
+  const stateFreshness = stateResync && stateResync.state_freshness ? stateResync.state_freshness : "unknown";
+  const sourceOfTruth = determinePlannerVisualSourceOfTruth({ mode, stateResync, sourceControl, context, pluginContext });
+  const stateResyncGate = buildPlannerVisualGateState(
+    "state_resync",
+    stateResync && stateResync.status === "blocked"
+      ? "blocked"
+      : stateFreshness === "current"
+        ? "pass"
+        : "blocked",
+    stateResync && stateResync.reason
+      ? stateResync.reason
+      : stateFreshness === "current"
+        ? "Current-state evidence is fresh."
+        : "Run kvdf state resync before authoritative planning.",
+    stateResync && stateResync.reasons ? stateResync.reasons.map((item) => String(item)) : [],
+    stateFreshness === "current" ? [] : ["State resync is required before execution."]
+  );
+  const docsGate = buildPlannerVisualDocsGate({ docsStatus, docsStatusReport });
+  const evolutionGate = buildPlannerVisualEvolutionGate({ evolutionPlan, currentPlan, currentVersion, nextVersion, stateResync });
+  const taskGate = buildPlannerVisualTaskGate({ taskPunch, currentPlan, mode });
+  const validationGate = buildPlannerVisualValidationGate({ versionControl, planningReadiness, evolutionPlan });
+  const securityGate = buildPlannerVisualSecurityGate({ versionControl, planningReadiness, currentGate, stateResync });
+  const handoffGate = buildPlannerVisualHandoffGate({ versionControl, planningReadiness, deliveryMode, sourceControl, mode });
+  const publishGate = buildPlannerVisualPublishGate({ versionControl, planningReadiness, sourceControl, mode, handoffGate, validationGate, securityGate, stateResyncGate });
+  const gateMatrix = {
+    state_resync: stateResyncGate,
+    docs: docsGate,
+    evolution: evolutionGate,
+    task: taskGate,
+    validation: validationGate,
+    security: securityGate,
+    handoff: handoffGate,
+    publish: publishGate
+  };
+  const blockers = buildPlannerVisualBlockers({ gateMatrix, stateResync, docsStatusReport, currentPlan, mode });
+  const warnings = buildPlannerVisualWarnings({ gateMatrix, planningReadiness, docsStatusReport, stateResync, currentPlan, risks });
+  const readinessSummary = buildPlannerVisualReadinessSummaryV2({ gateMatrix, docsStatus, currentPlan, mode });
+  const publishReadiness = buildPlannerVisualPublishReadiness({ publishGate, gateMatrix, stateResync, mode });
+  const executionFeedback = buildPlannerVisualExecutionFeedback({ planningReadiness, versionControl, stateResync, currentPlan, evolutionPlan, validationGate });
+  const stageTimeline = buildPlannerVisualStageTimeline({
+    mode,
+    goal,
+    evolutionPlan,
+    taskPunch,
+    docsGate,
+    evolutionGate,
+    taskGate,
+    validationGate,
+    securityGate,
+    handoffGate,
+    publishGate,
+    stateResyncGate,
+    readinessSummary,
+    publishReadiness,
+    currentPlan,
+    validationCommands: evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS
+  });
+  const dashboardSummary = buildPlannerVisualDashboardSummary({
+    versionControl,
+    publishReadiness,
+    gateMatrix,
+    blockers,
+    warnings
+  });
+  const planningLifecycle = {
+    method: stateResync && stateResync.state_freshness === "current"
+      ? "state_resync"
+      : currentPlan
+        ? "planner_current"
+        : goal
+          ? "goal_based"
+          : "manual",
+    confidence: stateResync && stateResync.state_freshness === "current"
+      ? "high"
+      : currentPlan
+        ? "medium"
+        : goal
+          ? "low"
+          : "low",
+    reason: stateResync && stateResync.state_freshness === "current"
+      ? "Fresh state-resync evidence is available."
+      : currentPlan
+        ? "Planner current-state evidence exists, but it is not fully resynced."
+        : goal
+          ? "The report is goal-based and should be validated against current files before execution."
+          : "Manual planning context only.",
+    current_version: currentVersion && currentVersion.version_id ? currentVersion.version_id : null,
+    next_version: nextVersion && nextVersion.version_id ? nextVersion.version_id : null,
+    current_evolution: currentEvolution,
+    next_evolution: nextEvolution,
+    state_freshness: stateFreshness,
+    source_of_truth: sourceOfTruth
+  };
+  return {
+    planning_lifecycle: planningLifecycle,
+    gate_matrix: gateMatrix,
+    blockers,
+    warnings,
+    readiness_summary: readinessSummary,
+    publish_readiness: publishReadiness,
+    execution_feedback: executionFeedback,
+    stage_timeline: stageTimeline,
+    dashboard_summary: dashboardSummary,
+    state_resync: stateResync
+  };
+}
+
+function buildPlannerVisualStopCondition({ base = "", blockers = [] }) {
+  const blockerMessages = Array.isArray(blockers) ? blockers.filter(Boolean) : [];
+  if (!blockerMessages.length) {
+    return base || "Execution may continue when the current-state report is fresh and all required gates are clear.";
+  }
+  const prefix = base ? `${base.trim()} ` : "";
+  return `${prefix}Execution must not continue until blockers are resolved: ${blockerMessages.map((item) => item.message || item.id || item).join("; ")}.`;
+}
+
+function buildPlannerVisualDocsGate({ docsStatus = "planned", docsStatusReport = null }) {
+  const stageStatus = docsStatusReport && docsStatusReport.stage_status ? docsStatusReport.stage_status : {};
+  const missingStages = Object.entries(stageStatus).filter(([, item]) => Number(item && item.missing || 0) > 0);
+  const appliedStages = Object.entries(stageStatus).filter(([, item]) => String(item && item.status || "").toLowerCase() === "applied_to_stage");
+  const hasMissing = docsStatus === "missing" || missingStages.length > 0;
+  const status = hasMissing ? "blocked" : docsStatus === "generated" || docsStatus === "applied_to_stage" || appliedStages.length ? "pass" : "warning";
+  const blockers = hasMissing ? (docsStatusReport && docsStatusReport.missing_total ? [`${docsStatusReport.missing_total} required doc(s) are missing.`] : ["Required docs are missing."]) : [];
+  const warnings = status === "warning" ? ["Docs are planned but not yet fully applied."] : [];
+  return buildPlannerVisualGateState(
+    "docs",
+    status,
+    hasMissing
+      ? "Required documentation is missing."
+      : status === "pass"
+        ? "Current docs are generated or applied to stage."
+        : "Documentation is planned but not yet fully staged.",
+    blockers,
+    warnings,
+    hasMissing ? "Generate or apply the required docs before execution." : "Docs are aligned with the current plan."
+  );
+}
+
+function buildPlannerVisualEvolutionGate({ evolutionPlan = null, currentPlan = null, currentVersion = null, nextVersion = null, stateResync = null }) {
+  const currentStatus = String(currentPlan && currentPlan.status || "").toLowerCase();
+  const activeEvolution = stateResync && stateResync.active_evolution ? stateResync.active_evolution : null;
+  const plannedEvolution = stateResync && Array.isArray(stateResync.planned_evolutions) && stateResync.planned_evolutions.length ? stateResync.planned_evolutions[0] : null;
+  let status = "warning";
+  const blockers = [];
+  const warnings = [];
+  if (currentStatus === "blocked") {
+    status = "blocked";
+    blockers.push("Current planner plan is blocked.");
+  } else if (currentStatus === "approved" || currentStatus === "materialized" || currentStatus === "completed") {
+    status = "pass";
+  } else if (!currentPlan) {
+    warnings.push("Evolution is based on the goal only and should be approved before execution.");
+  } else {
+    warnings.push(`Current planner plan status is ${currentStatus || "unknown"}.`);
+  }
+  if (activeEvolution && evolutionPlan && activeEvolution.evolution_id && evolutionPlan.evolution_id && activeEvolution.evolution_id !== evolutionPlan.evolution_id) {
+    warnings.push("Active evolution differs from the proposed execution slice.");
+  }
+  if (plannedEvolution && evolutionPlan && plannedEvolution.evolution_id && plannedEvolution.evolution_id !== evolutionPlan.evolution_id) {
+    warnings.push("A planned evolution exists that should be reconciled before execution.");
+  }
+  return buildPlannerVisualGateState(
+    "evolution",
+    status,
+    status === "pass"
+      ? "Evolution is aligned with the approved planner state."
+      : status === "blocked"
+        ? "Evolution cannot continue because the current planner plan is blocked."
+        : "Evolution is proposed but still needs approval or reconciliation.",
+    blockers,
+    warnings,
+    status === "pass"
+      ? "Continue with the approved evolution slice."
+      : "Resolve planner-state alignment before execution."
+  );
+}
+
+function buildPlannerVisualTaskGate({ taskPunch = null, currentPlan = null, mode = "owner" }) {
+  const tasks = taskPunch && Array.isArray(taskPunch.tasks) ? taskPunch.tasks : [];
+  const blockedTasks = tasks.filter((task) => String(task.status || "").toLowerCase() === "blocked");
+  const inProgressTasks = tasks.filter((task) => ["assigned", "in_progress", "review"].includes(String(task.status || "").toLowerCase()));
+  const status = blockedTasks.length ? "blocked" : tasks.length ? "pass" : "warning";
+  const warnings = [];
+  if (!tasks.length) warnings.push("No task punch exists for the current execution slice.");
+  if (inProgressTasks.length && status !== "blocked") warnings.push("Some tasks are still in progress.");
+  const blockers = blockedTasks.map((task) => `${task.id || task.title || "task"} is blocked`);
+  return buildPlannerVisualGateState(
+    "task",
+    status,
+    status === "pass"
+      ? "Task punch exists for the current execution slice."
+      : tasks.length
+        ? "Task punch exists but requires review."
+        : "Task punch is missing.",
+    blockers,
+    warnings,
+    status === "pass"
+      ? "Execute the planned task slices."
+      : "Create or reconcile the task punch before execution."
+  );
+}
+
+function buildPlannerVisualValidationGate({ versionControl = null, planningReadiness = {}, evolutionPlan = null }) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const gate = currentVersion && currentVersion.validation_gate ? currentVersion.validation_gate : buildEmptyVersionGate("validation");
+  const hasCommands = Array.isArray(evolutionPlan && evolutionPlan.validation_commands) && evolutionPlan.validation_commands.length > 0;
+  const status = gate.status === "blocked" ? "blocked" : gate.status === "pass" ? "pass" : hasCommands ? "warning" : "warning";
+  return buildPlannerVisualGateState(
+    "validation",
+    status,
+    status === "pass"
+      ? "Validation gates are recorded."
+      : hasCommands
+        ? "Validation commands are available but execution evidence is not yet recorded."
+        : "Validation commands are missing.",
+    status === "blocked" ? [...(gate.blockers || [])] : [],
+    [...(gate.warnings || []), ...(hasCommands ? [] : ["Validation commands are missing."])].filter(Boolean),
+    gate.next_action || (hasCommands ? "Run the validation commands and capture the result." : "Add validation commands before execution.")
+  );
+}
+
+function buildPlannerVisualSecurityGate({ versionControl = null, planningReadiness = {}, currentGate = null, stateResync = null }) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const gate = currentVersion && currentVersion.security_gate ? currentVersion.security_gate : buildEmptyVersionGate("security");
+  const status = gate.status === "blocked" ? "blocked" : gate.status === "pass" ? "pass" : "warning";
+  const blockers = [...(gate.blockers || [])];
+  const warnings = [...(gate.warnings || [])];
+  if (currentGate && /security/i.test(String(currentGate)) && status !== "pass" && !warnings.length) warnings.push("Security readiness is not confirmed.");
+  if (stateResync && stateResync.state_freshness !== "current") warnings.push("State resync is not current.");
+  return buildPlannerVisualGateState(
+    "security",
+    status,
+    status === "pass"
+      ? "Security readiness is recorded."
+      : "Security readiness is not fully recorded.",
+    blockers,
+    warnings,
+    gate.next_action || "Review the security gate before execution."
+  );
+}
+
+function buildPlannerVisualHandoffGate({ versionControl = null, planningReadiness = {}, deliveryMode = "direct_main", sourceControl = null, mode = "owner" }) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const gate = currentVersion && currentVersion.handoff_gate ? currentVersion.handoff_gate : buildEmptyVersionGate("handoff");
+  const status = gate.status === "blocked" ? "blocked" : gate.status === "pass" ? "pass" : "warning";
+  const warnings = [...(gate.warnings || [])];
+  if (mode === "vibe" && deliveryMode !== "local_first") warnings.push("Vibe track should remain local-first unless explicitly changed.");
+  return buildPlannerVisualGateState(
+    "handoff",
+    status,
+    status === "pass"
+      ? "Handoff readiness is recorded."
+      : "Handoff readiness is not fully recorded.",
+    [...(gate.blockers || [])],
+    warnings,
+    gate.next_action || "Prepare the handoff package before publish or commit."
+  );
+}
+
+function buildPlannerVisualPublishGate({ versionControl = null, planningReadiness = {}, sourceControl = null, mode = "owner", handoffGate = null, validationGate = null, securityGate = null, stateResyncGate = null }) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const gate = currentVersion && currentVersion.publish_gate ? currentVersion.publish_gate : buildEmptyVersionGate("publish");
+  const blockers = [...(stateResyncGate && stateResyncGate.status === "blocked" ? stateResyncGate.blockers : []), ...(gate.blockers || [])];
+  const warnings = [...(gate.warnings || [])];
+  const summary = gate.status === "pass"
+    ? "Publish is allowed only with explicit Owner approval or a configured delivery gate."
+    : gate.status === "blocked"
+      ? "Publish is blocked."
+      : "Publish readiness is not final.";
+  const status = blockers.length ? "blocked" : gate.status === "pass" ? "pass" : gate.status === "blocked" ? "blocked" : "warning";
+  return buildPlannerVisualGateState(
+    "publish",
+    status,
+    summary,
+    blockers,
+    warnings,
+    gate.next_action || "KVDF must not auto-publish."
+  );
+}
+
+function buildPlannerVisualBlockers({ gateMatrix = {}, stateResync = null, docsStatusReport = null, currentPlan = null, mode = "owner" }) {
+  const blockers = [];
+  const addGateBlocker = (area, gate, fallbackMessage) => {
+    if (!gate || gate.status !== "blocked") return;
+    blockers.push({
+      id: `${area}-blocked`,
+      severity: "blocker",
+      area,
+      message: gate.summary || fallbackMessage || `${area} is blocked.`,
+      next_action: gate.next_action || `Resolve the ${area} blocker.`
+    });
+  };
+  addGateBlocker("state_resync", gateMatrix.state_resync, "State resync is blocked.");
+  addGateBlocker("docs", gateMatrix.docs, "Docs are blocked.");
+  addGateBlocker("evolution", gateMatrix.evolution, "Evolution is blocked.");
+  addGateBlocker("task", gateMatrix.task, "Task readiness is blocked.");
+  addGateBlocker("validation", gateMatrix.validation, "Validation is blocked.");
+  addGateBlocker("security", gateMatrix.security, "Security is blocked.");
+  addGateBlocker("handoff", gateMatrix.handoff, "Handoff is blocked.");
+  addGateBlocker("publish", gateMatrix.publish, "Publish is blocked.");
+  if (stateResync && Array.isArray(stateResync.conflicts)) {
+    for (const conflict of stateResync.conflicts) {
+      if (!conflict || conflict.severity !== "blocking") continue;
+      blockers.push({
+        id: conflict.id || `state-conflict-${blockers.length + 1}`,
+        severity: "blocker",
+        area: "state_resync",
+        message: conflict.message || "State resync conflict detected.",
+        next_action: conflict.next_action || "Resolve the state conflict."
+      });
+    }
+  }
+  if (docsStatusReport && docsStatusReport.status === "blocked") {
+    blockers.push({
+      id: "docs-status-blocked",
+      severity: "blocker",
+      area: "docs",
+      message: "Documentation status report is blocked.",
+      next_action: docsStatusReport.next_action || "Generate the missing documentation."
+    });
+  }
+  if (mode === "vibe" && currentPlan && currentPlan.status === "blocked") {
+    blockers.push({
+      id: "vibe-plan-blocked",
+      severity: "blocker",
+      area: "task",
+      message: "The current app-track plan is blocked.",
+      next_action: currentPlan.next_action || "Resolve the app-track blockers."
+    });
+  }
+  return blockers;
+}
+
+function buildPlannerVisualWarnings({ gateMatrix = {}, planningReadiness = {}, docsStatusReport = null, stateResync = null, currentPlan = null, risks = [] }) {
+  const warnings = [];
+  for (const gate of Object.values(gateMatrix)) {
+    if (!gate || gate.status === "blocked" || !Array.isArray(gate.warnings)) continue;
+    for (const warning of gate.warnings) warnings.push(String(warning));
+  }
+  if (planningReadiness && Array.isArray(planningReadiness.gate_warnings)) {
+    for (const warning of planningReadiness.gate_warnings) warnings.push(String(warning));
+  }
+  if (stateResync && Array.isArray(stateResync.reasons)) {
+    for (const reason of stateResync.reasons) warnings.push(String(reason));
+  }
+  if (docsStatusReport && docsStatusReport.status === "warning") warnings.push("Documentation status is warning.");
+  if (currentPlan && String(currentPlan.status || "").toLowerCase() === "approved") warnings.push("Approved plans still need execution and validation.");
+  if (Array.isArray(risks)) {
+    for (const risk of risks) warnings.push(String(risk));
+  }
+  return Array.from(new Set(warnings)).filter(Boolean);
+}
+
+function buildPlannerVisualReadinessSummaryV2({ gateMatrix = {}, docsStatus = "planned", currentPlan = null, mode = "owner" }) {
+  const docsGate = gateMatrix.docs || {};
+  const evolutionGate = gateMatrix.evolution || {};
+  const taskGate = gateMatrix.task || {};
+  const validationGate = gateMatrix.validation || {};
+  const securityGate = gateMatrix.security || {};
+  const handoffGate = gateMatrix.handoff || {};
+  const docsStatusValue = docsGate.status === "pass"
+    ? "generated"
+    : docsGate.status === "blocked"
+      ? "missing"
+      : docsStatus === "applied_to_stage"
+        ? "applied_to_stage"
+        : docsStatus === "generated"
+          ? "generated"
+          : "planned";
+  const taskStatus = taskGate.status === "pass"
+    ? "in_progress"
+    : taskGate.status === "blocked"
+      ? "pending"
+      : currentPlan && String(currentPlan.status || "").toLowerCase() === "completed"
+        ? "completed"
+        : "pending";
+  const evolutionStatus = evolutionGate.status === "pass"
+    ? "active"
+    : evolutionGate.status === "blocked"
+      ? "blocked"
+      : currentPlan && String(currentPlan.status || "").toLowerCase() === "completed"
+        ? "completed"
+        : "planned";
+  const validationStatus = validationGate.status === "blocked" ? "blocked" : validationGate.status === "pass" ? "pass" : "warning";
+  const securityStatus = securityGate.status === "blocked" ? "blocked" : securityGate.status === "pass" ? "pass" : "warning";
+  const handoffStatus = handoffGate.status === "pass" ? "ready" : handoffGate.status === "blocked" ? "blocked" : "not_started";
+  return {
+    docs_status: docsStatusValue,
+    task_status: taskStatus,
+    evolution_status: evolutionStatus,
+    validation_status: validationStatus,
+    security_status: securityStatus,
+    handoff_status: handoffStatus
+  };
+}
+
+function buildPlannerVisualPublishReadiness({ publishGate = null, gateMatrix = {}, stateResync = null, mode = "owner" }) {
+  const status = publishGate && publishGate.status === "blocked"
+    ? "blocked"
+    : publishGate && publishGate.status === "pass"
+      ? "ready"
+      : "warning";
+  const blockers = Array.isArray(publishGate && publishGate.blockers) ? publishGate.blockers : [];
+  const scoreBase = status === "ready" ? 100 : status === "warning" ? 60 : 0;
+  const score = Math.max(0, Math.min(100, scoreBase - (blockers.length * 10)));
+  const label = status === "ready"
+    ? "Ready for Owner-approved publish or handoff"
+    : status === "warning"
+      ? "Publish requires review"
+      : "Publish blocked";
+  return {
+    status,
+    score,
+    label,
+    auto_publish: false,
+    rule: "KVDF must not auto-publish. Owner approval or a configured delivery gate is required.",
+    next_action: publishGate && publishGate.next_action ? publishGate.next_action : "Review the publish gates before continuing."
+  };
+}
+
+function buildPlannerVisualExecutionFeedback({ planningReadiness = {}, versionControl = null, stateResync = null, currentPlan = null, evolutionPlan = null, validationGate = null }) {
+  const latestFeedback = planningReadiness && planningReadiness.feedback ? planningReadiness.feedback : (versionControl && versionControl.latest_feedback ? versionControl.latest_feedback : null);
+  if (!latestFeedback) {
+    return {
+      status: "none",
+      executor: null,
+      checks_run: [],
+      changed_files: [],
+      warnings: [],
+      stop_condition: "No execution feedback exists yet.",
+      updated_at: null
+    };
+  }
+  const updatedAt = latestFeedback.updated_at || latestFeedback.generated_at || null;
+  const isCurrent = stateResync && stateResync.state_freshness === "current";
+  return {
+    status: isCurrent ? "current" : "old",
+    executor: latestFeedback.executor || null,
+    checks_run: Array.isArray(latestFeedback.checks_run) ? latestFeedback.checks_run : [],
+    changed_files: Array.isArray(latestFeedback.changed_files) ? latestFeedback.changed_files : [],
+    warnings: Array.isArray(latestFeedback.warnings) ? latestFeedback.warnings : [],
+    stop_condition: latestFeedback.stop_condition || (validationGate && validationGate.next_action) || "Review the latest execution feedback.",
+    updated_at: updatedAt
+  };
+}
+
+function buildPlannerVisualStageTimeline({ mode = "owner", goal = "", evolutionPlan = null, taskPunch = null, docsGate = null, evolutionGate = null, taskGate = null, validationGate = null, securityGate = null, handoffGate = null, publishGate = null, stateResyncGate = null, readinessSummary = null, publishReadiness = null, currentPlan = null, validationCommands = [] }) {
+  const outputsByStage = {
+    idea: [goal ? `Goal: ${goal}` : "Goal not specified.", `Track: ${mode}`],
+    requirements: [docsGate ? docsGate.summary : "Requirements are not yet confirmed.", `Docs status: ${readinessSummary ? readinessSummary.docs_status : "unknown"}`],
+    design: [evolutionGate ? evolutionGate.summary : "Design is not yet confirmed.", `Evolution: ${readinessSummary ? readinessSummary.evolution_status : "unknown"}`],
+    implementation: [taskGate ? taskGate.summary : "Task execution is not yet confirmed.", ...(taskPunch && Array.isArray(taskPunch.tasks) ? taskPunch.tasks.map((task) => task.title || task.id || "task") : [])],
+    validation: [validationGate ? validationGate.summary : "Validation is not yet confirmed.", ...validationCommands],
+    handoff: [handoffGate ? handoffGate.summary : "Handoff is not yet confirmed.", publishReadiness ? publishReadiness.label : "Publish readiness is not yet confirmed."]
+  };
+  const stageStatus = {
+    idea: "pass",
+    requirements: docsGate && docsGate.status === "blocked" ? "blocked" : docsGate && docsGate.status === "warning" ? "warning" : "pass",
+    design: evolutionGate && evolutionGate.status === "blocked" ? "blocked" : evolutionGate && evolutionGate.status === "warning" ? "warning" : "pass",
+    implementation: taskGate && taskGate.status === "blocked" ? "blocked" : taskGate && taskGate.status === "warning" ? "warning" : "pass",
+    validation: validationGate && validationGate.status === "blocked" ? "blocked" : validationGate && validationGate.status === "warning" ? "warning" : "pass",
+    handoff: publishGate && publishGate.status === "blocked" ? "blocked" : publishGate && publishGate.status === "warning" ? "warning" : (publishReadiness && publishReadiness.status === "ready" ? "pass" : "warning")
+  };
+  const stages = ["idea", "requirements", "design", "implementation", "validation", "handoff"].map((stage) => ({
+    stage,
+    status: stageStatus[stage] || "unknown",
+    outputs: outputsByStage[stage] || [],
+    next_action: stage === "idea"
+      ? "Confirm the current execution goal."
+      : stage === "requirements"
+        ? docsGate && docsGate.next_action ? docsGate.next_action : "Confirm the requirements and docs."
+        : stage === "design"
+          ? evolutionGate && evolutionGate.next_action ? evolutionGate.next_action : "Confirm the design and evolution slice."
+          : stage === "implementation"
+            ? taskGate && taskGate.next_action ? taskGate.next_action : "Create or update the task punch."
+            : stage === "validation"
+              ? validationGate && validationGate.next_action ? validationGate.next_action : "Run validation."
+              : publishReadiness && publishReadiness.next_action ? publishReadiness.next_action : "Prepare the handoff."
+  }));
+  return stages;
+}
+
+function buildPlannerVisualDashboardSummary({ versionControl = null, publishReadiness = null, gateMatrix = {}, blockers = [], warnings = [] }) {
+  return {
+    version_to_publish_summary: {
+      current_version: versionControl && versionControl.current_version ? versionControl.current_version.version_id || versionControl.current_version.title || null : null,
+      next_version: versionControl && versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || null : null,
+      publish_status: publishReadiness ? publishReadiness.status : "unknown"
+    },
+    gate_summary: Object.fromEntries(Object.entries(gateMatrix).map(([gate, entry]) => [gate, entry ? entry.status : "unknown"])),
+    readiness_label: publishReadiness ? publishReadiness.label : "Readiness unknown",
+    blocked_total: Array.isArray(blockers) ? blockers.filter((item) => item && item.severity === "blocker").length : 0,
+    warnings_total: Array.isArray(warnings) ? warnings.length : 0
+  };
+}
+
+function determinePlannerVisualSourceOfTruth({ mode = "owner", stateResync = null, sourceControl = null, context = {}, pluginContext = null }) {
+  if (sourceControl && sourceControl.remote_provider && sourceControl.remote_provider !== "none") return "remote_supported";
+  if (stateResync && stateResync.state_freshness === "current") return "file_first";
+  if (mode === "owner" || mode === "vibe" || mode === "plugin") return "file_first";
+  if (sourceControl && sourceControl.mode && sourceControl.mode !== "local_only") return "git_supported";
+  if (stateResync && stateResync.runtime_state && stateResync.runtime_state.supporting_only) return "file_first";
+  return "unknown";
+}
+
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null }) {
   const title = mode === "vibe"
-    ? "KVDF Planner Visual Model - Vibe/App"
+    ? "KVDF Planner Visual Execution Readiness - Vibe/App"
     : mode === "plugin"
-      ? "KVDF Planner Visual Model - Plugin"
-      : "KVDF Planner Visual Model - Owner";
+      ? "KVDF Planner Visual Execution Readiness - Plugin"
+      : "KVDF Planner Visual Execution Readiness - Owner";
   const boardSummary = board.columns.map((column) => `- ${column.title}: ${column.cards.length} card(s)`).join("\n");
   const allowedFiles = (scopeMap.allowed_files || []).map((item) => `- ${item}`).join("\n");
   const forbiddenFiles = (scopeMap.forbidden_files || []).map((item) => `- ${item}`).join("\n");
@@ -2771,16 +3359,10 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
   const generatedArtifacts = (scopeMap.generated_artifacts || []).map((item) => `- ${item}`).join("\n");
   const docs = (scopeMap.docs || []).map((item) => `- ${item}`).join("\n");
   const tests = (scopeMap.tests || []).map((item) => `- ${item}`).join("\n");
-  const gateRows = planningReadiness.gate_status ? [
-    `- Docs: ${planningReadiness.gate_status.docs || "unknown"}`,
-    `- Evolution: ${planningReadiness.gate_status.evolution || "unknown"}`,
-    `- Task: ${planningReadiness.gate_status.task || "unknown"}`,
-    `- Validation: ${planningReadiness.gate_status.validation || "unknown"}`,
-    `- Security: ${planningReadiness.gate_status.security || "unknown"}`,
-    `- Handoff: ${planningReadiness.gate_status.handoff || "unknown"}`,
-    `- Publish: ${planningReadiness.gate_status.publish || "unknown"}`
-  ] : [];
-  const stageRows = docsStatusReport && docsStatusReport.stage_status ? Object.entries(docsStatusReport.stage_status).map(([stage, item]) => `- ${stage}: ${item.status || "missing"} (required ${item.required || 0}, existing ${item.existing || 0}, missing ${item.missing || 0}, applied ${item.applied || 0})`) : [];
+  const gateRows = executionReadiness.gate_matrix ? Object.entries(executionReadiness.gate_matrix).map(([gate, item]) => `- ${gate}: ${item.status || "unknown"}${item.summary ? ` - ${item.summary}` : ""}`) : [];
+  const blockerRows = Array.isArray(executionReadiness.blockers) ? executionReadiness.blockers.map((blocker) => `- [${blocker.severity}] ${blocker.area}: ${blocker.message} -> ${blocker.next_action}`) : [];
+  const warningRows = Array.isArray(executionReadiness.warnings) ? executionReadiness.warnings.map((warning) => `- ${warning}`) : [];
+  const stageRows = Array.isArray(executionReadiness.stage_timeline) ? executionReadiness.stage_timeline.map((stage) => `- ${stage.stage}: ${stage.status}${Array.isArray(stage.outputs) && stage.outputs.length ? ` (${stage.outputs.join("; ")})` : ""}`) : [];
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -2793,40 +3375,93 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     `- Current branch: ${sourceControl.current_branch || "none"}`,
     `- Requires Owner approval: ${sourceControl.requires_owner_approval ? "yes" : "no"}`,
     `- Replaceable provider: ${sourceControl.replaceable_provider ? "yes" : "no"}`,
+    "- GitHub is optional and not required for state authority.",
+    mode === "vibe" ? "Current app files/docs/specs are primary for app-track planning." : null,
+    "KVDF does not auto-publish.",
+    "Publish or handoff requires Owner approval or a configured delivery gate.",
     ...(Array.isArray(sourceControl.notes) && sourceControl.notes.length ? ["- Notes:", ...sourceControl.notes.map((note) => `  - ${note}`)] : [])
-  ].join("\n") : "";
+  ].filter(Boolean).join("\n") : [
+    "- GitHub is optional and not required for state authority.",
+    "KVDF does not auto-publish.",
+    "Publish or handoff requires Owner approval or a configured delivery gate."
+  ].join("\n");
+  const lifecycle = executionReadiness.planning_lifecycle || {};
   return [
     `# ${title}`,
     "",
     `- Track: ${evolutionPlan.track}`,
+    `- Planner mode: ${mode}`,
     `- Delivery mode: ${deliveryMode}`,
+    `- State freshness: ${lifecycle.state_freshness || "unknown"}`,
+    `- Source control mode: ${sourceControl ? sourceControl.mode || "local_only" : "local_only"}`,
     planningMethod ? `- Planning Method: ${planningMethod}` : null,
     planningMethod ? `- Why this method: ${methodReason || ""}` : null,
     planningMethod ? `- Method confidence: ${planningReadiness.planning_method_confidence || "unknown"}` : null,
     reviewStatus ? `- Review status: ${reviewStatus}` : null,
     docsStatus ? `- Documentation status: ${docsStatus}` : null,
     `- Docs created total: ${docsCreatedTotal || 0}`,
+    `- Stop condition note: ${executionReadiness.publish_readiness ? executionReadiness.publish_readiness.rule : "KVDF does not auto-publish."}`,
     versionControl && versionControl.current_version ? `- Current version: ${versionControl.current_version.version_id || versionControl.current_version.title || "unknown"}` : null,
     versionControl && versionControl.next_version ? `- Next version: ${versionControl.next_version.version_id || versionControl.next_version.title || "unknown"}` : null,
     versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
-    versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
     roadmapTrain ? `- Roadmap train: ${roadmapTrain.status || "unknown"}${roadmapTrain.next_evolution_id ? ` (next ${roadmapTrain.next_evolution_id})` : ""}` : null,
     currentGate ? `- Current gate: ${currentGate}` : null,
     risks && risks.length ? `- Risks: ${risks.join("; ")}` : null,
-    planningReadiness.feedback ? `- Latest feedback: ${planningReadiness.feedback.status || "unknown"} (${planningReadiness.feedback.executor || "unknown"})` : null,
+    executionReadiness.execution_feedback ? `- Latest feedback: ${executionReadiness.execution_feedback.status || "none"}${executionReadiness.execution_feedback.executor ? ` (${executionReadiness.execution_feedback.executor})` : ""}` : null,
     `- Proposed Evolution: ${evolutionPlan.title}`,
     "",
-    "## Planner Readiness",
-    `- Version status: ${planningReadiness.version_status || "unknown"}`,
-    `- Current stage: ${planningReadiness.current_stage || "planning"}`,
-    planningReadiness.next_action ? `- Next action: ${planningReadiness.next_action}` : null,
+    "## State Freshness",
+    `- State freshness: ${lifecycle.state_freshness || "unknown"}`,
+    `- Source of truth: ${lifecycle.source_of_truth || "unknown"}`,
+    `- Planning lifecycle method: ${lifecycle.method || "manual"}`,
+    `- Planning lifecycle confidence: ${lifecycle.confidence || "low"}`,
+    lifecycle.reason ? `- Planning lifecycle reason: ${lifecycle.reason}` : null,
+    "",
+    "## Planning Lifecycle",
+    `- Method: ${lifecycle.method || "manual"}`,
+    `- Confidence: ${lifecycle.confidence || "low"}`,
+    lifecycle.current_version ? `- Current version: ${lifecycle.current_version}` : null,
+    lifecycle.next_version ? `- Next version: ${lifecycle.next_version}` : null,
+    lifecycle.current_evolution ? `- Current evolution: ${lifecycle.current_evolution}` : null,
+    lifecycle.next_evolution ? `- Next evolution: ${lifecycle.next_evolution}` : null,
+    lifecycle.reason ? `- Reason: ${lifecycle.reason}` : null,
+    mode === "vibe" ? "- Current app files/docs/specs are primary for app-track planning." : null,
     "",
     "## Gate Matrix",
     gateRows.length ? gateRows.join("\n") : "- Gate details not available",
-    planningReadiness.gate_blockers && planningReadiness.gate_blockers.length ? `- Blockers: ${planningReadiness.gate_blockers.join("; ")}` : "- Blockers: none",
-    planningReadiness.gate_warnings && planningReadiness.gate_warnings.length ? `- Warnings: ${planningReadiness.gate_warnings.join("; ")}` : "- Warnings: none",
     "",
-    "## Stage Readiness",
+    "## Blockers",
+    blockerRows.length ? blockerRows.join("\n") : "- None",
+    "",
+    "## Warnings",
+    warningRows.length ? warningRows.join("\n") : "- None",
+    "",
+    "## Docs / Task / Evolution Readiness",
+    `- Docs status: ${executionReadiness.readiness_summary ? executionReadiness.readiness_summary.docs_status || "unknown" : docsStatus || "unknown"}`,
+    `- Task status: ${executionReadiness.readiness_summary ? executionReadiness.readiness_summary.task_status || "unknown" : "unknown"}`,
+    `- Evolution status: ${executionReadiness.readiness_summary ? executionReadiness.readiness_summary.evolution_status || "unknown" : "unknown"}`,
+    `- Validation status: ${executionReadiness.readiness_summary ? executionReadiness.readiness_summary.validation_status || "unknown" : "unknown"}`,
+    `- Security status: ${executionReadiness.readiness_summary ? executionReadiness.readiness_summary.security_status || "unknown" : "unknown"}`,
+    `- Handoff status: ${executionReadiness.readiness_summary ? executionReadiness.readiness_summary.handoff_status || "unknown" : "unknown"}`,
+    "",
+    "## Publish Readiness",
+    executionReadiness.publish_readiness ? `- Status: ${executionReadiness.publish_readiness.status || "warning"}` : "- Status: unknown",
+    executionReadiness.publish_readiness ? `- Score: ${executionReadiness.publish_readiness.score}` : "- Score: 0",
+    executionReadiness.publish_readiness ? `- Label: ${executionReadiness.publish_readiness.label}` : "- Label: unknown",
+    `- Auto publish: ${executionReadiness.publish_readiness ? (executionReadiness.publish_readiness.auto_publish ? "true" : "false") : "false"}`,
+    executionReadiness.publish_readiness ? `- Rule: ${executionReadiness.publish_readiness.rule}` : "- Rule: KVDF must not auto-publish. Owner approval or a configured delivery gate is required.",
+    executionReadiness.publish_readiness ? `- Next action: ${executionReadiness.publish_readiness.next_action}` : "- Next action: Review the publish gates before continuing.",
+    "",
+    "## Execution Feedback",
+    `- Status: ${executionReadiness.execution_feedback ? executionReadiness.execution_feedback.status : "none"}`,
+    executionReadiness.execution_feedback && executionReadiness.execution_feedback.executor ? `- Executor: ${executionReadiness.execution_feedback.executor}` : "- Executor: none",
+    executionReadiness.execution_feedback && Array.isArray(executionReadiness.execution_feedback.checks_run) && executionReadiness.execution_feedback.checks_run.length ? `- Checks run: ${executionReadiness.execution_feedback.checks_run.join("; ")}` : "- Checks run: none",
+    executionReadiness.execution_feedback && Array.isArray(executionReadiness.execution_feedback.changed_files) && executionReadiness.execution_feedback.changed_files.length ? `- Changed files: ${executionReadiness.execution_feedback.changed_files.join("; ")}` : "- Changed files: none",
+    executionReadiness.execution_feedback && Array.isArray(executionReadiness.execution_feedback.warnings) && executionReadiness.execution_feedback.warnings.length ? `- Warnings: ${executionReadiness.execution_feedback.warnings.join("; ")}` : "- Warnings: none",
+    executionReadiness.execution_feedback ? `- Stop condition: ${executionReadiness.execution_feedback.stop_condition || "none"}` : "- Stop condition: none",
+    executionReadiness.execution_feedback && executionReadiness.execution_feedback.updated_at ? `- Updated at: ${executionReadiness.execution_feedback.updated_at}` : "- Updated at: none",
+    "",
+    "## Stage Timeline",
     stageRows.length ? stageRows.join("\n") : "- Stage status not available",
     "",
     "## Mermaid Graph",
@@ -2883,8 +3518,8 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     stopCondition,
     "",
     "## Next Approved Action",
-    nextAction || evolutionPlan.next_action || ""
-    ,
+    nextAction || evolutionPlan.next_action || "",
+    "",
     `## Goal`,
     goal
   ].filter(Boolean).join("\n");
