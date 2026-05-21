@@ -15,6 +15,7 @@
     "brief",
     "docs_design_gates",
     "version_evolution_gates",
+    "execution_gates",
     "documentation_folders",
     "documentation_files",
     "portable_docs_mapping",
@@ -181,6 +182,30 @@
           "type": "array",
           "items": { "type": "object", "additionalProperties": true }
         },
+        "next_action": { "type": "string" }
+      }
+    },
+    "execution_gates": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "status",
+        "security_gate",
+        "handoff_gate",
+        "source_control_gate",
+        "validation_gate",
+        "blockers",
+        "warnings",
+        "next_action"
+      ],
+      "properties": {
+        "status": { "type": "string", "enum": ["ready", "warning", "blocked"] },
+        "security_gate": { "$ref": "#/$defs/executionGate" },
+        "handoff_gate": { "$ref": "#/$defs/executionGate" },
+        "source_control_gate": { "$ref": "#/$defs/executionGate" },
+        "validation_gate": { "$ref": "#/$defs/executionGate" },
+        "blockers": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "warnings": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
         "next_action": { "type": "string" }
       }
     },
@@ -440,6 +465,24 @@
         "blocked_total": { "type": "integer", "minimum": 0 },
         "missing_items": { "type": "array", "items": { "type": "string" } },
         "blocking_errors": { "type": "array", "items": { "type": "string" } },
+        "warnings": { "type": "array", "items": { "type": "string" } },
+        "next_action": { "type": "string" }
+      }
+    },
+    "executionGate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["gate", "status", "required", "source", "evidence", "blockers", "warnings", "next_action"],
+      "properties": {
+        "gate": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["missing", "planned", "ready", "passed", "warning", "blocked", "not_applicable", "unknown"]
+        },
+        "required": { "type": "boolean" },
+        "source": { "type": "string", "enum": ["security_auditor", "handoff", "source_control", "validation", "runtime", "derived", "missing"] },
+        "evidence": { "type": "array", "items": { "type": "string" } },
+        "blockers": { "type": "array", "items": { "type": "string" } },
         "warnings": { "type": "array", "items": { "type": "string" } },
         "next_action": { "type": "string" }
       }

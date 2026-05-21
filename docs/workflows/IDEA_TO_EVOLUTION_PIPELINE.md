@@ -58,6 +58,9 @@ Idea
 - GitHub stays optional, and KVDF Core files stay out of the app track by default.
 - `kvdf evolution validate-order --app <app-name>` must pass before app task
   generation turns approved evolutions into task punches.
+- Security, handoff, source-control, and validation gates are the final
+  pre-execution checks, and warning-level execution gates still block by
+  default unless the Owner explicitly approves them.
 
 ### Plugin Track
 

@@ -164,6 +164,7 @@ The planner should also surface:
 - review warnings
 - source-control mode
 - security gate state when available
+- execution gate state when available
 - visual planning summary
 - next approved action
 

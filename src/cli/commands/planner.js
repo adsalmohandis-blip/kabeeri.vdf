@@ -4049,7 +4049,10 @@ function buildViberPipelineState({
   const stages = Array.isArray(stageOrderState.stages) ? stageOrderState.stages.map((stage) => ({ ...stage })) : [];
   const blockers = Array.isArray(stageOrderState.execution_blockers) ? stageOrderState.execution_blockers.map((blocker) => ({ ...blocker })) : [];
   const warnings = stages.flatMap((stage) => Array.isArray(stage.warnings) ? stage.warnings : []);
-  const nextStage = stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(stage.status)) || stages[stages.length - 1] || null;
+  const nextStageName = stageOrderState.next_stage || null;
+  const nextStage = nextStageName
+    ? stages.find((stage) => stage.stage === nextStageName) || stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(stage.status)) || stages[stages.length - 1] || null
+    : stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(stage.status)) || stages[stages.length - 1] || null;
   const readinessStatus = stageOrderState.readiness ? stageOrderState.readiness.status : (blockers.length ? "blocked" : warnings.length ? "warning" : executionAllowed ? "ready" : "warning");
   const readinessNextAction = stageOrderState.readiness && stageOrderState.readiness.next_action
     ? stageOrderState.readiness.next_action
@@ -4087,6 +4090,7 @@ function buildViberPipelineState({
     stages,
     docs_design_gates: stageOrderState.docs_design_gates || null,
     version_evolution_gates: stageOrderState.version_evolution_gates || null,
+    execution_gates: stageOrderState.execution_gates || null,
     readiness: {
       status: readinessStatus,
       blocked_total: Array.isArray(blockers) ? blockers.filter((item) => item.severity === "blocker").length : 0,
@@ -4631,6 +4635,28 @@ function buildViberVersionEvolutionGateEntry({
   };
 }
 
+function buildViberExecutionGateEntry({
+  gate,
+  status,
+  required = true,
+  source = "missing",
+  evidence = [],
+  blockers = [],
+  warnings = [],
+  nextAction = ""
+} = {}) {
+  return {
+    gate,
+    status,
+    required: Boolean(required),
+    source,
+    evidence: uniqueList(evidence),
+    blockers: uniqueList(blockers),
+    warnings: uniqueList(warnings),
+    next_action: nextAction || ""
+  };
+}
+
 function mapViberVersionEvolutionGateStatusToStageStatus(status) {
   const normalized = String(status || "").trim().toLowerCase();
   if (["approved"].includes(normalized)) return "approved";
@@ -4640,6 +4666,201 @@ function mapViberVersionEvolutionGateStatusToStageStatus(status) {
   if (normalized === "deferred") return "deferred";
   if (normalized === "not_applicable") return "not_applicable";
   return "unknown";
+}
+
+function normalizeViberExecutionGateStatus(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (["passed", "pass", "ready"].includes(normalized)) return "passed";
+  if (["warning", "blocked", "missing", "planned", "not_applicable", "unknown"].includes(normalized)) return normalized === "pass" ? "passed" : normalized;
+  return "unknown";
+}
+
+function buildViberExecutionGates({
+  sourceControl = null,
+  versionControl = null,
+  taskPunchReviewReady = false,
+  evolutionValidation = null,
+  validationCommands = DEFAULT_VALIDATION_COMMANDS,
+  securityGateState = null,
+  materialized = false,
+  planningMethod = "hybrid"
+} = {}) {
+  const currentVersion = versionControl && versionControl.current_version ? versionControl.current_version : null;
+  const securityEvidence = [];
+  if (currentVersion && currentVersion.security_gate) securityEvidence.push(`version_control:${currentVersion.security_gate.status || "unknown"}`);
+  if (securityGateState && securityGateState.status) securityEvidence.push(`runtime:${securityGateState.status}`);
+  const securitySource = currentVersion && currentVersion.security_gate ? "runtime" : (securityGateState ? "security_auditor" : "missing");
+  const securityRawStatus = currentVersion && currentVersion.security_gate
+    ? String(currentVersion.security_gate.status || "").toLowerCase()
+    : securityGateState
+      ? String(securityGateState.status || "").toLowerCase()
+      : "";
+  const securityWarnings = [];
+  const securityBlockers = [];
+  let securityStatus = "warning";
+  if (securityRawStatus === "blocked") {
+    securityStatus = "blocked";
+    securityBlockers.push(currentVersion && currentVersion.security_gate && currentVersion.security_gate.next_action ? currentVersion.security_gate.next_action : (securityGateState && securityGateState.next_action ? securityGateState.next_action : "Resolve the security gate before execution."));
+  } else if (securityRawStatus === "pass" || securityRawStatus === "ready") {
+    securityStatus = "passed";
+  } else if (securityGateState) {
+    securityWarnings.push("Security gate evidence is present but not fully passing.");
+  } else {
+    securityWarnings.push("Security gate evidence is missing.");
+  }
+  const securityGate = buildViberExecutionGateEntry({
+    gate: "security_gate",
+    status: securityStatus,
+    source: securitySource,
+    evidence: securityEvidence.length ? securityEvidence : ["No security gate evidence found."],
+    blockers: securityBlockers,
+    warnings: securityWarnings,
+    nextAction: securityStatus === "passed"
+      ? "Security gate is ready."
+      : securityStatus === "blocked"
+        ? "Resolve the security gate before execution."
+        : "Run the security gate and capture the result."
+  });
+
+  const sourceMode = normalizeSourceControlMode(sourceControl && sourceControl.mode ? sourceControl.mode : "local_only") || "local_only";
+  const sourceControlEvidence = [];
+  if (sourceControl && sourceControl.mode) sourceControlEvidence.push(`mode:${sourceMode}`);
+  if (sourceControl && sourceControl.remote_provider) sourceControlEvidence.push(`remote:${sourceControl.remote_provider}`);
+  if (sourceControl && sourceControl.provider_plugin) sourceControlEvidence.push(`provider_plugin:${sourceControl.provider_plugin}`);
+  const sourceControlWarnings = [];
+  const sourceControlBlockers = [];
+  let sourceControlStatus = "warning";
+  if (sourceMode === "local_only") {
+    sourceControlStatus = "ready";
+    sourceControlEvidence.push("local_only");
+  } else if (sourceMode === "direct_main") {
+    sourceControlStatus = "ready";
+    sourceControlEvidence.push("validation_then_commit_push_main");
+  } else if (sourceMode === "branch") {
+    sourceControlStatus = sourceControl && sourceControl.branching_enabled ? "ready" : "warning";
+    if (!sourceControl || !sourceControl.branching_enabled) sourceControlWarnings.push("Branching is not enabled for the selected source-control mode.");
+  } else if (sourceMode === "branch_pr") {
+    sourceControlStatus = sourceControl && sourceControl.branching_enabled && sourceControl.pr_enabled ? "ready" : "warning";
+    if (!sourceControl || !sourceControl.branching_enabled) sourceControlWarnings.push("Branching is not enabled for the selected source-control mode.");
+    if (!sourceControl || !sourceControl.pr_enabled) sourceControlWarnings.push("PR readiness is not enabled for the selected source-control mode.");
+  } else {
+    sourceControlWarnings.push("Source-control mode is not explicit.");
+  }
+  const sourceControlGate = buildViberExecutionGateEntry({
+    gate: "source_control_gate",
+    status: sourceControlStatus,
+    source: "source_control",
+    evidence: sourceControlEvidence.length ? sourceControlEvidence : ["No source-control plan found."],
+    blockers: sourceControlBlockers,
+    warnings: sourceControlWarnings,
+    nextAction: sourceMode === "local_only"
+      ? "Keep the changes local; commit, push, branch, and PR are not required."
+      : sourceMode === "direct_main"
+        ? "Validate, then commit and push to main after approval and materialization."
+        : sourceMode === "branch"
+          ? "Create the branch and push it after approval and materialization."
+          : sourceMode === "branch_pr"
+            ? "Create the branch, push it, and prepare the PR after approval and materialization."
+            : "Choose a source-control mode before execution."
+  });
+
+  const handoffEvidence = [];
+  if (taskPunchReviewReady) handoffEvidence.push("task_punch_review:ready");
+  if (materialized) handoffEvidence.push("materialized:true");
+  if (sourceMode) handoffEvidence.push(`source_control_mode:${sourceMode}`);
+  const handoffWarnings = [];
+  const handoffBlockers = [];
+  let handoffStatus = "warning";
+  if (!taskPunchReviewReady) {
+    handoffStatus = "blocked";
+    handoffBlockers.push("Task punch review must be approved before execution.");
+  } else if (materialized) {
+    handoffStatus = "passed";
+  } else {
+    handoffWarnings.push("Handoff requirements are present but not yet materialized.");
+  }
+  const handoffGate = buildViberExecutionGateEntry({
+    gate: "handoff_gate",
+    status: handoffStatus,
+    source: "handoff",
+    evidence: handoffEvidence.length ? handoffEvidence : ["Handoff evidence is missing."],
+    blockers: handoffBlockers,
+    warnings: handoffWarnings,
+    nextAction: handoffStatus === "passed"
+      ? "Handoff gate is ready."
+      : taskPunchReviewReady
+        ? "Materialize the approved plan and prepare the handoff."
+        : "Review and approve the task punches before handoff."
+  });
+
+  const validationEvidence = Array.isArray(validationCommands) && validationCommands.length ? [...validationCommands] : [...DEFAULT_VALIDATION_COMMANDS];
+  const validationWarnings = [];
+  const validationBlockers = [];
+  let validationStatus = "warning";
+  if (materialized) {
+    validationStatus = "planned";
+  } else {
+    validationWarnings.push("Validation cannot pass before execution.");
+  }
+  const validationGate = buildViberExecutionGateEntry({
+    gate: "validation_gate",
+    status: validationStatus,
+    source: "validation",
+    evidence: validationEvidence,
+    blockers: validationBlockers,
+    warnings: validationWarnings,
+    nextAction: materialized
+      ? "Run the validation commands after execution."
+      : "Validation will run after execution."
+  });
+
+  const blockers = [];
+  const warnings = [];
+  [securityGate, handoffGate, sourceControlGate].forEach((gate) => {
+    if (gate.status === "blocked" || gate.status === "missing") {
+      blockers.push({
+        id: `viber-execution-${gate.gate}`,
+        severity: "blocker",
+        area: gate.gate === "source_control_gate" ? "source_control" : gate.gate === "handoff_gate" ? "handoff" : "security",
+        gate: gate.gate,
+        message: gate.blockers[0] || `${gate.gate} is not ready.`,
+        next_action: gate.next_action
+      });
+    } else if (gate.status === "warning") {
+      warnings.push({
+        id: `viber-execution-${gate.gate}-warning`,
+        severity: "warning",
+        area: gate.gate === "source_control_gate" ? "source_control" : gate.gate === "handoff_gate" ? "handoff" : "security",
+        gate: gate.gate,
+        message: gate.warnings[0] || `${gate.gate} needs review.`,
+        next_action: gate.next_action
+      });
+    }
+  });
+  if (!taskPunchReviewReady) {
+    blockers.push({
+      id: "viber-execution-task-punch-review",
+      severity: "blocker",
+      area: "task",
+      gate: "task_punch_review",
+      message: "Task punch review is required before execution.",
+      next_action: "Review and approve the task punches before execution."
+    });
+  }
+
+  const status = blockers.length ? "blocked" : warnings.length ? "warning" : (securityGate.status === "passed" && handoffGate.status === "passed" && sourceControlGate.status === "ready" && taskPunchReviewReady ? "ready" : "warning");
+  const nextGate = [securityGate, handoffGate, sourceControlGate].find((gate) => gate.status === "blocked" || gate.status === "missing")
+    || (!taskPunchReviewReady ? { next_action: "Review and approve the task punches before execution." } : null);
+  return {
+    status,
+    security_gate: securityGate,
+    handoff_gate: handoffGate,
+    source_control_gate: sourceControlGate,
+    validation_gate: validationGate,
+    blockers,
+    warnings,
+    next_action: nextGate ? nextGate.next_action : "Resolve the execution gates before prompting Codex."
+  };
 }
 
 function buildViberVersionEvolutionGates({
@@ -5019,8 +5240,8 @@ function buildViberPipelineStageOrderState({
   const taskPunchesStatus = mapViberVersionEvolutionGateStatusToStageStatus(versionEvolutionGates.task_punches.status);
   const taskPunchReviewStatus = mapViberVersionEvolutionGateStatusToStageStatus(versionEvolutionGates.task_punch_review.status);
   approvalReady = Boolean(briefApproved && questionnaireComplete && stateFresh && docsDesignReady && sourceControlPlanReady && securityPlanReady && versionEvolutionGates.status === "ready");
-  const codexPromptStatus = Boolean(approvalReady && materialized && docsDesignReady && versionEvolutionGates.status === "ready") ? "ready" : "blocked";
-  const executionAllowed = Boolean(planningFoundationReady && docsDesignReady && versionEvolutionGates.status === "ready" && approvalReady && materialized && securityGateReady && sourceControlGateReady && handoffGateReady && evolutionValidation.task_generation_allowed);
+  const codexPromptStatus = Boolean(approvalReady && materialized && docsDesignReady && versionEvolutionGates.status === "ready" && executionReady) ? "ready" : "blocked";
+  const executionAllowed = Boolean(planningFoundationReady && docsDesignReady && versionEvolutionGates.status === "ready" && approvalReady && materialized && executionReady && evolutionValidation.task_generation_allowed);
   const executionStatus = executionAllowed ? "ready" : "blocked";
   const validationStatus = executionAllowed ? "ready" : "planned";
   const securityScanStatus = executionAllowed ? "ready" : "planned";
@@ -5029,6 +5250,17 @@ function buildViberPipelineStageOrderState({
   const learningCaptureStatus = executionAllowed ? "ready" : "planned";
   const closeoutStatus = executionAllowed ? "ready" : "planned";
   const planningMethodPolicy = buildViberPipelinePlanningMethodPolicy(planningMethod, questionnaire, brief, sourceControl);
+  const executionGates = buildViberExecutionGates({
+    sourceControl,
+    versionControl,
+    taskPunchReviewReady,
+    evolutionValidation,
+    validationCommands: DEFAULT_VALIDATION_COMMANDS,
+    securityGateState: readJsonFileIfExists(path.join(process.cwd(), ".kabeeri", "security", "security_gate_state.json")),
+    materialized,
+    planningMethod
+  });
+  const executionReady = executionGates.status === "ready";
   const blockers = [];
   const warnings = [];
   const appendBlocker = (id, area, message, nextAction) => blockers.push({ id, severity: "blocker", area, message, next_action: nextAction });
@@ -5044,6 +5276,12 @@ function buildViberPipelineStageOrderState({
   }
   for (const warning of Array.isArray(versionEvolutionGates.warnings) ? versionEvolutionGates.warnings : []) {
     appendWarning(warning.id || `version-evolution-${warning.gate || "unknown"}-warning`, warning.area || "task", warning.message || "Version/evolution readiness has a warning.", warning.next_action || "Review the version/evolution gate.");
+  }
+  for (const blocker of Array.isArray(executionGates.blockers) ? executionGates.blockers : []) {
+    appendBlocker(blocker.id || `execution-${blocker.gate || "unknown"}`, blocker.area || "task", blocker.message || "Execution readiness is blocked.", blocker.next_action || "Resolve the blocked execution gate.");
+  }
+  for (const warning of Array.isArray(executionGates.warnings) ? executionGates.warnings : []) {
+    appendWarning(warning.id || `execution-${warning.gate || "unknown"}-warning`, warning.area || "task", warning.message || "Execution readiness has a warning.", warning.next_action || "Review the execution gate.");
   }
   if (!questionnaire.generated) appendBlocker("questionnaire-generation-missing", "docs", "No questionnaire has been generated yet.", "Run kvdf questionnaire plan to generate the intake questions.");
   if (questionMissing) appendBlocker("questionnaire-answers-missing", "docs", "Questionnaire answers are incomplete.", "Answer the remaining questionnaire items before planning further.");
@@ -5063,9 +5301,9 @@ function buildViberPipelineStageOrderState({
   if (!approvalReady) appendBlocker("approval-pending", "task", "The plan is not approved.", "Approve the brief, version plan, and ordered evolutions before materialization.");
   if (!materialized) appendBlocker("materialization-pending", "task", "The plan is not materialized.", "Materialize the approved plan before prompting Codex.");
   if (!codexPromptStatus) appendBlocker("codex-prompt-blocked", "validation", "Codex execution is not allowed yet.", "Complete the planning gates before generating the execution prompt.");
-  if (!securityGateReady) appendBlocker("security-gate-blocked", "security", "Security gate is not passing.", "Resolve the security gate before execution.");
-  if (!handoffGateReady) appendBlocker("handoff-gate-blocked", "handoff", "Handoff gate is not ready.", "Prepare the handoff gate before execution.");
-  if (!sourceControlGateReady) appendBlocker("source-control-gate-blocked", "source_control", "Source control gate is not ready.", "Confirm the source-control mode before execution.");
+  if (!executionGates.security_gate || executionGates.security_gate.status !== "passed") appendBlocker("security-gate-blocked", "security", executionGates.security_gate && executionGates.security_gate.blockers.length ? executionGates.security_gate.blockers[0] : "Security gate is not passing.", executionGates.security_gate ? executionGates.security_gate.next_action : "Resolve the security gate before execution.");
+  if (!executionGates.handoff_gate || executionGates.handoff_gate.status !== "passed") appendBlocker("handoff-gate-blocked", "handoff", executionGates.handoff_gate && executionGates.handoff_gate.blockers.length ? executionGates.handoff_gate.blockers[0] : "Handoff gate is not ready.", executionGates.handoff_gate ? executionGates.handoff_gate.next_action : "Prepare the handoff gate before execution.");
+  if (!executionGates.source_control_gate || executionGates.source_control_gate.status !== "ready") appendBlocker("source-control-gate-blocked", "source_control", executionGates.source_control_gate && executionGates.source_control_gate.blockers.length ? executionGates.source_control_gate.blockers[0] : "Source control gate is not ready.", executionGates.source_control_gate ? executionGates.source_control_gate.next_action : "Confirm the source-control mode before execution.");
   if (!executionAllowed) appendBlocker("execution-blocked", "task", "Execution is blocked until the planning gates pass.", "Finish the next blocked stage before execution.");
   const stageOrder = [...VIBER_PIPELINE_STAGE_ORDER];
   const stageGroups = Object.fromEntries(Object.entries(VIBER_PIPELINE_STAGE_GROUPS).map(([group, items]) => [group, [...items]]));
@@ -5137,16 +5375,16 @@ function buildViberPipelineStageOrderState({
                                                     : stage === "codex_prompt"
                                                       ? (codexPromptStatus ? "ready" : "blocked")
                                                       : stage === "security_gate"
-                                                        ? (securityGateReady ? "complete" : "blocked")
-                                                        : stage === "handoff_gate"
-                                                          ? (handoffGateReady ? "complete" : "blocked")
-                                                          : stage === "source_control_gate"
-                                                            ? (sourceControlGateReady ? "complete" : "blocked")
+                                                        ? (executionGates.security_gate.status === "passed" ? "complete" : "blocked")
+                                                      : stage === "handoff_gate"
+                                                          ? (executionGates.handoff_gate.status === "passed" ? "complete" : "blocked")
+                                                      : stage === "source_control_gate"
+                                                            ? (executionGates.source_control_gate.status === "ready" ? "complete" : "blocked")
                                                             : stage === "execution"
                                                               ? executionStatus
                                                               : stage === "validation"
-                                                                ? validationStatus
-                                                                : stage === "security_scan"
+                                                                ? (executionAllowed ? validationStatus : "blocked")
+                                                              : stage === "security_scan"
                                                                   ? securityScanStatus
                                                                   : stage === "handoff"
                                                                     ? handoffStatus
@@ -5192,11 +5430,11 @@ function buildViberPipelineStageOrderState({
     stageOutput("approval", [approvalReady ? "Plan approved." : "Plan pending approval."], approvalReady ? [] : ["Approval is required before materialization."], [], approvalReady ? "Approval is recorded." : "Approve the brief and ordered plan."),
     stageOutput("materialization", [materialized ? "Plan materialized." : "Plan not materialized."], materialized ? [] : ["Materialization must happen before the Codex prompt."] , [], materialized ? "Materialization is complete." : "Materialize the approved plan."),
     stageOutput("codex_prompt", [codexPromptStatus ? "Codex prompt can be generated." : "Codex prompt blocked."], codexPromptStatus ? [] : ["No materialized task punch means no Codex execution."], [], codexPromptStatus ? "Generate the Codex prompt." : "Do not prompt Codex for execution yet."),
-    stageOutput("security_gate", [securityGateReady ? "Security gate passes." : "Security gate blocked or pending."], securityGateReady ? [] : ["Security gate must pass before execution."], [], securityGateReady ? "Security gate is passing." : "Resolve the security gate."),
-    stageOutput("handoff_gate", [handoffGateReady ? "Handoff gate passes." : "Handoff gate blocked or pending."], handoffGateReady ? [] : ["Handoff gate must pass before execution."], [], handoffGateReady ? "Handoff gate is ready." : "Prepare the handoff gate."),
-    stageOutput("source_control_gate", [sourceControlGateReady ? "Source control gate passes." : "Source control gate blocked or pending."], sourceControlGateReady ? [] : ["Source control mode must be explicit before execution."], [], sourceControlGateReady ? "Source control gate is ready." : "Confirm the source-control mode."),
+    stageOutput("security_gate", [executionGates.security_gate.status === "passed" ? "Security gate passes." : "Security gate blocked or pending."], executionGates.security_gate.status === "passed" ? [] : (executionGates.security_gate.blockers.length ? [...executionGates.security_gate.blockers] : ["Security gate must pass before execution."]), executionGates.security_gate.warnings || [], executionGates.security_gate.next_action || "Resolve the security gate."),
+    stageOutput("handoff_gate", [executionGates.handoff_gate.status === "passed" ? "Handoff gate passes." : "Handoff gate blocked or pending."], executionGates.handoff_gate.status === "passed" ? [] : (executionGates.handoff_gate.blockers.length ? [...executionGates.handoff_gate.blockers] : ["Handoff gate must pass before execution."]), executionGates.handoff_gate.warnings || [], executionGates.handoff_gate.next_action || "Prepare the handoff gate."),
+    stageOutput("source_control_gate", [executionGates.source_control_gate.status === "ready" ? "Source control gate passes." : "Source control gate blocked or pending."], executionGates.source_control_gate.status === "ready" ? [] : (executionGates.source_control_gate.blockers.length ? [...executionGates.source_control_gate.blockers] : ["Source control mode must be explicit before execution."]), executionGates.source_control_gate.warnings || [], executionGates.source_control_gate.next_action || "Confirm the source-control mode."),
     stageOutput("execution", [executionAllowed ? "Task execution can start." : "Task execution is blocked."], executionAllowed ? [] : ["Execution cannot start from a raw idea."], [], executionAllowed ? "Execute the approved task punch." : "Complete the next planning stage only."),
-    stageOutput("validation", [executionAllowed ? "Validation can run after execution." : "Validation is pending execution."], executionAllowed ? [] : ["Validation follows execution."], [], executionAllowed ? "Run validation after execution." : "Complete execution first."),
+    stageOutput("validation", [executionAllowed ? "Validation can run after execution." : "Validation is pending execution."], executionAllowed ? [] : ["Validation follows execution."], executionGates.validation_gate.warnings || [], executionGates.validation_gate.next_action || (executionAllowed ? "Run validation after execution." : "Complete execution first.")),
     stageOutput("security_scan", [executionAllowed ? "Security scan can run." : "Security scan is pending execution."], executionAllowed ? [] : ["Security scan follows execution."], [], executionAllowed ? "Run the security scan." : "Complete execution first."),
     stageOutput("handoff", [executionAllowed ? "Handoff can proceed." : "Handoff is pending execution."], executionAllowed ? [] : ["Handoff follows security and validation gates."], [], executionAllowed ? "Prepare the handoff." : "Complete execution first."),
     stageOutput("dashboard_update", [executionAllowed ? "Dashboards can be updated." : "Dashboard update is pending."], executionAllowed ? [] : ["Dashboard update follows handoff."], [], executionAllowed ? "Refresh the dashboards." : "Complete the handoff first."),
@@ -5205,7 +5443,11 @@ function buildViberPipelineStageOrderState({
   ];
   const blockedStages = stages.filter((stage) => stage.status === "blocked");
   const warningStages = stages.flatMap((stage) => Array.isArray(stage.warnings) ? stage.warnings : []);
-  const nextStage = stages.find((stage) => !["complete", "approved", "materialized", "ready"].includes(stage.status)) || stages[stages.length - 1];
+  const executionGateStages = new Set(["security_gate", "handoff_gate", "source_control_gate", "execution", "validation", "security_scan", "handoff"]);
+  const firstBlockedExecutionStage = stages.find((stage) => executionGateStages.has(stage.stage) && stage.status === "blocked") || null;
+  const nextStage = executionGates.status === "blocked"
+    ? firstBlockedExecutionStage || stages.find((stage) => !["complete", "approved", "materialized", "ready"].includes(stage.status)) || stages[stages.length - 1]
+    : stages.find((stage) => !["complete", "approved", "materialized", "ready"].includes(stage.status)) || stages[stages.length - 1];
   const readinessStatus = blockedStages.length || docsDesignGates.status === "blocked"
     ? "blocked"
     : warningStages.length || docsDesignGates.status === "warning"
@@ -5254,6 +5496,7 @@ function buildViberPipelineStageOrderState({
     stages,
     docs_design_gates: docsDesignGates,
     version_evolution_gates: versionEvolutionGates,
+    execution_gates: executionGates,
     readiness: {
       status: readinessStatus,
       blocked_total: blockedStages.length,
@@ -6826,9 +7069,13 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     ? viberPipeline.execution_blockers.filter((blocker) => String(blocker && blocker.area || "").toLowerCase() === "docs")
     : [];
   const versionEvolutionGate = viberPipeline && viberPipeline.version_evolution_gates ? viberPipeline.version_evolution_gates : null;
+  const executionGate = viberPipeline && viberPipeline.execution_gates ? viberPipeline.execution_gates : null;
   const versionEvolutionGateBlocked = Boolean(
     versionEvolutionGate && ["blocked", "warning"].includes(String(versionEvolutionGate.status || "").toLowerCase())
   ) || (versionEvolutionGate && Array.isArray(versionEvolutionGate.blockers) && versionEvolutionGate.blockers.length > 0);
+  const executionGateBlocked = Boolean(
+    executionGate && ["blocked", "warning"].includes(String(executionGate.status || "").toLowerCase())
+  ) || (executionGate && Array.isArray(executionGate.blockers) && executionGate.blockers.length > 0);
   const docsDesignGateBlocked = Boolean(
     docsDesignGate && ["blocked", "warning"].includes(String(docsDesignGate.status || "").toLowerCase())
   ) || docsDesignBlockers.length > 0;
@@ -6840,18 +7087,25 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
   const versionEvolutionNextAction = versionEvolutionGate && versionEvolutionGate.next_action
     ? versionEvolutionGate.next_action
     : "Approve the version plan before generating task punches.";
+  const executionNextAction = executionGate && executionGate.next_action
+    ? executionGate.next_action
+    : "Resolve the execution gates before prompting Codex.";
   const blockedPlanningAction = docsDesignGateBlocked
     ? docsDesignNextAction
     : versionEvolutionGateBlocked
       ? versionEvolutionNextAction
-      : "Complete the next planning stage only.";
-  const executionReady = Boolean(viberPipeline && (viberPipeline.execution_allowed || String(viberPipeline.current_plan_materialization_status || "").toLowerCase() === "materialized" || String(viberPipeline.current_plan_status || "").toLowerCase() === "approved"));
+      : executionGateBlocked
+        ? executionNextAction
+        : "Complete the next planning stage only.";
+  const executionReady = Boolean(viberPipeline && (viberPipeline.execution_allowed || String(viberPipeline.current_plan_materialization_status || "").toLowerCase() === "materialized" || String(viberPipeline.current_plan_status || "").toLowerCase() === "approved")) && !executionGateBlocked;
   const taskLines = viberPipeline && !executionReady
     ? [
       blockedPlanningAction === docsDesignNextAction
         ? "1. Complete the next docs/design stage only."
         : blockedPlanningAction === versionEvolutionNextAction
           ? "1. Complete the next version/evolution stage only."
+          : blockedPlanningAction === executionNextAction
+            ? "1. Complete the next execution gate only."
           : "1. Complete the next planning stage only.",
       `2. Next stage: ${viberPipeline.next_stage || "approval"}`,
       "3. Keep the app implementation untouched for now."
@@ -6880,6 +7134,12 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
       docsDesignGate || docsDesignBlockers.length ? `- Next docs/design action: ${docsDesignNextAction}` : null,
       versionEvolutionGate ? `- Version/evolution gates: ${versionEvolutionGateBlocked ? "blocked" : versionEvolutionGate.status || "unknown"}` : null,
       versionEvolutionGate ? `- Next version/evolution action: ${versionEvolutionNextAction}` : null,
+      executionGate ? `- Execution gates: ${executionGateBlocked ? "blocked" : executionGate.status || "unknown"}` : null,
+      executionGate ? `- Security gate: ${executionGate.security_gate ? executionGate.security_gate.status || "unknown" : "unknown"}` : null,
+      executionGate ? `- Handoff gate: ${executionGate.handoff_gate ? executionGate.handoff_gate.status || "unknown" : "unknown"}` : null,
+      executionGate ? `- Source control gate: ${executionGate.source_control_gate ? executionGate.source_control_gate.status || "unknown" : "unknown"}` : null,
+      executionGate ? `- Validation gate: ${executionGate.validation_gate ? executionGate.validation_gate.status || "unknown" : "unknown"}` : null,
+      executionGate ? `- Next execution gate action: ${executionNextAction}` : null,
       ...(executionReady ? ["- Task execution can start."] : ["- Execution is blocked until the pipeline gates pass."]),
       `- Next stage: ${viberPipeline.next_stage || "unknown"}`,
       `- Next action: ${viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : "Complete the next planning stage."}`,
@@ -8981,6 +9241,7 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
   const sourceControl = report.source_control || null;
   const versionControl = report.version_control || null;
   const roadmapTrain = report.roadmap_train || null;
+  const executionGates = report.execution_gates || null;
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -8993,6 +9254,16 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     `- Current branch: ${sourceControl.current_branch || "none"}`,
     ...(Array.isArray(sourceControl.notes) && sourceControl.notes.length ? ["- Notes:", ...sourceControl.notes.map((note) => `  - ${note}`)] : [])
   ] : ["- None"];
+  const executionGateLines = executionGates ? [
+    `- Status: ${executionGates.status || "unknown"}`,
+    `- Security gate: ${executionGates.security_gate ? executionGates.security_gate.status || "unknown" : "unknown"}`,
+    `- Handoff gate: ${executionGates.handoff_gate ? executionGates.handoff_gate.status || "unknown" : "unknown"}`,
+    `- Source control gate: ${executionGates.source_control_gate ? executionGates.source_control_gate.status || "unknown" : "unknown"}`,
+    `- Validation gate: ${executionGates.validation_gate ? executionGates.validation_gate.status || "unknown" : "unknown"}`,
+    ...(Array.isArray(executionGates.blockers) && executionGates.blockers.length ? ["- Blockers:", ...executionGates.blockers.map((item) => `  - ${item.message || item.id || "blocked"}`)] : []),
+    ...(Array.isArray(executionGates.warnings) && executionGates.warnings.length ? ["- Warnings:", ...executionGates.warnings.map((item) => `  - ${item.message || item.id || "warning"}`)] : []),
+    `- Next action: ${executionGates.next_action || "Resolve the execution gates."}`
+  ] : [];
   return [
     "# KVDF Idea to Evolution Pipeline",
     "",
@@ -9045,6 +9316,9 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     "",
     "## Source Control",
     ...sourceControlLines,
+    "",
+    "## Execution Gates",
+    ...executionGateLines,
     "",
     "## Next Evolution",
     ...renderIndentedObjectSection(report.next_evolution || {}),

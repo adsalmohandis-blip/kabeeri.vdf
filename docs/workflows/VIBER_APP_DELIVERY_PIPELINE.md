@@ -157,6 +157,14 @@ and design readiness:
 - task punch review comes before materialization
 - materialization comes before Codex execution
 
+The pipeline also enforces final execution gates before any Codex run:
+
+- security gate comes before execution
+- handoff gate comes before execution and handoff
+- source-control gate is mode-driven and optional in local-only mode
+- validation gate lists the expected validation commands but does not pass before execution
+- warning-level execution gates still block by default unless the Owner explicitly approves them
+
 The pipeline also exposes a planning authority level:
 
 - placeholder: raw idea or incomplete questionnaire / brief state

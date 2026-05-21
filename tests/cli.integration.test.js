@@ -7441,7 +7441,7 @@ test("planner materialize creates local-first vibe runtime records without defau
   assert.ok(plannerTasks.every((task) => !task.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
 }));
 
-test("planner prompt from current allows vibe execution only after approval and materialization", () => withTempDir((dir) => {
+test("planner prompt from current keeps vibe execution blocked until execution gates are ready", () => withTempDir((dir) => {
   const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Current vibe execution", "--track", "vibe", "--json"], { cwd: dir }).stdout);
   runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
   runKvdf(["planner", "materialize", proposal.plan_id, "--json"], { cwd: dir });
@@ -7449,9 +7449,10 @@ test("planner prompt from current allows vibe execution only after approval and 
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.planner_mode, "vibe");
   assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
-  assert.ok(prompt.prompt.includes("Execution allowed: yes"));
-  assert.ok(prompt.prompt.includes("Task execution can start."));
-  assert.doesNotMatch(prompt.prompt, /Do not edit app source files yet/i);
+  assert.ok(prompt.prompt.includes("Execution gates: blocked"));
+  assert.ok(prompt.prompt.includes("Next execution gate action:"));
+  assert.ok(prompt.prompt.includes("Execution is blocked until the pipeline gates pass."));
+  assert.doesNotMatch(prompt.prompt, /edit app source files/i);
 }));
 
 test("planner prompt blocks vibe execution until version and evolution gates are ready", () => withTempDir((dir) => {
@@ -7459,7 +7460,10 @@ test("planner prompt blocks vibe execution until version and evolution gates are
   assert.strictEqual(prompt.planner_mode, "vibe");
   assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
   assert.ok(prompt.prompt.includes("Version/evolution gates: blocked"));
+  assert.ok(prompt.prompt.includes("Execution gates: blocked"));
+  assert.ok(prompt.prompt.includes("Security gate:"));
   assert.ok(prompt.prompt.includes("Next version/evolution action:"));
+  assert.ok(prompt.prompt.includes("Next execution gate action:"));
   assert.doesNotMatch(prompt.prompt, /edit app source files/i);
 }));
 
@@ -7709,6 +7713,14 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.evolution_order_validation.status, "blocked");
   assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.task_punches.status, "blocked");
   assert.strictEqual(pipeline.viber_pipeline.version_evolution_gates.task_punch_review.status, "blocked");
+  assert.ok(pipeline.viber_pipeline.execution_gates);
+  assert.strictEqual(pipeline.viber_pipeline.execution_gates.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.execution_gates.security_gate.status, "warning");
+  assert.strictEqual(pipeline.viber_pipeline.execution_gates.handoff_gate.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+  assert.strictEqual(pipeline.viber_pipeline.execution_gates.validation_gate.status, "warning");
+  assert.ok(Array.isArray(pipeline.viber_pipeline.execution_gates.validation_gate.evidence));
+  assert.ok(pipeline.viber_pipeline.execution_gates.validation_gate.evidence.includes("node bin/kvdf.js validate"));
   assert.ok(pipeline.viber_pipeline.questionnaire);
   assert.strictEqual(pipeline.viber_pipeline.questionnaire.status, "missing");
   assert.ok(pipeline.viber_pipeline.brief);
@@ -7774,7 +7786,11 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "task_punch_review"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "materialization"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "codex_prompt"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "security_gate" && stage.status === "blocked"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "handoff_gate" && stage.status === "blocked"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "source_control_gate" && stage.status === "complete"));
   assert.ok(Array.isArray(pipeline.viber_pipeline.execution_blockers));
+  assert.strictEqual(pipeline.viber_pipeline.next_stage, "security_gate");
   assert.ok(Array.isArray(pipeline.documentation_folders));
   const folderIds = pipeline.documentation_folders.map((folder) => folder.folder_id);
   assert.ok(folderIds.includes("product"));
@@ -7862,18 +7878,26 @@ test("planner pipeline supports source-control modes without making GitHub manda
   assert.strictEqual(localOnly.viber_pipeline.source_control.branching_enabled, false);
   assert.strictEqual(localOnly.viber_pipeline.source_control.pr_enabled, false);
   assert.match(localOnly.viber_pipeline.source_control.next_source_control_action, /local/i);
+  assert.ok(localOnly.viber_pipeline.execution_gates);
+  assert.strictEqual(localOnly.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+  assert.strictEqual(localOnly.viber_pipeline.execution_gates.source_control_gate.required, true);
+  assert.ok(localOnly.viber_pipeline.execution_gates.source_control_gate.evidence.includes("local_only"));
 
   const directMain = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--sc-mode", "direct-main", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(directMain.viber_pipeline.source_control.mode, "direct_main");
   assert.strictEqual(directMain.viber_pipeline.source_control.branching_enabled, false);
   assert.strictEqual(directMain.viber_pipeline.source_control.pr_enabled, false);
   assert.match(directMain.viber_pipeline.source_control.next_source_control_action, /commit and push to main/i);
+  assert.strictEqual(directMain.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+  assert.match(directMain.viber_pipeline.execution_gates.source_control_gate.next_action, /commit and push to main/i);
 
   const branch = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--sc-mode", "branch", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(branch.viber_pipeline.source_control.mode, "branch");
   assert.strictEqual(branch.viber_pipeline.source_control.branching_enabled, true);
   assert.strictEqual(branch.viber_pipeline.source_control.pr_enabled, false);
   assert.match(branch.viber_pipeline.source_control.next_source_control_action, /branch/i);
+  assert.strictEqual(branch.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+  assert.strictEqual(branch.viber_pipeline.execution_gates.source_control_gate.warnings.length, 0);
 
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const branchPr = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"], { cwd: dir }).stdout);
@@ -7883,7 +7907,9 @@ test("planner pipeline supports source-control modes without making GitHub manda
   assert.strictEqual(branchPr.viber_pipeline.source_control.branching_enabled, true);
   assert.strictEqual(branchPr.viber_pipeline.source_control.pr_enabled, true);
   assert.match(branchPr.viber_pipeline.source_control.next_source_control_action, /GitHub PR/i);
-}));
+  assert.strictEqual(branchPr.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+  assert.ok(branchPr.viber_pipeline.execution_gates.source_control_gate.evidence.includes("remote:github"));
+})); 
 
 test("planner pipeline exposes structured agile and hybrid planning policies", () => {
   const structured = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Enterprise vibe app", "--track", "vibe", "--method", "structured", "--json"]).stdout);
