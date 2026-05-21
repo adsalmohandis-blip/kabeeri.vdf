@@ -1031,6 +1031,10 @@ It can show:
 - business features
 - journeys
 - linked workspace summaries
+- planner execution-readiness views
+- state freshness, gate matrix, blockers, publish readiness, execution feedback, stage timeline, source-control posture, security readiness, AI learning warning availability, and next safe action
+
+KVDF does not auto-publish. Owner and Viber dashboards remain separate products, and GitHub is optional rather than required for state authority.
 
 Main commands:
 

@@ -120,5 +120,15 @@
       "additionalProperties": true
     }
   },
+  "properties": {
+    "readiness": { "type": "object", "additionalProperties": true },
+    "gate_matrix": { "type": "object", "additionalProperties": true },
+    "blockers": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "publish_readiness": { "type": "object", "additionalProperties": true },
+    "execution_feedback": { "type": "object", "additionalProperties": true },
+    "stage_timeline": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "security_status": { "type": "string" },
+    "ai_learning_status": { "type": "object", "additionalProperties": true }
+  },
   "additionalProperties": true
 }

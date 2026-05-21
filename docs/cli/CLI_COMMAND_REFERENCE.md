@@ -1592,6 +1592,8 @@ kvdf dashboard workspace remove --path ../store-a
 
 `dashboard owner state` and `dashboard viber state` are separate dashboard products, not role filters inside one page. `dashboard state` returns the current-track dashboard only, so owner work stays on the owner dashboard and app work stays on the viber dashboard.
 
+Both dashboards now surface an execution-readiness view derived from the planner visual model. The readiness section includes state freshness, gate matrix, blockers, warnings, publish readiness, execution feedback, stage timeline, source-control posture, security readiness, AI learning context availability, and the next safe action. KVDF does not auto-publish. Publish or handoff requires Owner approval or a configured delivery gate. GitHub is optional and not required for state authority.
+
 `dashboard export` keeps the legacy customer-page export path: it writes the customer-facing first page to `.kabeeri/site/index.html`, writes the private dashboard for the current track to `.kabeeri/site/__kvdf/dashboard/index.html`, and exports per-app pages under `.kabeeri/site/customer/apps/<username>/index.html`. `dashboard owner export --output owner-dashboard.html` and `dashboard viber export --output viber-dashboard.html` write the separated dashboard products directly to the requested file path.
 
 The shared planner cycle feeds both dashboards, but the rendered dashboard product stays separated by track. Planner and pipeline summaries appear in the dashboard JSON and HTML for the active track only.
