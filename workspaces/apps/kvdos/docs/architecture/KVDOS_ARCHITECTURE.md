@@ -151,6 +151,29 @@ It does not implement:
 
 This boundary stays app-local and pre-implementation until explicitly approved.
 
+## Tasking And Approval Boundary
+
+Tasking and approval work is documentation-first at this stage.
+
+It covers:
+
+- task queue boundary
+- FIFO ordering boundary
+- approval panel boundary
+- reports panel boundary
+- audit trail boundary
+- task derivation rules
+- approval checkpoint rules
+
+It does not implement:
+
+- task queue behavior code
+- approval UI code
+- reports UI code
+- audit implementation code
+
+This boundary stays app-local and pre-implementation until explicitly approved.
+
 ## KVDOS Core Rule
 
 Agents should not mutate project files directly.

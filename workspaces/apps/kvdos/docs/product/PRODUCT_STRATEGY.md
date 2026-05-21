@@ -10,6 +10,11 @@ The discovery/spec planning surface is documentation-first. Questionnaire flow,
 blueprint/spec notes, and `app.kvdos.yaml` validation are aligned in docs
 before any UI or generator implementation.
 
+The tasking/approval planning surface is also documentation-first. Task queue
+notes, FIFO ordering notes, approval panel notes, reports panel notes, audit
+trail notes, and task-derivation rules are aligned in docs before any queue or
+approval UI implementation.
+
 > Note: this strategy document is a product plan. The current repository state is
 > a local-first Studio and task-governance foundation, not a complete execution
 > platform yet.
@@ -122,6 +127,9 @@ Build a local project studio and runner that works with existing editors, while
 also shipping the subscription and license control required for commercial v1.
 
 Keep the discovery/spec boundary app-local and pre-implementation until the
+related slice is explicitly approved for build-out.
+
+Keep the tasking/approval boundary app-local and pre-implementation until the
 related slice is explicitly approved for build-out.
 
 ## Success Definition for v1
