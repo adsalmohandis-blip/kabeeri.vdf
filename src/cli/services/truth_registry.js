@@ -161,7 +161,7 @@ const TRUTH_FEATURES = [
     support_required: true
   }),
   feature("security-auditor plugin", "Security Auditor Plugin", {
-    source_patterns: ["securityAuditor", "plugins/security-auditor"],
+    source_patterns: ["securityAuditor", "plugins/security_auditor"],
     docs_patterns: ["security-auditor status|scan|report"],
     test_patterns: ["security-auditor"],
     plugin_id: "security-auditor",
@@ -223,7 +223,7 @@ function feature(id, title, config = {}) {
 
 function inferSourceFiles(id) {
   if (String(id).startsWith("planner.")) return ["src/cli/commands/planner.js", "src/cli/index.js", "src/cli/ui.js"];
-  if (id === "security-auditor plugin") return ["src/cli/commands/security_auditor.js", "plugins/security-auditor/plugin.json"];
+  if (id === "security-auditor plugin") return ["src/cli/commands/security_auditor.js", "plugins/security_auditor/plugin.json"];
   if (id === "owner dashboard" || id === "viber dashboard") return ["src/cli/commands/dashboard_state.js", "src/cli/index.js", "src/cli/ui.js"];
   if (id === "source-control provider model") return ["src/cli/commands/planner.js", "src/cli/commands/delivery.js", "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md"];
   if (id === "viber documentation pipeline") return ["src/cli/commands/planner.js", "src/cli/workspace.js"];

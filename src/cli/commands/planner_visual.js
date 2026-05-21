@@ -5,7 +5,7 @@ const { buildPluginLoaderReport } = require("../services/plugin_loader");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 const { buildPlannerVisualReport, buildPlannerVisualFromCurrentReport } = require("./planner");
-const { renderMarkdownVisualReport, buildPlannerVisualRenderArtifact } = require("../../../plugins/planner-visual/runtime");
+const { renderMarkdownVisualReport, buildPlannerVisualRenderArtifact } = require("../../../plugins/planner_visual/runtime");
 
 function plannerVisual(action, value, flags = {}, rest = [], deps = {}) {
   const { ensureWorkspace = () => {} } = deps;

@@ -1,0 +1,36 @@
+{
+  "plugin_id": "company-profile",
+  "name": "Company Profile Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "command_entrypoint": "plugins/company_profile/bootstrap.js",
+  "runtime_entrypoint": "plugins/company_profile/runtime/company_profile.js",
+  "removable": true,
+  "track": "app",
+  "plugin_family": "app_builder",
+  "plugin_type": "company-profile",
+  "enabled_by_default": false,
+  "description": "Build company profile websites from intake to briefs, modules, tasks, approvals, and release handoff.",
+  "required_folders": ["commands", "docs", "prompts", "schemas", "templates", "tests"],
+  "optional_folders": ["references", "examples", "assets", "dashboard", "business-type"],
+  "domain_folders": ["business-type", "references", "examples", "assets", "dashboard"],
+  "command_surface": [
+    "kvdf company-profile status",
+    "kvdf company-profile init",
+    "kvdf company-profile questionnaire",
+    "kvdf company-profile brief",
+    "kvdf company-profile design",
+    "kvdf company-profile modules",
+    "kvdf company-profile tasks",
+    "kvdf company-profile approve",
+    "kvdf company-profile report",
+    "kvdf plugins install company-profile",
+    "kvdf plugins uninstall company-profile"
+  ],
+  "docs_surface": [
+    "plugins/company_profile/README.md",
+    "plugins/company_profile/docs/index.md",
+    "plugins/company_profile/docs/cli.md"
+  ]
+}

@@ -24,7 +24,7 @@ const {
   renderMaintenanceInspectionReport,
   renderMaintenanceRelocationReport
 } = require("../src/cli/services/cleanup_audit");
-const vibeMaintainer = require("../plugins/vibe-maintainer/runtime/vibe_maintainer");
+const vibeMaintainer = require("../plugins/vibe_maintainer/runtime/vibe_maintainer");
 const { buildSessionHandoff } = require("../src/cli/services/session_handoff");
 const { classifyWorkspaceBoundaryPath, summarizeWorkspaceBoundary, validateDeveloperAppWorkspace } = require("../src/cli/services/app_workspace_contract");
 const { objectLines, recordLines } = require("../src/cli/services/report_output");
@@ -238,13 +238,13 @@ test("evolution scorecards build a review-only scorecard report", () => {
 test("cleanup audit builds an organized repo report", () => {
   withTempDir((dir) => {
     fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
-    fs.mkdirSync(path.join(dir, "plugins", "kvdf-dev"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "plugins", "kvdf_dev"), { recursive: true });
     fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
     fs.mkdirSync(path.join(dir, "src", "cli", "commands"), { recursive: true });
     fs.mkdirSync(path.join(dir, "docs"), { recursive: true });
     fs.mkdirSync(path.join(dir, "packs", "prompt_packs"), { recursive: true });
     fs.mkdirSync(path.join(dir, "prompt-packs"), { recursive: true });
-    fs.writeFileSync(path.join(dir, "plugins", "kvdf-dev", "plugin.json"), JSON.stringify({
+    fs.writeFileSync(path.join(dir, "plugins", "kvdf_dev", "plugin.json"), JSON.stringify({
       plugin_id: "kvdf-dev",
       name: "KVDF Dev System Bundle",
       plugin_version: "1.0.0",
@@ -255,7 +255,7 @@ test("cleanup audit builds an organized repo report", () => {
       enabled_by_default: true,
       required_folders: ["commands", "docs"],
       command_surface: ["kvdf cleaner cleanup"],
-      docs_surface: ["plugins/kvdf-dev/docs/index.md"]
+      docs_surface: ["plugins/kvdf_dev/docs/index.md"]
     }, null, 2), "utf8");
     fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "console.log('cleaner');\n", "utf8");
     fs.writeFileSync(path.join(dir, "src", "cli", "commands", "maintainability.js"), [
@@ -390,7 +390,7 @@ test("bootstrap context exposes a deterministic boot path and reversible plugin 
   assert.strictEqual(boot.runtime_split.shared_runtime_entry, "src/cli/index.js");
   assert.strictEqual(boot.runtime_split.track_boundaries.control_plane, "bin/kvdf.js");
   assert.strictEqual(boot.runtime_split.track_boundaries.shared_runtime, "src/cli/index.js");
-  assert.strictEqual(boot.runtime_split.track_boundaries.plugin_runtime_root, "plugins/kvdf-dev/");
+  assert.strictEqual(boot.runtime_split.track_boundaries.plugin_runtime_root, "plugins/kvdf_dev/");
   assert.strictEqual(boot.shared_runtime.status, "ready");
   assert.ok(Array.isArray(boot.plugin_loader.plugins));
   assert.ok(boot.plugin_loader.plugins.some((item) => item.plugin_id === "kvdf-dev"));
@@ -422,12 +422,12 @@ test("plugin loader surfaces bundle contracts for installed plugin bundles", () 
 });
 
 test("kvdf-dev plugin manifest documents the bundle contract and surfaces", () => {
-  const manifestPath = path.join(repoRoot(), "plugins", "kvdf-dev", "plugin.json");
+  const manifestPath = path.join(repoRoot(), "plugins", "kvdf_dev", "plugin.json");
   const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   assert.strictEqual(manifest.plugin_id, "kvdf-dev");
   assert.strictEqual(manifest.track, "framework_owner");
-  assert.strictEqual(manifest.command_entrypoint, "plugins/kvdf-dev/bootstrap.js");
-  assert.strictEqual(manifest.runtime_entrypoint, "plugins/kvdf-dev/runtime/index.js");
+  assert.strictEqual(manifest.command_entrypoint, "plugins/kvdf_dev/bootstrap.js");
+  assert.strictEqual(manifest.runtime_entrypoint, "plugins/kvdf_dev/runtime/index.js");
   assert.ok(Array.isArray(manifest.required_folders));
   assert.ok(manifest.required_folders.includes("runtime"));
   assert.ok(manifest.required_folders.includes("tests"));
@@ -435,9 +435,9 @@ test("kvdf-dev plugin manifest documents the bundle contract and surfaces", () =
   assert.ok(manifest.command_surface.includes("kvdf task packet"));
   assert.ok(manifest.command_surface.includes("kvdf plugins show kvdf-dev"));
   assert.ok(Array.isArray(manifest.docs_surface));
-  assert.ok(manifest.docs_surface.includes("plugins/kvdf-dev/docs/index.md"));
-  assert.ok(manifest.docs_surface.includes("plugins/kvdf-dev/runtime/README.md"));
-  assert.ok(manifest.docs_surface.includes("plugins/kvdf-dev/governance/README.md"));
+  assert.ok(manifest.docs_surface.includes("plugins/kvdf_dev/docs/index.md"));
+  assert.ok(manifest.docs_surface.includes("plugins/kvdf_dev/runtime/README.md"));
+  assert.ok(manifest.docs_surface.includes("plugins/kvdf_dev/governance/README.md"));
 });
 
 test("state resync governance docs define the no planning without resync guard", () => {

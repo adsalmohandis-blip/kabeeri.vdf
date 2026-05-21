@@ -18,6 +18,8 @@ const { buildCurrentStateReport: buildCurrentStateReportService, buildStaleState
 const { buildWorkspaceBoundaryReport: buildWorkspaceBoundaryReportService } = require("../services/workspace_boundary");
 const { loadStateResyncReport, evaluateStateResyncFreshness, CURRENT_STATE_REPORT_PATH } = require("./state_resync");
 const { readGitHeadCommit, readGitRepositoryState } = require("../services/git_snapshot");
+const { getPluginSourcePath } = require("../services/plugin_mounts");
+const { repoRoot } = require("../fs_utils");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -1309,7 +1311,7 @@ function buildPlannerDocsPath(definition, options = {}) {
   const pluginId = normalizePluginId(options.pluginId || "plugin");
   const categoryFolder = (PLANNER_DOC_CATEGORIES.find((category) => category.id === definition.category) || {}).folder || definition.category;
   if (plannerMode === "plugin") {
-    return path.join(options.repo_root || process.cwd(), "plugins", pluginId, "docs", categoryFolder, definition.filename);
+    return path.join(getPluginSourcePath(pluginId), "docs", categoryFolder, definition.filename);
   }
   return path.join(options.repo_root || process.cwd(), "workspaces", "apps", appSlug, "docs", categoryFolder, definition.filename);
 }
@@ -1360,7 +1362,7 @@ function readPlannerDocsStatusFile(root, plannerMode, appSlug, pluginId) {
 }
 
 function buildPlannerDocsStatusFilePath(root, plannerMode, appSlug, pluginId) {
-  if (plannerMode === "plugin") return path.join(root, "plugins", pluginId, ".kabeeri", "planner_docs_status.json");
+  if (plannerMode === "plugin") return path.join(getPluginSourcePath(pluginId), ".kabeeri", "planner_docs_status.json");
   return path.join(root, "workspaces", "apps", appSlug, ".kabeeri", "planner_docs_status.json");
 }
 
@@ -3100,12 +3102,13 @@ function buildIdeaToEvolutionDocumentationFiles(mode, pluginContext) {
   }
   if (mode === "plugin") {
     const pluginId = pluginContext ? pluginContext.plugin_id : "plugin";
+    const pluginRoot = path.relative(repoRoot(), getPluginSourcePath(pluginId)).replace(/\\/g, "/");
     return [
-      `plugins/${pluginId}/docs/`,
-      `plugins/${pluginId}/schemas/`,
-      `plugins/${pluginId}/tests/`,
-      `plugins/${pluginId}/runtime/`,
-      `plugins/${pluginId}/plugin.json`,
+      `${pluginRoot}/docs/`,
+      `${pluginRoot}/schemas/`,
+      `${pluginRoot}/tests/`,
+      `${pluginRoot}/runtime/`,
+      `${pluginRoot}/plugin.json`,
       "docs/workflows/IDEA_TO_EVOLUTION_PIPELINE.md",
       "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md"
     ];
@@ -4312,11 +4315,12 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
 
   if (mode === "plugin") {
     const pluginId = pluginContext ? pluginContext.plugin_id : "plugin";
+    const pluginRoot = path.relative(repoRoot(), getPluginSourcePath(pluginId)).replace(/\\/g, "/");
     return [
       taskPunchItem(`${evolutionId}-manifest`, "Align the plugin manifest and CLI contract", [
-        `plugins/${pluginId}/plugin.json`,
-        `plugins/${pluginId}/README.md`,
-        `plugins/${pluginId}/docs/`,
+        `${pluginRoot}/plugin.json`,
+        `${pluginRoot}/README.md`,
+        `${pluginRoot}/docs/`,
         "src/cli/services/plugin_loader.js",
         "src/cli/services/plugin_mounts.js"
       ], [
@@ -4330,10 +4334,10 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "Install and uninstall behavior stays reversible and local."
       ], [...plan.validation_commands, "kvdf plugins status"], "Stop if the work would alter unrelated plugins."),
       taskPunchItem(`${evolutionId}-runtime`, "Protect plugin runtime and mount state boundaries", [
-        `plugins/${pluginId}/runtime/`,
+        `${pluginRoot}/runtime/`,
         `.kabeeri/plugins.json`,
         ".kabeeri/plugin-links/",
-        `plugins/${pluginId}/tests/`
+        `${pluginRoot}/tests/`
       ], [
         "KVDOS/",
         "workspaces/apps/",
@@ -4349,7 +4353,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
         "knowledge/governance/KVDF_PLANNER_LAYER.md",
         "docs/workflows/EVOLUTION_PLANNER_WORKFLOW.md",
-        `plugins/${pluginId}/tests/`
+        `${pluginRoot}/tests/`
       ], [
         "KVDOS/",
         "plugins/*/runtime/",
@@ -5252,7 +5256,7 @@ function buildPlannerNextAction(mode, title, pluginContext) {
 
 function buildPluginAllowedFiles(pluginContext) {
   const pluginId = pluginContext ? pluginContext.plugin_id : "plugin";
-  const pluginRoot = `plugins/${pluginId}`;
+  const pluginRoot = path.relative(repoRoot(), getPluginSourcePath(pluginId)).replace(/\\/g, "/");
   return [
     `${pluginRoot}/plugin.json`,
     `${pluginRoot}/README.md`,

@@ -15,7 +15,7 @@ function buildRuntimeSplit(pluginLoader = {}) {
     track_boundaries: {
       control_plane: "bin/kvdf.js",
       shared_runtime: "src/cli/index.js",
-      plugin_runtime_root: "plugins/kvdf-dev/",
+      plugin_runtime_root: "plugins/kvdf_dev/",
       plugin_loader_state: ".kabeeri/plugins.json"
     },
     loader_strategy: "manifest_driven_reversible_plugins",

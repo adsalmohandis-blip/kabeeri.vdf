@@ -5,7 +5,7 @@
 This study defines how KVDF capabilities should be separated into:
 
 - `kabeeri-core`
-- `plugins/kvdf-dev`
+- `plugins/kvdf_dev`
 - `workspaces/apps/<app-slug>/`
 
 The goal is to make the system fully controllable, removable, and
@@ -89,7 +89,7 @@ Core must not contain:
 - hard-coded mixed routing tables
 - plugin-specific business logic
 
-### 2. plugins/kvdf-dev
+### 2. plugins/kvdf_dev
 
 The owner bundle owns the Kabeeri platform-development surface.
 
@@ -257,7 +257,7 @@ The authoritative machine-readable matrix is exposed through:
 The matrix keeps three buckets aligned with the target structure:
 
 - `kabeeri-core`
-- `plugins/kvdf-dev`
+- `plugins/kvdf_dev`
 - `workspaces/apps/<app-slug>`
 
 The matrix is considered authoritative when:

@@ -3,14 +3,14 @@
 ## Summary
 
 The owner track is now packaged as a removable plugin bundle under
-`plugins/kvdf-dev/`. The shared loader can discover the bundle, enable or
+`plugins/kvdf_dev/`. The shared loader can discover the bundle, enable or
 disable it, and report its metadata without hard-coding the owner surface into
 the core CLI registry.
 
 ## What Exists
 
-- `plugins/kvdf-dev/plugin.json`
-- `plugins/kvdf-dev/` as the framework-development bundle root
+- `plugins/kvdf_dev/plugin.json`
+- `plugins/kvdf_dev/` as the framework-development bundle root
 - `src/cli/services/plugin_loader.js`
 - `src/cli/commands/plugin.js`
 - `.kabeeri/plugins.json`

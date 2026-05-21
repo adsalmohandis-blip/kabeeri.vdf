@@ -221,7 +221,7 @@ The source and governance now explicitly support:
 - `knowledge/governance/EVOLUTION_STEWARD.md`
 - `docs/cli/CLI_COMMAND_REFERENCE.md`
 - `docs/SYSTEM_CAPABILITIES_REFERENCE.md`
-- `plugins/kvdf-dev/*`
+- `plugins/kvdf_dev/*`
 
 ### State files used by this pipeline
 - `.kabeeri/evolution.json`
@@ -302,18 +302,18 @@ I found 13 plugins from `plugins/*/plugin.json`.
 | Plugin | Track | Enabled by default | Removable | Command Surface | Runtime Entrypoint | Maturity | Gaps |
 |---|---:|---:|---:|---|---|---|---|
 | `blog` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/blog/runtime/blog.js` | working | Command surface is docs/runtime-driven, not manifest-explicit |
-| `booking-builder` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/booking-builder/runtime/booking.js` | working | Sparse bundle docs/tests compared with framework bundles |
-| `company-profile` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/company-profile/runtime/company_profile.js` | working | Bundle is light; command docs are limited |
+| `booking-builder` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/booking_builder/runtime/booking.js` | working | Sparse bundle docs/tests compared with framework bundles |
+| `company-profile` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/company_profile/runtime/company_profile.js` | working | Bundle is light; command docs are limited |
 | `crm` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/crm/runtime/crm.js` | working | Command/runtime docs are sparse |
-| `ecommerce-builder` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/ecommerce-builder/runtime/ecommerce.js` | working | Light docs/test surface |
-| `ecommerce-mobile-app` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/ecommerce-mobile-app/runtime/ecommerce_mobile_app.js` | working | Needs better docs/tests parity |
+| `ecommerce-builder` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/ecommerce_builder/runtime/ecommerce.js` | working | Light docs/test surface |
+| `ecommerce-mobile-app` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/ecommerce_mobile_app/runtime/ecommerce_mobile_app.js` | working | Needs better docs/tests parity |
 | `github` | shared | yes | yes | Integration bundle; surfaced through CLI GitHub commands | none declared in manifest | working | Manifest is thin; behavior is mostly routed by core commands |
 | `github_sync` | shared | yes | yes | Sync rules bundle; surfaced through CLI GitHub/sync behavior | none declared in manifest | working | Very small surface, mostly policy/rules |
-| `kvdf-dev` | framework_owner | yes | yes | Framework-owner bundle; CLI/evolution/task surfaces and governance docs | `plugins/kvdf-dev/runtime/index.js` | mature | Large surface area, some legacy wording and report drift risk |
+| `kvdf-dev` | framework_owner | yes | yes | Framework-owner bundle; CLI/evolution/task surfaces and governance docs | `plugins/kvdf_dev/runtime/index.js` | mature | Large surface area, some legacy wording and report drift risk |
 | `multi_ai_governance` | shared | yes | yes | Governance bundle for multi-AI work | none declared in manifest | working | Small surface; documentation is lighter than core bundles |
-| `news-website` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/news-website/runtime/news_website.js` | working | Docs/test surfaces are modest |
+| `news-website` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/news_website/runtime/news_website.js` | working | Docs/test surfaces are modest |
 | `pos` | app | no | yes | App builder bundle; manifest does not enumerate commands | `plugins/pos/runtime/pos.js` | working | Docs/test surfaces are modest |
-| `vibe-maintainer` | app | no | yes | App-maintenance bundle; surfaced through vibe-maintainer commands | `plugins/vibe-maintainer/runtime/vibe_maintainer.js` | working | App maintenance only; limited docs/tests/runtime footprint |
+| `vibe-maintainer` | app | no | yes | App-maintenance bundle; surfaced through vibe-maintainer commands | `plugins/vibe_maintainer/runtime/vibe_maintainer.js` | working | App maintenance only; limited docs/tests/runtime footprint |
 
 ### Plugin loader behavior
 - `src/cli/services/plugin_loader.js` scans manifests, resolves enabled/disabled state, and builds plugin bundle reports.
@@ -345,7 +345,7 @@ The manifest appears to define:
 ### 1) KVDF Development Pipeline Dev
 - Purpose: develop KVDF Core itself.
 - Current implementation: strong and explicit, with owner-track routing and direct-to-main policy.
-- Important files: `src/cli/commands/evolution.js`, `src/cli/commands/resume.js`, `knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`, `plugins/kvdf-dev/*`
+- Important files: `src/cli/commands/evolution.js`, `src/cli/commands/resume.js`, `knowledge/governance/KVDF_WORKFLOW_INSTRUCTIONS.md`, `plugins/kvdf_dev/*`
 - Missing pieces: fewer legacy policy references, tighter report cleanliness, more direct-to-main consistency in help/docs
 - Recommended next evolution: normalize remaining owner-track wording everywhere and centralize the delivery policy contract
 

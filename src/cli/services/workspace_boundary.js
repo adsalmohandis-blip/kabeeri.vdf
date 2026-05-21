@@ -103,7 +103,7 @@ function buildWorkspacePaths(kind, { appSlug = null, pluginId = null } = {}) {
         "packs/",
         "schemas/",
         "tests/",
-        "plugins/kvdf-dev/"
+        "plugins/kvdf_dev/"
       ],
       forbidden_paths: [
         "KVDOS/",

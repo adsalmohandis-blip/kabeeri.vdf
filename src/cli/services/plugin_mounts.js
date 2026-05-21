@@ -4,8 +4,26 @@ const { repoRoot, packageRoot } = require("../fs_utils");
 
 const PLUGIN_MOUNT_ROOT = ".kabeeri/plugin-links";
 
+const PLUGIN_BUNDLE_DIRS = {
+  "ai-learning": "ai_learning",
+  "booking-builder": "booking_builder",
+  "company-profile": "company_profile",
+  "ecommerce-builder": "ecommerce_builder",
+  "ecommerce-mobile-app": "ecommerce_mobile_app",
+  "kvdf-dev": "kvdf_dev",
+  "news-website": "news_website",
+  "planner-visual": "planner_visual",
+  "security-auditor": "security_auditor",
+  "vibe-maintainer": "vibe_maintainer"
+};
+
+function resolvePluginSourcePath(pluginId) {
+  const bundleDir = PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
+  return path.join(repoRoot(), "plugins", bundleDir);
+}
+
 function getPluginSourcePath(pluginId) {
-  return path.join(repoRoot(), "plugins", pluginId);
+  return resolvePluginSourcePath(pluginId);
 }
 
 function getPluginMountPath(pluginId) {
@@ -21,7 +39,7 @@ function isPluginMounted(pluginId) {
 }
 
 function mountPluginBundle(plugin) {
-  const sourcePath = getPluginSourcePath(plugin.plugin_id);
+  const sourcePath = plugin && plugin.bundle_path ? path.join(repoRoot(), plugin.bundle_path) : getPluginSourcePath(plugin.plugin_id);
   const mountPath = getPluginMountPath(plugin.plugin_id);
   if (!fs.existsSync(sourcePath)) {
     throw new Error(`Plugin bundle not found: ${sourcePath}`);
@@ -58,7 +76,7 @@ function loadPluginBootstrap(pluginId, { allowSourceFallback = false } = {}) {
       delete require.cache[require.resolve(sourceBootstrap)];
       return require(sourceBootstrap);
     }
-    const packagedBootstrap = path.join(packageRoot(), "plugins", pluginId, "bootstrap.js");
+    const packagedBootstrap = path.join(packageRoot(), "plugins", PLUGIN_BUNDLE_DIRS[pluginId] || pluginId, "bootstrap.js");
     if (fs.existsSync(packagedBootstrap)) {
       delete require.cache[require.resolve(packagedBootstrap)];
       return require(packagedBootstrap);

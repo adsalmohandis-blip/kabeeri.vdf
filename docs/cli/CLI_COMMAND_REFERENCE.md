@@ -238,7 +238,7 @@ which track owns them:
 | `src/cli/index.js` | shared bridge / migrating | Legacy facade still holds a little routing glue while command modules finish the split. |
 | `src/cli/commands/` | shared platform layer / migrated | Canonical command modules live here instead of the monolith. |
 | `src/cli/services/` | shared platform layer | Reusable runtime helpers that both owner and app surfaces can call. |
-| `plugins/kvdf-dev/` | kvdf-dev | Framework-development controls and packaging metadata. |
+| `plugins/kvdf_dev/` | kvdf-dev | Framework-development controls and packaging metadata. |
 | `workspaces/apps/<app-slug>/` | app-track | Isolated developer-app workspaces with their own local state. |
 | `docs/reports/` | shared reporting layer | Ledger, traceability, readiness, and migration reports. |
 | `knowledge/` | shared reference layer | Governance and runtime knowledge that informs both tracks. |
@@ -509,7 +509,7 @@ removable bundle without changing the shared core. Runtime completeness means
 the status and show surfaces, the manifest, and the live `.kabeeri/plugins.json`
 state all agree about what is loaded and what can happen next. The owner bundle
 is packaged as a manifest-driven removable extension, so
-`plugins/kvdf-dev/plugin.json` is the source of truth for its load strategy,
+`plugins/kvdf_dev/plugin.json` is the source of truth for its load strategy,
 version, and command/docs surfaces.
 
 Application developers can also use `kvdf evolution app ...` as a developer-

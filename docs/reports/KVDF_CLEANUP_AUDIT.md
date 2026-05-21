@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779327264735
-- Generated at: 2026-05-21T01:34:24.735Z
+- Report ID: kvdf-cleanup-1779358338826
+- Generated at: 2026-05-21T10:12:18.826Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -80,16 +80,16 @@ Category               File                                                Line 
 ---------------------  --------------------------------------------------  ----  -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 dead_code_candidates   docs/reports/VIBE_MAINTAINER_AUDIT.md               16    Dead code             | 0                                                                                                                                          
 dead_code_candidates   docs/reports/VIBE_MAINTAINER_SUMMARY.md             16    Dead code             | 0                                                                                                                                          
-dead_code_candidates   plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
-dead_code_candidates   plugins/vibe-maintainer/runtime/vibe_maintainer.js  521   ["Dead code", String(report.summary ? report.summary.dead_code_candidates || 0 : 0)],                                                                              
+dead_code_candidates   plugins/vibe_maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
+dead_code_candidates   plugins/vibe_maintainer/runtime/vibe_maintainer.js  521   ["Dead code", String(report.summary ? report.summary.dead_code_candidates || 0 : 0)],                                                                              
 stale_docs             docs/reports/KVDF_FULL_REPOSITORY_AUDIT.md          525   - The repo supports it, but old wording can still confuse users if not kept consistent.                                                                            
 stale_docs             docs/workflows/KVDF_STATE_RESYNC.md                 6     Evolution is planned. It exists to prevent stale planning drafts, outdated                                                                                         
-stale_docs             plugins/vibe-maintainer/runtime/vibe_maintainer.js  1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },
+stale_docs             plugins/vibe_maintainer/runtime/vibe_maintainer.js  1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },
 stale_docs             tests/service.unit.test.js                          78    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                           
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_AUDIT.md               18    Spec drift            | 0                                                                                                                                          
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_SUMMARY.md             18    Spec drift            | 0                                                                                                                                          
-spec_drift_candidates  plugins/vibe-maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
-spec_drift_candidates  plugins/vibe-maintainer/runtime/vibe_maintainer.js  523   ["Spec drift", String(report.summary ? report.summary.spec_drift_candidates || 0 : 0)],                                                                            
+spec_drift_candidates  plugins/vibe_maintainer/README.md                   9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                               
+spec_drift_candidates  plugins/vibe_maintainer/runtime/vibe_maintainer.js  523   ["Spec drift", String(report.summary ? report.summary.spec_drift_candidates || 0 : 0)],                                                                            
 
 ## Relocation Plan
 

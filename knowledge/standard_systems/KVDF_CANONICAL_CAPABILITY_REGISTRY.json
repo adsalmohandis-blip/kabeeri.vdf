@@ -283,7 +283,7 @@
           "category": "execution-control",
           "primary_track": "framework_owner",
           "commands": ["kvdf task batch-run", "kvdf batch-exe"],
-          "source_files": ["plugins/kvdf-dev/runtime/task_batch_run.js", "src/cli/commands/task_scheduler.js"],
+          "source_files": ["plugins/kvdf_dev/runtime/task_batch_run.js", "src/cli/commands/task_scheduler.js"],
           "runtime_files": [".kabeeri/reports/task_batch_run.json", ".kabeeri/task_trash.json"],
           "docs": ["knowledge/governance/EVOLUTION_STEWARD.md"],
           "tests": ["tests/cli.integration.test.js"],
@@ -487,10 +487,10 @@
           "category": "app_builder",
           "primary_track": "app",
           "commands": ["kvdf booking init", "kvdf booking questionnaire", "kvdf booking report"],
-          "source_files": ["plugins/booking-builder/plugin.json", "plugins/booking-builder/runtime/booking.js"],
-          "runtime_files": ["plugins/booking-builder/runtime/booking.js", ".kabeeri/plugins.json"],
-          "docs": ["plugins/booking-builder/docs/index.md"],
-          "tests": ["plugins/booking-builder/tests/smoke-cases.json"],
+          "source_files": ["plugins/booking_builder/plugin.json", "plugins/booking_builder/runtime/booking.js"],
+          "runtime_files": ["plugins/booking_builder/runtime/booking.js", ".kabeeri/plugins.json"],
+          "docs": ["plugins/booking_builder/docs/index.md"],
+          "tests": ["plugins/booking_builder/tests/smoke-cases.json"],
           "maturity": "working",
           "notes": "App builder bundle; removable and not enabled by default.",
           "plugin_id": "booking-builder",
@@ -498,7 +498,7 @@
           "plugin_type": "booking",
           "enabled_by_default": false,
           "removable": true,
-          "runtime_entrypoint": "plugins/booking-builder/runtime/booking.js"
+          "runtime_entrypoint": "plugins/booking_builder/runtime/booking.js"
         },
         {
           "capability_id": "company-profile",
@@ -506,10 +506,10 @@
           "category": "app_builder",
           "primary_track": "app",
           "commands": ["kvdf company-profile init", "kvdf company-profile questionnaire", "kvdf company-profile report"],
-          "source_files": ["plugins/company-profile/plugin.json", "plugins/company-profile/runtime/company_profile.js"],
-          "runtime_files": ["plugins/company-profile/runtime/company_profile.js", ".kabeeri/plugins.json"],
-          "docs": ["plugins/company-profile/docs/index.md"],
-          "tests": ["plugins/company-profile/tests/smoke-cases.json"],
+          "source_files": ["plugins/company_profile/plugin.json", "plugins/company_profile/runtime/company_profile.js"],
+          "runtime_files": ["plugins/company_profile/runtime/company_profile.js", ".kabeeri/plugins.json"],
+          "docs": ["plugins/company_profile/docs/index.md"],
+          "tests": ["plugins/company_profile/tests/smoke-cases.json"],
           "maturity": "working",
           "notes": "App builder bundle; removable and not enabled by default.",
           "plugin_id": "company-profile",
@@ -517,7 +517,7 @@
           "plugin_type": "company-profile",
           "enabled_by_default": false,
           "removable": true,
-          "runtime_entrypoint": "plugins/company-profile/runtime/company_profile.js"
+          "runtime_entrypoint": "plugins/company_profile/runtime/company_profile.js"
         },
         {
           "capability_id": "crm",
@@ -544,10 +544,10 @@
           "category": "app_builder",
           "primary_track": "app",
           "commands": ["kvdf ecommerce init", "kvdf ecommerce questionnaire", "kvdf ecommerce report"],
-          "source_files": ["plugins/ecommerce-builder/plugin.json", "plugins/ecommerce-builder/runtime/ecommerce.js"],
-          "runtime_files": ["plugins/ecommerce-builder/runtime/ecommerce.js", ".kabeeri/plugins.json"],
-          "docs": ["plugins/ecommerce-builder/docs/index.md"],
-          "tests": ["plugins/ecommerce-builder/tests/smoke-cases.json"],
+          "source_files": ["plugins/ecommerce_builder/plugin.json", "plugins/ecommerce_builder/runtime/ecommerce.js"],
+          "runtime_files": ["plugins/ecommerce_builder/runtime/ecommerce.js", ".kabeeri/plugins.json"],
+          "docs": ["plugins/ecommerce_builder/docs/index.md"],
+          "tests": ["plugins/ecommerce_builder/tests/smoke-cases.json"],
           "maturity": "working",
           "notes": "App builder bundle; removable and not enabled by default.",
           "plugin_id": "ecommerce-builder",
@@ -555,7 +555,7 @@
           "plugin_type": "ecommerce",
           "enabled_by_default": false,
           "removable": true,
-          "runtime_entrypoint": "plugins/ecommerce-builder/runtime/ecommerce.js"
+          "runtime_entrypoint": "plugins/ecommerce_builder/runtime/ecommerce.js"
         },
         {
           "capability_id": "ecommerce-mobile-app",
@@ -563,10 +563,10 @@
           "category": "app_builder",
           "primary_track": "app",
           "commands": ["kvdf ecommerce-mobile-app init", "kvdf ecommerce-mobile-app questionnaire", "kvdf ecommerce-mobile-app report"],
-          "source_files": ["plugins/ecommerce-mobile-app/plugin.json", "plugins/ecommerce-mobile-app/runtime/ecommerce_mobile_app.js"],
-          "runtime_files": ["plugins/ecommerce-mobile-app/runtime/ecommerce_mobile_app.js", ".kabeeri/plugins.json"],
-          "docs": ["plugins/ecommerce-mobile-app/docs/index.md"],
-          "tests": ["plugins/ecommerce-mobile-app/tests/smoke-cases.json"],
+          "source_files": ["plugins/ecommerce_mobile_app/plugin.json", "plugins/ecommerce_mobile_app/runtime/ecommerce_mobile_app.js"],
+          "runtime_files": ["plugins/ecommerce_mobile_app/runtime/ecommerce_mobile_app.js", ".kabeeri/plugins.json"],
+          "docs": ["plugins/ecommerce_mobile_app/docs/index.md"],
+          "tests": ["plugins/ecommerce_mobile_app/tests/smoke-cases.json"],
           "maturity": "working",
           "notes": "App builder bundle; removable and not enabled by default.",
           "plugin_id": "ecommerce-mobile-app",
@@ -574,7 +574,7 @@
           "plugin_type": "ecommerce-mobile-app",
           "enabled_by_default": false,
           "removable": true,
-          "runtime_entrypoint": "plugins/ecommerce-mobile-app/runtime/ecommerce_mobile_app.js"
+          "runtime_entrypoint": "plugins/ecommerce_mobile_app/runtime/ecommerce_mobile_app.js"
         },
         {
           "capability_id": "github",
@@ -620,10 +620,10 @@
           "category": "framework_plugin",
           "primary_track": "framework_owner",
           "commands": ["kvdf evolution", "kvdf task packet", "kvdf task batch-run", "kvdf maintenance", "kvdf cleaner"],
-          "source_files": ["plugins/kvdf-dev/plugin.json", "plugins/kvdf-dev/bootstrap.js", "plugins/kvdf-dev/runtime/index.js"],
-          "runtime_files": [".kabeeri/plugins.json", "plugins/kvdf-dev/runtime/index.js"],
-          "docs": ["plugins/kvdf-dev/docs/index.md", "knowledge/governance/EVOLUTION_STEWARD.md"],
-          "tests": ["plugins/kvdf-dev/tests/"],
+          "source_files": ["plugins/kvdf_dev/plugin.json", "plugins/kvdf_dev/bootstrap.js", "plugins/kvdf_dev/runtime/index.js"],
+          "runtime_files": [".kabeeri/plugins.json", "plugins/kvdf_dev/runtime/index.js"],
+          "docs": ["plugins/kvdf_dev/docs/index.md", "knowledge/governance/EVOLUTION_STEWARD.md"],
+          "tests": ["plugins/kvdf_dev/tests/"],
           "maturity": "mature",
           "notes": "Framework-owner bundle with the widest command surface and direct-to-main governance.",
           "plugin_id": "kvdf-dev",
@@ -631,7 +631,7 @@
           "plugin_type": "kvdf_core",
           "enabled_by_default": true,
           "removable": true,
-          "runtime_entrypoint": "plugins/kvdf-dev/runtime/index.js"
+          "runtime_entrypoint": "plugins/kvdf_dev/runtime/index.js"
         },
         {
           "capability_id": "multi_ai_governance",
@@ -658,10 +658,10 @@
           "category": "app_builder",
           "primary_track": "app",
           "commands": ["kvdf news-website init", "kvdf news-website questionnaire", "kvdf news-website report"],
-          "source_files": ["plugins/news-website/plugin.json", "plugins/news-website/runtime/news_website.js"],
-          "runtime_files": ["plugins/news-website/runtime/news_website.js", ".kabeeri/plugins.json"],
-          "docs": ["plugins/news-website/docs/index.md"],
-          "tests": ["plugins/news-website/tests/smoke-cases.json"],
+          "source_files": ["plugins/news_website/plugin.json", "plugins/news_website/runtime/news_website.js"],
+          "runtime_files": ["plugins/news_website/runtime/news_website.js", ".kabeeri/plugins.json"],
+          "docs": ["plugins/news_website/docs/index.md"],
+          "tests": ["plugins/news_website/tests/smoke-cases.json"],
           "maturity": "working",
           "notes": "App builder bundle; removable and not enabled by default.",
           "plugin_id": "news-website",
@@ -669,7 +669,7 @@
           "plugin_type": "news-website",
           "enabled_by_default": false,
           "removable": true,
-          "runtime_entrypoint": "plugins/news-website/runtime/news_website.js"
+          "runtime_entrypoint": "plugins/news_website/runtime/news_website.js"
         },
         {
           "capability_id": "pos",
@@ -696,10 +696,10 @@
           "category": "app_maintenance",
           "primary_track": "app",
           "commands": ["kvdf vibe-maintainer fast", "kvdf vibe-maintainer slow", "kvdf vibe-maintainer cleanup", "kvdf vibe-maintainer inspect", "kvdf vibe-maintainer finalize"],
-          "source_files": ["plugins/vibe-maintainer/plugin.json", "plugins/vibe-maintainer/runtime/vibe_maintainer.js"],
-          "runtime_files": ["plugins/vibe-maintainer/runtime/vibe_maintainer.js", ".kabeeri/plugins.json"],
-          "docs": ["plugins/vibe-maintainer/docs/index.md"],
-          "tests": ["plugins/vibe-maintainer/tests/"],
+          "source_files": ["plugins/vibe_maintainer/plugin.json", "plugins/vibe_maintainer/runtime/vibe_maintainer.js"],
+          "runtime_files": ["plugins/vibe_maintainer/runtime/vibe_maintainer.js", ".kabeeri/plugins.json"],
+          "docs": ["plugins/vibe_maintainer/docs/index.md"],
+          "tests": ["plugins/vibe_maintainer/tests/"],
           "maturity": "working",
           "notes": "App maintenance bundle for local workspace inspection, relocation, approval, and finalization.",
           "plugin_id": "vibe-maintainer",
@@ -707,7 +707,7 @@
           "plugin_type": "vibe-maintainer",
           "enabled_by_default": false,
           "removable": true,
-          "runtime_entrypoint": "plugins/vibe-maintainer/runtime/vibe_maintainer.js"
+          "runtime_entrypoint": "plugins/vibe_maintainer/runtime/vibe_maintainer.js"
         }
       ]
     }

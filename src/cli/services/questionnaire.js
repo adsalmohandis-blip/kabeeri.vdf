@@ -728,8 +728,8 @@ function inferAllowedFilesForArea(areaKey, moduleKey, latestPlan) {
   const areaFileMap = {
     product_business: ["docs/", "knowledge/", "src/cli/commands/blueprint.js"],
     mvp_scope: ["docs/", "knowledge/"],
-    backend: ["src/cli/", "plugins/kvdf-dev/runtime/", "src/cli/commands/"],
-    api_layer: ["src/cli/", "plugins/kvdf-dev/runtime/"],
+    backend: ["src/cli/", "plugins/kvdf_dev/runtime/", "src/cli/commands/"],
+    api_layer: ["src/cli/", "plugins/kvdf_dev/runtime/"],
     technology_governance: ["knowledge/", "docs/"],
     public_frontend: ["src/cli/", "docs/site/", "docs/cli/"],
     admin_frontend: ["src/cli/", "docs/site/", "docs/cli/"],
@@ -742,7 +742,7 @@ function inferAllowedFilesForArea(areaKey, moduleKey, latestPlan) {
     qa: ["tests/", "docs/"],
     security: ["src/cli/", "docs/"],
     product_design: ["docs/", "knowledge/"],
-    kabeeri_control_layer: ["src/cli/", "plugins/kvdf-dev/runtime/", ".kabeeri/"]
+    kabeeri_control_layer: ["src/cli/", "plugins/kvdf_dev/runtime/", ".kabeeri/"]
   };
   const base = areaFileMap[areaKey] ? [...areaFileMap[areaKey]] : [];
   if (moduleKey && latestPlan && latestPlan.module_plan) {

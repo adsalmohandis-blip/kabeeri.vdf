@@ -25,10 +25,10 @@ Evidence and notes:
   Evidence: src/cli/services/command_registry.js defines the shared operating contract. | src/cli/commands/contract.js and src/cli/commands/resume.js already publish next action guidance. | src/cli/services/pipeline_guard.js renders fail-closed blockers.
 - plugin_system: The plugin loader can install, enable, disable, and uninstall removable bundles while keeping plugin state persisted.
   Weakness: The app-builder plugins still need occasional parity work so every bundle feels equally mature and contract-complete.
-  Evidence: src/cli/services/plugin_loader.js owns the canonical reversible plugin state. | plugins/booking-builder/ and plugins/ecommerce-builder/ provide mature domain packs. | The newer app-builder plugins now have mode packs, schemas, and smoke tests.
+  Evidence: src/cli/services/plugin_loader.js owns the canonical reversible plugin state. | plugins/booking_builder/ and plugins/ecommerce_builder/ provide mature domain packs. | The newer app-builder plugins now have mode packs, schemas, and smoke tests.
 - task_governance: Task packet, executor contract, coverage, lifecycle, and batch execution give Kabeeri a strong governed execution path.
   Weakness: The task model is rich enough that the system must keep state, verification, and archive trails perfectly synchronized to avoid drift.
-  Evidence: plugins/kvdf-dev/runtime/task_packet.js compiles the control-plane packet. | src/cli/services/pipeline_guard.js blocks packet and execution paths when prerequisites are missing. | src/cli/services/task_coverage.js and src/cli/commands/task_lifecycle.js keep task state visible.
+  Evidence: plugins/kvdf_dev/runtime/task_packet.js compiles the control-plane packet. | src/cli/services/pipeline_guard.js blocks packet and execution paths when prerequisites are missing. | src/cli/services/task_coverage.js and src/cli/commands/task_lifecycle.js keep task state visible.
 - docs_consistency: The docs system is broad, and the CLI/docs split is now visible in reports, command reference pages, and capability maps.
   Weakness: The large number of docs layers, historical reports, and compatibility aliases can still drift if they are not generated from shared metadata.
   Evidence: docs/cli/CLI_COMMAND_REFERENCE.md documents the command surface. | docs/SYSTEM_CAPABILITIES_REFERENCE.md acts as the high-level capability map. | docs/reports/ holds historical and execution reports.

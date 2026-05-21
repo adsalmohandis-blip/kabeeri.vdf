@@ -121,7 +121,7 @@ function normalizeMissingPluginBehavior(value) {
 
 function readSecurityAuditorPluginState(root = repoRoot()) {
   const plugin = getPluginRuntimeStatus("security-auditor");
-  const pluginPath = path.join(root, "plugins", "security-auditor", "plugin.json");
+  const pluginPath = path.join(root, "plugins", "security_auditor", "plugin.json");
   if (!plugin) {
     const installed = fs.existsSync(pluginPath);
     const commandEntrypoint = installed ? safeReadPluginManifestField(pluginPath, "command_entrypoint") : null;

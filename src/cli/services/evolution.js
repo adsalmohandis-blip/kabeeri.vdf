@@ -1,4 +1,4 @@
-﻿const { fileExists } = require("../fs_utils");
+const { fileExists } = require("../fs_utils");
 const { readJsonFile } = require("../workspace");
 const { readStateArray, summarizeBy } = require("./state_utils");
 
@@ -316,7 +316,7 @@ function buildEvolutionScorecards(state, options = {}) {
       risk: "low",
       evidence: [
         "src/cli/services/plugin_loader.js owns the canonical reversible plugin state.",
-        "plugins/booking-builder/ and plugins/ecommerce-builder/ provide mature domain packs.",
+        "plugins/booking_builder/ and plugins/ecommerce_builder/ provide mature domain packs.",
         "The newer app-builder plugins now have mode packs, schemas, and smoke tests."
       ],
       impacted_areas: ["implementation", "docs", "tests"],
@@ -332,7 +332,7 @@ function buildEvolutionScorecards(state, options = {}) {
       weakness: "The task model is rich enough that the system must keep state, verification, and archive trails perfectly synchronized to avoid drift.",
       risk: "low",
       evidence: [
-        "plugins/kvdf-dev/runtime/task_packet.js compiles the control-plane packet.",
+        "plugins/kvdf_dev/runtime/task_packet.js compiles the control-plane packet.",
         "src/cli/services/pipeline_guard.js blocks packet and execution paths when prerequisites are missing.",
         "src/cli/services/task_coverage.js and src/cli/commands/task_lifecycle.js keep task state visible."
       ],
@@ -882,7 +882,7 @@ function defaultEvolutionDevelopmentPriorities() {
       status: "planned",
       tree_view: [
         "kabeeri-core/ - shared runtime, guards, task engine, session routing, and loader",
-        "plugins/kvdf-dev/ - removable framework-development bundle with owner-only commands and docs",
+        "plugins/kvdf_dev/ - removable framework-development bundle with owner-only commands and docs",
         "workspaces/apps/<app-slug>/ - isolated developer applications with local state"
       ],
       included_surfaces: [
@@ -977,7 +977,7 @@ function defaultEvolutionDevelopmentPriorities() {
       status: "planned",
       tree_view: [
         "kabeeri-core/ - shared runtime, guards, task engine, session routing, and loader",
-        "plugins/kvdf-dev/ - removable framework-development bundle with owner-only commands, docs, and governance",
+        "plugins/kvdf_dev/ - removable framework-development bundle with owner-only commands, docs, and governance",
         "workspaces/apps/<app-slug>/ - isolated developer applications with local state and app-only commands",
         "docs/reports/ - the study and decision reports that record the split",
         "docs/site/ - developer-facing capability documentation that mirrors the split"
@@ -1011,7 +1011,7 @@ function defaultEvolutionDevelopmentPriorities() {
       ],
       partition_rules: [
         "Shared runtime, session routing, validation, guard, task engine, trash, scheduler, and telemetry belong to kabeeri-core.",
-        "Framework-development governance, dev docs, dev routing, owner tokens, and removable owner commands belong to plugins/kvdf-dev/.",
+        "Framework-development governance, dev docs, dev routing, owner tokens, and removable owner commands belong to plugins/kvdf_dev/.",
         "Developer-facing app workflows, blueprints, questionnaire flows, and app-local state belong to workspaces/apps/<app-slug>/.",
         "If a capability touches more than one boundary, split it into a core primitive plus a plugin or app wrapper instead of keeping it mixed."
       ]
@@ -1486,7 +1486,7 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
   const ownerPluginCapabilities = [
     ["kvdf-dev-system", "KVDF Dev System / Evolution Steward", "This capability changes Kabeeri itself and must remain removable as a framework-development bundle.", ["kvdf evolution", "kvdf evolution roadmap", "kvdf evolution priorities"], ["knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"]],
     ["owner-cli-separation", "Owner and Developer CLI Separation", "Track-specific command visibility belongs to the owner/developer split.", ["kvdf evolution app", "owner-only command surfaces"], ["docs/cli/CLI_COMMAND_REFERENCE.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
-    ["owner-plugin-packaging", "KVDF Dev Plugin Packaging and Load Control", "The framework-development surface must be installable and removable as a bundle.", ["plugins/kvdf-dev/"], ["docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
+    ["owner-plugin-packaging", "KVDF Dev Plugin Packaging and Load Control", "The framework-development surface must be installable and removable as a bundle.", ["plugins/kvdf_dev/"], ["docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md", "knowledge/governance/TRACK_ROUTING_GOVERNANCE.md"]],
     ["owner-docs-token-gate", "Owner docs token gate", "The owner docs gate is a framework-maintenance control and should not live in core.", ["owner docs entry flow"], ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "docs/reports/"]],
     ["owner-session-auto-close", "Owner session auto-close", "Owner-session lifecycle is a framework-development policy.", ["owner session lifecycle"], ["knowledge/governance/TRACK_ROUTING_GOVERNANCE.md", "docs/reports/"]],
     ["capability-partition-matrix", "Capability Partition Matrix", "The split contract itself belongs with the owner stewardship layer because it defines how bundles load.", ["kvdf evolution partition"], ["docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
@@ -1525,8 +1525,8 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
       capabilities: coreCapabilities.map(([id, title, reason, cli_surface, docs_surface]) => ({ id, title, reason, cli_surface, docs_surface }))
     },
     {
-      bucket_id: "plugins/kvdf-dev",
-      bucket_name: "plugins/kvdf-dev",
+      bucket_id: "plugins/kvdf_dev",
+      bucket_name: "plugins/kvdf_dev",
       load_rule: "Load only when the framework-owner track is active and the kvdf-dev bundle is enabled.",
       capabilities: ownerPluginCapabilities.map(([id, title, reason, cli_surface, docs_surface]) => ({ id, title, reason, cli_surface, docs_surface }))
     },
@@ -1540,7 +1540,7 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
 
   const boundary_rules = [
     "Shared runtime, session routing, validation, guard, task engine, trash, scheduler, and telemetry belong in kabeeri-core.",
-    "Framework-development governance, dev docs, dev routing, owner tokens, and removable owner commands belong in plugins/kvdf-dev.",
+    "Framework-development governance, dev docs, dev routing, owner tokens, and removable owner commands belong in plugins/kvdf_dev.",
     "Developer-facing app workflows, blueprints, questionnaire flows, and app-local state belong in workspaces/apps/<app-slug>.",
     "If a capability crosses a boundary, split it into a core primitive plus a plugin or workspace wrapper instead of keeping it mixed.",
     "Developer docs may explain the split, but the docs site and runtime behavior must remain track-safe."

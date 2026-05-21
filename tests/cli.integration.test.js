@@ -1,4 +1,4 @@
-﻿const assert = require("assert");
+const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -12,10 +12,26 @@ const wordpressPlanService = require("../src/cli/services/wordpress_plans");
 const appPluginCatalog = require("../src/cli/services/app_plugin_catalog");
 const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/commands/multi_ai_communications");
 const { resolveDashboardScope } = require("../src/cli/commands/site");
-const plannerVisualRenderer = require("../plugins/planner-visual/runtime");
+const plannerVisualRenderer = require("../plugins/planner_visual/runtime");
 const { version: packageVersion } = require("../package.json");
 
 const repoRoot = path.resolve(__dirname, "..");
+const PLUGIN_BUNDLE_DIRS = {
+  "ai-learning": "ai_learning",
+  "booking-builder": "booking_builder",
+  "company-profile": "company_profile",
+  "ecommerce-builder": "ecommerce_builder",
+  "ecommerce-mobile-app": "ecommerce_mobile_app",
+  "kvdf-dev": "kvdf_dev",
+  "news-website": "news_website",
+  "planner-visual": "planner_visual",
+  "security-auditor": "security_auditor",
+  "vibe-maintainer": "vibe_maintainer"
+};
+
+function getPluginBundleDir(pluginId) {
+  return PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
+}
 
 const tests = [];
 
@@ -101,7 +117,8 @@ function withTempDir(fn) {
 
 function copyPluginBundle(dir, pluginId) {
   fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
-  fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
+  const bundleDir = PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
+  fs.cpSync(path.join(repoRoot, "plugins", bundleDir), path.join(dir, "plugins", bundleDir), { recursive: true });
 }
 
 function copyRepoFile(dir, relativePath) {
@@ -112,27 +129,28 @@ function copyRepoFile(dir, relativePath) {
 }
 
 function loadPluginSmokeCases(pluginId) {
-  const smokePath = path.join(repoRoot, "plugins", pluginId, "tests", "smoke-cases.json");
+  const bundleDir = PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
+  const smokePath = path.join(repoRoot, "plugins", bundleDir, "tests", "smoke-cases.json");
   return JSON.parse(fs.readFileSync(smokePath, "utf8"));
 }
 
 function runAppPluginSmokeCase(dir, pluginId, spec, smokeCase) {
-  fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
-  fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
+  const bundleDir = PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
+  copyPluginBundle(dir, pluginId);
 
-  const projectSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "project.schema.json"), "utf8"));
+  const projectSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", bundleDir, "schemas", "project.schema.json"), "utf8"));
   assert.strictEqual(projectSchema.oneOf.length, (spec.supported_modes || []).length);
   assert.deepStrictEqual(
     projectSchema.oneOf.map((item) => item.properties.mode.const),
     spec.supported_modes || []
   );
-  const briefSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "brief.schema.json"), "utf8"));
+  const briefSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", bundleDir, "schemas", "brief.schema.json"), "utf8"));
   assert.deepStrictEqual(briefSchema.oneOf.map((item) => item.properties.mode.const), spec.supported_modes || []);
-  const tasksSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "tasks.schema.json"), "utf8"));
+  const tasksSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", bundleDir, "schemas", "tasks.schema.json"), "utf8"));
   assert.ok(Array.isArray(tasksSchema.properties.proposed_tasks.items.required));
-  const designSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "design.schema.json"), "utf8"));
+  const designSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", bundleDir, "schemas", "design.schema.json"), "utf8"));
   assert.deepStrictEqual(designSchema.oneOf.map((item) => item.properties.mode.const), spec.supported_modes || []);
-  const approvalSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", pluginId, "schemas", "approval.schema.json"), "utf8"));
+  const approvalSchema = JSON.parse(fs.readFileSync(path.join(dir, "plugins", bundleDir, "schemas", "approval.schema.json"), "utf8"));
   assert.deepStrictEqual(approvalSchema.oneOf.map((item) => item.properties.mode.const), spec.supported_modes || []);
 
   const initialStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
@@ -878,7 +896,7 @@ test("init creates workspace state files", () => withTempDir((dir) => {
   }
   assert.ok(fs.existsSync(path.join(dir, "workspaces")), "workspaces should exist");
   assert.ok(fs.existsSync(path.join(dir, "workspaces", "apps")), "workspaces/apps should exist");
-  assert.ok(fs.existsSync(path.join(dir, "plugins", "kvdf-dev", "docs", "index.md")), "kvdf dev docs index should exist");
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "kvdf_dev", "docs", "index.md")), "kvdf dev docs index should exist");
   assert.match(runKvdf(["validate", "workspace"], { cwd: dir }).stdout, /workspace present/);
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /runtime schema validation checked/);
   const upgrade = JSON.parse(runKvdf(["upgrade", "check", "--json"], { cwd: dir }).stdout);
@@ -2107,7 +2125,7 @@ test("evolution batch-exe auto-assigns missing tasks to the active multi-ai lead
 test("task batch-run executes approved tasks to completion and creates execution artifacts", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
-  fs.cpSync(path.join(repoRoot, "plugins", "kvdf-dev"), path.join(dir, "plugins", "kvdf-dev"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "kvdf_dev"), path.join(dir, "plugins", "kvdf_dev"), { recursive: true });
   fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
     tasks: [
       {
@@ -2363,7 +2381,7 @@ test("task executor contract derives a packet-only AI boundary from the control-
         title: "Implement executor boundary",
         status: "approved",
         assignee_id: "codex",
-        allowed_files: ["src/cli/index.js", "plugins/kvdf-dev/runtime/"],
+        allowed_files: ["src/cli/index.js", "plugins/kvdf_dev/runtime/"],
         acceptance_criteria: ["Compile executor contract", "Document allowed files"],
         created_at: "2026-05-14T00:00:00.000Z"
       }
@@ -2386,7 +2404,7 @@ test("task executor contract derives a packet-only AI boundary from the control-
         status: "approved",
         assignee_id: "codex",
         next_action: "continue execution",
-        allowed_files: ["src/cli/index.js", "plugins/kvdf-dev/runtime/"],
+        allowed_files: ["src/cli/index.js", "plugins/kvdf_dev/runtime/"],
         acceptance_criteria_count: 2
       }
     ]
@@ -2603,7 +2621,7 @@ test("evolution roadmap exposes the canonical seven-step restructure order", () 
   assert.strictEqual(partitionMatrix.bucket_totals.owner_plugin, 8);
   assert.strictEqual(partitionMatrix.bucket_totals.app_workspace, 20);
   assert.ok(partitionMatrix.buckets.find((bucket) => bucket.bucket_id === "kabeeri-core").capabilities.some((item) => item.title === "CLI Engine"));
-  assert.ok(partitionMatrix.buckets.find((bucket) => bucket.bucket_id === "plugins/kvdf-dev").capabilities.some((item) => item.title === "KVDF Dev System / Evolution Steward"));
+  assert.ok(partitionMatrix.buckets.find((bucket) => bucket.bucket_id === "plugins/kvdf_dev").capabilities.some((item) => item.title === "KVDF Dev System / Evolution Steward"));
   assert.ok(partitionMatrix.buckets.find((bucket) => bucket.bucket_id === "workspaces/apps/<app-slug>").capabilities.some((item) => item.title === "Vibe App Developer Track"));
   assert.match(runKvdf(["evolution", "partition"], { cwd: dir }).stdout, /KVDF Capability Partition Matrix/);
   const pluginsStatus = JSON.parse(runKvdf(["plugins", "status", "--json"], { cwd: dir }).stdout);
@@ -3827,7 +3845,7 @@ test("wordpress services modules persist state and build plans", () => {
 test("booking builder plugin installs and runs a full runtime pipeline", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
-  fs.cpSync(path.join(repoRoot, "plugins", "booking-builder"), path.join(dir, "plugins", "booking-builder"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "booking_builder"), path.join(dir, "plugins", "booking_builder"), { recursive: true });
 
   const initialStatus = JSON.parse(runKvdf(["booking", "status", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(initialStatus.plugin_enabled, false);
@@ -3887,7 +3905,7 @@ test("booking builder plugin installs and runs a full runtime pipeline", () => w
 test("ecommerce builder plugin installs and runs a full runtime pipeline", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   fs.mkdirSync(path.join(dir, "plugins"), { recursive: true });
-  fs.cpSync(path.join(repoRoot, "plugins", "ecommerce-builder"), path.join(dir, "plugins", "ecommerce-builder"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "ecommerce_builder"), path.join(dir, "plugins", "ecommerce_builder"), { recursive: true });
 
   const initialStatus = JSON.parse(runKvdf(["ecommerce", "status", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(initialStatus.plugin_enabled, false);
@@ -3951,7 +3969,8 @@ test("app plugin suite installs and runs full runtime pipelines", () => withTemp
   const pluginIds = ["company-profile", "news-website", "blog", "ecommerce-mobile-app", "crm", "pos"];
 
   for (const pluginId of pluginIds) {
-    fs.cpSync(path.join(repoRoot, "plugins", pluginId), path.join(dir, "plugins", pluginId), { recursive: true });
+    const bundleDir = getPluginBundleDir(pluginId);
+    fs.cpSync(path.join(repoRoot, "plugins", bundleDir), path.join(dir, "plugins", bundleDir), { recursive: true });
 
     const spec = appPluginCatalog[pluginId];
     const initialStatus = JSON.parse(runKvdf([pluginId, "status", "--json"], { cwd: dir }).stdout);
@@ -5348,7 +5367,7 @@ test("vibe maintainer cleanup supports current, all, and lifecycle workflow scop
   runKvdf(["app", "workspace", "create", "--slug", "storefront-web", "--name", "Storefront Web", "--type", "frontend"], { cwd: dir });
   runKvdf(["app", "workspace", "create", "--slug", "admin-web", "--name", "Admin Web", "--type", "frontend"], { cwd: dir });
   fs.cpSync(path.join(repoRoot, "src"), path.join(dir, "src"), { recursive: true });
-  fs.cpSync(path.join(repoRoot, "plugins", "vibe-maintainer"), path.join(dir, "plugins", "vibe-maintainer"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "plugins", "vibe_maintainer"), path.join(dir, "plugins", "vibe_maintainer"), { recursive: true });
   runKvdf(["plugins", "install", "vibe-maintainer"], { cwd: dir });
 
   const appRoot = path.join(dir, "workspaces", "apps", "storefront-web");
@@ -5597,7 +5616,7 @@ test("docs generation workflow emits template catalog manifest and contracts", (
   assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/framework-development.html")));
   assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/plugin-development.html")));
   assert.ok(!fs.existsSync(path.join(repoRoot, "docs/site/pages/en/scorecards-evo.html")));
-  const systemManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/site-manifest.json"), "utf8"));
+  const systemManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "plugins/kvdf_dev/docs/site/site-manifest.json"), "utf8"));
   assert.strictEqual(systemManifest.page_count, systemManifest.pages.length);
   assert.ok(systemManifest.pages.some((page) => page.slug === "system-development"));
   assert.ok(systemManifest.pages.some((page) => page.slug === "methodology"));
@@ -5605,9 +5624,9 @@ test("docs generation workflow emits template catalog manifest and contracts", (
   assert.ok(systemManifest.pages.some((page) => page.slug === "framework-development"));
   assert.ok(systemManifest.pages.some((page) => page.slug === "plugin-development"));
   assert.ok(systemManifest.pages.some((page) => page.slug === "scorecards-evo"));
-  const systemIndex = fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/index.html"), "utf8");
-  const systemPageEn = fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/pages/en/system-development.html"), "utf8");
-  const systemPageAr = fs.readFileSync(path.join(repoRoot, "plugins/kvdf-dev/docs/site/pages/ar/system-development.html"), "utf8");
+  const systemIndex = fs.readFileSync(path.join(repoRoot, "plugins/kvdf_dev/docs/site/index.html"), "utf8");
+  const systemPageEn = fs.readFileSync(path.join(repoRoot, "plugins/kvdf_dev/docs/site/pages/en/system-development.html"), "utf8");
+  const systemPageAr = fs.readFileSync(path.join(repoRoot, "plugins/kvdf_dev/docs/site/pages/ar/system-development.html"), "utf8");
   assert.match(systemIndex, /<header class="topbar">/);
   assert.match(systemIndex, /<aside class="sidebar">/);
   assert.match(systemIndex, /assets\/css\/style\.css/);
@@ -5860,7 +5879,7 @@ test("command deprecation ledger documents active migrated alias and duplicated 
   assert.match(commandReference, /workspaces\/apps\/<app-slug>/);
   assert.match(capabilitiesReference, /Command Lifecycle Ledger/);
   assert.match(capabilitiesReference, /Folder Ownership Ledger/);
-  assert.match(capabilitiesReference, /plugins\/kvdf-dev/);
+  assert.match(capabilitiesReference, /plugins\/kvdf_dev/);
   assert.match(capabilitiesReference, /workspaces\/apps\/<app-slug>/);
   assert.match(capabilitiesReference, /AI Entry And Track Split/);
   assert.match(capabilitiesReference, /Plugin lanes stay optional and removable/);
@@ -6195,7 +6214,7 @@ test("planner layer recommends the next plugin evolution with plugin context", (
   assert.ok(plannerNext.plugin_context);
   assert.strictEqual(plannerNext.plugin_context.plugin_id, "kvdf-dev");
   assert.ok(Array.isArray(plannerNext.allowed_files));
-  assert.ok(plannerNext.allowed_files.some((item) => item.includes("plugins/kvdf-dev/plugin.json")));
+  assert.ok(plannerNext.allowed_files.some((item) => item.includes("plugins/kvdf_dev/plugin.json")));
   assert.ok(Array.isArray(plannerNext.forbidden_files));
   assert.ok(plannerNext.forbidden_files.some((item) => item.includes(".kabeeri/plugin-links/")));
   assert.ok(Array.isArray(plannerNext.validation_commands));
@@ -6352,8 +6371,8 @@ test("planner auto returns a structured plugin plan with plugin parity guidance"
   assert.strictEqual(report.planner_mode, "plugin");
   assert.strictEqual(report.planning_method, "structured");
   assert.strictEqual(report.source_pipeline.plugin_context.plugin_id, "planner-visual");
-  assert.ok(report.source_pipeline.documentation_files.some((item) => item.includes("plugins/planner-visual/docs/")));
-  assert.ok(report.source_pipeline.evolutions[0].allowed_files.some((item) => item.includes("plugins/planner-visual")));
+  assert.ok(report.source_pipeline.documentation_files.some((item) => item.includes("plugins/planner_visual/docs/")));
+  assert.ok(report.source_pipeline.evolutions[0].allowed_files.some((item) => item.includes("plugins/planner_visual")));
   assert.ok(report.source_pipeline.evolutions[0].forbidden_files.some((item) => item.includes("KVDOS")));
 }));
 
@@ -6729,9 +6748,9 @@ test("planner docs materialization creates plugin drafts only under the selected
   copyPluginBundle(dir, "planner-visual");
   const report = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Improve planner visual plugin", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
-  assert.ok(report.docs_created.every((item) => item.startsWith("plugins/planner-visual/docs/")));
-  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "product", "PRD.md")));
-  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner-visual", "docs", "delivery", "VERSION_PLAN.md")));
+  assert.ok(report.docs_created.every((item) => item.startsWith("plugins/planner_visual/docs/")));
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner_visual", "docs", "product", "PRD.md")));
+  assert.ok(fs.existsSync(path.join(dir, "plugins", "planner_visual", "docs", "delivery", "VERSION_PLAN.md")));
   assert.ok(!fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "product", "PRD.md")));
 }));
 
@@ -7210,12 +7229,12 @@ test("planner pipeline builds a plugin package with plugin context and isolated 
   assert.ok(pipeline.source_control);
   assert.strictEqual(pipeline.source_control.mode, "direct_main");
   assert.ok(Array.isArray(pipeline.documentation_files));
-  assert.ok(pipeline.documentation_files.some((item) => item.includes("plugins/planner-visual/docs/")));
+  assert.ok(pipeline.documentation_files.some((item) => item.includes("plugins/planner_visual/docs/")));
   assert.ok(pipeline.docs_plan);
   assert.ok(pipeline.docs_status);
   assert.ok(Array.isArray(pipeline.evolutions));
   assert.ok(pipeline.evolutions.every((evolution) => evolution.track === "plugin"));
-  assert.ok(pipeline.evolutions.every((evolution) => evolution.allowed_files.some((item) => item.includes("plugins/planner-visual"))));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.allowed_files.some((item) => item.includes("plugins/planner_visual"))));
   assert.ok(pipeline.evolutions.every((evolution) => evolution.forbidden_files.includes(".kabeeri/plugin-links/")));
   assert.ok(Array.isArray(pipeline.task_punches));
   assert.ok(pipeline.task_punches.every((taskPunch) => taskPunch.source_control && taskPunch.source_control.mode === "direct_main"));
@@ -7374,8 +7393,8 @@ test("planner visual renderers output Mermaid text without depending on a Mermai
   assert.match(markdown, /Validation Commands/);
   assert.match(markdown, /Stop Condition/);
 
-  const runtimeSource = fs.readFileSync(path.join(repoRoot, "plugins", "planner-visual", "runtime", "index.js"), "utf8");
-  const mermaidSource = fs.readFileSync(path.join(repoRoot, "plugins", "planner-visual", "runtime", "mermaid_renderer.js"), "utf8");
+  const runtimeSource = fs.readFileSync(path.join(repoRoot, "plugins", "planner_visual", "runtime", "index.js"), "utf8");
+  const mermaidSource = fs.readFileSync(path.join(repoRoot, "plugins", "planner_visual", "runtime", "mermaid_renderer.js"), "utf8");
   assert.ok(!runtimeSource.includes("require(\"mermaid\")"));
   assert.ok(!mermaidSource.includes("require(\"mermaid\")"));
 });
@@ -7435,9 +7454,9 @@ test("evolution execution report persists a resumable report for the next open p
 test("cleaner cleanup saves an organized audit report", () => {
   withTempDir((dir) => {
     fs.mkdirSync(path.join(dir, ".kabeeri"), { recursive: true });
-    fs.mkdirSync(path.join(dir, "plugins", "kvdf-dev"), { recursive: true });
+    fs.mkdirSync(path.join(dir, "plugins", "kvdf_dev"), { recursive: true });
     fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
-    fs.writeFileSync(path.join(dir, "plugins", "kvdf-dev", "plugin.json"), JSON.stringify({
+    fs.writeFileSync(path.join(dir, "plugins", "kvdf_dev", "plugin.json"), JSON.stringify({
       plugin_id: "kvdf-dev",
       name: "KVDF Dev System Bundle",
       plugin_version: "1.0.0",
@@ -7448,7 +7467,7 @@ test("cleaner cleanup saves an organized audit report", () => {
       enabled_by_default: true,
       required_folders: ["commands", "docs"],
       command_surface: ["kvdf cleaner cleanup", "kvdf cleaner inspect"],
-      docs_surface: ["plugins/kvdf-dev/docs/index.md"]
+      docs_surface: ["plugins/kvdf_dev/docs/index.md"]
     }, null, 2), "utf8");
     fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "console.log('cleaner');\n", "utf8");
     const result = runKvdf(["cleaner", "cleanup", "--json"], { cwd: dir });

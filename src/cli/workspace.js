@@ -720,8 +720,8 @@ function createWorkspace({ profile, mode, lang }) {
   fs.mkdirSync(path.join(stateDir, "metadata"), { recursive: true });
   fs.mkdirSync(path.join(root, "workspaces"), { recursive: true });
   fs.mkdirSync(path.join(root, "workspaces", "apps"), { recursive: true });
-  fs.mkdirSync(path.join(root, "plugins", "kvdf-dev"), { recursive: true });
-  fs.mkdirSync(path.join(root, "plugins", "kvdf-dev", "docs"), { recursive: true });
+  fs.mkdirSync(path.join(root, "plugins", "kvdf_dev"), { recursive: true });
+  fs.mkdirSync(path.join(root, "plugins", "kvdf_dev", "docs"), { recursive: true });
   for (const folder of [
     "commands",
     "prompts",
@@ -740,7 +740,7 @@ function createWorkspace({ profile, mode, lang }) {
     "tracks",
     "reports"
   ]) {
-    fs.mkdirSync(path.join(root, "plugins", "kvdf-dev", folder), { recursive: true });
+    fs.mkdirSync(path.join(root, "plugins", "kvdf_dev", folder), { recursive: true });
   }
 
   const files = [
@@ -1079,7 +1079,7 @@ Owner approval is required before final delivery, release, publish, or scope clo
     created.push({ path: ".kabeeri/interactions/user_intents.jsonl", status: "created" });
   }
 
-  const kvdfDevPluginManifest = path.join(root, "plugins", "kvdf-dev", "plugin.json");
+  const kvdfDevPluginManifest = path.join(root, "plugins", "kvdf_dev", "plugin.json");
   if (!fs.existsSync(kvdfDevPluginManifest)) {
     fs.writeFileSync(kvdfDevPluginManifest, JSON.stringify({
       plugin_id: "kvdf-dev",
@@ -1140,17 +1140,17 @@ Owner approval is required before final delivery, release, publish, or scope clo
         "kvdf plugins disable kvdf-dev"
       ],
       docs_surface: [
-        "plugins/kvdf-dev/docs/index.md",
+        "plugins/kvdf_dev/docs/index.md",
         "knowledge/governance/EVOLUTION_STEWARD.md",
         "docs/reports/KVDF_CORE_PLUGIN_CAPABILITY_SPLIT_STUDY.md"
       ]
     }, null, 2) + "\n", "utf8");
-    created.push({ path: "plugins/kvdf-dev/plugin.json", status: "created" });
+    created.push({ path: "plugins/kvdf_dev/plugin.json", status: "created" });
   } else {
-    created.push({ path: "plugins/kvdf-dev/plugin.json", status: "exists" });
+    created.push({ path: "plugins/kvdf_dev/plugin.json", status: "exists" });
   }
 
-  const kvdfDevDocsIndex = path.join(root, "plugins", "kvdf-dev", "docs", "index.md");
+  const kvdfDevDocsIndex = path.join(root, "plugins", "kvdf_dev", "docs", "index.md");
   if (!fs.existsSync(kvdfDevDocsIndex)) {
     fs.writeFileSync(kvdfDevDocsIndex, [
       "# KVDF Dev System",
@@ -1162,9 +1162,9 @@ Owner approval is required before final delivery, release, publish, or scope clo
       "- Install with `kvdf plugins install kvdf-dev` or uninstall with `kvdf plugins uninstall kvdf-dev` when framework work needs to be toggled.",
       ""
     ].join("\n"), "utf8");
-    created.push({ path: "plugins/kvdf-dev/docs/index.md", status: "created" });
+    created.push({ path: "plugins/kvdf_dev/docs/index.md", status: "created" });
   } else {
-    created.push({ path: "plugins/kvdf-dev/docs/index.md", status: "exists" });
+    created.push({ path: "plugins/kvdf_dev/docs/index.md", status: "exists" });
   }
 
   const workspacesRoot = path.join(root, "workspaces", "apps");

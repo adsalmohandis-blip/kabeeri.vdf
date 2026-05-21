@@ -1,4 +1,4 @@
-﻿const pages = [
+const pages = [
   ["what-is", "Overview", "نظرة عامة"],
   ["start-here", "Start Here", "ابدأ من هنا"],
   ["install-profiles", "Install and Profiles", "التثبيت والبروفايلات"],
@@ -84,7 +84,7 @@ const capabilityRows = {
     ["Live Dashboard", "Shows live technical, business, governance, task, app, cost, policy, workspace, and UX state.", "`integrations/dashboard/`, `.kabeeri/dashboard/`"],
     ["Live JSON Reports", "Shows derived readiness, governance, task, package, upgrade, security, and next-action state while historical reports explain the story behind it.", "`docs/internal/LIVE_JSON_REPORTS.md`, `.kabeeri/reports/live_reports_state.json`"],
     ["Plugin Loader", "Reads plugin manifests, keeps install and enable state in `.kabeeri/plugins.json`, and shows the next exact action for removable bundles. The manifest is the source of truth.", "`plugins/*/plugin.json`, `.kabeeri/plugins.json`"],
-    ["App Plugin Suite", "Provides installable app-track bundles for company profiles, news websites, blogs, ecommerce mobile apps, CRM, and POS with shared plugin-state gating and bundle contracts.", "`plugins/company-profile/`, `plugins/news-website/`, `plugins/blog/`, `plugins/ecommerce-mobile-app/`, `plugins/crm/`, `plugins/pos/`"],
+    ["App Plugin Suite", "Provides installable app-track bundles for company profiles, news websites, blogs, ecommerce mobile apps, CRM, and POS with shared plugin-state gating and bundle contracts.", "`plugins/company_profile/`, `plugins/news_website/`, `plugins/blog/`, `plugins/ecommerce_mobile_app/`, `plugins/crm/`, `plugins/pos/`"],
     ["Multi-AI Governance", "Controls session leadership, agent queues, locks, tokens, audit, and Owner verification. The governance doc and live state are the source of truth.", "`knowledge/governance/MULTI_AI_GOVERNANCE.md`, `.kabeeri/multi_ai_governance.json`"],
     ["Handoff Packages", "Generates owner/client reports from local state so the handoff bundle matches the workspace evidence.", "`kvdf handoff`, `.kabeeri/handoff/`"],
     ["Independent Reports", "Exports readiness, governance, blocked-scenarios, and live report state so live JSON stays the execution view and Markdown stays the story.", "`kvdf reports live`, `kvdf reports blocked`, `.kabeeri/reports/live_reports_state.json`"],
@@ -118,7 +118,7 @@ const capabilityRows = {
     ["الداشبورد الحي", "يعرض الحالة التقنية والتجارية والحوكمة والتاسكات والتطبيقات والتكلفة والسياسات ومساحات العمل وتجربة الواجهة.", "`integrations/dashboard/`, `.kabeeri/dashboard/`"],
     ["التقارير الحية JSON", "تعرض حالة الجاهزية والحوكمة والتاسكات والحزم والترقية والأمان والخطوة التالية كمخرج مشتق، بينما تشرح التقارير التاريخية القصة وراء ذلك.", "`docs/internal/LIVE_JSON_REPORTS.md`, `.kabeeri/reports/live_reports_state.json`"],
     ["محمل البلغنز", "يقرأ ملفات manifests ويحتفظ بحالة install وenable داخل `.kabeeri/plugins.json` ويعرض الخطوة التالية للباندلات القابلة للإزالة. الـ manifest هو مصدر الحقيقة.", "`plugins/*/plugin.json`, `.kabeeri/plugins.json`"],
-    ["حزمة البلغنز للتطبيقات", "توفر باندلات قابلة للتثبيت لتطبيقات مثل company profiles وnews وblogs وecommerce mobile apps وCRM وPOS مع حوكمة حالة موحدة وعقود واضحة.", "`plugins/company-profile/`, `plugins/news-website/`, `plugins/blog/`, `plugins/ecommerce-mobile-app/`, `plugins/crm/`, `plugins/pos/`"],
+    ["حزمة البلغنز للتطبيقات", "توفر باندلات قابلة للتثبيت لتطبيقات مثل company profiles وnews وblogs وecommerce mobile apps وCRM وPOS مع حوكمة حالة موحدة وعقود واضحة.", "`plugins/company_profile/`, `plugins/news_website/`, `plugins/blog/`, `plugins/ecommerce_mobile_app/`, `plugins/crm/`, `plugins/pos/`"],
     ["حوكمة Multi-AI", "تتحكم في قيادة الجلسات وقوائم الوكلاء واللوكس والتوكنز والتدقيق وتحقق المالك. وثيقة الحوكمة وحالة `.kabeeri/` هما مصدر الحقيقة.", "`knowledge/governance/MULTI_AI_GOVERNANCE.md`, `.kabeeri/multi_ai_governance.json`"],
     ["حزم التسليم", "تولد تقارير owner/client من الحالة المحلية بحيث تتطابق حزمة التسليم مع دليل المساحة الفعلي.", "`kvdf handoff`, `.kabeeri/handoff/`"],
     ["التقارير المستقلة", "تخرج readiness وgovernance وblocked-scenarios وحالة التقارير الحية، بحيث يبقى JSON هو واجهة التنفيذ بينما تشرح Markdown القصة.", "`kvdf reports live`, `kvdf reports blocked`, `.kabeeri/reports/live_reports_state.json`"],

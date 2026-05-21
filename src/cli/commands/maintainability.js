@@ -19,7 +19,7 @@ const {
   renderMaintenanceInspectionReport
 } = require("../services/cleanup_audit");
 const { evolution } = require("./evolution");
-const kvdfDevBundle = require("../../../plugins/kvdf-dev/bootstrap");
+const kvdfDevBundle = require("../../../plugins/kvdf_dev/bootstrap");
 const { DEFAULT_RETENTION_DAYS, ensureTaskTrashState, moveTaskToTrash, taskTrashSummary } = require("../services/task_trash");
 const { buildTaskLifecycleState } = require("./task_lifecycle");
 

@@ -72,7 +72,7 @@ function normalizeSecurityAuditorAction(action) {
 }
 
 function loadSecurityAuditorRuntime(root) {
-  const runtimePath = path.join(root, "plugins", "security-auditor", "runtime", "index.js");
+  const runtimePath = path.join(root, "plugins", "security_auditor", "runtime", "index.js");
   if (!fs.existsSync(runtimePath)) {
     throw new Error("Security Auditor plugin runtime is missing. Run `kvdf plugins install security-auditor` first.");
   }

@@ -80,7 +80,7 @@ The site is organized around developer-facing capability docs and covers:
 - prompt packs
 - WordPress development and WordPress plugin development
 - AI Tool and Vibe developer workflow instructions and role hubs for app delivery
-- system-development docs are now published separately under `plugins/kvdf-dev/docs/site/`
+- system-development docs are now published separately under `plugins/kvdf_dev/docs/site/`
 - live dashboard
 - AI cost control
 - multi-AI governance
