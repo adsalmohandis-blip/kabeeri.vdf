@@ -174,6 +174,36 @@ It does not implement:
 
 This boundary stays app-local and pre-implementation until explicitly approved.
 
+## Cloud Commercial Boundary
+
+Cloud commercial work is documentation-first at this stage.
+
+It covers:
+
+- cloud account boundary
+- authentication boundary
+- subscription boundary
+- license entitlement boundary
+- device activation boundary
+- secure entitlement cache boundary
+- plan-access boundary
+- release-access boundary
+- update-access boundary
+
+It does not implement:
+
+- cloud API code
+- authentication implementation
+- subscription backend code
+- license enforcement code
+- activation code
+- entitlement cache code
+- plan-access code
+- release-access code
+- update-access code
+
+This boundary stays app-local and pre-implementation until explicitly approved.
+
 ## KVDOS Core Rule
 
 Agents should not mutate project files directly.

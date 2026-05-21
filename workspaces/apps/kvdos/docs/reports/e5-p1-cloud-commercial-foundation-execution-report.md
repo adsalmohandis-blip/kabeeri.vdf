@@ -140,6 +140,7 @@ It only defines the cloud-commercial boundary so later slices can be planned cle
 - [Product Strategy](../product/PRODUCT_STRATEGY.md)
 - [e5-p1 Cloud Commercial Foundation Build-Ready Report](./e5-p1-cloud-commercial-foundation-build-ready-report.md)
 - [e5-p1 Cloud Commercial Foundation Tasks](../roadmap/E5_P1_CLOUD_COMMERCIAL_FOUNDATION_TASKS.md)
+- [e5-p1 Cloud Commercial Foundation Implementation Tasks](../roadmap/E5_P1_CLOUD_COMMERCIAL_FOUNDATION_IMPLEMENTATION_TASKS.md)
 
 ## Keep-Out List
 
