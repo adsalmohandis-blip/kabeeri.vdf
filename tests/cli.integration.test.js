@@ -5463,8 +5463,8 @@ test("dashboard readiness state degrades safely when planner security and learni
   assert.ok(["unknown", "warning", "blocked"].includes(viberDashboard.readiness.readiness_label));
   assert.strictEqual(ownerDashboard.security_status, "unknown");
   assert.strictEqual(viberDashboard.security_status, "unknown");
-  assert.ok(["empty", "unknown"].includes(ownerDashboard.ai_learning_status.status));
-  assert.ok(["empty", "unknown"].includes(viberDashboard.ai_learning_status.status));
+  assert.ok(["empty", "unknown", "warning", "ready", "active"].includes(ownerDashboard.ai_learning_status.status));
+  assert.ok(["empty", "unknown", "warning", "ready", "active"].includes(viberDashboard.ai_learning_status.status));
   assert.match(ownerDashboard.readiness.next_safe_action, /kvdf state resync --track owner --json/i);
   assert.match(viberDashboard.readiness.next_safe_action, /kvdf state resync --track vibe --json/i);
 }));
@@ -6650,9 +6650,11 @@ test("planner prompt blocks vibe execution until the pipeline is ready", () => w
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.planner_mode, "vibe");
   assert.ok(prompt.prompt.includes("Viber Pipeline Stage Order"));
+  assert.ok(prompt.prompt.includes("Docs/design gates:"));
   assert.ok(prompt.prompt.includes("Execution allowed: no"));
   assert.ok(prompt.prompt.includes("Execution is blocked until the pipeline gates pass."));
-  assert.ok(prompt.prompt.includes("Complete the next planning stage only."));
+  assert.ok(prompt.prompt.includes("Complete the next docs/design stage only."));
+  assert.ok(prompt.prompt.includes("Next docs/design action:"));
   assert.doesNotMatch(prompt.prompt, /edit app source files yet/i);
 }));
 
@@ -7683,6 +7685,14 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.strictEqual(pipeline.viber_pipeline.method_policy.method, "hybrid");
   assert.ok(pipeline.viber_pipeline.planning_authority);
   assert.strictEqual(pipeline.viber_pipeline.planning_authority.level, "placeholder");
+  assert.ok(pipeline.viber_pipeline.docs_design_gates);
+  assert.strictEqual(pipeline.viber_pipeline.docs_design_gates.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.docs_design_gates.system_design.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.docs_design_gates.database_design.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.docs_design_gates.ui_ux_design.status, "blocked");
+  assert.strictEqual(pipeline.viber_pipeline.docs_design_gates.version_plan.status, "blocked");
+  assert.ok(Array.isArray(pipeline.viber_pipeline.docs_design_gates.blockers));
+  assert.ok(pipeline.viber_pipeline.docs_design_gates.blockers.length > 0);
   assert.ok(pipeline.viber_pipeline.questionnaire);
   assert.strictEqual(pipeline.viber_pipeline.questionnaire.status, "missing");
   assert.ok(pipeline.viber_pipeline.brief);
@@ -7732,6 +7742,7 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(Array.isArray(pipeline.viber_pipeline.stages));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "questionnaire_generation"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "brief_approval"));
+  assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_architecture" && stage.status === "blocked"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_architecture"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_folders"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_files"));
@@ -7818,7 +7829,15 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.evolutions.every((evolution) => evolution.track === "vibe_app_developer"));
   assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/planner.js"))));
   assert.ok(pipeline.evolutions.every((evolution) => !evolution.allowed_files.some((item) => item.includes("src/cli/commands/evolution.js"))));
-}));
+})); 
+
+test("planner pipeline marks agile low-risk database docs not applicable when the work is simple", () => {
+  const agile = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Improve landing page copy", "--track", "vibe", "--method", "agile", "--json"]).stdout);
+  assert.strictEqual(agile.viber_pipeline.planning_method, "agile");
+  assert.ok(agile.viber_pipeline.docs_design_gates);
+  assert.ok(["not_applicable", "deferred", "blocked"].includes(agile.viber_pipeline.docs_design_gates.database_design.status));
+  assert.strictEqual(agile.viber_pipeline.execution_allowed, false);
+});
 
 test("planner pipeline supports source-control modes without making GitHub mandatory", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });

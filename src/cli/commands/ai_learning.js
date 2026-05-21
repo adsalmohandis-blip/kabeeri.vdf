@@ -403,6 +403,7 @@ function buildAiLearningPromptContext(track, options = {}) {
 
 function buildAiLearningPromptSection(aiLearning, options = {}) {
   if (!aiLearning || typeof aiLearning !== "object") return [];
+  if (!fileExists(AI_LEARNING_STATE_FILE)) return [];
   const promptContext = normalizeAiLearningPromptContext(aiLearning);
   const stateResync = options.state_resync || options.stateResync || null;
   const warningItems = uniqueBy([
@@ -1470,6 +1471,10 @@ function upsertSharedKnowledgeFastPath(fastPaths, nextFastPath) {
 }
 
 function resolvePromotionActor(flags = {}) {
+  const track = resolveTrack(flags.track);
+  if (track === "owner") return "owner";
+  if (track === "vibe") return "vibe";
+  if (track === "plugin") return "plugin";
   return normalizeText(flags.approved_by || flags.promoted_by || flags.owner || flags.by || resolveDefaultTrack());
 }
 

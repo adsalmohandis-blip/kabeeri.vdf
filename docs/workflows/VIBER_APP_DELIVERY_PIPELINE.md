@@ -81,6 +81,28 @@ Planner foldered docs map back to the portable package through the portable
 docs mapping. That lets the app keep the canonical numbered package intact
 while still supporting stage-driven planning and review.
 
+## Docs And Design Gates
+
+The Viber pipeline now exposes explicit docs/design readiness gates for:
+
+- documentation architecture
+- documentation folders
+- documentation files
+- system design
+- database design
+- UI/UX design
+- version plan
+
+These gates are enforced before version approval, evolutions, task punches,
+materialization, and execution. If the docs/design gates are blocked, the
+pipeline must stop at the next docs/design stage instead of jumping to code
+execution.
+
+Structured planning requires the full docs/design foundation unless a gate is
+explicitly marked not applicable. Agile planning can defer heavy docs only when
+that deferral is explicit and safe. Hybrid planning keeps the same gate order
+but usually needs the structured foundation before the first execution slice.
+
 ## Source Of Truth
 
 For Viber/App Track:

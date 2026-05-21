@@ -13,6 +13,7 @@
     "planning_authority",
     "questionnaire",
     "brief",
+    "docs_design_gates",
     "documentation_folders",
     "documentation_files",
     "portable_docs_mapping",
@@ -105,6 +106,45 @@
         "path": { "type": ["string", "null"] },
         "reviewed": { "type": "boolean" },
         "approved": { "type": "boolean" },
+        "next_action": { "type": "string" }
+      }
+    },
+    "docs_design_gates": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "status",
+        "documentation_architecture",
+        "documentation_folders",
+        "documentation_files",
+        "system_design",
+        "database_design",
+        "ui_ux_design",
+        "version_plan",
+        "blockers",
+        "warnings",
+        "next_action"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["ready", "warning", "blocked"]
+        },
+        "documentation_architecture": { "$ref": "#/$defs/docsDesignGate" },
+        "documentation_folders": { "$ref": "#/$defs/docsDesignGate" },
+        "documentation_files": { "$ref": "#/$defs/docsDesignGate" },
+        "system_design": { "$ref": "#/$defs/docsDesignGate" },
+        "database_design": { "$ref": "#/$defs/docsDesignGate" },
+        "ui_ux_design": { "$ref": "#/$defs/docsDesignGate" },
+        "version_plan": { "$ref": "#/$defs/docsDesignGate" },
+        "blockers": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "object", "additionalProperties": true }
+        },
         "next_action": { "type": "string" }
       }
     },
@@ -326,5 +366,26 @@
     "dataset_tags": { "type": "array", "items": { "type": "string" } },
     "training_eligible": { "type": "boolean" },
     "plugin_context": { "type": ["object", "null"], "additionalProperties": true }
+  },
+  "$defs": {
+    "docsDesignGate": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["gate", "status", "required", "source", "required_docs", "existing_docs", "missing_docs", "applied_docs", "next_action"],
+      "properties": {
+        "gate": { "type": "string" },
+        "status": {
+          "type": "string",
+          "enum": ["missing", "planned", "generated", "applied_to_stage", "reviewed", "approved", "blocked", "deferred", "not_applicable", "unknown"]
+        },
+        "required": { "type": "boolean" },
+        "source": { "type": "string", "enum": ["planner_docs_status", "pipeline", "derived", "missing"] },
+        "required_docs": { "type": "array", "items": { "type": "string" } },
+        "existing_docs": { "type": "array", "items": { "type": "string" } },
+        "missing_docs": { "type": "array", "items": { "type": "string" } },
+        "applied_docs": { "type": "array", "items": { "type": "string" } },
+        "next_action": { "type": "string" }
+      }
+    }
   }
 }

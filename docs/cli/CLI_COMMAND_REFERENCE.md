@@ -195,7 +195,7 @@ kvdf plugins uninstall planner-visual
 
 `planner-visual` is an optional plugin that renders planner visual JSON into readable Markdown and Mermaid text. KVDF Core still owns the planner logic, runtime state, task punch, and Codex prompt generation. The plugin is only the presentation layer for the visual model, so it can be installed or removed without changing the canonical planner contract. KVDF does not auto-publish.
 
-`kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed. For Viber/App Track, the same command is also the execution-readiness gate, so the generated prompt and visual report stay blocked until the plan is approved and materialized. The Viber docs model now treats foldered planner docs as primary and the portable numbered docs package as canonical long-term product knowledge.
+`kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed. For Viber/App Track, the same command is also the execution-readiness gate, so the generated prompt and visual report stay blocked until the plan is approved and materialized. The Viber pipeline now surfaces `docs_design_gates` for documentation architecture, folder materialization, file compatibility, system design, database design, UI/UX design, and version-plan readiness. The Viber docs model treats foldered planner docs as primary and the portable numbered docs package as canonical long-term product knowledge.
 
 See `docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md` for the canonical track map and session cycle summary.
 See `knowledge/governance/TRACK_ROUTING_GOVERNANCE.md` for the route and block rules that decide which track activates at entry.
@@ -498,7 +498,9 @@ or release guidance. `kvdf evolution validate-order --app <app-name>` checks
 generic Viber/App evolution categories and blocks task generation until the
 boundary, discovery, approval, safety, and packaging order is safe. `kvdf
 planner pipeline --track vibe` also emits the ordered Viber pipeline stage
-contract so the queue cannot jump from raw idea to execution. When a
+contract and docs/design gate summary so the queue cannot jump from raw idea
+to execution before the documentation architecture, foldered docs, system
+design, database design, UI/UX design, and version plan are ready. When a
 priority is already
 `in_progress`, every AI tool must start with `kvdf evolution temp` and work
 only on the current temporary slice.
