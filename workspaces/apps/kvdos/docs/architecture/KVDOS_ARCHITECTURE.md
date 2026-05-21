@@ -132,6 +132,25 @@ app.kvdos.yaml
 
 This file should become the primary product specification for generated applications.
 
+## Discovery And Spec Boundary
+
+Discovery and spec work is documentation-first at this stage.
+
+It covers:
+
+- questionnaire flow
+- blueprint/spec derivation
+- `app.kvdos.yaml` validation
+- source-of-truth alignment against app-local KVDOS docs
+
+It does not implement:
+
+- questionnaire UI code
+- blueprint/spec generator code
+- `app.kvdos.yaml` generation logic
+
+This boundary stays app-local and pre-implementation until explicitly approved.
+
 ## KVDOS Core Rule
 
 Agents should not mutate project files directly.
