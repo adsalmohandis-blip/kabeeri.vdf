@@ -75,6 +75,9 @@ The planner can emit:
   markdown report output
 - a Viber Planning-to-Task Execution Pipeline with execution gating,
   state-freshness, and source-control posture
+- a generic Viber evolution ordering validator that blocks task generation when
+  slices are draft, misordered, future-only without approval, or missing the
+  required boundary/discovery/safety sequence
 - allowed and forbidden file lists
 - acceptance criteria
 - validation commands

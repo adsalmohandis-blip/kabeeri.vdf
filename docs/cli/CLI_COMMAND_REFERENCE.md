@@ -409,9 +409,12 @@ The strict flow is:
 1. `kvdf questionnaire plan`
 2. `kvdf questionnaire review`
 3. `kvdf questionnaire approve --confirm`
-4. `kvdf questionnaire generate-tasks`
+4. `kvdf evolution validate-order --app <app-name>`
+5. `kvdf questionnaire generate-tasks`
 
 Task generation now fails closed until the planning pack has been reviewed and approved.
+For Viber/App work, task generation also fails closed until the evolution order
+validator passes.
 
 ## Repository Foldering
 
@@ -451,6 +454,7 @@ kvdf evolution next
 kvdf evolution roadmap
 kvdf evolution partition
 kvdf evolution scorecards
+kvdf evolution validate-order --app storefront-web
 kvdf evolution report
 kvdf evolution batch-exe
 kvdf batch-exe
@@ -490,7 +494,10 @@ impacted areas, creates proposed follow-up tasks, and exposes unfinished
 dependent work in dashboard/live reports. Use it when a requested Kabeeri
 change may affect runtime code, CLI help, task tracking, schemas, dashboard
 state, reports, prompt/AI guidance, docs, the capability map, tests, changelog,
-or release guidance. When a priority is already
+or release guidance. `kvdf evolution validate-order --app <app-name>` checks
+generic Viber/App evolution categories and blocks task generation until the
+boundary, discovery, approval, safety, and packaging order is safe. When a
+priority is already
 `in_progress`, every AI tool must start with `kvdf evolution temp` and work
 only on the current temporary slice.
 
@@ -1368,7 +1375,7 @@ kvdf questionnaire generate-tasks
 kvdf validate questionnaire
 ```
 
-`questionnaire coverage` generates `.kabeeri/questionnaires/coverage_matrix.json` for the 53 standard system areas. `questionnaire missing` writes `.kabeeri/questionnaires/missing_answers_report.json`. `questionnaire generate-tasks` creates proposed tasks with provenance fields for `system_area_key`, `question_ids`, `answer_ids`, and `source_mode`.
+`questionnaire coverage` generates `.kabeeri/questionnaires/coverage_matrix.json` for the 53 standard system areas. `questionnaire missing` writes `.kabeeri/questionnaires/missing_answers_report.json`. `questionnaire generate-tasks` creates proposed tasks with provenance fields for `system_area_key`, `question_ids`, `answer_ids`, and `source_mode`, but Viber/App task generation also requires `kvdf evolution validate-order --app <app-name>` to pass first.
 `kvdf capability registry` exposes the canonical capability registry as named, traceable units with ownership, runtime boundaries, and generated-artifact mapping so the imported capability catalog stays machine-readable. `kvdf capability registry payments_billing` shows one registry entry directly; `kvdf capability registry map` returns the grouped registry map as JSON.
 
 The canonical registry lives in:

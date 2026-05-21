@@ -53,6 +53,11 @@ function normalizeEvolutionSlug(value, fallback = "milestone") {
     .slice(0, 48) || fallback;
 }
 
+function uniqueStrings(values = []) {
+  const list = Array.isArray(values) ? values : [values];
+  return Array.from(new Set(list.flat().map((item) => String(item || "").trim()).filter(Boolean)));
+}
+
 function resolveEvolutionDeliveryMode(flags = {}, appMode = false) {
   const raw = String(
     flags["sync-mode"] ||
@@ -195,6 +200,14 @@ function evolution(action, value, flags = {}, rest = [], deps = {}) {
     const report = buildEvolutionReconciliation();
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(JSON.stringify(report, null, 2));
+    return;
+  }
+
+  if (action === "validate-order") {
+    const appName = value && value !== true ? value : flags.app || flags["app-name"] || flags.app_slug || flags.appSlug || "";
+    const report = buildEvolutionOrderValidationReport(appName, flags, { ...deps });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderEvolutionOrderValidationReport(report, table));
     return;
   }
 
@@ -1847,4 +1860,534 @@ function updateEvolutionPriority(state, id, flags = {}) {
   return priority;
 }
 
-module.exports = { evolution };
+const EVOLUTION_ORDERING_SEQUENCE = [
+  "boundary_stabilization",
+  "local_ui_foundation",
+  "runtime_state",
+  "discovery_spec",
+  "tasking_approval",
+  "cloud_commercial_control",
+  "local_license_gate",
+  "release_access",
+  "safety_quality",
+  "execution_review",
+  "release_packaging",
+  "bridge_evolution"
+];
+
+const EVOLUTION_ORDERING_RULES = [
+  "boundary_stabilization must come first.",
+  "discovery_spec must come before tasking_approval.",
+  "tasking_approval must come before execution_review.",
+  "safety_quality must come before execution_review.",
+  "release_packaging must come after safety_quality.",
+  "release_packaging must come after execution_review.",
+  "cloud_commercial_control must come before local_license_gate when both are enabled.",
+  "local_license_gate must come before release_access when both are enabled.",
+  "release_access must come before release_packaging when it is enabled.",
+  "bridge_evolution must not be used before boundary_stabilization is complete."
+];
+
+const EVOLUTION_ORDERING_CATEGORY_KEYWORDS = {
+  boundary_stabilization: ["boundary", "boundaries", "split", "splitter", "track", "workspace", "isolation", "ownership", "stabilization"],
+  local_ui_foundation: ["ui", "ux", "frontend", "visual", "layout", "page", "screen", "component", "design"],
+  runtime_state: ["runtime", "state", "storage", "persist", "snapshot", "ledger", "cache", ".kabeeri", "reconcile"],
+  discovery_spec: ["questionnaire", "discovery", "brief", "requirements", "spec", "source of truth", "source-of-truth", "source_truth"],
+  tasking_approval: ["task", "punch", "approval", "approve", "review", "materializ", "ticket"],
+  cloud_commercial_control: ["cloud", "commercial", "billing", "subscription", "commerce", "entitlement", "pricing"],
+  local_license_gate: ["license", "licence", "entitlement", "activation", "local license"],
+  release_access: ["release access", "handoff", "publish", "delivery access", "access gate"],
+  safety_quality: ["security", "quality", "qa", "validation", "test", "audit", "safety"],
+  execution_review: ["execution", "implement", "implementation", "review", "runtime review"],
+  release_packaging: ["package", "packaging", "bundle", "artifact", "artifacts", "deploy", "release packaging"],
+  bridge_evolution: ["bridge", "loop", "future", "migration", "handoff bridge"]
+};
+
+const EVOLUTION_ORDERING_ALIAS_MAP = {
+  boundary: "boundary_stabilization",
+  boundary_stabilization: "boundary_stabilization",
+  track_boundary: "boundary_stabilization",
+  workspace_boundary: "boundary_stabilization",
+  local_ui: "local_ui_foundation",
+  ui_foundation: "local_ui_foundation",
+  frontend_foundation: "local_ui_foundation",
+  runtime: "runtime_state",
+  state: "runtime_state",
+  discovery: "discovery_spec",
+  brief: "discovery_spec",
+  questionnaire: "discovery_spec",
+  spec: "discovery_spec",
+  tasking: "tasking_approval",
+  approval: "tasking_approval",
+  cloud: "cloud_commercial_control",
+  commercial: "cloud_commercial_control",
+  license: "local_license_gate",
+  release: "release_access",
+  safety: "safety_quality",
+  quality: "safety_quality",
+  execution: "execution_review",
+  review: "execution_review",
+  packaging: "release_packaging",
+  package: "release_packaging",
+  bridge: "bridge_evolution",
+  future_only: "bridge_evolution"
+};
+
+function buildEvolutionOrderingPolicy(track = "vibe_app_developer") {
+  return {
+    report_type: "kvdf_evolution_order_policy",
+    track,
+    ordered_categories: EVOLUTION_ORDERING_SEQUENCE.map((category, index) => ({
+      order: index + 1,
+      category,
+      title: formatEvolutionOrderingTitle(category)
+    })),
+    rules: [...EVOLUTION_ORDERING_RULES]
+  };
+}
+
+function buildEvolutionOrderValidationReport(appName, flags = {}, deps = {}) {
+  const cwd = path.resolve(deps.cwd || process.cwd());
+  const appSlug = normalizeEvolutionOrderSlug(appName || flags.app || flags["app-name"] || flags.app_slug || flags.appSlug || "");
+  const track = "vibe_app_developer";
+  const sourceFilesInspected = [];
+  const warnings = [];
+  const blockingErrors = [];
+  const approvalStatus = {};
+
+  if (!appSlug) {
+    blockingErrors.push("Missing --app <app-name>. Suggested fix: pass the app slug to validate the Viber evolution ordering.");
+  }
+
+  const appRoot = appSlug ? path.join(cwd, "workspaces", "apps", appSlug) : null;
+  let docsReady = null;
+  if (appRoot) {
+    if (!fs.existsSync(appRoot)) {
+      blockingErrors.push(`App workspace not found: ${path.relative(cwd, appRoot).replace(/\\/g, "/")}. Suggested fix: create or select the app workspace before generating tasks.`);
+    } else {
+      docsReady = collectEvolutionOrderWorkspaceFiles(appRoot, cwd);
+      sourceFilesInspected.push(...docsReady.files);
+      warnings.push(...docsReady.warnings);
+      blockingErrors.push(...docsReady.blockers);
+    }
+  }
+
+  const questionnairePath = ".kabeeri/questionnaires/adaptive_intake_plan.json";
+  const questionnaireState = localFileExists(questionnairePath) ? readLocalJsonFile(questionnairePath) : { plans: [] };
+  const questionnairePlan = Array.isArray(questionnaireState.plans) && questionnaireState.plans.length ? questionnaireState.plans[questionnaireState.plans.length - 1] : null;
+  const answersPath = ".kabeeri/questionnaires/answers.json";
+  const answers = localFileExists(answersPath) ? (readLocalJsonFile(answersPath).answers || []) : [];
+  const answerIds = new Set(answers.map((answer) => String(answer.question_id || "").trim()).filter(Boolean));
+  const generatedQuestions = Array.isArray(questionnairePlan && questionnairePlan.generated_questions) ? questionnairePlan.generated_questions : [];
+  const missingQuestionIds = generatedQuestions.filter((question) => !answerIds.has(String(question.question_id || "").trim())).map((question) => question.question_id);
+  const questionnaireApproved = Boolean(questionnairePlan && questionnairePlan.approval_status === "approved");
+  const questionnaireComplete = Boolean(questionnairePlan && (questionnairePlan.require_all_answers !== false) && missingQuestionIds.length === 0);
+  approvalStatus.questionnaire = questionnairePlan ? questionnairePlan.approval_status || "pending" : "missing";
+  approvalStatus.questionnaire_complete = questionnairePlan ? (questionnaireComplete ? "complete" : "incomplete") : "missing";
+  approvalStatus.product_brief = questionnaireApproved && questionnaireComplete ? "approved" : questionnairePlan ? (questionnairePlan.approval_status || "pending") : "missing";
+  approvalStatus.product_brief_source = questionnairePlan ? "questionnaire_intake_plan" : "missing";
+
+  if (!questionnairePlan) {
+    blockingErrors.push("Product brief / questionnaire plan is missing. Suggested fix: create and approve the questionnaire brief before generating tasks.");
+  } else if (!questionnaireApproved) {
+    blockingErrors.push(`Product brief is not approved (${approvalStatus.product_brief}). Suggested fix: review and approve the questionnaire brief before generating tasks.`);
+  }
+  if (questionnairePlan && !questionnaireComplete) {
+    blockingErrors.push(`Questionnaire answers are incomplete (${missingQuestionIds.length} missing). Suggested fix: answer every generated question before generating tasks.`);
+  }
+
+  const sourceTruthPath = ".kabeeri/design_sources/sources.json";
+  const sourceTruth = localFileExists(sourceTruthPath) ? readLocalJsonFile(sourceTruthPath) : { sources: [] };
+  const sourceTruthSources = Array.isArray(sourceTruth.sources) ? sourceTruth.sources : [];
+  const sourceTruthPresent = sourceTruthSources.length > 0;
+  approvalStatus.source_of_truth_map = sourceTruthPresent ? "present" : "missing";
+  if (!sourceTruthPresent) {
+    blockingErrors.push("Source-of-truth map is missing or empty at .kabeeri/design_sources/sources.json. Suggested fix: rebuild the current source-of-truth map before generating tasks.");
+  }
+  sourceFilesInspected.push(sourceTruthPath);
+  sourceFilesInspected.push(questionnairePath);
+  sourceFilesInspected.push(answersPath);
+
+  const evolutionPath = ".kabeeri/evolution.json";
+  const evolutionState = localFileExists(evolutionPath) ? readLocalJsonFile(evolutionPath) : { changes: [] };
+  const evolutionChanges = Array.isArray(evolutionState.changes) ? evolutionState.changes : [];
+  sourceFilesInspected.push(evolutionPath);
+  const appSlices = evolutionChanges
+    .filter((slice) => isViberEvolutionSlice(slice))
+    .map((slice, index) => normalizeEvolutionOrderSlice(slice, index))
+    .sort((a, b) => a.order - b.order || String(a.slice_id).localeCompare(String(b.slice_id)));
+
+  const detectedCategories = [];
+  const detectedSlices = [];
+  const inferredSlices = [];
+  const unknownSlices = [];
+  for (const slice of appSlices) {
+    const detection = detectEvolutionOrderCategories(slice);
+    detectedSlices.push({
+      slice_id: slice.slice_id,
+      title: slice.title,
+      status: slice.status,
+      approval_status: slice.approval_status,
+      categories: detection.categories,
+      primary_category: detection.categories[0] || null,
+      inferred: detection.inferred,
+      future_only: detection.future_only,
+      source: slice.source || null
+    });
+    for (const category of detection.categories) {
+      if (!detectedCategories.includes(category)) detectedCategories.push(category);
+    }
+    if (detection.inferred) inferredSlices.push(slice.slice_id);
+    if (detection.unknown_categories.length) unknownSlices.push({ slice_id: slice.slice_id, categories: detection.unknown_categories });
+  }
+
+  const currentOrder = detectedSlices.map((slice) => slice.primary_category).filter(Boolean);
+  const expectedOrder = [...EVOLUTION_ORDERING_SEQUENCE];
+  const suggestedCorrectedOrder = expectedOrder.filter((category) => currentOrder.includes(category));
+  const policy = buildEvolutionOrderingPolicy(track);
+
+  if (appSlices.length === 0) {
+    blockingErrors.push("No Viber evolution slices were found for the selected app. Suggested fix: add approved slices before generating tasks.");
+  }
+  if (unknownSlices.length) {
+    for (const item of unknownSlices) {
+      blockingErrors.push(`Slice ${item.slice_id} contains an unknown evolution category: ${item.categories.join(", ")}. Suggested fix: replace it with one of the supported generic categories.`);
+    }
+  }
+  if (inferredSlices.length) {
+    warnings.push(`Category inference was used for slice(s): ${inferredSlices.join(", ")}. Suggested fix: add explicit categories so ordering stays title-independent.`);
+  }
+
+  const statusIndex = (category) => currentOrder.indexOf(category);
+  const has = (category) => statusIndex(category) !== -1;
+  const first = (category) => statusIndex(category);
+  const firstSliceByCategory = (category) => detectedSlices.find((slice) => Array.isArray(slice.categories) && slice.categories.includes(category)) || null;
+
+  if (currentOrder.length && currentOrder[0] !== "boundary_stabilization") {
+    blockingErrors.push(`boundary_stabilization must be the first slice. Suggested fix: move boundary_stabilization before every other evolution slice.`);
+  }
+  if (has("tasking_approval") && (!has("discovery_spec") || first("discovery_spec") > first("tasking_approval"))) {
+    blockingErrors.push(`discovery_spec must come before tasking_approval. Suggested fix: move discovery_spec before tasking_approval.`);
+  }
+  if (has("tasking_approval") && has("execution_review") && first("tasking_approval") > first("execution_review")) {
+    blockingErrors.push(`tasking_approval appears after execution_review. Suggested fix: move tasking_approval before execution_review.`);
+  }
+  if (has("safety_quality") && has("execution_review") && first("safety_quality") > first("execution_review")) {
+    blockingErrors.push(`execution_review appears before safety_quality. Suggested fix: move safety_quality before execution_review.`);
+  }
+  if (has("release_packaging") && has("safety_quality") && first("release_packaging") < first("safety_quality")) {
+    blockingErrors.push(`release_packaging appears before safety_quality. Suggested fix: move safety_quality before release_packaging.`);
+  }
+  if (has("release_packaging") && has("execution_review") && first("release_packaging") < first("execution_review")) {
+    blockingErrors.push(`release_packaging appears before execution_review. Suggested fix: move execution_review before release_packaging.`);
+  }
+  if (has("release_packaging") && !has("safety_quality")) {
+    blockingErrors.push(`release_packaging requires safety_quality before it. Suggested fix: add and approve safety_quality before release_packaging.`);
+  }
+  if (has("release_packaging") && !has("execution_review")) {
+    blockingErrors.push(`release_packaging requires execution_review before it. Suggested fix: add and approve execution_review before release_packaging.`);
+  }
+  if (has("cloud_commercial_control") && has("local_license_gate") && first("cloud_commercial_control") > first("local_license_gate")) {
+    blockingErrors.push(`cloud_commercial_control appears after local_license_gate. Suggested fix: move cloud_commercial_control before local_license_gate.`);
+  }
+  if (has("local_license_gate") && has("release_access") && first("local_license_gate") > first("release_access")) {
+    blockingErrors.push(`local_license_gate appears after release_access. Suggested fix: move local_license_gate before release_access.`);
+  }
+  if (has("release_access") && has("release_packaging") && first("release_access") > first("release_packaging")) {
+    blockingErrors.push(`release_access appears after release_packaging. Suggested fix: move release_access before release_packaging.`);
+  }
+
+  const boundarySlice = firstSliceByCategory("boundary_stabilization");
+  const boundaryReady = Boolean(boundarySlice && isApprovedOrActiveEvolutionSlice(boundarySlice));
+  const bridgeSlice = firstSliceByCategory("bridge_evolution");
+  if (bridgeSlice && !boundaryReady) {
+    blockingErrors.push(`bridge_evolution cannot be used before boundary_stabilization is complete. Suggested fix: complete boundary_stabilization and revalidate the release order.`);
+  }
+
+  const futureOnlySlices = detectedSlices.filter((slice) => slice.future_only);
+  const approvedFutureOnlySlices = futureOnlySlices.filter((slice) => slice.approval_status === "approved" || slice.approval_status === "active" || slice.approved_for_active_release === true);
+  const blockedFutureOnlySlices = futureOnlySlices.filter((slice) => !approvedFutureOnlySlices.includes(slice));
+  if (blockedFutureOnlySlices.length) {
+    blockingErrors.push(`Future-only slices are mixed into the active release without explicit approval: ${blockedFutureOnlySlices.map((slice) => slice.slice_id).join(", ")}. Suggested fix: approve or separate those slices before generating tasks.`);
+  } else if (futureOnlySlices.length) {
+    warnings.push(`Future-only slices are present and explicitly approved for active release: ${futureOnlySlices.map((slice) => slice.slice_id).join(", ")}.`);
+  }
+
+  const unapprovedSlices = detectedSlices.filter((slice) => !isApprovedOrActiveEvolutionSlice(slice) && !slice.future_only);
+  if (unapprovedSlices.length) {
+    blockingErrors.push(`Unapproved or draft evolution slices cannot be used for task generation: ${unapprovedSlices.map((slice) => slice.slice_id).join(", ")}. Suggested fix: approve the slices or mark them active before generating tasks.`);
+  }
+
+  if (docsReady) {
+    if (!docsReady.docsPresent) {
+      blockingErrors.push(`App docs are missing for ${appSlug || "the selected app"}. Suggested fix: materialize the current app docs before generating tasks.`);
+    }
+    if (!docsReady.readmePresent) {
+      blockingErrors.push(`App README.md is missing for ${appSlug || "the selected app"}. Suggested fix: restore the app workspace README before generating tasks.`);
+    }
+    if (!docsReady.packageJsonPresent) {
+      blockingErrors.push(`App package.json is missing for ${appSlug || "the selected app"}. Suggested fix: restore the app workspace package metadata before generating tasks.`);
+    }
+    if (!docsReady.sourcePresent) warnings.push(`No app source files were inspected under ${path.posix.join("workspaces", "apps", appSlug || "<app>", "src")}.`);
+    if (!docsReady.testsPresent) warnings.push(`No app test files were inspected under ${path.posix.join("workspaces", "apps", appSlug || "<app>", "tests")}.`);
+  }
+
+  const taskGenerationAllowed = blockingErrors.length === 0;
+  approvalStatus.evolution_slices = detectedSlices.length
+    ? (taskGenerationAllowed ? "approved" : "blocked")
+    : "missing";
+  approvalStatus.future_only = futureOnlySlices.length
+    ? (blockedFutureOnlySlices.length ? "blocked" : "approved")
+    : "none";
+  approvalStatus.task_generation = taskGenerationAllowed ? "allowed" : "blocked";
+
+  const nextAction = taskGenerationAllowed
+    ? `Run kvdf questionnaire generate-tasks --app ${appSlug || "<app-name>"} after approving the ordered slices.`
+    : `Fix the first blocker, then rerun kvdf evolution validate-order --app ${appSlug || "<app-name>"}.`;
+
+  return {
+    report_type: "kvdf_evolution_order_validation",
+    app: appSlug || appName || "",
+    track,
+    source_files_inspected: uniqueStrings(sourceFilesInspected),
+    detected_evolution_slices: detectedSlices,
+    detected_categories: detectedCategories,
+    current_order: currentOrder,
+    expected_order: expectedOrder,
+    approval_status: approvalStatus,
+    blocking_errors: uniqueStrings(blockingErrors),
+    warnings: uniqueStrings(warnings),
+    suggested_corrected_order: suggestedCorrectedOrder,
+    task_generation_allowed: taskGenerationAllowed,
+    next_action: nextAction,
+    policy
+  };
+}
+
+function renderEvolutionOrderValidationReport(report, table = () => "") {
+  const lines = [
+    report.task_generation_allowed ? "Evolution order validation passed." : "Evolution order validation failed.",
+    "",
+    `App: ${report.app || "n/a"}`,
+    `Track: ${report.track || "vibe_app_developer"}`,
+    `Task generation allowed: ${report.task_generation_allowed ? "yes" : "no"}`,
+    `Next action: ${report.next_action || "Review the policy and rerun validation."}`,
+    ""
+  ];
+  lines.push("Source files inspected:");
+  if (Array.isArray(report.source_files_inspected) && report.source_files_inspected.length) {
+    for (const item of report.source_files_inspected) lines.push(`- ${item}`);
+  } else {
+    lines.push("- none");
+  }
+  lines.push("");
+  lines.push("Detected evolution slices:");
+  const sliceRows = (report.detected_evolution_slices || []).map((slice) => [
+    slice.slice_id || "",
+    slice.status || "",
+    (slice.categories || []).join(", "),
+    slice.approval_status || "",
+    slice.inferred ? "yes" : "no"
+  ]);
+  lines.push(sliceRows.length ? table(["Slice", "Status", "Categories", "Approval", "Inferred"], sliceRows) : "No evolution slices were detected.");
+  lines.push("");
+  lines.push("Current order:");
+  lines.push((report.current_order || []).length ? `- ${report.current_order.join(" -> ")}` : "- none");
+  lines.push("Expected order:");
+  lines.push((report.expected_order || []).length ? `- ${report.expected_order.join(" -> ")}` : "- none");
+  lines.push("");
+  lines.push("Approval status:");
+  lines.push(table(["Field", "Value"], Object.entries(report.approval_status || {}).map(([key, value]) => [key, String(value)])));
+  lines.push("");
+  lines.push("Blocking errors:");
+  lines.push((report.blocking_errors || []).length ? (report.blocking_errors || []).map((item) => `- ${item}`).join("\n") : "- none");
+  lines.push("");
+  lines.push("Warnings:");
+  lines.push((report.warnings || []).length ? (report.warnings || []).map((item) => `- ${item}`).join("\n") : "- none");
+  lines.push("");
+  lines.push("Suggested corrected order:");
+  lines.push((report.suggested_corrected_order || []).length ? `- ${report.suggested_corrected_order.join(" -> ")}` : "- none");
+  lines.push("");
+  lines.push(`Policy categories: ${EVOLUTION_ORDERING_SEQUENCE.join(" -> ")}`);
+  return lines.join("\n");
+}
+
+function renderEvolutionOrderValidationFailure(report) {
+  const firstError = Array.isArray(report.blocking_errors) && report.blocking_errors.length ? report.blocking_errors[0] : "Unknown ordering error.";
+  return [
+    "Evolution order validation failed.",
+    "",
+    `Blocking error: ${firstError}`,
+    "",
+    `Suggested fix: ${report.next_action || "Review the ordering policy and rerun validation."}`
+  ].join("\n");
+}
+
+function collectEvolutionOrderWorkspaceFiles(appRoot, cwd) {
+  const files = [];
+  const warnings = [];
+  const blockers = [];
+  const docsDir = path.join(appRoot, "docs");
+  const srcDir = path.join(appRoot, "src");
+  const testsDir = path.join(appRoot, "tests");
+  const packageJson = path.join(appRoot, "package.json");
+  const readme = path.join(appRoot, "README.md");
+  const appDocFiles = collectEvolutionOrderFiles(docsDir, cwd, [".md"], 8);
+  const appSourceFiles = collectEvolutionOrderFiles(srcDir, cwd, [".js", ".ts", ".tsx", ".jsx", ".json"], 8);
+  const appTestFiles = collectEvolutionOrderFiles(testsDir, cwd, [".js", ".ts", ".tsx", ".jsx", ".json"], 8);
+  if (appDocFiles.length) files.push(...appDocFiles);
+  if (appSourceFiles.length) files.push(...appSourceFiles);
+  if (appTestFiles.length) files.push(...appTestFiles);
+  if (fs.existsSync(packageJson)) files.push(path.relative(cwd, packageJson).replace(/\\/g, "/"));
+  if (fs.existsSync(readme)) files.push(path.relative(cwd, readme).replace(/\\/g, "/"));
+  if (!fs.existsSync(docsDir) || appDocFiles.length === 0) blockers.push(`App docs are missing for ${path.relative(cwd, appRoot).replace(/\\/g, "/")}/docs. Suggested fix: materialize the app docs package before task generation.`);
+  if (!fs.existsSync(packageJson)) blockers.push(`App package.json is missing for ${path.relative(cwd, appRoot).replace(/\\/g, "/")}. Suggested fix: restore the app package metadata before task generation.`);
+  if (!fs.existsSync(readme)) warnings.push(`README.md was not found for ${path.relative(cwd, appRoot).replace(/\\/g, "/")}.`);
+  return {
+    files: uniqueStrings(files),
+    warnings: uniqueStrings(warnings),
+    blockers: uniqueStrings(blockers),
+    docsPresent: fs.existsSync(docsDir) && appDocFiles.length > 0,
+    readmePresent: fs.existsSync(readme),
+    packageJsonPresent: fs.existsSync(packageJson),
+    sourcePresent: appSourceFiles.length > 0,
+    testsPresent: appTestFiles.length > 0
+  };
+}
+
+function collectEvolutionOrderFiles(rootDir, cwd, extensions = [], maxDepth = 6) {
+  const files = [];
+  if (!rootDir || !fs.existsSync(rootDir)) return files;
+  const walk = (currentDir, depth) => {
+    if (depth < 0) return;
+    for (const entry of fs.readdirSync(currentDir, { withFileTypes: true })) {
+      const fullPath = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        walk(fullPath, depth - 1);
+        continue;
+      }
+      if (extensions.length && !extensions.some((ext) => entry.name.toLowerCase().endsWith(ext))) continue;
+      files.push(path.relative(cwd, fullPath).replace(/\\/g, "/"));
+    }
+  };
+  walk(rootDir, maxDepth);
+  return files;
+}
+
+function normalizeEvolutionOrderSlug(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/['"`]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function isViberEvolutionSlice(slice = {}) {
+  const text = [slice.track, slice.audience, slice.workspace_kind, slice.source, slice.status, slice.approval_status].map((item) => String(item || "").trim().toLowerCase()).join(" ");
+  return /vibe_app_developer|developer_app|app_developer|vibe|app/.test(text);
+}
+
+function normalizeEvolutionOrderSlice(slice = {}, index = 0) {
+  return {
+    order: Number.isFinite(Number(slice.order)) ? Number(slice.order) : index + 1,
+    slice_id: slice.change_id || slice.slice_id || slice.evolution_id || slice.id || `slice-${String(index + 1).padStart(3, "0")}`,
+    title: slice.title || slice.name || slice.description || "Untitled slice",
+    description: slice.description || "",
+    status: normalizeEvolutionOrderStatus(slice.status || slice.approval_status || ""),
+    approval_status: normalizeEvolutionOrderStatus(slice.approval_status || slice.status || ""),
+    future_only: isFutureOnlyEvolutionSlice(slice),
+    approved_for_active_release: Boolean(slice.approved_for_active_release || slice.active_release_approved || slice.future_only_approved),
+    categories: Array.isArray(slice.categories) ? slice.categories.slice() : []
+  };
+}
+
+function normalizeEvolutionOrderStatus(value = "") {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/-/g, "_");
+}
+
+function isFutureOnlyEvolutionSlice(slice = {}) {
+  const status = normalizeEvolutionOrderStatus(slice.status || slice.approval_status || "");
+  const releaseScope = normalizeEvolutionOrderStatus(slice.release_scope || slice.scope || "");
+  return Boolean(slice.future_only) || status === "future_only" || status === "future" || releaseScope === "future_only";
+}
+
+function isApprovedOrActiveEvolutionSlice(slice = {}) {
+  const status = normalizeEvolutionOrderStatus(slice.status || "");
+  const approvalStatus = normalizeEvolutionOrderStatus(slice.approval_status || "");
+  if (slice.future_only && !Boolean(slice.approved_for_active_release || slice.active_release_approved || slice.future_only_approved)) return false;
+  return ["approved", "active", "completed", "materialized", "done"].includes(status) || ["approved", "active", "completed", "materialized"].includes(approvalStatus) || (slice.future_only && Boolean(slice.approved_for_active_release || slice.active_release_approved || slice.future_only_approved));
+}
+
+function detectEvolutionOrderCategories(slice = {}) {
+  const explicitValues = uniqueStrings([
+    ...(Array.isArray(slice.categories) ? slice.categories : []),
+    ...(Array.isArray(slice.tags) ? slice.tags : []),
+    ...(Array.isArray(slice.labels) ? slice.labels : []),
+    slice.category,
+    slice.evolution_category
+  ].flatMap((item) => Array.isArray(item) ? item : [item]).filter(Boolean).map((item) => String(item).trim()));
+  const explicitCategories = uniqueStrings(explicitValues.map((value) => normalizeEvolutionOrderingCategory(value)).filter(Boolean));
+  const unknownCategories = uniqueStrings(explicitValues.filter((value) => !normalizeEvolutionOrderingCategory(value)));
+  if (explicitCategories.length) {
+    return {
+      categories: explicitCategories,
+      inferred: false,
+      unknown_categories: unknownCategories,
+      future_only: isFutureOnlyEvolutionSlice(slice)
+    };
+  }
+  const haystack = [
+    slice.title,
+    slice.description,
+    slice.summary,
+    slice.goal,
+    slice.source,
+    slice.status,
+    slice.approval_status,
+    slice.release_scope,
+    JSON.stringify(slice.impacted_areas || []),
+    JSON.stringify(slice.workstreams || []),
+    JSON.stringify(slice.tags || []),
+    JSON.stringify(slice.labels || [])
+  ].join(" ").toLowerCase();
+  const inferredCategories = EVOLUTION_ORDERING_SEQUENCE.filter((category) => {
+    const keywords = EVOLUTION_ORDERING_CATEGORY_KEYWORDS[category] || [];
+    return keywords.some((keyword) => haystack.includes(keyword));
+  });
+  return {
+    categories: uniqueStrings(inferredCategories),
+    inferred: inferredCategories.length > 0,
+    unknown_categories: unknownCategories,
+    future_only: isFutureOnlyEvolutionSlice(slice)
+  };
+}
+
+function normalizeEvolutionOrderingCategory(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/['"`]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  if (!normalized) return null;
+  return EVOLUTION_ORDERING_ALIAS_MAP[normalized] || (EVOLUTION_ORDERING_SEQUENCE.includes(normalized) ? normalized : null);
+}
+
+function formatEvolutionOrderingTitle(category) {
+  return String(category || "")
+    .split("_")
+    .map((item) => item ? `${item.charAt(0).toUpperCase()}${item.slice(1)}` : "")
+    .join(" ");
+}
+
+module.exports = {
+  evolution,
+  buildEvolutionOrderValidationReport,
+  renderEvolutionOrderValidationReport,
+  renderEvolutionOrderValidationFailure,
+  buildEvolutionOrderingPolicy
+};

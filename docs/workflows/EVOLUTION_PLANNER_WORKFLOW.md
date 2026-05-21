@@ -62,6 +62,10 @@ and must stay blocked until the current-state evidence, documentation map,
 design artifacts, visual planning, version plan, evolutions, task punches, and
 approval/materialization gates are complete. The planner prompt must switch to
 the next planning stage only whenever `execution_allowed` is false.
+Before `kvdf questionnaire generate-tasks --app <app-name>` can create app
+task punches, KVDF must also pass `kvdf evolution validate-order --app
+<app-name>`, which enforces category-based Viber evolution ordering and blocks
+draft, misordered, or future-only slices from becoming executable work.
 
 ## Self-Planning Engine
 

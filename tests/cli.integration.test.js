@@ -129,6 +129,82 @@ function copyRepoFile(dir, relativePath) {
   fs.copyFileSync(source, target);
 }
 
+function writeJsonFixture(dir, relativePath, data) {
+  const target = path.join(dir, relativePath);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, `${JSON.stringify(data, null, 2)}\n`, "utf8");
+}
+
+function seedViberEvolutionOrderFixture(dir, { appSlug = "storefront-web", slices = [] } = {}) {
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+
+  const appRoot = path.join(dir, "workspaces", "apps", appSlug);
+  fs.mkdirSync(path.join(appRoot, "docs"), { recursive: true });
+  fs.mkdirSync(path.join(appRoot, "src"), { recursive: true });
+  fs.mkdirSync(path.join(appRoot, "tests"), { recursive: true });
+  fs.writeFileSync(path.join(appRoot, "README.md"), `# ${appSlug}\n`, "utf8");
+  fs.writeFileSync(path.join(appRoot, "package.json"), JSON.stringify({ name: appSlug, private: true, version: "0.0.0" }, null, 2), "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "00-executive-summary.md"), "# Executive Summary\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "01-overview.md"), "# Overview\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "05-ux-principles.md"), "# UX Principles\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "docs", "12-architecture-overview.md"), "# Architecture Overview\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "src", "index.js"), "module.exports = {};\n", "utf8");
+  fs.writeFileSync(path.join(appRoot, "tests", "app.test.js"), "const assert = require('assert');\nassert.ok(true);\n", "utf8");
+
+  writeJsonFixture(dir, ".kabeeri/design_sources/sources.json", {
+    sources: [
+      {
+        source_id: "source-001",
+        title: "App docs",
+        source_mode: "manual",
+        recorded_at: new Date().toISOString()
+      }
+    ]
+  });
+
+  writeJsonFixture(dir, ".kabeeri/questionnaires/adaptive_intake_plan.json", {
+    current_plan_id: "questionnaire-intake-001",
+    plans: [
+      {
+        plan_id: "questionnaire-intake-001",
+        approval_status: "approved",
+        review_status: "reviewed",
+        require_all_answers: true,
+        generated_questions: [],
+        created_at: new Date().toISOString()
+      }
+    ]
+  });
+  writeJsonFixture(dir, ".kabeeri/questionnaires/answers.json", { answers: [] });
+  writeJsonFixture(dir, ".kabeeri/evolution.json", {
+    changes: slices,
+    impact_plans: [],
+    current_change_id: null
+  });
+}
+
+function makeViberEvolutionSlice(changeId, category, overrides = {}) {
+  return {
+    change_id: changeId,
+    title: `${category} slice`,
+    description: `${category} slice`,
+    status: "approved",
+    approval_status: "approved",
+    audience: "vibe_app_developer",
+    track: "vibe_app_developer",
+    categories: [category],
+    ...overrides
+  };
+}
+
+function readViberEvolutionOrderReport(dir, slices = [], flags = {}) {
+  const appSlug = flags.appSlug || "storefront-web";
+  seedViberEvolutionOrderFixture(dir, { appSlug, slices });
+  const args = ["evolution", "validate-order", "--app", appSlug, "--json"];
+  if (flags.extraArgs) args.push(...flags.extraArgs);
+  return JSON.parse(runKvdf(args, { cwd: dir }).stdout);
+}
+
 function loadPluginSmokeCases(pluginId) {
   const bundleDir = PLUGIN_BUNDLE_DIRS[pluginId] || pluginId;
   const smokePath = path.join(repoRoot, "plugins", bundleDir, "tests", "smoke-cases.json");
@@ -3355,6 +3431,169 @@ test("questionnaire task generation emits explicit frontend UI decision tasks", 
   assert.ok(uiTasks.some((task) => /public frontend UI direction/i.test(task.title)));
   assert.ok(uiTasks.some((task) => /admin frontend UI direction/i.test(task.title)));
   assert.ok(uiTasks.every((task) => Array.isArray(task.acceptance_criteria) && task.acceptance_criteria.some((item) => /responsive priority/i.test(item))));
+}));
+
+test("viber evolution ordering validate-order passes on the default generic sequence", () => withTempDir((dir) => {
+  const report = readViberEvolutionOrderReport(dir, [
+    makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+    makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+    makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+    makeViberEvolutionSlice("cloud-001", "cloud_commercial_control"),
+    makeViberEvolutionSlice("license-001", "local_license_gate"),
+    makeViberEvolutionSlice("release-001", "release_access"),
+    makeViberEvolutionSlice("safety-001", "safety_quality"),
+    makeViberEvolutionSlice("execution-001", "execution_review"),
+    makeViberEvolutionSlice("packaging-001", "release_packaging"),
+    makeViberEvolutionSlice("bridge-001", "bridge_evolution", { future_only: true, approved_for_active_release: true })
+  ]);
+  assert.strictEqual(report.report_type, "kvdf_evolution_order_validation");
+  assert.strictEqual(report.task_generation_allowed, true);
+  assert.strictEqual(report.approval_status.task_generation, "allowed");
+  assert.deepStrictEqual(report.current_order, [
+    "boundary_stabilization",
+    "discovery_spec",
+    "tasking_approval",
+    "cloud_commercial_control",
+    "local_license_gate",
+    "release_access",
+    "safety_quality",
+    "execution_review",
+    "release_packaging",
+    "bridge_evolution"
+  ]);
+  assert.ok(report.expected_order.includes("bridge_evolution"));
+  assert.ok(report.source_files_inspected.some((item) => item.includes("workspaces/apps/storefront-web/docs/00-executive-summary.md")));
+  assert.strictEqual(report.approval_status.source_of_truth_map, "present");
+  assert.match(report.next_action, /kvdf questionnaire generate-tasks --app storefront-web/);
+}));
+
+test("viber evolution ordering fails when boundary stabilization is missing", () => withTempDir((dir) => {
+  const report = readViberEvolutionOrderReport(dir, [
+    makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+    makeViberEvolutionSlice("tasking-001", "tasking_approval")
+  ]);
+  assert.strictEqual(report.task_generation_allowed, false);
+  assert.ok(report.blocking_errors.some((item) => /boundary_stabilization must be the first slice/i.test(item)));
+  const human = runKvdf(["evolution", "validate-order", "--app", "storefront-web"], { cwd: dir });
+  assert.match(human.stdout, /Evolution order validation failed\./);
+  assert.match(human.stdout, /boundary_stabilization must be the first slice/);
+  assert.match(human.stdout, /Suggested fix:/);
+}));
+
+test("viber evolution ordering blocks unsafe category order variants", () => {
+  const cases = [
+    {
+      name: "tasking before discovery",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec")
+      ],
+      error: /discovery_spec must come before tasking_approval/i
+    },
+    {
+      name: "execution before safety",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("execution-001", "execution_review"),
+        makeViberEvolutionSlice("safety-001", "safety_quality")
+      ],
+      error: /execution_review appears before safety_quality/i
+    },
+    {
+      name: "packaging before execution",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("safety-001", "safety_quality"),
+        makeViberEvolutionSlice("packaging-001", "release_packaging"),
+        makeViberEvolutionSlice("execution-001", "execution_review")
+      ],
+      error: /release_packaging appears before execution_review/i
+    },
+    {
+      name: "packaging before safety",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("packaging-001", "release_packaging"),
+        makeViberEvolutionSlice("safety-001", "safety_quality"),
+        makeViberEvolutionSlice("execution-001", "execution_review")
+      ],
+      error: /release_packaging appears before safety_quality/i
+    },
+    {
+      name: "release access before license gate",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+        makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+        makeViberEvolutionSlice("release-001", "release_access"),
+        makeViberEvolutionSlice("license-001", "local_license_gate"),
+        makeViberEvolutionSlice("safety-001", "safety_quality"),
+        makeViberEvolutionSlice("execution-001", "execution_review"),
+        makeViberEvolutionSlice("packaging-001", "release_packaging")
+      ],
+      error: /local_license_gate appears after release_access/i
+    },
+    {
+      name: "unapproved slice",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("discovery-001", "discovery_spec", { status: "draft", approval_status: "draft" })
+      ],
+      error: /Unapproved or draft evolution slices cannot be used for task generation/i
+    },
+    {
+      name: "future-only slice mixed into active release",
+      slices: [
+        makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+        makeViberEvolutionSlice("future-001", "bridge_evolution", { status: "future_only", approval_status: "future_only", future_only: true })
+      ],
+      error: /Future-only slices are mixed into the active release without explicit approval/i
+    }
+  ];
+
+  for (const item of cases) {
+    withTempDir((dir) => {
+      const report = readViberEvolutionOrderReport(dir, item.slices, { appSlug: "storefront-web" });
+      assert.strictEqual(report.task_generation_allowed, false, item.name);
+      assert.ok(report.blocking_errors.some((error) => item.error.test(error)), item.name);
+    });
+  }
+});
+
+test("cloud commercial control can precede local license gate when both are present", () => withTempDir((dir) => {
+  const report = readViberEvolutionOrderReport(dir, [
+    makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+    makeViberEvolutionSlice("discovery-001", "discovery_spec"),
+    makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+    makeViberEvolutionSlice("cloud-001", "cloud_commercial_control"),
+    makeViberEvolutionSlice("license-001", "local_license_gate"),
+    makeViberEvolutionSlice("release-001", "release_access"),
+    makeViberEvolutionSlice("safety-001", "safety_quality"),
+    makeViberEvolutionSlice("execution-001", "execution_review"),
+    makeViberEvolutionSlice("packaging-001", "release_packaging")
+  ]);
+  assert.strictEqual(report.task_generation_allowed, true);
+  assert.ok(report.current_order.indexOf("cloud_commercial_control") < report.current_order.indexOf("local_license_gate"));
+}));
+
+test("questionnaire generate-tasks blocks when evolution ordering fails", () => withTempDir((dir) => {
+  seedViberEvolutionOrderFixture(dir, {
+    slices: [
+      makeViberEvolutionSlice("boundary-001", "boundary_stabilization"),
+      makeViberEvolutionSlice("tasking-001", "tasking_approval"),
+      makeViberEvolutionSlice("discovery-001", "discovery_spec")
+    ]
+  });
+  const failure = runKvdf(["questionnaire", "generate-tasks", "--app", "storefront-web"], { cwd: dir, expectFailure: true });
+  assert.match(failure.stderr, /Evolution order validation failed\./);
+  assert.match(failure.stderr, /discovery_spec must come before tasking_approval/);
 }));
 
 test("questionnaire flow exposes a direct start path and operator notes", () => withTempDir((dir) => {

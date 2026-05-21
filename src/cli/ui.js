@@ -472,6 +472,7 @@ Notes:
   kvdf evolution roadmap
   kvdf evolution partition
   kvdf evolution scorecards [--materialize]
+  kvdf evolution validate-order --app storefront-web
   kvdf evolution report
   kvdf evolution batch-exe
   kvdf batch-exe
@@ -731,10 +732,11 @@ Public routes always use username:
   kvdf questionnaire answer entry.has_users --value yes
   kvdf questionnaire coverage
   kvdf questionnaire missing
+  kvdf evolution validate-order --app storefront-web
   kvdf questionnaire generate-tasks
 
 Notes:
-  Questionnaire planning uses Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor to generate focused developer questions before task generation. The resulting planning pack is fail-closed until it is reviewed with \`kvdf questionnaire review\` and approved with \`kvdf questionnaire approve --confirm\`. It also recommends a short prompt-pack path and compact guidance so the next AI step stays small and task-specific.
+  Questionnaire planning uses Product Blueprints, framework prompt packs, Data Design, UI/UX Advisor, and Delivery Mode Advisor to generate focused developer questions before task generation. The resulting planning pack is fail-closed until it is reviewed with \`kvdf questionnaire review\` and approved with \`kvdf questionnaire approve --confirm\`. For Viber/App work, \`kvdf evolution validate-order --app <app-name>\` must also pass before \`kvdf questionnaire generate-tasks\`. It also recommends a short prompt-pack path and compact guidance so the next AI step stays small and task-specific.
 `,
     capability: `Usage:
   kvdf capability list

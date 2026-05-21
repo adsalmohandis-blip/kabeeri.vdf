@@ -55,6 +55,8 @@ Idea
 - Planner foldered docs map back to the canonical portable app-doc package through a portable docs mapping, so the numbered long-term app docs remain the durable source of truth.
 - Viber prompts must not tell Codex to edit app source files until the pipeline is execution-ready.
 - GitHub stays optional, and KVDF Core files stay out of the app track by default.
+- `kvdf evolution validate-order --app <app-name>` must pass before app task
+  generation turns approved evolutions into task punches.
 
 ### Plugin Track
 
