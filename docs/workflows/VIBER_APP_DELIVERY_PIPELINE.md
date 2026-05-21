@@ -165,6 +165,13 @@ The pipeline also enforces final execution gates before any Codex run:
 - validation gate lists the expected validation commands but does not pass before execution
 - warning-level execution gates still block by default unless the Owner explicitly approves them
 
+The pipeline also enforces stage transitions, not just a static stage list:
+
+- each Viber stage can only move to the next ordered stage when the next stage's prerequisites are satisfied
+- raw ideas may move into questionnaire generation, but they cannot jump to task punches or execution
+- the planner prompt and pipeline JSON now surface the current stage, next stage, blocked-by evidence, and the next action required to advance safely
+- task generation stays blocked until the current transition reaches the task-punch stages in the approved order
+
 The pipeline also exposes a planning authority level:
 
 - placeholder: raw idea or incomplete questionnaire / brief state

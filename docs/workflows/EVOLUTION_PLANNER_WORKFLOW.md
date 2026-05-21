@@ -250,6 +250,12 @@ Planner state is used to:
 
 Planner state is runtime-only and is not part of the normal commit set.
 
+For Viber/App Track, the planner pipeline also exposes a stage-transition
+report so prompt generation can stop at the current blocked stage instead of
+jumping forward to task execution. The transition view is how the Planner Layer
+keeps the idea -> questionnaire -> brief -> docs/design -> version/evolution ->
+task punch -> execution chain honest.
+
 ## Prompt Output
 
 The Codex-ready prompt must explicitly state:
@@ -257,6 +263,8 @@ The Codex-ready prompt must explicitly state:
 - repository context
 - track
 - delivery mode
+- current stage / next stage transition
+- blocked-by evidence when the transition is not allowed
 - allowed files
 - forbidden files
 - implementation tasks

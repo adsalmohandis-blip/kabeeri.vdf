@@ -7540,6 +7540,11 @@ test("planner prompt blocks vibe execution until version and evolution gates are
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.planner_mode, "vibe");
   assert.ok(prompt.prompt.includes("Viber Pipeline Readiness"));
+  assert.ok(prompt.prompt.includes("Current stage:"));
+  assert.ok(prompt.prompt.includes("Transition allowed:"));
+  assert.ok(prompt.prompt.includes("Blocked by:"));
+  assert.ok(prompt.prompt.includes("Required before next:"));
+  assert.ok(prompt.prompt.includes("Stage transition next action:"));
   assert.ok(prompt.prompt.includes("Version/evolution gates: blocked"));
   assert.ok(prompt.prompt.includes("Execution gates: blocked"));
   assert.ok(prompt.prompt.includes("Security gate:"));
@@ -7849,6 +7854,13 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.deepStrictEqual(pipeline.viber_pipeline.stage_groups.intake, ["idea", "questionnaire_generation", "questionnaire_answers", "answer_completeness_check"]);
   assert.strictEqual(pipeline.viber_pipeline.execution_allowed, false);
   assert.ok(Array.isArray(pipeline.viber_pipeline.stages));
+  assert.ok(pipeline.viber_pipeline.stage_transition);
+  assert.strictEqual(pipeline.viber_pipeline.stage_transition.current_stage, "idea");
+  assert.strictEqual(pipeline.viber_pipeline.stage_transition.next_stage, "questionnaire_generation");
+  assert.strictEqual(pipeline.viber_pipeline.stage_transition.transition_allowed, true);
+  assert.ok(Array.isArray(pipeline.viber_pipeline.stage_transition.required_before_next));
+  assert.ok(pipeline.viber_pipeline.stage_transition.required_before_next.some((item) => /raw idea/i.test(item) || /questionnaire/i.test(item)));
+  assert.match(pipeline.viber_pipeline.stage_transition.next_action, /questionnaire/i);
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "questionnaire_generation"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "brief_approval"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "documentation_architecture" && stage.status === "blocked"));
@@ -7871,7 +7883,7 @@ test("planner pipeline builds a vibe local-first package with local-only source 
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "handoff_gate" && stage.status === "blocked"));
   assert.ok(pipeline.viber_pipeline.stages.some((stage) => stage.stage === "source_control_gate" && stage.status === "complete"));
   assert.ok(Array.isArray(pipeline.viber_pipeline.execution_blockers));
-  assert.strictEqual(pipeline.viber_pipeline.next_stage, "security_gate");
+  assert.strictEqual(pipeline.viber_pipeline.next_stage, "questionnaire_generation");
   assert.ok(Array.isArray(pipeline.documentation_folders));
   const folderIds = pipeline.documentation_folders.map((folder) => folder.folder_id);
   assert.ok(folderIds.includes("product"));

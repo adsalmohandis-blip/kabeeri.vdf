@@ -16,6 +16,7 @@
     "docs_design_gates",
     "version_evolution_gates",
     "execution_gates",
+    "stage_transition",
     "documentation_folders",
     "documentation_files",
     "portable_docs_mapping",
@@ -206,6 +207,19 @@
         "validation_gate": { "$ref": "#/$defs/executionGate" },
         "blockers": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
         "warnings": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+        "next_action": { "type": "string" }
+      }
+    },
+    "stage_transition": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["current_stage", "next_stage", "transition_allowed", "blocked_by", "required_before_next", "next_action"],
+      "properties": {
+        "current_stage": { "type": "string" },
+        "next_stage": { "type": "string" },
+        "transition_allowed": { "type": "boolean" },
+        "blocked_by": { "type": "array", "items": { "type": "string" } },
+        "required_before_next": { "type": "array", "items": { "type": "string" } },
         "next_action": { "type": "string" }
       }
     },
