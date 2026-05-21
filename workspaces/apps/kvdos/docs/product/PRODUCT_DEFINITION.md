@@ -35,6 +35,24 @@ The boundary covers:
 It does not include questionnaire UI code, blueprint/spec generator code, or
 `app.kvdos.yaml` generation logic yet.
 
+## Tasking And Approval Boundary
+
+Tasking and approval work for KVDOS starts as app-local documentation and
+validation.
+
+The boundary covers:
+
+- task queue boundary
+- FIFO ordering boundary
+- approval panel boundary
+- reports panel boundary
+- audit trail boundary
+- task derivation rules
+- approval checkpoint rules
+
+It does not include task queue behavior code, approval UI code, reports UI code,
+or audit implementation code yet.
+
 ## What KVDOS Does
 
 KVDOS provides a structured workflow for:

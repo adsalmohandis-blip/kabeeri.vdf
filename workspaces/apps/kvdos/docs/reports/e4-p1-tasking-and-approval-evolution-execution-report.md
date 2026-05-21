@@ -1,6 +1,6 @@
 # e4-p1 Tasking And Approval Evolution Execution Report
 
-Updated: 2026-05-21
+Updated: 2026-05-22
 
 Branch: `exec/e4-p1-tasking-and-approval-evolution-docs`
 
@@ -26,8 +26,9 @@ The execution result is the app-local Tasking And Approval Boundary contract:
 
 ## Files Changed
 
-- [e4-p1 Tasking And Approval Evolution Build-Ready Report](./e4-p1-tasking-and-approval-evolution-build-ready-report.md)
-- [E4-P1 Tasking And Approval Evolution Tasks](../roadmap/E4_P1_TASKING_AND_APPROVAL_EVOLUTION_TASKS.md)
+- [KVDOS Product Definition](../product/PRODUCT_DEFINITION.md)
+- [KVDOS Product Strategy](../product/PRODUCT_STRATEGY.md)
+- [KVDOS Architecture](../architecture/KVDOS_ARCHITECTURE.md)
 - [e4-p1 Tasking And Approval Evolution Execution Report](./e4-p1-tasking-and-approval-evolution-execution-report.md)
 
 ## Summary By Scope
