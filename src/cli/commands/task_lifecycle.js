@@ -1,4 +1,4 @@
-const { ensureTaskTrashState, taskTrashSummary } = require("../services/task_trash");
+const { ensureTaskTrashState, taskTrashSummary, buildTaskArchivePolicy } = require("../services/task_trash");
 
 const LIFECYCLE_STAGES = ["intake", "ready", "execution", "validation", "closure", "blocked", "archived"];
 
@@ -8,6 +8,8 @@ function buildTaskLifecycleState(taskItem, options = {}) {
   const archived = stage === "archived";
   const trashedAt = archived ? (taskItem.trashed_at || options.trashed_at || null) : null;
   const evolution = extractTaskEvolutionContext(taskItem, options.evolution_state || null);
+  const taskTrack = resolveLifecycleTaskTrack(taskItem, options.workspace_track || options.track || options.workspace_kind || "framework_owner");
+  const archivePolicy = buildLifecycleArchivePolicy(taskTrack, stage, options, evolution);
   const nextStatuses = getNextLifecycleStatuses(stage, status, archived);
   return {
     task_id: taskItem && (taskItem.id || taskItem.task_id) ? (taskItem.id || taskItem.task_id) : null,
@@ -18,7 +20,7 @@ function buildTaskLifecycleState(taskItem, options = {}) {
     stage_order: LIFECYCLE_STAGES,
     stage_index: Math.max(0, LIFECYCLE_STAGES.indexOf(stage)),
     next_statuses: nextStatuses,
-    next_action: getLifecycleNextAction(stage, status, archived),
+    next_action: getLifecycleNextAction(stage, status, archived, taskTrack),
     blockers: Array.isArray(taskItem && taskItem.blockers) ? taskItem.blockers : [],
     assignee_id: taskItem && taskItem.assignee_id ? taskItem.assignee_id : "",
     reviewer_id: taskItem && taskItem.reviewer_id ? taskItem.reviewer_id : "",
@@ -36,8 +38,9 @@ function buildTaskLifecycleState(taskItem, options = {}) {
     github_sync_enabled: evolution.github_sync_enabled,
     review_gate: evolution.review_gate,
     task_trash_policy: evolution.task_trash_policy,
-    archive_after_completion: evolution.archive_after_completion,
+    archive_after_completion: taskTrack === "vibe_app_developer" ? false : evolution.archive_after_completion,
     archive_status: evolution.archive_status,
+    archive_policy: archivePolicy,
     trashed_at: trashedAt,
     trashed_reason: archived ? (taskItem.trashed_reason || options.trashed_reason || null) : null,
     original_status: archived ? (taskItem.original_status || options.original_status || status) : null,
@@ -96,6 +99,7 @@ function buildLifecycleRow(taskItem, options = {}) {
     task_trash_policy: lifecycle.task_trash_policy || null,
     archive_after_completion: typeof lifecycle.archive_after_completion === "boolean" ? lifecycle.archive_after_completion : null,
     archive_status: lifecycle.archive_status || null,
+    archive_policy: lifecycle.archive_policy || null,
     blockers: Array.isArray(lifecycle.blockers) ? lifecycle.blockers : [],
     archived: lifecycle.current_stage === "archived",
     trashed_at: lifecycle.trashed_at || null
@@ -116,6 +120,13 @@ function renderTaskLifecycleState(state) {
     state.task_trash_policy ? `Task trash policy: ${typeof state.task_trash_policy === "string" ? state.task_trash_policy : JSON.stringify(state.task_trash_policy)}` : "Task trash policy: n/a",
     typeof state.archive_after_completion === "boolean" ? `Archive after completion: ${state.archive_after_completion ? "yes" : "no"}` : null,
     state.archive_status ? `Archive status: ${state.archive_status}` : null,
+    state.archive_policy ? `Archive policy: ${state.archive_policy.warning || JSON.stringify(state.archive_policy)}` : null,
+    state.archive_policy && state.archive_policy.requires_explicit_request
+      ? "Viber tasks are not archived automatically after closure."
+      : null,
+    state.archive_policy && state.archive_policy.requires_confirmation
+      ? "Archive/trash requires explicit Viber confirmation."
+      : null,
     `Next action: ${state.next_action || "inspect task status and choose next governed action"}`,
     `Assignee: ${state.assignee_id || "n/a"}`,
     `Reviewer: ${state.reviewer_id || "n/a"}`,
@@ -194,13 +205,18 @@ function getLifecycleStageLabel(stage) {
   return labels[stage] || "Intake";
 }
 
-function getLifecycleNextAction(stage, status = "", archived = false) {
+function getLifecycleNextAction(stage, status = "", archived = false, track = "framework_owner") {
   if (archived || stage === "archived" || status === "trashed") return "restore from trash or purge after retention";
   if (stage === "intake") return "approve or refine task scope";
   if (stage === "ready") return "assign the task and issue a scoped token";
   if (stage === "execution") return "continue execution, record evidence, then move to review";
   if (stage === "validation") return "review acceptance evidence and Owner verify or reject";
-  if (stage === "closure") return "archive the completed task, tokens, and locks";
+  if (stage === "closure") {
+    if (track === "vibe_app_developer") {
+      return "Task is closed. Archive only if the Viber explicitly requests it and confirms the 30-day trash retention warning.";
+    }
+    return "archive the completed task, tokens, and locks";
+  }
   if (stage === "blocked") return "resolve blockers or reopen with a clearer scope";
   return "inspect task status and choose next governed action";
 }
@@ -222,6 +238,35 @@ function renderLifecyclePath(state) {
   return path.map((stage) => {
     const marker = stage === current ? ">" : " ";
     return `${marker} ${stage}${stage === current ? " (current)" : ""}`;
+  });
+}
+
+function buildLifecycleArchivePolicy(track, stage, options = {}, evolution = {}) {
+  const isViberTrack = track === "vibe_app_developer";
+  const retentionDays = Number(
+    options.trash_retention_days ||
+      (options.task_trash_policy && options.task_trash_policy.trash_retention_days) ||
+      (evolution.task_trash_policy && evolution.task_trash_policy.trash_retention_days) ||
+      30
+  ) || 30;
+  if (isViberTrack) {
+    return buildTaskArchivePolicy({
+      retentionDays,
+      requiresConfirmation: true,
+      autoArchive: false
+    });
+  }
+  if (stage === "closure") {
+    return buildTaskArchivePolicy({
+      retentionDays,
+      requiresConfirmation: false,
+      autoArchive: Boolean(options.archive_after_completion !== false)
+    });
+  }
+  return buildTaskArchivePolicy({
+    retentionDays,
+    requiresConfirmation: false,
+    autoArchive: false
   });
 }
 
@@ -312,7 +357,6 @@ function normalizeLifecycleTrack(value = "") {
 function resolveLifecycleTaskTrack(taskItem = {}, fallbackTrack = "framework_owner") {
   const explicit = normalizeLifecycleTrack(taskItem.track || taskItem.evolution_track || taskItem.workspace_track || "");
   if (explicit && explicit !== "framework_owner") return explicit;
-  if (Array.isArray(taskItem.app_usernames) && taskItem.app_usernames.length) return "vibe_app_developer";
   if (typeof taskItem.source === "string" && taskItem.source.startsWith("evolution:")) return fallbackTrack;
   return fallbackTrack;
 }

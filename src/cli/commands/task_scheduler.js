@@ -148,7 +148,8 @@ function routeTaskMovement(readJsonFile, writeJsonFile, fileExists, action, valu
   if (route === "trash") {
     const result = moveTaskToTrash(taskId, {
       reason: flags.reason || "scheduler_move",
-      actor: flags.actor || flags.owner || flags.by || "scheduler"
+      actor: flags.actor || flags.owner || flags.by || "scheduler",
+      confirmed: Boolean(flags.confirm || flags.confirmed || flags.yes)
     });
     const routeRecord = recordTaskSchedulerRoute(readJsonFile, writeJsonFile, fileExists, {
       route_id: nextRouteId(schedulerState.routes),

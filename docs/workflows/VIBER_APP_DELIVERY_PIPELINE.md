@@ -182,3 +182,18 @@ The pipeline also exposes a planning authority level:
 - It must not let Viber/App work edit KVDF Core files by default.
 - It must not let version or evolution planning skip the approval and review
   gates.
+
+## Task Archive Confirmation
+
+Viber tasks are not archived automatically after closure.
+
+When a Viber task reaches `done`, `completed`, or `closed`, it stays in
+closure until the Viber explicitly requests archive/trash.
+
+Archive/trash requires explicit Viber confirmation.
+
+Task trash is recoverable until retention expires. Default retention is 30 days.
+
+Both the JSON output and the human-readable lifecycle output must show the
+archive policy, the retention warning, and the 30-day trash window before a
+Viber task is moved into trash.

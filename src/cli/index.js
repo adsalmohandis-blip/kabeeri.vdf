@@ -67,7 +67,7 @@ const { traceability } = require("./commands/traceability");
 const { plugin: pluginCommand } = require("./commands/plugin");
 const { appWorkspace } = require("./commands/app_workspace");
 const { multiAiCommunications } = require("./commands/multi_ai_communications");
-const { listTaskTrash, moveTaskToTrash, purgeExpiredTaskTrash, restoreTaskFromTrash, showTaskTrash } = require("./services/task_trash");
+const { listTaskTrash, moveTaskToTrash, purgeExpiredTaskTrash, restoreTaskFromTrash, showTaskTrash, buildTaskArchivePolicy } = require("./services/task_trash");
 const { suggestCommand: suggestCommandService } = require("./services/command_suggestions");
 const { capitalize, isExpired, matchesAny, parseCsv, uniqueBy, uniqueList } = require("./services/collections");
 const { detectLanguage: detectLanguageService, matchesWords: matchesWordsService, resolveOutputLanguage: resolveOutputLanguageService } = require("./services/text");
@@ -2876,6 +2876,13 @@ function task(action, id, flags, rest = []) {
     if (!taskId) throw new Error("Missing task id.");
     const found = data.tasks.find((item) => item.id === taskId);
     if (!found) throw new Error(`Task not found: ${taskId}`);
+    const taskTrack = String(found.track || found.evolution_track || found.workspace_track || "").trim().toLowerCase();
+    const isViberTask = taskTrack === "vibe_app_developer" || ["vibe", "app", "developer_app", "app_developer"].includes(taskTrack);
+    const archivePolicy = buildTaskArchivePolicy({
+      retentionDays: 30,
+      requiresConfirmation: true,
+      autoArchive: false
+    });
     if (!["owner_verified", "done", "closed"].includes(found.status) && !flags.force) {
       throw new Error("Task must be owner_verified before completion. Use --force to archive it manually.");
     }
@@ -2903,9 +2910,70 @@ function task(action, id, flags, rest = []) {
     found.completed_by = getOwnerActor(flags);
     found.updated_at = finishedAt;
     writeJsonFile(file, data);
+
+    if (isViberTask && action !== "archive") {
+      const completionReport = generateCompletionReport(found, {
+        completed_at: finishedAt,
+        completed_by: getOwnerActor(flags),
+        verification_report_path: `.kabeeri/reports/${taskId}.verification.md`,
+        verification_report: {
+          path: verificationPath,
+          matches_task: true
+        },
+        security_gate: securityGate,
+        archive_trail: null,
+        scheduler_route: null,
+        trash_task: null,
+        archive_policy: {
+          auto_archive: false,
+          requires_explicit_request: true,
+          requires_confirmation: true,
+          trash_retention_days: archivePolicy.trash_retention_days,
+          warning: archivePolicy.warning
+        },
+        reason: flags.reason || "completed"
+      });
+      const evolutionSync = reconcileEvolutionCompletionService(evolutionState, { workspace_kind: project.workspace_kind });
+      if (evolutionSync.changed) writeJsonFile(".kabeeri/evolution.json", evolutionState);
+      refreshDashboardArtifacts();
+      appendAudit("task.completed", "task", taskId, `Task completed and left in closure: ${found.title}`, {
+        completion_report_path: completionReport.path
+      });
+      console.log(JSON.stringify({
+        report_type: "task_completed",
+        generated_at: finishedAt,
+        status: "closed",
+        current_stage: "closure",
+        archive_after_completion: false,
+        next_action: "Task is closed. Archive only if the Viber explicitly requests it and confirms the 30-day trash retention warning.",
+        archive_policy: {
+          auto_archive: false,
+          requires_explicit_request: true,
+          requires_confirmation: true,
+          trash_retention_days: archivePolicy.trash_retention_days,
+          warning: archivePolicy.warning
+        },
+        completed_task: {
+          id: taskId,
+          status: "done",
+          completed_at: finishedAt,
+          completed_by: getOwnerActor(flags),
+          track: found.track || "vibe_app_developer"
+        },
+        security_gate: securityGate,
+        completion_report: completionReport.report
+      }, null, 2));
+      return;
+    }
+
+    if (action === "archive" && isViberTask && !(flags.confirm || flags.confirmed || flags.yes)) {
+      throw new Error("Archive/trash requires explicit Viber confirmation. Task trash is recoverable until retention expires. Default retention is 30 days.");
+    }
+
     const result = moveTaskToTrash(taskId, {
       reason: flags.reason || "completed",
-      actor: getOwnerActor(flags)
+      actor: getOwnerActor(flags),
+      confirmed: isViberTask ? Boolean(flags.confirm || flags.confirmed || flags.yes) : true
     });
     const schedulerReport = buildTaskSchedulerReport(readJsonFile, fileExists);
     const schedulerRoute = recordTaskSchedulerRoute(readJsonFile, writeJsonFile, fileExists, {
@@ -2937,6 +3005,7 @@ function task(action, id, flags, rest = []) {
       archive_trail: archiveTrail,
       scheduler_route: schedulerRoute,
       trash_task: result.trashed_task || archiveTrail.item || null,
+      archive_policy: result.archive_policy || archivePolicy,
       reason: flags.reason || "completed"
     });
     const evolutionSync = reconcileEvolutionCompletionService(evolutionState, { workspace_kind: project.workspace_kind });
@@ -2952,7 +3021,8 @@ function task(action, id, flags, rest = []) {
         id: taskId,
         status: "done",
         completed_at: finishedAt,
-        completed_by: getOwnerActor(flags)
+        completed_by: getOwnerActor(flags),
+        track: found.track || null
       },
       security_gate: securityGate,
       completion_report: completionReport.report

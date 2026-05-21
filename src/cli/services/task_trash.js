@@ -3,6 +3,7 @@ const { fileExists, readJsonFile, writeJsonFile } = require("../fs_utils");
 const TASKS_FILE = ".kabeeri/tasks.json";
 const TRASH_FILE = ".kabeeri/task_trash.json";
 const DEFAULT_RETENTION_DAYS = 30;
+const DEFAULT_TRASH_WARNING = "Task trash is recoverable until retention expires. Default retention is 30 days.";
 
 function ensureTaskTrashState() {
   if (!fileExists(TRASH_FILE)) {
@@ -57,13 +58,22 @@ function purgeExpiredTaskTrash() {
 function listTaskTrash() {
   const state = ensureTaskTrashState();
   const items = [...state.trash].sort((a, b) => compareDates(b.trashed_at, a.trashed_at));
+  const retentionDays = Number(state.retention_days || DEFAULT_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS;
   return {
     report_type: "task_trash_list",
     generated_at: new Date().toISOString(),
-    retention_days: Number(state.retention_days || DEFAULT_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS,
+    retention_days: retentionDays,
+    warning: buildTaskTrashWarning(retentionDays),
     last_sweep_at: state.last_sweep_at || null,
     total: items.length,
-    items: items.map(taskTrashSummary)
+    items: items.map(taskTrashSummary).map((item) => ({
+      ...item,
+      archive_policy: buildTaskArchivePolicy({
+        retentionDays,
+        requiresConfirmation: true,
+        autoArchive: false
+      })
+    }))
   };
 }
 
@@ -75,7 +85,16 @@ function showTaskTrash(taskId) {
   return {
     report_type: "task_trash_item",
     generated_at: new Date().toISOString(),
-    item: clone(item)
+    retention_days: Number(state.retention_days || DEFAULT_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS,
+    warning: buildTaskTrashWarning(Number(state.retention_days || DEFAULT_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS),
+    item: {
+      ...clone(item),
+      archive_policy: buildTaskArchivePolicy({
+        retentionDays: Number(state.retention_days || DEFAULT_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS,
+        requiresConfirmation: true,
+        autoArchive: false
+      })
+    }
   };
 }
 
@@ -87,6 +106,10 @@ function moveTaskToTrash(taskId, options = {}) {
   if (index === -1) throw new Error(`Task not found: ${taskId}`);
 
   const task = clone(tasksState.tasks[index]);
+  const taskTrack = resolveTaskTrack(task);
+  if (taskTrack === "vibe_app_developer" && !options.confirmed) {
+    throw new Error("Viber archive requires explicit confirmation. Task trash is recoverable until retention expires. Default retention is 30 days.");
+  }
   const trashState = ensureTaskTrashState();
   if (trashState.trash.some((item) => item.id === taskId)) {
     throw new Error(`Task already exists in trash: ${taskId}`);
@@ -103,7 +126,12 @@ function moveTaskToTrash(taskId, options = {}) {
     original_position: index,
     original_status: task.status || "proposed",
     source_collection: "tasks.json",
-    trash_retention_days: retentionDays
+    trash_retention_days: retentionDays,
+    archive_policy: buildTaskArchivePolicy({
+      retentionDays,
+      requiresConfirmation: true,
+      autoArchive: false
+    })
   };
 
   tasksState.tasks.splice(index, 1);
@@ -119,6 +147,13 @@ function moveTaskToTrash(taskId, options = {}) {
     report_type: "task_trashed",
     generated_at: now.toISOString(),
     status: "trashed",
+    retention_days: retentionDays,
+    warning: buildTaskTrashWarning(retentionDays),
+    archive_policy: buildTaskArchivePolicy({
+      retentionDays,
+      requiresConfirmation: true,
+      autoArchive: false
+    }),
     task: taskTrashSummary(record),
     trashed_task: clone(record),
     original_task: taskTrashSummary(task)
@@ -183,6 +218,28 @@ function taskTrashSummary(item) {
   };
 }
 
+function buildTaskArchivePolicy(options = {}) {
+  const retentionDays = Number(options.retentionDays || DEFAULT_RETENTION_DAYS) || DEFAULT_RETENTION_DAYS;
+  return {
+    auto_archive: Boolean(options.autoArchive),
+    requires_explicit_request: true,
+    requires_confirmation: Boolean(options.requiresConfirmation),
+    trash_retention_days: retentionDays,
+    warning: buildTaskTrashWarning(retentionDays)
+  };
+}
+
+function buildTaskTrashWarning(retentionDays = DEFAULT_RETENTION_DAYS) {
+  return `${DEFAULT_TRASH_WARNING}`;
+}
+
+function resolveTaskTrack(task = {}) {
+  const explicit = String(task.track || task.evolution_track || task.workspace_track || "").trim().toLowerCase();
+  if (explicit === "vibe_app_developer" || ["vibe", "app", "developer_app", "app_developer"].includes(explicit)) return "vibe_app_developer";
+  if (explicit === "framework_owner" || ["owner", "owner_track"].includes(explicit)) return "framework_owner";
+  return "framework_owner";
+}
+
 function addDays(date, days) {
   const result = new Date(date.getTime());
   result.setUTCDate(result.getUTCDate() + Number(days || 0));
@@ -213,5 +270,6 @@ module.exports = {
   purgeExpiredTaskTrash,
   restoreTaskFromTrash,
   showTaskTrash,
+  buildTaskArchivePolicy,
   taskTrashSummary
 };

@@ -1312,6 +1312,87 @@ test("task completion archives to trash and restore returns to active tasks", ()
   assert.ok(restoredTasks.some((task) => task.id === "task-001"));
 }));
 
+test("viber task completion stays in closure until explicit archive confirmation", () => withTempDir((dir) => {
+  const env = { KVDF_OWNER_PASSPHRASE: "secret-pass" };
+  runKvdf(["init"], { cwd: dir });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "project.json"), JSON.stringify({
+    workspace_kind: "developer_app"
+  }, null, 2));
+  runKvdf(["owner", "init", "--id", "owner-001", "--name", "Project Owner"], { cwd: dir, env });
+  runKvdf(["task", "create", "--id", "task-vibe-001", "--title", "Viber closure policy", "--workstream", "backend", "--acceptance", "Closure must stay local until archive is explicit"], { cwd: dir });
+  runKvdf(["task", "approve", "task-vibe-001"], { cwd: dir });
+  runKvdf(["acceptance", "create", "--task", "task-vibe-001"], { cwd: dir });
+  runKvdf(["acceptance", "review", "acceptance-001", "--reviewer", "reviewer-001", "--result", "pass", "--evidence", "Closure must stay local until archive is explicit"], { cwd: dir });
+  runKvdf(["task", "verify", "task-vibe-001", "--owner", "owner-001"], { cwd: dir });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "evolution.json"), JSON.stringify({
+    changes: [
+      {
+        change_id: "evo-vibe-001",
+        title: "Viber closure policy",
+        description: "Keep Viber completed tasks in closure until explicit archive confirmation.",
+        status: "planned",
+        task_ids: ["task-vibe-001"],
+        track: "vibe_app_developer",
+        workspace_kind: "developer_app",
+        created_at: new Date().toISOString()
+      }
+    ],
+    impact_plans: [],
+    current_change_id: "evo-vibe-001",
+    temporary_priorities: null,
+    development_priorities: [],
+    deferred_ideas: [],
+    scorecards: [],
+    workspace_kind: "developer_app",
+    track: "vibe_app_developer",
+    updated_at: new Date().toISOString()
+  }, null, 2));
+  const completed = JSON.parse(runKvdf(["task", "complete", "task-vibe-001", "--owner", "owner-001"], { cwd: dir }).stdout);
+  assert.strictEqual(completed.status, "closed");
+  assert.strictEqual(completed.current_stage, "closure");
+  assert.strictEqual(completed.archive_after_completion, false);
+  assert.ok(completed.archive_policy);
+  assert.strictEqual(completed.archive_policy.auto_archive, false);
+  assert.strictEqual(completed.archive_policy.requires_explicit_request, true);
+  assert.strictEqual(completed.archive_policy.requires_confirmation, true);
+  assert.strictEqual(completed.archive_policy.trash_retention_days, 30);
+  assert.match(completed.archive_policy.warning, /Task trash is recoverable until retention expires/i);
+  assert.match(completed.next_action, /Archive only if the Viber explicitly requests it/i);
+  assert.strictEqual(completed.completed_task.status, "done");
+  const activeTasksAfterComplete = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
+  const completedTask = activeTasksAfterComplete.find((task) => task.id === "task-vibe-001");
+  assert.ok(completedTask);
+  assert.strictEqual(completedTask.status, "done");
+  const trashStateAfterComplete = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/task_trash.json"), "utf8"));
+  assert.ok(!trashStateAfterComplete.trash.some((task) => task.id === "task-vibe-001"));
+  const lifecycleJson = JSON.parse(runKvdf(["task", "lifecycle", "task-vibe-001", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(lifecycleJson.current_stage, "closure");
+  assert.strictEqual(lifecycleJson.archive_after_completion, false);
+  assert.match(lifecycleJson.next_action, /Archive only if the Viber explicitly requests it/i);
+  assert.ok(lifecycleJson.archive_policy);
+  const lifecycleHuman = runKvdf(["task", "lifecycle", "task-vibe-001"], { cwd: dir }).stdout;
+  assert.match(lifecycleHuman, /Viber tasks are not archived automatically after closure/i);
+  assert.match(lifecycleHuman, /Task trash is recoverable until retention expires/i);
+  const archiveRejected = runKvdf(["task", "archive", "task-vibe-001", "--owner", "owner-001"], { cwd: dir, expectFailure: true });
+  assert.match(archiveRejected.stderr, /Archive\/trash requires explicit Viber confirmation/i);
+  const archived = JSON.parse(runKvdf(["task", "archive", "task-vibe-001", "--owner", "owner-001", "--confirm"], { cwd: dir }).stdout);
+  assert.strictEqual(archived.status, "trashed");
+  assert.strictEqual(archived.retention_days, 30);
+  assert.match(archived.warning, /recoverable until retention expires/i);
+  assert.ok(archived.archive_policy);
+  assert.strictEqual(archived.archive_policy.auto_archive, false);
+  assert.strictEqual(archived.archive_policy.requires_explicit_request, true);
+  assert.strictEqual(archived.archive_policy.requires_confirmation, true);
+  assert.strictEqual(archived.archive_policy.trash_retention_days, 30);
+  const trashState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "task_trash.json"), "utf8"));
+  assert.strictEqual(trashState.trash.length, 1);
+  assert.strictEqual(trashState.trash[0].id, "task-vibe-001");
+  const restored = JSON.parse(runKvdf(["task", "trash", "restore", "task-vibe-001"], { cwd: dir }).stdout);
+  assert.strictEqual(restored.status, "restored");
+  const restoredTasks = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/tasks.json"), "utf8")).tasks;
+  assert.ok(restoredTasks.some((task) => task.id === "task-vibe-001"));
+}));
+
 test("resume sweeps expired task trash records on session start", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   const expired = {
