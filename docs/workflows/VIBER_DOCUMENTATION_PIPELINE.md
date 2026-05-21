@@ -50,3 +50,5 @@ Docs live in the app workspace, not in KVDF Core docs.
 The planner may also attach a Roadmap Train summary so the app can resume the
 same version/stage/sprint/evolution queue on the next session without
 rebuilding it from chat or stale runtime state.
+That summary is surfaced as `roadmap_train_summary` and pairs with the derived
+`evo_sprint_queue` view when the train is present.

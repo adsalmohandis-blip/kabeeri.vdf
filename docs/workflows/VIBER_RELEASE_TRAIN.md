@@ -25,3 +25,4 @@ Viber readiness should move through:
 - The next version and next evolution must be explicit.
 - The release train should expose the first unblocked FIFO evolution.
 - Publishing is still explicit and gated elsewhere.
+- The release train should also expose `roadmap_train_summary` so the Viber pipeline, dashboard, prompt, and readiness views can share the same FIFO snapshot.
