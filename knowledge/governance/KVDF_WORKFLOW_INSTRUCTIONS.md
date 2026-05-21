@@ -83,6 +83,7 @@ Required behavior:
   priority than old planning drafts
 - treat `.kabeeri/tasks.json` as supporting state only, not the only source of
   current progress
+- treat `.kabeeri/` runtime state as supporting state only, not implementation truth
 - do not let `.kabeeri/tasks.json` overrule later git history, release tags, or
   roadmap evidence
 - for app work, treat current app files/docs/specs/tests as the primary source of truth
@@ -185,7 +186,7 @@ The source-of-truth priority is:
 8. `.kabeeri/` runtime state as supporting state only
 9. Chat history as supporting context only
 
-Git is historical evidence. GitHub is an optional secondary provider/plugin evidence. `.kabeeri/` is supporting runtime evidence only.
+Git is historical evidence. GitHub is an optional secondary provider/plugin evidence. `.kabeeri/` is supporting runtime evidence only, not the only source of current progress.
 
 ### Scope
 

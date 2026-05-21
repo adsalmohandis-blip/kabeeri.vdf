@@ -12,6 +12,8 @@
     { "path": ".kabeeri/project.json", "schema": "schemas/runtime/project-state.schema.json" },
     { "path": ".kabeeri/project_profile.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
     { "path": ".kabeeri/delivery_mode.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
+    { "path": ".kabeeri/state_resync/current_state_report.json", "schema": "schemas/runtime/current-state-report.schema.json" },
+    { "path": ".kabeeri/state_resync/state_resync_history.json", "schema": "schemas/runtime/state-resync-state.schema.json" },
     { "path": ".kabeeri/tasks.json", "schema": "schemas/runtime/tasks-state.schema.json" },
     { "path": ".kabeeri/task_assessments.json", "schema": "schemas/runtime/generic-object-state.schema.json" },
     { "path": ".kabeeri/task_trash.json", "schema": "schemas/runtime/task-trash-state.schema.json" },

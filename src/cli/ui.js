@@ -207,7 +207,7 @@ Notes:
 Notes:
   Onboarding shows the guided first-session route for the current workspace. It summarizes the safe opening steps, the enter/route/resume sequence, commands, guardrails, and a persisted session onboarding report for framework-owner or app-developer work.
 `,
-    guard: `Usage:
+  guard: `Usage:
   kvdf guard
   kvdf guard status
   kvdf guard status --json
@@ -215,6 +215,15 @@ Notes:
 
 Notes:
   Guard checks whether the current folder is Kabeeri framework source or a user workspace. In user workspaces it blocks accidental framework-internal edits unless an explicit override is provided.
+`,
+  state: `Usage:
+  kvdf state resync --track owner --json
+  kvdf state resync --track vibe --json
+  kvdf state resync --track plugin --plugin <plugin-id> --json
+  kvdf state status --json
+
+Notes:
+  State Resync rebuilds a file-first Current-State Report before planning. It treats current files, docs, specs, source, tests, and git evidence as higher priority than runtime memory or chat history, then writes the report into .kabeeri/state_resync/ for planner guard checks.
 `,
     conflict: `Usage:
   kvdf conflict scan
@@ -502,6 +511,8 @@ Notes:
   kvdf planner task-punch --goal "Add planner layer" --track owner --json
 
 Notes:
+  State Resync is the file-first gate before the next Evolution is recommended. Use kvdf state resync before kvdf planner next, kvdf planner propose, kvdf planner prompt --from-current, kvdf planner visual --from-current, or kvdf planner pipeline when you need authoritative planning output.
+  kvdf planner guard exposes the machine-checkable drift gate for missing or stale current-state reports.
   Planner output includes an explicit source_control object so KVDF can express no source control,
   local-only, direct-to-main, branch, and branch+PR modes without assuming GitHub is mandatory.
   The planner visual and pipeline commands keep stdout-only by default for visual/planning output, use --open to launch a browser preview, use --no-open to force file-only output, and use --fullscreen when you want the preview shell to request fullscreen.
@@ -537,6 +548,7 @@ Notes:
   kvdf planner next --track owner --json
   kvdf planner next --track vibe --json
   kvdf planner next --track plugin --plugin kvdf-dev --json
+  kvdf planner guard --json
   kvdf planner prompt --goal "Add planner layer" --track owner --json
   kvdf planner prompt --goal "Build app delivery slice" --track vibe --json
   kvdf planner prompt --goal "Update plugin manifest" --track plugin --plugin booking-builder --json

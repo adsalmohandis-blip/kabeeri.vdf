@@ -7,6 +7,8 @@ No Planning Without State Resync.
 Before you recommend or start the next Evolution, you must resync the current
 repository reality and produce a Current-State Report.
 
+Produce a File-first State Summary before any recommendation.
+
 ## Confirm Repository
 
 Run:
@@ -74,6 +76,9 @@ evidence. GitHub is an optional secondary provider/plugin only.
 For KVDF Core work, current KVDF source files and docs, current branch, latest
 main, git history, release tags, roadmap/docs, and manifests/specs are the
 required evidence set. GitHub remains optional and secondary.
+
+GitHub is an optional secondary provider/plugin. `.kabeeri/` runtime state is
+supporting state only. Chat history is supporting context only.
 
 ## Rebuild The Evolution Ledger
 

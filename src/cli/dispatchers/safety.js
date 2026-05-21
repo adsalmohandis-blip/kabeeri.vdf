@@ -6,6 +6,7 @@ function dispatchSafetyCommands({ group, action, value, flags, rest, c }) {
   if (group === "start" || group === "start-here" || group === "entry") return handled(c.entryCommand(action, value, flags));
   if (group === "track") return handled(c.trackCommand(action, value, flags));
   if (group === "onboarding") return handled(c.onboardingCommand(action, value, flags));
+  if (group === "state") return handled(c.stateResyncCommand(action, value, flags, rest));
   if (group === "guard" || group === "boundary") return handled(c.guard(action, value, flags));
   if (group === "conflict" || group === "conflicts" || group === "scan") return handled(c.conflict(action, value, flags));
   if (group === "validate") return handled(c.validateCommand(action, flags));

@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KVDF Development Plan Visual Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-soft: #1f2937;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+      --border: #334155;
+      --table-head: #0b1220;
+      --success: #22c55e;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0, #0f172a 55%, #020617 100%);
+      color: var(--text);
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+    header {
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: linear-gradient(180deg, rgba(17,24,39,.94), rgba(15,23,42,.94));
+      box-shadow: 0 24px 80px rgba(0,0,0,.35);
+      margin-bottom: 20px;
+    }
+    h1, h2, h3 { margin: 0 0 12px; line-height: 1.2; }
+    h1 { font-size: clamp(2rem, 4vw, 3.2rem); }
+    h2 { margin-top: 28px; font-size: 1.4rem; }
+    h3 { margin-top: 20px; font-size: 1.05rem; color: #f8fafc; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      color: #dbeafe;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .card {
+      background: rgba(17,24,39,.88);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+    }
+    .card p { margin-bottom: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      background: rgba(17,24,39,.9);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 14px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--table-head);
+      color: #f8fafc;
+      font-weight: 700;
+    }
+    tr:last-child td { border-bottom: none; }
+    .section {
+      margin-top: 26px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.78);
+    }
+    .diagram {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 16px;
+      background: #fff;
+      overflow-x: auto;
+    }
+    .note {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .status-good { color: var(--success); }
+    .status-warn { color: var(--warn); }
+    ul { margin: 10px 0 0 20px; color: var(--text); }
+    li { margin: 6px 0; }
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(148,163,184,.14);
+      color: #f8fafc;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>KVDF Development Plan Visual Report</h1>
+      <p>Generated: 2026-05-21</p>
+      <p>This page turns the current KVDF development plan into tables and Mermaid diagrams.</p>
+      <div class="meta">
+        <div class="pill">Track: <strong>framework_owner</strong></div>
+        <div class="pill">Branch: <strong>main</strong></div>
+        <div class="pill">Active change: <strong>owner-dashboard-planner</strong></div>
+        <div class="pill">Open priorities: <strong class="status-good">0</strong></div>
+        <div class="pill">Pending UI decision: <strong class="status-warn">Dashboard Customization</strong></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Current Snapshot</h3>
+        <p>Owner track is active, the repo is clean, and the live work is centered on planner coverage, docs alignment, and the next governed owner slice.</p>
+      </div>
+      <div class="card">
+        <h3>Active Focus</h3>
+        <p>The current task memory is <code>owner-dashboard-planner-tests</code>, with scope limited to planner integration tests and the CLI/capability documentation surfaces.</p>
+      </div>
+      <div class="card">
+        <h3>Immediate Next Step</h3>
+        <p>Finish the planner tests and docs, then validate and resume from live state rather than from chat history.</p>
+      </div>
+    </div>
+
+    <section class="section">
+      <h2>Roadmap Table</h2>
+      <table>
+        <thead>
+          <tr><th>Order</th><th>Phase</th><th>Goal</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Capability registry and source mapping</td><td>Trace every capability from source study to CLI and docs</td><td>In progress</td></tr>
+          <tr><td>2</td><td>Entry / track / role enforcement</td><td>Keep owner and vibe flows separated from the first command</td><td>In progress</td></tr>
+          <tr><td>3</td><td>Pack router and project profile</td><td>Route projects to the smallest correct pack set</td><td>In progress</td></tr>
+          <tr><td>4</td><td>Lifecycle engine and quality gates</td><td>Prevent premature execution and enforce readiness</td><td>In progress</td></tr>
+          <tr><td>5</td><td>Traceability, risk, and change control</td><td>Keep decisions explainable and auditable</td><td>In progress</td></tr>
+          <tr><td>6</td><td>Docs site deep publishing</td><td>Publish EN/AR developer explanations for each major capability</td><td>In progress</td></tr>
+          <tr><td>7</td><td>Source folder normalization</td><td>Preserve traceability while normalizing imported source roots</td><td>Deferred</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Owner Execution Queue</h2>
+      <table>
+        <thead>
+          <tr><th>Priority</th><th>Item</th><th>Why it matters</th><th>Next action</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>owner-dashboard-planner-tests</code></td><td>Confirms planner command behavior and docs coverage</td><td>Update tests and docs, then validate</td></tr>
+          <tr><td>2</td><td>Dashboard customization decision</td><td>Unblocks dashboard-specific owner work</td><td>Resolve the pending questionnaire item</td></tr>
+          <tr><td>3</td><td>Safe CLI modularization</td><td>Keeps <code>src/cli/index.js</code> maintainable</td><td>Continue extracting route modules carefully</td></tr>
+          <tr><td>4</td><td>Capability/source mapping cleanup</td><td>Keeps imported knowledge unambiguous</td><td>Review duplicates and map to correct folders</td></tr>
+          <tr><td>5</td><td>Docs site publishing</td><td>Makes the runtime understandable without chat history</td><td>Deepen English and Arabic pages</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Mermaid: Development Flow</h2>
+      <div class="diagram mermaid">
+flowchart TD
+  A[Owner Track Active] --> B[Read live state]
+  B --> C[Check current evolution]
+  C --> D[Pick next approved task]
+  D --> E[Work inside allowed files]
+  E --> F[Run tests and validation]
+  F --> G[Update reports and docs]
+  G --> H[Commit and push]
+  H --> I[Resume from state]
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Mermaid: KVDF System Layers</h2>
+      <div class="diagram mermaid">
+flowchart LR
+  subgraph Core[Shared Core]
+    C1[CLI bootstrap]
+    C2[Command router]
+    C3[Workspace state]
+    C4[Validation and guards]
+    C5[Reports and dashboards]
+  end
+
+  subgraph Planner[Planner Layer]
+    P1[Next evolution recommendation]
+    P2[Task punch generation]
+    P3[Prompt generation]
+    P4[Allowed file boundaries]
+  end
+
+  subgraph Plugins[Plugin Layer]
+    L1[Manifest loader]
+    L2[Enable / disable state]
+    L3[Bundle contracts]
+  end
+
+  subgraph Governance[Governance]
+    G1[Owner verification]
+    G2[Task lifecycle]
+    G3[Security and release gates]
+    G4[Multi-AI coordination]
+  end
+
+  Core --> Planner
+  Core --> Plugins
+  Core --> Governance
+  Planner --> Governance
+  Plugins --> Governance
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Mermaid: Development Timeline</h2>
+      <div class="diagram mermaid">
+gantt
+  title KVDF Development Timeline
+  dateFormat  YYYY-MM-DD
+  axisFormat  %b %d
+
+  section Current
+  Planner tests and docs        :active, 2026-05-18, 7d
+  Dashboard customization       :2026-05-21, 5d
+
+  section Near Term
+  CLI modularization            :2026-05-22, 10d
+  Capability mapping cleanup    :2026-05-25, 10d
+
+  section Mid Term
+  Docs site deep publishing     :2026-05-30, 14d
+  Platform integration hardening:2026-06-03, 14d
+
+  section Later
+  Multi-AI governance polish    :2026-06-10, 14d
+  Plugin and workspace polish   :2026-06-15, 14d
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Mermaid: Track Routing</h2>
+      <div class="diagram mermaid">
+stateDiagram-v2
+  [*] --> Resume
+  Resume --> OwnerTrack: framework_owner_development
+  Resume --> DeveloperTrack: kabeeri_user_app_workspace
+  Resume --> InitTrack: unknown workspace
+
+  OwnerTrack --> EvolutionPriorities
+  OwnerTrack --> PlannerLayer
+  OwnerTrack --> Validation
+
+  DeveloperTrack --> Questionnaire
+  DeveloperTrack --> Blueprint
+  DeveloperTrack --> TaskTracker
+
+  InitTrack --> WorkspaceInit
+  WorkspaceInit --> Resume
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Mermaid: Delivery Order</h2>
+      <div class="diagram mermaid">
+sequenceDiagram
+  participant Owner
+  participant KVDF
+  participant State as .kabeeri state
+  participant Reports as Docs/Reports
+
+  Owner->>KVDF: kvdf resume
+  KVDF->>State: Read current track, tasks, and evolution
+  State-->>KVDF: Live owner checkpoint
+  KVDF-->>Owner: Next exact action
+  Owner->>KVDF: Implement approved slice
+  KVDF->>Reports: Write validation and progress reports
+  KVDF-->>Owner: Resume-ready outcome
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Suggested Immediate Next Steps</h2>
+      <table>
+        <thead>
+          <tr><th>Step</th><th>Action</th><th>Output</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Finish <code>owner-dashboard-planner-tests</code></td><td>Planner integration coverage and doc alignment</td></tr>
+          <tr><td>2</td><td>Resolve <code>Dashboard Customization</code></td><td>Clear the remaining UI decision</td></tr>
+          <tr><td>3</td><td>Continue safe CLI modularization</td><td>Smaller, maintainable command modules</td></tr>
+          <tr><td>4</td><td>Keep capability mapping current</td><td>No ambiguous imported knowledge</td></tr>
+          <tr><td>5</td><td>Deepen docs site publishing</td><td>Developer-readable EN/AR guidance</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Notes</h2>
+      <ul>
+        <li>This page is a visual summary, not a replacement for live runtime state.</li>
+        <li>For execution, trust <code>kvdf resume</code>, <code>kvdf evolution priorities</code>, and the <code>.kabeeri/</code> state files.</li>
+        <li>For the next development slice, keep the scope inside the active task memory and validation commands.</li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+  </script>
+</body>
+</html>

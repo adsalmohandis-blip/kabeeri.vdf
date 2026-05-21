@@ -107,6 +107,7 @@ kvdf planner method --goal "Build secure database app" --track vibe --json
 kvdf planner auto --goal "Build booking app" --track vibe --method auto --json
 kvdf planner review --from-current --json
 kvdf planner resume --json
+kvdf planner guard --json
 kvdf planner current-state --json
 kvdf planner boundary --track owner --json
 kvdf planner stale-state --json
@@ -140,8 +141,12 @@ kvdf planner visual --goal "Add visual planner" --track owner --open --fullscree
 kvdf planner pipeline --idea "Improve KVDF planner" --track owner --json
 kvdf planner pipeline --idea "Build booking app" --track vibe --json
   kvdf planner pipeline --idea "Improve planner visual plugin" --track plugin --plugin planner-visual --json
-kvdf planner pipeline --idea "Improve KVDF planner" --track owner --open --fullscreen
-kvdf planner pipeline --goal "Build app" --track vibe
+  kvdf planner pipeline --idea "Improve KVDF planner" --track owner --open --fullscreen
+  kvdf planner pipeline --goal "Build app" --track vibe
+kvdf state resync --track owner --json
+kvdf state resync --track vibe --json
+kvdf state resync --track plugin --plugin planner-visual --json
+kvdf state status --json
 kvdf planner train build --track owner --goal "Improve KVDF planner" --method structured --json
 kvdf planner train build --track vibe --app booking --idea "Build booking app" --method hybrid --json
 kvdf planner train status --track owner --json
@@ -167,7 +172,7 @@ The shared Roadmap Train and Evo Sprint Queue commands let the planner persist o
 
 Planner outputs now include an explicit `source_control` object so Git, no source control, direct-to-main, branch, and branch+PR can be expressed as provider-driven modes instead of assuming GitHub is mandatory. GitHub is treated as an optional remote/provider plugin, not the same thing as Git.
 
-Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
+Use `kvdf state resync` to rebuild a file-first Current-State Report before any next-evolution recommendation. Use `kvdf planner guard` when you want an explicit planner drift check that blocks or warns if the current-state report is missing or stale. Use `kvdf planner propose` to create a durable proposed plan, `kvdf planner approve` to promote it into the approved current plan, `kvdf planner current` to inspect the active approved plan, `kvdf planner reject` to record a rejection, `kvdf planner complete` to mark an approved plan as completed, and `kvdf planner prompt --from-current` to generate the Codex prompt from approved runtime state instead of chat memory.
 Use `kvdf planner method` to recommend `structured`, `agile`, or `hybrid` before planning. Use `kvdf planner current-state` to rebuild the live repo/workspace summary, `kvdf planner boundary` to check the target write boundary, `kvdf planner stale-state` to classify stale roadmap and report files, `kvdf truth audit` and `kvdf planner truth` to compare source-level implementation evidence against runtime and report claims, `kvdf planner auto` to generate the full self-planning package, `kvdf planner review` to inspect scope, method, docs, security, source control, task quality, and visual readiness, and `kvdf planner resume` to recover the current planning context. Use `kvdf planner docs catalog|plan|materialize|status|apply-stage|review` to plan, draft, stage, and review foldered app documentation without executing or materializing work. Use `kvdf planner version status|next|gate|publish-ready|mark-published` to inspect Viber version readiness, gate health, and recorded published state without publishing anything automatically.
 Use `kvdf truth audit` and `kvdf truth feature` to compare source-level implementation evidence against runtime state, generated snapshots, and docs before trusting a report.
 Use `kvdf evolution reconcile` to compare evolution runtime state against source-level evidence and identify stale plans, duplicate task links, and runtime-only items.

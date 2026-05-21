@@ -6,7 +6,6 @@ const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const OWNER_ROADMAP_TRAIN_STATE_FILE = ".kabeeri/owner_roadmap_train.json";
 const VIBER_RELEASE_TRAIN_FALLBACK_FILE = ".kabeeri/viber_release_train.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
-const { readGitRepositoryState } = require("../services/git_snapshot");
 const { buildAiLearningPromptContext } = require("./ai_learning");
 const { buildDeliveryModeRecommendation } = require("./delivery");
 const { buildAppDocsPackageTemplates } = require("../workspace");
@@ -17,6 +16,8 @@ const { buildPlannerTruth: buildPlannerTruthReportService } = require("../servic
 const { reconcileRuntimeTruth } = require("../services/truth_registry");
 const { buildCurrentStateReport: buildCurrentStateReportService, buildStaleStateReport: buildStaleStateReportService } = require("../services/source_truth");
 const { buildWorkspaceBoundaryReport: buildWorkspaceBoundaryReportService } = require("../services/workspace_boundary");
+const { loadStateResyncReport, evaluateStateResyncFreshness, CURRENT_STATE_REPORT_PATH } = require("./state_resync");
+const { readGitHeadCommit, readGitRepositoryState } = require("../services/git_snapshot");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -247,11 +248,17 @@ const PLANNER_DOC_DEFINITIONS = [
 
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
-  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "current-state", "boundary", "stale-state", "reject", "complete", "materialize"].includes(mode)) {
+  if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "current-state", "boundary", "stale-state", "reject", "complete", "materialize", "guard"].includes(mode)) {
     throw new Error(`Unknown planner action: ${action}`);
   }
 
   const request = resolvePlannerRequest({ action: mode, value, flags, rest }, deps);
+
+  if (mode === "guard") {
+    const report = buildPlannerGuardReport(value, flags, rest, deps);
+    printPlannerOutput(report, flags, deps, "guard");
+    return;
+  }
 
   if (mode === "propose") {
     const goal = resolveGoal(value, flags, rest, request.recommended_evolution.title);
@@ -435,16 +442,20 @@ function buildPlannerNextReport(request = {}, deps = {}) {
   const deliveryMode = getDeliveryMode(mode);
   const pluginContext = mode === "plugin" ? buildPluginContext(request, context) : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const stateResync = buildPlannerStateResyncSummary(context, request);
   const recommendedEvolution = recommendNextEvolution(mode, context, pluginContext, request);
   const plan = buildPlannerEvolutionPlan(recommendedEvolution.title, { ...request, mode, deliveryMode, pluginContext, sourceControl, recommendedEvolution }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const report = {
     report_type: "kvdf_planner_next",
     generated_at: new Date().toISOString(),
+    status: stateResync.status === "blocked" ? "blocked" : (stateResync.status === "warning" ? "warning" : "pass"),
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    state_resync: stateResync,
+    state_resync_required: !stateResync.fresh,
     recommended_evolution: recommendedEvolution,
     allowed_files: plan.allowed_files,
     forbidden_files: plan.forbidden_files,
@@ -2959,6 +2970,7 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     ? (request.pluginContext || (request.plugin_id || request.plugin ? buildPluginContext({ plugin_id: request.plugin_id || request.plugin }, context) : buildPluginContext(request, context)))
     : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
+  const stateResync = buildPlannerStateResyncSummary(context, request);
   const normalizedIdea = String(idea || request.idea || request.goal || "").trim() || "KVDF Planning Idea";
   const documentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
   const designArtifacts = buildIdeaToEvolutionDesignArtifacts(normalizedIdea, mode, context, pluginContext, sourceControl);
@@ -3060,7 +3072,9 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     publish_readiness: versionControl.publish_readiness || null,
     validation_commands: firstEvolution.validation_commands || visualPlanning.validation_commands || DEFAULT_VALIDATION_COMMANDS,
     stop_condition: firstEvolution.stop_condition || visualPlanning.stop_condition || "",
-    next_action: "Review the pipeline plan, then approve/materialize the first Evolution."
+    next_action: "Review the pipeline plan, then approve/materialize the first Evolution.",
+    state_resync: stateResync,
+    state_resync_required: !stateResync.fresh
   };
   if (mode === "vibe") report.pipeline = [...VIBE_PIPELINE];
   if (pluginContext) report.plugin_context = pluginContext;
@@ -3596,6 +3610,7 @@ function renderIndentedObjectSection(value, indent = "- ", nestedIndent = "  - "
 function buildPlannerProposalReport(goal, request = {}, deps = {}) {
   const planning = buildPlannerPlanningContext(goal, request, deps);
   const context = planning.context;
+  const stateResync = buildPlannerStateResyncSummary(context, request);
   const mode = planning.mode;
   const deliveryMode = planning.deliveryMode;
   const pluginContext = planning.plugin_context;
@@ -3679,6 +3694,8 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     track: evolutionPlan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    state_resync: stateResync,
+    state_resync_required: !stateResync.fresh,
     planning_method: planning.planning_method,
     method_reason: planning.method.reason,
     confidence: planning.method.confidence,
@@ -3785,6 +3802,21 @@ function buildPlannerCurrentStateReport(value = "", flags = {}, rest = [], deps 
   return currentState;
 }
 
+function buildPlannerGuardReport(value = "", flags = {}, rest = [], deps = {}) {
+  const context = buildPlannerContext(deps);
+  const stateResync = buildPlannerStateResyncSummary(context, { ...flags, track: flags.track || value || rest[0] });
+  return {
+    report_type: "kvdf_planner_drift_guard",
+    generated_at: new Date().toISOString(),
+    status: stateResync.status === "current" ? "pass" : stateResync.status,
+    state_resync_required: !stateResync.fresh,
+    current_state_report_path: CURRENT_STATE_REPORT_PATH,
+    reason: stateResync.reason,
+    next_action: stateResync.next_action,
+    state_resync: stateResync
+  };
+}
+
 function buildPlannerWorkspaceBoundaryReport(value = "", flags = {}, rest = [], deps = {}) {
   const context = buildPlannerContext(deps);
   const currentState = buildPlannerCurrentStateSummary(context, flags);
@@ -3860,6 +3892,7 @@ function buildPlannerCurrentStateSummary(context, flags = {}, options = {}) {
   const useRepoPlan = cwd === context.repo_root;
   const explicitAppSlug = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
   const explicitPluginId = String(flags.plugin || flags.plugin_id || "").trim();
+  const stateResync = buildPlannerStateResyncSummary(context, flags, { cwd, pluginId: explicitPluginId });
   const report = buildCurrentStateReportService({
     cwd,
     targetTrack: normalizeTrackAlias(flags.track) || (useRepoPlan && currentPlan ? currentPlan.track : null),
@@ -3869,14 +3902,62 @@ function buildPlannerCurrentStateSummary(context, flags = {}, options = {}) {
   return {
     ...report,
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
-    current_plan_status: currentPlan ? currentPlan.status || null : null
+    current_plan_status: currentPlan ? currentPlan.status || null : null,
+    state_resync: stateResync,
+    state_resync_required: !stateResync.fresh
   };
 }
 
 function attachPlannerCurrentStateSummary(report, context, flags = {}) {
+  const currentState = buildPlannerCurrentStateSummary(context, flags);
   return {
     ...report,
-    current_state_summary: buildPlannerCurrentStateSummary(context, flags)
+    current_state_summary: currentState,
+    state_resync: report.state_resync || currentState.state_resync || null,
+    state_resync_required: report.state_resync_required !== undefined ? report.state_resync_required : Boolean(currentState.state_resync_required)
+  };
+}
+
+function buildPlannerStateResyncSummary(context, flags = {}, options = {}) {
+  const cwd = options.cwd || context.execution_cwd || context.repo_root;
+  const track = normalizeTrackAlias(flags.track) || normalizeTrackAlias(options.track) || detectPlannerMode(context, null);
+  const pluginId = String(options.pluginId || flags.plugin || flags.plugin_id || "").trim() || null;
+  const report = loadStateResyncReport(cwd);
+  const gitRepository = readGitRepositoryState(cwd);
+  const currentHead = readGitHeadCommit(cwd);
+  const freshness = evaluateStateResyncFreshness(report, {
+    cwd,
+    current_branch: gitRepository.current_branch || null,
+    head_commit: currentHead
+  });
+  if (!report) {
+    return {
+      report_type: "kvdf_current_state_report",
+      current_state_report_path: CURRENT_STATE_REPORT_PATH,
+      status: "blocked",
+      fresh: false,
+      state_freshness: "unknown",
+      reason: "No current-state report exists yet.",
+      next_action: `Run kvdf state resync --track ${track === "plugin" ? "plugin" : track === "vibe" ? "vibe" : "owner"} --json first.`,
+      required: true,
+      report: null,
+      plugin_id: pluginId
+    };
+  }
+  const status = freshness.fresh ? "current" : (freshness.state_freshness === "stale" ? "warning" : "blocked");
+  return {
+    report_type: report.report_type || "kvdf_current_state_report",
+    current_state_report_path: CURRENT_STATE_REPORT_PATH,
+    status,
+    fresh: freshness.fresh,
+    state_freshness: freshness.state_freshness,
+    reason: freshness.reasons && freshness.reasons.length ? freshness.reasons[0] : "Current-state report is available.",
+    reasons: freshness.reasons || [],
+    next_action: freshness.fresh
+      ? "State Resync is current; it is safe to recommend the next Evolution."
+      : `Run kvdf state resync --track ${track === "plugin" ? "plugin" : track === "vibe" ? "vibe" : "owner"} --json before recommending the next Evolution.`,
+    required: !freshness.fresh,
+    report
   };
 }
 
@@ -4542,7 +4623,7 @@ function printPlannerOutput(report, flags, deps, kind) {
   else if (kind === "evolution") rendered = renderPlannerEvolutionPlan(report, deps.table);
   else if (kind === "task-punch") rendered = renderPlannerTaskPunchReport(report, deps.table);
   else if (["propose", "approve", "current", "reject"].includes(kind)) rendered = renderPlannerStateSummaryReport(report, deps.table);
-  else if (["current-state", "boundary", "stale-state"].includes(kind)) rendered = JSON.stringify(report, null, 2);
+  else if (["current-state", "boundary", "stale-state", "guard"].includes(kind)) rendered = JSON.stringify(report, null, 2);
   else rendered = renderPlannerNextReport(report, deps.table);
   if ((kind === "visual" || kind === "pipeline")) {
     openPlannerPreview(report, rendered, kind, flags, deps);
@@ -7694,6 +7775,7 @@ module.exports = {
   planner,
   buildPlannerNextReport,
   buildPlannerPromptReport,
+  buildPlannerGuardReport,
   buildPlannerCurrentStateReport,
   buildPlannerWorkspaceBoundaryReport,
   buildPlannerStaleStateReport,

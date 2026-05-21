@@ -41,6 +41,7 @@ const { changeControl } = require("./commands/change_control");
 const { init: initCommand } = require("./commands/init");
 const { temp: tempCommand } = require("./commands/temp");
 const { planner: plannerCommand } = require("./commands/planner");
+const { stateResync: stateResyncCommand } = require("./commands/state_resync");
 const { plannerVisual: plannerVisualCommand } = require("./commands/planner_visual");
 const { truth: truthCommand } = require("./commands/truth");
 const kvdfDevBundle = require("../../plugins/kvdf-dev/bootstrap");
@@ -9961,6 +9962,7 @@ function getCommandDispatchContext() {
     vibeCommand,
     getVibeRuntimeDeps,
     plannerCommand,
+    stateResyncCommand,
     truthCommand,
     plannerVisualCommand,
     getPlannerRuntimeDeps,

@@ -101,6 +101,33 @@ function readGitStatus(cwd = repoRoot()) {
   };
 }
 
+function readGitHeadCommit(cwd = repoRoot()) {
+  const result = spawnSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf8" });
+  if (result.status !== 0 || result.error) return null;
+  const value = String(result.stdout || "").trim();
+  return value || null;
+}
+
+function readGitRecentCommits(cwd = repoRoot(), limit = 10) {
+  const result = spawnSync("git", ["log", `-n${Math.max(1, limit)}`, "--oneline"], { cwd, encoding: "utf8" });
+  if (result.status !== 0 || result.error) return [];
+  return String(result.stdout || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function readGitLatestTags(cwd = repoRoot(), limit = 10) {
+  const result = spawnSync("git", ["tag", "--sort=-creatordate"], { cwd, encoding: "utf8" });
+  if (result.status !== 0 || result.error) return [];
+  return String(result.stdout || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((tag) => tag.length > 0)
+    .slice(0, Math.max(1, limit));
+}
+
 function listLocalGitChangedFileDetails(cwd = repoRoot()) {
   const gitDir = path.join(cwd, ".git");
   if (!fs.existsSync(gitDir)) return [];
@@ -124,6 +151,9 @@ function listLocalGitChangedFileDetails(cwd = repoRoot()) {
 module.exports = {
   getGitChangedFiles,
   getGitChangedFileDetails,
+  readGitHeadCommit,
+  readGitLatestTags,
+  readGitRecentCommits,
   listLocalGitChangedFileDetails,
   readGitStatus,
   readGitRepositoryState,

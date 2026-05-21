@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KVDF State Resync Current-State Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #020617;
+      --panel: rgba(15, 23, 42, 0.88);
+      --panel-2: rgba(17, 24, 39, 0.92);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #34d399;
+      --warn: #fbbf24;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top, #1e293b 0, #0f172a 40%, var(--bg) 100%);
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 28px 18px 56px;
+    }
+    header, section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+    }
+    header {
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+    section {
+      padding: 20px;
+      margin-top: 18px;
+    }
+    h1, h2, h3 { margin: 0 0 12px; line-height: 1.15; }
+    h1 { font-size: clamp(2rem, 4vw, 3.3rem); }
+    h2 { font-size: 1.35rem; }
+    h3 { font-size: 1.05rem; color: #f8fafc; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .pill {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      background: rgba(56, 189, 248, 0.12);
+      color: #dbeafe;
+      white-space: nowrap;
+      font-size: 0.92rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: rgba(2, 6, 23, 0.35);
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+      text-align: left;
+    }
+    th {
+      background: rgba(15, 23, 42, 0.98);
+      color: #f8fafc;
+    }
+    tr:last-child td { border-bottom: none; }
+    .diagram {
+      margin-top: 14px;
+      background: #fff;
+      border-radius: 16px;
+      padding: 12px;
+      overflow-x: auto;
+    }
+    ul { margin: 10px 0 0 20px; color: var(--text); }
+    li { margin: 6px 0; }
+    code {
+      background: rgba(148, 163, 184, 0.14);
+      padding: 2px 6px;
+      border-radius: 6px;
+      color: #f8fafc;
+    }
+    .good { color: var(--ok); }
+    .warn { color: var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>KVDF State Resync Current-State Report</h1>
+      <p>Generated: 2026-05-21</p>
+      <p>This is an evidence-backed current-state snapshot. It is stricter than a planning summary and separates support state from planning authority.</p>
+      <div class="pills">
+        <div class="pill">Track: <strong>framework_owner</strong></div>
+        <div class="pill">Branch: <strong>main</strong></div>
+        <div class="pill">Latest main: <strong>420fd43</strong></div>
+        <div class="pill">Validation: <strong class="good">passed</strong></div>
+        <div class="pill">Working tree: <strong class="warn">dirty</strong></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h3>State Resync Result</h3>
+        <p>Repo path, branch, git history, source files, runtime state, and validation were checked directly before this report was written.</p>
+      </div>
+      <div class="card">
+        <h3>Important Distinction</h3>
+        <p><code>No open priorities</code> does not mean <code>no active task</code>. The queue is empty, but the planner task memory is still materialized.</p>
+      </div>
+      <div class="card">
+        <h3>Execution Authority</h3>
+        <p>This report is safe for the scoped planner slice, not for broad unbounded execution.</p>
+      </div>
+    </div>
+
+    <section>
+      <h2>State Resync Table</h2>
+      <table>
+        <thead>
+          <tr><th>Check</th><th>Result</th><th>Evidence</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Repo path confirmed</td><td>Yes</td><td><code>D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf</code></td></tr>
+          <tr><td>Current branch confirmed</td><td>Yes</td><td><code>main</code></td></tr>
+          <tr><td>Latest main checked</td><td>Yes</td><td><code>420fd43 chore: refresh generated reports</code></td></tr>
+          <tr><td>Git history checked</td><td>Yes</td><td>Recent commits reviewed with <code>git log -n 5</code></td></tr>
+          <tr><td>Current files inspected</td><td>Yes</td><td><code>OWNER_DEVELOPMENT_STATE.md</code>, <code>ROADMAP.md</code>, <code>README.md</code>, <code>src/cli/index.js</code>, <code>src/core/bootstrap.js</code>, <code>src/cli/commands/resume.js</code>, <code>src/cli/commands/dashboard_state.js</code>, <code>src/cli/commands/security.js</code>, <code>src/cli/commands/release.js</code>, <code>src/cli/workspace.js</code>, <code>src/cli/fs_utils.js</code>, <code>.kabeeri/evolution.json</code>, <code>.kabeeri/reports/evolution_batch_execution.json</code></td></tr>
+          <tr><td>.kabeeri runtime state checked</td><td>Yes</td><td>Resume, evolution, and task memory reviewed</td></tr>
+          <tr><td>Stale docs detected</td><td>Yes</td><td>Historical roadmap / owner-state language exists and must not outrank live runtime state</td></tr>
+          <tr><td>Conflicts found</td><td>No blocking conflicts</td><td>Tree is dirty only because of the two newly created report files</td></tr>
+          <tr><td>Validation checked</td><td>Yes</td><td><code>node bin/kvdf.js validate</code> and <code>npm test</code> both passed</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Mermaid: Resync Logic</h2>
+      <div class="diagram mermaid">
+flowchart TD
+  A[Start Resync] --> B[Check git status]
+  B --> C[Check branch and HEAD]
+  C --> D[Inspect current source files]
+  D --> E[Inspect live runtime state]
+  E --> F[Run validation]
+  F --> G{Any conflicts or blockers?}
+  G -->|No| H[Produce current-state report]
+  G -->|Yes| I[Mark do-not-proceed flag]
+      </div>
+    </section>
+
+    <section>
+      <h2>Mermaid: Truth Hierarchy</h2>
+      <div class="diagram mermaid">
+flowchart LR
+  S[Current source files] --> T[Planning truth]
+  D[Current docs] --> T
+  G[Git state / history] --> T
+  V[Validation results] --> T
+  R[.kabeeri runtime state] --> T
+  C[Chat context] -. support only .-> T
+      </div>
+    </section>
+
+    <section>
+      <h2>Mermaid: Next-Evolution Decision</h2>
+      <div class="diagram mermaid">
+flowchart TD
+  A[Current task memory: owner-dashboard-planner-tests] --> B{Scope still valid?}
+  B -->|Yes| C[Update tests and docs]
+  B -->|No| D[Re-evaluate with owner approval]
+  C --> E[Run npm test]
+  E --> F[Run kvdf validate]
+  F --> G[Resume from state]
+      </div>
+    </section>
+
+    <section>
+      <h2>Current-State Verdict</h2>
+      <table>
+        <thead>
+          <tr><th>Question</th><th>Answer</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Good strategic orientation?</td><td>Yes</td></tr>
+          <tr><td>Good execution authority?</td><td>Not by itself</td></tr>
+          <tr><td>Needs state resync first?</td><td>Yes, and now it has one</td></tr>
+          <tr><td>Safe to use as the next prompt basis?</td><td>Yes, for the scoped planner task only</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Suggested Immediate Next Steps</h2>
+      <table>
+        <thead>
+          <tr><th>Step</th><th>Action</th><th>Output</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Finish <code>owner-dashboard-planner-tests</code></td><td>Planner integration coverage and doc alignment</td></tr>
+          <tr><td>2</td><td>Resolve <code>Dashboard Customization</code> if it affects the next slice</td><td>Clear the remaining UI decision</td></tr>
+          <tr><td>3</td><td>Keep CLI modularization safe</td><td>Stable route extraction and maintainable command wiring</td></tr>
+          <tr><td>4</td><td>Keep capability mapping current</td><td>No ambiguous imported knowledge</td></tr>
+          <tr><td>5</td><td>Keep docs and runtime aligned</td><td>Developer-readable EN/AR guidance</td></tr>
+        </tbody>
+      </table>
+      <ul>
+        <li>This report is a current-state snapshot, not just a planning orientation.</li>
+        <li>The next evolution recommendation is evidence-backed and scoped, not a broad queue rewrite.</li>
+        <li>For execution, trust <code>kvdf resume</code>, <code>kvdf evolution priorities</code>, and the live <code>.kabeeri/</code> state together with current source/docs and validation.</li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+  </script>
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF State Resync History",
+  "type": "object",
+  "required": [
+    "report_type",
+    "generated_at",
+    "current_state_report_path",
+    "entries"
+  ],
+  "properties": {
+    "report_type": { "const": "kvdf_state_resync_state" },
+    "generated_at": { "type": "string" },
+    "current_state_report_path": { "type": "string" },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "generated_at",
+          "track",
+          "status",
+          "state_freshness",
+          "repo"
+        ],
+        "properties": {
+          "generated_at": { "type": "string" },
+          "track": { "type": "string" },
+          "status": { "type": "string" },
+          "state_freshness": { "type": "string" },
+          "repo": { "type": "object", "additionalProperties": true },
+          "recommended_next_evolution": { "type": ["object", "null"], "additionalProperties": true }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

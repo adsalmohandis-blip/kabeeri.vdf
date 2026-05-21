@@ -21,12 +21,12 @@
 - Git enabled:
 - GitHub / remote provider enabled:
 
-## Latest Main Commit
+## Latest Main Commit if Git Is Enabled
 
 - Latest `main` commit:
 - Merge status:
 
-## Latest Release/Tag
+## Latest Release/Tag if Available
 
 - Latest release/tag:
 - Release notes or tag evidence:
@@ -42,7 +42,7 @@
 
 - Completed:
 
-## Active Evolution
+## Active Evolution if Any
 
 - Active Evolution:
 - Active evidence:
@@ -75,7 +75,7 @@
 - Recommended action:
 - Evidence for recommended next Evolution:
 
-## Do-Not-Proceed Flag
+## Do-Not-Proceed Flag if Ambiguous
 
 - Ambiguous state:
 - Do not proceed:

@@ -13,6 +13,7 @@ No Planning Without State Resync:
 
 - the planner must complete a State Resync before recommending the next
   Evolution
+- the planner must expose `kvdf planner guard --json` as the explicit drift gate
 - the planner must output a Current-State Report first
 - the planner must confirm the workspace boundary before any write-capable
   action
@@ -63,16 +64,18 @@ Evolution:
 1. `kvdf planner method`
 2. `kvdf planner auto`
 3. `kvdf planner review`
-4. `kvdf planner current-state`
-5. `kvdf planner boundary`
-6. `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
-7. `kvdf planner resume`
-8. `kvdf planner propose`
-9. `kvdf planner approve`
-10. `kvdf planner current`
-11. `kvdf planner materialize`
-12. `kvdf planner prompt --from-current`
-13. `kvdf planner visual --from-current`
+4. `kvdf state resync --track owner --json`
+5. `kvdf planner guard --json`
+6. `kvdf planner current-state`
+7. `kvdf planner boundary`
+8. `kvdf planner docs catalog|plan|materialize|status|apply-stage|review`
+9. `kvdf planner resume`
+10. `kvdf planner propose`
+11. `kvdf planner approve`
+12. `kvdf planner current`
+13. `kvdf planner materialize`
+14. `kvdf planner prompt --from-current`
+15. `kvdf planner visual --from-current`
 
 The planner remains the planning authority, but it does not execute code
 changes automatically. Owner approval still gates execution, and draft docs

@@ -6262,6 +6262,57 @@ test("planner current-state and owner boundary reports expose file-first workspa
   assert.strictEqual(boundary.current_state_summary.report_type, "kvdf_current_state_report");
 });
 
+test("state resync returns a current-state report and persists runtime state in the temp workspace", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const report = JSON.parse(runKvdf(["state", "resync", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_current_state_report");
+  assert.strictEqual(report.repo.root, dir);
+  assert.strictEqual(report.repo.branch, "main");
+  assert.ok(Array.isArray(report.source_of_truth_priority));
+  assert.ok(report.source_of_truth_priority.length > 0);
+  assert.strictEqual(report.runtime_state.supporting_only, true);
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "state_resync", "current_state_report.json")));
+  assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "state_resync", "state_resync_history.json")));
+}));
+
+test("planner guard blocks when no current-state report exists", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const report = JSON.parse(runKvdf(["planner", "guard", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_drift_guard");
+  assert.ok(["warning", "blocked", "pass"].includes(report.status));
+  assert.strictEqual(report.state_resync_required, true);
+  assert.match(report.current_state_report_path, /current_state_report\.json$/);
+  assert.match(report.next_action, /kvdf state resync/);
+}));
+
+test("planner next and pipeline surface state resync freshness", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const next = JSON.parse(runKvdf(["planner", "next", "--goal", "Check drift guard", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(next.report_type, "kvdf_planner_next");
+  assert.ok(next.state_resync);
+  assert.strictEqual(next.state_resync_required, true);
+  assert.match(next.state_resync.next_action, /kvdf state resync/);
+  assert.ok(next.next_action.includes("kvdf planner evolution --goal"));
+  assert.ok(next.current_state_summary);
+  assert.strictEqual(next.current_state_summary.report_type, "kvdf_current_state_report");
+
+  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Check drift guard", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pipeline.report_type, "kvdf_idea_to_evolution_pipeline");
+  assert.ok(pipeline.state_resync);
+  assert.ok(pipeline.state_resync.status);
+  assert.match(pipeline.state_resync.next_action, /kvdf state resync/);
+  assert.strictEqual(pipeline.next_action, "Review the pipeline plan, then approve/materialize the first Evolution.");
+  assert.ok(pipeline.current_state_summary);
+  assert.strictEqual(pipeline.current_state_summary.report_type, "kvdf_current_state_report");
+
+  const propose = JSON.parse(runKvdf(["planner", "propose", "--goal", "Check drift guard", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(propose.report_type, "kvdf_planner_proposal");
+  assert.strictEqual(propose.state_resync_required, true);
+  assert.ok(propose.state_resync);
+  assert.match(propose.state_resync.next_action, /kvdf state resync/);
+  assert.ok(propose.next_action.includes("kvdf planner approve"));
+}));
+
 test("planner boundary uses app workspace paths for vibe track and blocks core paths", () => withTempDir((dir) => {
   const boundary = JSON.parse(runKvdf(["planner", "boundary", "--track", "vibe", "--app", "booking", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(boundary.report_type, "kvdf_workspace_boundary_report");
