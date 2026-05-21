@@ -2,21 +2,22 @@
 
 Updated: 2026-05-21
 
-Branch: `exec/e3-p1-discovery-and-spec-evolution`
+Branch: `exec/e3-p1-discovery-and-spec-evolution-docs`
 
-Status: prepared for review
+Status: executed locally, pending PR review
 
-This execution report records the scoped preparation work for `e3-p1 Discovery And Spec Evolution`.
+This report records the scoped documentation alignment work for `e3-p1 Discovery And Spec Evolution`.
 It stays app-local to `workspaces/apps/kvdos/` and does not touch runtime code,
 SQLite implementation, cloud, license, execution runner, packaging, or repo-root KVDF files.
 
 ## Execution Summary
 
-The approved `e3-p1` slice was prepared as a documentation and spec-boundary step.
+The approved `e3-p1` slice was executed as documentation and spec-boundary alignment work.
 
 The execution result is the app-local Discovery And Spec Boundary contract:
 
-- the questionnaire boundary is explicit
+- the discovery boundary is explicit
+- the questionnaire flow boundary is explicit
 - the blueprint/spec derivation boundary is explicit
 - the `app.kvdos.yaml` validation boundary is explicit
 - the local privacy boundary is preserved
@@ -25,19 +26,22 @@ The execution result is the app-local Discovery And Spec Boundary contract:
 
 ## Files Changed
 
+- [KVDOS Product Definition](../product/PRODUCT_DEFINITION.md)
+- [KVDOS Product Strategy](../product/PRODUCT_STRATEGY.md)
+- [KVDOS Architecture](../architecture/KVDOS_ARCHITECTURE.md)
 - [e3-p1 Discovery And Spec Evolution Execution Report](./e3-p1-discovery-and-spec-evolution-execution-report.md)
 
 ## Summary By Scope
 
 ### Discovery Boundary
 
-- Defined the discovery/spec boundary as a documentation-only planning surface.
+- Defined the discovery/spec boundary as documentation-first and app-local.
 - Kept the boundary before any implementation or generator behavior.
 
 ### Questionnaire Boundary
 
-- Framed questionnaire flow as discovery boundary work only.
-- Avoided implying runtime mutation, cloud sync, or execution.
+- Framed questionnaire flow as discovery documentation only.
+- Avoided implying runtime mutation, cloud sync, or UI implementation.
 
 ### Blueprint / Spec Boundary
 
@@ -73,6 +77,9 @@ The execution result is the app-local Discovery And Spec Boundary contract:
 
 - No repo-root KVDF files were modified.
 - No `e4-p1` work was started.
+- No questionnaire UI was added.
+- No blueprint/spec generator code was added.
+- No `app.kvdos.yaml` generation logic was modified.
 - No runtime code was added.
 - No SQLite implementation was added.
 - No cloud, license, execution, or packaging work was added.
@@ -82,7 +89,7 @@ The execution result is the app-local Discovery And Spec Boundary contract:
 
 PR title:
 
-`e3-p1: prepare discovery and spec evolution execution boundary`
+`e3-p1: execute discovery and spec boundary docs alignment`
 
 PR checklist:
 
@@ -90,6 +97,9 @@ PR checklist:
 - [ ] No repo-root KVDF core files modified
 - [ ] No `e4-p1` work started
 - [ ] No runtime, SQLite, cloud, license, execution runner, or packaging work added
+- [ ] No questionnaire UI added
+- [ ] No blueprint/spec generator code added
+- [ ] No `app.kvdos.yaml` generation logic modified
 - [ ] Discovery boundary is explicit
 - [ ] Questionnaire boundary is explicit
 - [ ] Blueprint/spec derivation boundary is explicit
@@ -102,6 +112,6 @@ PR checklist:
 
 ## Handoff Note
 
-This preparation is ready for review. If approved, the next step is to continue
-with the next scoped `e3-p1` execution-prep work, not to expand beyond the local
-discovery/spec boundary.
+This execution is ready for review. If approved, the next step is to continue
+with the next scoped `e3-p1` documentation/spec-boundary alignment work, not to
+expand into real discovery UI or generator implementation.
