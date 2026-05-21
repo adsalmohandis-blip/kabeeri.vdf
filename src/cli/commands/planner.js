@@ -271,6 +271,33 @@ const PLANNER_DOC_DEFINITIONS = [
   { doc_id: "vendor_and_dependency_inventory", title: "Vendor And Dependency Inventory", filename: "VENDOR_AND_DEPENDENCY_INVENTORY.md", category: "dependencies", pipeline_stage: "handoff", planning_method_relevance: ["structured", "agile", "hybrid"], required_for: ["structured", "hybrid"], optional_for: ["agile"], source_template: ["42-vendor-and-dependency-inventory.md"], source_planner_stage: "handoff", depends_on: ["integration_map"], next_action: "List vendors, packages, and service dependencies." }
 ];
 
+const PLANNER_PORTABLE_DOC_MAPPINGS = [
+  {
+    doc_id: "ui_ux_design",
+    canonical_docs: ["05-ux-principles.md", "06-information-architecture.md", "09-ui-specification.md"]
+  },
+  {
+    doc_id: "system_design",
+    canonical_docs: ["12-architecture-overview.md", "13-module-breakdown.md", "14-service-boundaries.md"]
+  },
+  {
+    doc_id: "data_model",
+    canonical_docs: ["19-data-model.md", "20-entities-and-relationships.md", "21-data-dictionary.md"]
+  },
+  {
+    doc_id: "security_design",
+    canonical_docs: ["38-security-and-privacy.md", "16-authentication-and-permissions.md", "41-role-and-permission-matrix.md"]
+  },
+  {
+    doc_id: "version_plan",
+    canonical_docs: ["28-release-plan.md", "27-implementation-order.md"]
+  },
+  {
+    doc_id: "task_punches",
+    canonical_docs: ["26-task-plan.md", "27-implementation-order.md", "31-qa-checklist.md"]
+  }
+];
+
 function planner(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizePlannerAction(action);
   if (!["next", "status", "show", "plan", "prompt", "method", "auto", "review", "resume", "docs", "version", "feedback", "truth", "evolution", "task-punch", "visual", "pipeline", "train", "propose", "approve", "current", "current-state", "boundary", "stale-state", "reject", "complete", "materialize", "guard", "state", "state-resync"].includes(mode)) {
@@ -1075,10 +1102,94 @@ function buildPlannerDocsCatalog(options = {}) {
     catalog_type: "kvdf_planner_docs_catalog",
     planner_mode: plannerMode,
     track: getPlannerTrack(plannerMode),
-    folder_categories: PLANNER_DOC_CATEGORIES.map((category) => category.id),
+    folder_categories: PLANNER_DOC_CATEGORIES.map((category) => category.folder),
     categories,
     docs
   };
+}
+
+function buildPlannerDocumentationFolders(docs = [], options = {}) {
+  const plannerMode = normalizePlannerMode(options.plannerMode || options.track || "vibe");
+  const appSlug = normalizeAppSlug(options.appSlug || "app-draft");
+  const pluginId = normalizePluginId(options.pluginId || "plugin");
+  const repoRootPath = options.repo_root || process.cwd();
+  const baseRoot = plannerMode === "plugin"
+    ? path.join(getPluginSourcePath(pluginId), "docs")
+    : path.join(repoRootPath, "workspaces", "apps", appSlug, "docs");
+  const categoryMap = new Map(PLANNER_DOC_CATEGORIES.map((category) => [category.id, category]));
+  const docsByCategory = new Map();
+  for (const doc of Array.isArray(docs) ? docs : []) {
+    const categoryId = String(doc.category || "").trim();
+    if (!docsByCategory.has(categoryId)) docsByCategory.set(categoryId, []);
+    docsByCategory.get(categoryId).push(doc);
+  }
+  return PLANNER_DOC_CATEGORIES.map((category) => {
+    const files = (docsByCategory.get(category.id) || []).map((doc) => ({
+      doc_id: doc.doc_id,
+      title: doc.title,
+      path: doc.path,
+      status: doc.status,
+      pipeline_stage: doc.pipeline_stage
+    }));
+    const folderPath = normalizeRelativePath(repoRootPath, path.join(baseRoot, category.folder));
+    const required = files.some((file) => ["planned", "generated", "reviewed", "approved", "applied_to_stage"].includes(String(file.status || "").toLowerCase()));
+    const status = files.some((file) => String(file.status || "").toLowerCase() === "blocked")
+      ? "blocked"
+      : files.some((file) => String(file.status || "").toLowerCase() === "missing")
+        ? "missing"
+        : files.some((file) => String(file.status || "").toLowerCase() === "planned")
+          ? "planned"
+          : files.some((file) => String(file.status || "").toLowerCase() === "generated")
+            ? "generated"
+            : files.some((file) => String(file.status || "").toLowerCase() === "reviewed")
+              ? "reviewed"
+              : files.some((file) => String(file.status || "").toLowerCase() === "approved")
+                ? "approved"
+                : "unknown";
+    const requiredTotal = files.filter((file) => ["planned", "generated", "reviewed", "approved", "applied_to_stage"].includes(String(file.status || "").toLowerCase())).length;
+    return {
+      folder_id: category.folder,
+      title: category.title,
+      path: `${folderPath.replace(/\\/g, "/").replace(/\/?$/, "/")}`,
+      required,
+      status,
+      required_total: requiredTotal,
+      files
+    };
+  }).filter((folder) => folder.files.length || folder.required);
+}
+
+function buildPlannerPortableDocsMapping(options = {}) {
+  const plannerMode = normalizePlannerMode(options.plannerMode || options.track || "vibe");
+  const appSlug = normalizeAppSlug(options.appSlug || "app-draft");
+  const pluginId = normalizePluginId(options.pluginId || "plugin");
+  const repoRootPath = options.repo_root || process.cwd();
+  const plannerDocsRoot = plannerMode === "plugin"
+    ? normalizeRelativePath(repoRootPath, path.join(getPluginSourcePath(pluginId), "docs"))
+    : normalizeRelativePath(repoRootPath, path.join(repoRootPath, "workspaces", "apps", appSlug, "docs"));
+  const canonicalRoot = normalizeRelativePath(repoRootPath, path.join(repoRootPath, "workspaces", "apps", appSlug, "docs"));
+  const mappingById = new Map(PLANNER_PORTABLE_DOC_MAPPINGS.map((item) => [item.doc_id, item]));
+  return PLANNER_DOC_DEFINITIONS.map((definition) => {
+    const mapping = mappingById.get(definition.doc_id);
+    if (!mapping) return null;
+    const canonicalDocs = Array.isArray(mapping.canonical_docs) ? mapping.canonical_docs.map((doc) => `${canonicalRoot}/${doc}`) : [];
+    const categoryFolder = (PLANNER_DOC_CATEGORIES.find((category) => category.id === definition.category) || {}).folder || definition.category;
+    return {
+      planner_doc: `${plannerDocsRoot.replace(/\\/g, "/")}/${categoryFolder}/${definition.filename}`,
+      canonical_docs: canonicalDocs,
+      mapping_status: "planned"
+    };
+  }).filter(Boolean);
+}
+
+function buildPlannerDocumentationFilesFromFolders(folders = []) {
+  const files = [];
+  for (const folder of Array.isArray(folders) ? folders : []) {
+    for (const file of Array.isArray(folder.files) ? folder.files : []) {
+      if (file && file.path) files.push(file.path);
+    }
+  }
+  return uniqueList(files);
 }
 
 function buildPlannerDocsPlan(sourcePipeline = {}, options = {}) {
@@ -1106,6 +1217,9 @@ function buildPlannerDocsPlan(sourcePipeline = {}, options = {}) {
     force: Boolean(options.force),
     sourcePipeline
   }));
+  const documentationFolders = buildPlannerDocumentationFolders(docs, { plannerMode, appSlug, pluginId, repo_root: options.repo_root || process.cwd() });
+  const portableDocsMapping = buildPlannerPortableDocsMapping({ plannerMode, appSlug, pluginId, repo_root: options.repo_root || process.cwd() });
+  const documentationFiles = buildPlannerDocumentationFilesFromFolders(documentationFolders);
   const summary = summarizePlannerDocsEntries(docs);
   return {
     report_type: "kvdf_planner_docs_plan",
@@ -1119,6 +1233,9 @@ function buildPlannerDocsPlan(sourcePipeline = {}, options = {}) {
     plugin: plannerMode === "plugin" ? pluginId : null,
     folder_categories: catalog.folder_categories,
     catalog,
+    documentation_folders: documentationFolders,
+    portable_docs_mapping: portableDocsMapping,
+    documentation_files: documentationFiles,
     docs,
     docs_plan: docs,
     stage_status: summary.stage_status,
@@ -1244,6 +1361,15 @@ function buildPlannerDocsStatusSummaryFromPlan(docsPlan = {}) {
     planning_method: docsPlan.planning_method || null,
     app: docsPlan.app || null,
     plugin: docsPlan.plugin || null,
+    documentation_folders: Array.isArray(docsPlan.documentation_folders) ? docsPlan.documentation_folders.map((folder) => ({
+      ...folder,
+      files: Array.isArray(folder.files) ? folder.files.map((file) => ({ ...file })) : []
+    })) : [],
+    portable_docs_mapping: Array.isArray(docsPlan.portable_docs_mapping) ? docsPlan.portable_docs_mapping.map((mapping) => ({
+      ...mapping,
+      canonical_docs: Array.isArray(mapping.canonical_docs) ? [...mapping.canonical_docs] : []
+    })) : [],
+    documentation_files: Array.isArray(docsPlan.documentation_files) ? [...docsPlan.documentation_files] : [],
     required_total: summary.required_total,
     existing_total: summary.existing_total,
     generated_total: summary.generated_total,
@@ -1887,6 +2013,12 @@ function buildPlannerCurrentPipelineSnapshot(context, flags = {}) {
   const currentPlan = findCurrentPlannerPlan(state);
   if (!currentPlan) return buildPlannerBlockedReviewReport("No approved current planner plan exists.", context);
   const review = buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  const documentationFolders = Array.isArray(currentPlan.documentation_folders)
+    ? currentPlan.documentation_folders
+    : (currentPlan.docs_plan && Array.isArray(currentPlan.docs_plan.documentation_folders) ? currentPlan.docs_plan.documentation_folders : []);
+  const portableDocsMapping = Array.isArray(currentPlan.portable_docs_mapping)
+    ? currentPlan.portable_docs_mapping
+    : (currentPlan.docs_plan && Array.isArray(currentPlan.docs_plan.portable_docs_mapping) ? currentPlan.docs_plan.portable_docs_mapping : []);
   return {
     report_type: "kvdf_planner_auto_plan",
     generated_at: new Date().toISOString(),
@@ -1898,7 +2030,19 @@ function buildPlannerCurrentPipelineSnapshot(context, flags = {}) {
     goal: currentPlan.goal || "",
     source_control: currentPlan.source_control || null,
     planning_strategy: currentPlan.planning_strategy || null,
-    documentation_files: currentPlan.documentation_files || [],
+    documentation_files: Array.isArray(currentPlan.documentation_files) && currentPlan.documentation_files.length
+      ? [...currentPlan.documentation_files]
+      : Array.isArray(currentPlan.docs_plan && currentPlan.docs_plan.documentation_files)
+        ? [...currentPlan.docs_plan.documentation_files]
+        : [],
+    documentation_folders: documentationFolders.map((folder) => ({
+      ...folder,
+      files: Array.isArray(folder.files) ? folder.files.map((file) => ({ ...file })) : []
+    })),
+    portable_docs_mapping: portableDocsMapping.map((mapping) => ({
+      ...mapping,
+      canonical_docs: Array.isArray(mapping.canonical_docs) ? [...mapping.canonical_docs] : []
+    })),
     docs_plan: currentPlan.docs_plan || null,
     docs_status: currentPlan.docs_status || null,
     design_artifacts: currentPlan.design_artifacts || null,
@@ -3672,7 +3816,7 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
   const stateResync = buildPlannerStateResyncSummary(context, request);
   const normalizedIdea = String(idea || request.idea || request.goal || "").trim() || "KVDF Planning Idea";
-  const documentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
+  const supportDocumentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
   const designArtifacts = buildIdeaToEvolutionDesignArtifacts(normalizedIdea, mode, context, pluginContext, sourceControl);
   const versionPlan = buildIdeaToEvolutionVersionPlan(normalizedIdea, mode, deliveryMode, context, pluginContext, sourceControl);
   const versionControl = buildPlannerVersionControlSummary({
@@ -3709,6 +3853,11 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     idea: normalizedIdea
   });
   const docsStatus = buildPlannerDocsStatusSummaryFromPlan(docsPlan);
+  const documentationFolders = Array.isArray(docsPlan.documentation_folders) ? docsPlan.documentation_folders : [];
+  const documentationFiles = uniqueList([
+    ...supportDocumentationFiles,
+    ...(Array.isArray(docsPlan.documentation_files) ? docsPlan.documentation_files : [])
+  ]);
   const visualPlanning = buildPlannerVisualPayload({
     goal: normalizedIdea,
     mode,
@@ -3777,6 +3926,8 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     source_control: sourceControl,
     idea: normalizedIdea,
     documentation_files: documentationFiles,
+    documentation_folders: documentationFolders,
+    portable_docs_mapping: Array.isArray(docsPlan.portable_docs_mapping) ? docsPlan.portable_docs_mapping : [],
     docs_plan: docsPlan,
     docs_status: docsStatus,
     design_artifacts: designArtifacts,
@@ -3915,6 +4066,14 @@ function buildViberPipelineState({
     allowed_files: Array.isArray(currentPlan && currentPlan.allowed_files) ? [...currentPlan.allowed_files] : [],
     docs_status: docsStatusValue,
     docs_plan: docsPlan || null,
+    documentation_folders: Array.isArray(docsPlan && docsPlan.documentation_folders) ? docsPlan.documentation_folders.map((folder) => ({
+      ...folder,
+      files: Array.isArray(folder.files) ? folder.files.map((file) => ({ ...file })) : []
+    })) : [],
+    portable_docs_mapping: Array.isArray(docsPlan && docsPlan.portable_docs_mapping) ? docsPlan.portable_docs_mapping.map((mapping) => ({
+      ...mapping,
+      canonical_docs: Array.isArray(mapping.canonical_docs) ? [...mapping.canonical_docs] : []
+    })) : [],
     design_artifacts: designArtifacts || null,
     visual_planning: visualPlanning || null,
     version_plan: versionPlan || null,
@@ -4094,6 +4253,15 @@ function buildViberPipelineStages({
     allowed_files: [],
     docs_status: docsStatusValue,
     docs_plan: docsPlan || null,
+    documentation_folders: Array.isArray(docsPlan && docsPlan.documentation_folders) ? docsPlan.documentation_folders.map((folder) => ({
+      ...folder,
+      files: Array.isArray(folder.files) ? folder.files.map((file) => ({ ...file })) : []
+    })) : [],
+    documentation_files: Array.isArray(docsPlan && docsPlan.documentation_files) ? [...docsPlan.documentation_files] : [],
+    portable_docs_mapping: Array.isArray(docsPlan && docsPlan.portable_docs_mapping) ? docsPlan.portable_docs_mapping.map((mapping) => ({
+      ...mapping,
+      canonical_docs: Array.isArray(mapping.canonical_docs) ? [...mapping.canonical_docs] : []
+    })) : [],
     design_artifacts: designArtifacts || null,
     visual_planning: visualPlanning || null,
     version_plan: versionPlan || null,

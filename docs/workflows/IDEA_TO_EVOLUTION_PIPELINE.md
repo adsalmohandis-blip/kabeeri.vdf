@@ -1,7 +1,7 @@
 ﻿# Idea to Evolution Pipeline
 
 The Idea to Evolution Pipeline is the next planning layer above the shared Planner Runtime Approval Gate.
-It turns a raw idea or goal into documentation files, design artifacts, a visual planning model, a version plan, governed evolutions, task punches, a visual roadmap, and the next approved Evolution slice.
+It turns a raw idea or goal into documentation folder maps, documentation file compatibility lists, design artifacts, a visual planning model, a version plan, governed evolutions, task punches, a visual roadmap, and the next approved Evolution slice.
 
 Before any write-capable step, the pipeline should also consume the Current-State
 Report and workspace boundary summary so stale roadmap snapshots do not outrank
@@ -51,6 +51,8 @@ Idea
 - GitHub handoff remains optional and never becomes the default path.
 - The Viber Planning-to-Task Execution Pipeline is gated: raw ideas must first become a Current-State Report, documentation map, system design, database design, UI/UX design, visual planning, version plan, evolutions, task punches, and approval/materialization before Codex execution is allowed.
 - `kvdf planner pipeline --track vibe` should expose `execution_allowed`, `execution_blockers`, `next_stage`, and a `viber_pipeline` summary so the app track stays file-first and local-first.
+- `documentation_folders` is the primary Viber docs model, while `documentation_files` remains the compatibility flattening view for legacy surfaces.
+- Planner foldered docs map back to the canonical portable app-doc package through a portable docs mapping, so the numbered long-term app docs remain the durable source of truth.
 - Viber prompts must not tell Codex to edit app source files until the pipeline is execution-ready.
 - GitHub stays optional, and KVDF Core files stay out of the app track by default.
 

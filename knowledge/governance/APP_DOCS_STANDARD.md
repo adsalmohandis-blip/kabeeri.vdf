@@ -37,6 +37,19 @@ enough that:
 - Human workflow guidance stays in `knowledge/` and `docs/`.
 - The app folder is the portable package, not chat text.
 
+## Planner Foldered Docs Bridge
+
+Planner-generated foldered docs are a stage-driven working layer for Viber/app
+planning. They live under `workspaces/apps/<app-slug>/docs/<category>/` and are
+used to plan, review, stage, and approve implementation readiness.
+
+- `documentation_folders` is the primary planner docs model.
+- `documentation_files` is a derived compatibility list for older surfaces.
+- The portable numbered app-doc package remains the canonical long-term app
+  documentation package.
+- Planner foldered docs should map back to the portable package instead of
+  replacing it.
+
 ## Document Metadata Standard
 
 Every canonical app doc should carry a visible metadata block near the top with

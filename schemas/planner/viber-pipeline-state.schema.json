@@ -8,6 +8,9 @@
     "track",
     "delivery_mode",
     "source_of_truth",
+    "documentation_folders",
+    "documentation_files",
+    "portable_docs_mapping",
     "stages",
     "readiness",
     "execution_allowed",
@@ -46,6 +49,51 @@
         "pr_title": { "type": ["string", "null"] },
         "handoff_requires_pr": { "type": "boolean" },
         "next_source_control_action": { "type": "string" }
+      }
+    },
+    "documentation_folders": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["folder_id", "title", "path", "required", "status", "files"],
+        "properties": {
+          "folder_id": { "type": "string" },
+          "title": { "type": "string" },
+          "path": { "type": "string" },
+          "required": { "type": "boolean" },
+          "status": { "type": "string" },
+          "required_total": { "type": "integer" },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["doc_id", "title", "path", "status", "pipeline_stage"],
+              "properties": {
+                "doc_id": { "type": "string" },
+                "title": { "type": "string" },
+                "path": { "type": "string" },
+                "status": { "type": "string" },
+                "pipeline_stage": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "documentation_files": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "portable_docs_mapping": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["planner_doc", "canonical_docs", "mapping_status"],
+        "properties": {
+          "planner_doc": { "type": "string" },
+          "canonical_docs": { "type": "array", "items": { "type": "string" } },
+          "mapping_status": { "type": "string" }
+        }
       }
     },
     "stages": {

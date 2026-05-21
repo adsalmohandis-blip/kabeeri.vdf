@@ -317,7 +317,9 @@ approved or materialized.
 
 The pipeline output can include:
 
-- documentation file maps
+- documentation folder maps
+- documentation file maps as a compatibility view
+- portable docs mappings back to the canonical numbered app package
 - system design
 - database design
 - UI/UX design
@@ -338,6 +340,10 @@ Track behavior:
   KVDF Core edits out of scope unless the Owner explicitly approves them.
 - Plugin Track keeps plugin manifest, runtime, docs, schemas, and tests in
   parity while protecting unrelated plugins and plugin-link runtime state.
+- Planner-generated foldered docs are the stage-driven planning view, while
+  the portable numbered app docs remain the canonical durable product package.
+- `documentation_folders` should be the primary planner docs surface and
+  `documentation_files` should stay as a compatibility flattening view.
 
 The pipeline is still governed by the same approval gate:
 
