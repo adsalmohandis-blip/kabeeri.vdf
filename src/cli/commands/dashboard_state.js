@@ -853,6 +853,54 @@ function buildPlannerVersionPlanSummary(plan = null) {
   };
 }
 
+function buildRoadmapTrainSummarySnapshot(train = null) {
+  const majorVersions = Array.isArray(train && train.major_versions) ? train.major_versions : [];
+  const stages = majorVersions.flatMap((major) => Array.isArray(major.stages) ? major.stages : []);
+  const evoSprints = stages.flatMap((stage) => Array.isArray(stage.evo_sprints) ? stage.evo_sprints : []);
+  const queue = Array.isArray(train && train.fifo_queue) ? train.fifo_queue : [];
+  const next = queue.find((item) => ["planned", "ready", "active"].includes(String(item && item.status || "").toLowerCase()) && !item.blocked) || null;
+  const blockedTotal = queue.filter((item) => item && (item.blocked || String(item.status || "").toLowerCase() === "blocked")).length;
+  const readyTotal = queue.filter((item) => String(item && item.status || "").toLowerCase() === "ready").length;
+  const activeTotal = queue.filter((item) => String(item && item.status || "").toLowerCase() === "active").length;
+  const completedTotal = queue.filter((item) => ["completed", "published"].includes(String(item && item.status || "").toLowerCase())).length;
+  const publishedTotal = queue.filter((item) => String(item && item.status || "").toLowerCase() === "published").length;
+  const status = blockedTotal
+    ? "blocked"
+    : publishedTotal > 0 && completedTotal === queue.length && queue.length > 0
+      ? "published"
+      : activeTotal > 0
+        ? "active"
+        : readyTotal > 0
+          ? "ready"
+          : queue.length > 0 && completedTotal === queue.length
+            ? "completed"
+            : "planned";
+  return {
+    train_engine: "shared-roadmap-train-engine",
+    available: Boolean(train),
+    train_type: train && train.train_type ? train.train_type : "owner",
+    track: train && train.track ? train.track : null,
+    planning_method: train && train.planning_method ? train.planning_method : "auto",
+    status,
+    major_versions_total: majorVersions.length,
+    version_stages_total: stages.length,
+    evo_sprints_total: evoSprints.length,
+    evolutions_total: queue.length,
+    task_ids_total: queue.reduce((total, item) => total + (Array.isArray(item && item.task_ids) ? item.task_ids.length : 0), 0),
+    fifo_queue_total: queue.length,
+    blocked_total: blockedTotal,
+    ready_total: readyTotal,
+    active_total: activeTotal,
+    completed_total: completedTotal,
+    published_total: publishedTotal,
+    next_major_version: next ? next.major_version || null : null,
+    next_version_id: next ? next.version_id || null : null,
+    next_evo_sprint_id: next ? next.evo_sprint_id || null : null,
+    next_evolution_id: next ? next.evolution_id || null : (train && train.next_evolution_id ? train.next_evolution_id : null),
+    next_action: next ? next.next_action || "Review the next unblocked evolution." : train && train.next_action ? train.next_action : "Build the roadmap train first."
+  };
+}
+
 function buildPlannerPipelineSummary(plan = null) {
   const pipeline = plan && (plan.pipeline || plan.source_pipeline || plan.sourcePipeline) ? (plan.pipeline || plan.source_pipeline || plan.sourcePipeline) : null;
   const viberPipeline = pipeline && pipeline.viber_pipeline ? pipeline.viber_pipeline : (plan && plan.viber_pipeline ? plan.viber_pipeline : null);
@@ -861,6 +909,8 @@ function buildPlannerPipelineSummary(plan = null) {
   const visual = plan && plan.visual ? plan.visual : null;
   const designArtifacts = pipeline && pipeline.design_artifacts ? pipeline.design_artifacts : {};
   const versionPlan = rawVersionPlan || null;
+  const roadmapTrain = plan && plan.roadmap_train ? plan.roadmap_train : null;
+  const roadmapTrainSummary = buildRoadmapTrainSummarySnapshot(roadmapTrain);
   const stages = Array.isArray(viberPipeline && viberPipeline.stages) ? viberPipeline.stages : [];
   const fallbackStageCount = plan && (plan.recommended_evolution || plan.task_punch || (Array.isArray(plan.task_punches) && plan.task_punches.length) || plan.source_pipeline) ? 1 : 0;
   const stagesTotal = stages.length || fallbackStageCount;
@@ -884,6 +934,7 @@ function buildPlannerPipelineSummary(plan = null) {
     evolutions_total: Array.isArray(pipeline && pipeline.evolutions) ? pipeline.evolutions.length : Array.isArray(plan && plan.evolutions) ? plan.evolutions.length : 0,
     task_punches_total: Array.isArray(pipeline && pipeline.task_punches) ? pipeline.task_punches.length : taskPunch ? 1 : 0,
     next_evolution: pipeline && pipeline.next_evolution ? pipeline.next_evolution : (plan && plan.recommended_evolution) || {},
+    roadmap_train_summary: roadmapTrainSummary,
     viber_pipeline: viberPipeline ? {
       report_type: viberPipeline.report_type || "kvdf_viber_planning_to_task_pipeline",
       track: viberPipeline.track || "vibe_app_developer",
@@ -984,6 +1035,7 @@ function buildPlannerDashboardState(options = {}) {
   const sourceControl = normalizePlannerSourceControl(currentPlan ? currentPlan.source_control : null);
   const versionPlan = buildPlannerVersionPlanSummary(currentPlan);
   const pipeline = buildPlannerPipelineSummary(currentPlan);
+  const roadmapTrainSummary = buildRoadmapTrainSummarySnapshot(currentPlan ? currentPlan.roadmap_train : null);
   const securityGate = buildSecurityGateState({
     track: currentPlan && String(currentPlan.track || "").toLowerCase().includes("vibe") ? "vibe" : "owner",
     scope: "workspace",
@@ -1040,6 +1092,7 @@ function buildPlannerDashboardState(options = {}) {
     source_control: sourceControl,
     version_plan: versionPlan,
     pipeline,
+    roadmap_train_summary: roadmapTrainSummary,
     security_gate: securityGate,
     visual,
     task_punch: pipeline.task_punch,

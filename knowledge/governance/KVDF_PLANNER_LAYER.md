@@ -71,6 +71,7 @@ The planner can emit:
 - a planner resume report
 - draft documentation files from the planner pipeline
 - a shared Roadmap Train / Evo Sprint Queue for owner and Viber tracks
+- a reusable `roadmap_train_summary` and `evo_sprint_queue` snapshot for prompt, visual, pipeline, readiness, and dashboard reuse
 - a Codex-ready execution prompt
 - a visual planning model with Mermaid, planning board JSON, scope map, and
   markdown report output

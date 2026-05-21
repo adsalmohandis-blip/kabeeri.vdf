@@ -25,3 +25,4 @@ Owner readiness should consider:
 - Persist the owner train in `.kabeeri/owner_roadmap_train.json`.
 - Use FIFO to find the next unblocked evolution.
 - Keep blocked items visible and skip completed items.
+- Surface the reusable `roadmap_train_summary` when you need a compact readiness snapshot for pipeline, dashboard, prompt, or visual output.

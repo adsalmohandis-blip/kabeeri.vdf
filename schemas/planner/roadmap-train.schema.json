@@ -24,6 +24,8 @@
     "status": { "type": "string", "enum": ["planned", "active", "blocked", "ready", "completed", "published"] },
     "major_versions": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
     "fifo_queue": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
+    "roadmap_train_summary": { "type": "object", "additionalProperties": true },
+    "evo_sprint_queue": { "type": "array", "items": { "type": "object", "additionalProperties": true } },
     "next_evolution_id": { "type": ["string", "null"] },
     "created_at": { "type": "string" },
     "updated_at": { "type": "string" }

@@ -6,7 +6,7 @@ KVDF Planner controls Viber/App versions from planning through publish readiness
 
 This workflow links the planner, docs system, evolution plan, task punches, validation, security, handoff, and publish readiness into one read-only governance loop.
 
-The shared Roadmap Train feeds this workflow with ordered version stages, Evo Sprints, evolutions, and task punches so the next publish step stays FIFO and resumable.
+The shared Roadmap Train feeds this workflow with ordered version stages, Evo Sprints, evolutions, and task punches so the next publish step stays FIFO and resumable. When present, `roadmap_train_summary` is the compact shared snapshot for the same queue state across planner, prompt, visual, and dashboard surfaces.
 
 ## Version State
 

@@ -37,6 +37,7 @@ Completed items are skipped. Blocked items remain visible.
 
 - Roadmap train records major versions, version stages, evo sprints, evolutions, and task ids.
 - Each item is persisted as JSON so the next session can resume without reconstructing the queue from chat.
+- Reports surface a reusable `roadmap_train_summary` plus the derived `evo_sprint_queue` so pipeline, visual, prompt, readiness, and dashboard views can reuse the same FIFO state.
 
 ## Next Action
 
