@@ -42,11 +42,13 @@ function detectWorkspaceKind({ cwd = repoRoot(), packageJson = null, workspaceJs
   const root = path.resolve(cwd);
   const repoName = String(packageJson && packageJson.name || "").trim().toLowerCase();
   const resolved = resolveWorkspaceRoot(root);
+  const looksLikeKvdos = repoName === "kvdos" || repoName.includes("kvdos") || /kvdos/i.test(root);
+  if (looksLikeKvdos) return "viber_app";
   if (pluginJson || pluginId || resolved.kind === "plugin") return "plugin";
   if (repoName === "kabeeri-vdf" || repoName.includes("kabeeri") || fs.existsSync(path.join(root, "bin", "kvdf.js")) || fs.existsSync(path.join(root, "src", "cli", "index.js"))) {
     return "kvdf_core";
   }
-  if (resolved.kind === "viber_app" || workspaceJson || projectJson || appSlug || repoName.includes("kvdos") || /kvdos/i.test(root)) return "viber_app";
+  if (resolved.kind === "viber_app" || workspaceJson || projectJson || appSlug) return "viber_app";
   if (normalizeTrack(targetTrack) === "framework_owner") return "kvdf_core";
   return "unknown";
 }
@@ -145,7 +147,11 @@ function buildWorkspaceBoundaryReport(options = {}) {
     pluginId: options.pluginId
   });
   const track = normalizeTrack(options.targetTrack || (kind === "kvdf_core" ? "framework_owner" : kind === "plugin" ? "plugin" : "vibe_app_developer"));
-  const appSlug = String(options.appSlug || resolved.app_slug || workspaceJson && workspaceJson.app_slug || projectJson && projectJson.app_slug || (kind === "viber_app" ? path.basename(cwd) : "")).trim() || null;
+  const repoName = packageJson && packageJson.name ? String(packageJson.name).trim().toLowerCase() : "";
+  const inferredAppSlug = kind === "viber_app" && (repoName.includes("kvdos") || /kvdos/i.test(cwd))
+    ? "kvdos"
+    : path.basename(cwd);
+  const appSlug = String(options.appSlug || resolved.app_slug || workspaceJson && workspaceJson.app_slug || projectJson && projectJson.app_slug || (kind === "viber_app" ? inferredAppSlug : "")).trim() || null;
   const pluginId = String(options.pluginId || resolved.plugin_id || pluginJson && pluginJson.plugin_id || "").trim() || null;
   const pathSet = buildWorkspacePaths(kind, { appSlug, pluginId });
   const targetWorkspace = kind === "kvdf_core"

@@ -6924,6 +6924,20 @@ test("planner current-state and owner boundary reports expose file-first workspa
   assert.strictEqual(boundary.current_state_summary.report_type, "kvdf_current_state_report");
 });
 
+test("planner current-state treats KVDOS as an app workspace instead of KVDF Core", () => withTempDir((dir) => {
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+    name: "kvdos",
+    version: "1.0.0"
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, "README.md"), "# KVDOS\n", "utf8");
+  const currentState = JSON.parse(runKvdf(["planner", "current-state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(currentState.report_type, "kvdf_current_state_report");
+  assert.strictEqual(currentState.workspace.kind, "viber_app");
+  assert.strictEqual(currentState.track.active_track, "vibe_app_developer");
+  assert.ok(currentState.allowed_paths.some((item) => item.startsWith("workspaces/apps/kvdos/")));
+  assert.ok(currentState.forbidden_paths.includes("src/cli/"));
+}));
+
 test("state resync returns a current-state report and persists runtime state in the temp workspace", () => withTempDir((dir) => {
   writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
   const report = JSON.parse(runKvdf(["state", "resync", "--track", "owner", "--json"], { cwd: dir }).stdout);
@@ -7010,6 +7024,9 @@ test("planner stale-state classifies stale plans and generated report snapshots 
   assert.strictEqual(report.status, "warning");
   assert.ok(report.stale_plans.some((item) => item.id === "owner-dashboard-planner"));
   assert.ok(report.stale_reports.some((item) => item.path === "docs/reports/old-report.md"));
+  assert.ok(report.stale_plans.some((item) => ["superseded", "stale", "unknown"].includes(item.classification)));
+  assert.ok(Array.isArray(report.active_items));
+  assert.ok(Array.isArray(report.unknown_items));
   assert.ok(Array.isArray(report.historical_items));
   assert.ok(Array.isArray(report.stale_runtime_items));
 }));

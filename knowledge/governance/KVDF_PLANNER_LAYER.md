@@ -65,6 +65,7 @@ The planner can emit:
 - a Current-State Report
 - a workspace boundary report
 - a stale-state report
+- a source-of-truth policy summary
 - a self-planning auto plan with docs, review, and visual context
 - a planner review report
 - a planner resume report
@@ -231,6 +232,7 @@ Rules:
 - completed plans close out the shared runtime approval gate and clear the current plan id when they match the current slice
 - direct-to-main remains the default for KVDF Core Owner Track work
 - current-state and boundary reports should be read before any write-capable planner action
+- latest main, merged PR history, package.json, and README outrank stale roadmap/report snapshots
 - truth reconciliation should be read whenever runtime or generated reports may
   be stale
 - planner docs catalog/plan/status/review output should carry the foldered app documentation model forward

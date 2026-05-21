@@ -6,6 +6,8 @@ It turns a raw idea or goal into documentation folder maps, documentation file c
 Before any write-capable step, the pipeline should also consume the Current-State
 Report and workspace boundary summary so stale roadmap snapshots do not outrank
 the live repository state.
+Latest main, merged PR history, package.json/scripts, and README/current docs
+always outrank stale roadmap or generated report snapshots.
 
 The planner dashboard sync layer can then surface the approved plan, visual summary, source-control state, materialization status, and next action in live dashboard JSON and exported HTML.
 
@@ -43,6 +45,7 @@ Idea
 - Delivery mode defaults to direct-to-main when Git is available.
 - The pipeline stays focused on KVDF Core source, docs, schemas, tests, and prompt packs.
 - KVDOS and runtime state under `.kabeeri/` stay out of scope unless explicitly requested.
+- KVDOS remains an app/product workspace, not KVDF Core.
 
 ### Vibe/App Track
 

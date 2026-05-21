@@ -3,8 +3,9 @@
 ## Purpose
 
 KVDF must not plan or write from stale snapshots alone. Before planning,
-materializing, or generating reports, it should know the current repo,
-workspace, track, source-of-truth order, and safe write boundary.
+materializing, generating reports, or handing work off, it should know the
+current repo, workspace, track, source-of-truth order, and safe write
+boundary.
 
 ## Source Of Truth Order
 
@@ -27,6 +28,10 @@ Rules:
 - runtime state is operational evidence, not implementation truth
 - generated reports are snapshots unless a document explicitly marks them canonical
 - chat history is supporting context only
+- when current source files prove a roadmap item is already implemented, the
+  roadmap item is stale or superseded
+- when runtime state points at KVDOS or another app workspace, KVDF Core must
+  not treat it as framework source truth
 
 ## Workspace Boundary Rules
 
@@ -35,6 +40,8 @@ KVDF Core work:
 - may write only to KVDF Core allowed paths
 - must not write to KVDOS
 - must not write app workspace files
+- must not cross into a Viber app workspace unless the command explicitly
+  targets that app boundary
 
 Viber/App work:
 
@@ -47,6 +54,18 @@ Plugin work:
 - writes only the selected plugin folder
 - must not touch unrelated plugins
 - protects `.kabeeri/plugin-links/` runtime state
+
+## Current State Report
+
+Use `kvdf planner current-state --json` to rebuild the current repo/workspace
+summary. Use `kvdf planner boundary --track owner|vibe|plugin --json` to check
+the target write boundary. Use `kvdf planner stale-state --json` to classify
+roadmap, report, and runtime items before trusting a next step.
+
+The current-state report is the file-first gate for planning. If the repo
+identity or workspace boundary is ambiguous, the report should be blocked or
+warning-level and the next action should ask the Owner to clarify the target
+repo or workspace before planning continues.
 
 ## Current State Report
 

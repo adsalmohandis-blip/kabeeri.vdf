@@ -123,12 +123,12 @@ function listRoadmapAndReportCandidates(cwd = repoRoot()) {
 function classifyStaleState(cwd = repoRoot()) {
   const runtimeRecon = reconcileRuntimeTruth(cwd);
   const roadmapFiles = listRoadmapAndReportCandidates(cwd);
-  const reports = roadmapFiles.filter((file) => /docs\/reports|\.kabeeri\/reports/.test(file)).map((file) => ({
+  const reportItems = roadmapFiles.filter((file) => /docs\/reports|\.kabeeri\/reports/.test(file)).map((file) => ({
     path: file,
-    classification: file.startsWith(".kabeeri/reports/") ? "generated_snapshot" : "historical",
+    classification: file.startsWith(".kabeeri/reports/") ? "historical" : "historical",
     reason: file.startsWith(".kabeeri/reports/") ? "runtime snapshot" : "generated report snapshot"
   }));
-  const historicalItems = roadmapFiles.filter((file) => file.startsWith("docs/reports/") || file === "ROADMAP.md").map((file) => ({
+  const roadmapItems = roadmapFiles.filter((file) => file.startsWith("docs/roadmap/") || file === "ROADMAP.md").map((file) => ({
     path: file,
     classification: "historical",
     reason: "planning or generated history"
@@ -136,18 +136,28 @@ function classifyStaleState(cwd = repoRoot()) {
   const runtimeItems = [...runtimeRecon.stale_planned, ...runtimeRecon.stale_recommended, ...runtimeRecon.runtime_only_evolutions].map((item) => ({
     id: item.id || item.change_id || item.title || "runtime-item",
     title: item.title || item.id || "runtime item",
-    classification: item.matched_feature ? (item.kind === "recommended" ? "stale_recommended" : "stale_planned") : "runtime_only",
+    classification: item.matched_feature ? (item.kind === "recommended" ? "stale" : "superseded") : "unknown",
     reason: item.matched_feature ? `Superseded by ${item.matched_feature}` : "Runtime item has no source-level implementation evidence."
   }));
-  const supersededItems = runtimeItems.filter((item) => item.classification === "stale_planned" || item.classification === "stale_recommended");
-  const status = supersededItems.length || runtimeItems.some((item) => item.classification === "runtime_only") ? "warning" : "pass";
+  const supersededItems = runtimeItems.filter((item) => item.classification === "superseded" || item.classification === "stale");
+  const activeItems = runtimeRecon.findings.filter((item) => String(item.status || "").toLowerCase() === "implemented").map((item) => ({
+    id: item.feature_id || item.id || "feature",
+    title: item.title || item.feature_id || "feature",
+    classification: "active",
+    reason: "Source-level evidence is implemented and current."
+  }));
+  const unknownItems = runtimeItems.filter((item) => item.classification === "unknown");
+  const status = supersededItems.length || unknownItems.length ? "warning" : "pass";
   return {
     status,
     roadmap_files: roadmapFiles,
-    reports,
+    roadmap_items: roadmapItems,
+    reports: reportItems,
     runtime_items: runtimeItems,
     superseded_items: supersededItems,
-    historical_items: historicalItems
+    historical_items: [...reportItems, ...roadmapItems],
+    active_items: activeItems,
+    unknown_items: unknownItems
   };
 }
 
@@ -263,12 +273,14 @@ function buildStaleStateReport(options = {}) {
     status: staleState.status,
     stale_plans: staleState.superseded_items.map((item) => ({
       ...item,
-      classification: item.classification || "stale_planned"
+      classification: item.classification || "superseded"
     })),
     stale_reports: staleState.reports,
     stale_runtime_items: staleState.runtime_items,
     superseded_items: staleState.superseded_items,
     historical_items: staleState.historical_items,
+    active_items: staleState.active_items || [],
+    unknown_items: staleState.unknown_items || [],
     next_action: staleState.status === "warning"
       ? "Review the stale roadmap, runtime, and generated report items before trusting the next plan."
       : "No stale-state warnings found."

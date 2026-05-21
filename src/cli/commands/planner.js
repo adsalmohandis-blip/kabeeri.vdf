@@ -2267,12 +2267,12 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
   const sourcePipeline = fromCurrent && currentPlan
     ? buildPlannerCurrentPipelineSnapshot(context, flags)
     : buildPlannerAutoPlanReport(planning.goal, flags, rest, deps);
-  const currentState = buildPlannerCurrentStateSummary(context, flags);
   const plannerMode = normalizePlannerMode(flags.track || sourcePipeline.planner_mode || flags.mode || "vibe");
   const explicitAppSlug = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
   const explicitPluginId = String(flags.plugin || flags.plugin_id || "").trim();
   const appSlug = explicitAppSlug ? normalizeAppSlug(explicitAppSlug) : (sourcePipeline.app || sourcePipeline.app_slug ? normalizeAppSlug(sourcePipeline.app || sourcePipeline.app_slug) : "app-draft");
   const pluginId = explicitPluginId ? normalizePluginId(explicitPluginId) : (sourcePipeline.plugin || sourcePipeline.plugin_id ? normalizePluginId(sourcePipeline.plugin || sourcePipeline.plugin_id) : "plugin");
+  const currentState = assertPlannerWriteBoundary(context, flags, { track: plannerMode, appSlug, pluginId });
   if (plannerMode === "vibe" && !explicitAppSlug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
     const error = new Error("Missing app slug for planner docs materialization. Use --app or --app-slug, or add --dry-run to preview the docs plan.");
     error.current_state = currentState;
@@ -7504,7 +7504,7 @@ function buildPlannerStaleStateReport(value = "", flags = {}, rest = [], deps = 
       .map((item) => ({
         id: item.id || item.priority || item.title || "priority",
         title: item.title || item.id || "priority",
-        classification: "stale_planned",
+        classification: "stale",
         reason: "Runtime priority should not outrank source-level evidence."
       }))
     : [];
@@ -7531,6 +7531,8 @@ function buildPlannerStaleStateReport(value = "", flags = {}, rest = [], deps = 
         ...runtimePriorityItems
       ],
       historical_items: report.historical_items || [],
+      active_items: report.active_items || [],
+      unknown_items: report.unknown_items || [],
       next_action: "Review the stale roadmap, runtime, and generated report items before trusting the next plan.",
       current_state_summary: buildPlannerCurrentStateSummary(context, flags)
     };
@@ -10504,12 +10506,7 @@ function buildPlannerVersionMarkPublishedReport(versionId, flags = {}, rest = []
   if (!note) throw new Error("Missing note for planner version mark-published.");
   const force = resolveBooleanFlag(flags.force);
   const context = buildPlannerContext(deps);
-  const currentState = buildPlannerCurrentStateSummary(context, flags);
-  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
-    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
-    error.current_state = currentState;
-    throw error;
-  }
+  const currentState = assertPlannerWriteBoundary(context, flags, { track: flags.track || null, appSlug: flags.app || flags.app_slug || flags["app-slug"] || "" });
   const readiness = buildPlannerVersionPublishReadyReport(versionId, flags, rest, deps);
   if (readiness.status === "blocked" && !force) {
     throw new Error(`Version ${versionId} is not publish-ready. Use --force to record the published state anyway.`);
@@ -10675,12 +10672,7 @@ function buildPlannerRoadmapTrainBuildReport(value = "", flags = {}, rest = [], 
     source_control: flags.source_control || null
   };
   const planning = buildPlannerPlanningContext(subject, request, deps);
-  const currentState = buildPlannerCurrentStateSummary(context, flags);
-  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
-    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
-    error.current_state = currentState;
-    throw error;
-  }
+  const currentState = assertPlannerWriteBoundary(context, flags, { track: profile.mode, appSlug: profile.app_slug });
   if (profile.train_type === "viber" && !profile.app_slug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
     const error = new Error("Missing app slug for Viber roadmap train build. Use --app or --app-slug.");
     error.current_state = currentState;
@@ -10769,12 +10761,7 @@ function buildPlannerRoadmapTrainAdvanceReport(value = "", flags = {}, rest = []
       app: profile.app_slug
     });
   }
-  const currentState = buildPlannerCurrentStateSummary(context, flags);
-  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
-    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
-    error.current_state = currentState;
-    throw error;
-  }
+  const currentState = assertPlannerWriteBoundary(context, flags, { track: profile.mode, appSlug: profile.app_slug });
   if (profile.train_type === "viber" && !profile.app_slug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
     const error = new Error("Missing app slug for Viber roadmap train advance. Use --app or --app-slug.");
     error.current_state = currentState;
@@ -11500,12 +11487,7 @@ function readPlannerLatestFeedback(repoRootPath, appSlug) {
 
 function buildPlannerFeedbackCommandReport(value = "", flags = {}, rest = [], deps = {}) {
   const context = buildPlannerContext(deps);
-  const currentState = buildPlannerCurrentStateSummary(context, flags);
-  if (currentState.write_policy && !currentState.write_policy.can_write && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
-    const error = new Error(currentState.write_policy.reason || "Workspace identity is ambiguous.");
-    error.current_state = currentState;
-    throw error;
-  }
+  const currentState = assertPlannerWriteBoundary(context, flags, { track: flags.track || null, appSlug: flags.app || flags.app_slug || flags["app-slug"] || "" });
   const plannerState = loadPlannerState(context.repo_root);
   const currentPlan = isFromCurrentPlan(flags) ? findCurrentPlannerPlan(plannerState) : findPlannerPlan(plannerState, flags.plan || flags.plan_id || value);
   const planId = currentPlan ? currentPlan.plan_id : normalizeVersionId(flags.plan || flags.plan_id || value || "feedback");

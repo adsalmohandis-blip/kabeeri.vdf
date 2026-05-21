@@ -52,6 +52,10 @@ Before any next-Evolution recommendation, the planner must:
   live repo/workspace summary
 - treat `kvdf planner boundary --json` as the write-boundary check for the
   selected track
+- treat KVDOS and other app workspaces as app/product boundaries, not KVDF
+  Core
+- treat stale roadmap/report snapshots as lower priority than the live repo
+  source tree and merged history
 
 The planner can only recommend the next Evolution after the Current-State
 Report shows that the repo reality matches the proposed ledger.
