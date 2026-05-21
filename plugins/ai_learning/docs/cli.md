@@ -17,6 +17,8 @@ kvdf learn metadata
 kvdf learn prompt-context --track owner
 ```
 
+`prompt-context` is the same track-aware learning surface that `kvdf planner prompt` reuses when it builds an `AI Learning Context` section. Safe shared warnings and fast paths are visible there; raw sensitive details are not.
+
 ## Notes
 
 - `capture` and `fast-path` record local AI learning state in the current workspace.
@@ -25,3 +27,4 @@ kvdf learn prompt-context --track owner
 - `review`, `promote`, and `reject` keep KVDF Core shared learning Owner-approved.
 - `cache` syncs an optional local global cache under `~/.kabeeri/learning/`.
 - `metadata` prepares future cloud-ready metadata without requiring a remote provider.
+- Planner prompt generation reuses the track-aware learning context and suppresses the section entirely when there is no safe learning to show.

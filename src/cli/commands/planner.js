@@ -6,7 +6,7 @@ const PLANNER_STATE_FILE = ".kabeeri/planner.json";
 const OWNER_ROADMAP_TRAIN_STATE_FILE = ".kabeeri/owner_roadmap_train.json";
 const VIBER_RELEASE_TRAIN_FALLBACK_FILE = ".kabeeri/viber_release_train.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
-const { buildAiLearningPromptContext } = require("./ai_learning");
+const { buildAiLearningPromptContext, buildAiLearningPromptSection } = require("./ai_learning");
 const { buildDeliveryModeRecommendation } = require("./delivery");
 const { buildAppDocsPackageTemplates } = require("../workspace");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
@@ -4426,7 +4426,9 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
   const validationCommands = plan.validation_commands || [];
   const taskLines = (taskPunch.tasks || []).map((task, index) => `${index + 1}. ${task.title}`);
   const contextLines = buildPromptContextLines(mode, pluginContext, sourceControl);
-  const aiLearningLines = buildAiLearningPromptLines(aiLearning);
+  const aiLearningLines = buildAiLearningPromptSection(aiLearning, {
+    state_resync: buildPlannerStateResyncSummary({ repo_root: repoRoot() }, { track: mode, plugin: pluginContext ? pluginContext.plugin_id : null })
+  });
   const commitLines = buildPromptCommitLines(mode, plan, pluginContext, sourceControl);
   const pipelineLines = mode === "vibe"
     ? ["", "Pipeline:", ...VIBE_PIPELINE.map((step) => `- ${step}`)]
@@ -4437,7 +4439,7 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "Context:",
     "- Repo: kabeeri.vdf",
     ...contextLines,
-    ...(aiLearningLines.length ? ["", "AI Learning Memory:", ...aiLearningLines] : []),
+    ...(aiLearningLines.length ? ["", ...aiLearningLines] : []),
     "",
     "Goal:",
     goal,
@@ -4477,26 +4479,6 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "",
     `Stop condition: ${plan.stop_condition}`
   ].filter(Boolean).join("\\n");
-}
-
-function buildAiLearningPromptLines(aiLearning) {
-  if (!aiLearning) return [];
-  const warnings = (aiLearning.active_warning_rules || []).slice(0, 6).map((pattern) => `- ${pattern.prompt_warning || pattern.prevention_rule || pattern.problem || pattern.title}`);
-  const fastPaths = (aiLearning.active_fast_paths || []).slice(0, 6).map((fastPath) => `- ${fastPath.title}: ${(fastPath.validation_commands || []).length ? fastPath.validation_commands.join(" -> ") : (fastPath.steps || []).join(" -> ")}`);
-  const lines = [
-    `- Track: ${aiLearning.track || "unknown"}`,
-    `- Active warnings: ${String((aiLearning.active_warning_rules || []).length)}`,
-    `- Active fast paths: ${String((aiLearning.active_fast_paths || []).length)}`
-  ];
-  if (warnings.length) {
-    lines.push("- Warnings:");
-    lines.push(...warnings);
-  }
-  if (fastPaths.length) {
-    lines.push("- Fast paths:");
-    lines.push(...fastPaths);
-  }
-  return lines;
 }
 
 function buildPromptContextLines(mode, pluginContext, sourceControl) {

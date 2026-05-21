@@ -21,7 +21,7 @@ The durable state lives in:
 - `.kabeeri/ai_learning/failure_patterns.json`
 
 The file is shared across owner, vibe, and plugin tracks. The command writes runtime state only; it does not modify source files or auto-apply fixes.
-The memory is auto-synced into planner prompt generation, resume guidance, and prompt-pack composition so the next AI action sees the learned warnings immediately.
+The memory is auto-synced into planner prompt generation, resume guidance, and prompt-pack composition so the next AI action sees the learned warnings immediately. Planner prompts materialize this memory as an `AI Learning Context` section when safe, track-relevant learning exists, and suppress the section entirely when there is nothing useful to show.
 
 The optional `ai-learning` plugin formalizes export/import, promotion, shared-learning, and cloud-ready metadata workflows on top of the same core local memory file. Core remains the source of truth; the plugin is a packaging and workflow layer.
 
@@ -78,7 +78,7 @@ Each fast path stores:
 
 ### `prompt-context`
 
-`prompt-context` returns only the active warning rules and fast paths for the requested track. Use `--track all` to retrieve the combined active context across every track. Promoted shared learning is included so planner prompt-context hooks can learn from the shared memory layer without relying on chat history.
+`prompt-context` returns only the active warning rules and fast paths for the requested track. Use `--track all` to retrieve the combined active context across every track. Promoted shared learning is included so planner prompt-context hooks can learn from the shared memory layer without relying on chat history. Planner prompt generation reuses the same track-aware context and keeps sensitive or overly specific items out of the emitted prompt section.
 
 ### `export`
 

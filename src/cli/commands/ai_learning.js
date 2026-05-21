@@ -401,6 +401,100 @@ function buildAiLearningPromptContext(track, options = {}) {
   };
 }
 
+function buildAiLearningPromptSection(aiLearning, options = {}) {
+  if (!aiLearning || typeof aiLearning !== "object") return [];
+  const promptContext = normalizeAiLearningPromptContext(aiLearning);
+  const stateResync = options.state_resync || options.stateResync || null;
+  const warningItems = uniqueBy([
+    ...(Array.isArray(promptContext.active_warning_rules) ? promptContext.active_warning_rules : []),
+    ...(Array.isArray(promptContext.shared_warning_rules) ? promptContext.shared_warning_rules : [])
+  ], "pattern_id").filter(isPromptSafeLearningWarning);
+  const fastPathItems = uniqueBy([
+    ...(Array.isArray(promptContext.active_fast_paths) ? promptContext.active_fast_paths : []),
+    ...(Array.isArray(promptContext.shared_fast_path_summaries) ? promptContext.shared_fast_path_summaries : [])
+  ], "fast_path_id").filter(isPromptSafeLearningFastPath);
+  const driftWarnings = buildStateResyncPromptWarnings(stateResync);
+  if (!warningItems.length && !fastPathItems.length) return [];
+  const lines = ["## AI Learning Context", ""];
+  if (warningItems.length) {
+    lines.push("Known recurring failure patterns:");
+    for (const item of warningItems) {
+      lines.push(`- ${item.prompt_warning || item.prevention_rule || item.title}`);
+    }
+  }
+  if (fastPathItems.length) {
+    if (warningItems.length) lines.push("");
+    lines.push("Fast paths:");
+    for (const item of fastPathItems) {
+      const steps = Array.isArray(item.validation_commands) && item.validation_commands.length
+        ? item.validation_commands
+        : (Array.isArray(item.steps) ? item.steps : []);
+      const summary = steps.length ? `${item.title}: ${steps.join(" -> ")}` : item.title;
+      lines.push(`- ${summary}`);
+    }
+  }
+  if (driftWarnings.length) {
+    if (warningItems.length || fastPathItems.length) lines.push("");
+    lines.push("State Resync / planner drift warnings:");
+    for (const warning of driftWarnings) lines.push(`- ${warning}`);
+  }
+  return lines;
+}
+
+function normalizeAiLearningPromptContext(aiLearning) {
+  return {
+    track: normalizeText(aiLearning.track || ""),
+    active_warning_rules: Array.isArray(aiLearning.active_warning_rules) ? aiLearning.active_warning_rules : [],
+    active_fast_paths: Array.isArray(aiLearning.active_fast_paths) ? aiLearning.active_fast_paths : [],
+    shared_warning_rules: Array.isArray(aiLearning.shared_warning_rules) ? aiLearning.shared_warning_rules : [],
+    shared_fast_path_summaries: Array.isArray(aiLearning.shared_fast_path_summaries) ? aiLearning.shared_fast_path_summaries : []
+  };
+}
+
+function buildStateResyncPromptWarnings(stateResync) {
+  if (!stateResync || typeof stateResync !== "object") return [];
+  if (String(stateResync.status || "").toLowerCase() === "current") return [];
+  const messages = [];
+  for (const reason of uniqueList([...(Array.isArray(stateResync.reasons) ? stateResync.reasons : []), stateResync.reason].filter(Boolean))) {
+    const text = normalizeText(reason);
+    if (text) messages.push(text);
+  }
+  if (!messages.length && stateResync.next_action) {
+    messages.push(normalizeText(stateResync.next_action));
+  }
+  return messages.filter(Boolean);
+}
+
+function isPromptSafeLearningWarning(item) {
+  const text = [
+    item && item.prompt_warning,
+    item && item.prevention_rule,
+    item && item.title
+  ].filter(Boolean).join(" ");
+  return isPromptSafeLearningText(text);
+}
+
+function isPromptSafeLearningFastPath(item) {
+  const text = [
+    item && item.title,
+    item && item.problem_type,
+    ...(Array.isArray(item && item.steps) ? item.steps : []),
+    ...(Array.isArray(item && item.validation_commands) ? item.validation_commands : [])
+  ].filter(Boolean).join(" ");
+  return isPromptSafeLearningText(text);
+}
+
+function isPromptSafeLearningText(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+  const sensitivePatterns = [
+    /\b(secret|token|password|passwd|credential|api[-_ ]?key|bearer|private key|client[-\s]?specific|confidential|sensitive)\b/i,
+    /\b\.env\b/i,
+    /\bssn\b/i
+  ];
+  return !sensitivePatterns.some((pattern) => pattern.test(normalized));
+}
+
 function renderAiLearningList(payload) {
   console.log("AI Learning Memory");
   console.log("");
@@ -1761,6 +1855,7 @@ module.exports = {
   writeAiLearningState,
   summarizeAiLearningState,
   buildAiLearningPromptContext,
+  buildAiLearningPromptSection,
   exportLearningState,
   importLearningState,
   promoteLearningEntry,

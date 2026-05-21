@@ -1622,7 +1622,9 @@ test("ai learning exchange exports sanitized packages imports candidates and pro
 
   const plannerPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Re-use the shared warning", "--track", "owner", "--json"], { cwd: dir }).stdout);
   assert.ok(plannerPrompt.ai_learning);
+  assert.ok(plannerPrompt.prompt.includes("## AI Learning Context"));
   assert.ok(plannerPrompt.ai_learning.prompt_warnings.some((warning) => /shared prompt warning/i.test(warning)));
+  assert.ok(plannerPrompt.prompt.includes("shared prompt warning"));
 
   const cacheHome = path.join(dir, "home");
   const cacheUpdate = JSON.parse(runKvdf([
@@ -1693,8 +1695,6 @@ test("ai learning memory auto-syncs into planner prompts, resume guidance, and p
     "owner",
     "--applies-to-tracks",
     "owner",
-    "--applies-to-tracks",
-    "vibe",
     "--json"
   ], { cwd: dir });
   runKvdf([
@@ -1710,8 +1710,6 @@ test("ai learning memory auto-syncs into planner prompts, resume guidance, and p
     "owner",
     "--applies-to-tracks",
     "owner",
-    "--applies-to-tracks",
-    "vibe",
     "--json"
   ], { cwd: dir });
 
@@ -1721,7 +1719,7 @@ test("ai learning memory auto-syncs into planner prompts, resume guidance, and p
   const plannerPrompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(plannerPrompt.report_type, "kvdf_planner_codex_prompt");
   assert.ok(plannerPrompt.ai_learning);
-  assert.match(plannerPrompt.prompt, /AI Learning Memory/);
+  assert.match(plannerPrompt.prompt, /AI Learning Context/);
   assert.ok(plannerPrompt.ai_learning.active_warning_rules.length >= 0);
 
   const resume = JSON.parse(runKvdf(["resume", "--json"], { cwd: dir }).stdout);
@@ -6310,6 +6308,74 @@ test("planner prompts reflect the selected source control mode", () => {
   assert.match(branchPr.prompt, /GitHub PR/);
   assert.match(branchPr.prompt, /Owner review/);
 });
+
+test("planner prompts include AI learning context when learning exists and omit it when empty", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const emptyPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Fresh owner plan", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.ok(emptyPrompt.prompt.includes("Direct-to-main"));
+  assert.doesNotMatch(emptyPrompt.prompt, /AI Learning Context/);
+
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Track-safe warning",
+    "--problem",
+    "The prompt missed the current warning context",
+    "--fix",
+    "Include the safe warning in the prompt section",
+    "--category",
+    "track_confusion",
+    "--track",
+    "vibe",
+    "--json"
+  ], { cwd: dir });
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Secret token leak",
+    "--problem",
+    "API token leak in app notes",
+    "--fix",
+    "Rotate the token and keep it private",
+    "--category",
+    "other",
+    "--track",
+    "vibe",
+    "--json"
+  ], { cwd: dir });
+  const vibePrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build vibe slice", "--track", "vibe", "--json"], { cwd: dir }).stdout);
+  assert.ok(vibePrompt.prompt.includes("## AI Learning Context"));
+  assert.ok(vibePrompt.prompt.includes("Watch for track-safe warning."));
+  assert.ok(vibePrompt.prompt.includes("Local-first"));
+  assert.doesNotMatch(vibePrompt.prompt, /Secret token leak/i);
+  assert.doesNotMatch(vibePrompt.prompt, /API token leak/i);
+}));
+
+test("planner prompt includes plugin learning when plugin id is provided", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "planner-visual");
+  runKvdf([
+    "learn",
+    "capture",
+    "--title",
+    "Plugin parity warning",
+    "--problem",
+    "The plugin prompt skipped the plugin-specific parity note",
+    "--fix",
+    "Keep manifest, runtime, docs, schema, and tests aligned",
+    "--category",
+    "scope_violation",
+    "--track",
+    "plugin",
+    "--json"
+  ], { cwd: dir });
+  const pluginPrompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Improve planner visuals", "--track", "plugin", "--plugin", "planner-visual", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pluginPrompt.planner_mode, "plugin");
+  assert.ok(pluginPrompt.prompt.includes("## AI Learning Context"));
+  assert.ok(pluginPrompt.prompt.includes("Watch for plugin parity warning."));
+  assert.ok(pluginPrompt.prompt.includes("Plugin: planner-visual"));
+}));
 
 test("planner evolution returns a structured owner plan and task punch", () => {
   const plannerEvolution = JSON.parse(runKvdf(["planner", "evolution", "--goal", "Add planner layer", "--track", "owner", "--json"]).stdout);
