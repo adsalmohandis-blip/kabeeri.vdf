@@ -8,27 +8,56 @@ allow code execution until the planning artifacts are ready.
 
 Raw ideas do not go straight to execution.
 
-The pipeline must progress through:
+The pipeline is ordered and gated. The canonical stage order is:
 
-1. State Resync
-2. Current-State Report
-3. Documentation Files and Folders
-4. System Design
-5. Database Design
-6. UI/UX Design
-7. Visual Planning
-8. Version Plan
-9. Evolutions
-10. Task Punches
-11. Approval
-12. Materialization
-13. Codex Prompt
-14. Task Execution
-15. Validation
-16. Security Scan
-17. Handoff
-18. Dashboard Update
-19. AI Learning Capture
+1. idea
+2. questionnaire_generation
+3. questionnaire_answers
+4. answer_completeness_check
+5. brief_generation
+6. brief_review
+7. brief_approval
+8. state_resync
+9. current_state_report
+10. app_boundary
+11. documentation_architecture
+12. documentation_folders
+13. documentation_files
+14. system_design
+15. database_design
+16. ui_ux_design
+17. source_control_plan
+18. security_plan
+19. version_plan
+20. evolutions
+21. evolution_order_validation
+22. task_punches
+23. task_punch_review
+24. approval
+25. materialization
+26. codex_prompt
+27. security_gate
+28. handoff_gate
+29. source_control_gate
+30. execution
+31. validation
+32. security_scan
+33. handoff
+34. dashboard_update
+35. learning_capture
+36. closeout
+
+Planning methods share the same order:
+
+- structured: full foundation first for enterprise, security-heavy, or integration-heavy work
+- agile: lighter docs per iteration, but no raw-idea execution and no skipped gates
+- hybrid: the default for full app/product work, with a structured foundation and agile slices after approval
+
+No answers = no real planning.
+No approved brief = no evolutions.
+No approved evolutions = no task punches.
+No valid evolution order = no task punches.
+No materialized task punch = no Codex execution.
 
 ## Documentation Layers
 
@@ -97,6 +126,13 @@ The current-state report, design docs, version plan, evolutions, task punches,
 approval, materialization, and security gates must all be ready before Codex
 execution is allowed.
 
+The pipeline also exposes a planning authority level:
+
+- placeholder: raw idea or incomplete questionnaire / brief state
+- draft: questionnaire answers exist and the brief is in review
+- approved: the brief is approved, the order is valid, task punches are
+  materialized, and execution gates pass
+
 ## What The Pipeline Must Not Do
 
 - It must not let raw ideas jump directly into code execution.
@@ -105,4 +141,3 @@ execution is allowed.
 - It must not require GitHub.
 - It must not make branch or PR the default delivery shape.
 - It must not let Viber/App work edit KVDF Core files by default.
-

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "KVDF Viber Planning-to-Task Pipeline",
+  "title": "KVDF Viber Pipeline Stage Order",
   "type": "object",
   "additionalProperties": true,
   "required": [
@@ -8,9 +8,16 @@
     "track",
     "delivery_mode",
     "source_of_truth",
+    "planning_method",
+    "method_policy",
+    "planning_authority",
+    "questionnaire",
+    "brief",
     "documentation_folders",
     "documentation_files",
     "portable_docs_mapping",
+    "stage_order",
+    "stage_groups",
     "stages",
     "readiness",
     "execution_allowed",
@@ -20,7 +27,7 @@
   "properties": {
     "report_type": {
       "type": "string",
-      "const": "kvdf_viber_planning_to_task_pipeline"
+      "const": "kvdf_viber_pipeline_stage_order"
     },
     "track": {
       "type": "string",
@@ -28,27 +35,77 @@
     },
     "delivery_mode": {
       "type": "string",
-      "enum": ["local_first", "direct_main", "local_only", "branch", "branch_pr"]
+      "enum": ["local_first", "local_only", "direct_main", "branch", "branch_pr"]
     },
     "source_of_truth": {
       "type": "string",
       "enum": ["file_first"]
     },
-    "source_control": {
+    "planning_method": {
+      "type": "string",
+      "enum": ["structured", "agile", "hybrid"]
+    },
+    "method_policy": {
       "type": "object",
       "additionalProperties": true,
+      "required": ["method", "foundation_depth", "execution_style", "required_stage_overrides", "deferred_stage_rules", "reason"],
       "properties": {
-        "enabled": { "type": "boolean" },
-        "provider": { "type": "string" },
-        "remote_provider": { "type": "string" },
-        "provider_plugin": { "type": ["string", "null"] },
-        "mode": { "type": "string" },
-        "branching_enabled": { "type": "boolean" },
-        "pr_enabled": { "type": "boolean" },
-        "branch_name": { "type": ["string", "null"] },
-        "pr_title": { "type": ["string", "null"] },
-        "handoff_requires_pr": { "type": "boolean" },
-        "next_source_control_action": { "type": "string" }
+        "method": { "type": "string", "enum": ["structured", "agile", "hybrid"] },
+        "foundation_depth": { "type": "string" },
+        "execution_style": { "type": "string" },
+        "required_stage_overrides": { "type": "array", "items": { "type": "string" } },
+        "deferred_stage_rules": { "type": "array", "items": { "type": "string" } },
+        "reason": { "type": "string" }
+      }
+    },
+    "planning_authority": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["level", "reason", "state_freshness", "source_of_truth"],
+      "properties": {
+        "level": { "type": "string", "enum": ["placeholder", "draft", "approved"] },
+        "reason": { "type": "string" },
+        "current_version": { "type": ["string", "null"] },
+        "next_version": { "type": ["string", "null"] },
+        "current_evolution": { "type": ["string", "null"] },
+        "next_evolution": { "type": ["string", "null"] },
+        "state_freshness": { "type": "string", "enum": ["current", "stale", "unknown"] },
+        "source_of_truth": { "type": "string", "enum": ["file_first", "runtime_only", "git_supported", "remote_supported", "unknown"] }
+      }
+    },
+    "questionnaire": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["status", "questions_total", "answers_total", "missing_answers", "next_action"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["missing", "generated", "answered", "incomplete", "complete", "reviewed", "approved"]
+        },
+        "path": { "type": ["string", "null"] },
+        "questions_total": { "type": "integer", "minimum": 0 },
+        "answers_total": { "type": "integer", "minimum": 0 },
+        "missing_answers": { "type": "array", "items": { "type": "string" } },
+        "reviewed": { "type": "boolean" },
+        "approved": { "type": "boolean" },
+        "complete": { "type": "boolean" },
+        "generated": { "type": "boolean" },
+        "next_action": { "type": "string" }
+      }
+    },
+    "brief": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["status", "next_action"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["missing", "draft", "reviewed", "approved", "blocked"]
+        },
+        "path": { "type": ["string", "null"] },
+        "reviewed": { "type": "boolean" },
+        "approved": { "type": "boolean" },
+        "next_action": { "type": "string" }
       }
     },
     "documentation_folders": {
@@ -96,41 +153,119 @@
         }
       }
     },
+    "stage_order": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "idea",
+          "questionnaire_generation",
+          "questionnaire_answers",
+          "answer_completeness_check",
+          "brief_generation",
+          "brief_review",
+          "brief_approval",
+          "state_resync",
+          "current_state_report",
+          "app_boundary",
+          "documentation_architecture",
+          "documentation_folders",
+          "documentation_files",
+          "system_design",
+          "database_design",
+          "ui_ux_design",
+          "source_control_plan",
+          "security_plan",
+          "version_plan",
+          "evolutions",
+          "evolution_order_validation",
+          "task_punches",
+          "task_punch_review",
+          "approval",
+          "materialization",
+          "codex_prompt",
+          "security_gate",
+          "handoff_gate",
+          "source_control_gate",
+          "execution",
+          "validation",
+          "security_scan",
+          "handoff",
+          "dashboard_update",
+          "learning_capture",
+          "closeout"
+        ]
+      }
+    },
+    "stage_groups": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intake", "brief", "state_and_boundary", "documentation_and_design", "planning", "tasking", "execution", "feedback"],
+      "properties": {
+        "intake": { "type": "array", "items": { "type": "string" } },
+        "brief": { "type": "array", "items": { "type": "string" } },
+        "state_and_boundary": { "type": "array", "items": { "type": "string" } },
+        "documentation_and_design": { "type": "array", "items": { "type": "string" } },
+        "planning": { "type": "array", "items": { "type": "string" } },
+        "tasking": { "type": "array", "items": { "type": "string" } },
+        "execution": { "type": "array", "items": { "type": "string" } },
+        "feedback": { "type": "array", "items": { "type": "string" } }
+      }
+    },
     "stages": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
-        "required": ["stage", "status", "required", "outputs", "blockers", "warnings", "next_action"],
+        "required": ["stage", "order", "group", "label", "status", "required", "outputs", "blockers", "warnings", "next_action"],
         "properties": {
           "stage": {
             "type": "string",
             "enum": [
               "idea",
+              "questionnaire_generation",
+              "questionnaire_answers",
+              "answer_completeness_check",
+              "brief_generation",
+              "brief_review",
+              "brief_approval",
               "state_resync",
               "current_state_report",
+              "app_boundary",
+              "documentation_architecture",
+              "documentation_folders",
               "documentation_files",
               "system_design",
               "database_design",
               "ui_ux_design",
-              "visual_planning",
+              "source_control_plan",
+              "security_plan",
               "version_plan",
               "evolutions",
+              "evolution_order_validation",
               "task_punches",
+              "task_punch_review",
               "approval",
               "materialization",
               "codex_prompt",
+              "security_gate",
+              "handoff_gate",
+              "source_control_gate",
               "execution",
               "validation",
-              "security",
+              "security_scan",
               "handoff",
               "dashboard_update",
-              "learning_capture"
+              "learning_capture",
+              "closeout"
             ]
           },
+          "order": { "type": "integer", "minimum": 1 },
+          "group": { "type": "string" },
+          "label": { "type": "string" },
           "status": {
             "type": "string",
-            "enum": ["missing", "planned", "ready", "approved", "materialized", "blocked", "complete", "unknown"]
+            "enum": ["missing", "planned", "ready", "approved", "materialized", "blocked", "complete", "unknown", "deferred", "not_applicable"]
           },
           "required": { "type": "boolean" },
           "outputs": { "type": "array", "items": { "type": "string" } },
@@ -148,22 +283,12 @@
           "type": "string",
           "enum": ["ready", "warning", "blocked"]
         },
-        "blocked_total": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "warnings_total": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "next_action": {
-          "type": "string"
-        }
+        "blocked_total": { "type": "integer", "minimum": 0 },
+        "warnings_total": { "type": "integer", "minimum": 0 },
+        "next_action": { "type": "string" }
       }
     },
-    "execution_allowed": {
-      "type": "boolean"
-    },
+    "execution_allowed": { "type": "boolean" },
     "execution_blockers": {
       "type": "array",
       "items": {
@@ -181,8 +306,25 @@
         }
       }
     },
-    "next_stage": {
-      "type": "string"
-    }
+    "next_stage": { "type": "string" },
+    "state_resync": { "type": ["object", "null"], "additionalProperties": true },
+    "docs_plan": { "type": ["object", "null"], "additionalProperties": true },
+    "docs_status": { "type": "string" },
+    "documentation_architecture": { "type": ["object", "null"], "additionalProperties": true },
+    "design_artifacts": { "type": ["object", "null"], "additionalProperties": true },
+    "visual_planning": { "type": ["object", "null"], "additionalProperties": true },
+    "version_plan": { "type": ["object", "null"], "additionalProperties": true },
+    "version_control": { "type": ["object", "null"], "additionalProperties": true },
+    "evolutions": { "type": "array" },
+    "task_punches": { "type": "array" },
+    "evolution_order_validation": { "type": ["object", "null"], "additionalProperties": true },
+    "cloud_ready": { "type": "boolean" },
+    "consent_required": { "type": "boolean" },
+    "owner_approved_for_cloud": { "type": "boolean" },
+    "anonymized": { "type": "boolean" },
+    "sensitive_items_removed": { "type": "integer", "minimum": 0 },
+    "dataset_tags": { "type": "array", "items": { "type": "string" } },
+    "training_eligible": { "type": "boolean" },
+    "plugin_context": { "type": ["object", "null"], "additionalProperties": true }
   }
 }

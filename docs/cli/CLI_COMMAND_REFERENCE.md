@@ -496,7 +496,9 @@ change may affect runtime code, CLI help, task tracking, schemas, dashboard
 state, reports, prompt/AI guidance, docs, the capability map, tests, changelog,
 or release guidance. `kvdf evolution validate-order --app <app-name>` checks
 generic Viber/App evolution categories and blocks task generation until the
-boundary, discovery, approval, safety, and packaging order is safe. When a
+boundary, discovery, approval, safety, and packaging order is safe. `kvdf
+planner pipeline --track vibe` also emits the ordered Viber pipeline stage
+contract so the queue cannot jump from raw idea to execution. When a
 priority is already
 `in_progress`, every AI tool must start with `kvdf evolution temp` and work
 only on the current temporary slice.

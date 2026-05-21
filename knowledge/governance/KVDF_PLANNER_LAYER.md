@@ -347,6 +347,10 @@ Track behavior:
   the portable numbered app docs remain the canonical durable product package.
 - `documentation_folders` should be the primary planner docs surface and
   `documentation_files` should stay as a compatibility flattening view.
+- The Viber pipeline stage order is fixed and gated: questionnaire, brief,
+  state resync, boundary, docs, design, version, evolutions, task punches,
+  approval, materialization, execution, validation, handoff, dashboard update,
+  learning capture, and closeout.
 
 The pipeline is still governed by the same approval gate:
 

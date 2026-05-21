@@ -17,6 +17,7 @@ const { reconcileRuntimeTruth } = require("../services/truth_registry");
 const { buildCurrentStateReport: buildCurrentStateReportService, buildStaleStateReport: buildStaleStateReportService } = require("../services/source_truth");
 const { buildWorkspaceBoundaryReport: buildWorkspaceBoundaryReportService } = require("../services/workspace_boundary");
 const { loadStateResyncReport, evaluateStateResyncFreshness, CURRENT_STATE_REPORT_PATH } = require("./state_resync");
+const { buildEvolutionOrderValidationReport } = require("./evolution");
 const { readGitHeadCommit, readGitRepositoryState } = require("../services/git_snapshot");
 const { getPluginSourcePath } = require("../services/plugin_mounts");
 const { repoRoot } = require("../fs_utils");
@@ -138,26 +139,53 @@ const VIBE_PIPELINE = [
 
 const VIBER_PIPELINE_STAGE_ORDER = [
   "idea",
+  "questionnaire_generation",
+  "questionnaire_answers",
+  "answer_completeness_check",
+  "brief_generation",
+  "brief_review",
+  "brief_approval",
   "state_resync",
   "current_state_report",
+  "app_boundary",
+  "documentation_architecture",
+  "documentation_folders",
   "documentation_files",
   "system_design",
   "database_design",
   "ui_ux_design",
-  "visual_planning",
+  "source_control_plan",
+  "security_plan",
   "version_plan",
   "evolutions",
+  "evolution_order_validation",
   "task_punches",
+  "task_punch_review",
   "approval",
   "materialization",
   "codex_prompt",
+  "security_gate",
+  "handoff_gate",
+  "source_control_gate",
   "execution",
   "validation",
-  "security",
+  "security_scan",
   "handoff",
   "dashboard_update",
-  "learning_capture"
+  "learning_capture",
+  "closeout"
 ];
+
+const VIBER_PIPELINE_STAGE_GROUPS = {
+  intake: ["idea", "questionnaire_generation", "questionnaire_answers", "answer_completeness_check"],
+  brief: ["brief_generation", "brief_review", "brief_approval"],
+  state_and_boundary: ["state_resync", "current_state_report", "app_boundary"],
+  documentation_and_design: ["documentation_architecture", "documentation_folders", "documentation_files", "system_design", "database_design", "ui_ux_design"],
+  planning: ["source_control_plan", "security_plan", "version_plan", "evolutions", "evolution_order_validation"],
+  tasking: ["task_punches", "task_punch_review", "approval", "materialization", "codex_prompt"],
+  execution: ["security_gate", "handoff_gate", "source_control_gate", "execution", "validation", "security_scan", "handoff"],
+  feedback: ["dashboard_update", "learning_capture", "closeout"]
+};
 
 const PLUGIN_ALLOWED_FILES_GENERIC = [
   "plugins/<plugin-id>/plugin.json",
@@ -676,6 +704,8 @@ function buildPlannerPlanningContext(goal, request = {}, deps = {}, options = {}
     ...flags,
     mode,
     deliveryMode: resolved.deliveryMode,
+    method: selectedMethod,
+    planning_method: selectedMethod,
     pluginContext,
     source_control: sourceControl
   }, resolved.context);
@@ -2634,7 +2664,9 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
       taskPunches: planningPipeline && Array.isArray(planningPipeline.task_punches) ? planningPipeline.task_punches : [],
       currentPlan,
       taskPunch,
-      pluginContext
+      pluginContext,
+      planningMethod,
+      appSlug: currentPlan && currentPlan.app_slug ? normalizeAppSlug(currentPlan.app_slug || "") : ""
     })
     : null;
   const validationCommands = [...(evolutionPlan.validation_commands || DEFAULT_VALIDATION_COMMANDS)];
@@ -3886,7 +3918,9 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
       evolutions,
       taskPunches,
       taskPunch: firstTaskPunch,
-      pluginContext
+      pluginContext,
+      planningMethod: request.method || request.planning_method || "hybrid",
+      appSlug: request.app || request.app_slug || request["app-slug"] || ""
     })
     : null;
   const visualRoadmap = buildIdeaToEvolutionVisualRoadmap(versionPlan, sourceControl, mode);
@@ -3978,37 +4012,23 @@ function buildViberPipelineState({
   currentPlan = null,
   taskPunch = null,
   executionAllowedOverride = null,
-  pluginContext = null
+  pluginContext = null,
+  planningMethod = "hybrid",
+  appSlug = "",
+  currentState = null
 } = {}) {
   const normalizedIdea = String(idea || "").trim() || "Viber Planning Idea";
-  const freshness = String(stateResync && stateResync.state_freshness || "unknown").trim().toLowerCase();
-  const stateFresh = Boolean(stateResync && stateResync.fresh && freshness === "current");
   const docsStatusValue = String(docsStatus && typeof docsStatus === "object" ? docsStatus.status || "" : docsStatus || "unknown").trim().toLowerCase();
-  const docsReady = ["generated", "applied_to_stage", "ready", "current", "draft", "approved"].includes(docsStatusValue);
-  const hasSystemDesign = Boolean(designArtifacts && designArtifacts.system_design);
-  const hasDatabaseDesign = Boolean(designArtifacts && designArtifacts.database_design);
-  const hasUiUxDesign = Boolean(designArtifacts && designArtifacts.ui_ux_design);
-  const hasVisualPlanning = Boolean(visualPlanning && visualPlanning.graph && visualPlanning.board);
-  const hasVersionPlan = Boolean(versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length);
-  const hasEvolutions = Array.isArray(evolutions) && evolutions.length > 0;
-  const hasTaskPunches = Array.isArray(taskPunches) && taskPunches.length > 0;
   const currentPlanStatus = String(currentPlan && currentPlan.status || "").trim().toLowerCase();
   const materializationStatus = String(currentPlan && (currentPlan.materialization_status || "") || "").trim().toLowerCase();
-  const approvedOrMaterialized = ["approved", "materialized", "completed"].includes(currentPlanStatus) || ["materialized", "approved"].includes(materializationStatus);
-  const securityGate = versionControl && versionControl.current_version && versionControl.current_version.security_gate ? versionControl.current_version.security_gate : null;
-  const securityPass = Boolean(securityGate && securityGate.status === "pass");
-  const securityBlocked = Boolean(securityGate && securityGate.status === "blocked");
-  const executionAllowed = executionAllowedOverride !== null
-    ? Boolean(executionAllowedOverride)
-    : stateFresh && docsReady && hasSystemDesign && hasDatabaseDesign && hasUiUxDesign && hasVisualPlanning && hasVersionPlan && hasEvolutions && hasTaskPunches && approvedOrMaterialized && !securityBlocked;
-  const sourceControlSummary = buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, executionAllowed);
-  const stageReport = buildViberPipelineStages({
+  const stageOrderState = buildViberPipelineStageOrderState({
     idea: normalizedIdea,
-    stateResync,
+    mode,
     deliveryMode,
+    sourceControl,
+    stateResync,
     docsPlan,
-    docsStatusValue,
-    docsReady,
+    docsStatus,
     designArtifacts,
     visualPlanning,
     versionPlan,
@@ -4017,49 +4037,64 @@ function buildViberPipelineState({
     taskPunches,
     currentPlan,
     taskPunch,
-    sourceControl: sourceControlSummary,
     pluginContext,
-    executionAllowed,
-    securityPass,
-    securityBlocked
+    planningMethod,
+    currentState,
+    appSlug
   });
-  const stages = Array.isArray(stageReport) ? stageReport : Array.isArray(stageReport && stageReport.stages) ? stageReport.stages : [];
-  const blockers = stages
-    .filter((stage) => stage.status === "blocked")
-    .map((stage, index) => ({
-      id: `${stage.stage}-blocked-${index + 1}`,
-      severity: "blocker",
-      area: pipelineStageToArea(stage.stage),
-      message: stage.blockers && stage.blockers.length ? stage.blockers[0] : `${stage.stage} is blocked.`,
-      next_action: stage.next_action || `Resolve the ${stage.stage} blocker.`
-    }));
+  const executionAllowed = executionAllowedOverride !== null
+    ? Boolean(executionAllowedOverride)
+    : Boolean(stageOrderState.execution_allowed);
+  const sourceControlSummaryAdjusted = buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, executionAllowed);
+  const stages = Array.isArray(stageOrderState.stages) ? stageOrderState.stages.map((stage) => ({ ...stage })) : [];
+  const blockers = Array.isArray(stageOrderState.execution_blockers) ? stageOrderState.execution_blockers.map((blocker) => ({ ...blocker })) : [];
   const warnings = stages.flatMap((stage) => Array.isArray(stage.warnings) ? stage.warnings : []);
   const nextStage = stages.find((stage) => !["complete", "ready", "approved", "materialized"].includes(stage.status)) || stages[stages.length - 1] || null;
-  const readinessStatus = blockers.length ? "blocked" : warnings.length ? "warning" : executionAllowed ? "ready" : "warning";
-  const readinessNextAction = blockers.length
-    ? blockers[0].next_action
-    : executionAllowed
-      ? "Run kvdf planner prompt --from-current --json, then execute the approved task punch."
-      : nextStage && nextStage.next_action
-        ? nextStage.next_action
-        : "Complete the current planning stage before execution.";
+  const readinessStatus = stageOrderState.readiness ? stageOrderState.readiness.status : (blockers.length ? "blocked" : warnings.length ? "warning" : executionAllowed ? "ready" : "warning");
+  const readinessNextAction = stageOrderState.readiness && stageOrderState.readiness.next_action
+    ? stageOrderState.readiness.next_action
+    : blockers.length
+      ? blockers[0].next_action
+      : executionAllowed
+        ? "Run kvdf planner prompt --from-current --json, then execute the approved task punch."
+        : nextStage && nextStage.next_action
+          ? nextStage.next_action
+          : "Complete the current planning stage before execution.";
+  const evolutionOrderValidation = stageOrderState.evolution_order_validation || buildViberPipelineStageOrderValidation(appSlug, { repo_root: repoRoot() ? repoRoot() : process.cwd() }, stateResync, stageOrderState.questionnaire, stageOrderState.brief, sourceControlSummaryAdjusted, currentState);
   return {
-    report_type: "kvdf_viber_planning_to_task_pipeline",
+    report_type: "kvdf_viber_pipeline_stage_order",
     track: "vibe_app_developer",
     delivery_mode: deliveryMode,
     source_of_truth: "file_first",
-    source_control: sourceControlSummary,
+    source_control: sourceControlSummaryAdjusted,
+    planning_method: stageOrderState.planning_method || planningMethod || "hybrid",
+    method_policy: stageOrderState.method_policy || buildViberPipelinePlanningMethodPolicy(planningMethod, stageOrderState.questionnaire, stageOrderState.brief, sourceControlSummaryAdjusted),
+    planning_authority: stageOrderState.planning_authority || {
+      level: "placeholder",
+      reason: "Planning authority is not yet established.",
+      current_version: null,
+      next_version: null,
+      current_evolution: null,
+      next_evolution: null,
+      state_freshness: stateResync && stateResync.state_freshness ? stateResync.state_freshness : "unknown",
+      source_of_truth: "file_first"
+    },
+    questionnaire: stageOrderState.questionnaire || buildViberPipelineQuestionnaireSummary(),
+    brief: stageOrderState.brief || buildViberPipelineBriefSummary(stageOrderState.questionnaire || buildViberPipelineQuestionnaireSummary(), stateResync, currentState),
+    stage_order: stageOrderState.stage_order || [...VIBER_PIPELINE_STAGE_ORDER],
+    stage_groups: stageOrderState.stage_groups || Object.fromEntries(Object.entries(VIBER_PIPELINE_STAGE_GROUPS).map(([group, items]) => [group, [...items]])),
     idea: normalizedIdea,
     stages,
     readiness: {
       status: readinessStatus,
-      blocked_total: blockers.length,
+      blocked_total: Array.isArray(blockers) ? blockers.filter((item) => item.severity === "blocker").length : 0,
       warnings_total: warnings.length,
       next_action: readinessNextAction
     },
     execution_allowed: executionAllowed,
     execution_blockers: blockers,
     next_stage: nextStage ? nextStage.stage : "execution",
+    state_resync: stateResync || null,
     forbidden_files: Array.isArray(currentPlan && currentPlan.forbidden_files) && currentPlan.forbidden_files.length
       ? [...currentPlan.forbidden_files]
       : [...VIBE_FORBIDDEN_FILES],
@@ -4090,7 +4125,8 @@ function buildViberPipelineState({
     sensitive_items_removed: 0,
     dataset_tags: [],
     training_eligible: false,
-    plugin_context: pluginContext || null
+    plugin_context: pluginContext || null,
+    evolution_order_validation: evolutionOrderValidation
   };
 }
 
@@ -4133,6 +4169,545 @@ function buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, exec
     requires_owner_approval: true,
     replaceable_provider: true,
     notes: Array.isArray(base.notes) ? [...base.notes] : []
+  };
+}
+
+function buildViberPipelinePlanningMethodPolicy(planningMethod = "hybrid", questionnaire = null, brief = null, sourceControl = null) {
+  const normalizedMethod = String(planningMethod || "hybrid").trim().toLowerCase();
+  if (normalizedMethod === "structured") {
+    return {
+      method: "structured",
+      foundation_depth: "full",
+      execution_style: "gated_batch",
+      required_stage_overrides: [
+        "questionnaire_generation",
+        "questionnaire_answers",
+        "answer_completeness_check",
+        "brief_generation",
+        "brief_review",
+        "brief_approval",
+        "state_resync",
+        "current_state_report",
+        "app_boundary",
+        "documentation_architecture",
+        "documentation_folders",
+        "documentation_files",
+        "system_design",
+        "database_design",
+        "ui_ux_design",
+        "source_control_plan",
+        "security_plan",
+        "version_plan",
+        "evolutions",
+        "evolution_order_validation",
+        "task_punches"
+      ],
+      deferred_stage_rules: [
+        "No stage may be skipped; any missing stage must remain blocked until approved.",
+        "Execution begins only after task punch review, approval, materialization, and safety gates pass."
+      ],
+      reason: "Structured planning keeps enterprise, security-heavy, or integration-heavy Viber work fully ordered before execution."
+    };
+  }
+  if (normalizedMethod === "agile") {
+    return {
+      method: "agile",
+      foundation_depth: "lightweight",
+      execution_style: "small_iteration",
+      required_stage_overrides: [
+        "questionnaire_generation",
+        "questionnaire_answers",
+        "answer_completeness_check",
+        "brief_generation",
+        "brief_review",
+        "brief_approval",
+        "state_resync",
+        "current_state_report",
+        "app_boundary",
+        "approval",
+        "materialization",
+        "codex_prompt",
+        "security_gate",
+        "handoff_gate",
+        "source_control_gate"
+      ],
+      deferred_stage_rules: [
+        "Heavy docs may be deferred or marked not_applicable only when low-risk and explicit.",
+        "Agile never removes the approval, materialization, security, validation, or handoff gates.",
+        "Raw ideas still cannot go directly to code execution."
+      ],
+      reason: "Agile planning keeps small Viber iterations lightweight while preserving safety and approval gates."
+    };
+  }
+  return {
+    method: "hybrid",
+    foundation_depth: "structured_then_iterative",
+    execution_style: "evolution_slice",
+    required_stage_overrides: [
+      "questionnaire_generation",
+      "questionnaire_answers",
+      "answer_completeness_check",
+      "brief_generation",
+      "brief_review",
+      "brief_approval",
+      "state_resync",
+      "current_state_report",
+      "app_boundary",
+      "documentation_architecture",
+      "documentation_folders",
+      "documentation_files",
+      "system_design",
+      "database_design",
+      "ui_ux_design",
+      "source_control_plan",
+      "security_plan",
+      "version_plan",
+      "evolutions",
+      "evolution_order_validation",
+      "task_punches"
+    ],
+    deferred_stage_rules: [
+      "Use a structured foundation first, then move into one approved/materialized evolution slice at a time.",
+      "Do not mix future-only slices into the active release without explicit approval."
+    ],
+    reason: "Hybrid planning is the default for full Viber app development: structured foundation first, then agile execution slices."
+  };
+}
+
+function buildViberPipelineQuestionnaireSummary() {
+  const questionnairePath = ".kabeeri/questionnaires/adaptive_intake_plan.json";
+  const answersPath = ".kabeeri/questionnaires/answers.json";
+  const questionnaireReport = fs.existsSync(questionnairePath) ? readJsonFileIfExists(questionnairePath) : null;
+  const questionnairePlan = questionnaireReport && Array.isArray(questionnaireReport.plans) && questionnaireReport.plans.length
+    ? questionnaireReport.current_plan_id
+      ? questionnaireReport.plans.find((item) => item.plan_id === questionnaireReport.current_plan_id) || questionnaireReport.plans[questionnaireReport.plans.length - 1]
+      : questionnaireReport.plans[questionnaireReport.plans.length - 1]
+    : null;
+  const answersReport = fs.existsSync(answersPath) ? readJsonFileIfExists(answersPath) : { answers: [] };
+  const answers = Array.isArray(answersReport.answers) ? answersReport.answers : [];
+  const generatedQuestions = Array.isArray(questionnairePlan && questionnairePlan.generated_questions) ? questionnairePlan.generated_questions : [];
+  const answerMap = Object.fromEntries(answers.map((answer) => [String(answer.question_id || ""), answer]).filter(([key]) => key));
+  const missingAnswers = generatedQuestions.filter((question) => !answerMap[String(question.question_id || "")]).map((question) => question.question_id).filter(Boolean);
+  const answersTotal = answers.length;
+  const questionsTotal = generatedQuestions.length;
+  const complete = Boolean(questionnairePlan) && questionsTotal > 0 && missingAnswers.length === 0;
+  const reviewed = Boolean(questionnairePlan && (questionnairePlan.reviewed_at || questionnairePlan.review_status === "reviewed" || questionnairePlan.review_status === "approved"));
+  const approved = Boolean(questionnairePlan && questionnairePlan.approval_status === "approved");
+  let status = "missing";
+  if (questionnairePlan) {
+    if (approved) status = "approved";
+    else if (reviewed && complete) status = "reviewed";
+    else if (complete) status = "complete";
+    else if (answersTotal > 0) status = "answered";
+    else status = "generated";
+  }
+  return {
+    status,
+    path: questionnairePath,
+    questions_total: questionsTotal,
+    answers_total: answersTotal,
+    missing_answers: uniqueList(missingAnswers),
+    reviewed,
+    approved,
+    complete,
+    generated: Boolean(questionnairePlan),
+    next_action: !questionnairePlan
+      ? "Run kvdf questionnaire plan to generate the intake questions."
+      : missingAnswers.length
+        ? "Answer the remaining questionnaire items before approving the brief."
+        : approved
+          ? "The questionnaire is approved."
+          : reviewed
+            ? "Review and approve the questionnaire brief."
+            : "Review the questionnaire before approval."
+  };
+}
+
+function buildViberPipelineBriefSummary(questionnaire, stateResync, currentState = null) {
+  const questionnaireApproved = Boolean(questionnaire && questionnaire.approved);
+  const questionnaireComplete = Boolean(questionnaire && questionnaire.complete);
+  let status = "missing";
+  if (!questionnaire || !questionnaire.generated) {
+    status = "missing";
+  } else if (!questionnaireComplete) {
+    status = "blocked";
+  } else if (questionnaireApproved) {
+    status = "approved";
+  } else if (questionnaire.reviewed) {
+    status = "reviewed";
+  } else {
+    status = "draft";
+  }
+  return {
+    status,
+    path: questionnaire && questionnaire.path ? questionnaire.path : null,
+    reviewed: questionnaire ? Boolean(questionnaire.reviewed) : false,
+    approved: questionnaireApproved,
+    next_action: !questionnaire || !questionnaire.generated
+      ? "Generate the questionnaire brief before planning further."
+      : !questionnaireComplete
+        ? "Complete the questionnaire answers before approving the brief."
+        : questionnaireApproved
+          ? "The brief is approved."
+          : questionnaire.reviewed
+            ? "Approve the brief with --confirm."
+            : "Review the brief before approval."
+  };
+}
+
+function formatViberPipelineStageTitle(stage) {
+  return String(stage || "")
+    .split("_")
+    .map((item) => item ? `${item.charAt(0).toUpperCase()}${item.slice(1)}` : "")
+    .join(" ");
+}
+
+function buildViberPipelineStageRecord(stage, status, group, order, outputs = [], blockers = [], warnings = [], nextAction = "", required = true) {
+  return {
+    stage,
+    order,
+    group,
+    label: formatViberPipelineStageTitle(stage),
+    status,
+    required,
+    outputs: Array.isArray(outputs) ? outputs : [],
+    blockers: Array.isArray(blockers) ? uniqueList(blockers) : [],
+    warnings: Array.isArray(warnings) ? uniqueList(warnings) : [],
+    next_action: nextAction || ""
+  };
+}
+
+function buildViberPipelineStageOrderValidation(appSlug, context, stateResync, questionnaire, brief, sourceControl, currentState = null) {
+  if (!appSlug) {
+    const expectedOrder = [
+      "boundary_stabilization",
+      "local_ui_foundation",
+      "runtime_state",
+      "discovery_spec",
+      "tasking_approval",
+      "cloud_commercial_control",
+      "local_license_gate",
+      "release_access",
+      "safety_quality",
+      "execution_review",
+      "release_packaging",
+      "bridge_evolution"
+    ];
+    return {
+      report_type: "kvdf_evolution_order_validation",
+      app: "",
+      track: "vibe_app_developer",
+      source_files_inspected: [],
+      detected_evolution_slices: [],
+      detected_categories: [],
+      current_order: [],
+      expected_order: expectedOrder,
+      approval_status: {
+        questionnaire: questionnaire ? questionnaire.status : "missing",
+        questionnaire_complete: questionnaire && questionnaire.complete ? "complete" : "incomplete",
+        product_brief: brief ? brief.status : "missing",
+        product_brief_source: questionnaire && questionnaire.path ? questionnaire.path : "missing",
+        source_of_truth_map: "missing",
+        evolution_slices: "missing",
+        future_only: "none",
+        task_generation: "blocked"
+      },
+      blocking_errors: ["Missing app boundary / app slug. Suggested fix: select or create the app workspace before task generation."],
+      warnings: ["App-level evolution ordering cannot be validated without an app boundary."],
+      suggested_corrected_order: [],
+      task_generation_allowed: false,
+      next_action: "Run kvdf state resync --track vibe --json, then select an app workspace before generating tasks.",
+      policy: null
+    };
+  }
+  return buildEvolutionOrderValidationReport(appSlug, { app: appSlug }, { cwd: context.repo_root });
+}
+
+function buildViberPipelineStageOrderState({
+  idea = "",
+  mode = "vibe",
+  deliveryMode = "local_first",
+  sourceControl = null,
+  stateResync = null,
+  docsPlan = null,
+  docsStatus = null,
+  designArtifacts = null,
+  visualPlanning = null,
+  versionPlan = null,
+  versionControl = null,
+  evolutions = [],
+  taskPunches = [],
+  currentPlan = null,
+  taskPunch = null,
+  pluginContext = null,
+  planningMethod = "hybrid",
+  currentState = null,
+  appSlug = ""
+} = {}) {
+  const questionnaire = buildViberPipelineQuestionnaireSummary();
+  const brief = buildViberPipelineBriefSummary(questionnaire, stateResync, currentState);
+  const questionMissing = questionnaire.missing_answers.length > 0;
+  const questionnaireComplete = questionnaire.complete;
+  const briefApproved = brief.approved;
+  const stateFresh = Boolean(stateResync && stateResync.fresh && String(stateResync.state_freshness || "").toLowerCase() === "current");
+  const boundaryReady = Boolean(appSlug);
+  const docsArchitectureReady = Boolean(docsPlan && Array.isArray(docsPlan.documentation_folders) && docsPlan.documentation_folders.length);
+  const docsFoldersReady = Boolean(docsArchitectureReady && Array.isArray(docsPlan.documentation_folders) && docsPlan.documentation_folders.length);
+  const docsFilesReady = Boolean(Array.isArray(docsPlan && docsPlan.documentation_files) && docsPlan.documentation_files.length);
+  const systemDesignReady = Boolean(designArtifacts && designArtifacts.system_design);
+  const databaseDesignReady = Boolean(designArtifacts && designArtifacts.database_design);
+  const uiUxDesignReady = Boolean(designArtifacts && designArtifacts.ui_ux_design);
+  const sourceControlPlanReady = Boolean(sourceControl && sourceControl.mode);
+  const securityPlanReady = Boolean(designArtifacts && designArtifacts.security_design);
+  const versionPlanReady = Boolean(versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length);
+  const evolutionsReady = Array.isArray(evolutions) && evolutions.length > 0;
+  const sourceControlGateReady = Boolean(sourceControl && ["direct_main", "branch", "branch_pr", "local_only"].includes(sourceControl.mode));
+  const securityGateReady = Boolean(versionControl && versionControl.current_version && versionControl.current_version.security_gate && versionControl.current_version.security_gate.status === "pass");
+  const handoffGateReady = Boolean(sourceControlGateReady && (sourceControl.mode === "local_only" || sourceControl.mode === "direct_main" || sourceControl.mode === "branch" || sourceControl.mode === "branch_pr"));
+  const currentPlanStatus = String(currentPlan && currentPlan.status || "").trim().toLowerCase();
+  const currentPlanMaterializationStatus = String(currentPlan && currentPlan.materialization_status || "").trim().toLowerCase();
+  const taskPunchesReady = Array.isArray(taskPunches) && taskPunches.length > 0;
+  const taskPunchReviewReady = Boolean(currentPlan && ["approved", "materialized", "completed"].includes(currentPlanStatus));
+  const approvalReady = Boolean(briefApproved && questionnaireComplete && stateFresh);
+  const materialized = Boolean(currentPlanMaterializationStatus === "materialized" || currentPlanStatus === "materialized");
+  const planningFoundationReady = Boolean(questionnaireComplete && briefApproved && stateFresh && boundaryReady);
+  const appBoundaryStageStatus = boundaryReady ? "approved" : "blocked";
+  const answerCompletenessStatus = questionnaireComplete ? "complete" : "blocked";
+  const briefGenerationStatus = questionnaire.generated ? (questionnaireComplete ? "complete" : "blocked") : "planned";
+  const briefReviewStatus = questionnaire.generated ? (questionnaire.reviewed ? "complete" : questionnaireComplete ? "ready" : "blocked") : "missing";
+  const briefApprovalStatus = briefApproved ? "approved" : (questionnaireComplete ? "planned" : "blocked");
+  const stateResyncStatus = stateFresh ? "complete" : "blocked";
+  const currentStateReportStatus = stateResync && stateResync.report ? (stateFresh ? "complete" : "blocked") : "blocked";
+  const documentationArchitectureStatus = planningFoundationReady && docsArchitectureReady ? "complete" : (planningFoundationReady ? "planned" : "blocked");
+  const documentationFoldersStatus = planningFoundationReady && docsFoldersReady ? "complete" : (planningFoundationReady ? "ready" : "blocked");
+  const documentationFilesStatus = planningFoundationReady && docsFilesReady ? "complete" : (planningFoundationReady ? "ready" : "blocked");
+  const systemDesignStatus = planningFoundationReady && systemDesignReady ? "complete" : (planningFoundationReady ? "planned" : "blocked");
+  const databaseDesignStatus = planningFoundationReady && databaseDesignReady ? "complete" : (planningFoundationReady ? "ready" : "blocked");
+  const uiUxDesignStatus = planningFoundationReady && uiUxDesignReady ? "complete" : (planningFoundationReady ? "planned" : "blocked");
+  const sourceControlPlanStatus = planningFoundationReady && sourceControlPlanReady ? "complete" : (planningFoundationReady ? "planned" : "blocked");
+  const securityPlanStatus = planningFoundationReady && securityPlanReady ? "complete" : (planningFoundationReady ? "planned" : "blocked");
+  const versionPlanStatus = planningFoundationReady && versionPlanReady ? "complete" : (planningFoundationReady ? "planned" : "blocked");
+  const evolutionsStatus = planningFoundationReady && evolutionsReady ? "complete" : (planningFoundationReady ? "ready" : "blocked");
+  const evolutionValidation = buildViberPipelineStageOrderValidation(appSlug, { repo_root: repoRoot() ? repoRoot() : process.cwd() }, stateResync, questionnaire, brief, sourceControl, currentState);
+  const evolutionOrderValidationStatus = Boolean(planningFoundationReady && evolutionValidation.task_generation_allowed) ? "complete" : "blocked";
+  const taskPunchesStatus = Boolean(planningFoundationReady && taskPunchesReady && evolutionValidation.task_generation_allowed) ? "complete" : "blocked";
+  const taskPunchReviewStatus = planningFoundationReady && taskPunchReviewReady ? "complete" : (planningFoundationReady && taskPunchesReady ? "ready" : "blocked");
+  const codexPromptStatus = Boolean(approvalReady && materialized) ? "ready" : "blocked";
+  const executionAllowed = Boolean(planningFoundationReady && approvalReady && materialized && securityGateReady && sourceControlGateReady && handoffGateReady && evolutionValidation.task_generation_allowed);
+  const executionStatus = executionAllowed ? "ready" : "blocked";
+  const validationStatus = executionAllowed ? "ready" : "planned";
+  const securityScanStatus = executionAllowed ? "ready" : "planned";
+  const handoffStatus = executionAllowed ? "ready" : "planned";
+  const dashboardUpdateStatus = executionAllowed ? "ready" : "planned";
+  const learningCaptureStatus = executionAllowed ? "ready" : "planned";
+  const closeoutStatus = executionAllowed ? "ready" : "planned";
+  const planningMethodPolicy = buildViberPipelinePlanningMethodPolicy(planningMethod, questionnaire, brief, sourceControl);
+  const blockers = [];
+  const warnings = [];
+  const appendBlocker = (id, area, message, nextAction) => blockers.push({ id, severity: "blocker", area, message, next_action: nextAction });
+  const appendWarning = (id, area, message, nextAction) => warnings.push({ id, severity: "warning", area, message, next_action: nextAction });
+  if (!questionnaire.generated) appendBlocker("questionnaire-generation-missing", "docs", "No questionnaire has been generated yet.", "Run kvdf questionnaire plan to generate the intake questions.");
+  if (questionMissing) appendBlocker("questionnaire-answers-missing", "docs", "Questionnaire answers are incomplete.", "Answer the remaining questionnaire items before planning further.");
+  if (!briefApproved) appendBlocker("brief-not-approved", "docs", "The product brief is not approved.", "Approve the brief before generating evolutions or tasks.");
+  if (!stateFresh) appendBlocker("state-resync-stale", "state_resync", "State Resync is stale or missing.", "Run kvdf state resync --track vibe --json.");
+  if (!boundaryReady) appendBlocker("app-boundary-missing", "state_resync", "The app boundary is not approved yet.", "Select the app workspace before generating app tasks.");
+  if (!planningFoundationReady) appendBlocker("planning-foundation-missing", "docs", "The documentation and design foundation is not approved yet.", "Approve the brief before authorizing docs, design, and versions.");
+  if (!docsArchitectureReady) appendBlocker("documentation-architecture-missing", "docs", "Documentation architecture is missing.", "Define the planner documentation architecture.");
+  if (!docsFoldersReady) appendBlocker("documentation-folders-missing", "docs", "Documentation folders are not materialized.", "Materialize the planner documentation folders.");
+  if (!docsFilesReady) appendBlocker("documentation-files-missing", "docs", "Documentation files are not ready.", "Populate the planner documentation files.");
+  if (!systemDesignReady) appendBlocker("system-design-missing", "docs", "System design is missing.", "Create the system design before version planning.");
+  if (!databaseDesignReady) appendBlocker("database-design-missing", "docs", "Database design is missing.", "Create the database design before tasking.");
+  if (!uiUxDesignReady) appendBlocker("ui-ux-design-missing", "docs", "UI/UX design is missing.", "Create the UI/UX design before tasking.");
+  if (!sourceControlPlanReady) appendWarning("source-control-plan-missing", "source_control", "Source control plan is not explicit.", "Choose the local_only, direct_main, branch, or branch_pr mode.");
+  if (!securityPlanReady) appendWarning("security-plan-missing", "security", "Security plan is not yet materialized.", "Add the security plan before execution.");
+  if (!versionPlanReady) appendBlocker("version-plan-missing", "task", "Version plan is missing.", "Create the version plan before evolutions.");
+  if (!evolutionsReady) appendBlocker("evolutions-missing", "task", "No evolutions are present.", "Create the ordered evolutions before task punches.");
+  if (!evolutionValidation.task_generation_allowed) {
+    const firstError = Array.isArray(evolutionValidation.blocking_errors) && evolutionValidation.blocking_errors.length ? evolutionValidation.blocking_errors[0] : "Evolution order validation failed.";
+    appendBlocker("evolution-order-invalid", "task", firstError, evolutionValidation.next_action || "Validate the ordered evolutions before creating task punches.");
+  }
+  if (!taskPunchesReady) appendBlocker("task-punches-missing", "task", "Task punches are missing.", "Create task punches after evolution order validation passes.");
+  if (!taskPunchReviewReady) appendWarning("task-punch-review-pending", "task", "Task punch review is not yet complete.", "Review the task punches before approval.");
+  if (!approvalReady) appendBlocker("approval-pending", "task", "The plan is not approved.", "Approve the brief and ordered plan before materialization.");
+  if (!materialized) appendBlocker("materialization-pending", "task", "The plan is not materialized.", "Materialize the approved plan before prompting Codex.");
+  if (!codexPromptStatus) appendBlocker("codex-prompt-blocked", "validation", "Codex execution is not allowed yet.", "Complete the planning gates before generating the execution prompt.");
+  if (!securityGateReady) appendBlocker("security-gate-blocked", "security", "Security gate is not passing.", "Resolve the security gate before execution.");
+  if (!handoffGateReady) appendBlocker("handoff-gate-blocked", "handoff", "Handoff gate is not ready.", "Prepare the handoff gate before execution.");
+  if (!sourceControlGateReady) appendBlocker("source-control-gate-blocked", "source_control", "Source control gate is not ready.", "Confirm the source-control mode before execution.");
+  if (!executionAllowed) appendBlocker("execution-blocked", "task", "Execution is blocked until the planning gates pass.", "Finish the next blocked stage before execution.");
+  const stageOrder = [...VIBER_PIPELINE_STAGE_ORDER];
+  const stageGroups = Object.fromEntries(Object.entries(VIBER_PIPELINE_STAGE_GROUPS).map(([group, items]) => [group, [...items]]));
+  const stageIndex = (stage) => stageOrder.indexOf(stage);
+  const stageGroupFor = (stage) => {
+    const entry = Object.entries(stageGroups).find(([, items]) => Array.isArray(items) && items.includes(stage));
+    return entry ? entry[0] : "planning";
+  };
+  const stageOutput = (stage, outputs, blockersForStage, warningsForStage, nextAction, required = true) => buildViberPipelineStageRecord(stage, stage === "idea"
+    ? "complete"
+    : stage === "questionnaire_generation"
+      ? questionnaire.generated ? "complete" : "planned"
+      : stage === "questionnaire_answers"
+        ? questionnaireComplete ? "complete" : questionMissing ? "blocked" : "planned"
+        : stage === "answer_completeness_check"
+          ? answerCompletenessStatus
+          : stage === "brief_generation"
+            ? briefGenerationStatus
+            : stage === "brief_review"
+              ? briefReviewStatus
+              : stage === "brief_approval"
+                ? briefApprovalStatus
+                : stage === "state_resync"
+                  ? stateResyncStatus
+                  : stage === "current_state_report"
+                    ? currentStateReportStatus
+                    : stage === "app_boundary"
+                      ? appBoundaryStageStatus
+                      : stage === "documentation_architecture"
+                        ? documentationArchitectureStatus
+                        : stage === "documentation_folders"
+                          ? documentationFoldersStatus
+                          : stage === "documentation_files"
+                            ? documentationFilesStatus
+                            : stage === "system_design"
+                              ? systemDesignStatus
+                              : stage === "database_design"
+                                ? databaseDesignStatus
+                                : stage === "ui_ux_design"
+                                  ? uiUxDesignStatus
+                                  : stage === "source_control_plan"
+                                    ? sourceControlPlanStatus
+                                    : stage === "security_plan"
+                                      ? securityPlanStatus
+                                      : stage === "version_plan"
+                                        ? versionPlanStatus
+                                        : stage === "evolutions"
+                                          ? evolutionsStatus
+                                          : stage === "evolution_order_validation"
+                                            ? evolutionOrderValidationStatus
+                                            : stage === "task_punches"
+                                              ? taskPunchesStatus
+                                              : stage === "task_punch_review"
+                                                ? taskPunchReviewStatus
+                                                : stage === "approval"
+                                                  ? (approvalReady ? "approved" : "blocked")
+                                                  : stage === "materialization"
+                                                    ? (materialized ? "materialized" : "blocked")
+                                                    : stage === "codex_prompt"
+                                                      ? (codexPromptStatus ? "ready" : "blocked")
+                                                      : stage === "security_gate"
+                                                        ? (securityGateReady ? "complete" : "blocked")
+                                                        : stage === "handoff_gate"
+                                                          ? (handoffGateReady ? "complete" : "blocked")
+                                                          : stage === "source_control_gate"
+                                                            ? (sourceControlGateReady ? "complete" : "blocked")
+                                                            : stage === "execution"
+                                                              ? executionStatus
+                                                              : stage === "validation"
+                                                                ? validationStatus
+                                                                : stage === "security_scan"
+                                                                  ? securityScanStatus
+                                                                  : stage === "handoff"
+                                                                    ? handoffStatus
+                                                                    : stage === "dashboard_update"
+                                                                      ? dashboardUpdateStatus
+                                                                      : stage === "learning_capture"
+                                                                        ? learningCaptureStatus
+                                                                        : stage === "closeout"
+                                                                          ? closeoutStatus
+                                                                          : "unknown", stageGroupFor(stage), stageIndex(stage) + 1, outputs, blockersForStage, warningsForStage, nextAction, required);
+  const stages = [
+    stageOutput("idea", [idea || "Raw request captured."], [], [], "Confirm the raw idea before planning."),
+    stageOutput("questionnaire_generation", [questionnaire.generated ? "Questionnaire generated." : "Questionnaire not generated yet."], questionnaire.generated ? [] : ["Generate the questionnaire before planning proceeds."], [], questionnaire.generated ? "Questionnaire generation is complete." : "Run kvdf questionnaire plan to generate the intake questions."),
+    stageOutput("questionnaire_answers", [questionnaire.answers_total > 0 ? `${questionnaire.answers_total} answer(s) recorded.` : "No questionnaire answers recorded."], questionMissing ? ["Questionnaire answers are incomplete."] : [], questionMissing ? ["Answer the remaining questionnaire items."] : [], questionMissing ? "Answer the remaining questionnaire items." : "Questionnaire answers are recorded."),
+    stageOutput("answer_completeness_check", [questionnaire.complete ? "All questionnaire answers are complete." : "Questionnaire answers still need completion."], questionnaire.complete ? [] : ["Answer completeness must pass before a brief can be approved."], [], questionnaire.complete ? "Answer completeness check passed." : "Complete the questionnaire answers before planning further."),
+    stageOutput("brief_generation", [brief.status !== "missing" ? `Brief status: ${brief.status}.` : "Brief not generated yet."], brief.status === "missing" ? ["Generate the brief from the questionnaire."] : [], [], brief.next_action || "Generate the brief." , true),
+    stageOutput("brief_review", [brief.status !== "missing" ? `Brief review status: ${brief.status}.` : "Brief review not started."], brief.status === "blocked" ? ["The brief cannot be reviewed until answers are complete."] : [], brief.status === "draft" ? ["Review the brief before approval."] : [], brief.next_action || "Review the brief before approval."),
+    stageOutput("brief_approval", [brief.approved ? "Brief approved." : "Brief pending approval."], brief.approved ? [] : ["No approved brief means no evolutions."], [], brief.approved ? "Brief approval recorded." : "Approve the brief before evolutions."),
+    stageOutput("state_resync", [stateFresh ? "State resync is current." : "State resync is stale or missing."], stateFresh ? [] : ["State Resync must be current before planning proceeds."], [], stateResync && stateResync.next_action ? stateResync.next_action : "Run kvdf state resync --track vibe --json."),
+    stageOutput("current_state_report", [stateResync && stateResync.report_type ? stateResync.report_type : "Current-state report missing."], stateResync && stateResync.report ? [] : ["Current-state report is required before final planning."], [], stateResync && stateResync.reason ? stateResync.reason : "Generate the current-state report."),
+    stageOutput("app_boundary", [boundaryReady ? `App boundary approved for ${appSlug}.` : "App boundary not approved."], boundaryReady ? [] : ["The app boundary must be approved before app-scoped docs or tasks are generated."], [], boundaryReady ? "App boundary is approved." : "Approve the app boundary first."),
+    stageOutput("documentation_architecture", [docsArchitectureReady ? "Documentation architecture is available." : "Documentation architecture missing."], docsArchitectureReady ? [] : ["Define the portable and foldered documentation architecture."], [], docsArchitectureReady ? "Documentation architecture is ready." : "Define the documentation architecture."),
+    stageOutput("documentation_folders", [docsFoldersReady ? `${docsPlan.documentation_folders.length} folder(s) materialized.` : "Documentation folders are missing."], docsFoldersReady ? [] : ["Materialize the foldered planner docs."], [], docsFoldersReady ? "Documentation folders are ready." : "Materialize the foldered planner docs."),
+    stageOutput("documentation_files", [docsFilesReady ? `${docsPlan.documentation_files.length} file(s) mapped.` : "Documentation files are missing."], docsFilesReady ? [] : ["Documentation files are derived from the foldered docs."], [], docsFilesReady ? "Documentation files are ready." : "Derive the compatibility file list from the folders."),
+    stageOutput("system_design", [systemDesignReady ? "System design is present." : "System design missing."], systemDesignReady ? [] : ["System design must be explicit before execution."], [], systemDesignReady ? "System design is ready." : "Create the system design."),
+    stageOutput("database_design", [databaseDesignReady ? "Database design is present." : "Database design missing."], databaseDesignReady ? [] : ["Database design must be explicit before execution."], [], databaseDesignReady ? "Database design is ready." : "Create the database design."),
+    stageOutput("ui_ux_design", [uiUxDesignReady ? "UI/UX design is present." : "UI/UX design missing."], uiUxDesignReady ? [] : ["UI/UX design must be explicit before execution."], [], uiUxDesignReady ? "UI/UX design is ready." : "Create the UI/UX design."),
+    stageOutput("source_control_plan", [sourceControl && sourceControl.mode ? `Source control mode: ${sourceControl.mode}.` : "Source control plan missing."], sourceControlPlanReady ? [] : ["Source control mode must be explicit before execution."], [], sourceControlPlanReady ? "Source control plan is ready." : "Choose the source-control mode."),
+    stageOutput("security_plan", [securityPlanReady ? "Security plan is present." : "Security plan missing."], securityPlanReady ? [] : ["Security planning must be explicit before execution."], [], securityPlanReady ? "Security plan is ready." : "Create the security plan."),
+    stageOutput("version_plan", [versionPlanReady ? `${versionPlan.versions.length} version(s) planned.` : "Version plan missing."], versionPlanReady ? [] : ["Version plan must be approved before evolutions."], [], versionPlanReady ? "Version plan is ready." : "Create the version plan."),
+    stageOutput("evolutions", [evolutionsReady ? `${evolutions.length} evolution(s) prepared.` : "Evolutions missing."], evolutionsReady ? [] : ["Evolutions must be approved before task punches."], [], evolutionsReady ? "Evolutions are ready." : "Create the evolutions."),
+    stageOutput("evolution_order_validation", [evolutionValidation.task_generation_allowed ? "Evolution order validation passed." : "Evolution order validation failed."], evolutionValidation.task_generation_allowed ? [] : uniqueList(evolutionValidation.blocking_errors || ["Invalid evolution order."]), evolutionValidation.warnings || [], evolutionValidation.next_action || "Validate the evolution order."),
+    stageOutput("task_punches", [taskPunchesReady ? `${taskPunches.length} task punch(es) prepared.` : "Task punches missing."], taskPunchesReady ? [] : ["Task punches are blocked until evolution order validation passes."], [], taskPunchesReady ? "Task punches are ready." : "Create the task punches."),
+    stageOutput("task_punch_review", [taskPunchReviewReady ? "Task punch review complete." : "Task punch review pending."], taskPunchReviewReady ? [] : ["Review the task punches before approval."], [], taskPunchReviewReady ? "Task punch review is complete." : "Review the task punches."),
+    stageOutput("approval", [approvalReady ? "Plan approved." : "Plan pending approval."], approvalReady ? [] : ["Approval is required before materialization."], [], approvalReady ? "Approval is recorded." : "Approve the brief and ordered plan."),
+    stageOutput("materialization", [materialized ? "Plan materialized." : "Plan not materialized."], materialized ? [] : ["Materialization must happen before the Codex prompt."] , [], materialized ? "Materialization is complete." : "Materialize the approved plan."),
+    stageOutput("codex_prompt", [codexPromptStatus ? "Codex prompt can be generated." : "Codex prompt blocked."], codexPromptStatus ? [] : ["No materialized task punch means no Codex execution."], [], codexPromptStatus ? "Generate the Codex prompt." : "Do not prompt Codex for execution yet."),
+    stageOutput("security_gate", [securityGateReady ? "Security gate passes." : "Security gate blocked or pending."], securityGateReady ? [] : ["Security gate must pass before execution."], [], securityGateReady ? "Security gate is passing." : "Resolve the security gate."),
+    stageOutput("handoff_gate", [handoffGateReady ? "Handoff gate passes." : "Handoff gate blocked or pending."], handoffGateReady ? [] : ["Handoff gate must pass before execution."], [], handoffGateReady ? "Handoff gate is ready." : "Prepare the handoff gate."),
+    stageOutput("source_control_gate", [sourceControlGateReady ? "Source control gate passes." : "Source control gate blocked or pending."], sourceControlGateReady ? [] : ["Source control mode must be explicit before execution."], [], sourceControlGateReady ? "Source control gate is ready." : "Confirm the source-control mode."),
+    stageOutput("execution", [executionAllowed ? "Task execution can start." : "Task execution is blocked."], executionAllowed ? [] : ["Execution cannot start from a raw idea."], [], executionAllowed ? "Execute the approved task punch." : "Complete the next planning stage only."),
+    stageOutput("validation", [executionAllowed ? "Validation can run after execution." : "Validation is pending execution."], executionAllowed ? [] : ["Validation follows execution."], [], executionAllowed ? "Run validation after execution." : "Complete execution first."),
+    stageOutput("security_scan", [executionAllowed ? "Security scan can run." : "Security scan is pending execution."], executionAllowed ? [] : ["Security scan follows execution."], [], executionAllowed ? "Run the security scan." : "Complete execution first."),
+    stageOutput("handoff", [executionAllowed ? "Handoff can proceed." : "Handoff is pending execution."], executionAllowed ? [] : ["Handoff follows security and validation gates."], [], executionAllowed ? "Prepare the handoff." : "Complete execution first."),
+    stageOutput("dashboard_update", [executionAllowed ? "Dashboards can be updated." : "Dashboard update is pending."], executionAllowed ? [] : ["Dashboard update follows handoff."], [], executionAllowed ? "Refresh the dashboards." : "Complete the handoff first."),
+    stageOutput("learning_capture", [executionAllowed ? "AI learning capture can run." : "Learning capture is pending."], executionAllowed ? [] : ["Learning capture follows handoff."], [], executionAllowed ? "Capture the learning." : "Complete the handoff first."),
+    stageOutput("closeout", [executionAllowed ? "Closeout can happen after learning capture." : "Closeout is pending."], executionAllowed ? [] : ["Closeout is the final stage."], [], executionAllowed ? "Close out the pipeline." : "Complete the earlier stages first.")
+  ];
+  const blockedStages = stages.filter((stage) => stage.status === "blocked");
+  const warningStages = stages.flatMap((stage) => Array.isArray(stage.warnings) ? stage.warnings : []);
+  const nextStage = stages.find((stage) => !["complete", "approved", "materialized", "ready"].includes(stage.status)) || stages[stages.length - 1];
+  const readinessStatus = blockedStages.length ? "blocked" : warningStages.length ? "warning" : executionAllowed ? "ready" : "warning";
+  const readinessNextAction = blockedStages.length
+    ? blockedStages[0].next_action || "Resolve the first blocked stage."
+    : executionAllowed
+      ? "Run kvdf planner prompt --from-current --json, then execute the approved task punch."
+      : nextStage && nextStage.next_action
+        ? nextStage.next_action
+        : "Complete the next planning stage.";
+  const planningAuthorityLevel = executionAllowed
+    ? "approved"
+    : questionnaireComplete && questionnaire.generated && stateFresh && !briefApproved
+      ? "draft"
+      : "placeholder";
+  const planningAuthorityReason = executionAllowed
+    ? "The Viber pipeline has an approved brief, a valid evolution order, materialized task punches, and passing execution gates."
+    : planningAuthorityLevel === "draft"
+      ? "Questionnaire answers exist and the brief is still draft or reviewed, so planning can continue but execution remains blocked."
+      : "Raw idea planning is still waiting on questionnaire answers, brief approval, or state resync evidence.";
+  return {
+    questionnaire,
+    brief,
+    planning_method: planningMethodPolicy.method,
+    method_policy: planningMethodPolicy,
+    planning_authority: {
+      level: planningAuthorityLevel,
+      reason: planningAuthorityReason,
+      current_version: versionControl && versionControl.current_version ? versionControl.current_version.version_id || versionControl.current_version.title || null : null,
+      next_version: versionControl && versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || null : null,
+      current_evolution: evolutionsReady ? evolutions[0] && (evolutions[0].evolution_id || evolutions[0].title || null) : null,
+      next_evolution: evolutionsReady && evolutions[1] ? evolutions[1].evolution_id || evolutions[1].title || null : null,
+      state_freshness: stateResync && stateResync.state_freshness ? stateResync.state_freshness : "unknown",
+      source_of_truth: "file_first"
+    },
+    stage_order: [...stageOrder],
+    stage_groups: stageGroups,
+    stages,
+    readiness: {
+      status: readinessStatus,
+      blocked_total: blockedStages.length,
+      warnings_total: warningStages.length,
+      next_action: readinessNextAction
+    },
+    execution_allowed: executionAllowed,
+    execution_blockers: blockers.map((blocker, index) => ({
+      ...blocker,
+      id: blocker.id || `viber-stage-blocker-${String(index + 1).padStart(2, "0")}`
+    })),
+    next_stage: nextStage ? nextStage.stage : "execution",
+    evolution_order_validation: evolutionValidation,
+    state_resync: stateResync || null,
+    questionnaire_state: questionnaire,
+    brief_state: brief
   };
 }
 
@@ -4281,11 +4856,43 @@ function buildViberPipelineStages({
 
 function pipelineStageToArea(stage) {
   if (stage === "state_resync" || stage === "current_state_report") return "state_resync";
-  if (["documentation_files", "system_design", "database_design", "ui_ux_design", "visual_planning", "version_plan", "evolutions", "task_punches", "approval", "materialization", "codex_prompt", "execution", "validation", "dashboard_update", "learning_capture"].includes(stage)) {
+  if ([
+    "questionnaire_generation",
+    "questionnaire_answers",
+    "answer_completeness_check",
+    "brief_generation",
+    "brief_review",
+    "brief_approval",
+    "app_boundary",
+    "documentation_architecture",
+    "documentation_folders",
+    "documentation_files",
+    "system_design",
+    "database_design",
+    "ui_ux_design"
+  ].includes(stage)) {
+    return "docs";
+  }
+  if (["source_control_plan", "source_control_gate"].includes(stage)) return "source_control";
+  if (["security_plan", "security_gate", "security_scan"].includes(stage)) return "security";
+  if (["validation"].includes(stage)) return "validation";
+  if (["handoff_gate", "handoff"].includes(stage)) return "handoff";
+  if ([
+    "version_plan",
+    "evolutions",
+    "evolution_order_validation",
+    "task_punches",
+    "task_punch_review",
+    "approval",
+    "materialization",
+    "codex_prompt",
+    "execution",
+    "dashboard_update",
+    "learning_capture",
+    "closeout"
+  ].includes(stage)) {
     return "task";
   }
-  if (stage === "security") return "security";
-  if (stage === "handoff") return "handoff";
   return "docs";
 }
 
@@ -4746,9 +5353,14 @@ function renderPlannerPipelineReport(report, tableRenderer) {
     `- Idea: ${report.idea || ""}`,
     "",
     viberPipeline ? "## Viber Planning-to-Task Pipeline" : null,
+    viberPipeline ? `- Planning method: ${viberPipeline.planning_method || "hybrid"}` : null,
+    viberPipeline ? `- Planning authority: ${viberPipeline.planning_authority ? viberPipeline.planning_authority.level || "placeholder" : "placeholder"}` : null,
+    viberPipeline ? `- Questionnaire: ${viberPipeline.questionnaire ? viberPipeline.questionnaire.status || "missing" : "missing"}` : null,
+    viberPipeline ? `- Brief: ${viberPipeline.brief ? viberPipeline.brief.status || "missing" : "missing"}` : null,
     viberPipeline ? `- Execution allowed: ${viberPipeline.execution_allowed ? "yes" : "no"}` : null,
     viberPipeline ? `- Next stage: ${viberPipeline.next_stage || "unknown"}` : null,
     viberPipeline ? `- Next action: ${viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : "Complete the next planning stage."}` : null,
+    viberPipeline && Array.isArray(viberPipeline.stage_order) && viberPipeline.stage_order.length ? `- Stage order: ${viberPipeline.stage_order.join(" -> ")}` : null,
     viberPipeline ? tableRenderer(["Stage", "Status", "Blockers", "Warnings", "Next Action"], viberStageRows) : null,
     "",
     "## Documentation Files",
@@ -5665,11 +6277,19 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     ? [
       "",
       "Viber Pipeline Readiness:",
+      "Viber Pipeline Stage Order:",
+      `- Planning method: ${viberPipeline.planning_method || "hybrid"}`,
+      `- Planning authority: ${viberPipeline.planning_authority ? viberPipeline.planning_authority.level || "placeholder" : "placeholder"}`,
+      `- Questionnaire: ${viberPipeline.questionnaire ? viberPipeline.questionnaire.status || "missing" : "missing"}`,
+      `- Brief: ${viberPipeline.brief ? viberPipeline.brief.status || "missing" : "missing"}`,
       `- Status: ${viberPipeline.readiness ? viberPipeline.readiness.status : "unknown"}`,
       `- Execution allowed: ${executionReady ? "yes" : "no"}`,
-      ...(executionReady ? ["- Task execution can start."] : []),
+      ...(executionReady ? ["- Task execution can start."] : ["- Execution is blocked until the pipeline gates pass."]),
       `- Next stage: ${viberPipeline.next_stage || "unknown"}`,
       `- Next action: ${viberPipeline.readiness && viberPipeline.readiness.next_action ? viberPipeline.readiness.next_action : "Complete the next planning stage."}`,
+      viberPipeline.stage_order && Array.isArray(viberPipeline.stage_order) && viberPipeline.stage_order.length
+        ? `- Stage order: ${viberPipeline.stage_order.join(" -> ")}`
+        : null,
       ...(Array.isArray(viberPipeline.execution_blockers) && viberPipeline.execution_blockers.length
         ? ["- Blockers:", ...viberPipeline.execution_blockers.map((blocker) => `  - ${blocker.message || blocker.id || "blocked"}`)]
         : [])
@@ -6283,6 +6903,12 @@ function buildPlannerContext(deps = {}) {
 function resolvePlannerRequest({ action, value, flags, rest }, deps = {}) {
   const explicitTrack = normalizeTrackAlias(flags.track);
   const explicitPlugin = normalizePluginId(flags.plugin);
+  const planningMethod = normalizePlannerMethod(
+    readPlannerFlag(flags, "method", "planning-method", "planning_method") ||
+    flags.method ||
+    flags.planning_method ||
+    null
+  );
   const goal = resolveGoal(value, flags, rest, "");
   const context = buildPlannerContext(deps);
   const mode = explicitPlugin ? "plugin" : (explicitTrack || detectPlannerMode(context, explicitTrack));
@@ -6295,6 +6921,8 @@ function resolvePlannerRequest({ action, value, flags, rest }, deps = {}) {
     goal,
     mode,
     deliveryMode,
+    method: planningMethod || null,
+    planning_method: planningMethod || null,
     plugin_id: pluginContext ? pluginContext.plugin_id : null,
     source_control: sourceControl,
     recommended_evolution: recommendedEvolution,
@@ -7682,6 +8310,8 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
       currentPlan: plan,
       taskPunch,
       pluginContext,
+      planningMethod: plan.planning_method || null,
+      appSlug: normalizeAppSlug(plan.app_slug || ""),
       executionAllowedOverride: String(plan.materialization_status || plan.status || "").toLowerCase() === "materialized" || Boolean(plan.materialized_at)
     })
     : null;

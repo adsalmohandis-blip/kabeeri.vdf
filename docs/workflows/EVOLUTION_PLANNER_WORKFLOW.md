@@ -65,7 +65,10 @@ the next planning stage only whenever `execution_allowed` is false.
 Before `kvdf questionnaire generate-tasks --app <app-name>` can create app
 task punches, KVDF must also pass `kvdf evolution validate-order --app
 <app-name>`, which enforces category-based Viber evolution ordering and blocks
-draft, misordered, or future-only slices from becoming executable work.
+draft, misordered, or future-only slices from becoming executable work. The
+planner pipeline must also surface the Viber stage-order contract so Codex only
+executes after the questionnaire, brief, state resync, docs, design, version,
+evolution, approval, materialization, and safety gates are ready.
 
 ## Self-Planning Engine
 
