@@ -53,6 +53,27 @@ The boundary covers:
 It does not include task queue behavior code, approval UI code, reports UI code,
 or audit implementation code yet.
 
+## Cloud Commercial Boundary
+
+Cloud commercial work for KVDOS starts as app-local documentation and
+validation.
+
+The boundary covers:
+
+- cloud account boundary
+- authentication boundary
+- subscription boundary
+- license entitlement boundary
+- device activation boundary
+- secure entitlement cache boundary
+- plan-access boundary
+- release-access boundary
+- update-access boundary
+
+It does not include cloud API code, authentication implementation, subscription
+backend code, license enforcement code, activation code, entitlement cache code,
+plan-access code, release-access code, or update-access code yet.
+
 ## What KVDOS Does
 
 KVDOS provides a structured workflow for:

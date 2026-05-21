@@ -15,6 +15,12 @@ notes, FIFO ordering notes, approval panel notes, reports panel notes, audit
 trail notes, and task-derivation rules are aligned in docs before any queue or
 approval UI implementation.
 
+The cloud-commercial planning surface is also documentation-first. Cloud
+account notes, authentication notes, subscription notes, license entitlement
+notes, device activation notes, secure entitlement cache notes, plan-access
+notes, release-access notes, and update-access notes are aligned in docs before
+any cloud API or commercial-control implementation.
+
 > Note: this strategy document is a product plan. The current repository state is
 > a local-first Studio and task-governance foundation, not a complete execution
 > platform yet.
@@ -130,6 +136,9 @@ Keep the discovery/spec boundary app-local and pre-implementation until the
 related slice is explicitly approved for build-out.
 
 Keep the tasking/approval boundary app-local and pre-implementation until the
+related slice is explicitly approved for build-out.
+
+Keep the cloud-commercial boundary app-local and pre-implementation until the
 related slice is explicitly approved for build-out.
 
 ## Success Definition for v1
