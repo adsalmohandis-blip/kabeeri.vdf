@@ -1,10 +1,15 @@
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../workspace");
+const { buildResumeReport, buildSessionEntryRoute } = require("./resume");
 const { fileExists } = require("../fs_utils");
 const { table } = require("../ui");
 
 function owner(action, value, flags = {}, deps = {}) {
   const { appendAudit, ensureNoOtherOwner } = deps;
   ensureWorkspace();
+
+  if (action === "track" || action === "system-dev" || action === "system_dev") {
+    return ownerTrack(flags, deps);
+  }
 
   if (action === "transfer") {
     return ownerTransfer(value, flags, deps);
@@ -76,6 +81,66 @@ function owner(action, value, flags = {}, deps = {}) {
   }
 
   throw new Error(`Unknown owner action: ${action}`);
+}
+
+function ownerTrack(flags = {}, deps = {}) {
+  const { appendAudit } = deps;
+  const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check) });
+  const route = buildSessionEntryRoute(report);
+  const now = new Date().toISOString();
+  const sessionTrack = {
+    version: "v1",
+    active: true,
+    active_track: "framework_owner",
+    track_label: route.track_label || "Framework Owner Track",
+    role_gate: route.role_gate || "owner_only",
+    route_command: route.route_command || "kvdf evolution priorities",
+    follow_up_command: route.follow_up_command || "kvdf evolution temp",
+    activated_features: Array.isArray(route.activated_features) ? route.activated_features : [],
+    blocked_features: Array.isArray(route.blocked_features) ? route.blocked_features : [],
+    started_from_mode: report.mode || "framework_owner_development",
+    decision_source: "owner_track",
+    active_root: report.current_root || null,
+    activated_at: now,
+    updated_at: now
+  };
+  writeJsonFile(".kabeeri/session_track.json", sessionTrack);
+  if (appendAudit) appendAudit("owner_track.activated", "owner", report.primary_track && report.primary_track.id ? report.primary_track.id : "framework_owner", "Owner track initiated for system development");
+
+  const payload = {
+    ...report,
+    report_type: "owner_track_initiated",
+    generated_at: now,
+    entry_route: route,
+    session_track: sessionTrack,
+    next_exact_action: report.next_exact_action,
+    next_action: report.next_exact_action,
+    message: "Framework owner track initiated for system development."
+  };
+
+  if (flags.json) {
+    console.log(JSON.stringify(payload, null, 2));
+    return;
+  }
+
+  console.log("Owner Track Initiated");
+  console.log(table(["Field", "Value"], [
+    ["Track", sessionTrack.track_label],
+    ["Role gate", sessionTrack.role_gate],
+    ["Route command", sessionTrack.route_command],
+    ["Follow-up command", sessionTrack.follow_up_command],
+    ["Current root", sessionTrack.active_root || ""],
+    ["Primary track", report.primary_track ? report.primary_track.label : "unknown"],
+    ["Next exact action", report.next_exact_action || ""]
+  ]));
+  console.log("");
+  console.log("Activated features:");
+  for (const item of sessionTrack.activated_features) console.log(`- ${item}`);
+  console.log("");
+  console.log("Blocked features:");
+  for (const item of sessionTrack.blocked_features) console.log(`- ${item}`);
+  console.log("");
+  console.log(`System dev entry point: ${sessionTrack.route_command}`);
 }
 
 function ownerTransfer(action, flags = {}, deps = {}) {

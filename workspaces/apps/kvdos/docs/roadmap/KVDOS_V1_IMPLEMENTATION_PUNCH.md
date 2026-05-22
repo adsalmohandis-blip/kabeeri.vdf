@@ -11,6 +11,26 @@ It does not implement code.
 It does not authorize skipping owner approval.
 It stays app-local to `workspaces/apps/kvdos/`.
 
+## Viber Pipeline Gate Requirement
+
+This roadmap is not execution approval.
+
+Every `impl-*` slice must be reviewed and executed only through the
+Viber/App delivery pipeline gates:
+
+1. questionnaire answers and approved brief before real planning
+2. docs/design readiness before version/evolution approval
+3. version plan before evolutions
+4. evolution order validation before task punches
+5. task punch review and materialization before Codex execution
+6. security, handoff, and source-control gates before implementation
+7. validation and security scan before handoff
+8. dashboard update and learning capture before closeout
+
+No implementation branch may start from this roadmap alone.
+Each slice requires Owner approval and the relevant Viber pipeline readiness
+evidence.
+
 ## Implementation Order
 
 1. `impl-0` Implementation Baseline And Guardrails
@@ -854,6 +874,13 @@ The later foundation slices remain ordered as approved:
 - `.vscode/settings.json` is out of scope.
 - The implementation punch is the execution form of the closed foundation stage;
   it does not reopen planning/readiness work.
+- Every `impl-*` slice remains subject to the Viber pipeline gates before
+  execution:
+  - questionnaire answers and approved brief before real planning
+  - docs/design readiness before version/evolution approval
+  - evolution ordering validation before task punches
+  - task punch review/materialization before Codex execution
+  - security, handoff, and source-control gates before implementation
 
 ## Transition Note
 

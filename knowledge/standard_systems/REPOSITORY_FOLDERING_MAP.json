@@ -161,7 +161,8 @@
     "integrations",
     "docs",
     "schemas",
-    "tests"
+    "tests",
+    "scripts"
   ],
   "new_folder_policy": {
     "default": "Do not create a new top-level folder when an existing root group can own the feature.",

@@ -1,0 +1,33 @@
+{
+  "plugin_id": "tailwind_ui",
+  "name": "Tailwind UI",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/tailwind_ui/runtime/index.js",
+  "command_entrypoint": "plugins/tailwind_ui/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "ui",
+  "plugin_type": "utility_css_provider",
+  "enabled_by_default": false,
+  "description": "Optional Tailwind utility CSS provider plugin for KVDF UI guidance, snippets, and future generated HTML surfaces.",
+  "required_folders": [
+    "runtime",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "command_surface": [
+    "kvdf tailwind-ui status",
+    "kvdf tailwind-ui snippet",
+    "kvdf tailwind-ui utility-map",
+    "kvdf tailwind-ui verify",
+    "kvdf plugins install tailwind_ui",
+    "kvdf plugins uninstall tailwind_ui"
+  ],
+  "docs_surface": [
+    "plugins/tailwind_ui/docs/index.md",
+    "plugins/tailwind_ui/docs/cli.md"
+  ]
+}

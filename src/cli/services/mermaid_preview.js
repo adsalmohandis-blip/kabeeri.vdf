@@ -1,6 +1,7 @@
 const DEFAULT_MIN_ZOOM = 0;
 const DEFAULT_MAX_ZOOM = 1.8;
 const DEFAULT_STEP = 0.08;
+const { buildOptionalAssetTags, getOptionalUiAssets } = require("./ui_asset_provider");
 
 function buildMermaidPreviewHtml({
   title,
@@ -10,19 +11,34 @@ function buildMermaidPreviewHtml({
   bodyHtml = "",
   kind = "visual",
   fallbackLabel = "Preview markdown",
-  diagramTitle = "Diagram Graph"
+  diagramTitle = "Diagram Graph",
+  ui_provider: uiProvider,
+  provider,
+  withBootstrap,
+  with_bootstrap: withBootstrapAlt,
+  noBootstrap,
+  no_bootstrap: noBootstrapAlt
 }) {
   const mermaidBlock = extractMermaidBlock(diagramSource || rendered);
   const diagramHtml = mermaidBlock ? renderFlowchartSvg(mermaidBlock) : "";
   const previewScript = mermaidBlock ? buildMermaidPreviewScript() : "";
   const hasDiagramSource = Boolean(mermaidBlock);
   const noDiagramMessage = hasDiagramSource ? "Mermaid source was found, but the diagram could not be rendered. Review the fallback markdown below." : "No Mermaid source was found in this output.";
+  const uiAssets = buildOptionalUiAssetMarkup({
+    ui_provider: uiProvider,
+    provider,
+    withBootstrap,
+    with_bootstrap: withBootstrapAlt,
+    noBootstrap,
+    no_bootstrap: noBootstrapAlt
+  });
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeXml(title)}</title>
+${indentHtmlBlock(uiAssets, 2)}
   <style>
     :root { color-scheme: light; }
     html, body { margin: 0; font-family: system-ui, sans-serif; background: #f5f7fb; color: #1f2937; overflow-y: auto; }
@@ -100,6 +116,25 @@ function buildMermaidPreviewStatusScript(hasSource, hasRenderedDiagram) {
   error.textContent = fallbackMessage;
 })();
 </script>`;
+}
+
+function buildOptionalUiAssetMarkup(options = {}) {
+  const selected = getOptionalUiAssets({
+    ui_provider: options.ui_provider || options.provider,
+    provider: options.provider,
+    withBootstrap: options.withBootstrap || options["with-bootstrap"],
+    with_bootstrap: options.with_bootstrap,
+    noBootstrap: options.noBootstrap || options["no-bootstrap"],
+    no_bootstrap: options.no_bootstrap
+  });
+  return buildOptionalAssetTags(selected, options);
+}
+
+function indentHtmlBlock(value, spaces = 2) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const indent = " ".repeat(spaces);
+  return text.split("\n").map((line) => `${indent}${line}`).join("\n");
 }
 
 function buildMermaidPreviewScript() {

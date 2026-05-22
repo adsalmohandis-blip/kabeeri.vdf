@@ -58,6 +58,8 @@ const { ecommerceMobileApp } = require("./commands/ecommerce_mobile_app");
 const { crm } = require("./commands/crm");
 const { pos } = require("./commands/pos");
 const { uiUxIntelligence } = require("./commands/ui_ux_intelligence");
+const { bootstrapUi } = require("./commands/bootstrap_ui");
+const { tailwindUi } = require("./commands/tailwind_ui");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
 const { booking: bookingCommand } = require("./commands/booking");
@@ -365,6 +367,18 @@ function run(argv) {
   assertTrackSurfaceAllowed(group, action, getActiveTrackSurface());
   if (["ui-ux-intelligence", "ui_ux_intelligence", "uiux-intelligence", "uiux", "ui-ux"].includes(group)) {
     return uiUxIntelligence(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
+  if (["bootstrap-ui", "bootstrap_ui", "bootstrapui"].includes(group)) {
+    return bootstrapUi(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
+  if (["tailwind-ui", "tailwind_ui", "tailwindui"].includes(group)) {
+    return tailwindUi(action, value, args.flags, rest, {
       table,
       repoRoot
     });

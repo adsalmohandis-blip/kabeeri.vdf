@@ -1,0 +1,33 @@
+{
+  "plugin_id": "bootstrap_ui",
+  "name": "Bootstrap UI",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/bootstrap_ui/runtime/index.js",
+  "command_entrypoint": "plugins/bootstrap_ui/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "ui",
+  "plugin_type": "asset_provider",
+  "enabled_by_default": false,
+  "description": "Optional Bootstrap UI asset provider plugin for KVDF dashboards, docs, and app UI references.",
+  "required_folders": [
+    "runtime",
+    "assets",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "command_surface": [
+    "kvdf bootstrap-ui status",
+    "kvdf bootstrap-ui assets",
+    "kvdf bootstrap-ui snippet",
+    "kvdf plugins install bootstrap_ui",
+    "kvdf plugins uninstall bootstrap_ui"
+  ],
+  "docs_surface": [
+    "plugins/bootstrap_ui/docs/index.md",
+    "plugins/bootstrap_ui/docs/cli.md"
+  ]
+}

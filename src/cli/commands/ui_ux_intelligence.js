@@ -15,9 +15,27 @@ const {
   generateScreenBlueprint,
   generateUiUxHandoffPack,
   buildHandoffMarkdown,
+  buildUiPatternLibrary,
+  buildImplementationGuidance,
+  buildUiUxPromptPack,
+  renderPromptPackMarkdown,
   buildUiUxScorecard,
   buildUiUxGate,
-  buildViberUiUxReadiness
+  buildViberUiUxReadiness,
+  buildUiUxEvidenceManifest,
+  renderEvidenceMarkdown,
+  buildVisualQaContract,
+  renderVisualQaMarkdown,
+  buildUiUxAcceptanceGate,
+  summarizeAcceptanceGate,
+  buildUiUxRegressionChecklist,
+  renderRegressionMarkdown,
+  readKnowledgePackManifest,
+  buildKnowledgePackStatus,
+  buildCatalogHealth,
+  buildUiUxGovernanceRegistry,
+  buildUiUxUpgradePlan,
+  buildUiUxGovernance
 } = require("../../../plugins/ui_ux_intelligence/runtime");
 
 function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
@@ -51,6 +69,36 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
 
   if (mode === "catalog") {
     const report = getCatalogReport({ root: process.cwd(), refresh: true });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "knowledge-pack" || mode === "knowledge_pack") {
+    const report = buildKnowledgePackReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "catalog-health" || mode === "catalog_health") {
+    const report = buildCatalogHealthReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "governance-registry" || mode === "governance_registry") {
+    const report = buildGovernanceRegistryReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "upgrade-plan" || mode === "upgrade_plan") {
+    const report = buildUpgradePlanReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "governance") {
+    const report = buildGovernanceReport(flags);
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(renderJsonLike(report));
     return;
@@ -128,6 +176,28 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
     else console.log(buildHandoffMarkdown(report));
     return;
   }
+  if (mode === "patterns") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildUiPatternLibraryReport(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "implementation-guidance" || mode === "implementation_guidance") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildImplementationGuidanceReport(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "prompt-pack" || mode === "prompt_pack") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildPromptPackReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, renderPromptPackMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderPromptPackMarkdown(report));
+    return;
+  }
   if (mode === "tokens") {
     const input = resolveIdea(value, flags, rest);
     const report = generateDesignTokens(input, flags);
@@ -149,6 +219,38 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
     else console.log(renderJsonLike(report));
     return;
   }
+  if (mode === "evidence") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildEvidenceReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, renderEvidenceMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderEvidenceMarkdown(report));
+    return;
+  }
+  if (mode === "visual-qa" || mode === "visual_qa") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildVisualQaReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, renderVisualQaMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderVisualQaMarkdown(report));
+    return;
+  }
+  if (mode === "acceptance-gate" || mode === "acceptance_gate") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildAcceptanceGateReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, renderAcceptanceGateMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderAcceptanceGateMarkdown(report));
+    return;
+  }
+  if (mode === "regression") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildRegressionReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, renderRegressionMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderRegressionMarkdown(report));
+    return;
+  }
 
   throw new Error(`Unknown ui-ux-intelligence action: ${action}`);
 }
@@ -158,6 +260,14 @@ function normalizeAction(action) {
   if (value === "design_system") return "design-system";
   if (value === "source_status") return "source-status";
   if (value === "handoff_pack") return "handoff-pack";
+  if (value === "implementation_guidance") return "implementation-guidance";
+  if (value === "prompt_pack") return "prompt-pack";
+  if (value === "visual_qa") return "visual-qa";
+  if (value === "acceptance_gate") return "acceptance-gate";
+  if (value === "knowledge_pack") return "knowledge-pack";
+  if (value === "catalog_health") return "catalog-health";
+  if (value === "governance_registry") return "governance-registry";
+  if (value === "upgrade_plan") return "upgrade-plan";
   return value;
 }
 
@@ -297,6 +407,123 @@ function buildUiUxHandoffPackReport(input, flags = {}) {
     app: flags.app || flags.app_slug || flags.appSlug || ""
   });
   return report;
+}
+
+function buildUiPatternLibraryReport(input, flags = {}) {
+  return buildUiPatternLibrary(input, {
+    ...flags,
+    stack: flags.stack || flags.stack_name || flags.framework || ""
+  });
+}
+
+function buildImplementationGuidanceReport(input, flags = {}) {
+  return buildImplementationGuidance(input, {
+    ...flags,
+    stack: flags.stack || flags.stack_name || flags.framework || ""
+  });
+}
+
+function buildPromptPackReport(input, flags = {}) {
+  return buildUiUxPromptPack(input, {
+    ...flags,
+    stack: flags.stack || flags.stack_name || flags.framework || "",
+    executor: flags.executor || flags.role || "codex",
+    app: flags.app || flags.app_slug || flags.appSlug || ""
+  });
+}
+
+function buildEvidenceReport(input, flags = {}) {
+  return buildUiUxEvidenceManifest(input, {
+    ...flags,
+    app: flags.app || flags.app_slug || flags.appSlug || "",
+    evidence: flags.evidence || flags.evidence_paths || flags.paths || "",
+    screens: flags.screens || "",
+    states: flags.states || "",
+    stage: flags.stage || "validation"
+  });
+}
+
+function buildVisualQaReport(input, flags = {}) {
+  return buildVisualQaContract(input, {
+    ...flags,
+    app: flags.app || flags.app_slug || flags.appSlug || "",
+    evidence: flags.evidence || flags.evidence_paths || flags.paths || "",
+    screens: flags.screens || "",
+    states: flags.states || "",
+    stage: flags.stage || "validation"
+  });
+}
+
+function buildAcceptanceGateReport(input, flags = {}) {
+  return buildUiUxAcceptanceGate(input, {
+    ...flags,
+    app: flags.app || flags.app_slug || flags.appSlug || "",
+    stage: flags.stage || "handoff",
+    strict: Boolean(flags.strict),
+    evidence: flags.evidence || flags.evidence_paths || flags.paths || "",
+    screens: flags.screens || "",
+    states: flags.states || ""
+  });
+}
+
+function buildRegressionReport(input, flags = {}) {
+  return buildUiUxRegressionChecklist(input, {
+    ...flags,
+    app: flags.app || flags.app_slug || flags.appSlug || "",
+    evidence: flags.evidence || flags.evidence_paths || flags.paths || "",
+    screens: flags.screens || "",
+    states: flags.states || ""
+  });
+}
+
+function buildKnowledgePackReport(flags = {}) {
+  return buildKnowledgePackStatus({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildCatalogHealthReport(flags = {}) {
+  return buildCatalogHealth({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildGovernanceRegistryReport(flags = {}) {
+  return buildUiUxGovernanceRegistry({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildUpgradePlanReport(flags = {}) {
+  return buildUiUxUpgradePlan({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildGovernanceReport(flags = {}) {
+  return buildUiUxGovernance({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function renderAcceptanceGateMarkdown(report) {
+  return [
+    "# UI/UX Acceptance Gate",
+    "",
+    `- App: ${report.app || "n/a"}`,
+    `- Status: ${report.status || "warning"}`,
+    `- Score: ${report.score || 0}`,
+    `- Grade: ${report.grade || "F"}`,
+    `- Next action: ${report.next_action || "Resolve the acceptance blockers before UI/UX handoff."}`,
+    "",
+    "## Criteria",
+    ...(Array.isArray(report.criteria) && report.criteria.length
+      ? report.criteria.map((item) => [
+        `### ${item.criteria_id}`,
+        `- Title: ${item.title}`,
+        `- Status: ${item.status}`,
+        `- Evidence: ${(item.evidence || []).join(", ") || "none"}`,
+        `- Next action: ${item.next_action}`,
+        ""
+      ]).flat()
+      : ["- None"]),
+    "",
+    "## Blockers",
+    ...(Array.isArray(report.blockers) && report.blockers.length ? report.blockers.map((item) => `- ${item}`) : ["- None"]),
+    "",
+    "## Warnings",
+    ...(Array.isArray(report.warnings) && report.warnings.length ? report.warnings.map((item) => `- ${item}`) : ["- None"])
+  ].join("\n").replace(/\n{3,}/g, "\n\n").trimEnd() + "\n";
 }
 
 function writeUiUxOutput(outputPath, content, root) {

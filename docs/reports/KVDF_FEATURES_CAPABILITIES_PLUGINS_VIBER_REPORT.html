@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KVDF Features, Capabilities, Plugins, and Viber Track Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #07111f;
+      --panel: rgba(12, 20, 36, 0.94);
+      --panel-soft: rgba(20, 29, 52, 0.9);
+      --text: #edf2ff;
+      --muted: #aab6d3;
+      --border: rgba(120, 145, 190, 0.3);
+      --accent: #7dd3fc;
+      --accent-2: #a78bfa;
+      --good: #4ade80;
+      --warn: #fbbf24;
+      --danger: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(125, 211, 252, 0.15), transparent 30%),
+        radial-gradient(circle at top right, rgba(167, 139, 250, 0.15), transparent 32%),
+        linear-gradient(180deg, #06101d 0%, #09111f 48%, #050a12 100%);
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      line-height: 1.55;
+    }
+    .wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px 20px 56px;
+    }
+    header {
+      background: linear-gradient(180deg, rgba(12, 20, 36, 0.96), rgba(9, 16, 29, 0.96));
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 28px 100px rgba(0,0,0,0.35);
+    }
+    h1, h2, h3 { margin: 0 0 12px; line-height: 1.15; }
+    h1 { font-size: clamp(2.1rem, 4vw, 3.6rem); }
+    h2 { font-size: 1.55rem; }
+    h3 { font-size: 1.08rem; color: #f8fbff; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .meta, .stats, .grid {
+      display: grid;
+      gap: 14px;
+    }
+    .meta {
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      margin-top: 18px;
+    }
+    .stats {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      margin: 18px 0 4px;
+    }
+    .card, .section {
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+    }
+    .card {
+      padding: 18px;
+      box-shadow: 0 18px 60px rgba(0,0,0,0.2);
+    }
+    .section {
+      margin-top: 18px;
+      padding: 20px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.24);
+      background: rgba(148, 163, 184, 0.1);
+      color: #dce7ff;
+      white-space: nowrap;
+      font-size: 0.92rem;
+    }
+    .pill-good { background: rgba(74, 222, 128, 0.12); border-color: rgba(74, 222, 128, 0.25); color: #b6f7cc; }
+    .pill-neutral { background: rgba(125, 211, 252, 0.12); border-color: rgba(125, 211, 252, 0.25); color: #c5f0ff; }
+    .pill-soft { background: rgba(167, 139, 250, 0.12); border-color: rgba(167, 139, 250, 0.25); color: #ebdeff; }
+    .muted { color: var(--muted); font-size: 0.92rem; }
+    .small { font-size: 0.92rem; }
+    .summary-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 16px;
+      background: var(--panel-soft);
+      border: 1px solid var(--border);
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    th, td {
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(120, 145, 190, 0.18);
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.95rem;
+    }
+    th {
+      background: rgba(10, 18, 33, 0.94);
+      color: #f8fbff;
+      font-weight: 700;
+    }
+    tr:last-child td { border-bottom: 0; }
+    code {
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(148, 163, 184, 0.15);
+      color: #f8fbff;
+      white-space: nowrap;
+    }
+    .path {
+      font-family: Consolas, "Liberation Mono", monospace;
+      font-size: 0.88rem;
+      color: #d8e2ff;
+    }
+    .diagram {
+      margin-top: 14px;
+      background: #f9fbff;
+      border-radius: 18px;
+      padding: 16px;
+      overflow-x: auto;
+      color: #111827;
+    }
+    .diagram-title {
+      margin-top: 18px;
+    }
+    .section-note {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .footer {
+      margin-top: 20px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+    .kicker {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 0.77rem;
+      color: #9cc7ff;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="kicker">KVDF report</div>
+      <h1>Features, Capabilities, Plugins, and Viber Track</h1>
+      <p>This browser-ready report combines the live capability registry, the plugin catalog, and the Viber delivery track so the system can be reviewed as one operating model.</p>
+      <div class="summary-line">
+        <span class="pill">Generated: <strong>2026-05-21T23:36:53.271Z</strong></span>
+        <span class="pill">Capabilities: <strong>53</strong></span>
+        <span class="pill">Capability coverage: <strong>53</strong>/<strong>53</strong></span>
+        <span class="pill">Plugins discovered: <strong>17</strong></span>
+        <span class="pill">Plugin commands: <strong>181</strong></span>
+        <span class="pill">Plugin docs links: <strong>57</strong></span>
+      </div>
+      <div class="stats">
+        <div class="card">
+          <h3>What this report answers</h3>
+          <p>What KVDF can do, which CLI surfaces map to those capabilities, how the plugin ecosystem is split, and how the Viber track gates app delivery before execution.</p>
+        </div>
+        <div class="card">
+          <h3>Primary operating split</h3>
+          <p>Framework-owner work changes KVDF itself, Viber app-developer work uses KVDF to build apps, and the shared platform layer keeps both safe and resumable.</p>
+        </div>
+        <div class="card">
+          <h3>Important guardrail</h3>
+          <p>Raw ideas do not go straight to execution. The Viber pipeline forces questionnaire, brief, docs, design, version, evolution, task punch, approval, and gate checks first.</p>
+        </div>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>Operating Model</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Track</th>
+            <th>Who it serves</th>
+            <th>Core cycle</th>
+            <th>Owns</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Framework Owner Track</strong></td>
+            <td>Maintain and extend KVDF itself.</td>
+            <td><code>resume -> evolution priorities -> evolution temp -> validate -> verify -> commit on main -> push origin main</code></td>
+            <td>Evolution Steward, framework governance, release readiness, dependency mapping, and follow-up tasks for KVDF internals.</td>
+          </tr>
+          <tr>
+            <td><strong>Viber App Developer Track</strong></td>
+            <td>Build real applications with KVDF as the engine.</td>
+            <td><code>resume -> vibe/ask -> blueprint/questionnaire -> evolution -> temp -> tasks/capture -> handoff -> validate</code></td>
+            <td>Vibe-first intake, milestone-based app evolution, app task execution, capture records, app blueprints, prompt packs, and local-first handoff.</td>
+          </tr>
+          <tr>
+            <td><strong>Shared Platform Layer</strong></td>
+            <td>Both tracks.</td>
+            <td><code>resume -> guard -> conflict scan -> validate -> dashboard/reports</code></td>
+            <td>CLI engine, workspace state, task tracker, dashboard, sync preflight, security, tokens, locks, and runtime schemas.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Coverage Snapshot</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Capability Registry</h3>
+          <p>53 capabilities are fully covered in the CLI surface and docs matrix. The registry is complete, so the report can trace each capability from source to CLI to documentation.</p>
+          <div class="summary-line">
+            <span class="pill pill-good">complete: 53</span>
+            <span class="pill pill-soft">partial: 0</span>
+            <span class="pill pill-neutral">groups: 10</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Plugin Catalog</h3>
+          <p>17 plugins are present, spanning framework, shared platform, design, security, planner, knowledge, and app-builder bundles.</p>
+          <div class="summary-line">
+            <span class="pill pill-good">framework_owner: 1</span>
+            <span class="pill pill-soft">shared: 7</span>
+            <span class="pill pill-neutral">app: 9</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Capability Groups</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th>Count</th>
+            <th>Owner(s)</th>
+            <th>Representative capabilities</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        <tr>
+          <td>A. Product &amp; Business</td>
+          <td>1</td>
+          <td>docs</td>
+          <td>Product &amp; Business (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>B. Users, Access, and Journeys</td>
+          <td>7</td>
+          <td>docs</td>
+          <td>Users &amp; Roles (3 CLI entries)<br>Permissions (3 CLI entries)<br>User Journeys (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>C. Frontend Experience</td>
+          <td>5</td>
+          <td>public_frontend</td>
+          <td>Public Frontend (3 CLI entries)<br>User Frontend (3 CLI entries)<br>Admin Frontend (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>D. Backend, Data, and APIs</td>
+          <td>3</td>
+          <td>backend</td>
+          <td>Backend APIs (3 CLI entries)<br>Business Logic (3 CLI entries)<br>Database (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>8</td>
+          <td>admin_frontend, public_frontend, docs</td>
+          <td>Admin Panel (3 CLI entries)<br>Settings System (3 CLI entries)<br>Theme / Colors / Branding / Design Tokens (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>9</td>
+          <td>docs, public_frontend</td>
+          <td>Notifications (3 CLI entries)<br>Search &amp; Filtering (3 CLI entries)<br>Files &amp; Media (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>7</td>
+          <td>docs, qa</td>
+          <td>Audit Logs (3 CLI entries)<br>Security (3 CLI entries)<br>Performance (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>G. Commerce and Plugins</td>
+          <td>3</td>
+          <td>backend, docs</td>
+          <td>Plugins (3 CLI entries)<br>Payments / Billing (3 CLI entries)<br>Multi-Tenancy (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>I. Operations and Release</td>
+          <td>9</td>
+          <td>qa, docs</td>
+          <td>Deployment (3 CLI entries)<br>Production vs Publish (3 CLI entries)<br>Backup / Recovery (3 CLI entries)</td>
+        </tr>
+
+        <tr>
+          <td>J. Kabeeri Control Layer</td>
+          <td>1</td>
+          <td>docs</td>
+          <td>Kabeeri Development Control Layer (3 CLI entries)</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Capability Index</h2>
+      <p class="section-note">This table keeps the full capability surface visible. The CLI surface entries are the operational entry points; the source references show where the capability was derived and documented.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Capability</th>
+            <th>Group</th>
+            <th>Owner</th>
+            <th>CLI surface</th>
+            <th>Source reference</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        <tr>
+          <td>1</td>
+          <td><strong>Product &amp; Business</strong></td>
+          <td>A. Product &amp; Business</td>
+          <td>docs</td>
+          <td><code>kvdf project route</code><br><code>kvdf questionnaire plan</code><br><code>kvdf blueprint</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>2</td>
+          <td><strong>Users &amp; Roles</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>3</td>
+          <td><strong>Permissions</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>4</td>
+          <td><strong>User Journeys</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>5</td>
+          <td><strong>Onboarding</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>6</td>
+          <td><strong>Offboarding</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>7</td>
+          <td><strong>Public Frontend</strong></td>
+          <td>C. Frontend Experience</td>
+          <td>public_frontend</td>
+          <td><code>kvdf design</code><br><code>kvdf vibe</code><br><code>kvdf prompt-pack</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>8</td>
+          <td><strong>User Frontend</strong></td>
+          <td>C. Frontend Experience</td>
+          <td>public_frontend</td>
+          <td><code>kvdf design</code><br><code>kvdf vibe</code><br><code>kvdf prompt-pack</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>9</td>
+          <td><strong>Admin Frontend</strong></td>
+          <td>C. Frontend Experience</td>
+          <td>public_frontend</td>
+          <td><code>kvdf design</code><br><code>kvdf vibe</code><br><code>kvdf prompt-pack</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>10</td>
+          <td><strong>Internal Operations Frontend</strong></td>
+          <td>C. Frontend Experience</td>
+          <td>public_frontend</td>
+          <td><code>kvdf design</code><br><code>kvdf vibe</code><br><code>kvdf prompt-pack</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>11</td>
+          <td><strong>Backend APIs</strong></td>
+          <td>D. Backend, Data, and APIs</td>
+          <td>backend</td>
+          <td><code>kvdf data-design</code><br><code>kvdf migration</code><br><code>kvdf release</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>12</td>
+          <td><strong>Business Logic</strong></td>
+          <td>D. Backend, Data, and APIs</td>
+          <td>backend</td>
+          <td><code>kvdf data-design</code><br><code>kvdf migration</code><br><code>kvdf release</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>13</td>
+          <td><strong>Database</strong></td>
+          <td>D. Backend, Data, and APIs</td>
+          <td>backend</td>
+          <td><code>kvdf data-design</code><br><code>kvdf migration</code><br><code>kvdf release</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>14</td>
+          <td><strong>Authentication</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>15</td>
+          <td><strong>Authorization</strong></td>
+          <td>B. Users, Access, and Journeys</td>
+          <td>docs</td>
+          <td><code>kvdf owner</code><br><code>kvdf developer</code><br><code>kvdf task assessment</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>16</td>
+          <td><strong>Admin Panel</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>admin_frontend</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>17</td>
+          <td><strong>Settings System</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>admin_frontend</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>18</td>
+          <td><strong>Theme / Colors / Branding / Design Tokens</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>public_frontend</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>19</td>
+          <td><strong>Dashboard Customization</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>docs</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>20</td>
+          <td><strong>Notifications</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>21</td>
+          <td><strong>Search &amp; Filtering</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>22</td>
+          <td><strong>Files &amp; Media</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>23</td>
+          <td><strong>Reports &amp; Analytics</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>24</td>
+          <td><strong>Audit Logs</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>docs</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>25</td>
+          <td><strong>Security</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>qa</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>26</td>
+          <td><strong>Plugins</strong></td>
+          <td>G. Commerce and Plugins</td>
+          <td>backend</td>
+          <td><code>kvdf github</code><br><code>kvdf sync</code><br><code>kvdf release</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>27</td>
+          <td><strong>Payments / Billing</strong></td>
+          <td>G. Commerce and Plugins</td>
+          <td>backend</td>
+          <td><code>kvdf github</code><br><code>kvdf sync</code><br><code>kvdf release</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>28</td>
+          <td><strong>SEO</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>public_frontend</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>29</td>
+          <td><strong>Localization / Languages</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>30</td>
+          <td><strong>Accessibility</strong></td>
+          <td>C. Frontend Experience</td>
+          <td>public_frontend</td>
+          <td><code>kvdf design</code><br><code>kvdf vibe</code><br><code>kvdf prompt-pack</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>31</td>
+          <td><strong>Performance</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>qa</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>32</td>
+          <td><strong>Error Handling</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>docs</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>33</td>
+          <td><strong>Testing / QA</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>qa</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>34</td>
+          <td><strong>Deployment</strong></td>
+          <td>I. Operations and Release</td>
+          <td>qa</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>35</td>
+          <td><strong>Production vs Publish</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>36</td>
+          <td><strong>Backup / Recovery</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>37</td>
+          <td><strong>Monitoring</strong></td>
+          <td>I. Operations and Release</td>
+          <td>qa</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>38</td>
+          <td><strong>Documentation</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>39</td>
+          <td><strong>Support / Help Center</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>40</td>
+          <td><strong>Legal / Compliance</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>docs</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>41</td>
+          <td><strong>Content Management</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>42</td>
+          <td><strong>Workflows / Approvals</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>43</td>
+          <td><strong>Multi-Tenancy</strong></td>
+          <td>G. Commerce and Plugins</td>
+          <td>docs</td>
+          <td><code>kvdf github</code><br><code>kvdf sync</code><br><code>kvdf release</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>44</td>
+          <td><strong>Feature Flags</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>docs</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>45</td>
+          <td><strong>Data Import / Export</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>46</td>
+          <td><strong>Scheduling / Automation</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>47</td>
+          <td><strong>AI Product Features</strong></td>
+          <td>F. Engagement, Content, and Growth</td>
+          <td>docs</td>
+          <td><code>kvdf docs</code><br><code>kvdf prompt-pack</code><br><code>kvdf example</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>48</td>
+          <td><strong>Data Governance</strong></td>
+          <td>H. Quality, Security, and Compliance</td>
+          <td>docs</td>
+          <td><code>kvdf validate</code><br><code>kvdf security</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>49</td>
+          <td><strong>Tenant / Admin Customization</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>admin_frontend</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>50</td>
+          <td><strong>Email / Notification Templates</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>docs</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>51</td>
+          <td><strong>Dynamic Forms / Custom Fields</strong></td>
+          <td>E. Admin, Settings, and Customization</td>
+          <td>docs</td>
+          <td><code>kvdf dashboard</code><br><code>kvdf task</code><br><code>kvdf policy</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>52</td>
+          <td><strong>Versioning / API Versioning</strong></td>
+          <td>I. Operations and Release</td>
+          <td>docs</td>
+          <td><code>kvdf release</code><br><code>kvdf dashboard</code><br><code>kvdf handoff</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+
+        <tr>
+          <td>53</td>
+          <td><strong>Kabeeri Development Control Layer</strong></td>
+          <td>J. Kabeeri Control Layer</td>
+          <td>docs</td>
+          <td><code>kvdf task</code><br><code>kvdf change report</code><br><code>kvdf trace report</code></td>
+          <td><span class="path">knowledge/standard_systems/SYSTEM_AREAS_INDEX.md</span><br><span class="path">docs/SYSTEM_CAPABILITIES_REFERENCE.md</span></td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Plugin Inventory</h2>
+      <p class="section-note">This inventory includes every plugin manifest under <code>plugins/</code>. The table shows whether each plugin is on by default, which track it belongs to, and the main command entrypoint.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Plugin ID</th>
+            <th>Name</th>
+            <th>Track</th>
+            <th>Family / Type</th>
+            <th>State</th>
+            <th>Commands</th>
+            <th>Entrypoint</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        <tr>
+          <td>ai-learning</td>
+          <td>
+            <strong>AI Learning</strong><br>
+            <span class="muted">Optional AI learning plugin that packages local failure capture, sanitized export/import, owner review, promotion, shared learning, local cache sync, and future cloud-ready metadata on top of the core memory layer.</span>
+          </td>
+          <td>shared</td>
+          <td>knowledge<br><span class="muted">ai-learning</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>14<br><span class="muted"><code>kvdf learn capture</code><br><code>kvdf learn fast-path</code><br><code>kvdf learn export</code><br><code>kvdf learn import</code></span></td>
+          <td>plugins/ai_learning/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>blog</td>
+          <td>
+            <strong>Blog Builder</strong><br>
+            <span class="muted">Build blogs from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">blog</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf blog status</code><br><code>kvdf blog init</code><br><code>kvdf blog questionnaire</code><br><code>kvdf blog brief</code></span></td>
+          <td>plugins/blog/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>booking-builder</td>
+          <td>
+            <strong>Booking Builder</strong><br>
+            <span class="muted">Build booking websites and reservation platforms from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">booking</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf booking status</code><br><code>kvdf booking init</code><br><code>kvdf booking questionnaire</code><br><code>kvdf booking brief</code></span></td>
+          <td>plugins/booking_builder/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>company-profile</td>
+          <td>
+            <strong>Company Profile Builder</strong><br>
+            <span class="muted">Build company profile websites from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">company-profile</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf company-profile status</code><br><code>kvdf company-profile init</code><br><code>kvdf company-profile questionnaire</code><br><code>kvdf company-profile brief</code></span></td>
+          <td>plugins/company_profile/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>crm</td>
+          <td>
+            <strong>CRM Builder</strong><br>
+            <span class="muted">Build CRM systems from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">crm</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf crm status</code><br><code>kvdf crm init</code><br><code>kvdf crm questionnaire</code><br><code>kvdf crm brief</code></span></td>
+          <td>plugins/crm/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>ecommerce-builder</td>
+          <td>
+            <strong>Ecommerce Builder</strong><br>
+            <span class="muted">Build ecommerce systems from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">ecommerce</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf ecommerce status</code><br><code>kvdf ecommerce init</code><br><code>kvdf ecommerce questionnaire</code><br><code>kvdf ecommerce brief</code></span></td>
+          <td>plugins/ecommerce_builder/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>ecommerce-mobile-app</td>
+          <td>
+            <strong>Ecommerce Mobile App Builder</strong><br>
+            <span class="muted">Build ecommerce mobile apps from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">ecommerce-mobile-app</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf ecommerce-mobile-app status</code><br><code>kvdf ecommerce-mobile-app init</code><br><code>kvdf ecommerce-mobile-app questionnaire</code><br><code>kvdf ecommerce-mobile-app brief</code></span></td>
+          <td>plugins/ecommerce_mobile_app/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>github</td>
+          <td>
+            <strong>GitHub Integration Bundle</strong><br>
+            <span class="muted">GitHub labels, milestones, backlog notes, import guidance, and sync references packaged as a removable bundle.</span>
+          </td>
+          <td>shared</td>
+          <td>platform_plugin<br><span class="muted">integration_bundle</span></td>
+          <td><span class="pill pill-good">enabled</span><br><span class="pill pill-soft">removable</span></td>
+          <td>6<br><span class="muted"><code>kvdf github</code><br><code>kvdf github report</code><br><code>kvdf plugins install github</code><br><code>kvdf plugins enable github</code></span></td>
+          <td>plugins/github/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>github_sync</td>
+          <td>
+            <strong>GitHub Sync Rules Bundle</strong><br>
+            <span class="muted">GitHub sync rules, issue mapping guidance, and plugin lifecycle notes packaged as a removable bundle.</span>
+          </td>
+          <td>shared</td>
+          <td>platform_plugin<br><span class="muted">integration_bundle</span></td>
+          <td><span class="pill pill-good">enabled</span><br><span class="pill pill-soft">removable</span></td>
+          <td>6<br><span class="muted"><code>kvdf github</code><br><code>kvdf github report</code><br><code>kvdf plugins install github_sync</code><br><code>kvdf plugins enable github_sync</code></span></td>
+          <td>plugins/github_sync/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>kvdf-dev</td>
+          <td>
+            <strong>KVDF Dev System Bundle</strong><br>
+            <span class="muted">Removable framework-development bundle that keeps KVDF itself separate from app-building plugins and app-track workflows.</span>
+          </td>
+          <td>framework_owner</td>
+          <td>framework_plugin<br><span class="muted">kvdf_core</span></td>
+          <td><span class="pill pill-good">enabled</span><br><span class="pill pill-soft">removable</span></td>
+          <td>25<br><span class="muted"><code>kvdf evolution</code><br><code>kvdf evolution roadmap</code><br><code>kvdf evolution priorities</code><br><code>kvdf evolution partition</code></span></td>
+          <td>plugins/kvdf_dev/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>multi_ai_governance</td>
+          <td>
+            <strong>Multi-AI Governance Bundle</strong><br>
+            <span class="muted">Multi-AI governance plans, milestones, and operational rules packaged as a removable framework plugin.</span>
+          </td>
+          <td>shared</td>
+          <td>framework_plugin<br><span class="muted">multi_ai_governance</span></td>
+          <td><span class="pill pill-good">enabled</span><br><span class="pill pill-soft">removable</span></td>
+          <td>8<br><span class="muted"><code>kvdf multi-ai status</code><br><code>kvdf multi-ai queue</code><br><code>kvdf multi-ai relay</code><br><code>kvdf multi-ai sync</code></span></td>
+          <td>n/a</td>
+        </tr>
+
+        <tr>
+          <td>news-website</td>
+          <td>
+            <strong>News Website Builder</strong><br>
+            <span class="muted">Build news websites from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">news-website</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf news-website status</code><br><code>kvdf news-website init</code><br><code>kvdf news-website questionnaire</code><br><code>kvdf news-website brief</code></span></td>
+          <td>plugins/news_website/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>planner-visual</td>
+          <td>
+            <strong>Planner Visual Renderer</strong><br>
+            <span class="muted">Render planner visual JSON into readable Markdown and Mermaid text without moving planner logic out of KVDF Core.</span>
+          </td>
+          <td>shared</td>
+          <td>planner<br><span class="muted">visual_renderer</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>5<br><span class="muted"><code>kvdf planner-visual status</code><br><code>kvdf planner-visual render</code><br><code>kvdf planner-visual export</code><br><code>kvdf plugins install planner-visual</code></span></td>
+          <td>plugins/planner_visual/runtime/index.js</td>
+        </tr>
+
+        <tr>
+          <td>pos</td>
+          <td>
+            <strong>POS Builder</strong><br>
+            <span class="muted">Build point-of-sale systems from intake to briefs, modules, tasks, approvals, and release handoff.</span>
+          </td>
+          <td>app</td>
+          <td>app_builder<br><span class="muted">pos</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>11<br><span class="muted"><code>kvdf pos status</code><br><code>kvdf pos init</code><br><code>kvdf pos questionnaire</code><br><code>kvdf pos brief</code></span></td>
+          <td>plugins/pos/bootstrap.js</td>
+        </tr>
+
+        <tr>
+          <td>security-auditor</td>
+          <td>
+            <strong>Security Auditor</strong><br>
+            <span class="muted">Optional built-in security auditor plugin that scans tasks, evolutions, handoff packages, and workspace changes for common secret, injection, auth, and backdoor patterns before release or handoff.</span>
+          </td>
+          <td>shared</td>
+          <td>security<br><span class="muted">auditor</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>7<br><span class="muted"><code>kvdf security-auditor status</code><br><code>kvdf security-auditor scan</code><br><code>kvdf security-auditor scan --task &lt;task-id&gt;</code><br><code>kvdf security-auditor scan --evolution current</code></span></td>
+          <td>plugins/security_auditor/runtime/index.js</td>
+        </tr>
+
+        <tr>
+          <td>ui_ux_intelligence</td>
+          <td>
+            <strong>UI UX Intelligence</strong><br>
+            <span class="muted">Standalone optional UI/UX intelligence plugin for design-system recommendations, accessibility checks, UX anti-pattern detection, and Viber app UI/UX documentation support.</span>
+          </td>
+          <td>shared</td>
+          <td>design<br><span class="muted">ui_ux_advisor</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>10<br><span class="muted"><code>kvdf ui-ux-intelligence status</code><br><code>kvdf ui-ux-intelligence source-status</code><br><code>kvdf ui-ux-intelligence search</code><br><code>kvdf ui-ux-intelligence recommend</code></span></td>
+          <td>plugins/ui_ux_intelligence/runtime/index.js</td>
+        </tr>
+
+        <tr>
+          <td>vibe-maintainer</td>
+          <td>
+            <strong>Vibe Maintainer</strong><br>
+            <span class="muted">Inspect and maintain vibe developer app workspaces with scope-aware cleanup, relocation review, approvals, execution, and finalization.</span>
+          </td>
+          <td>app</td>
+          <td>app_maintenance<br><span class="muted">vibe-maintainer</span></td>
+          <td><span class="pill pill-neutral">optional</span><br><span class="pill pill-soft">removable</span></td>
+          <td>12<br><span class="muted"><code>kvdf vibe-maintainer status</code><br><code>kvdf vibe-maintainer fast</code><br><code>kvdf vibe-maintainer slow</code><br><code>kvdf vibe-maintainer cleanup</code></span></td>
+          <td>plugins/vibe_maintainer/bootstrap.js</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Viber Track</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Viber app delivery pipeline</h3>
+          <p>The Viber pipeline is the gated path from raw app idea to execution. No answers means no real planning, no approved brief means no evolutions, and no task punch means no Codex execution.</p>
+        </div>
+        <div class="card">
+          <h3>Viber release train</h3>
+          <p>The release train is the FIFO readiness model for app delivery. It moves through docs, evolution, task, validation, security, handoff, and publish readiness.</p>
+        </div>
+      </div>
+
+      <h3 class="diagram-title">Mermaid: Viber pipeline flow</h3>
+      <div class="diagram mermaid">
+flowchart TD
+  A["Idea"] --> B["Questionnaire generation"]
+  B --> C["Questionnaire answers"]
+  C --> D["Answer completeness check"]
+  D --> E["Brief generation"]
+  E --> F["Brief review"]
+  F --> G["Brief approval"]
+  G --> H["State resync"]
+  H --> I["Current state report"]
+  I --> J["App boundary"]
+  J --> K["Docs + design foundation"]
+  K --> L["Version plan"]
+  L --> M["Evolutions"]
+  M --> N["Task punches"]
+  N --> O["Approval"]
+  O --> P["Materialization"]
+  P --> Q["Execution gates"]
+  Q --> R["Execution"]
+  R --> S["Validation + security scan"]
+  S --> T["Handoff + dashboard update"]
+  T --> U["Learning capture + closeout"]
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Gate / step</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        <tr>
+          <td>1</td>
+          <td><code>idea</code></td>
+          <td>Raw request enters the Viber pipeline, but cannot execute immediately.</td>
+        </tr>
+
+        <tr>
+          <td>2</td>
+          <td><code>questionnaire_generation</code></td>
+          <td>The system asks for structured intake questions.</td>
+        </tr>
+
+        <tr>
+          <td>3</td>
+          <td><code>questionnaire_answers</code></td>
+          <td>Answers are captured as durable planning input.</td>
+        </tr>
+
+        <tr>
+          <td>4</td>
+          <td><code>answer_completeness_check</code></td>
+          <td>The answer set is checked for missing planning gaps.</td>
+        </tr>
+
+        <tr>
+          <td>5</td>
+          <td><code>brief_generation</code></td>
+          <td>A brief is produced from the intake evidence.</td>
+        </tr>
+
+        <tr>
+          <td>6</td>
+          <td><code>brief_review</code></td>
+          <td>The brief is reviewed before any further planning.</td>
+        </tr>
+
+        <tr>
+          <td>7</td>
+          <td><code>brief_approval</code></td>
+          <td>Owner approval unlocks the downstream planning path.</td>
+        </tr>
+
+        <tr>
+          <td>8</td>
+          <td><code>state_resync</code></td>
+          <td>Current local state is reconciled before planning continues.</td>
+        </tr>
+
+        <tr>
+          <td>9</td>
+          <td><code>current_state_report</code></td>
+          <td>A current-state report becomes the planning anchor.</td>
+        </tr>
+
+        <tr>
+          <td>10</td>
+          <td><code>app_boundary</code></td>
+          <td>The app boundary is defined so KVDF Core stays separate.</td>
+        </tr>
+
+        <tr>
+          <td>11</td>
+          <td><code>documentation_architecture</code></td>
+          <td>The docs architecture is planned.</td>
+        </tr>
+
+        <tr>
+          <td>12</td>
+          <td><code>documentation_folders</code></td>
+          <td>Foldered docs are materialized.</td>
+        </tr>
+
+        <tr>
+          <td>13</td>
+          <td><code>documentation_files</code></td>
+          <td>The compatibility file list is derived.</td>
+        </tr>
+
+        <tr>
+          <td>14</td>
+          <td><code>system_design</code></td>
+          <td>System design artifacts are prepared.</td>
+        </tr>
+
+        <tr>
+          <td>15</td>
+          <td><code>database_design</code></td>
+          <td>Data model and persistence design are prepared.</td>
+        </tr>
+
+        <tr>
+          <td>16</td>
+          <td><code>ui_ux_design</code></td>
+          <td>UX and UI design artifacts are prepared.</td>
+        </tr>
+
+        <tr>
+          <td>17</td>
+          <td><code>source_control_plan</code></td>
+          <td>Delivery mode and source-control path are chosen.</td>
+        </tr>
+
+        <tr>
+          <td>18</td>
+          <td><code>security_plan</code></td>
+          <td>Security posture and gates are planned.</td>
+        </tr>
+
+        <tr>
+          <td>19</td>
+          <td><code>version_plan</code></td>
+          <td>Version strategy is proposed and reviewed.</td>
+        </tr>
+
+        <tr>
+          <td>20</td>
+          <td><code>evolutions</code></td>
+          <td>Approved changes become tracked evolutions.</td>
+        </tr>
+
+        <tr>
+          <td>21</td>
+          <td><code>evolution_order_validation</code></td>
+          <td>Evolution order is validated before tasking.</td>
+        </tr>
+
+        <tr>
+          <td>22</td>
+          <td><code>task_punches</code></td>
+          <td>Task punches are generated only after approval.</td>
+        </tr>
+
+        <tr>
+          <td>23</td>
+          <td><code>task_punch_review</code></td>
+          <td>The task punch set is reviewed.</td>
+        </tr>
+
+        <tr>
+          <td>24</td>
+          <td><code>approval</code></td>
+          <td>The owner gate approves the next action.</td>
+        </tr>
+
+        <tr>
+          <td>25</td>
+          <td><code>materialization</code></td>
+          <td>The approved work is materialized into workspace files.</td>
+        </tr>
+
+        <tr>
+          <td>26</td>
+          <td><code>codex_prompt</code></td>
+          <td>The execution prompt is assembled.</td>
+        </tr>
+
+        <tr>
+          <td>27</td>
+          <td><code>security_gate</code></td>
+          <td>Security checks block unsafe execution.</td>
+        </tr>
+
+        <tr>
+          <td>28</td>
+          <td><code>handoff_gate</code></td>
+          <td>Handoff readiness is verified.</td>
+        </tr>
+
+        <tr>
+          <td>29</td>
+          <td><code>source_control_gate</code></td>
+          <td>The mode-specific source-control gate is checked.</td>
+        </tr>
+
+        <tr>
+          <td>30</td>
+          <td><code>execution</code></td>
+          <td>Codex execution begins only after the gates pass.</td>
+        </tr>
+
+        <tr>
+          <td>31</td>
+          <td><code>validation</code></td>
+          <td>Validation checks confirm the result.</td>
+        </tr>
+
+        <tr>
+          <td>32</td>
+          <td><code>security_scan</code></td>
+          <td>Security scanning runs after execution.</td>
+        </tr>
+
+        <tr>
+          <td>33</td>
+          <td><code>handoff</code></td>
+          <td>The result is prepared for handoff.</td>
+        </tr>
+
+        <tr>
+          <td>34</td>
+          <td><code>dashboard_update</code></td>
+          <td>Dashboards and live views are updated.</td>
+        </tr>
+
+        <tr>
+          <td>35</td>
+          <td><code>learning_capture</code></td>
+          <td>Reusable learning is recorded.</td>
+        </tr>
+
+        <tr>
+          <td>36</td>
+          <td><code>closeout</code></td>
+          <td>The session closes with a resumable final state.</td>
+        </tr>
+        </tbody>
+      </table>
+
+      <h3 class="diagram-title">Mermaid: Release train gates</h3>
+      <div class="diagram mermaid">
+flowchart LR
+  A["docs"] --> B["evolution"]
+  B --> C["task"]
+  C --> D["validation"]
+  D --> E["security"]
+  E --> F["handoff"]
+  F --> G["publish readiness"]
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Order</th>
+            <th>Phase</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        <tr>
+          <td>1</td>
+          <td><code>docs</code></td>
+          <td>Required planning and documentation readiness.</td>
+        </tr>
+
+        <tr>
+          <td>2</td>
+          <td><code>evolution</code></td>
+          <td>Versioned changes in the app track.</td>
+        </tr>
+
+        <tr>
+          <td>3</td>
+          <td><code>task</code></td>
+          <td>Task punches and task execution queueing.</td>
+        </tr>
+
+        <tr>
+          <td>4</td>
+          <td><code>validation</code></td>
+          <td>Validation and QA checks.</td>
+        </tr>
+
+        <tr>
+          <td>5</td>
+          <td><code>security</code></td>
+          <td>Security gate and scan checks.</td>
+        </tr>
+
+        <tr>
+          <td>6</td>
+          <td><code>handoff</code></td>
+          <td>Packaging, release notes, and handoff.</td>
+        </tr>
+
+        <tr>
+          <td>7</td>
+          <td><code>publish readiness</code></td>
+          <td>The app is safe to publish or release.</td>
+        </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="section">
+      <h2>Mermaid Visuals</h2>
+      <h3 class="diagram-title">KVDF operating split</h3>
+      <div class="diagram mermaid">
+flowchart LR
+  Owner["Framework Owner Track"] --> Core["KVDF Core"]
+  Viber["Viber App Developer Track"] --> Apps["App workspaces"]
+  Shared["Shared Platform Layer"] --> Core
+  Shared --> Apps
+  Core --> Docs["Docs + reports + schemas"]
+  Core --> CLI["CLI runtime"]
+  Apps --> Plan["Questionnaires + blueprints + tasks"]
+  Apps --> Deliver["Handoff + validation + publish"]
+      </div>
+
+      <h3 class="diagram-title">Capability groups by size</h3>
+      <div class="diagram mermaid">
+pie title Capability groups
+  "1. A. Product & Business": 1
+  "2. B. Users, Access, and Journeys": 7
+  "3. C. Frontend Experience": 5
+  "4. D. Backend, Data, and APIs": 3
+  "5. E. Admin, Settings, and Customization": 8
+  "6. F. Engagement, Content, and Growth": 9
+  "7. H. Quality, Security, and Compliance": 7
+  "8. G. Commerce and Plugins": 3
+  "9. I. Operations and Release": 9
+  "10. J. Kabeeri Control Layer": 1
+      </div>
+
+      <h3 class="diagram-title">Plugin track distribution</h3>
+      <div class="diagram mermaid">
+pie title Plugin tracks
+  "framework_owner": 1
+  "shared": 7
+  "app": 9
+      </div>
+
+      <h3 class="diagram-title">Plugin ecosystem</h3>
+      <div class="diagram mermaid">
+flowchart TB
+  subgraph Framework["Framework Owner"]
+    KVDF["kvdf_dev"]
+  end
+  subgraph Shared["Shared Platform"]
+    GIT["github / github_sync"]
+    PL["planner_visual"]
+    SA["security_auditor"]
+    UI["ui_ux_intelligence"]
+    MA["multi_ai_governance"]
+    AI["ai_learning"]
+  end
+  subgraph Apps["App Builders"]
+    BLOG["blog"]
+    BOOK["booking_builder"]
+    COMP["company_profile"]
+    CRM["crm"]
+    ECO["ecommerce_builder"]
+    ECM["ecommerce_mobile_app"]
+    NEWS["news_website"]
+    POS["pos"]
+    VIBE["vibe_maintainer"]
+  end
+  KVDF --> Shared
+  Shared --> Apps
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Sources Used</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Why it matters</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><code>docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json</code></td><td>Canonical capability to CLI mapping and coverage counts.</td></tr>
+          <tr><td><code>docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json</code></td><td>Docs-aligned capability traceability reference.</td></tr>
+          <tr><td><code>docs/SYSTEM_CAPABILITIES_REFERENCE.md</code></td><td>Main narrative source for the operating model and capability families.</td></tr>
+          <tr><td><code>docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md</code></td><td>Explains the framework-owner / Viber split and shared platform layer.</td></tr>
+          <tr><td><code>docs/workflows/VIBER_APP_DELIVERY_PIPELINE.md</code></td><td>Defines the gated Viber delivery stages and stop conditions.</td></tr>
+          <tr><td><code>docs/workflows/VIBER_RELEASE_TRAIN.md</code></td><td>Defines the FIFO release readiness order for app delivery.</td></tr>
+          <tr><td><code>plugins/*/plugin.json</code></td><td>Plugin catalog, tracks, families, command surfaces, and entrypoints.</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <div class="footer">
+      Report generated from repository state. Mermaid diagrams load from the CDN used by the repo's existing visual reports; if the CDN is unavailable, the tables still provide the full data view.
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      if (!window.mermaid) {
+        return;
+      }
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: 'loose',
+        theme: 'dark',
+        flowchart: { useMaxWidth: true, htmlLabels: true }
+      });
+      mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+    })();
+  </script>
+</body>
+</html>

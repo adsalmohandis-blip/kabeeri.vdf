@@ -56,9 +56,24 @@ That summary is surfaced as `roadmap_train_summary` and pairs with the derived
 When `ui_ux_intelligence` is available, the Viber docs pipeline can optionally
 include its UI/UX recommendations, checklist summary, Markdown-ready docs
 sections, scorecard, gate, readiness, tokens, component blueprints, screen
-blueprints, and handoff-pack summary during planning or materialization. Use
+blueprints, pattern libraries, implementation guidance, prompt packs, evidence
+manifests, visual QA contracts, acceptance gates, regression checklists, and
+handoff-pack summary during planning or materialization. The same provider can
+also surface knowledge-pack status, catalog health, governance registry, and
+safe upgrade planning so future docs runs know whether the local knowledge pack
+is healthy before relying on it. Use
 `--include-ui-ux-intelligence` or `--ui-ux-intelligence` to opt in, and
 `--no-ui-ux-intelligence` to suppress the provider even when installed. The
 plugin remains optional, offline, and read-only unless docs materialization is
 already writing the app docs. The handoff pack can be exported to Markdown only
-when the operator explicitly passes `handoff-pack --output <path>`.
+when the operator explicitly passes `handoff-pack --output <path>`. The prompt
+pack can likewise be exported only when `prompt-pack --output <path>` is
+explicitly requested. The evidence, visual-qa, acceptance-gate, and regression
+commands are report-only surfaces for handoff and publish readiness.
+
+If a surface explicitly opts into Bootstrap styling, the optional
+`bootstrap_ui` plugin can provide copied Bootstrap CSS and JavaScript assets
+and a safe snippet/helper/provider surface without making Bootstrap a Core
+dependency. When it is not enabled, HTML builders keep the fallback comment in
+the output so review tools can see that the surface stayed on the local HTML
+path instead of a Bootstrap-backed path.
