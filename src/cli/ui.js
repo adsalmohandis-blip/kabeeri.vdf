@@ -1256,6 +1256,13 @@ Notes:
   Raw design links, images, PDFs, and reference websites are inputs only. Frontend implementation is blocked until a source has a snapshot and an approved text spec. UI/UX references are approved learning/spec patterns used to ask better questions and generate governed design tasks, not to copy third-party assets. Frontend verification should also have a passing visual review. Design governance reports summarize sources, specs, tokens, page specs, components, visual evidence, UI advisor context, and next actions.
 `,
     github: `Usage:
+  kvdf github-provider status
+  kvdf github-provider readiness
+  kvdf github-provider sync-plan
+  kvdf github-provider issue-plan
+  kvdf github-provider pr-plan
+  kvdf github-provider release-plan
+  kvdf github-provider handoff-plan
   kvdf github status
   kvdf github report
   kvdf github feedback list
@@ -1264,6 +1271,9 @@ Notes:
   kvdf github issue sync --version v4.0.0 --confirm
   kvdf github label sync --version v4.0.0 --confirm
   kvdf github milestone sync --version v4.0.0 --confirm
+
+  GitHub is optional. \`kvdf github\` is preserved as a compatibility wrapper
+  while \`kvdf github-provider\` is the canonical provider surface.
 `,
     sync: `Usage:
   kvdf sync status

@@ -12,13 +12,13 @@ This lets the system support:
 - Git direct-to-main
 - Git branch workflow without PR
 - Git branch + PR workflow
-- GitHub as an optional remote/provider plugin
+- GitHub as an optional remote/provider plugin, canonicalized in `github_provider`
 - future source-control providers such as GitLab, Bitbucket, or custom plugins
 
 ## Git vs GitHub vs Branch vs PR
 
 - **Git** is the local source-control provider.
-- **GitHub** is an optional remote/provider layer.
+- **GitHub** is an optional remote/provider layer, implemented canonically by the `github_provider` plugin.
 - **Branch** is a delivery mode.
 - **PR** is an optional review and merge workflow.
 
@@ -81,6 +81,10 @@ control providers by expressing delivery as:
 - remote provider
 - mode
 - branch/PR capability
+
+The canonical GitHub remote-provider implementation lives in the optional
+`github_provider` plugin. Legacy `github` and `github_sync` bundles are
+compatibility wrappers only.
 
 ## Planner Integration
 

@@ -10,15 +10,13 @@
   "track": "shared",
   "plugin_family": "platform_plugin",
   "plugin_type": "integration_bundle",
-  "enabled_by_default": true,
-  "description": "GitHub labels, milestones, backlog notes, import guidance, and sync references packaged as a removable bundle.",
+  "enabled_by_default": false,
+  "canonical_provider": false,
+  "superseded_by": "github_provider",
+  "description": "Deprecated compatibility bundle superseded by the canonical github_provider plugin.",
   "command_surface": [
-    "kvdf github",
-    "kvdf github report",
     "kvdf plugins install github",
-    "kvdf plugins enable github",
-    "kvdf plugins uninstall github",
-    "kvdf plugins disable github"
+    "kvdf plugins uninstall github"
   ],
   "docs_surface": [
     "plugins/github/README.md",

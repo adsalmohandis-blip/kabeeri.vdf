@@ -1,6 +1,8 @@
 # GitHub Sync Rules Bundle
 
-This bundle packages the GitHub sync rules used by KVDF as a removable plugin.
+This bundle is deprecated and kept only for compatibility. The canonical GitHub
+provider now lives in `plugins/github_provider/`.
+
 The bundle entrypoint lives in `plugins/github_sync/bootstrap.js`.
 
 It is installable and uninstallable through the standard plugin loader:
@@ -10,13 +12,6 @@ kvdf plugins install github_sync
 kvdf plugins uninstall github_sync
 ```
 
-You can also toggle the active state without changing bundle files:
-
-```bash
-kvdf plugins enable github_sync
-kvdf plugins disable github_sync
-```
-
 ## What lives here
 
 - `GITHUB_SYNC_RULES.md`: safety rules and command intent for GitHub sync.
@@ -24,6 +19,5 @@ kvdf plugins disable github_sync
 
 ## Relationship To GitHub
 
-`plugins/github_sync/` holds the sync policy layer. `plugins/github/` holds the
-planning and import-reference bundle. Together they define the safe GitHub
-surface without making GitHub the source of truth.
+`plugins/github_sync/` is now compatibility material. Use
+`plugins/github_provider/` for the canonical GitHub provider implementation.

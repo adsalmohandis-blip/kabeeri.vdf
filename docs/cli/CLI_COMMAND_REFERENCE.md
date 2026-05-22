@@ -28,6 +28,7 @@ kvdf ai-run --help
 kvdf learn --help
 kvdf dashboard --help
 kvdf release --help
+kvdf github-provider --help
 kvdf github --help
 kvdf contract --help
 kvdf resume --help
@@ -1891,6 +1892,13 @@ the current scale pack bundle selection for large systems.
 ## GitHub Dry Run
 
 ```bash
+kvdf github-provider status
+kvdf github-provider readiness
+kvdf github-provider sync-plan
+kvdf github-provider issue-plan
+kvdf github-provider pr-plan
+kvdf github-provider release-plan
+kvdf github-provider handoff-plan
 kvdf github status
 kvdf github report
 kvdf github feedback list
@@ -1904,7 +1912,9 @@ kvdf github config set --repo owner/repo --branch main --default-version v4.0.0
 kvdf github config show
 ```
 
-These commands do not write to GitHub. `github report` is the trace surface for the local sync adapter and reads the same `.kabeeri` state that powers the dry-run and confirmed write flows.
+`kvdf github-provider` is the canonical GitHub remote-provider surface. `kvdf github` remains as a compatibility wrapper for the legacy sync/report surface.
+
+These commands do not write to GitHub by default. `github report` is the trace surface for the local sync adapter and reads the same `.kabeeri` state that powers the dry-run and confirmed write flows.
 
 ## GitHub Confirmed Sync
 

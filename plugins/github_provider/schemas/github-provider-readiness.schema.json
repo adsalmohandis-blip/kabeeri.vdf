@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitHub Provider Readiness",
+  "type": "object",
+  "required": ["report_type", "status", "repo_detected", "git_remote_detected", "github_remote_detected", "auth_required", "write_mode", "blockers", "warnings", "next_action"],
+  "properties": {
+    "report_type": { "const": "github_provider_readiness" },
+    "status": { "type": "string" },
+    "repo_detected": { "type": "boolean" },
+    "git_remote_detected": { "type": "boolean" },
+    "github_remote_detected": { "type": "boolean" },
+    "auth_required": { "type": "string" },
+    "write_mode": { "type": "string" },
+    "blockers": { "type": "array" },
+    "warnings": { "type": "array" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

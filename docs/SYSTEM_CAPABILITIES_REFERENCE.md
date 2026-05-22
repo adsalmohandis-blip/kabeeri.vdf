@@ -134,7 +134,7 @@ shared logic layer behind the owner and Multi-AI command facades.
 | AI Learning Memory | Records repeated AI mistakes, blockers, learned warnings, fast-path solutions, export packages, review candidates, shared learning, promotion history, local cache sync, and cloud-ready metadata so future prompts can reuse the shortest safe route instead of replaying the same failures. The shared memory is track-aware for owner, vibe, and plugin work, supports combined `--track all` prompt context, and auto-synces into planner prompt generation, resume guidance, and prompt-pack composition. Planner prompts now materialize that memory as a track-filtered `AI Learning Context` section only when the learning data is safe and relevant. | `knowledge/ai_learning/AI_LEARNING_MEMORY.md`, `knowledge/ai_learning/shared_patterns.json`, `knowledge/ai_learning/shared_fast_paths.json`, `.kabeeri/ai_learning/failure_patterns.json`, `plugins/ai_learning/`, `kvdf learn` |
 | Live Dashboard | Shows live state for tasks, governance, apps, costs, policies, planner pipeline state, and dashboard UX audits. Owner and viber dashboards are separate dashboard products, not filters inside one page, and the shared planner cycle feeds both while rendering stays track-separated. Linked workspace summaries are opt-in and stay summarized rather than merged. The Viber dashboard may also surface optional `ui_ux_intelligence` and `tailwind_ui` summaries, handoff-pack readiness, and prompt-pack availability when the providers are available. | `docs/reports/dashboard/`, `kvdf dashboard` |
 | VS Code Integration | Scaffolds workspace tasks and command helpers, and reports the editor bridge state without becoming the source of truth. | `plugins/vscode_extension/`, `kvdf vscode`, `kvdf vscode report` |
-| GitHub Sync | Plans and optionally confirms labels, milestones, issues, and releases through `gh`, with a local trace report for the sync adapter. The GitHub planning bundle and sync bundle are installable and uninstallable as removable plugins. | `plugins/github_sync/`, `plugins/github/`, `kvdf github`, `kvdf github report`, `kvdf plugins install github`, `kvdf plugins uninstall github`, `kvdf plugins install github_sync`, `kvdf plugins uninstall github_sync` |
+| GitHub Provider | Canonical optional GitHub remote-provider plugin that plans readiness, sync, issues, pull requests, releases, and handoff state through `gh` when explicitly enabled or confirmed. Legacy `github` and `github_sync` bundles remain as deprecated compatibility wrappers only. | `plugins/github_provider/`, `plugins/github/`, `plugins/github_sync/`, `kvdf github-provider`, `kvdf github`, `kvdf plugins install github_provider`, `kvdf plugins uninstall github_provider`, `kvdf plugins install github`, `kvdf plugins uninstall github`, `kvdf plugins install github_sync`, `kvdf plugins uninstall github_sync` |
 | GitHub Team Sync Preflight | Reports branch, remote, upstream, ahead/behind, local changes, dry-run pull/push commands, and whether sync is optional for solo work or recommended for team work. | `kvdf sync` |
 | Security Governance | KVDF Core owns the security gate policy, the security gate status surface, and the built-in scan command that identifies high-risk findings before release or handoff. The security gate policy is read from `.kabeeri/policies/security_gate_policy.json` when present and falls back to a non-blocking default when it is missing. | `kvdf security`, `.kabeeri/security/`, `.kabeeri/policies/security_gate_policy.json` |
 | Security Auditor Plugin | Optional removable plugin that scans tasks, evolutions, handoff packages, and workspace changes for common secret, injection, auth, and backdoor patterns before release or handoff. It complements the core policy gate without requiring external security tools. | `plugins/security_auditor/`, `.kabeeri/security/security_auditor_scans.json`, `kvdf security-auditor`, `kvdf plugins install security-auditor`, `kvdf plugins uninstall security-auditor` |
@@ -1114,6 +1114,13 @@ without changing the runtime command surface.
 Main commands:
 
 ```bash
+kvdf github-provider status
+kvdf github-provider readiness
+kvdf github-provider sync-plan
+kvdf github-provider issue-plan
+kvdf github-provider pr-plan
+kvdf github-provider release-plan
+kvdf github-provider handoff-plan
 kvdf github status
 kvdf github feedback list
 kvdf github feedback record --type status --subject task-001 --message "Ready for review"
@@ -1132,11 +1139,14 @@ Main references:
 - `plugins/github_sync/`
 - `plugins/github/`
 
-`plugins/github_sync/` is the sync-policy bundle. It is installable and
-uninstallable through the plugin loader, so the sync rules can be toggled
-without changing the CLI runtime surface.
+`plugins/github_provider/` is the canonical GitHub provider plugin.
+`plugins/github_sync/` and `plugins/github/` are deprecated compatibility
+bundles. They remain removable so older workflows do not break immediately.
 
-`kvdf github status` and `kvdf github feedback` stay local but summarize issue/PR/status/comment feedback records when the workspace is in team mode.
+`kvdf github-provider` is the canonical remote-provider surface. `kvdf github`
+remains as a compatibility wrapper, and `kvdf github status` / `kvdf github
+feedback` stay local but summarize issue/PR/status/comment feedback records
+when the workspace is in team mode.
 
 ## 21. Security Governance
 

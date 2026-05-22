@@ -26,6 +26,7 @@ const PLUGIN_BUNDLE_DIRS = {
   "company-profile": "company_profile",
   "ecommerce-builder": "ecommerce_builder",
   "ecommerce-mobile-app": "ecommerce_mobile_app",
+  "github-provider": "github_provider",
   "kvdf-dev": "kvdf_dev",
   "news-website": "news_website",
   "planner-visual": "planner_visual",
@@ -6567,6 +6568,62 @@ test("github sync config is locally manageable", () => withTempDir((dir) => {
   assert.strictEqual(config.write_requires_confirmation, true);
 }));
 
+test("github provider plugin is canonical and exposes provider planning commands", () => {
+  const report = buildPluginLoaderReport();
+  const canonicalProviders = report.plugins.filter((item) => item.canonical_provider);
+  assert.strictEqual(canonicalProviders.length, 1);
+  assert.strictEqual(canonicalProviders[0].plugin_id, "github_provider");
+  assert.ok(report.plugins.some((item) => item.plugin_id === "github" && item.superseded_by === "github_provider"));
+  assert.ok(report.plugins.some((item) => item.plugin_id === "github_sync" && item.superseded_by === "github_provider"));
+
+  const status = JSON.parse(runKvdf(["github-provider", "status", "--json"]).stdout);
+  assert.strictEqual(status.report_type, "github_provider_status");
+  assert.strictEqual(status.plugin_id, "github_provider");
+  assert.strictEqual(status.provider, "github");
+  assert.strictEqual(status.remote_provider, "github");
+  assert.strictEqual(status.enabled_by_default, false);
+  assert.strictEqual(status.core_dependency, false);
+  assert.strictEqual(status.writes_remote_by_default, false);
+  assert.strictEqual(status.canonical_provider, true);
+
+  const readiness = JSON.parse(runKvdf(["github-provider", "readiness", "--json"]).stdout);
+  assert.strictEqual(readiness.report_type, "github_provider_readiness");
+  assert.ok(["pass", "warning", "blocked"].includes(readiness.status));
+  assert.ok(Object.prototype.hasOwnProperty.call(readiness, "repo_detected"));
+  assert.ok(Object.prototype.hasOwnProperty.call(readiness, "git_remote_detected"));
+  assert.ok(Object.prototype.hasOwnProperty.call(readiness, "github_remote_detected"));
+
+  const syncPlan = JSON.parse(runKvdf(["github-provider", "sync-plan", "--json"]).stdout);
+  assert.strictEqual(syncPlan.report_type, "github_provider_sync_plan");
+  assert.strictEqual(syncPlan.dry_run, true);
+  assert.ok(Array.isArray(syncPlan.planned_sync_actions));
+
+  const issuePlan = JSON.parse(runKvdf(["github-provider", "issue-plan", "--json"]).stdout);
+  assert.strictEqual(issuePlan.report_type, "github_provider_issue_plan");
+  assert.strictEqual(issuePlan.dry_run, true);
+
+  const prPlan = JSON.parse(runKvdf(["github-provider", "pr-plan", "--json"]).stdout);
+  assert.strictEqual(prPlan.report_type, "github_provider_pr_plan");
+  assert.strictEqual(prPlan.dry_run, true);
+
+  const releasePlan = JSON.parse(runKvdf(["github-provider", "release-plan", "--json"]).stdout);
+  assert.strictEqual(releasePlan.report_type, "github_provider_release_plan");
+  assert.strictEqual(releasePlan.dry_run, true);
+
+  const handoffPlan = JSON.parse(runKvdf(["github-provider", "handoff-plan", "--json"]).stdout);
+  assert.strictEqual(handoffPlan.report_type, "github_provider_handoff_plan");
+  assert.strictEqual(handoffPlan.dry_run, true);
+
+  const legacy = JSON.parse(runKvdf(["github", "--json"]).stdout);
+  assert.strictEqual(legacy.report_type, "github_team_feedback_status");
+
+  const { githubProvider } = require("../src/cli/commands/github_provider");
+  const unavailable = githubProvider("status", null, { json: true }, [], { loadRuntime: () => null });
+  assert.strictEqual(unavailable.report_type, "github_provider_unavailable");
+  assert.strictEqual(unavailable.status, "unavailable");
+  assert.strictEqual(unavailable.plugin_id, "github_provider");
+});
+
 test("multi-ai queue handoff dispatches a new relay message to the target agent", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   runKvdf(["multi-ai", "leader", "start", "--ai", "leader-001"], { cwd: dir });
@@ -6803,7 +6860,7 @@ test("planner layer supports explicit branch and branch-pr source control modes"
 
   const branchPrMode = JSON.parse(runKvdf(["planner", "next", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"]).stdout);
   assert.strictEqual(branchPrMode.source_control.remote_provider, "github");
-  assert.strictEqual(branchPrMode.source_control.provider_plugin, "github");
+  assert.strictEqual(branchPrMode.source_control.provider_plugin, "github_provider");
   assert.strictEqual(branchPrMode.source_control.mode, "branch_pr");
   assert.strictEqual(branchPrMode.source_control.branching_enabled, true);
   assert.strictEqual(branchPrMode.source_control.pr_enabled, true);
@@ -8282,7 +8339,7 @@ test("planner pipeline supports source-control modes without making GitHub manda
   const branchPr = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build app", "--track", "vibe", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(branchPr.viber_pipeline.source_control.mode, "branch_pr");
   assert.strictEqual(branchPr.viber_pipeline.source_control.remote_provider, "github");
-  assert.strictEqual(branchPr.viber_pipeline.source_control.provider_plugin, "github");
+  assert.strictEqual(branchPr.viber_pipeline.source_control.provider_plugin, "github_provider");
   assert.strictEqual(branchPr.viber_pipeline.source_control.branching_enabled, true);
   assert.strictEqual(branchPr.viber_pipeline.source_control.pr_enabled, true);
   assert.match(branchPr.viber_pipeline.source_control.next_source_control_action, /GitHub PR/i);
@@ -8362,7 +8419,7 @@ test("planner pipeline supports explicit branch-pr GitHub source control", () =>
   assert.strictEqual(pipeline.source_control.branching_enabled, true);
   assert.strictEqual(pipeline.source_control.pr_enabled, true);
   assert.strictEqual(pipeline.source_control.remote_provider, "github");
-  assert.strictEqual(pipeline.source_control.provider_plugin, "github");
+  assert.strictEqual(pipeline.source_control.provider_plugin, "github_provider");
   assert.ok(pipeline.version_plan.versions.every((version) => version.source_control_mode === "branch_pr"));
 }));
 

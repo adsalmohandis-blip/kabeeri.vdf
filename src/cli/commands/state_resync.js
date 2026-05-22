@@ -293,7 +293,7 @@ function buildSourceControlSummary({ cwd, track, gitRepository, headCommit }) {
     enabled: Boolean(gitRepository && gitRepository.available),
     provider: "git",
     remote_provider: remoteUrls.length ? "github" : "none",
-    provider_plugin: remoteUrls.length ? "github" : null,
+    provider_plugin: remoteUrls.length ? "github_provider" : null,
     mode,
     branching_enabled: mode !== "git_direct_to_main",
     pr_enabled: mode !== "git_direct_to_main" && remoteUrls.length > 0,

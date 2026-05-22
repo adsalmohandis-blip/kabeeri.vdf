@@ -1,21 +1,15 @@
 # GitHub Integration Bundle
 
-This bundle packages the GitHub planning, command surface, and sync notes used
-by KVDF as a removable plugin. The bundle entrypoint lives in
-`plugins/github/bootstrap.js`.
+This bundle is deprecated and kept only for compatibility. The canonical GitHub
+provider now lives in `plugins/github_provider/`.
+
+The bundle entrypoint lives in `plugins/github/bootstrap.js`.
 
 It is installable and uninstallable through the standard plugin loader:
 
 ```bash
 kvdf plugins install github
 kvdf plugins uninstall github
-```
-
-You can also toggle the active state without changing the bundle files:
-
-```bash
-kvdf plugins enable github
-kvdf plugins disable github
 ```
 
 ## What lives here
@@ -28,10 +22,9 @@ kvdf plugins disable github
 
 ## Relationship To GitHub Sync
 
-`plugins/github/` is the bundle that carries the GitHub planning/reference
-material and plugin-owned GitHub command implementation. `plugins/github_sync/`
-carries the sync-rule bundle that aligns release and issue write workflows with
-KVDF governance.
+`plugins/github/` is now a compatibility bundle. Use `plugins/github_provider/`
+for the canonical GitHub provider implementation. `plugins/github_sync/` is
+also deprecated compatibility material.
 
 Keep GitHub writes gated by the CLI confirmation and policy checks. The plugin
 only stores the bundle contract and reference material.

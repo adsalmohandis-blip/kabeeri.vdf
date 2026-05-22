@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitHub Provider Sync Plan",
+  "type": "object",
+  "required": ["report_type", "status", "source_control_mode", "planned_sync_actions", "dry_run", "next_action"],
+  "properties": {
+    "report_type": { "const": "github_provider_sync_plan" },
+    "status": { "type": "string" },
+    "source_control_mode": { "type": "string" },
+    "planned_sync_actions": { "type": "array" },
+    "dry_run": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

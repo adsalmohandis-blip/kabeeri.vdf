@@ -62,6 +62,7 @@ const { uiDashboardKits } = require("./commands/ui_dashboard_kits");
 const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
 const { pluginExtraction } = require("./commands/plugin_extraction");
+const { githubProvider } = require("./commands/github_provider");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
 const { wordpressBuilder: wordpressBuilderCommand } = require("./commands/wordpress_builder");
@@ -390,6 +391,14 @@ function run(argv) {
     return tailwindUi(action, value, args.flags, rest, {
       table,
       repoRoot
+    });
+  }
+  if (["github-provider", "github_provider", "githubprovider"].includes(group)) {
+    return githubProvider(action, value, args.flags, rest, {
+      table,
+      repoRoot,
+      runGithubWriteGate,
+      runReleasePublishGates
     });
   }
   if (["plugin-extraction", "plugin_extraction", "pluginextraction"].includes(group)) {
@@ -8887,11 +8896,19 @@ function syncGithubIssues(plan) {
 
 function publishGithubRelease(plan, flags) {
   if (!flags.publishGatesPassed) runReleasePublishGates(plan, flags);
-  ensureGhAvailable();
-  const notesFile = flags.notes || `.kabeeri/releases/${plan.version}.notes.md`;
-  writeTextFile(notesFile, `${buildReleaseNotes(plan).join("\n")}\n`);
-  runGh(["release", "create", plan.version, "--title", `Kabeeri VDF ${plan.version}`, "--notes-file", notesFile]);
-  console.log(`Published GitHub release ${plan.version}.`);
+  const runtime = loadGithubProviderRuntime();
+  if (runtime && typeof runtime.publishGithubRelease === "function") {
+    return runtime.publishGithubRelease(plan, flags);
+  }
+  throw new Error("GitHub provider plugin is unavailable. Install or enable github_provider to publish GitHub releases.");
+}
+
+function loadGithubProviderRuntime() {
+  try {
+    return require("../../plugins/github_provider/runtime");
+  } catch {
+    return null;
+  }
 }
 
 function ensureGhAvailable() {
@@ -10141,6 +10158,8 @@ function getCommandDispatchContext() {
     runtimeReport,
     release,
     github,
+    runGithubWriteGate,
+    runReleasePublishGates,
     sync,
     productPackage,
     upgrade,

@@ -9,17 +9,6 @@ function loadGithubProviderRuntime() {
   return null;
 }
 
-function github(action, value, flags = {}, deps = {}) {
-  const runtime = typeof deps.loadRuntime === "function" ? deps.loadRuntime() : loadGithubProviderRuntime();
-  if (!runtime || typeof runtime.runGithubProvider !== "function") {
-    const report = buildUnavailableGithubProviderReport(action);
-    if (flags.json) console.log(JSON.stringify(report, null, 2));
-    else console.log(report.next_action);
-    return report;
-  }
-  return runtime.runGithubProvider(action, value, { ...flags, compatibility_surface: true }, [], deps);
-}
-
 function buildUnavailableGithubProviderReport(action) {
   return {
     report_type: "github_provider_unavailable",
@@ -36,8 +25,20 @@ function buildUnavailableGithubProviderReport(action) {
   };
 }
 
+function githubProvider(action, value, flags = {}, rest = [], deps = {}) {
+  const runtime = typeof deps.loadRuntime === "function" ? deps.loadRuntime() : loadGithubProviderRuntime();
+  if (!runtime || typeof runtime.runGithubProvider !== "function") {
+    const report = buildUnavailableGithubProviderReport(action);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(report.next_action);
+    return report;
+  }
+  const normalizedFlags = { ...flags };
+  return runtime.runGithubProvider(action, value, normalizedFlags, rest, deps);
+}
+
 module.exports = {
-  github,
+  githubProvider,
   loadGithubProviderRuntime,
   buildUnavailableGithubProviderReport
 };

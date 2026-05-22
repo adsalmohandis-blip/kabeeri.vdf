@@ -5183,7 +5183,7 @@ function buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, exec
     enabled: Boolean(base.enabled) && normalizedMode !== "local_only" && provider !== "none",
     provider,
     remote_provider: remoteProvider,
-    provider_plugin: remoteProvider === "github" ? "github" : (remoteProvider === "custom" ? base.provider_plugin || null : null),
+    provider_plugin: remoteProvider === "github" ? "github_provider" : (remoteProvider === "custom" ? base.provider_plugin || null : null),
     mode: normalizedMode,
     branching_enabled: branchingEnabled,
     pr_enabled: prEnabled,
@@ -10242,7 +10242,7 @@ function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", d
   const branchingEnabled = enabled && (sourceControlMode === "branch" || sourceControlMode === "branch_pr");
   const prEnabled = enabled && sourceControlMode === "branch_pr" && remoteProvider !== "none";
   const providerPlugin = remoteProvider === "github"
-    ? "github"
+    ? "github_provider"
     : (remoteProvider === "custom" ? explicitProviderPlugin || null : null);
   const notes = [];
   if (!gitRepoDetected) {

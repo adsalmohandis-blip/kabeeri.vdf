@@ -1,0 +1,14 @@
+[
+  {
+    "command": "kvdf github-provider status --json",
+    "report_type": "github_provider_status"
+  },
+  {
+    "command": "kvdf github-provider readiness --json",
+    "report_type": "github_provider_readiness"
+  },
+  {
+    "command": "kvdf github-provider sync-plan --json",
+    "report_type": "github_provider_sync_plan"
+  }
+]

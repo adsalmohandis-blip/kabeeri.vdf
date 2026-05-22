@@ -1,0 +1,34 @@
+{
+  "plugin_id": "github_provider",
+  "name": "GitHub Provider",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/github_provider/runtime/index.js",
+  "command_entrypoint": "plugins/github_provider/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "source_control",
+  "plugin_type": "remote_provider",
+  "enabled_by_default": false,
+  "canonical_provider": true,
+  "description": "Optional GitHub remote provider for KVDF source-control workflows, issue/PR/release planning, handoff support, and provider readiness checks.",
+  "required_folders": ["runtime", "docs", "schemas", "tests"],
+  "command_surface": [
+    "kvdf github-provider status",
+    "kvdf github-provider readiness",
+    "kvdf github-provider sync-plan",
+    "kvdf github-provider issue-plan",
+    "kvdf github-provider pr-plan",
+    "kvdf github-provider release-plan",
+    "kvdf github-provider handoff-plan",
+    "kvdf github-provider",
+    "kvdf github",
+    "kvdf plugins install github_provider",
+    "kvdf plugins uninstall github_provider"
+  ],
+  "docs_surface": [
+    "plugins/github_provider/docs/index.md",
+    "plugins/github_provider/docs/cli.md"
+  ]
+}

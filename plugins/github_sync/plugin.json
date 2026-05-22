@@ -10,15 +10,13 @@
   "track": "shared",
   "plugin_family": "platform_plugin",
   "plugin_type": "integration_bundle",
-  "enabled_by_default": true,
-  "description": "GitHub sync rules, issue mapping guidance, and plugin lifecycle notes packaged as a removable bundle.",
+  "enabled_by_default": false,
+  "canonical_provider": false,
+  "superseded_by": "github_provider",
+  "description": "Deprecated compatibility bundle superseded by the canonical github_provider plugin.",
   "command_surface": [
-    "kvdf github",
-    "kvdf github report",
     "kvdf plugins install github_sync",
-    "kvdf plugins enable github_sync",
-    "kvdf plugins uninstall github_sync",
-    "kvdf plugins disable github_sync"
+    "kvdf plugins uninstall github_sync"
   ],
   "docs_surface": [
     "plugins/github_sync/README.md",
