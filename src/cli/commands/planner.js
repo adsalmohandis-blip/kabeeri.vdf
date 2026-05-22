@@ -29,6 +29,7 @@ const { buildAppDocsPackageTemplates } = require("../workspace");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
 const { buildDashboardKitGuidanceSummary } = require("../services/ui_kit_provider");
+const { buildNamingIdentity, attachNamingIdentity, normalizeSlug, normalizeVersionForNaming } = require("../services/naming_governance");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 const { buildPlannerTruth: buildPlannerTruthReportService } = require("../services/truth_reconciler");
@@ -660,7 +661,8 @@ function buildPlannerAutoPlanReport(goal, flags = {}, rest = [], deps = {}) {
     currentGate: planning.current_gate,
     versionControl: pipeline.version_control,
     latestFeedback: pipeline.latest_feedback || null,
-    roadmapTrain: pipeline.roadmap_train || null
+    roadmapTrain: pipeline.roadmap_train || null,
+    naming: planning.naming || null
   });
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_auto_plan",
@@ -735,6 +737,17 @@ function buildPlannerPlanningContext(goal, request = {}, deps = {}, options = {}
     pluginContext,
     source_control: sourceControl
   }, resolved.context);
+  const appSlug = normalizeAppSlug(
+    request.app ||
+    request.app_slug ||
+    request["app-slug"] ||
+    flags.app ||
+    flags.app_slug ||
+    flags["app-slug"] ||
+    resolved.app ||
+    resolved.app_slug ||
+    ""
+  );
   return {
     ...resolved,
     mode,
@@ -752,6 +765,18 @@ function buildPlannerPlanningContext(goal, request = {}, deps = {}, options = {}
     ai_learning: aiLearning,
     current_gate: currentGate,
     pipeline,
+    naming: buildPlannerNamingSummary({
+      plan: pipeline,
+      evolutionPlan: pipeline && Array.isArray(pipeline.evolutions) && pipeline.evolutions.length ? pipeline.evolutions[0] : null,
+      taskPunch: pipeline && Array.isArray(pipeline.task_punches) && pipeline.task_punches.length ? pipeline.task_punches[0] : null,
+      versionPlan: pipeline ? pipeline.version_plan || null : null,
+      versionControl: pipeline ? pipeline.version_control || null : null,
+      mode,
+      appSlug,
+      currentPlan: null,
+      track: getPlannerTrack(mode),
+      sourceControl
+    }),
     track: getPlannerTrack(mode)
   };
 }
@@ -931,10 +956,16 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     notes: hasVisual ? ["Visual planner output is present."] : ["Visual planner output is missing."],
     review_status: hasVisual ? "pass" : "warning"
   };
+  const currentVersionDisplay = version_control && version_control.current_version
+    ? version_control.current_version.normalized_id || version_control.current_version.id || version_control.current_version.version_id || version_control.current_version.title || ""
+    : "";
+  const nextVersionDisplay = version_control && version_control.next_version
+    ? version_control.next_version.normalized_id || version_control.next_version.id || version_control.next_version.version_id || version_control.next_version.title || ""
+    : "";
   const versionControlReview = {
     status: version_control ? (version_control.publish_readiness && version_control.publish_readiness.status === "blocked" ? "warning" : "pass") : "warning",
-    current_version: version_control && version_control.current_version ? version_control.current_version.version_id || version_control.current_version.title || "" : "",
-    next_version: version_control && version_control.next_version ? version_control.next_version.version_id || version_control.next_version.title || "" : "",
+    current_version: currentVersionDisplay,
+    next_version: nextVersionDisplay,
     publish_readiness: version_control ? version_control.publish_readiness || null : null,
     notes: version_control ? ["Version control summary is available."] : ["Version control summary is missing."]
   };
@@ -1112,6 +1143,17 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     source_control_review: sourceControlReview,
     task_quality_review: taskQualityReview,
     visual_review: visualReview,
+    naming: buildPlannerNamingSummary({
+      plan: current_plan,
+      evolutionPlan: Array.isArray(evolutions) && evolutions.length ? evolutions[0] : null,
+      taskPunch: Array.isArray(task_punches) && task_punches.length ? task_punches[0] : null,
+      versionPlan: version_control ? { versions: version_control.versions || [] } : null,
+      versionControl: version_control,
+      mode: planner_mode === "vibe_app_developer" ? "vibe" : "owner",
+      appSlug: current_plan && current_plan.app_slug ? current_plan.app_slug : "",
+      track,
+      sourceControl: source_control
+    }),
     ui_ux_review: uiUxReview,
     tailwind_ui_review: tailwindUiReview,
     ui_dashboard_kits_review: uiDashboardKitsReview,
@@ -2931,6 +2973,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     report_type: "kvdf_planner_review",
     generated_at: new Date().toISOString(),
     plan_id: null,
+    naming: planning.naming || null,
     status: review.status,
     planner_mode: planning.mode,
     planning_method: review.planning_method,
@@ -2996,6 +3039,18 @@ function buildPlannerResumeReport(deps = {}) {
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_resume",
     generated_at: new Date().toISOString(),
+    naming: currentPlan ? buildPlannerNamingSummary({
+      plan: currentPlan,
+      evolutionPlan: currentPlan.recommended_evolution || null,
+      taskPunch: currentPlan.task_punch || null,
+      versionPlan: currentPlan.version_plan || null,
+      versionControl: versionControl || currentPlan.version_control || null,
+      mode: normalizePlannerMode(currentPlan.planner_mode),
+      appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+      currentPlan,
+      track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
+      sourceControl: currentPlan.source_control || null
+    }) : null,
     current_plan: currentPlan || null,
     current_evolution: currentEvolution || null,
     current_task_punch: currentTaskPunch || null,
@@ -3279,6 +3334,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
+    naming: planning.naming || null,
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
@@ -3321,11 +3377,12 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     currentGate: planning.current_gate,
     versionControl,
     latestFeedback,
-    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
-    pipelineState: visualSummary.viber_pipeline || null,
-    uiUxIntelligence: promptUiUxIntelligence,
-    uiDashboardKits,
-    tailwindUi: uiUxFlags.disabled || !tailwindUiFlags.includeDetails ? null : (tailwindUi || buildTailwindUiUnavailableSummary("Tailwind UI summary unavailable in this workspace.", "Use kvdf tailwind-ui docs-guidance --idea \"...\" --json if Tailwind guidance is needed."))
+      roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
+      pipelineState: visualSummary.viber_pipeline || null,
+      uiUxIntelligence: promptUiUxIntelligence,
+      uiDashboardKits,
+      tailwindUi: uiUxFlags.disabled || !tailwindUiFlags.includeDetails ? null : (tailwindUi || buildTailwindUiUnavailableSummary("Tailwind UI summary unavailable in this workspace.", "Use kvdf tailwind-ui docs-guidance --idea \"...\" --json if Tailwind guidance is needed.")),
+      naming: planning.naming || null
   })
   }, context, {
     track: mode,
@@ -3343,9 +3400,27 @@ function buildPlannerEvolutionReport(goal, request = {}, deps = {}) {
   const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const naming = buildPlannerNamingSummary({
+    plan: {
+      goal,
+      title: goal,
+      created_at: new Date().toISOString(),
+      plan_id: null
+    },
+    evolutionPlan: plan,
+    taskPunch,
+    versionPlan: null,
+    versionControl: null,
+    mode,
+    appSlug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""),
+    currentPlan: null,
+    track: getPlannerTrack(mode),
+    sourceControl
+  });
   return {
     report_type: "kvdf_planner_evolution_plan",
     generated_at: new Date().toISOString(),
+    naming,
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
@@ -3354,7 +3429,7 @@ function buildPlannerEvolutionReport(goal, request = {}, deps = {}) {
     goal,
     evolution_plan: plan,
     task_punch: taskPunch,
-    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl, aiLearning })
+    prompt: renderCodexPrompt({ goal, mode, plan, taskPunch, context, pluginContext, sourceControl, aiLearning, naming })
   };
 }
 
@@ -3367,9 +3442,27 @@ function buildPlannerTaskPunchReport(goal, request = {}, deps = {}) {
   const aiLearning = buildAiLearningPromptContext(mode, { include_all: true });
   const plan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(plan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
+  const naming = buildPlannerNamingSummary({
+    plan: {
+      goal,
+      title: goal,
+      created_at: new Date().toISOString(),
+      plan_id: null
+    },
+    evolutionPlan: plan,
+    taskPunch,
+    versionPlan: null,
+    versionControl: null,
+    mode,
+    appSlug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""),
+    currentPlan: null,
+    track: getPlannerTrack(mode),
+    sourceControl
+  });
   return {
     report_type: "kvdf_task_punch",
     generated_at: new Date().toISOString(),
+    naming,
     planner_mode: mode,
     track: plan.track,
     delivery_mode: deliveryMode,
@@ -3475,7 +3568,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     nextAction: evolutionPlan.next_action,
     uiUxIntelligence,
     tailwindUi,
-    uiDashboardKits
+    uiDashboardKits,
+    naming: planning.naming || null
   });
 }
 
@@ -3544,9 +3638,20 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     plannerMode: mode,
     sourceControl
   });
-  if (currentPlan.visual && currentPlan.visual.report_type === "kvdf_planner_visual" && currentPlan.visual.source_control) {
-    return currentPlan.visual;
-  }
+  const visualNaming = currentPlan.visual && currentPlan.visual.naming
+    ? currentPlan.visual.naming
+    : buildPlannerNamingSummary({
+      plan: currentPlan,
+      evolutionPlan,
+      taskPunch,
+      versionPlan: currentPlan.version_plan || null,
+      versionControl,
+      mode,
+      appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+      currentPlan,
+      track: currentPlan.track || getPlannerTrack(mode),
+      sourceControl
+    });
   return buildPlannerVisualPayload({
     goal,
     mode,
@@ -3572,11 +3677,12 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     roadmapTrain: currentPlan.roadmap_train || null,
     uiUxIntelligence,
     tailwindUi,
-    uiDashboardKits
+    uiDashboardKits,
+    naming: currentPlan.naming || visualNaming
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null, naming = null }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
@@ -3657,13 +3763,15 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     viberPipeline,
     uiUxIntelligence,
     tailwindUi,
-    uiDashboardKits
+    uiDashboardKits,
+    naming
   });
   const report = {
     report_type: "kvdf_planner_visual",
     generated_at: new Date().toISOString(),
     planner_mode: mode,
     track: evolutionPlan.track,
+    naming,
     delivery_mode: deliveryMode,
     goal,
     source_control: sourceControl,
@@ -3868,7 +3976,8 @@ function buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, 
     { id: "completed", title: "Completed", cards: [] }
   ];
   const evolutionCard = {
-    id: evolutionPlan.evolution_id,
+    id: evolutionPlan.normalized_id || evolutionPlan.id || evolutionPlan.evolution_id,
+    legacy_id: evolutionPlan.legacy_id || evolutionPlan.evolution_id || null,
     title: evolutionPlan.title,
     type: "evolution",
     status: currentPlan && String(currentPlan.status || "").toLowerCase() === "approved" ? "approved" : "proposed",
@@ -3877,7 +3986,8 @@ function buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, 
     next_action: evolutionPlan.next_action
   };
   const taskCards = (taskPunch.tasks || []).map((task) => ({
-    id: task.id,
+    id: task.normalized_id || task.id,
+    legacy_id: task.legacy_id || task.task_id || task.id || null,
     title: task.title,
     type: "task",
     status: task.status || "proposed",
@@ -4531,8 +4641,8 @@ function buildPlannerVisualStageTimeline({ mode = "owner", goal = "", evolutionP
 function buildPlannerVisualDashboardSummary({ versionControl = null, publishReadiness = null, gateMatrix = {}, blockers = [], warnings = [] }) {
   return {
     version_to_publish_summary: {
-      current_version: versionControl && versionControl.current_version ? versionControl.current_version.version_id || versionControl.current_version.title || null : null,
-      next_version: versionControl && versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || null : null,
+      current_version: versionControl && versionControl.current_version ? versionControl.current_version.normalized_id || versionControl.current_version.id || versionControl.current_version.version_id || versionControl.current_version.title || null : null,
+      next_version: versionControl && versionControl.next_version ? versionControl.next_version.normalized_id || versionControl.next_version.id || versionControl.next_version.version_id || versionControl.next_version.title || null : null,
       publish_status: publishReadiness ? publishReadiness.status : "unknown"
     },
     gate_summary: Object.fromEntries(Object.entries(gateMatrix).map(([gate, entry]) => [gate, entry ? entry.status : "unknown"])),
@@ -4551,7 +4661,7 @@ function determinePlannerVisualSourceOfTruth({ mode = "owner", stateResync = nul
   return "unknown";
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null, naming = null }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Execution Readiness - Vibe/App"
     : mode === "plugin"
@@ -4630,6 +4740,14 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     "KVDF does not auto-publish.",
     "Publish or handoff requires Owner approval or a configured delivery gate."
   ].join("\n");
+  const namingLines = naming ? [
+    `- Policy: ${naming.naming_policy || "kvdf_naming_governance_v1"}`,
+    naming.plan ? `- Plan ID: ${naming.plan.id || "unknown"}${naming.plan.legacy_id ? ` (legacy ${naming.plan.legacy_id})` : ""}` : null,
+    naming.version ? `- Version ID: ${naming.version.id || "unknown"}${naming.version.legacy_id ? ` (legacy ${naming.version.legacy_id})` : ""}` : null,
+    naming.evolution ? `- Evolution ID: ${naming.evolution.id || "unknown"}${naming.evolution.legacy_id ? ` (legacy ${naming.evolution.legacy_id})` : ""}` : null,
+    naming.task ? `- Task ID: ${naming.task.id || "unknown"}${naming.task.legacy_id ? ` (legacy ${naming.task.legacy_id})` : ""}` : null,
+    naming.app_slug ? `- App slug: ${naming.app_slug}` : null
+  ].filter(Boolean) : [];
   const lifecycle = executionReadiness.planning_lifecycle || {};
   return [
     `# ${title}`,
@@ -4644,14 +4762,16 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     planningMethod ? `- Method confidence: ${planningReadiness.planning_method_confidence || "unknown"}` : null,
     reviewStatus ? `- Review status: ${reviewStatus}` : null,
     docsStatus ? `- Documentation status: ${docsStatus}` : null,
+    namingLines.length ? "## Naming Governance" : null,
+    ...namingLines,
     uiDashboardKitsLines ? "" : null,
     uiDashboardKitsLines ? uiDashboardKitsLines : null,
     tailwindLines ? "" : null,
     tailwindLines ? tailwindLines : null,
     `- Docs created total: ${docsCreatedTotal || 0}`,
     `- Stop condition note: ${executionReadiness.publish_readiness ? executionReadiness.publish_readiness.rule : "KVDF does not auto-publish."}`,
-    versionControl && versionControl.current_version ? `- Current version: ${versionControl.current_version.version_id || versionControl.current_version.title || "unknown"}` : null,
-    versionControl && versionControl.next_version ? `- Next version: ${versionControl.next_version.version_id || versionControl.next_version.title || "unknown"}` : null,
+    versionControl && versionControl.current_version ? `- Current version: ${versionControl.current_version.normalized_id || versionControl.current_version.id || versionControl.current_version.version_id || versionControl.current_version.title || "unknown"}` : null,
+    versionControl && versionControl.next_version ? `- Next version: ${versionControl.next_version.normalized_id || versionControl.next_version.id || versionControl.next_version.version_id || versionControl.next_version.title || "unknown"}` : null,
     versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
     roadmapTrain ? `- Roadmap train: ${roadmapTrain.status || "unknown"}${roadmapTrain.next_evolution_id ? ` (next ${roadmapTrain.next_evolution_id})` : ""}` : null,
     currentGate ? `- Current gate: ${currentGate}` : null,
@@ -4861,21 +4981,30 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
   const context = buildPlannerContext(deps);
   const mode = resolvePlannerMode(request, context);
   const deliveryMode = getDeliveryMode(mode);
+  const appSlug = normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || "");
   const pluginContext = mode === "plugin"
     ? (request.pluginContext || (request.plugin_id || request.plugin ? buildPluginContext({ plugin_id: request.plugin_id || request.plugin }, context) : buildPluginContext(request, context)))
     : null;
   const sourceControl = request.source_control || buildPlannerSourceControl(request, context, mode, deliveryMode, pluginContext);
   const stateResync = buildPlannerStateResyncSummary(context, request);
   const normalizedIdea = String(idea || request.idea || request.goal || "").trim() || "KVDF Planning Idea";
+  const generatedAt = new Date().toISOString();
+  const planIdentitySource = {
+    goal: normalizedIdea,
+    title: normalizedIdea,
+    created_at: generatedAt,
+    plan_id: null,
+    app_slug: appSlug
+  };
   const supportDocumentationFiles = buildIdeaToEvolutionDocumentationFiles(mode, pluginContext);
   const designArtifacts = buildIdeaToEvolutionDesignArtifacts(normalizedIdea, mode, context, pluginContext, sourceControl);
-  const versionPlan = buildIdeaToEvolutionVersionPlan(normalizedIdea, mode, deliveryMode, context, pluginContext, sourceControl);
+  const versionPlan = buildIdeaToEvolutionVersionPlan(normalizedIdea, mode, deliveryMode, context, pluginContext, sourceControl, appSlug);
   const versionControl = buildPlannerVersionControlSummary({
     versionPlan,
     currentPlan: null,
     versionControlState: null,
     context,
-    appSlug: normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || ""),
+    appSlug,
     track: getPlannerTrack(mode),
     plannerMode: mode,
     sourceControl
@@ -4892,14 +5021,14 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     planning_method: request.method || request.planning_method || "auto",
     source_control: sourceControl,
     plugin_context: pluginContext,
-    app_slug: request.app || request.app_slug || request["app-slug"],
+    app_slug: appSlug,
     plugin_id: request.plugin || request.plugin_id || (pluginContext && pluginContext.plugin_id ? pluginContext.plugin_id : null)
   }, {
     repo_root: context.repo_root,
     plannerMode: mode,
     track: firstEvolution.track || getPlannerTrack(mode),
     method: request.method || request.planning_method || "auto",
-    appSlug: request.app || request.app_slug || request["app-slug"],
+    appSlug,
     pluginId: request.plugin || request.plugin_id || (pluginContext && pluginContext.plugin_id ? pluginContext.plugin_id : null),
     idea: normalizedIdea
   });
@@ -4919,7 +5048,19 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     pluginContext,
     sourceControl,
     versionControl,
-    roadmapTrain: null
+    roadmapTrain: null,
+    naming: buildPlannerNamingSummary({
+      plan: planIdentitySource,
+      evolutionPlan: firstEvolution,
+      taskPunch: firstTaskPunch,
+      versionPlan,
+      versionControl,
+      mode,
+      appSlug,
+      currentPlan: null,
+      track: getPlannerTrack(mode),
+      sourceControl
+    })
   });
   const viberPipeline = mode === "vibe"
     ? buildViberPipelineState({
@@ -4972,11 +5113,23 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     : null;
   const report = {
     report_type: "kvdf_idea_to_evolution_pipeline",
-    generated_at: new Date().toISOString(),
+    generated_at: generatedAt,
     planner_mode: mode,
     track: firstEvolution.track || getPlannerTrack(mode),
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    naming: buildPlannerNamingSummary({
+      plan: planIdentitySource,
+      evolutionPlan: firstEvolution,
+      taskPunch: firstTaskPunch,
+      versionPlan,
+      versionControl,
+      mode,
+      appSlug,
+      currentPlan: null,
+      track: getPlannerTrack(mode),
+      sourceControl
+    }),
     idea: normalizedIdea,
     documentation_files: documentationFiles,
     documentation_folders: documentationFolders,
@@ -7428,10 +7581,10 @@ function buildViberPipelineStageOrderState({
     planning_authority: {
       level: planningAuthorityLevel,
       reason: planningAuthorityReason,
-      current_version: versionControl && versionControl.current_version ? versionControl.current_version.version_id || versionControl.current_version.title || null : null,
-      next_version: versionControl && versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || null : null,
-      current_evolution: evolutionsReady ? evolutions[0] && (evolutions[0].evolution_id || evolutions[0].title || null) : null,
-      next_evolution: evolutionsReady && evolutions[1] ? evolutions[1].evolution_id || evolutions[1].title || null : null,
+      current_version: versionControl && versionControl.current_version ? versionControl.current_version.normalized_id || versionControl.current_version.id || versionControl.current_version.version_id || versionControl.current_version.title || null : null,
+      next_version: versionControl && versionControl.next_version ? versionControl.next_version.normalized_id || versionControl.next_version.id || versionControl.next_version.version_id || versionControl.next_version.title || null : null,
+      current_evolution: evolutionsReady ? evolutions[0] && (evolutions[0].normalized_id || evolutions[0].id || evolutions[0].evolution_id || evolutions[0].title || null) : null,
+      next_evolution: evolutionsReady && evolutions[1] ? evolutions[1].normalized_id || evolutions[1].id || evolutions[1].evolution_id || evolutions[1].title || null : null,
       state_freshness: stateResync && stateResync.state_freshness ? stateResync.state_freshness : "unknown",
       source_of_truth: "file_first"
     },
@@ -7515,14 +7668,14 @@ function buildViberPipelineStages({
     ? [...designArtifacts.ui_ux_design.surfaces]
     : ["UI/UX design pending."];
   const versionOutputs = Array.isArray(versionPlan && versionPlan.versions) && versionPlan.versions.length
-    ? versionPlan.versions.map((version) => version.version_id || version.title || "version")
+    ? versionPlan.versions.map((version) => version.normalized_id || version.id || version.version_id || version.title || "version")
     : ["Version plan pending."];
   const evolutionOutputs = Array.isArray(evolutions) && evolutions.length
-    ? evolutions.map((evolution) => evolution.evolution_id || evolution.title || "evolution")
+    ? evolutions.map((evolution) => evolution.normalized_id || evolution.id || evolution.evolution_id || evolution.title || "evolution")
     : ["Evolution slice pending."];
   const taskOutputs = Array.isArray(taskPunches) && taskPunches.length
-    ? taskPunches.flatMap((item) => Array.isArray(item.tasks) ? item.tasks.map((task) => task.title || task.id || "task") : [])
-    : Array.isArray(taskPunch && taskPunch.tasks) ? taskPunch.tasks.map((task) => task.title || task.id || "task") : ["Task punch pending."];
+    ? taskPunches.flatMap((item) => Array.isArray(item.tasks) ? item.tasks.map((task) => task.normalized_id || task.id || task.title || "task") : [])
+    : Array.isArray(taskPunch && taskPunch.tasks) ? taskPunch.tasks.map((task) => task.normalized_id || task.id || task.title || "task") : ["Task punch pending."];
   const stages = [
     stageState("idea", "complete", [idea || "Raw request captured."], [], [], "Confirm the request before planning."),
     stageState("state_resync", completedState, [stateResync && stateResync.state_freshness ? `State freshness: ${stateResync.state_freshness}` : "State freshness unknown."], stateResync && stateResync.state_freshness === "current" ? [] : ["Run state resync before execution."], stateResync && stateResync.reasons ? stateResync.reasons.map((item) => String(item)) : [], stateResync && stateResync.fresh ? "Current-state evidence is fresh." : "Run kvdf state resync --track vibe --json."),
@@ -7833,33 +7986,112 @@ function buildIdeaToEvolutionDesignArtifacts(idea, mode, context, pluginContext,
   };
 }
 
-function buildIdeaToEvolutionVersionPlan(idea, mode, deliveryMode, context, pluginContext, sourceControl) {
-  const versions = buildIdeaToEvolutionVersionTemplates(mode, idea, context, pluginContext).map((template) => {
-    const evolutionPlan = buildPlannerEvolutionPlan(template.goal, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
+function buildIdeaToEvolutionVersionPlan(idea, mode, deliveryMode, context, pluginContext, sourceControl, appSlug = "") {
+  const versions = buildIdeaToEvolutionVersionTemplates(mode, idea, context, pluginContext).map((template, index) => {
+    const normalizedAppSlug = normalizeAppSlug(appSlug || "");
+    const versionIdentity = buildNamingIdentity({
+      objectType: "version",
+      title: template.title,
+      slug: template.title,
+      track: getPlannerTrack(mode),
+      legacyId: template.version_id,
+      appSlug: normalizedAppSlug,
+      version: normalizeVersionForNaming(template.version_id)
+    });
+    const evolutionPlan = buildPlannerEvolutionPlan(template.goal, {
+      mode,
+      deliveryMode,
+      pluginContext,
+      source_control: sourceControl,
+      app: normalizedAppSlug,
+      app_slug: normalizedAppSlug,
+      version: template.version_id,
+      order: index + 1
+    }, context);
+    const evolutionIdentity = buildNamingIdentity({
+      objectType: "evolution",
+      title: evolutionPlan.title || template.goal,
+      slug: evolutionPlan.title || template.goal,
+      track: getPlannerTrack(mode),
+      legacyId: evolutionPlan.evolution_id,
+      appSlug: normalizedAppSlug,
+      version: template.version_id,
+      category: mode === "vibe" ? ["boundary_stabilization", "local_ui_foundation", "runtime_state", "discovery_spec", "tasking_approval"][index] || "boundary-stabilization" : "boundary-stabilization",
+      order: index + 1
+    });
     const evolution = {
       ...evolutionPlan,
+      id: evolutionIdentity.id,
+      normalized_id: evolutionIdentity.normalized_id,
+      legacy_id: evolutionIdentity.legacy_id,
       version_id: template.version_id,
       readiness_gate: template.readiness_gate,
       excluded_scope: [...template.excluded_scope],
       source_control: sourceControl,
       source_control_mode: sourceControl.mode,
-      next_action: template.next_action
+      next_action: template.next_action,
+      slug: evolutionIdentity.slug,
+      track: evolutionIdentity.track,
+      object_type: evolutionIdentity.object_type,
+      naming_policy: evolutionIdentity.naming_policy
     };
-    const taskPunch = buildPlannerTaskPunch(evolutionPlan, { mode, deliveryMode, pluginContext, source_control: sourceControl }, context);
+    const taskPunch = buildPlannerTaskPunch(evolutionPlan, {
+      mode,
+      deliveryMode,
+      pluginContext,
+      source_control: sourceControl,
+      app: normalizedAppSlug,
+      app_slug: normalizedAppSlug
+    }, context);
+    const taskPunchIdentity = buildNamingIdentity({
+      objectType: "task",
+      title: `${template.title} Task Punch`,
+      slug: template.title,
+      track: getPlannerTrack(mode),
+      legacyId: `${evolution.evolution_id}-task-punch`,
+      appSlug: normalizedAppSlug,
+      evolutionId: evolution.evolution_id,
+      workstream: mode === "vibe" ? "docs" : "docs",
+      order: index + 1
+    });
     return {
+      id: versionIdentity.id,
+      normalized_id: versionIdentity.normalized_id,
+      legacy_id: versionIdentity.legacy_id,
       version_id: template.version_id,
       title: template.title,
+      slug: versionIdentity.slug,
+      track: versionIdentity.track,
+      object_type: versionIdentity.object_type,
+      naming_policy: versionIdentity.naming_policy,
       goal: template.goal,
-      included_evolutions: [evolution.evolution_id],
+      included_evolutions: [evolution.normalized_id || evolution.id || evolution.evolution_id],
+      legacy_included_evolutions: [evolution.evolution_id],
       excluded_scope: [...template.excluded_scope],
       readiness_gate: template.readiness_gate,
       source_control_mode: sourceControl.mode,
       evolution,
       task_punch: {
-        version_id: template.version_id,
-        evolution_id: evolution.evolution_id,
+        id: taskPunchIdentity.id,
+        normalized_id: taskPunchIdentity.normalized_id,
+        legacy_id: taskPunchIdentity.legacy_id,
+        task_id: `${evolution.evolution_id}-task-punch`,
         title: `${template.title} Task Punch`,
-        tasks: taskPunch.tasks,
+        slug: taskPunchIdentity.slug,
+        track: taskPunchIdentity.track,
+        object_type: taskPunchIdentity.object_type,
+        naming_policy: taskPunchIdentity.naming_policy,
+        tasks: taskPunch.tasks.map((task, taskIndex) => attachPlannerNamingIdentity(task, {
+          objectType: "task",
+          title: task.title || `Task ${taskIndex + 1}`,
+          slug: task.slug || task.title || task.id || `task-${taskIndex + 1}`,
+          track: getPlannerTrack(mode),
+          legacy_id: task.id || task.task_id || null,
+          appSlug: normalizedAppSlug,
+          evolutionId: evolution.evolution_id,
+          workstream: task.workstream || (mode === "vibe" ? "docs" : "docs"),
+          order: taskIndex + 1
+        })),
         source_control: sourceControl,
         planner_mode: mode,
         track: evolution.track,
@@ -8308,7 +8540,8 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     docsStatusReport: planning.pipeline ? planning.pipeline.docs_status : null,
     docsCreatedTotal: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.existing_total || 0 : 0,
     currentGate: planning.current_gate,
-    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null
+    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
+    naming: planning.naming || null
   });
   const review = buildPlannerReviewSummary({
     goal,
@@ -8327,7 +8560,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     delivery_mode: deliveryMode,
     roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null
   });
-  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", visualSummary: visual, currentGate: planning.current_gate, roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null });
+  const codexPrompt = renderCodexPrompt({ goal, mode, plan: evolutionPlan, taskPunch, context, pluginContext, sourceControl, aiLearning, planningMethod: planning.planning_method, methodReason: planning.method.reason, review, docsStatus: planning.pipeline && planning.pipeline.docs_status ? planning.pipeline.docs_status.status : "planned", visualSummary: visual, currentGate: planning.current_gate, roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null, naming: planning.naming || null });
   const state = loadPlannerState(context.repo_root);
   const planId = allocatePlannerPlanId(state);
   const plan = buildPlannerPlanRecord({
@@ -8362,6 +8595,7 @@ function buildPlannerProposalReport(goal, request = {}, deps = {}) {
     report_type: "kvdf_planner_proposal",
     generated_at: new Date().toISOString(),
     plan_id: planId,
+    naming: planning.naming || null,
     status: "proposed",
     planner_mode: mode,
     track: evolutionPlan.track,
@@ -8419,7 +8653,8 @@ function approvePlannerPlan(planId, approvedBy, deps = {}) {
     docsStatus: plan.documentation_files && plan.documentation_files.length ? "draft" : "planned",
     docsCreatedTotal: Array.isArray(plan.documentation_files) ? plan.documentation_files.length : 0,
     risks: plan.review && Array.isArray(plan.review.risks) ? plan.review.risks : [],
-    currentGate: plan.current_gate || buildPlannerCurrentGate(plan.planning_method || "structured", plan.source_control || null, plan.planner_mode)
+    currentGate: plan.current_gate || buildPlannerCurrentGate(plan.planning_method || "structured", plan.source_control || null, plan.planner_mode),
+    naming: plan.naming || null
   });
   state.current_plan_id = planId;
   savePlannerState(context.repo_root, state);
@@ -8452,6 +8687,18 @@ function buildPlannerCurrentReport(deps = {}) {
     status: "approved",
     current_plan_id: currentPlan.plan_id,
     current_plan: currentPlan,
+    naming: buildPlannerNamingSummary({
+      plan: currentPlan,
+      evolutionPlan: currentPlan.recommended_evolution || null,
+      taskPunch: currentPlan.task_punch || null,
+      versionPlan: currentPlan.version_plan || null,
+      versionControl: currentPlan.version_control || null,
+      mode: normalizePlannerMode(currentPlan.planner_mode),
+      appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+      currentPlan,
+      track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
+      sourceControl: currentPlan.source_control || null
+    }),
     docs_plan: currentPlan.docs_plan || null,
     docs_status: currentPlan.docs_status || null,
     version_control: currentPlan.version_control || buildPlannerVersionControlSummary({
@@ -8769,6 +9016,7 @@ function materializePlannerPlan(planId, flags = {}, deps = {}) {
     report_type: "kvdf_planner_materialization",
     generated_at: materializedAt,
     plan_id: approvedPlan.plan_id,
+    naming: report.naming || approvedPlan.naming || null,
     planner_mode: approvedPlan.planner_mode,
     track: approvedPlan.track,
     delivery_mode: approvedPlan.delivery_mode,
@@ -8776,13 +9024,18 @@ function materializePlannerPlan(planId, flags = {}, deps = {}) {
     status: "materialized",
     evolution: {
       change_id: evolutionRecord.change_id,
+      id: evolutionRecord.id || evolutionRecord.normalized_id || evolutionRecord.change_id,
+      normalized_id: evolutionRecord.normalized_id || evolutionRecord.id || evolutionRecord.change_id,
+      legacy_id: evolutionRecord.legacy_id || null,
       title: evolutionRecord.title,
       status: evolutionRecord.status,
       planner_plan_id: approvedPlan.plan_id
     },
     task_punch: {
       tasks_created: taskRecords.length,
-      task_ids: taskRecords.map((task) => task.id)
+      task_ids: taskRecords.map((task) => task.id),
+      normalized_task_ids: taskRecords.map((task) => task.normalized_id || task.id),
+      legacy_task_ids: taskRecords.map((task) => task.legacy_id || task.task_id || null).filter(Boolean)
     },
     report_path: reportPath.replace(/\\/g, "/"),
     next_action: "Run kvdf planner prompt --from-current --json, then execute the first approved task slice.",
@@ -8806,20 +9059,21 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
   );
   const aiLearning = buildAiLearningPromptContext(normalizePlannerMode(currentPlan.track || currentPlan.planner_mode), { include_all: true });
   const review = currentPlan.review || buildPlannerReviewFromCurrentPlan(currentPlan, context);
+  const versionControl = currentPlan.version_control || buildPlannerVersionControlSummary({
+    versionPlan: currentPlan.version_plan || {},
+    currentPlan,
+    versionControlState: readPlannerVersionControlState(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")),
+    context,
+    appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+    track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
+    plannerMode: normalizePlannerMode(currentPlan.planner_mode),
+    sourceControl
+  });
   const roadmapTrain = currentPlan.version_plan
     ? buildPlannerRoadmapTrainSummary({
       pipeline: {
         version_plan: currentPlan.version_plan || {},
-        version_control: currentPlan.version_control || buildPlannerVersionControlSummary({
-          versionPlan: currentPlan.version_plan || {},
-          currentPlan,
-          versionControlState: readPlannerVersionControlState(context.repo_root, normalizeAppSlug(currentPlan.app_slug || "")),
-          context,
-          appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
-          track: currentPlan.track || getPlannerTrack(normalizePlannerMode(currentPlan.planner_mode)),
-          plannerMode: normalizePlannerMode(currentPlan.planner_mode),
-          sourceControl
-        }),
+        version_control: versionControl,
         docs_plan: currentPlan.docs_plan || null,
         docs_status: currentPlan.docs_status || null,
         validation_commands: currentPlan.validation_commands || [],
@@ -8888,10 +9142,29 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     docs_status: currentPlan.docs_status || null,
     visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
     current_gate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || review.planning_method || "structured", sourceControl, normalizePlannerMode(currentPlan.planner_mode))
-  }, context, sourceControl, aiLearning, promptUiUxIntelligence, promptTailwindUi, uiDashboardKits);
+  }, context, sourceControl, aiLearning, promptUiUxIntelligence, promptTailwindUi, uiDashboardKits, currentPlan.naming || buildPlannerNamingSummary({
+    plan: currentPlan,
+    versionPlan: currentPlan.version_plan || null,
+    versionControl,
+    mode: normalizePlannerMode(currentPlan.planner_mode),
+    appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+    currentPlan,
+    track: currentPlan.track || normalizePlannerMode(currentPlan.planner_mode),
+    sourceControl
+  }));
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
+    naming: currentPlan.naming || buildPlannerNamingSummary({
+      plan: currentPlan,
+      versionPlan: currentPlan.version_plan || null,
+      versionControl,
+      mode: normalizePlannerMode(currentPlan.planner_mode),
+      appSlug: normalizeAppSlug(currentPlan.app_slug || ""),
+      currentPlan,
+      track: currentPlan.track || normalizePlannerMode(currentPlan.planner_mode),
+      sourceControl
+    }),
     planner_mode: currentPlan.planner_mode,
     track: currentPlan.track,
     delivery_mode: currentPlan.delivery_mode,
@@ -8930,12 +9203,30 @@ function buildPlannerEvolutionPlan(goal, request = {}, context = {}) {
   const evolutionId = normalizeEvolutionId(title);
   const recommendationArea = getPlannerArea(mode);
   const nextAction = getPlannerNextAction(mode, title, pluginContext);
+  const appSlug = normalizeAppSlug(request.app || request.app_slug || request["app-slug"] || "");
+  const naming = buildNamingIdentity({
+    objectType: "evolution",
+    title,
+    slug: title,
+    track: getPlannerTrack(mode),
+    legacyId: evolutionId,
+    appSlug,
+    version: request.version || request.version_id || "v0.0.0",
+    category: request.category || recommendationArea || "boundary-stabilization",
+    order: request.order || 1
+  });
   const plan = {
     report_type: "kvdf_planner_evolution_plan",
+    id: naming.id,
+    normalized_id: naming.normalized_id,
+    legacy_id: naming.legacy_id,
     evolution_id: evolutionId,
     title,
+    slug: naming.slug,
     planner_mode: mode,
     track: getPlannerTrack(mode),
+    object_type: naming.object_type,
+    naming_policy: naming.naming_policy,
     area: recommendationArea,
     reason: buildPlannerReason(mode, context, pluginContext),
     in_scope: buildPlannerInScope(mode, context, pluginContext),
@@ -8959,7 +9250,19 @@ function buildPlannerTaskPunch(plan, request = {}, context = {}) {
   const pluginContext = request.pluginContext || plan.plugin_context || null;
   const sourceControl = request.source_control || request.sourceControl || plan.source_control || buildPlannerSourceControl(request, context, mode, request.deliveryMode || plan.delivery_mode || getDeliveryMode(mode), pluginContext);
   const evolutionId = plan.evolution_id || normalizeEvolutionId(plan.title);
-  const tasks = buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId);
+  const appSlug = normalizeAppSlug(request.app || request.app_slug || plan.app_slug || "");
+  const tasks = buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId, { appSlug });
+  const naming = buildNamingIdentity({
+    objectType: "task",
+    title: plan.title ? `${plan.title} Task Punch` : "Task Punch",
+    slug: plan.title || plan.goal || plan.evolution_id || "task-punch",
+    track: getPlannerTrack(mode),
+    legacyId: `${evolutionId}-task-punch`,
+    appSlug,
+    evolutionId,
+    workstream: "docs",
+    order: 1
+  });
   const uiUxFlags = resolveUiUxIntelligenceFlags(request);
   const uiUxIntelligence = uiUxFlags.disabled || !uiUxFlags.includeDetails
     ? null
@@ -8977,10 +9280,16 @@ function buildPlannerTaskPunch(plan, request = {}, context = {}) {
   return {
     report_type: "kvdf_task_punch",
     generated_at: new Date().toISOString(),
+    id: naming.id,
+    normalized_id: naming.normalized_id,
+    legacy_id: naming.legacy_id,
     evolution_id: evolutionId,
     title: `${plan.title} Task Punch`,
+    slug: naming.slug,
     planner_mode: mode,
     track: plan.track,
+    object_type: naming.object_type,
+    naming_policy: naming.naming_policy,
     delivery_mode: plan.delivery_mode,
     source_control: sourceControl,
     tasks,
@@ -8988,7 +9297,8 @@ function buildPlannerTaskPunch(plan, request = {}, context = {}) {
   };
 }
 
-function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId) {
+function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId, options = {}) {
+  const appSlug = normalizeAppSlug(options.appSlug || options.app_slug || plan.app_slug || "");
   if (mode === "vibe") {
     return [
       taskPunchItem(`${evolutionId}-intake`, "Define app-track intake and scope boundaries", [
@@ -9005,7 +9315,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "The request is documented in a file-based intake flow.",
         "Owner-track files remain untouched unless explicitly requested.",
         "The output states whether GitHub handoff is optional or local-only."
-      ], plan.validation_commands, "Stop if the request would turn into owner-track work by default."),
+      ], plan.validation_commands, "Stop if the request would turn into owner-track work by default.", { mode, appSlug, evolutionId, order: 1, workstream: "docs" }),
       taskPunchItem(`${evolutionId}-evolution`, "Draft the app evolution and task slicing guidance", [
         "workspaces/apps/<app-slug>/",
         ".kabeeri/reports/",
@@ -9020,7 +9330,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "The evolution slice is milestone-based and local-first by default.",
         "The task slice is small enough to finish without changing KVDF Core.",
         "Branch/PR appears only as an optional handoff path."
-      ], plan.validation_commands, "Stop if the task slice drifts into KVDF Core implementation by default."),
+      ], plan.validation_commands, "Stop if the task slice drifts into KVDF Core implementation by default.", { mode, appSlug, evolutionId, order: 2, workstream: "docs" }),
       taskPunchItem(`${evolutionId}-handoff`, "Add handoff and validation guidance for app delivery", [
         "docs/workflows/KVDF_LED_DELIVERY.md",
         "docs/workflows/PR_HANDOFF_TEMPLATE.md",
@@ -9036,7 +9346,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "The handoff flow remains valid even when GitHub is disabled.",
         "The final report names the app workspace and the next action.",
         "The output explains the direct-to-main KVDF Core exception separately."
-      ], plan.validation_commands, "Stop if the handoff guidance starts redefining KVDF Core delivery as the default app path.")
+      ], plan.validation_commands, "Stop if the handoff guidance starts redefining KVDF Core delivery as the default app path.", { mode, appSlug, evolutionId, order: 3, workstream: "handoff" })
     ];
   }
 
@@ -9059,7 +9369,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "The plugin manifest stays the source of truth.",
         "The plugin command surface, docs surface, and runtime entrypoint match the manifest.",
         "Install and uninstall behavior stays reversible and local."
-      ], [...plan.validation_commands, "kvdf plugins status"], "Stop if the work would alter unrelated plugins."),
+      ], [...plan.validation_commands, "kvdf plugins status"], "Stop if the work would alter unrelated plugins.", { mode, appSlug, evolutionId, order: 1, workstream: "plugin" }),
       taskPunchItem(`${evolutionId}-runtime`, "Protect plugin runtime and mount state boundaries", [
         `${pluginRoot}/runtime/`,
         `.kabeeri/plugins.json`,
@@ -9074,7 +9384,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "Plugin runtime state and mount links are protected.",
         "Plugin install/uninstall lifecycle checks are included where relevant.",
         "The planner output explains the bundle contract parity."
-      ], plan.validation_commands, "Stop if the runtime work would require changing unrelated plugin mounts."),
+      ], plan.validation_commands, "Stop if the runtime work would require changing unrelated plugin mounts.", { mode, appSlug, evolutionId, order: 2, workstream: "devops" }),
       taskPunchItem(`${evolutionId}-docs-tests`, "Add plugin docs, schema, and test parity guidance", [
         "docs/cli/CLI_COMMAND_REFERENCE.md",
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
@@ -9090,7 +9400,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
         "The plugin docs mention manifest, docs, runtime, and tests parity.",
         "The planner prompt says plugin development explicitly.",
         "The output protects mount state and unrelated plugin bundles."
-      ], plan.validation_commands, "Stop if the docs or tests would blur plugin scope across bundles.")
+      ], plan.validation_commands, "Stop if the docs or tests would blur plugin scope across bundles.", { mode, appSlug, evolutionId, order: 3, workstream: "docs" })
     ];
   }
 
@@ -9106,7 +9416,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
       "The planner layer governance document explains the roles and rules clearly.",
       "The workflow document shows Owner direction -> planner -> Codex execution -> validation -> review -> direct-to-main commit.",
       "The prompt templates exist and match the direct-to-main KVDF Core policy."
-    ], plan.validation_commands, "Stop if the documentation would describe branch/PR as the default KVDF Core delivery path."),
+    ], plan.validation_commands, "Stop if the documentation would describe branch/PR as the default KVDF Core delivery path.", { mode, appSlug, evolutionId, order: 1, workstream: "docs" }),
     taskPunchItem(`${evolutionId}-cli`, "Wire the planner command into the KVDF Core CLI", [
       "src/cli/commands/planner.js",
       "src/cli/dispatchers/build.js",
@@ -9116,7 +9426,7 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
       "kvdf planner next --json returns a deterministic recommendation.",
       "kvdf planner prompt --goal \"...\" --json returns a Codex-ready prompt.",
       "KVDF Core stays direct-to-main by default and branch/PR remains optional only."
-    ], plan.validation_commands, "Stop if command wiring would make branch/PR the default KVDF Core path."),
+    ], plan.validation_commands, "Stop if command wiring would make branch/PR the default KVDF Core path.", { mode, appSlug, evolutionId, order: 2, workstream: "source-control" }),
     taskPunchItem(`${evolutionId}-tests`, "Add planner integration and documentation coverage", [
       "tests/cli.integration.test.js",
       "docs/cli/CLI_COMMAND_REFERENCE.md",
@@ -9125,15 +9435,35 @@ function buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId
       "The planner command has integration coverage for JSON and prompt output.",
       "The CLI command reference documents the planner command family.",
       "The system capabilities reference records the Planner Layer in the core area map."
-    ], plan.validation_commands, "Stop if the test additions require runtime state edits or unrelated feature changes.")
+    ], plan.validation_commands, "Stop if the test additions require runtime state edits or unrelated feature changes.", { mode, appSlug, evolutionId, order: 3, workstream: "testing" })
   ];
 }
 
-function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriteria, validationCommands, stopCondition) {
+function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriteria, validationCommands, stopCondition, options = {}) {
+  const naming = buildNamingIdentity({
+    objectType: "task",
+    title,
+    slug: title,
+    track: options.mode === "vibe" ? "vibe_app_developer" : (options.mode === "plugin" ? "plugin" : "framework_owner"),
+    legacyId: id,
+    appSlug: options.appSlug || options.app_slug || "",
+    evolutionId: options.evolutionId || options.evolution_id || id,
+    workstream: options.workstream || "frontend",
+    order: options.order || 1
+  });
   return {
-    id,
+    id: naming.id,
+    task_id: id,
+    normalized_id: naming.normalized_id,
+    legacy_id: naming.legacy_id,
     title,
     status: "proposed",
+    slug: naming.slug,
+    track: naming.track,
+    object_type: naming.object_type,
+    naming_policy: naming.naming_policy,
+    workstream: naming.workstream || options.workstream || "frontend",
+    evolution_id: options.evolutionId || options.evolution_id || id,
     allowed_files: allowedFiles,
     forbidden_files: forbiddenFiles,
     acceptance_criteria: acceptanceCriteria,
@@ -9142,7 +9472,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null, naming = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -9196,6 +9526,15 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
         : "Complete the next planning stage only.";
   const executionReady = Boolean(viberPipeline && (viberPipeline.execution_allowed || String(viberPipeline.current_plan_materialization_status || "").toLowerCase() === "materialized" || String(viberPipeline.current_plan_status || "").toLowerCase() === "approved")) && !executionGateBlocked;
   const executionReadyWithTransition = Boolean(executionReady && (!stageTransition || stageTransition.transition_allowed));
+  const namingLines = naming ? [
+    "## Naming Governance",
+    `- Policy: ${naming.naming_policy || "kvdf_naming_governance_v1"}`,
+    naming.plan ? `- Plan ID: ${naming.plan.id || "unknown"}${naming.plan.legacy_id ? ` (legacy ${naming.plan.legacy_id})` : ""}` : null,
+    naming.version ? `- Version ID: ${naming.version.id || "unknown"}${naming.version.legacy_id ? ` (legacy ${naming.version.legacy_id})` : ""}` : null,
+    naming.evolution ? `- Evolution ID: ${naming.evolution.id || "unknown"}${naming.evolution.legacy_id ? ` (legacy ${naming.evolution.legacy_id})` : ""}` : null,
+    naming.task ? `- Task ID: ${naming.task.id || "unknown"}${naming.task.legacy_id ? ` (legacy ${naming.task.legacy_id})` : ""}` : null,
+    naming.app_slug ? `- App slug: ${naming.app_slug}` : null
+  ].filter(Boolean).join("\n") : null;
   const taskLines = viberPipeline && !executionReadyWithTransition
     ? [
       stageTransitionBlocked
@@ -9332,8 +9671,10 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     planningMethod && review ? `- Review status: ${review.status || "unknown"}` : null,
     planningMethod && review && Array.isArray(review.required_fixes) && review.required_fixes.length ? `- Review warnings: ${review.required_fixes.join("; ")}` : null,
     planningMethod && review && review.security_review ? `- Security gate: ${review.security_review.status || "unknown"}${review.security_review.next_action ? ` (${review.security_review.next_action})` : ""}` : null,
-    versionControl ? `- Current version: ${versionControl.current_version ? versionControl.current_version.version_id || versionControl.current_version.title || "unknown" : "none"}` : null,
-    versionControl ? `- Next version: ${versionControl.next_version ? versionControl.next_version.version_id || versionControl.next_version.title || "unknown" : "none"}` : null,
+    namingLines ? "" : null,
+    namingLines || null,
+    versionControl ? `- Current version: ${versionControl.current_version ? versionControl.current_version.normalized_id || versionControl.current_version.id || versionControl.current_version.version_id || versionControl.current_version.title || "unknown" : "none"}` : null,
+    versionControl ? `- Next version: ${versionControl.next_version ? versionControl.next_version.normalized_id || versionControl.next_version.id || versionControl.next_version.version_id || versionControl.next_version.title || "unknown" : "none"}` : null,
     versionControl && versionControl.publish_readiness ? `- Publish readiness: ${versionControl.publish_readiness.status || "unknown"}` : null,
     versionControl && versionControl.publish_readiness && Array.isArray(versionControl.publish_readiness.blockers) && versionControl.publish_readiness.blockers.length ? `- Gate blockers: ${versionControl.publish_readiness.blockers.join("; ")}` : null,
     roadmapTrain ? `- Roadmap train: ${roadmapTrain.status || "unknown"}${roadmapTrain.next_evolution_id ? ` (next ${roadmapTrain.next_evolution_id})` : ""}` : null,
@@ -9925,9 +10266,109 @@ function buildPlannerContext(deps = {}) {
   };
 }
 
+function buildPlannerNamingSummary({ plan = null, evolutionPlan = null, taskPunch = null, versionPlan = null, versionControl = null, mode = "owner", appSlug = "", currentPlan = null, track = null, sourceControl = null } = {}) {
+  const resolvedTrack = track || (mode === "vibe" ? "vibe_app_developer" : "framework_owner");
+  const version = versionPlan && Array.isArray(versionPlan.versions) && versionPlan.versions.length ? versionPlan.versions[0] : null;
+  const evolution = evolutionPlan && Object.keys(evolutionPlan).length ? evolutionPlan : (version && version.evolution ? version.evolution : null);
+  const task = taskPunch && Array.isArray(taskPunch.tasks) && taskPunch.tasks.length ? taskPunch.tasks[0] : (version && version.task_punch && Array.isArray(version.task_punch.tasks) && version.task_punch.tasks.length ? version.task_punch.tasks[0] : null);
+  const planIdentity = plan ? buildNamingIdentity({
+    objectType: "plan",
+    title: plan.goal || plan.title || (plan.recommended_evolution && plan.recommended_evolution.title) || "Planner Plan",
+    slug: plan.slug || plan.goal || plan.title || (plan.recommended_evolution && plan.recommended_evolution.title) || "planner-plan",
+    track: resolvedTrack,
+    legacyId: plan.plan_id || plan.id || null,
+    appSlug,
+    date: plan.created_at || plan.generated_at || plan.materialized_at,
+    order: 1
+  }) : null;
+  const versionIdentity = version ? buildNamingIdentity({
+    objectType: "version",
+    title: version.title || "Version",
+    slug: version.slug || version.title || version.version_id || "version",
+    track: resolvedTrack,
+    legacyId: version.version_id || version.id || null,
+    appSlug,
+    version: version.version_id || version.normalized_id || version.id || "v0.0.0"
+  }) : null;
+  const evolutionIdentity = evolution ? buildNamingIdentity({
+    objectType: "evolution",
+    title: evolution.title || "Evolution",
+    slug: evolution.slug || evolution.title || evolution.evolution_id || "evolution",
+    track: resolvedTrack,
+    legacyId: evolution.evolution_id || evolution.id || null,
+    appSlug,
+    version: version ? version.version_id || version.normalized_id || version.id || "v0.0.0" : evolution.version_id || evolution.version || "v0.0.0",
+    category: evolution.category || evolution.type || "boundary-stabilization",
+    order: version && Array.isArray(versionPlan && versionPlan.versions) ? (versionPlan.versions.indexOf(version) + 1) : 1
+  }) : null;
+  const taskIdentity = task ? buildNamingIdentity({
+    objectType: "task",
+    title: task.title || "Task",
+    slug: task.slug || task.title || task.id || "task",
+    track: resolvedTrack,
+    legacyId: task.task_id || task.id || null,
+    appSlug,
+    evolutionId: task.evolution_id || task.evolution_id || (evolutionIdentity ? evolutionIdentity.normalized_id : null) || task.evolution_change_id || task.evolution || "",
+    workstream: task.workstream || "frontend",
+    order: task.order || 1
+  }) : null;
+  return {
+    naming_policy: "kvdf_naming_governance_v1",
+    track: resolvedTrack,
+    app_slug: appSlug || null,
+    plan: planIdentity,
+    version: versionIdentity,
+    evolution: evolutionIdentity,
+    task: taskIdentity,
+    source_control: sourceControl ? {
+      mode: sourceControl.mode || null,
+      provider: sourceControl.provider || null,
+      remote_provider: sourceControl.remote_provider || null,
+      provider_plugin: sourceControl.provider_plugin || null
+    } : null,
+    current_plan: currentPlan ? {
+      id: currentPlan.id || currentPlan.normalized_id || currentPlan.plan_id || null,
+      normalized_id: currentPlan.normalized_id || currentPlan.id || currentPlan.plan_id || null,
+      legacy_id: currentPlan.legacy_id || currentPlan.plan_id || null,
+      title: currentPlan.title || currentPlan.goal || "",
+      slug: currentPlan.slug || normalizeSlug(currentPlan.goal || currentPlan.title || currentPlan.plan_id || "plan"),
+      object_type: currentPlan.object_type || "plan",
+      naming_policy: currentPlan.naming_policy || "kvdf_naming_governance_v1"
+    } : null,
+    version_control: versionControl ? {
+      current_version: versionControl.current_version ? {
+        id: versionControl.current_version.id || versionControl.current_version.normalized_id || versionControl.current_version.version_id || null,
+        normalized_id: versionControl.current_version.normalized_id || versionControl.current_version.id || versionControl.current_version.version_id || null,
+        legacy_id: versionControl.current_version.legacy_id || versionControl.current_version.version_id || null,
+        title: versionControl.current_version.title || "",
+        slug: versionControl.current_version.slug || normalizeSlug(versionControl.current_version.title || versionControl.current_version.version_id || "version"),
+        object_type: versionControl.current_version.object_type || "version",
+        naming_policy: versionControl.current_version.naming_policy || "kvdf_naming_governance_v1"
+      } : null,
+      next_version: versionControl.next_version ? {
+        id: versionControl.next_version.id || versionControl.next_version.normalized_id || versionControl.next_version.version_id || null,
+        normalized_id: versionControl.next_version.normalized_id || versionControl.next_version.id || versionControl.next_version.version_id || null,
+        legacy_id: versionControl.next_version.legacy_id || versionControl.next_version.version_id || null,
+        title: versionControl.next_version.title || "",
+        slug: versionControl.next_version.slug || normalizeSlug(versionControl.next_version.title || versionControl.next_version.version_id || "version"),
+        object_type: versionControl.next_version.object_type || "version",
+        naming_policy: versionControl.next_version.naming_policy || "kvdf_naming_governance_v1"
+      } : null
+    } : null
+  };
+}
+
+function attachPlannerNamingIdentity(record = {}, options = {}) {
+  return attachNamingIdentity(record, {
+    ...options,
+    legacy_id: options.legacy_id || record.legacy_id || record.plan_id || record.version_id || record.evolution_id || record.task_id || record.id || null
+  });
+}
+
 function resolvePlannerRequest({ action, value, flags, rest }, deps = {}) {
   const explicitTrack = normalizeTrackAlias(flags.track);
   const explicitPlugin = normalizePluginId(flags.plugin);
+  const explicitApp = String(flags.app || flags.app_slug || flags["app-slug"] || "").trim();
   const planningMethod = normalizePlannerMethod(
     readPlannerFlag(flags, "method", "planning-method", "planning_method") ||
     flags.method ||
@@ -9949,6 +10390,8 @@ function resolvePlannerRequest({ action, value, flags, rest }, deps = {}) {
     method: planningMethod || null,
     planning_method: planningMethod || null,
     plugin_id: pluginContext ? pluginContext.plugin_id : null,
+    app: explicitApp || null,
+    app_slug: explicitApp ? normalizeAppSlug(explicitApp) : null,
     source_control: sourceControl,
     recommended_evolution: recommendedEvolution,
     context
@@ -10436,8 +10879,26 @@ function normalizePlannerPlanRecord(plan = {}) {
   if (!plan || typeof plan !== "object") return null;
   const planId = String(plan.plan_id || "").trim();
   if (!planId) return null;
+  const normalized = attachPlannerNamingIdentity({
+    plan_id: planId,
+    title: plan.title || plan.goal || "",
+    goal: String(plan.goal || "").trim(),
+    track: normalizePlannerTrack(plan.track),
+    planner_mode: normalizePlannerMode(plan.planner_mode),
+    created_at: plan.created_at || null,
+    materialized_at: plan.materialized_at || null
+  }, {
+    objectType: "plan",
+    title: plan.title || plan.goal || "",
+    slug: plan.slug || plan.goal || plan.title || planId,
+    track: normalizePlannerTrack(plan.track),
+    legacy_id: plan.legacy_id || plan.plan_id || null,
+    date: plan.created_at || plan.generated_at || plan.materialized_at,
+    appSlug: plan.app_slug || ""
+  });
   return {
     plan_id: planId,
+    ...normalized,
     status: normalizePlannerStatus(plan.status),
     planner_mode: normalizePlannerMode(plan.planner_mode),
     track: normalizePlannerTrack(plan.track),
@@ -10510,11 +10971,46 @@ function buildPlannerPlanRecord({
   visualPlanning,
   sourcePipeline
 }) {
+  const naming = buildNamingIdentity({
+    objectType: "plan",
+    title: goal || evolutionPlan.title || "Planner Plan",
+    slug: goal || evolutionPlan.title || planId || "planner-plan",
+    track: evolutionPlan.track,
+    legacyId: planId,
+    date: createdAt,
+    appSlug: sourceControl && sourceControl.app_slug ? sourceControl.app_slug : ""
+  });
+  const namingSummary = buildPlannerNamingSummary({
+    plan: {
+      goal,
+      title: goal || evolutionPlan.title || "Planner Plan",
+      created_at: createdAt,
+      plan_id: planId,
+      app_slug: sourceControl && sourceControl.app_slug ? sourceControl.app_slug : ""
+    },
+    evolutionPlan,
+    taskPunch,
+    versionPlan,
+    versionControl: sourcePipeline && sourcePipeline.version_control ? sourcePipeline.version_control : null,
+    mode,
+    appSlug: sourceControl && sourceControl.app_slug ? sourceControl.app_slug : "",
+    currentPlan: null,
+    track: evolutionPlan.track,
+    sourceControl
+  });
   const plan = {
+    id: naming.id,
+    normalized_id: naming.normalized_id,
+    legacy_id: naming.legacy_id,
+    naming: namingSummary,
+    title: goal,
+    slug: naming.slug,
+    track: naming.track,
+    object_type: naming.object_type,
+    naming_policy: naming.naming_policy,
     plan_id: planId,
     status: "proposed",
     planner_mode: mode,
-    track: evolutionPlan.track,
     delivery_mode: deliveryMode,
     goal,
     recommended_evolution: evolutionPlan,
@@ -10612,8 +11108,22 @@ function upsertPlannerEvolutionRecord(evolutionState, plan, materialization, con
   const evolutionPlan = materialization.evolution_plan || {};
   const existing = evolutionState.changes.find((item) => String(item.change_id || "") === changeId) || null;
   const now = new Date().toISOString();
+  const naming = buildNamingIdentity({
+    objectType: "evolution",
+    title: evolutionPlan.title || plan.goal || "Planner Evolution",
+    slug: evolutionPlan.slug || evolutionPlan.title || plan.goal || "planner-evolution",
+    track: plan.track,
+    legacyId: changeId,
+    appSlug: plan.app_slug || plan.app || "",
+    version: plan.recommended_evolution && (plan.recommended_evolution.version_id || plan.recommended_evolution.normalized_id || plan.recommended_evolution.id) || "v0.0.0",
+    category: evolutionPlan.category || "boundary-stabilization",
+    order: 1
+  });
   const change = existing || {
     change_id: changeId,
+    id: naming.id,
+    normalized_id: naming.normalized_id,
+    legacy_id: naming.legacy_id,
     title: evolutionPlan.title || plan.goal || "Planner Evolution",
     description: plan.goal || evolutionPlan.reason || evolutionPlan.title || "Planner Evolution",
     status: "planned",
@@ -10622,6 +11132,13 @@ function upsertPlannerEvolutionRecord(evolutionState, plan, materialization, con
     created_at: now
   };
   change.title = evolutionPlan.title || plan.goal || change.title;
+  change.id = naming.id;
+  change.normalized_id = naming.normalized_id;
+  change.legacy_id = naming.legacy_id;
+  change.slug = naming.slug;
+  change.track = naming.track;
+  change.object_type = naming.object_type;
+  change.naming_policy = naming.naming_policy;
   change.description = plan.goal || evolutionPlan.reason || change.description || change.title;
   change.status = "planned";
   change.source = "planner";
@@ -10679,7 +11196,9 @@ function upsertPlannerEvolutionRecord(evolutionState, plan, materialization, con
   }
   const impactPlan = {
     plan_id: `${changeId}-materialization`,
+    id: `${naming.id}-materialization`,
     change_id: changeId,
+    evolution_id: naming.id,
     title: change.title,
     status: "planned",
     planner_plan_id: plan.plan_id,
@@ -10704,8 +11223,22 @@ function upsertPlannerMaterializationTasks(tasksState, evolutionState, plan, mat
   for (const task of taskPunch.tasks || []) {
     const taskId = String(task.id || "").trim();
     if (!taskId) continue;
+    const naming = buildNamingIdentity({
+      objectType: "task",
+      title: task.title || `Planner task for ${plan.plan_id}`,
+      slug: task.slug || task.title || task.id || "task",
+      track: plan.track,
+      legacyId: task.legacy_id || task.task_id || task.id || null,
+      appSlug: plan.app_slug || plan.app || "",
+      evolutionId: changeId,
+      workstream: task.workstream || "frontend",
+      order: task.order || 1
+    });
     const record = {
-      id: taskId,
+      id: naming.id,
+      normalized_id: naming.normalized_id,
+      legacy_id: naming.legacy_id,
+      task_id: taskId,
       title: task.title || `Planner task for ${plan.plan_id}`,
       status: "proposed",
       source: `planner:${plan.plan_id}`,
@@ -10723,6 +11256,8 @@ function upsertPlannerMaterializationTasks(tasksState, evolutionState, plan, mat
       created_at: now,
       source_control: materialization.source_control || plan.source_control || null
     };
+    record.slug = naming.slug;
+    record.naming_policy = naming.naming_policy;
     if (task.workstream) record.workstream = task.workstream;
     if (Array.isArray(task.workstreams)) record.workstreams = [...task.workstreams];
     if (plan.planner_mode === "plugin" && plan.plugin_context) record.plugin_context = plan.plugin_context;
@@ -10763,6 +11298,8 @@ function upsertPlannerMaterializationTasks(tasksState, evolutionState, plan, mat
     if (impactIdx >= 0) {
       evolutionState.impact_plans[impactIdx].tasks = createdTasks.map((task) => ({
         task_id: task.id,
+        normalized_id: task.normalized_id,
+        legacy_id: task.legacy_id,
         title: task.title,
         allowed_files: Array.isArray(task.allowed_files) ? [...task.allowed_files] : [],
         validation_commands: Array.isArray(task.validation_commands) ? [...task.validation_commands] : []
@@ -10774,10 +11311,23 @@ function upsertPlannerMaterializationTasks(tasksState, evolutionState, plan, mat
 }
 
 function buildPlannerMaterializationReport({ plan, materialization, evolutionRecord, taskRecords, reportPath, materializedAt }) {
+  const naming = plan.naming || buildPlannerNamingSummary({
+    plan,
+    evolutionPlan: materialization.evolution_plan || plan.recommended_evolution || null,
+    taskPunch: materialization.task_punch || plan.task_punch || null,
+    versionPlan: plan.version_plan || null,
+    versionControl: plan.version_control || null,
+    mode: plan.planner_mode,
+    appSlug: normalizeAppSlug(plan.app_slug || ""),
+    currentPlan: plan,
+    track: plan.track || normalizePlannerTrack(plan.track),
+    sourceControl: plan.source_control || materialization.source_control || null
+  });
   return {
     report_type: "kvdf_planner_materialization",
     generated_at: materializedAt,
     plan_id: plan.plan_id,
+    naming,
     planner_mode: plan.planner_mode,
     track: plan.track,
     delivery_mode: plan.delivery_mode,
@@ -10785,6 +11335,9 @@ function buildPlannerMaterializationReport({ plan, materialization, evolutionRec
     status: "materialized",
     evolution: {
       change_id: evolutionRecord.change_id,
+      id: evolutionRecord.id || evolutionRecord.normalized_id || evolutionRecord.change_id,
+      normalized_id: evolutionRecord.normalized_id || evolutionRecord.id || evolutionRecord.change_id,
+      legacy_id: evolutionRecord.legacy_id || null,
       title: evolutionRecord.title,
       status: evolutionRecord.status,
       planner_plan_id: plan.plan_id,
@@ -10792,7 +11345,9 @@ function buildPlannerMaterializationReport({ plan, materialization, evolutionRec
     },
     task_punch: {
       tasks_created: taskRecords.length,
-      task_ids: taskRecords.map((task) => task.id)
+      task_ids: taskRecords.map((task) => task.id),
+      normalized_task_ids: taskRecords.map((task) => task.normalized_id || task.id),
+      legacy_task_ids: taskRecords.map((task) => task.legacy_id || task.task_id || null).filter(Boolean)
     },
     report_path: reportPath.replace(/\\/g, "/"),
     next_action: "Run kvdf planner prompt --from-current --json, then execute the first approved task slice.",
@@ -11264,7 +11819,7 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
   ].join("\n");
 }
 
-function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null) {
+function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null, naming = null) {
   const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(plan.planner_mode);
   const sourcePipeline = plan.source_pipeline || plan.sourcePipeline || null;
@@ -11363,7 +11918,8 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     roadmapTrain,
     pipelineState,
     uiUxIntelligence,
-    tailwindUi
+    tailwindUi,
+    naming: naming || plan.naming || null
   });
 }
 
@@ -11390,7 +11946,7 @@ function renderPlannerTaskPunchReport(report, tableRenderer) {
 function buildPlannerPipelineMarkdown(report, tableRenderer) {
   const versionRows = Array.isArray(report.version_plan && report.version_plan.versions)
     ? report.version_plan.versions.map((version) => [
-      version.version_id || "",
+      version.normalized_id || version.id || version.version_id || "",
       version.title || "",
       version.readiness_gate || "",
       version.source_control_mode || ""
@@ -11398,7 +11954,7 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     : [];
   const evolutionRows = Array.isArray(report.evolutions)
     ? report.evolutions.map((evolution) => [
-      evolution.evolution_id || "",
+      evolution.normalized_id || evolution.id || evolution.evolution_id || "",
       evolution.title || "",
       evolution.version_id || "",
       evolution.source_control_mode || ""
@@ -11406,8 +11962,8 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     : [];
   const taskPunchRows = Array.isArray(report.task_punches)
     ? report.task_punches.map((taskPunch) => [
-      taskPunch.version_id || "",
-      taskPunch.evolution_id || "",
+      taskPunch.normalized_id || taskPunch.id || taskPunch.task_punch_id || taskPunch.version_id || "",
+      taskPunch.evolution_id || taskPunch.normalized_evolution_id || "",
       taskPunch.tasks ? String(taskPunch.tasks.length) : "0",
       taskPunch.source_control ? summarizeSourceControl(taskPunch.source_control) : "none"
     ])
@@ -11475,6 +12031,8 @@ function buildPlannerPipelineMarkdown(report, tableRenderer) {
     "",
     "## Version Control",
     ...renderIndentedObjectSection(versionControl || {}),
+    versionControl && versionControl.current_version ? `- Current version: ${versionControl.current_version.normalized_id || versionControl.current_version.id || versionControl.current_version.version_id || versionControl.current_version.title || "unknown"}` : null,
+    versionControl && versionControl.next_version ? `- Next version: ${versionControl.next_version.normalized_id || versionControl.next_version.id || versionControl.next_version.version_id || versionControl.next_version.title || "unknown"}` : null,
     "",
     roadmapTrain ? "## Roadmap Train" : null,
     ...(roadmapTrain ? renderIndentedObjectSection(roadmapTrain || {}) : []),
@@ -11693,9 +12251,14 @@ function buildPlannerVersionControlSummary({ versionPlan = {}, currentPlan = nul
     appSlug,
     versionControlState
   })) : [];
-  const stateCurrentId = versionControlState && (versionControlState.version_id || versionControlState.current_version_id || versionControlState.current_version && versionControlState.current_version.version_id) || null;
-  const currentVersion = stateCurrentId ? versions.find((item) => item.version_id === stateCurrentId) : versions[0] || null;
-  const nextVersion = currentVersion ? versions[versions.findIndex((item) => item.version_id === currentVersion.version_id) + 1] || null : versions[0] || null;
+  const stateCurrentId = versionControlState && (versionControlState.version_id || versionControlState.current_version_id || versionControlState.current_version && (versionControlState.current_version.normalized_id || versionControlState.current_version.version_id)) || null;
+  const currentVersion = stateCurrentId
+    ? versions.find((item) => [item.id, item.normalized_id, item.legacy_id, item.version_id].some((candidate) => String(candidate || "") === String(stateCurrentId))) || null
+    : versions[0] || null;
+  const currentVersionIndex = currentVersion
+    ? versions.findIndex((item) => [item.id, item.normalized_id, item.legacy_id, item.version_id].some((candidate) => String(candidate || "") === String(currentVersion.id || currentVersion.normalized_id || currentVersion.legacy_id || currentVersion.version_id || "")))
+    : -1;
+  const nextVersion = currentVersionIndex >= 0 ? versions[currentVersionIndex + 1] || null : (versions[0] || null);
   const nextEvolution = nextVersion && nextVersion.evolution ? nextVersion.evolution : (currentVersion && currentVersion.evolution ? currentVersion.evolution : null);
   const publishReadiness = currentVersion ? currentVersion.publish_gate || buildEmptyVersionGate("publish") : buildEmptyVersionGate("publish");
   const latestFeedback = readPlannerLatestFeedback(context.repo_root, appSlug);
@@ -12450,11 +13013,32 @@ function buildPlannerVersionEntry(version = {}, options = {}) {
   const context = options.context || {};
   const sourceControl = options.sourceControl || null;
   const versionControlState = options.versionControlState || null;
+  const appSlug = options.appSlug || "";
   const versionPlanItem = version || {};
   const docsStatus = currentPlan && currentPlan.docs_status ? currentPlan.docs_status : null;
   const tasks = versionPlanItem.task_punch && Array.isArray(versionPlanItem.task_punch.tasks) ? versionPlanItem.task_punch.tasks : [];
-  const taskIds = tasks.map((task) => task.id).filter(Boolean);
+  const taskIds = tasks.map((task) => task.normalized_id || task.id || task.task_id).filter(Boolean);
   const evolution = versionPlanItem.evolution || (Array.isArray(versionPlanItem.included_evolutions) && versionPlanItem.included_evolutions.length ? { evolution_id: versionPlanItem.included_evolutions[0], title: versionPlanItem.title } : null);
+  const versionNaming = buildNamingIdentity({
+    objectType: "version",
+    title: versionPlanItem.title || "Version",
+    slug: versionPlanItem.slug || versionPlanItem.title || versionPlanItem.version_id || "version",
+    track: currentPlan ? currentPlan.track || "framework_owner" : "framework_owner",
+    legacyId: versionPlanItem.version_id || versionPlanItem.id || null,
+    appSlug,
+    version: normalizeVersionForNaming(versionPlanItem.version_id || versionPlanItem.normalized_id || "v0.0.0")
+  });
+  const evolutionNaming = evolution ? buildNamingIdentity({
+    objectType: "evolution",
+    title: evolution.title || versionPlanItem.title || "Evolution",
+    slug: evolution.slug || evolution.title || evolution.evolution_id || "evolution",
+    track: currentPlan ? currentPlan.track || "framework_owner" : "framework_owner",
+    legacyId: evolution.evolution_id || evolution.id || null,
+    appSlug,
+    version: versionPlanItem.version_id || versionPlanItem.normalized_id || "v0.0.0",
+    category: evolution.category || "boundary-stabilization",
+    order: options.index || 1
+  }) : null;
   const docsGate = buildVersionGateState("docs", {
     required: true,
     evidence: docsStatus ? [docsStatus.status || "planned"] : [],
@@ -12464,7 +13048,7 @@ function buildPlannerVersionEntry(version = {}, options = {}) {
   });
   const evolutionGate = buildVersionGateState("evolution", {
     required: true,
-    evidence: evolution ? [evolution.evolution_id || versionPlanItem.version_id] : [],
+    evidence: evolution ? [evolution.normalized_id || evolution.id || evolution.evolution_id || versionPlanItem.version_id] : [],
     blockers: evolution ? [] : ["missing evolution"],
     warnings: [],
     next_action: evolution ? "Keep the current evolution in sync with the version." : "Create the first evolution for this version."
@@ -12495,14 +13079,22 @@ function buildPlannerVersionEntry(version = {}, options = {}) {
     versionControlState
   });
   return {
+    id: versionNaming.id,
+    normalized_id: versionNaming.normalized_id,
+    legacy_id: versionNaming.legacy_id,
     version_id: versionPlanItem.version_id || "",
     title: versionPlanItem.title || "",
+    slug: versionNaming.slug,
     app: options.appSlug || null,
     track: currentPlan ? currentPlan.track || null : null,
     planning_method: currentPlan ? currentPlan.planning_method || null : null,
+    object_type: versionNaming.object_type,
+    naming_policy: versionNaming.naming_policy,
     status,
     source_control_mode: versionPlanItem.source_control_mode || sourceControl && sourceControl.mode || null,
     included_evolutions: Array.isArray(versionPlanItem.included_evolutions) ? [...versionPlanItem.included_evolutions] : [],
+    normalized_included_evolutions: evolutionNaming ? [evolutionNaming.normalized_id] : [],
+    legacy_included_evolutions: Array.isArray(versionPlanItem.included_evolutions) ? [...versionPlanItem.included_evolutions] : [],
     task_ids: [...taskIds],
     docs_gate: docsGate,
     evolution_gate: evolutionGate,
@@ -12533,7 +13125,7 @@ function buildVersionGateState(name, data = {}) {
 function buildVersionTaskGate(versionPlanItem, context, taskIds = []) {
   const tasks = Array.isArray(context.task_state && context.task_state.tasks) ? context.task_state.tasks : [];
   const relatedEvolutionId = versionPlanItem.evolution && versionPlanItem.evolution.evolution_id ? versionPlanItem.evolution.evolution_id : null;
-  const related = taskIds.length ? tasks.filter((task) => taskIds.includes(task.id) || (relatedEvolutionId && task.evolution_change_id === relatedEvolutionId)) : [];
+  const related = taskIds.length ? tasks.filter((task) => taskIds.includes(task.id) || taskIds.includes(task.normalized_id) || (relatedEvolutionId && task.evolution_change_id === relatedEvolutionId)) : [];
   if (!related.length) {
     return buildVersionGateState("task", {
       required: true,

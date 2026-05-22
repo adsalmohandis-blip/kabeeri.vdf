@@ -7715,9 +7715,24 @@ test("planner materialize creates evolution and task runtime records from an app
   assert.strictEqual(materialization.delivery_mode, "direct_main");
   assert.strictEqual(materialization.source_control.mode, "direct_main");
   assert.strictEqual(materialization.status, "materialized");
+  assert.ok(materialization.naming);
+  assert.ok(materialization.naming.plan);
+  assert.ok(materialization.naming.plan.normalized_id);
+  assert.ok(materialization.naming.version);
+  assert.ok(materialization.naming.version.normalized_id);
+  assert.ok(materialization.naming.evolution);
+  assert.ok(materialization.naming.evolution.normalized_id);
+  assert.ok(materialization.naming.task);
+  assert.ok(materialization.naming.task.normalized_id);
   assert.ok(materialization.evolution.change_id);
+  assert.ok(materialization.evolution.normalized_id);
+  assert.ok(materialization.evolution.legacy_id);
   assert.strictEqual(materialization.evolution.planner_plan_id, proposal.plan_id);
   assert.ok(Array.isArray(materialization.task_punch.task_ids));
+  assert.ok(Array.isArray(materialization.task_punch.normalized_task_ids));
+  assert.ok(materialization.task_punch.normalized_task_ids.every(Boolean));
+  assert.ok(Array.isArray(materialization.task_punch.legacy_task_ids));
+  assert.ok(materialization.task_punch.legacy_task_ids.every(Boolean));
   assert.ok(materialization.task_punch.tasks_created > 0);
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "evolution.json")));
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri", "tasks.json")));
@@ -7736,6 +7751,8 @@ test("planner materialize creates evolution and task runtime records from an app
   assert.ok(evolutionChange);
   assert.strictEqual(evolutionChange.status, "planned");
   assert.strictEqual(evolutionChange.source, "planner");
+  assert.ok(evolutionChange.normalized_id);
+  assert.ok(evolutionChange.legacy_id);
   assert.ok(Array.isArray(evolutionChange.task_ids));
   const tasksState = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
   const plannerTasks = tasksState.tasks.filter((item) => item.planner_plan_id === proposal.plan_id);
@@ -7743,6 +7760,8 @@ test("planner materialize creates evolution and task runtime records from an app
   assert.ok(plannerTasks.every((task) => task.status === "proposed"));
   assert.ok(plannerTasks.every((task) => task.source === `planner:${proposal.plan_id}`));
   assert.ok(plannerTasks.every((task) => task.evolution_change_id === evolutionChange.change_id));
+  assert.ok(plannerTasks.every((task) => task.normalized_id));
+  assert.ok(plannerTasks.every((task) => task.legacy_id));
   assert.ok(plannerTasks.every((task) => task.source_control && task.source_control.mode === "direct_main"));
   assert.ok(plannerTasks.every((task) => Array.isArray(task.allowed_files)));
 }));
@@ -7967,6 +7986,11 @@ test("planner visual from current reuses the approved runtime plan", () => withT
   assert.strictEqual(visual.planner_mode, "owner");
   assert.strictEqual(visual.goal, "Approved visual planner");
   assert.strictEqual(visual.source_control.mode, "direct_main");
+  assert.ok(visual.naming);
+  assert.ok(visual.naming.version);
+  assert.ok(visual.naming.version.normalized_id);
+  assert.ok(visual.markdown_report.includes("## Naming Governance"));
+  assert.ok(visual.markdown_report.includes("Current version:"));
   assert.ok(visual.markdown_report.includes("KVDF Planner Visual Execution Readiness - Owner"));
   assert.ok(visual.publish_readiness);
   assert.strictEqual(visual.publish_readiness.auto_publish, false);
@@ -7992,26 +8016,49 @@ test("planner pipeline builds an owner-track idea to evolution package", () => w
   assert.ok(pipeline.version_plan);
   assert.ok(Array.isArray(pipeline.version_plan.versions));
   assert.ok(pipeline.version_plan.versions.length >= 3);
+  assert.ok(pipeline.version_plan.versions.every((version) => version.normalized_id));
   assert.ok(Array.isArray(pipeline.evolutions));
   assert.ok(pipeline.evolutions.length >= 3);
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.normalized_id));
   assert.ok(Array.isArray(pipeline.task_punches));
+  assert.ok(pipeline.task_punches.every((taskPunch) => taskPunch.normalized_id));
+  assert.ok(pipeline.task_punches.every((taskPunch) => Array.isArray(taskPunch.tasks) && taskPunch.tasks.every((task) => task.normalized_id && task.workstream)));
   assert.strictEqual(pipeline.evolutions[0].track, "framework_owner");
   assert.ok(pipeline.evolutions.every((evolution) => evolution.forbidden_files.includes("KVDOS/")));
   assert.ok(pipeline.evolutions.every((evolution) => evolution.forbidden_files.includes(".kabeeri/")));
+  assert.ok(pipeline.naming);
+  assert.ok(pipeline.naming.plan);
+  assert.ok(pipeline.naming.plan.normalized_id);
+  assert.ok(pipeline.naming.version);
+  assert.ok(pipeline.naming.version.normalized_id);
+  assert.ok(pipeline.naming.evolution);
+  assert.ok(pipeline.naming.evolution.normalized_id);
+  assert.ok(pipeline.naming.task);
+  assert.ok(pipeline.naming.task.normalized_id);
   assert.ok(pipeline.visual_planning);
   assert.ok(pipeline.visual_planning.graph);
   assert.ok(pipeline.next_evolution);
   assert.strictEqual(pipeline.next_action, "Review the pipeline plan, then approve/materialize the first Evolution.");
 }));
 
-test("planner pipeline builds a vibe local-first package with local-only source control", () => withTempDir((dir) => {
-  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build booking app", "--track", "vibe", "--source-control", "none", "--json"], { cwd: dir }).stdout);
+test("planner pipeline builds a vibe local-first package with app-slugged normalized ids", () => withTempDir((dir) => {
+  const pipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--app-slug", "booking", "--source-control", "none", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(pipeline.report_type, "kvdf_idea_to_evolution_pipeline");
   assert.strictEqual(pipeline.planner_mode, "vibe");
   assert.strictEqual(pipeline.delivery_mode, "local_first");
   assert.strictEqual(pipeline.source_control.enabled, false);
   assert.strictEqual(pipeline.source_control.provider, "none");
   assert.strictEqual(pipeline.source_control.mode, "local_only");
+  assert.ok(pipeline.naming);
+  assert.strictEqual(pipeline.naming.app_slug, "booking");
+  assert.ok(pipeline.naming.plan.normalized_id.includes("booking"));
+  assert.ok(pipeline.naming.version.normalized_id.includes("booking"));
+  assert.ok(pipeline.naming.evolution.normalized_id.includes("booking"));
+  assert.ok(pipeline.naming.task.normalized_id.includes("booking"));
+  assert.ok(pipeline.version_plan.versions.every((version) => version.normalized_id.includes("booking")));
+  assert.ok(pipeline.evolutions.every((evolution) => evolution.normalized_id.includes("booking")));
+  assert.ok(pipeline.task_punches.every((taskPunch) => taskPunch.normalized_id.includes("booking")));
+  assert.ok(pipeline.task_punches.every((taskPunch) => Array.isArray(taskPunch.tasks) && taskPunch.tasks.every((task) => task.normalized_id && task.workstream)));
   assert.ok(Array.isArray(pipeline.pipeline));
   assert.ok(pipeline.pipeline.includes("request"));
   assert.ok(pipeline.pipeline.includes("handoff"));
@@ -9702,6 +9749,37 @@ test("naming commands do not require or create runtime state", () => {
     assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
   });
 });
+
+test("planner prompt and visual outputs expose normalized naming ids", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/app.git" });
+  const proposal = JSON.parse(runKvdf(["planner", "propose", "--goal", "Normalized naming prompt", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  runKvdf(["planner", "approve", proposal.plan_id, "--owner", "local-owner", "--json"], { cwd: dir });
+  runKvdf(["planner", "materialize", "--from-current", "--json"], { cwd: dir });
+
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--from-current", "--json"], { cwd: dir }).stdout);
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--from-current", "--json"], { cwd: dir }).stdout);
+
+  assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(prompt.naming);
+  assert.ok(prompt.naming.plan);
+  assert.ok(prompt.naming.plan.normalized_id);
+  assert.ok(prompt.naming.version);
+  assert.ok(prompt.naming.version.normalized_id);
+  assert.ok(prompt.naming.evolution);
+  assert.ok(prompt.naming.evolution.normalized_id);
+  assert.ok(prompt.naming.task);
+  assert.ok(prompt.naming.task.normalized_id);
+  assert.ok(prompt.prompt.includes("Naming Governance"));
+  assert.ok(prompt.prompt.includes("Plan ID:"));
+  assert.ok(prompt.prompt.includes("Version ID:"));
+
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.ok(visual.naming);
+  assert.ok(visual.naming.version);
+  assert.ok(visual.naming.version.normalized_id);
+  assert.ok(visual.markdown_report.includes("## Naming Governance"));
+  assert.ok(visual.markdown_report.includes("Current version:"));
+}));
 
 let failed = 0;
 for (const item of tests) {

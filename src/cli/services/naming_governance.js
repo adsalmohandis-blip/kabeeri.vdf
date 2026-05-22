@@ -71,6 +71,15 @@ function normalizeVersionSlug(version) {
   return `v${core || "0-0-0"}`;
 }
 
+function normalizeVersionForNaming(version) {
+  const core = normalizeVersionCore(version);
+  const parts = String(core || "").split(".").filter(Boolean);
+  if (parts.length === 2 && parts.every((part) => /^\d+$/.test(part))) {
+    return `${core}.0`;
+  }
+  return core;
+}
+
 function normalizeOrderNumber(value) {
   const numeric = Number.parseInt(String(value || "1"), 10);
   const safe = Number.isFinite(numeric) && numeric > 0 ? numeric : 1;
@@ -254,6 +263,62 @@ function canonicalTrack(track) {
   return value || "framework_owner";
 }
 
+const NAMING_POLICY = "kvdf_naming_governance_v1";
+
+function buildNamingIdentity(options = {}) {
+  const objectType = String(options.objectType || options.object_type || "").trim().toLowerCase();
+  const normalizedTrack = canonicalTrack(options.track || options.mode || options.planner_mode || options.delivery_mode || "framework_owner");
+  const title = String(options.title || options.name || options.label || "").trim();
+  const slug = normalizeSlug(options.slug || title || options.id || options.legacyId || options.legacy_id || objectType || "item");
+  const legacyId = String(options.legacyId || options.legacy_id || options.id || options.plan_id || options.version_id || options.evolution_id || options.task_id || "").trim();
+  const appSlug = normalizeSlug(options.appSlug || options.app_slug || options.app || "");
+  const order = normalizeOrderNumber(options.order || options.index || 1);
+  const version = normalizeVersionForNaming(options.version || options.version_id || options.version_slug || options.versionSlug || "v0.0.0");
+  const category = normalizeEvolutionCategory(options.category || options.evolution_category || options.type || "");
+  const workstream = normalizeTaskWorkstream(options.workstream || options.stream || "");
+  let normalizedId = legacyId || slug;
+  if (objectType === "plan") {
+    normalizedId = normalizedTrack === "vibe_app_developer"
+      ? buildViberPlanId({ appSlug: appSlug || options.app || "app", date: options.date || options.generatedAt || options.createdAt || options.materializedAt, order, slug, title })
+      : buildOwnerPlanId({ date: options.date || options.generatedAt || options.createdAt || options.materializedAt, order, slug, title });
+  } else if (objectType === "version") {
+    normalizedId = normalizedTrack === "vibe_app_developer"
+      ? buildViberVersionId({ appSlug: appSlug || options.app || "app", version, label: slug || title || legacyId || "release" })
+      : buildOwnerVersionId({ version, label: slug || title || legacyId || "release" });
+  } else if (objectType === "evolution") {
+    normalizedId = normalizedTrack === "vibe_app_developer"
+      ? buildViberEvolutionId({ appSlug: appSlug || options.app || "app", version, order, category, slug, title })
+      : buildOwnerEvolutionId({ version, order, slug, title });
+  } else if (objectType === "task") {
+    normalizedId = normalizedTrack === "vibe_app_developer"
+      ? buildViberTaskId({ appSlug: appSlug || options.app || "app", evolutionId: options.evolutionId || options.evolution_id || options.evolution || legacyId || "evolution", order, workstream, verbObject: slug || title })
+      : buildOwnerTaskId({ evolutionId: options.evolutionId || options.evolution_id || options.evolution || legacyId || "evolution", order, verbObject: slug || title });
+  }
+  const normalized = String(normalizedId || "").trim() || slug || legacyId || objectType || "item";
+  const preservedLegacyId = legacyId && legacyId !== normalized ? legacyId : null;
+  return {
+    id: normalized,
+    normalized_id: normalized,
+    legacy_id: preservedLegacyId,
+    title,
+    slug,
+    track: normalizedTrack,
+    object_type: objectType || "item",
+    naming_policy: NAMING_POLICY,
+    app_slug: appSlug || null,
+    workstream: objectType === "task" ? workstream : undefined,
+    category: objectType === "evolution" ? category : undefined
+  };
+}
+
+function attachNamingIdentity(record = {}, options = {}) {
+  const identity = buildNamingIdentity({ ...options, legacy_id: options.legacy_id || record.legacy_id || record.id || record.plan_id || record.version_id || record.evolution_id || record.task_id });
+  return {
+    ...record,
+    ...identity
+  };
+}
+
 function buildNamingValidationReport() {
   const checks = [
     validateNamingId({ id: buildOwnerPlanId({ date: "20260522", order: 1, title: "Planner Readiness" }), track: "owner", type: "plan", date: "20260522", order: 1, title: "Planner Readiness" }, { track: "owner", type: "plan", date: "20260522", order: 1, title: "Planner Readiness" }),
@@ -282,6 +347,7 @@ module.exports = {
   normalizeSlug,
   normalizeDateStamp,
   normalizeVersionSlug,
+  normalizeVersionForNaming,
   normalizeOrderNumber,
   normalizeEvolutionCategory,
   normalizeTaskWorkstream,
@@ -293,6 +359,8 @@ module.exports = {
   buildViberVersionId,
   buildViberEvolutionId,
   buildViberTaskId,
+  buildNamingIdentity,
+  attachNamingIdentity,
   validateNamingId,
   explainNamingRules,
   buildNamingValidationReport
