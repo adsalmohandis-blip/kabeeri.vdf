@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bootstrap UI Status",
+  "type": "object",
+  "required": [
+    "report_type",
+    "plugin_id",
+    "status",
+    "enabled_by_default",
+    "assets",
+    "core_dependency",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "bootstrap_ui_status"
+    },
+    "plugin_id": {
+      "type": "string",
+      "const": "bootstrap_ui"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "available",
+        "warning",
+        "blocked"
+      ]
+    },
+    "enabled_by_default": {
+      "type": "boolean"
+    },
+    "assets": {
+      "type": "object",
+      "required": [
+        "css",
+        "js"
+      ],
+      "properties": {
+        "css": {
+          "type": "string"
+        },
+        "js": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "core_dependency": {
+      "type": "boolean",
+      "const": false
+    },
+    "next_action": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": true
+}

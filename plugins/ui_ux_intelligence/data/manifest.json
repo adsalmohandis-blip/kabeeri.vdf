@@ -1,0 +1,199 @@
+{
+  "knowledge_pack_id": "ui_ux_intelligence_base_pack",
+  "knowledge_pack_version": "0.1.0",
+  "source_policy": "owner_provided_local_files_only",
+  "external_github_dependency": false,
+  "runtime_temp_meta_dependency": false,
+  "domains": [
+    {
+      "domain": "products",
+      "path": "plugins/ui_ux_intelligence/data/products.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "styles",
+      "path": "plugins/ui_ux_intelligence/data/styles.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "colors",
+      "path": "plugins/ui_ux_intelligence/data/colors.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "typography",
+      "path": "plugins/ui_ux_intelligence/data/typography.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "ui_reasoning",
+      "path": "plugins/ui_ux_intelligence/data/ui-reasoning.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "ux_guidelines",
+      "path": "plugins/ui_ux_intelligence/data/ux-guidelines.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "charts",
+      "path": "plugins/ui_ux_intelligence/data/charts.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "landing",
+      "path": "plugins/ui_ux_intelligence/data/landing.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "icons",
+      "path": "plugins/ui_ux_intelligence/data/icons.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "app_interface",
+      "path": "plugins/ui_ux_intelligence/data/app-interface.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "react_performance",
+      "path": "plugins/ui_ux_intelligence/data/react-performance.csv",
+      "required": true,
+      "type": "csv"
+    }
+  ],
+  "stacks": [
+    {
+      "domain": "stacks",
+      "stack": "angular",
+      "path": "plugins/ui_ux_intelligence/data/stacks/angular.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "astro",
+      "path": "plugins/ui_ux_intelligence/data/stacks/astro.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "flutter",
+      "path": "plugins/ui_ux_intelligence/data/stacks/flutter.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "html-tailwind",
+      "path": "plugins/ui_ux_intelligence/data/stacks/html-tailwind.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "jetpack-compose",
+      "path": "plugins/ui_ux_intelligence/data/stacks/jetpack-compose.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "laravel",
+      "path": "plugins/ui_ux_intelligence/data/stacks/laravel.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "nextjs",
+      "path": "plugins/ui_ux_intelligence/data/stacks/nextjs.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "nuxt-ui",
+      "path": "plugins/ui_ux_intelligence/data/stacks/nuxt-ui.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "nuxtjs",
+      "path": "plugins/ui_ux_intelligence/data/stacks/nuxtjs.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "react-native",
+      "path": "plugins/ui_ux_intelligence/data/stacks/react-native.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "react",
+      "path": "plugins/ui_ux_intelligence/data/stacks/react.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "shadcn",
+      "path": "plugins/ui_ux_intelligence/data/stacks/shadcn.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "svelte",
+      "path": "plugins/ui_ux_intelligence/data/stacks/svelte.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "swiftui",
+      "path": "plugins/ui_ux_intelligence/data/stacks/swiftui.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "threejs",
+      "path": "plugins/ui_ux_intelligence/data/stacks/threejs.csv",
+      "required": true,
+      "type": "csv"
+    },
+    {
+      "domain": "stacks",
+      "stack": "vue",
+      "path": "plugins/ui_ux_intelligence/data/stacks/vue.csv",
+      "required": true,
+      "type": "csv"
+    }
+  ],
+  "excluded_sources": [
+    "font binaries",
+    "screenshots",
+    "preview assets",
+    "external repo",
+    "Claude packaging",
+    "installer code"
+  ],
+  "created_at": "2026-05-22T00:00:00.000Z",
+  "updated_at": "2026-05-22T00:00:00.000Z"
+}

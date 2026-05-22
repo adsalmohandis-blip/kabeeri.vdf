@@ -475,13 +475,13 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
 
   if (mode === "prompt") {
     if (isFromCurrentPlan(flags)) {
-      const report = buildPlannerPromptFromCurrentPlan(request, deps);
+      const report = buildPlannerPromptFromCurrentPlan({ ...request, ...flags }, deps);
       printPlannerOutput(report, flags, deps, "prompt");
       return;
     }
     const goal = resolveGoal(value, flags, rest, request.recommended_evolution.title);
     if (!goal) throw new Error("Missing goal for planner prompt.");
-    const report = buildPlannerPromptReport(goal, request, deps);
+    const report = buildPlannerPromptReport(goal, { ...request, ...flags }, deps);
     printPlannerOutput(report, flags, deps, "prompt");
     return;
   }
@@ -504,13 +504,13 @@ function planner(action, value, flags = {}, rest = [], deps = {}) {
 
   if (mode === "visual") {
     if (isFromCurrentPlan(flags)) {
-      const report = buildPlannerVisualFromCurrentReport(request, deps);
+      const report = buildPlannerVisualFromCurrentReport({ ...request, ...flags }, deps);
       printPlannerOutput(report, flags, deps, "visual");
       return;
     }
     const goal = resolveGoal(value, flags, rest, request.recommended_evolution.title);
     if (!goal) throw new Error("Missing goal for planner visual.");
-    const report = buildPlannerVisualReport(goal, request, deps);
+    const report = buildPlannerVisualReport(goal, { ...request, ...flags }, deps);
     printPlannerOutput(report, flags, deps, "visual");
     return;
   }
@@ -958,6 +958,20 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     handoff_pack_status: ui_ux_intelligence.handoff_pack_status || "warning",
     handoff_pack_ready: Boolean(ui_ux_intelligence.handoff_pack_ready),
     handoff_pack_target_docs: Array.isArray(ui_ux_intelligence.handoff_pack_target_docs) ? [...ui_ux_intelligence.handoff_pack_target_docs] : [],
+    pattern_library_status: ui_ux_intelligence.pattern_library_status || "unavailable",
+    pattern_library_available: Boolean(ui_ux_intelligence.pattern_library_available),
+    pattern_library_warnings: ui_ux_intelligence.pattern_library_summary && Array.isArray(ui_ux_intelligence.pattern_library_summary.warnings) ? [...ui_ux_intelligence.pattern_library_summary.warnings] : [],
+    prompt_pack_status: ui_ux_intelligence.prompt_pack && ui_ux_intelligence.prompt_pack.status ? ui_ux_intelligence.prompt_pack.status : "unavailable",
+    prompt_pack_executor: ui_ux_intelligence.prompt_pack && ui_ux_intelligence.prompt_pack.executor ? ui_ux_intelligence.prompt_pack.executor : "codex",
+    prompt_pack_available: Boolean(ui_ux_intelligence.prompt_pack && ui_ux_intelligence.prompt_pack.available),
+    prompt_pack_prompt_titles: ui_ux_intelligence.prompt_pack && Array.isArray(ui_ux_intelligence.prompt_pack.prompt_titles) ? [...ui_ux_intelligence.prompt_pack.prompt_titles] : [],
+    prompt_pack_warnings: ui_ux_intelligence.prompt_pack && Array.isArray(ui_ux_intelligence.prompt_pack.warnings) ? [...ui_ux_intelligence.prompt_pack.warnings] : [],
+    evidence_status: ui_ux_intelligence.evidence_status || "unavailable",
+    visual_qa_status: ui_ux_intelligence.visual_qa_status || "unavailable",
+    acceptance_gate_status: ui_ux_intelligence.acceptance_gate_status || "unavailable",
+    acceptance_gate_available: Boolean(ui_ux_intelligence.acceptance_gate_available),
+    acceptance_gate: ui_ux_intelligence.acceptance_gate || {},
+    regression_status: ui_ux_intelligence.regression_status || "unavailable",
     next_action: ui_ux_intelligence.next_action || "Review the UI/UX intelligence output."
   } : {
     status: "unavailable",
@@ -969,6 +983,20 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     findings: [],
     warnings: [],
     target_docs: [],
+    pattern_library_status: "unavailable",
+    pattern_library_available: false,
+    pattern_library_warnings: [],
+    prompt_pack_status: "unavailable",
+    prompt_pack_executor: "codex",
+    prompt_pack_available: false,
+    prompt_pack_prompt_titles: [],
+    prompt_pack_warnings: [],
+    evidence_status: "unavailable",
+    visual_qa_status: "unavailable",
+    acceptance_gate_status: "unavailable",
+    acceptance_gate_available: false,
+    acceptance_gate: {},
+    regression_status: "unavailable",
     next_action: "Run kvdf ui-ux-intelligence recommend --idea \"...\" --json if UI/UX guidance is needed."
   };
   const docsStatus = docsReview.docs_status;
@@ -1021,6 +1049,21 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     task_quality_review: taskQualityReview,
     visual_review: visualReview,
     ui_ux_review: uiUxReview,
+    ui_ux_governance: ui_ux_intelligence ? {
+      status: "available",
+      report_status: ui_ux_intelligence.governance && ui_ux_intelligence.governance.status ? ui_ux_intelligence.governance.status : "warning",
+      knowledge_pack_version: ui_ux_intelligence.governance && ui_ux_intelligence.governance.knowledge_pack_version ? ui_ux_intelligence.governance.knowledge_pack_version : "0.1.0",
+      catalog_health: ui_ux_intelligence.governance && ui_ux_intelligence.governance.catalog_health ? ui_ux_intelligence.governance.catalog_health : "warning",
+      capability_gaps: ui_ux_intelligence.governance && typeof ui_ux_intelligence.governance.capability_gaps === "number" ? ui_ux_intelligence.governance.capability_gaps : 0,
+      next_action: ui_ux_intelligence.governance && ui_ux_intelligence.governance.next_action ? ui_ux_intelligence.governance.next_action : "Review the UI/UX governance summary before relying on future upgrades."
+    } : {
+      status: "unavailable",
+      report_status: "unavailable",
+      knowledge_pack_version: null,
+      catalog_health: "unavailable",
+      capability_gaps: 0,
+      next_action: "Run kvdf ui-ux-intelligence governance --json if UI/UX governance is needed."
+    },
     ui_ux_handoff_pack: ui_ux_intelligence ? {
       status: ui_ux_intelligence.handoff_pack_ready ? "pass" : (ui_ux_intelligence.handoff_pack_status || "warning"),
       standalone: true,
@@ -1037,6 +1080,48 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
       ready: false,
       target_docs: [],
       next_action: "Run kvdf ui-ux-intelligence handoff-pack --idea \"...\" --json if UI/UX implementation guidance is needed."
+    },
+    ui_ux_prompt_pack: ui_ux_intelligence ? {
+      status: ui_ux_intelligence.prompt_pack_available ? "pass" : (ui_ux_intelligence.prompt_pack_status || "warning"),
+      standalone: true,
+      external_github_dependency: false,
+      available: Boolean(ui_ux_intelligence.prompt_pack_available),
+      executor: ui_ux_intelligence.prompt_pack_executor || "codex",
+      prompt_titles: Array.isArray(ui_ux_intelligence.prompt_pack_prompt_titles) ? [...ui_ux_intelligence.prompt_pack_prompt_titles] : [],
+      warnings: Array.isArray(ui_ux_intelligence.prompt_pack_warnings) ? [...ui_ux_intelligence.prompt_pack_warnings] : [],
+      next_action: ui_ux_intelligence.prompt_pack_available
+        ? "Run kvdf ui-ux-intelligence prompt-pack --idea \"...\" --executor codex --json."
+        : "Review the optional UI/UX prompt pack before task slicing."
+    } : {
+      status: "unavailable",
+      standalone: true,
+      external_github_dependency: false,
+      available: false,
+      executor: "codex",
+      prompt_titles: [],
+      warnings: [],
+      next_action: "Run kvdf ui-ux-intelligence prompt-pack --idea \"...\" --executor codex --json if implementation guidance is needed."
+    },
+    ui_ux_acceptance_gate: ui_ux_intelligence ? {
+      status: ui_ux_intelligence.acceptance_gate_status || "warning",
+      standalone: true,
+      external_github_dependency: false,
+      available: Boolean(ui_ux_intelligence.acceptance_gate_available),
+      score: ui_ux_intelligence.acceptance_gate ? ui_ux_intelligence.acceptance_gate.score || 0 : 0,
+      grade: ui_ux_intelligence.acceptance_gate ? ui_ux_intelligence.acceptance_gate.grade || "F" : "F",
+      blockers: ui_ux_intelligence.acceptance_gate && Array.isArray(ui_ux_intelligence.acceptance_gate.blockers) ? [...ui_ux_intelligence.acceptance_gate.blockers] : [],
+      warnings: ui_ux_intelligence.acceptance_gate && Array.isArray(ui_ux_intelligence.acceptance_gate.warnings) ? [...ui_ux_intelligence.acceptance_gate.warnings] : [],
+      next_action: ui_ux_intelligence.acceptance_gate && ui_ux_intelligence.acceptance_gate.next_action ? ui_ux_intelligence.acceptance_gate.next_action : "Resolve acceptance gate blockers before handoff."
+    } : {
+      status: "unavailable",
+      standalone: true,
+      external_github_dependency: false,
+      available: false,
+      score: 0,
+      grade: "F",
+      blockers: [],
+      warnings: [],
+      next_action: "Run kvdf ui-ux-intelligence acceptance-gate --idea \"...\" --json if UI/UX acceptance evidence is needed."
     },
     version_control_review: versionControlReview,
     publish_readiness_review: publishReadinessReview,
@@ -1167,6 +1252,10 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     task_quality_review: review.task_quality_review,
     visual_review: review.visual_review,
     ui_ux_review: review.ui_ux_review,
+    ui_ux_governance: review.ui_ux_governance,
+    ui_ux_handoff_pack: review.ui_ux_handoff_pack,
+    ui_ux_prompt_pack: review.ui_ux_prompt_pack,
+    ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -1848,9 +1937,14 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
       method,
       idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || ""
     });
+    const reportWithUiUx = uiUxFlags.includeDetails && !uiUxFlags.disabled
+      ? {
+        ...report,
+        ui_ux_intelligence: uiUxIntelligence
+      }
+      : report;
     return attachPlannerCurrentStateSummary({
-      ...report,
-      ui_ux_intelligence: uiUxIntelligence
+      ...reportWithUiUx
     }, context, { track: plannerMode, app: appSlug, plugin: pluginId });
   }
   if (action === "status") {
@@ -2222,16 +2316,41 @@ function buildUiUxIntelligenceUnavailableSummary(reason = "Plugin unavailable or
     standalone: true,
     external_github_dependency: false,
     available: false,
+    details_included: false,
     reason,
     recommendation_summary: {},
     checklist_summary: {},
     implementation_summary: {},
+    pattern_library_summary: {},
+    pattern_library_available: false,
+    pattern_library_status: "unavailable",
+    pattern_library_warnings: [],
+    prompt_pack: {},
+    prompt_pack_available: false,
+    prompt_pack_status: "unavailable",
+    prompt_pack_executor: "codex",
+    prompt_pack_prompt_titles: [],
+    prompt_pack_warnings: [],
     target_docs: [...UI_UX_INTELLIGENCE_TARGET_DOCS],
     findings: [],
     docs_ready: false,
+    evidence_status: "unavailable",
+    visual_qa_status: "unavailable",
+    acceptance_gate_status: "unavailable",
+    acceptance_gate_available: false,
+    acceptance_gate: {},
+    regression_status: "unavailable",
     handoff_pack_status: "unavailable",
     handoff_pack_ready: false,
+    handoff_pack_available: false,
     handoff_pack_target_docs: [...UI_UX_INTELLIGENCE_TARGET_DOCS],
+    governance: {
+      status: "unavailable",
+      knowledge_pack_version: null,
+      catalog_health: "unavailable",
+      capability_gaps: 0,
+      next_action: nextAction
+    },
     warnings: [reason],
     next_action: nextAction
   };
@@ -2263,15 +2382,41 @@ function buildUiUxIntelligenceSummary(options = {}) {
     standalone: true,
     external_github_dependency: false,
     available: true,
+    details_included: includeDetails,
     recommendation_summary: {},
     checklist_summary: {},
     implementation_summary: {},
+    pattern_library_summary: {},
+    pattern_library_available: false,
+    pattern_library_status: "unavailable",
+    pattern_library_warnings: [],
+    prompt_pack: {},
+    prompt_pack_available: false,
+    prompt_pack_status: "unavailable",
+    prompt_pack_executor: "codex",
+    prompt_pack_prompt_titles: [],
+    prompt_pack_warnings: [],
     target_docs: [],
     findings: [],
     docs_ready: false,
+    evidence_status: "unavailable",
+    visual_qa_status: "unavailable",
+    acceptance_gate_status: "unavailable",
+    acceptance_gate_available: false,
+    acceptance_gate: {},
+    regression_status: "unavailable",
+    governance: {
+      status: "unavailable",
+      report_status: "unavailable",
+      knowledge_pack_version: null,
+      catalog_health: "unavailable",
+      capability_gaps: 0,
+      next_action: "Run kvdf ui-ux-intelligence governance --json if UI/UX governance is needed."
+    },
     warnings: [],
     handoff_pack_status: "warning",
     handoff_pack_ready: false,
+    handoff_pack_available: false,
     handoff_pack_target_docs: [],
     next_action: includeDetails
       ? "Use ui_ux_intelligence docs sections during materialization if approved."
@@ -2289,6 +2434,14 @@ function buildUiUxIntelligenceSummary(options = {}) {
     const checklist = runtime.generateChecklist(input, { track, app, recommendation, strict });
     const docs = runtime.generateDocsSections(input, { track, app, stack, recommendation, strict });
     const handoffPack = runtime.generateUiUxHandoffPack(input, { track, app, stack, recommendation, checklist, strict });
+    const patternLibrary = runtime.buildUiPatternLibrary(input, { track, app, stack, recommendation, strict });
+    const implementationGuidance = runtime.buildImplementationGuidance(input, { track, app, stack, recommendation, strict });
+    const promptPack = runtime.buildUiUxPromptPack(input, { track, app, stack, recommendation, strict, executor: "codex", handoffPack });
+    const evidenceManifest = runtime.buildUiUxEvidenceManifest(input, { track, app, strict, stage: "handoff" });
+    const visualQa = runtime.buildVisualQaContract(input, { track, app, stack, recommendation, checklist, evidenceManifest, strict });
+    const acceptanceGate = runtime.buildUiUxAcceptanceGate(input, { track, app, stack, recommendation, checklist, scorecard: handoffPack.scorecard, evidenceManifest, visualQa, handoffPack, strict });
+    const regressionChecklist = runtime.buildUiUxRegressionChecklist(input, { track, app, stack, recommendation, checklist, strict });
+    const governance = runtime.buildUiUxGovernance({ track, app, stack, strict });
     const implementationSummary = buildUiUxImplementationSummary(handoffPack);
     summary.recommendation_summary = {
       detected_product_type: recommendation.detected_product_type,
@@ -2308,11 +2461,56 @@ function buildUiUxIntelligenceSummary(options = {}) {
     };
     summary.checklist_summary = runtime.summarizeChecklist(checklist);
     summary.implementation_summary = implementationSummary;
+    summary.pattern_library_summary = {
+      status: "available",
+      recommended_order: Array.isArray(patternLibrary.recommended_order) ? [...patternLibrary.recommended_order] : [],
+      patterns: Array.isArray(patternLibrary.patterns) ? patternLibrary.patterns.slice(0, 5).map((pattern) => pattern.name || pattern.pattern_id).filter(Boolean) : [],
+      warnings: Array.isArray(patternLibrary.warnings) ? [...patternLibrary.warnings] : [],
+      next_action: patternLibrary.next_action || "Use the pattern library in task punches."
+    };
+    summary.pattern_library_available = true;
+    summary.pattern_library_status = summary.pattern_library_summary.status;
+    summary.pattern_library_warnings = Array.isArray(patternLibrary.warnings) ? [...patternLibrary.warnings] : [];
+    summary.prompt_pack = {
+      status: "available",
+      executor: promptPack.executor || "codex",
+      available: true,
+      prompt_titles: Array.isArray(promptPack.prompts) ? promptPack.prompts.map((prompt) => prompt.title).filter(Boolean) : [],
+      warnings: Array.isArray(promptPack.warnings) ? [...promptPack.warnings] : [],
+      next_action: promptPack.next_action || "Run kvdf ui-ux-intelligence prompt-pack --idea \"...\" --executor codex --json."
+    };
+    summary.prompt_pack_available = true;
+    summary.prompt_pack_status = summary.prompt_pack.status;
+    summary.prompt_pack_executor = summary.prompt_pack.executor;
+    summary.prompt_pack_prompt_titles = [...summary.prompt_pack.prompt_titles];
+    summary.prompt_pack_warnings = Array.isArray(promptPack.warnings) ? [...promptPack.warnings] : [];
     summary.target_docs = Array.isArray(docs.target_docs) ? [...docs.target_docs] : [...summary.target_docs];
     summary.docs_ready = summary.target_docs.length > 0;
     summary.handoff_pack_status = handoffPack.handoff_status || "warning";
     summary.handoff_pack_ready = handoffPack.handoff_status === "pass";
+    summary.handoff_pack_available = Boolean(handoffPack && handoffPack.handoff_status && handoffPack.handoff_status !== "unavailable");
     summary.handoff_pack_target_docs = Array.isArray(handoffPack.target_docs) ? [...handoffPack.target_docs] : [...summary.target_docs];
+    summary.evidence_status = evidenceManifest.summary && evidenceManifest.summary.missing_recommended_evidence.length ? "warning" : "pass";
+    summary.visual_qa_status = visualQa.evidence_status && visualQa.evidence_status.status ? visualQa.evidence_status.status : "warning";
+    summary.acceptance_gate_status = acceptanceGate.status || "warning";
+    summary.acceptance_gate_available = true;
+    summary.acceptance_gate = {
+      status: acceptanceGate.status || "warning",
+      score: acceptanceGate.score || 0,
+      grade: acceptanceGate.grade || "F",
+      blockers: Array.isArray(acceptanceGate.blockers) ? [...acceptanceGate.blockers] : [],
+      warnings: Array.isArray(acceptanceGate.warnings) ? [...acceptanceGate.warnings] : [],
+      next_action: acceptanceGate.next_action || "Resolve the acceptance blockers before UI/UX handoff."
+    };
+    summary.regression_status = regressionChecklist.summary && regressionChecklist.summary.total ? "available" : "unavailable";
+    summary.governance = {
+      status: "available",
+      report_status: governance.status || "warning",
+      knowledge_pack_version: governance.knowledge_pack && governance.knowledge_pack.knowledge_pack_version ? governance.knowledge_pack.knowledge_pack_version : "0.1.0",
+      catalog_health: governance.catalog_health && governance.catalog_health.status ? governance.catalog_health.status : "warning",
+      capability_gaps: governance.governance_registry && Array.isArray(governance.governance_registry.gaps) ? governance.governance_registry.gaps.length : 0,
+      next_action: governance.next_action || "Review the UI/UX governance summary before relying on future upgrades."
+    };
     summary.next_action = "Use ui_ux_intelligence docs sections during materialization if approved.";
     summary.warnings = uniqueList([...(recommendation.warnings || []), ...(checklist.warnings || []), ...(docs.warnings || [])]);
     if (strict && summary.checklist_summary && summary.checklist_summary.summary && summary.checklist_summary.summary.blockers > 0) {
@@ -2367,6 +2565,9 @@ function buildUiUxImplementationSummary(handoffPack = {}) {
   const screens = Array.isArray(handoffPack.screens && handoffPack.screens.screens)
     ? handoffPack.screens.screens.map((screen) => screen.name || screen.screen_id).filter(Boolean).slice(0, 6)
     : [];
+  const patterns = Array.isArray(handoffPack.pattern_library && handoffPack.pattern_library.patterns)
+    ? handoffPack.pattern_library.patterns.map((pattern) => pattern.name || pattern.pattern_id).filter(Boolean).slice(0, 6)
+    : [];
   const checklistItems = Array.isArray(handoffPack.checklist && handoffPack.checklist.checklist)
     ? handoffPack.checklist.checklist
     : [];
@@ -2386,6 +2587,7 @@ function buildUiUxImplementationSummary(handoffPack = {}) {
     ]),
     key_components: uniqueList(components),
     key_screens: uniqueList(screens),
+    pattern_hints: uniqueList(patterns),
     critical_states: uniqueList(criticalStates),
     accessibility_notes: uniqueList(accessibilityNotes)
   };
@@ -2519,7 +2721,10 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     task_quality_review: review.task_quality_review,
     visual_review: review.visual_review,
     ui_ux_review: review.ui_ux_review,
+    ui_ux_governance: review.ui_ux_governance,
     ui_ux_handoff_pack: review.ui_ux_handoff_pack,
+    ui_ux_prompt_pack: review.ui_ux_prompt_pack,
+    ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -2753,7 +2958,9 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
   });
   const promptUiUxIntelligence = uiUxFlags.disabled
     ? null
-    : (uiUxIntelligence || buildUiUxIntelligenceUnavailableSummary("UI/UX intelligence summary unavailable in this workspace.", "Use ui_ux_intelligence docs sections during materialization if approved."));
+    : (uiUxFlags.includeDetails
+      ? (uiUxIntelligence || buildUiUxIntelligenceUnavailableSummary("UI/UX intelligence summary unavailable in this workspace.", "Use ui_ux_intelligence docs sections during materialization if approved."))
+      : null);
   const visualSummary = buildPlannerVisualPayload({
     goal,
     mode,
@@ -4048,9 +4255,13 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     uiUxIntelligence.recommendation_summary && uiUxIntelligence.recommendation_summary.recommended_palette ? `- Recommended palette: ${uiUxIntelligence.recommendation_summary.recommended_palette}` : null,
     uiUxIntelligence.recommendation_summary && uiUxIntelligence.recommendation_summary.recommended_typography ? `- Recommended typography: ${uiUxIntelligence.recommendation_summary.recommended_typography}` : null,
     uiUxIntelligence.handoff_pack_status ? `- Handoff pack: ${uiUxIntelligence.handoff_pack_status}${uiUxIntelligence.handoff_pack_ready ? " (ready)" : ""}` : null,
+    uiUxIntelligence.governance ? `- Governance: ${uiUxIntelligence.governance.status || "warning"}${uiUxIntelligence.governance.knowledge_pack_version ? ` (pack ${uiUxIntelligence.governance.knowledge_pack_version})` : ""}${uiUxIntelligence.governance.catalog_health ? `, catalog ${uiUxIntelligence.governance.catalog_health}` : ""}${typeof uiUxIntelligence.governance.capability_gaps === "number" ? `, gaps ${uiUxIntelligence.governance.capability_gaps}` : ""}` : null,
+    `- Pattern library: ${uiUxIntelligence.pattern_library_summary && Array.isArray(uiUxIntelligence.pattern_library_summary.patterns) && uiUxIntelligence.pattern_library_summary.patterns.length ? uiUxIntelligence.pattern_library_summary.patterns.join("; ") : (uiUxIntelligence.pattern_library_status || "unavailable")}`,
+    `- Prompt pack: ${uiUxIntelligence.prompt_pack && uiUxIntelligence.prompt_pack.status ? `${uiUxIntelligence.prompt_pack.executor || "codex"} (${uiUxIntelligence.prompt_pack.status})${Array.isArray(uiUxIntelligence.prompt_pack.prompt_titles) && uiUxIntelligence.prompt_pack.prompt_titles.length ? ` - ${uiUxIntelligence.prompt_pack.prompt_titles.join("; ")}` : ""}` : (uiUxIntelligence.prompt_pack_status || "unavailable")}`,
     uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.token_hints) && uiUxIntelligence.implementation_summary.token_hints.length ? `- Token hints: ${uiUxIntelligence.implementation_summary.token_hints.join("; ")}` : null,
     uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.key_components) && uiUxIntelligence.implementation_summary.key_components.length ? `- Key components: ${uiUxIntelligence.implementation_summary.key_components.join("; ")}` : null,
     uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.key_screens) && uiUxIntelligence.implementation_summary.key_screens.length ? `- Key screens: ${uiUxIntelligence.implementation_summary.key_screens.join("; ")}` : null,
+    uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.pattern_hints) && uiUxIntelligence.implementation_summary.pattern_hints.length ? `- Pattern hints: ${uiUxIntelligence.implementation_summary.pattern_hints.join("; ")}` : null,
     uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.critical_states) && uiUxIntelligence.implementation_summary.critical_states.length ? `- Critical states: ${uiUxIntelligence.implementation_summary.critical_states.join("; ")}` : null,
     uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.accessibility_notes) && uiUxIntelligence.implementation_summary.accessibility_notes.length ? `- Accessibility reminders: ${uiUxIntelligence.implementation_summary.accessibility_notes.join("; ")}` : null,
     uiUxIntelligence.checklist_summary && uiUxIntelligence.checklist_summary.summary ? `- Checklist summary: ${uiUxIntelligence.checklist_summary.summary.total || 0} items, ${uiUxIntelligence.checklist_summary.summary.blockers || 0} blockers, ${uiUxIntelligence.checklist_summary.summary.warnings || 0} warnings` : null,
@@ -8298,7 +8509,11 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     docsReadyHint: Boolean(currentPlan.docs_status && currentPlan.docs_status.status && currentPlan.docs_status.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
   });
-  const promptUiUxIntelligence = uiUxFlags.disabled ? null : (uiUxIntelligence || buildUiUxIntelligenceUnavailableSummary("UI/UX intelligence summary unavailable in this workspace.", "Use ui_ux_intelligence docs sections during materialization if approved."));
+  const promptUiUxIntelligence = uiUxFlags.disabled
+    ? null
+    : (uiUxFlags.includeDetails
+      ? (uiUxIntelligence || buildUiUxIntelligenceUnavailableSummary("UI/UX intelligence summary unavailable in this workspace.", "Use ui_ux_intelligence docs sections during materialization if approved."))
+      : null);
   const prompt = renderPlannerPromptFromPlan({
     ...currentPlan,
     planning_method: currentPlan.planning_method || review.planning_method || null,
@@ -8379,6 +8594,20 @@ function buildPlannerTaskPunch(plan, request = {}, context = {}) {
   const sourceControl = request.source_control || request.sourceControl || plan.source_control || buildPlannerSourceControl(request, context, mode, request.deliveryMode || plan.delivery_mode || getDeliveryMode(mode), pluginContext);
   const evolutionId = plan.evolution_id || normalizeEvolutionId(plan.title);
   const tasks = buildModeTaskPunchTasks(mode, plan, pluginContext, context, evolutionId);
+  const uiUxFlags = resolveUiUxIntelligenceFlags(request);
+  const uiUxIntelligence = uiUxFlags.disabled || !uiUxFlags.includeDetails
+    ? null
+    : buildUiUxIntelligenceSummary({
+      idea: plan.goal || plan.title || "",
+      track: plan.track || getPlannerTrack(mode),
+      app: request.app || request.app_slug || plan.app_slug || "",
+      stack: uiUxFlags.stack,
+      includeDetails: true,
+      strict: uiUxFlags.strict,
+      disabled: uiUxFlags.disabled,
+      docsReadyHint: Boolean(plan.docs_status && plan.docs_status.status && plan.docs_status.status !== "missing"),
+      targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
+    });
   return {
     report_type: "kvdf_task_punch",
     generated_at: new Date().toISOString(),
@@ -8388,7 +8617,8 @@ function buildPlannerTaskPunch(plan, request = {}, context = {}) {
     track: plan.track,
     delivery_mode: plan.delivery_mode,
     source_control: sourceControl,
-    tasks
+    tasks,
+    ui_ux_intelligence: uiUxIntelligence || undefined
   };
 }
 
@@ -8671,15 +8901,24 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     uiUxSummary.recommendation_summary && Array.isArray(uiUxSummary.recommendation_summary.ux_rules) && uiUxSummary.recommendation_summary.ux_rules.length ? `- UX rules: ${uiUxSummary.recommendation_summary.ux_rules.slice(0, 4).join("; ")}` : null,
     uiUxSummary.recommendation_summary && Array.isArray(uiUxSummary.recommendation_summary.anti_patterns_to_avoid) && uiUxSummary.recommendation_summary.anti_patterns_to_avoid.length ? `- Anti-patterns: ${uiUxSummary.recommendation_summary.anti_patterns_to_avoid.slice(0, 4).join("; ")}` : null,
     uiUxSummary.handoff_pack_status ? `- Handoff pack: ${uiUxSummary.handoff_pack_status}${uiUxSummary.handoff_pack_ready ? " (ready)" : ""}` : null,
+    `- Pattern library: ${uiUxSummary.pattern_library_summary && Array.isArray(uiUxSummary.pattern_library_summary.patterns) && uiUxSummary.pattern_library_summary.patterns.length ? uiUxSummary.pattern_library_summary.patterns.join("; ") : (uiUxSummary.pattern_library_status || "unavailable")}`,
+    `- Prompt pack: ${uiUxSummary.prompt_pack && uiUxSummary.prompt_pack.status ? `${uiUxSummary.prompt_pack.executor || "codex"} (${uiUxSummary.prompt_pack.status})${Array.isArray(uiUxSummary.prompt_pack.prompt_titles) && uiUxSummary.prompt_pack.prompt_titles.length ? ` - ${uiUxSummary.prompt_pack.prompt_titles.join("; ")}` : ""}` : (uiUxSummary.prompt_pack_status || "unavailable")}`,
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.token_hints) && uiUxSummary.implementation_summary.token_hints.length ? `- Token hints: ${uiUxSummary.implementation_summary.token_hints.join("; ")}` : null,
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.key_components) && uiUxSummary.implementation_summary.key_components.length ? `- Key components: ${uiUxSummary.implementation_summary.key_components.join("; ")}` : null,
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.key_screens) && uiUxSummary.implementation_summary.key_screens.length ? `- Key screens: ${uiUxSummary.implementation_summary.key_screens.join("; ")}` : null,
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.critical_states) && uiUxSummary.implementation_summary.critical_states.length ? `- Critical states: ${uiUxSummary.implementation_summary.critical_states.join("; ")}` : null,
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.accessibility_notes) && uiUxSummary.implementation_summary.accessibility_notes.length ? `- Accessibility reminders: ${uiUxSummary.implementation_summary.accessibility_notes.join("; ")}` : null,
     uiUxSummary.checklist_summary && uiUxSummary.checklist_summary.summary ? `- Accessibility checklist: ${uiUxSummary.checklist_summary.summary.total || 0} items, ${uiUxSummary.checklist_summary.summary.blockers || 0} blockers, ${uiUxSummary.checklist_summary.summary.warnings || 0} warnings` : null,
+    uiUxSummary.visual_qa_status ? `- Visual QA: ${uiUxSummary.visual_qa_status}` : null,
+    uiUxSummary.evidence_status ? `- Evidence manifest: ${uiUxSummary.evidence_status}` : null,
+    uiUxSummary.acceptance_gate ? `- Acceptance gate: ${uiUxSummary.acceptance_gate.status || "warning"}${typeof uiUxSummary.acceptance_gate.score === "number" ? ` (${uiUxSummary.acceptance_gate.score}/${uiUxSummary.acceptance_gate.grade || "F"})` : ""}` : null,
+    uiUxSummary.acceptance_gate && Array.isArray(uiUxSummary.acceptance_gate.blockers) && uiUxSummary.acceptance_gate.blockers.length ? `- Acceptance blockers: ${uiUxSummary.acceptance_gate.blockers.join("; ")}` : null,
+    uiUxSummary.acceptance_gate && Array.isArray(uiUxSummary.acceptance_gate.warnings) && uiUxSummary.acceptance_gate.warnings.length ? `- Acceptance warnings: ${uiUxSummary.acceptance_gate.warnings.join("; ")}` : null,
+    uiUxSummary.governance ? `- Governance: ${uiUxSummary.governance.status || "warning"}${uiUxSummary.governance.knowledge_pack_version ? ` (pack ${uiUxSummary.governance.knowledge_pack_version})` : ""}${uiUxSummary.governance.catalog_health ? `, catalog ${uiUxSummary.governance.catalog_health}` : ""}${typeof uiUxSummary.governance.capability_gaps === "number" ? `, gaps ${uiUxSummary.governance.capability_gaps}` : ""}` : null,
     uiUxSummary.target_docs && uiUxSummary.target_docs.length ? `- Target docs: ${uiUxSummary.target_docs.join("; ")}` : null,
     `- Next action: ${uiUxSummary.next_action || "Review the UI/UX intelligence output."}`,
-    "- Reminder: do not overwrite existing UI/UX docs unless --force or Owner approval exists."
+    "- Reminder: do not overwrite existing UI/UX docs unless --force or Owner approval exists.",
+    "- Stop condition: stop until the required UI/UX evidence, accessibility checks, and acceptance gate pass."
   ].filter(Boolean).join("\n") : null;
   return [
     heading,
@@ -10447,6 +10686,9 @@ function renderPlannerReviewReport(report, tableRenderer) {
     "",
     "Visual review:",
     ...renderIndentedObjectSection(report.visual_review || {}),
+    "",
+    "UI/UX governance:",
+    ...renderIndentedObjectSection(report.ui_ux_governance || {}),
     "",
     "Risks:",
     ...(report.risks || []).map((item) => `- ${item}`),

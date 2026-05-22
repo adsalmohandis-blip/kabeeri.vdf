@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UI UX Intelligence Prompt Pack",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["report_type", "input", "executor", "prompts", "constraints", "validation_commands", "standalone", "external_github_dependency"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_prompt_pack" },
+    "input": { "type": "string" },
+    "executor": { "type": "string" },
+    "prompts": { "type": "array" },
+    "constraints": { "type": "array" },
+    "validation_commands": { "type": "array" },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  }
+}

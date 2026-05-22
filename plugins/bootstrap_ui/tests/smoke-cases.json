@@ -1,0 +1,17 @@
+{
+  "plugin_id": "bootstrap_ui",
+  "smoke_cases": [
+    {
+      "command": "kvdf bootstrap-ui status --json",
+      "expects_report_type": "bootstrap_ui_status"
+    },
+    {
+      "command": "kvdf bootstrap-ui assets --json",
+      "expects_report_type": "bootstrap_ui_assets"
+    },
+    {
+      "command": "kvdf bootstrap-ui snippet --json",
+      "expects_report_type": "bootstrap_ui_snippet"
+    }
+  ]
+}

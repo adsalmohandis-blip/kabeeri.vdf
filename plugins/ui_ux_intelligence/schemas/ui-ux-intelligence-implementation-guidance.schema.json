@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UI UX Intelligence Implementation Guidance",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["report_type", "input", "stack", "guidance", "task_punch_guidance", "standalone", "external_github_dependency"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_implementation_guidance" },
+    "input": { "type": "string" },
+    "stack": { "type": "string" },
+    "guidance": { "type": "object" },
+    "task_punch_guidance": { "type": "array" },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  }
+}
