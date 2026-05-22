@@ -130,6 +130,7 @@ It only defines the safety-and-quality boundary so later slices can be planned c
 - [Product Strategy](../product/PRODUCT_STRATEGY.md)
 - [e8-p1 Safety And Quality Build-Ready Report](./e8-p1-safety-and-quality-build-ready-report.md)
 - [e8-p1 Safety And Quality Tasks](../roadmap/E8_P1_SAFETY_AND_QUALITY_TASKS.md)
+- [e8-p1 Safety And Quality Implementation Tasks](../roadmap/E8_P1_SAFETY_AND_QUALITY_IMPLEMENTATION_TASKS.md)
 
 ## Keep-Out List
 
