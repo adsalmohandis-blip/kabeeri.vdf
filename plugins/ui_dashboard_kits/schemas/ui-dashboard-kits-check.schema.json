@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI Dashboard Kits Check",
+  "type": "object",
+  "required": ["report_type", "status", "files_checked", "problems", "next_action"],
+  "properties": {
+    "report_type": { "const": "ui_dashboard_kits_check" },
+    "status": { "enum": ["pass", "warning", "blocked"] },
+    "files_checked": { "type": "array", "items": { "type": "string" } },
+    "problems": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string" }
+  }
+}

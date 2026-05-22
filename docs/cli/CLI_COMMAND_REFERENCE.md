@@ -36,6 +36,7 @@ kvdf multi-ai --help
 kvdf conflict --help
 kvdf source-package --help
 kvdf security-auditor --help
+kvdf ui-dashboard-kits --help
 kvdf ui-ux-intelligence --help
 kvdf truth --help
 ```
@@ -238,6 +239,11 @@ kvdf ui-ux-intelligence catalog-health --json
 kvdf ui-ux-intelligence governance-registry --json
 kvdf ui-ux-intelligence upgrade-plan --json
 kvdf ui-ux-intelligence governance --json
+  kvdf ui-dashboard-kits status
+  kvdf ui-dashboard-kits check src/app/page.html
+  kvdf ui-dashboard-kits examples
+  kvdf ui-dashboard-kits templates
+  kvdf ui-dashboard-kits snippets
   kvdf bootstrap-ui status
   kvdf bootstrap-ui assets
   kvdf bootstrap-ui verify
@@ -253,6 +259,8 @@ kvdf ui-ux-intelligence governance --json
   kvdf tailwind-ui utility-map
 kvdf plugins install ui_ux_intelligence
 kvdf plugins uninstall ui_ux_intelligence
+kvdf plugins install ui_dashboard_kits
+kvdf plugins uninstall ui_dashboard_kits
 kvdf plugins install bootstrap_ui
 kvdf plugins uninstall bootstrap_ui
 kvdf plugins install tailwind_ui
@@ -260,6 +268,8 @@ kvdf plugins uninstall tailwind_ui
 ```
 
 `ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides deterministic product detection, local catalog/search, recommendation, design-system generation, checklist generation, docs section generation, lightweight audit reporting, UI/UX scorecards, stage gates, readiness checks, handoff readiness, design tokens, component blueprints, screen blueprints, UI pattern libraries, implementation guidance, Codex-ready prompt packs, evidence manifests, visual QA contracts, acceptance gates, regression checklists, knowledge-pack status, catalog health, governance registry, and upgrade planning for Viber apps. Planner, review, visual, prompt, docs materialization, and Viber dashboard flows can optionally consume its summaries when explicitly requested, but the plugin remains removable and never becomes mandatory. Phase 1 used a flat `_temp_meta/` staging contract inside the plugin folder; phase 2 relocates the approved CSV data into `plugins/ui_ux_intelligence/data/` and `plugins/ui_ux_intelligence/data/stacks/`. The runtime never reads `_temp_meta/`. The plugin does not depend on external GitHub repositories, paid APIs, or AI APIs. The docs, audit, scorecard, gate, readiness, tokens, components, screens, patterns, implementation-guidance, prompt-pack, evidence, visual-qa, acceptance-gate, regression, knowledge-pack, catalog-health, governance-registry, upgrade-plan, and governance commands do not write files unless `handoff-pack`, `prompt-pack`, or a reporting command is given an explicit `--output` path, in which case only Markdown is written to an allowed docs or app-workspace path.
+
+`ui_dashboard_kits` is an optional removable UI dashboard kits plugin that owns the active UI check logic, dashboard examples, starter templates, snippets, and the compatibility path for `npm run ui:check`. It keeps the legacy core UI execution kit as a reference surface only, delegates the checker to `plugins/ui_dashboard_kits/`, and does not require Bootstrap or Tailwind packages in KVDF Core. The plugin is offline, removable, and safe to disable without affecting normal Core startup or rendering.
 
 `bootstrap_ui` is an optional removable Bootstrap asset provider plugin. It keeps Bootstrap out of the KVDF Core dependency graph, copies Bootstrap CSS and JavaScript into `plugins/bootstrap_ui/assets/`, and exposes safe status, verify, provider, and snippet helpers for surfaces that explicitly opt in to Bootstrap assets. The plugin is offline, manifest-driven, and removable by design. When it is unavailable, surfaces should fall back to the existing HTML/CSS rendering path.
 
@@ -270,6 +280,8 @@ kvdf plugins uninstall tailwind_ui
 `tailwind_ui` is an optional removable Tailwind guidance provider plugin. It keeps `tailwindcss` and `@tailwindcss/cli` out of the KVDF Core dependency graph and provides read-only status, verify, provider, planner-guidance, docs-guidance, html-comment, snippet, and utility-map helpers. The plugin is offline, manifest-driven, and guidance-only in this phase. It does not run the Tailwind CLI, does not fetch CDN assets, and does not generate compiled CSS. When it is unavailable or not selected, Core surfaces should keep using the local fallback HTML/CSS path.
 
 The checklist command groups readiness checks across accessibility, responsive, interaction, content, layout, forms, dashboard, performance, motion, and handoff. The docs command returns Markdown-ready sections for `docs/ui-ux/UI_UX_DESIGN.md`, `docs/ui-ux/UX_PRINCIPLES.md`, `docs/ui-ux/INFORMATION_ARCHITECTURE.md`, `docs/ui-ux/USER_FLOWS.md`, `docs/ui-ux/WIREFRAMES.md`, `docs/ui-ux/UI_SPECIFICATION.md`, `docs/ui-ux/ACCESSIBILITY.md`, and `docs/delivery/QA_CHECKLIST.md`. The audit command inspects a target file or inline text, and `--strict` escalates critical missing UI/UX sections to blockers.
+
+The `ui-dashboard-kits` checker is a thin optional plugin surface that keeps the classic UI execution rules available while the active logic lives outside KVDF Core. It checks for raw hex colors, inline color styles, Bootstrap button accessibility issues, and missing loading, empty, and error states for data-driven surfaces. Its examples, templates, and snippets surfaces are metadata-only and are intended for copy/paste guidance or prompt-pack references.
 
 `kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed. For Viber/App Track, the same command is also the execution-readiness gate, so the generated prompt and visual report stay blocked until the plan is approved and materialized. The Viber pipeline now surfaces `docs_design_gates` for documentation architecture, folder materialization, file compatibility, system design, database design, UI/UX design, and version-plan readiness, plus `version_evolution_gates` for version plan, evolution ordering, task-punch readiness, and task-punch review. The Viber docs model treats foldered planner docs as primary and the portable numbered docs package as canonical long-term product knowledge.
 

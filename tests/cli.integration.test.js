@@ -29,6 +29,7 @@ const PLUGIN_BUNDLE_DIRS = {
   "news-website": "news_website",
   "planner-visual": "planner_visual",
   "ui_ux_intelligence": "ui_ux_intelligence",
+  "ui_dashboard_kits": "ui_dashboard_kits",
   "security-auditor": "security_auditor",
   "vibe-maintainer": "vibe_maintainer"
 };
@@ -8449,6 +8450,83 @@ test("bootstrap_ui verify reports missing assets safely", () => withTempDir((dir
   assert.strictEqual(verify.core_dependency, false);
   assert.strictEqual(verify.node_modules_dependency, false);
   assert.strictEqual(verify.fallback_safe, true);
+}));
+
+test("ui_dashboard_kits plugin is discoverable and the checker surfaces remain safe", () => withTempDir((dir) => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+  assert.strictEqual(pkg.scripts["ui:check"], "node bin/kvdf.js ui-dashboard-kits check");
+
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_dashboard_kits");
+
+  const previousCwd = process.cwd();
+  process.chdir(dir);
+  try {
+    const report = buildPluginLoaderReport();
+    const plugin = report.plugins.find((item) => item.plugin_id === "ui_dashboard_kits");
+    assert.ok(plugin);
+    assert.strictEqual(plugin.removable, true);
+    assert.strictEqual(plugin.enabled_by_default, false);
+    assert.strictEqual(plugin.plugin_type, "ui_dashboard_kit");
+  } finally {
+    process.chdir(previousCwd);
+  }
+
+  const status = JSON.parse(runKvdf(["ui-dashboard-kits", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "ui_dashboard_kits_status");
+  assert.strictEqual(status.plugin_id, "ui_dashboard_kits");
+  assert.strictEqual(status.status, "available");
+  assert.strictEqual(status.core_dependency, false);
+  assert.strictEqual(status.enabled_by_default, false);
+  assert.ok(Array.isArray(status.checks));
+  assert.ok(status.checks.includes("raw_hex_color"));
+  assert.ok(status.checks.includes("data_surface_states"));
+
+  const cleanFile = path.join(dir, "clean-dashboard.html");
+  fs.writeFileSync(cleanFile, [
+    "<section class=\"card\">",
+    "  <button class=\"btn btn-primary\"><i class=\"bi bi-plus-lg me-2\"></i>Create item</button>",
+    "  <div role=\"status\" aria-busy=\"true\">Loading dashboard items...</div>",
+    "  <div>No items yet</div>",
+    "  <div class=\"alert alert-danger\">Unable to load dashboard items. Retry.</div>",
+    "  <table>",
+    "    <tr><td>Record</td></tr>",
+    "  </table>",
+    "</section>"
+  ].join("\n"), "utf8");
+  const passing = JSON.parse(runKvdf(["ui-dashboard-kits", "check", "clean-dashboard.html", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(passing.report_type, "ui_dashboard_kits_check");
+  assert.strictEqual(passing.status, "pass");
+  assert.deepStrictEqual(passing.files_checked, ["clean-dashboard.html"]);
+  assert.deepStrictEqual(passing.problems, []);
+
+  const hexFile = path.join(dir, "hex-dashboard.html");
+  fs.writeFileSync(hexFile, "<div style=\"color:#fff\">Bad color</div>", "utf8");
+  const hex = JSON.parse(runKvdf(["ui-dashboard-kits", "check", "hex-dashboard.html", "--json"], { cwd: dir, expectFailure: true }).stdout);
+  assert.strictEqual(hex.status, "blocked");
+  assert.ok(hex.problems.some((item) => /raw hex color/i.test(item)));
+  assert.ok(hex.problems.some((item) => /inline color styles/i.test(item)));
+
+  const statesFile = path.join(dir, "states-dashboard.html");
+  fs.writeFileSync(statesFile, "<table><tr><td>Record</td></tr></table>", "utf8");
+  const states = JSON.parse(runKvdf(["ui-dashboard-kits", "check", "states-dashboard.html", "--json"], { cwd: dir, expectFailure: true }).stdout);
+  assert.strictEqual(states.status, "blocked");
+  assert.ok(states.problems.some((item) => /missing states/i.test(item)));
+
+  const emptyBundleDir = path.join(dir, "plugins", "ui_dashboard_kits");
+  fs.rmSync(path.join(emptyBundleDir, "examples"), { recursive: true, force: true });
+  fs.rmSync(path.join(emptyBundleDir, "templates"), { recursive: true, force: true });
+  fs.rmSync(path.join(emptyBundleDir, "snippets"), { recursive: true, force: true });
+
+  const examples = JSON.parse(runKvdf(["ui-dashboard-kits", "examples", "--json"], { cwd: dir }).stdout);
+  const templates = JSON.parse(runKvdf(["ui-dashboard-kits", "templates", "--json"], { cwd: dir }).stdout);
+  const snippets = JSON.parse(runKvdf(["ui-dashboard-kits", "snippets", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(examples.report_type, "ui_dashboard_kits_examples");
+  assert.strictEqual(templates.report_type, "ui_dashboard_kits_templates");
+  assert.strictEqual(snippets.report_type, "ui_dashboard_kits_snippets");
+  assert.deepStrictEqual(examples.examples, []);
+  assert.deepStrictEqual(templates.templates, []);
+  assert.deepStrictEqual(snippets.snippets, []);
 }));
 
 test("tailwind_ui plugin is discoverable and provides guidance-only utilities", () => {

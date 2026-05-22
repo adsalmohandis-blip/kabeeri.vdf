@@ -81,6 +81,12 @@ guidance-only in this phase, so the docs pipeline never runs Tailwind CLI or
 fetches CDN assets. Generated HTML continues to fall back to the local path
 when Tailwind is unavailable.
 
+The optional `ui_dashboard_kits` plugin keeps the old UI execution-kit checker,
+dashboard examples, templates, and snippets available as a removable plugin
+surface. When it is installed, docs or task-punch guidance can point developers
+to `kvdf ui-dashboard-kits check`, `examples`, `templates`, and `snippets`
+without making those rules part of KVDF Core itself.
+
 If a surface explicitly opts into Bootstrap styling, the optional
 `bootstrap_ui` plugin can provide copied Bootstrap CSS and JavaScript assets
 and a safe snippet/helper/provider surface without making Bootstrap a Core

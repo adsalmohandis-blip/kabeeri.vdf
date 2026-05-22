@@ -1,5 +1,11 @@
 # Kabeeri UI Execution Kit
 
+> Status: moved to the optional `ui_dashboard_kits` plugin.
+>
+> The legacy core kit folder remains as a deprecation and reference surface.
+> The active checker now lives in `plugins/ui_dashboard_kits/`, and
+> `npm run ui:check` delegates there.
+
 This kit turns Kabeeri UI/UX strategy into short, reusable execution rules for Codex and other AI coding agents.
 
 The goal is not to make every product look the same. The goal is to make every product start from a governed UI system, then vary creatively through approved product answers, brand tokens, palette presets, density, layout rhythm, and component choices.
@@ -60,4 +66,4 @@ Use selected creative variant ID instead of inventing a new visual direction fro
 - `../creative_variant_intelligence/` - bounded creative directions that vary similar products without breaking governance.
 - `recipes/` - reusable page and component recipes.
 - `templates/` - starter HTML snippets for common UI surfaces.
-- `scripts/check-ui.js` - lightweight static UI checker.
+- `scripts/check-ui.js` - compatibility wrapper that delegates to the plugin checker.

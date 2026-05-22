@@ -1,0 +1,25 @@
+{
+  "plugin_id": "ui_dashboard_kits",
+  "smoke_cases": [
+    {
+      "command": "kvdf ui-dashboard-kits status --json",
+      "expect_report_type": "ui_dashboard_kits_status"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits check plugins/ui_dashboard_kits/templates/bootstrap-crud-page.html --json",
+      "expect_report_type": "ui_dashboard_kits_check"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits examples --json",
+      "expect_report_type": "ui_dashboard_kits_examples"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits templates --json",
+      "expect_report_type": "ui_dashboard_kits_templates"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits snippets --json",
+      "expect_report_type": "ui_dashboard_kits_snippets"
+    }
+  ]
+}

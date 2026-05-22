@@ -58,6 +58,7 @@ const { ecommerceMobileApp } = require("./commands/ecommerce_mobile_app");
 const { crm } = require("./commands/crm");
 const { pos } = require("./commands/pos");
 const { uiUxIntelligence } = require("./commands/ui_ux_intelligence");
+const { uiDashboardKits } = require("./commands/ui_dashboard_kits");
 const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
@@ -367,6 +368,12 @@ function run(argv) {
   assertTrackSurfaceAllowed(group, action, getActiveTrackSurface());
   if (["ui-ux-intelligence", "ui_ux_intelligence", "uiux-intelligence", "uiux", "ui-ux"].includes(group)) {
     return uiUxIntelligence(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
+  if (["ui-dashboard-kits", "ui_dashboard_kits", "uidashboardkits", "ui-dashboard", "ui_dashboard"].includes(group)) {
+    return uiDashboardKits(action, value, args.flags, rest, {
       table,
       repoRoot
     });

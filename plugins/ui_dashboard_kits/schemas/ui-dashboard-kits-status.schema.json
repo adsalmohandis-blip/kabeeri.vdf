@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI Dashboard Kits Status",
+  "type": "object",
+  "required": ["report_type", "plugin_id", "status", "checks", "next_action"],
+  "properties": {
+    "report_type": { "const": "ui_dashboard_kits_status" },
+    "plugin_id": { "const": "ui_dashboard_kits" },
+    "status": { "enum": ["available", "warning"] },
+    "core_dependency": { "type": "boolean" },
+    "checks": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string" }
+  }
+}

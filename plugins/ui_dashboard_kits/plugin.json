@@ -1,0 +1,37 @@
+{
+  "plugin_id": "ui_dashboard_kits",
+  "name": "UI Dashboard Kits",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/ui_dashboard_kits/runtime/index.js",
+  "command_entrypoint": "plugins/ui_dashboard_kits/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "ui",
+  "plugin_type": "ui_dashboard_kit",
+  "enabled_by_default": false,
+  "description": "Optional UI and dashboard kits plugin for checking UI files, dashboard examples, templates, snippets, accessibility states, and design-token discipline.",
+  "required_folders": [
+    "runtime",
+    "docs",
+    "examples",
+    "templates",
+    "snippets",
+    "schemas",
+    "tests"
+  ],
+  "command_surface": [
+    "kvdf ui-dashboard-kits status",
+    "kvdf ui-dashboard-kits check",
+    "kvdf ui-dashboard-kits examples",
+    "kvdf ui-dashboard-kits templates",
+    "kvdf ui-dashboard-kits snippets",
+    "kvdf plugins install ui_dashboard_kits",
+    "kvdf plugins uninstall ui_dashboard_kits"
+  ],
+  "docs_surface": [
+    "plugins/ui_dashboard_kits/docs/index.md",
+    "plugins/ui_dashboard_kits/docs/cli.md"
+  ]
+}
