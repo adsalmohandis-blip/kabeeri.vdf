@@ -5,7 +5,9 @@
 ```bash
 kvdf ui-ux-intelligence status --json
 kvdf ui-ux-intelligence source-status --json
+kvdf ui-ux-intelligence catalog --json
 kvdf ui-ux-intelligence search --idea "Build booking app for clinics" --json
+kvdf ui-ux-intelligence search --query "clinic booking app" --domain products --json
 kvdf ui-ux-intelligence recommend --idea "Build booking app for clinics" --json
 kvdf ui-ux-intelligence design-system --idea "Build ecommerce app" --json
 kvdf ui-ux-intelligence checklist --idea "Build dashboard app" --json
@@ -18,7 +20,8 @@ kvdf plugins uninstall ui_ux_intelligence
 ## Notes
 
 - `status` reports the plugin as an available optional bundle.
-- `source-status` inspects only flat files directly under `_temp_meta/`.
+- `source-status` inspects the flat `_temp_meta/` staging contract and the installed `data/` + `data/stacks/` catalog.
+- `catalog` reports whether the relocated data is ready for search and recommendation.
 - `search`, `recommend`, `design-system`, `checklist`, `docs`, and `audit` all work offline in the MVP.
-- Later phases can relocate approved staging material from `_temp_meta/` into plugin folders, but the final plugin must not depend on `_temp_meta/`.
-
+- `search` uses the local catalog only and can filter by `--domain products|styles|colors|typography|ui_reasoning|ux_guidelines|charts|landing|icons|app_interface|react_performance|stacks|all`.
+- The final plugin must not depend on `_temp_meta/` at runtime.

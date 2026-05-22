@@ -1,11 +1,13 @@
 const fs = require("fs");
 const path = require("path");
 const {
+  loadCatalog,
+  getCatalogSummary,
   getProductType,
   getStackProfile,
-  normalizeText
+  normalizeText,
+  searchCatalog
 } = require("./catalog");
-const { searchCatalog } = require("./search_engine");
 const { recommendUiUx } = require("./recommender");
 const { generateDesignSystem } = require("./design_system");
 const { generateChecklist } = require("./checklist");
@@ -56,81 +58,55 @@ const EXPECTED_SOURCE_FILES = [
 function getPluginStatus(root = process.cwd()) {
   const pluginPath = path.join(root, "plugins", PLUGIN_ID, "plugin.json");
   const available = fs.existsSync(pluginPath);
+  const catalog = loadCatalog({ root });
   return {
     report_type: "ui_ux_intelligence_status",
     plugin_id: PLUGIN_ID,
     status: available ? "available" : "missing",
     standalone: true,
     external_github_dependency: false,
-    catalog_ready: false,
-    capabilities: ["source-status", "search", "recommend", "design_system", "checklist", "docs", "audit"],
-    next_action: "Place selected files flat under plugins/ui_ux_intelligence/_temp_meta/, then run kvdf ui-ux-intelligence source-status --json."
+    catalog_ready: catalog.catalog_ready,
+    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit"],
+    next_action: catalog.catalog_ready
+      ? "Run kvdf ui-ux-intelligence catalog --json or kvdf ui-ux-intelligence search --query \"...\" --domain all --json."
+      : "Install the relocated CSV data into plugins/ui_ux_intelligence/data/ and plugins/ui_ux_intelligence/data/stacks/."
   };
 }
 
 function buildSourceStatusReport(options = {}) {
   const root = path.resolve(options.root || process.cwd());
-  const sourceRoot = path.resolve(options.source_root || options.sourceRoot || path.join(root, "plugins", PLUGIN_ID, "_temp_meta"));
-  const exists = fs.existsSync(sourceRoot);
-  const normalizedSourceRoot = normalizePathForReport(sourceRoot, root);
-  if (!exists) {
-    return {
-      report_type: "ui_ux_intelligence_source_status",
-      source_root: normalizedSourceRoot,
-      layout: "flat",
-      status: "missing",
-      expected_files_total: EXPECTED_SOURCE_FILES.length,
-      found_files_total: 0,
-      missing_files: [...EXPECTED_SOURCE_FILES],
-      found_files: [],
-      data_files: [],
-      stack_files: [],
-      reference_logic_files: [],
-      reference_doc_files: [],
-      unexpected_files: [],
-      temp_meta_ignored: true,
-      next_action: "Place selected files flat under plugins/ui_ux_intelligence/_temp_meta/, then run kvdf ui-ux-intelligence source-status --json."
-    };
-  }
-
-  const entries = fs.readdirSync(sourceRoot, { withFileTypes: true });
-  const fileNames = entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
-  const directories = entries.filter((entry) => entry.isDirectory()).map((entry) => `${entry.name}/`);
-  const dataFiles = fileNames.filter((name) => EXPECTED_DATA_FILES.includes(name));
-  const stackFiles = fileNames.filter((name) => EXPECTED_STACK_FILES.includes(name));
-  const referenceLogicFiles = fileNames.filter((name) => EXPECTED_REFERENCE_LOGIC_FILES.includes(name));
-  const referenceDocFiles = fileNames.filter((name) => EXPECTED_REFERENCE_DOC_FILES.includes(name));
-  const recognized = [...dataFiles, ...stackFiles, ...referenceLogicFiles, ...referenceDocFiles];
-  const unexpectedFiles = [
-    ...fileNames.filter((name) => !EXPECTED_SOURCE_FILES.includes(name)),
-    ...directories
-  ].sort();
-  const missingFiles = EXPECTED_SOURCE_FILES.filter((name) => !recognized.includes(name));
-  const foundFiles = [...recognized, ...unexpectedFiles].sort();
-  const foundFilesTotal = fileNames.length + directories.length;
-  let status = "partial";
-  if (foundFilesTotal === 0 || recognized.length === 0) {
-    status = "missing";
-  } else if (!missingFiles.length && !unexpectedFiles.length) {
-    status = "ready";
-  }
+  const dataRoot = path.join(root, "plugins", PLUGIN_ID, "data");
+  const catalog = loadCatalog({ root, refresh: true });
+  const installedDataFiles = collectInstalledFiles(dataRoot, EXPECTED_DATA_FILES);
+  const installedStackFiles = collectInstalledFiles(path.join(dataRoot, "stacks"), EXPECTED_STACK_FILES);
+  const installedComplete = installedDataFiles.length === EXPECTED_DATA_FILES.length && installedStackFiles.length === EXPECTED_STACK_FILES.length;
+  const status = installedComplete ? "ready" : catalog.catalog_ready || installedDataFiles.length > 0 || installedStackFiles.length > 0 ? "partial" : "missing";
   return {
     report_type: "ui_ux_intelligence_source_status",
-    source_root: normalizedSourceRoot,
+    data_root: normalizePathForReport(dataRoot, root),
     layout: "flat",
     status,
     expected_files_total: EXPECTED_SOURCE_FILES.length,
-    found_files_total: foundFilesTotal,
-    missing_files: missingFiles,
-    found_files: foundFiles,
-    data_files: dataFiles,
-    stack_files: stackFiles,
-    reference_logic_files: referenceLogicFiles,
-    reference_doc_files: referenceDocFiles,
-    unexpected_files: unexpectedFiles,
+    installed_data_files: installedDataFiles,
+    installed_stack_files: installedStackFiles,
+    installed_data_files_total: installedDataFiles.length,
+    installed_stack_files_total: installedStackFiles.length,
+    catalog_ready: catalog.catalog_ready,
+    temp_meta_dependency: !catalog.catalog_ready,
     temp_meta_ignored: true,
-    next_action: "Run the relocation/import phase after all expected files are present."
+    next_action: catalog.catalog_ready
+      ? "Use plugins/ui_ux_intelligence/data/ as the live catalog source."
+      : "Run the relocation/import phase after all expected files are present."
   };
+}
+
+function collectInstalledFiles(directory, expectedFiles) {
+  if (!fs.existsSync(directory)) {
+    return [];
+  }
+  const entries = fs.readdirSync(directory, { withFileTypes: true });
+  const found = entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
+  return expectedFiles.filter((name) => found.includes(name));
 }
 
 function searchUiUx(input, options = {}) {
@@ -155,6 +131,11 @@ function buildDocsSections(input, options = {}) {
 
 function buildAudit(input, options = {}) {
   return auditUiUx(input, options);
+}
+
+function getCatalogReport(options = {}) {
+  const root = typeof options.repoRoot === "function" ? options.repoRoot() : typeof options.root === "string" ? options.root : process.cwd();
+  return getCatalogSummary({ root, refresh: Boolean(options.refresh) });
 }
 
 function normalizePathForReport(value, root) {
@@ -192,6 +173,7 @@ module.exports = {
   EXPECTED_SOURCE_FILES,
   getPluginStatus,
   buildSourceStatusReport,
+  getCatalogReport,
   searchUiUx,
   recommendAndBuild,
   buildDesignSystem,

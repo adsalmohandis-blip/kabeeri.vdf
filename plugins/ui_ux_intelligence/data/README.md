@@ -4,7 +4,7 @@ This folder stores KVDF-native data imported from the flat staging area:
 
 - `plugins/ui_ux_intelligence/_temp_meta/`
 
-Phase 1 uses the staging contract only. Later phases relocate approved data into the proper folders under `data/`.
+Runtime reads this folder only. Once relocation is complete, the plugin no longer depends on `_temp_meta/`.
 
 ## Source Staging Contract
 

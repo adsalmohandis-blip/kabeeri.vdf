@@ -717,6 +717,33 @@ test("track status reflects framework owner sessions in the repository root", ()
   assert.ok(status.entry_route.activated_features.includes("evolution"));
 });
 
+test("owner track initiates the framework owner system development route", () => withTempDir((dir) => {
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+    name: "kabeeri-vdf",
+    private: true
+  }, null, 2));
+  fs.mkdirSync(path.join(dir, "bin"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "bin", "kvdf.js"), "#!/usr/bin/env node\n", "utf8");
+  fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "module.exports = {};\n", "utf8");
+  fs.writeFileSync(path.join(dir, "OWNER_DEVELOPMENT_STATE.md"), "# Owner Development State\n", "utf8");
+  runKvdf(["init", "--profile", "standard", "--no-intake"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["owner", "track", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "owner_track_initiated");
+  assert.strictEqual(report.session_track.active_track, "framework_owner");
+  assert.strictEqual(report.session_track.role_gate, "owner_only");
+  assert.strictEqual(report.session_track.route_command, "kvdf evolution priorities");
+  assert.strictEqual(report.session_track.follow_up_command, "kvdf evolution temp");
+  assert.ok(report.session_track.activated_features.includes("evolution"));
+  const persisted = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri", "session_track.json"), "utf8"));
+  assert.strictEqual(persisted.decision_source, "owner_track");
+  assert.strictEqual(persisted.active_track, "framework_owner");
+  assert.strictEqual(persisted.route_command, "kvdf evolution priorities");
+  const status = JSON.parse(runKvdf(["track", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.primary_track.id, "framework_owner");
+  assert.strictEqual(status.entry_route.track_id, "framework_owner");
+}));
+
 test("track lock ignores stale session track state when workspace context says owner", () => {
   const sessionTrackPath = path.join(repoRoot, ".kabeeri", "session_track.json");
   const original = fs.readFileSync(sessionTrackPath, "utf8");
@@ -8320,44 +8347,55 @@ test("ui_ux_intelligence plugin is discoverable and the status command is availa
   assert.strictEqual(status.status, "available");
   assert.strictEqual(status.standalone, true);
   assert.strictEqual(status.external_github_dependency, false);
-  assert.strictEqual(status.catalog_ready, false);
+  assert.strictEqual(status.catalog_ready, true);
   assert.ok(status.capabilities.includes("source-status"));
   assert.ok(status.capabilities.includes("recommend"));
+  assert.ok(status.capabilities.includes("catalog"));
 });
 
-test("ui_ux_intelligence source-status handles missing and flat staging files", () => withTempDir((dir) => {
+test("ui_ux_intelligence source-status and catalog use relocated plugin data", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   copyPluginBundle(dir, "ui_ux_intelligence");
 
-  const missingStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
-  assert.strictEqual(missingStatus.report_type, "ui_ux_intelligence_source_status");
-  assert.strictEqual(missingStatus.layout, "flat");
-  assert.strictEqual(missingStatus.temp_meta_ignored, true);
-  assert.strictEqual(missingStatus.status, "missing");
-  assert.strictEqual(missingStatus.found_files_total, 0);
-  assert.ok(missingStatus.next_action.includes("_temp_meta"));
-
-  const sourceRoot = path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta");
-  fs.mkdirSync(sourceRoot, { recursive: true });
-  for (const fileName of UI_UX_INTELLIGENCE_FLAT_FILES) {
-    fs.writeFileSync(path.join(sourceRoot, fileName), `sample for ${fileName}\n`, "utf8");
-  }
-
   const readyStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(readyStatus.report_type, "ui_ux_intelligence_source_status");
   assert.strictEqual(readyStatus.status, "ready");
   assert.strictEqual(readyStatus.expected_files_total, 32);
   assert.strictEqual(readyStatus.found_files_total, 32);
   assert.strictEqual(readyStatus.missing_files.length, 0);
   assert.strictEqual(readyStatus.unexpected_files.length, 0);
+  assert.strictEqual(readyStatus.catalog_ready, true);
+  assert.strictEqual(readyStatus.temp_meta_dependency, false);
+  assert.ok(readyStatus.installed_data_files.includes("products.csv"));
+  assert.ok(readyStatus.installed_stack_files.includes("react.csv"));
   assert.ok(readyStatus.data_files.includes("products.csv"));
   assert.ok(readyStatus.stack_files.includes("react.csv"));
   assert.ok(readyStatus.reference_logic_files.includes("core.py"));
   assert.ok(readyStatus.reference_doc_files.includes("quick-reference.md"));
 
-  fs.writeFileSync(path.join(sourceRoot, "notes.txt"), "unexpected file\n", "utf8");
-  const partialStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
-  assert.strictEqual(partialStatus.status, "partial");
-  assert.ok(partialStatus.unexpected_files.includes("notes.txt"));
+  const catalog = JSON.parse(runKvdf(["ui-ux-intelligence", "catalog", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(catalog.report_type, "ui_ux_intelligence_catalog");
+  assert.strictEqual(catalog.catalog_ready, true);
+  assert.ok(Array.isArray(catalog.domains));
+  assert.ok(catalog.domains.includes("products"));
+  assert.ok(catalog.summary.domain_counts.products > 0);
+
+  const search = JSON.parse(runKvdf(["ui-ux-intelligence", "search", "--query", "clinic booking app", "--domain", "products", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(search.report_type, "ui_ux_intelligence_search");
+  assert.strictEqual(search.domain, "products");
+  assert.ok(search.results.length > 0);
+
+  const searchAll = JSON.parse(runKvdf(["ui-ux-intelligence", "search", "--query", "clinic booking app", "--domain", "all", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(searchAll.domain, "all");
+  assert.ok(searchAll.results.length > 0);
+
+  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "data"), { recursive: true, force: true });
+  const missingCatalog = JSON.parse(runKvdf(["ui-ux-intelligence", "catalog", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(missingCatalog.catalog_ready, false);
+  assert.ok(missingCatalog.summary.warnings.length > 0);
+  const missingSearch = JSON.parse(runKvdf(["ui-ux-intelligence", "search", "--query", "clinic booking app", "--domain", "products", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(missingSearch.results.length, 0);
+  assert.ok(missingSearch.warnings.length > 0);
 }));
 
 test("ui_ux_intelligence runtime stays offline and does not depend on an external repository", () => {
@@ -8376,6 +8414,7 @@ test("ui_ux_intelligence runtime stays offline and does not depend on an externa
     assert.ok(!/github\.com/i.test(source), `${path.basename(file)} should not reference external GitHub repositories`);
     assert.ok(!/\bfetch\s*\(/i.test(source), `${path.basename(file)} should not depend on fetch()`);
     assert.ok(!/\baxios\b/i.test(source), `${path.basename(file)} should not depend on axios`);
+    assert.ok(!/_temp_meta/i.test(source), `${path.basename(file)} should not depend on _temp_meta`);
   }
 });
 

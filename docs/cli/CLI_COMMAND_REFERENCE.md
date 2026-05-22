@@ -205,7 +205,9 @@ kvdf plugins uninstall planner-visual
 ```bash
 kvdf ui-ux-intelligence status
 kvdf ui-ux-intelligence source-status
+kvdf ui-ux-intelligence catalog
 kvdf ui-ux-intelligence search --idea "Build booking app for clinics"
+kvdf ui-ux-intelligence search --query "clinic booking app" --domain products
 kvdf ui-ux-intelligence recommend --idea "Build booking app for clinics"
 kvdf ui-ux-intelligence design-system --idea "Build ecommerce app"
 kvdf ui-ux-intelligence checklist --idea "Build dashboard app"
@@ -215,7 +217,7 @@ kvdf plugins install ui_ux_intelligence
 kvdf plugins uninstall ui_ux_intelligence
 ```
 
-`ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides product detection, design-system recommendations, checklists, and docs support for Viber apps. Phase 1 uses a flat `_temp_meta/` staging contract inside the plugin folder; the plugin does not depend on external GitHub repositories or paid APIs.
+`ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides product detection, local catalog/search, design-system recommendations, checklists, and docs support for Viber apps. Phase 1 used a flat `_temp_meta/` staging contract inside the plugin folder; phase 2 relocates the approved CSV data into `plugins/ui_ux_intelligence/data/` and `plugins/ui_ux_intelligence/data/stacks/`. The plugin does not depend on external GitHub repositories or paid APIs.
 
 `kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed. For Viber/App Track, the same command is also the execution-readiness gate, so the generated prompt and visual report stay blocked until the plan is approved and materialized. The Viber pipeline now surfaces `docs_design_gates` for documentation architecture, folder materialization, file compatibility, system design, database design, UI/UX design, and version-plan readiness, plus `version_evolution_gates` for version plan, evolution ordering, task-punch readiness, and task-punch review. The Viber docs model treats foldered planner docs as primary and the portable numbered docs package as canonical long-term product knowledge.
 
@@ -1202,6 +1204,8 @@ kvdf audit report --task task-001 --output audit.md
 
 ```bash
 kvdf owner init --id owner-001 --name "Project Owner"
+kvdf owner track
+kvdf owner system-dev
 kvdf owner login --id owner-001
 kvdf owner status
 kvdf owner logout
@@ -1223,6 +1227,8 @@ kvdf agent add --id agent-001 --name "AI Backend Agent" --role "AI Developer" --
 ```
 
 `owner init` and `owner login` read the passphrase from `--passphrase` or `KVDF_OWNER_PASSPHRASE`. When Owner auth is configured, `task verify` requires an active Owner session.
+
+`owner track` is the system-development entry point for KVDF Core. It seeds the framework-owner session track, writes the direct-to-main route metadata, and points to the next owner-track command for framework work.
 
 `owner docs open` issues a fresh 50-character mixed owner-docs token, stores it as a one-minute gate, and revokes any previous active owner-docs token for the current session. `owner docs status` lists the current gate state. `owner docs close` revokes the active gate without ending the Owner session.
 
