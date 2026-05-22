@@ -40,6 +40,7 @@ kvdf security-auditor --help
 kvdf ui-dashboard-kits --help
 kvdf ui-ux-intelligence --help
 kvdf plugin-extraction --help
+kvdf naming --help
 kvdf truth --help
 ```
 
@@ -65,6 +66,11 @@ to.
 which Core surfaces should stay in KVDF Core and which ones should move into
 optional plugins. It does not modify files and it does not require `.kabeeri`
 runtime state.
+
+`kvdf naming preview` and `kvdf naming validate` provide deterministic naming
+governance for plans, versions, evolutions, and tasks across the Owner and
+Viber tracks. The command family only previews and validates IDs; it does not
+write runtime state.
 
 ## Workspace
 

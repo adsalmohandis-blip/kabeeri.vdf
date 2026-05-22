@@ -10,6 +10,7 @@ const { suggestCommand } = require("../src/cli/services/command_suggestions");
 const { capitalize, isExpired, matchesAny, parseCsv, uniqueBy, uniqueList } = require("../src/cli/services/collections");
 const { getCoverageAction, normalizeAnswerValue, inferAnswerConfidence } = require("../src/cli/services/questionnaire");
 const { buildEvolutionScorecards } = require("../src/cli/services/evolution");
+const namingGovernance = require("../src/cli/services/naming_governance");
 const {
   buildCleanupAuditReport,
   buildCleanupSummaryReport,
@@ -804,6 +805,43 @@ test("jsonl helper appends and writes records", () => {
       process.chdir(previousCwd);
     }
   });
+});
+
+test("naming governance helpers generate stable owner and viber ids", () => {
+  const ownerPlan = namingGovernance.buildOwnerPlanId({ date: "2026-05-22", order: 1, title: "Planner Readiness" });
+  const ownerVersion = namingGovernance.buildOwnerVersionId({ version: "v0.4.0", title: "Foundation" });
+  const ownerEvolution = namingGovernance.buildOwnerEvolutionId({ version: "v0.4.0", order: 3, title: "Validation Gate" });
+  const ownerTask = namingGovernance.buildOwnerTaskId({ evolutionId: ownerEvolution, order: 1, title: "Build Booking Form" });
+  const vibePlan = namingGovernance.buildViberPlanId({ appSlug: "booking", date: "2026-05-22", order: 1, title: "Planner Readiness" });
+  const vibeVersion = namingGovernance.buildViberVersionId({ appSlug: "booking", version: "v0.1.0", title: "Foundation" });
+  const vibeEvolution = namingGovernance.buildViberEvolutionId({ appSlug: "booking", version: "v0.2.0", order: 3, category: "safety_quality", title: "Validation Gate" });
+  const vibeTask = namingGovernance.buildViberTaskId({ appSlug: "booking", evolutionId: vibeEvolution, order: 1, workstream: "frontend", title: "Build Booking Form" });
+
+  assert.strictEqual(ownerPlan, "oplan-20260522-01-planner-readiness");
+  assert.strictEqual(ownerVersion, "kvdf-v0.4.0-foundation");
+  assert.strictEqual(ownerEvolution, "oevo-v0-4-0-03-validation-gate");
+  assert.strictEqual(ownerTask, "otask-oevo-v0-4-0-03-validation-gate-01-build-booking-form");
+  assert.strictEqual(vibePlan, "vplan-booking-20260522-01-planner-readiness");
+  assert.strictEqual(vibeVersion, "booking-v0.1.0-foundation");
+  assert.strictEqual(vibeEvolution, "vevo-booking-v0-2-0-03-safety-quality-validation-gate");
+  assert.strictEqual(vibeTask, "vtask-booking-vevo-booking-v0-2-0-03-safety-quality-validation-gate-01-frontend-build-booking-form");
+});
+
+test("naming governance normalizes slugs and rejects invalid ids", () => {
+  assert.strictEqual(namingGovernance.normalizeSlug("Planner Readiness!"), "planner-readiness");
+  assert.strictEqual(namingGovernance.normalizeVersionSlug("v0.4.0"), "v0-4-0");
+  assert.strictEqual(namingGovernance.normalizeEvolutionCategory("safety_quality"), "safety-quality");
+  assert.strictEqual(namingGovernance.normalizeTaskWorkstream("source_control"), "source-control");
+  const invalid = namingGovernance.validateNamingId("oplan-20260522-01-bad slug", {
+    track: "owner",
+    type: "plan",
+    date: "20260522",
+    order: 1,
+    title: "Bad Slug"
+  });
+  assert.strictEqual(invalid.valid, false);
+  assert.ok(Array.isArray(invalid.errors));
+  assert.ok(invalid.errors.length > 0);
 });
 
 test("local server helpers skip serve mode in non-interactive environments", () => {

@@ -9668,6 +9668,41 @@ test("cleaner cleanup saves an organized audit report", () => {
   });
 });
 
+test("naming governance preview and validate commands generate stable ids without mutating state", () => {
+  const dateStamp = "20260522";
+  const previewOwner = JSON.parse(runKvdf(["naming", "preview", "--track", "owner", "--type", "plan", "--title", "Planner Readiness", "--date", "2026-05-22", "--order", "1", "--json"]).stdout);
+  const previewVibeTask = JSON.parse(runKvdf(["naming", "preview", "--track", "vibe", "--app", "booking", "--type", "task", "--title", "Build Booking Form", "--evolution", "vevo-booking-v0-2-0-03-safety-quality-validation-gate", "--workstream", "frontend", "--json"]).stdout);
+  const validation = JSON.parse(runKvdf(["naming", "validate", "--json"]).stdout);
+
+  assert.strictEqual(previewOwner.report_type, "kvdf_naming_preview");
+  assert.strictEqual(previewOwner.track, "framework_owner");
+  assert.strictEqual(previewOwner.type, "plan");
+  assert.ok(previewOwner.valid);
+  assert.strictEqual(previewOwner.generated_id, `oplan-${dateStamp}-01-planner-readiness`);
+
+  assert.strictEqual(previewVibeTask.report_type, "kvdf_naming_preview");
+  assert.strictEqual(previewVibeTask.track, "vibe_app_developer");
+  assert.strictEqual(previewVibeTask.type, "task");
+  assert.ok(previewVibeTask.valid);
+  assert.strictEqual(previewVibeTask.generated_id, "vtask-booking-vevo-booking-v0-2-0-03-safety-quality-validation-gate-01-frontend-build-booking-form");
+
+  assert.strictEqual(validation.report_type, "kvdf_naming_validation");
+  assert.strictEqual(validation.status, "pass");
+  assert.ok(Array.isArray(validation.checks));
+  assert.ok(validation.checks.every((item) => item.valid));
+});
+
+test("naming commands do not require or create runtime state", () => {
+  withTempDir((dir) => {
+    const report = JSON.parse(runKvdf(["naming", "validate", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(report.report_type, "kvdf_naming_validation");
+    assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
+    const preview = JSON.parse(runKvdf(["naming", "preview", "--track", "owner", "--type", "version", "--version", "v0.4.0", "--title", "Foundation", "--json"], { cwd: dir }).stdout);
+    assert.strictEqual(preview.report_type, "kvdf_naming_preview");
+    assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
+  });
+});
+
 let failed = 0;
 for (const item of tests) {
   try {

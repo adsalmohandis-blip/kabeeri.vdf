@@ -62,6 +62,7 @@ const { uiDashboardKits } = require("./commands/ui_dashboard_kits");
 const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
 const { pluginExtraction } = require("./commands/plugin_extraction");
+const { naming } = require("./commands/naming");
 const { githubProvider } = require("./commands/github_provider");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
@@ -403,6 +404,12 @@ function run(argv) {
   }
   if (["plugin-extraction", "plugin_extraction", "pluginextraction"].includes(group)) {
     return pluginExtraction(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
+  if (["naming", "naming-governance", "naming_governance", "naminggovernance"].includes(group)) {
+    return naming(action, value, args.flags, rest, {
       table,
       repoRoot
     });
