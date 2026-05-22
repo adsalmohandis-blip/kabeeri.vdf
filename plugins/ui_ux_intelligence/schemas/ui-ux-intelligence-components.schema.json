@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ui_ux_intelligence_component_blueprint",
+  "type": "object",
+  "required": ["report_type", "components", "recommended_order", "standalone", "external_github_dependency"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_component_blueprint" },
+    "input": { "type": "string" },
+    "components": { "type": "array" },
+    "recommended_order": { "type": "array", "items": { "type": "string" } },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

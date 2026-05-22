@@ -542,7 +542,7 @@ function scoreHintBoost(query, hints) {
 }
 
 function scorePriorityBoost(query, productId) {
-  const rule = PRODUCT_PRIORITY_RULES.find((entry) => entry.id === productId && entry.pattern.test(query));
+  const rule = PROFILE_PRIORITY_RULES.find((entry) => entry.id === productId && entry.pattern.test(query));
   return rule ? rule.boost : 0;
 }
 

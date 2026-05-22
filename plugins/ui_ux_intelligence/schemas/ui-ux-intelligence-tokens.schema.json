@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ui_ux_intelligence_tokens",
+  "type": "object",
+  "required": ["report_type", "tokens", "standalone", "external_github_dependency"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_tokens" },
+    "input": { "type": "string" },
+    "tokens": { "type": "object" },
+    "usage_notes": { "type": "array", "items": { "type": "string" } },
+    "accessibility_notes": { "type": "array", "items": { "type": "string" } },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

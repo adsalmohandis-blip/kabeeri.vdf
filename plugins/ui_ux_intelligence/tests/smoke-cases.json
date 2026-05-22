@@ -28,6 +28,34 @@
     {
       "command": "kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md --json",
       "expect_report_type": "ui_ux_intelligence_audit"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence scorecard --idea \"Build booking app\" --json",
+      "expect_report_type": "ui_ux_intelligence_scorecard"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence gate --app booking --stage ui_ux_design --json",
+      "expect_report_type": "ui_ux_intelligence_gate"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence readiness --app booking --stage handoff --json",
+      "expect_report_type": "ui_ux_intelligence_viber_readiness"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence handoff-pack --idea \"Build booking app\" --app booking --json",
+      "expect_report_type": "ui_ux_intelligence_handoff_pack"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence tokens --idea \"Build booking app\" --json",
+      "expect_report_type": "ui_ux_intelligence_tokens"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence components --idea \"Build booking app\" --json",
+      "expect_report_type": "ui_ux_intelligence_component_blueprint"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence screens --idea \"Build booking app\" --json",
+      "expect_report_type": "ui_ux_intelligence_screen_blueprint"
     }
   ]
 }
