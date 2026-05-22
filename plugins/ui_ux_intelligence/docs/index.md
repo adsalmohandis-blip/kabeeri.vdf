@@ -11,6 +11,7 @@
 - UI implementation planning artifacts: design tokens, component blueprints, screen blueprints, and handoff packs
 - UI pattern libraries, framework-aware implementation guidance, and Codex-ready prompt packs
 - UI review evidence, visual QA contracts, acceptance gates, and regression checklists
+- knowledge-pack status, catalog health, governance registry, and safe upgrade planning
 - design-system recommendations
 - UI style recommendations
 - palette and typography guidance
@@ -54,8 +55,15 @@ The plugin also emits implementation-ready planning artifacts without generating
 - `visual-qa` turns the UI plan into a metadata-based QA contract for required screens, states, breakpoints, and accessibility evidence.
 - `acceptance-gate` evaluates the evidence, docs, scorecard, and visual QA contract for handoff and publish readiness.
 - `regression` builds a lightweight regression checklist for the key UI screens, components, states, and accessibility behaviors.
+- `knowledge-pack` reports the installed manifest-driven knowledge pack version, loaded domains, and reproducibility status.
+- `catalog-health` validates that the required data files are present and that the catalog is usable.
+- `governance-registry` describes the plugin capabilities, command surface, runtime modules, schemas, and docs.
+- `upgrade-plan` recommends the next safe knowledge-pack upgrade without modifying data.
+- `governance` combines knowledge-pack, catalog-health, governance-registry, and upgrade-plan into one read-only report.
 
 These outputs are planning/specification artifacts only. They do not create production UI code or app source files, and they do not inspect image pixels or run OCR.
+
+The governance layer adds manifest-backed versioning and health checks so future planner and dashboard integrations can trust the local knowledge pack before consuming any UI/UX summary.
 
 These commands are offline and deterministic. They do not write files unless the operator passes an explicit `--output` path to `handoff-pack` or `prompt-pack`, and even then the output is Markdown only.
 

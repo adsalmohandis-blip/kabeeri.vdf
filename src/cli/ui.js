@@ -1505,7 +1505,7 @@ function printHelp() {
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
-    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression Optional UI/UX intelligence plugin",
+    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",

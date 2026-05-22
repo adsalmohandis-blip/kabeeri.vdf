@@ -26,6 +26,11 @@ kvdf ui-ux-intelligence patterns --idea "Build booking app" --json
 kvdf ui-ux-intelligence implementation-guidance --idea "Build booking app" --stack react --json
 kvdf ui-ux-intelligence prompt-pack --idea "Build booking app" --stack react --executor codex --json
 kvdf ui-ux-intelligence prompt-pack --idea "Build booking app" --stack react --executor codex --output docs/reports/uiux-prompt-pack.md
+kvdf ui-ux-intelligence knowledge-pack --json
+kvdf ui-ux-intelligence catalog-health --json
+kvdf ui-ux-intelligence governance-registry --json
+kvdf ui-ux-intelligence upgrade-plan --json
+kvdf ui-ux-intelligence governance --json
 kvdf plugins install ui_ux_intelligence
 kvdf plugins uninstall ui_ux_intelligence
 ```
@@ -58,4 +63,9 @@ kvdf plugins uninstall ui_ux_intelligence
 - The final plugin must not depend on `_temp_meta/` at runtime and does not call any external GitHub or AI API service.
 - `audit --strict` escalates critical missing UI/UX sections to blockers for handoff review.
 - `evidence`, `visual-qa`, `acceptance-gate`, and `regression` are report commands only; they never generate production code and only write Markdown when `--output` explicitly targets an allowed docs or workspace path.
+- `knowledge-pack` reports the installed manifest-driven UI/UX knowledge pack version, loaded domains, and reproducibility state.
+- `catalog-health` validates that the required local data files exist and that the catalog is usable before Planner or Viber consumes the plugin.
+- `governance-registry` lists the plugin capabilities, command surfaces, runtime modules, docs, and schemas.
+- `upgrade-plan` recommends a safe next knowledge-pack version without changing any files.
+- `governance` combines the knowledge pack, catalog health, governance registry, and upgrade plan into one read-only summary.
 - `handoff-pack --output` and `prompt-pack --output` are the only commands in this plugin that can write a file, and they only write Markdown when the operator explicitly requests it.

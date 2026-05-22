@@ -8514,6 +8514,8 @@ test("planner docs plan can include optional ui_ux_intelligence output", () => w
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "prompt_pack"));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "prompt_pack_available"));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "pattern_library_summary"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "governance"));
+  assert.strictEqual(report.ui_ux_intelligence.governance.status, "available");
 }));
 
 test("planner docs plan still works when ui_ux_intelligence is missing", () => withTempDir((dir) => {
@@ -8537,6 +8539,65 @@ test("planner docs plan still works when ui_ux_intelligence is missing", () => w
   assert.strictEqual(review.ui_ux_prompt_pack.status, "unavailable");
   assert.strictEqual(review.ui_ux_prompt_pack.available, false);
   assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
+}));
+
+test("ui_ux_intelligence governance commands stay local and summarize the pack", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "ui_ux_intelligence");
+
+  const knowledgePack = JSON.parse(runKvdf(["ui-ux-intelligence", "knowledge-pack", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(knowledgePack.report_type, "ui_ux_intelligence_knowledge_pack");
+  assert.strictEqual(knowledgePack.knowledge_pack_version, "0.1.0");
+  assert.strictEqual(knowledgePack.external_github_dependency, false);
+  assert.strictEqual(knowledgePack.runtime_temp_meta_dependency, false);
+  assert.ok(Array.isArray(knowledgePack.domains));
+  assert.ok(knowledgePack.domains.length > 0);
+
+  const catalogHealth = JSON.parse(runKvdf(["ui-ux-intelligence", "catalog-health", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(catalogHealth.report_type, "ui_ux_intelligence_catalog_health");
+  assert.ok(Array.isArray(catalogHealth.required_files));
+  assert.ok(Array.isArray(catalogHealth.loaded_domains));
+  assert.ok(catalogHealth.record_counts);
+
+  const governanceRegistry = JSON.parse(runKvdf(["ui-ux-intelligence", "governance-registry", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(governanceRegistry.report_type, "ui_ux_intelligence_governance_registry");
+  assert.ok(Array.isArray(governanceRegistry.capabilities));
+  assert.ok(Array.isArray(governanceRegistry.commands));
+  assert.ok(Array.isArray(governanceRegistry.runtime_modules));
+  assert.ok(Array.isArray(governanceRegistry.schemas));
+  assert.ok(Array.isArray(governanceRegistry.docs));
+
+  const upgradePlan = JSON.parse(runKvdf(["ui-ux-intelligence", "upgrade-plan", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(upgradePlan.report_type, "ui_ux_intelligence_upgrade_plan");
+  assert.strictEqual(upgradePlan.current_version, "0.1.0");
+  assert.strictEqual(upgradePlan.recommended_next_version, "0.2.0");
+  assert.ok(Array.isArray(upgradePlan.catalog_improvements));
+
+  const governance = JSON.parse(runKvdf(["ui-ux-intelligence", "governance", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(governance.report_type, "ui_ux_intelligence_governance");
+  assert.ok(governance.knowledge_pack);
+  assert.ok(governance.catalog_health);
+  assert.ok(governance.governance_registry);
+  assert.ok(governance.upgrade_plan);
+  assert.ok(["pass", "warning", "blocked"].includes(governance.status));
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
+}));
+
+test("ui_ux_intelligence governance handles a missing manifest safely", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "data", "manifest.json"), { force: true });
+
+  const knowledgePack = JSON.parse(runKvdf(["ui-ux-intelligence", "knowledge-pack", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(knowledgePack.report_type, "ui_ux_intelligence_knowledge_pack");
+  assert.ok(["warning", "blocked"].includes(knowledgePack.status));
+
+  const catalogHealth = JSON.parse(runKvdf(["ui-ux-intelligence", "catalog-health", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(catalogHealth.report_type, "ui_ux_intelligence_catalog_health");
+  assert.ok(["warning", "blocked", "pass"].includes(catalogHealth.status));
+
+  const governance = JSON.parse(runKvdf(["ui-ux-intelligence", "governance", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(governance.report_type, "ui_ux_intelligence_governance");
+  assert.ok(["warning", "blocked"].includes(governance.status));
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
 }));
 
 test("planner docs materialize can enrich UI/UX docs in dry-run mode without writing files", () => withTempDir((dir) => {
@@ -8573,11 +8634,14 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.strictEqual(review.ui_ux_acceptance_gate.standalone, true);
   assert.strictEqual(review.ui_ux_acceptance_gate.external_github_dependency, false);
   assert.ok(Array.isArray(review.ui_ux_acceptance_gate.blockers));
+  assert.ok(review.ui_ux_governance);
+  assert.strictEqual(review.ui_ux_governance.status, "available");
 
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.ok(Object.prototype.hasOwnProperty.call(visual, "ui_ux_intelligence_status"));
   assert.ok(visual.markdown_report.includes("## UI/UX Intelligence"));
+  assert.ok(visual.markdown_report.includes("Governance:"));
   assert.ok(visual.markdown_report.includes("Handoff pack:"));
   assert.ok(visual.markdown_report.includes("Pattern library:"));
   assert.ok(visual.markdown_report.includes("Prompt pack:"));
@@ -8585,6 +8649,7 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
   assert.ok(prompt.prompt.includes("## UI/UX Intelligence"));
+  assert.ok(prompt.prompt.includes("Governance:"));
   assert.ok(prompt.prompt.includes("Handoff pack:"));
   assert.ok(prompt.prompt.includes("Pattern library:"));
   assert.ok(prompt.prompt.includes("Prompt pack:"));
@@ -8680,9 +8745,11 @@ test("planner visual and dashboard state expose ui_ux_intelligence safely", () =
   assert.ok(Array.isArray(dashboard.ui_ux_intelligence.target_docs));
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_ready"));
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_status"));
+  assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "governance"));
+  assert.ok(Object.prototype.hasOwnProperty.call(dashboard, "ui_ux_intelligence_governance"));
   assert.ok(dashboard.ui_ux_acceptance);
   assert.ok(["pass", "warning", "blocked", "unavailable"].includes(dashboard.ui_ux_acceptance.status));
-}));
+})); 
 
 test("ui_ux_intelligence implementation artifacts generate tokens components screens and handoff packs", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
@@ -8858,7 +8925,11 @@ test("ui_ux_intelligence runtime stays offline and does not depend on an externa
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "handoff_pack.js"),
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "pattern_library.js"),
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "implementation_guidance.js"),
-    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "prompt_pack.js")
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "prompt_pack.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "knowledge_pack.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "catalog_health.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "governance_registry.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "upgrade_plan.js")
   ];
   for (const file of runtimeFiles) {
     const source = fs.readFileSync(file, "utf8");

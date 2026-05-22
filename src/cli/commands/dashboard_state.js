@@ -1774,6 +1774,14 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
       checklist_status: "unavailable",
       recommendation_summary: {},
       target_docs: [],
+      governance: {
+        status: "unavailable",
+        report_status: "unavailable",
+        knowledge_pack_version: null,
+        catalog_health: "unavailable",
+        capability_gaps: 0,
+        next_action: "Run kvdf ui-ux-intelligence governance --json if UI/UX governance is needed."
+      },
       next_action: "Run kvdf plugins install ui_ux_intelligence if UI/UX intelligence is needed."
     };
   }
@@ -1788,6 +1796,7 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
     const visualQa = runtime.buildVisualQaContract(input, { track, app, stack, recommendation, checklist, evidenceManifest });
     const acceptanceGate = runtime.buildUiUxAcceptanceGate(input, { track, app, stack, recommendation, checklist, scorecard: handoffPack.scorecard, evidenceManifest, visualQa, handoffPack });
     const checklistSummary = runtime.summarizeChecklist(checklist);
+    const governance = runtime.buildUiUxGovernance({ track, app, stack });
     return {
       status: "available",
       plugin_id: UI_UX_INTELLIGENCE_PLUGIN_ID,
@@ -1812,6 +1821,14 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
         next_action: acceptanceGate.next_action || "Resolve the acceptance blockers before UI/UX handoff."
       },
       regression_status: "available",
+      governance: {
+        status: "available",
+        report_status: governance.status || "warning",
+        knowledge_pack_version: governance.knowledge_pack && governance.knowledge_pack.knowledge_pack_version ? governance.knowledge_pack.knowledge_pack_version : "0.1.0",
+        catalog_health: governance.catalog_health && governance.catalog_health.status ? governance.catalog_health.status : "warning",
+        capability_gaps: governance.governance_registry && Array.isArray(governance.governance_registry.gaps) ? governance.governance_registry.gaps.length : 0,
+        next_action: governance.next_action || "Review the UI/UX governance summary before relying on future upgrades."
+      },
       checklist_status: checklistSummary.blockers > 0 ? "warning" : (checklistSummary.warnings > 0 ? "warning" : "pass"),
       recommendation_summary: {
         detected_product_type: recommendation.detected_product_type,
@@ -1843,6 +1860,13 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
       acceptance_gate_available: false,
       acceptance_gate: {},
       regression_status: "unavailable",
+      governance: {
+        status: "warning",
+        knowledge_pack_version: null,
+        catalog_health: "unavailable",
+        capability_gaps: 0,
+        next_action: "Fix the plugin runtime, then re-run the dashboard state."
+      },
       warnings: [error.message],
       next_action: "Fix the plugin runtime, then re-run the dashboard state."
     };
@@ -1971,6 +1995,17 @@ function buildViberDashboardState(context = {}, deps = {}) {
       evidence_required: true,
       visual_qa_required: true,
       next_action: uiUxIntelligence.acceptance_gate && uiUxIntelligence.acceptance_gate.next_action ? uiUxIntelligence.acceptance_gate.next_action : uiUxIntelligence.next_action || "Run kvdf ui-ux-intelligence acceptance-gate --idea \"...\" --json."
+    },
+    ui_ux_intelligence_governance: uiUxIntelligence.governance ? {
+      knowledge_pack_version: uiUxIntelligence.governance.knowledge_pack_version || null,
+      catalog_health: uiUxIntelligence.governance.catalog_health || "unavailable",
+      capability_gaps: uiUxIntelligence.governance.capability_gaps || 0,
+      next_action: uiUxIntelligence.governance.next_action || "Review the UI/UX governance summary."
+    } : {
+      knowledge_pack_version: null,
+      catalog_health: "unavailable",
+      capability_gaps: 0,
+      next_action: "Run kvdf ui-ux-intelligence governance --json."
     },
     ui_ux_intelligence: uiUxIntelligence,
     generated_at: new Date().toISOString()

@@ -29,7 +29,13 @@ const {
   buildUiUxAcceptanceGate,
   summarizeAcceptanceGate,
   buildUiUxRegressionChecklist,
-  renderRegressionMarkdown
+  renderRegressionMarkdown,
+  readKnowledgePackManifest,
+  buildKnowledgePackStatus,
+  buildCatalogHealth,
+  buildUiUxGovernanceRegistry,
+  buildUiUxUpgradePlan,
+  buildUiUxGovernance
 } = require("../../../plugins/ui_ux_intelligence/runtime");
 
 function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
@@ -63,6 +69,36 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
 
   if (mode === "catalog") {
     const report = getCatalogReport({ root: process.cwd(), refresh: true });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "knowledge-pack" || mode === "knowledge_pack") {
+    const report = buildKnowledgePackReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "catalog-health" || mode === "catalog_health") {
+    const report = buildCatalogHealthReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "governance-registry" || mode === "governance_registry") {
+    const report = buildGovernanceRegistryReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "upgrade-plan" || mode === "upgrade_plan") {
+    const report = buildUpgradePlanReport(flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "governance") {
+    const report = buildGovernanceReport(flags);
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(renderJsonLike(report));
     return;
@@ -228,6 +264,10 @@ function normalizeAction(action) {
   if (value === "prompt_pack") return "prompt-pack";
   if (value === "visual_qa") return "visual-qa";
   if (value === "acceptance_gate") return "acceptance-gate";
+  if (value === "knowledge_pack") return "knowledge-pack";
+  if (value === "catalog_health") return "catalog-health";
+  if (value === "governance_registry") return "governance-registry";
+  if (value === "upgrade_plan") return "upgrade-plan";
   return value;
 }
 
@@ -434,6 +474,26 @@ function buildRegressionReport(input, flags = {}) {
     screens: flags.screens || "",
     states: flags.states || ""
   });
+}
+
+function buildKnowledgePackReport(flags = {}) {
+  return buildKnowledgePackStatus({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildCatalogHealthReport(flags = {}) {
+  return buildCatalogHealth({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildGovernanceRegistryReport(flags = {}) {
+  return buildUiUxGovernanceRegistry({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildUpgradePlanReport(flags = {}) {
+  return buildUiUxUpgradePlan({ root: process.cwd(), refresh: Boolean(flags.refresh) });
+}
+
+function buildGovernanceReport(flags = {}) {
+  return buildUiUxGovernance({ root: process.cwd(), refresh: Boolean(flags.refresh) });
 }
 
 function renderAcceptanceGateMarkdown(report) {

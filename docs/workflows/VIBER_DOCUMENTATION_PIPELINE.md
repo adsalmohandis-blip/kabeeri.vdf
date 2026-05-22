@@ -58,7 +58,10 @@ include its UI/UX recommendations, checklist summary, Markdown-ready docs
 sections, scorecard, gate, readiness, tokens, component blueprints, screen
 blueprints, pattern libraries, implementation guidance, prompt packs, evidence
 manifests, visual QA contracts, acceptance gates, regression checklists, and
-handoff-pack summary during planning or materialization. Use
+handoff-pack summary during planning or materialization. The same provider can
+also surface knowledge-pack status, catalog health, governance registry, and
+safe upgrade planning so future docs runs know whether the local knowledge pack
+is healthy before relying on it. Use
 `--include-ui-ux-intelligence` or `--ui-ux-intelligence` to opt in, and
 `--no-ui-ux-intelligence` to suppress the provider even when installed. The
 plugin remains optional, offline, and read-only unless docs materialization is

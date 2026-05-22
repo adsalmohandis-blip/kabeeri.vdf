@@ -58,6 +58,10 @@ const { buildUiUxEvidenceManifest, normalizeEvidenceItem, classifyEvidencePath, 
 const { buildVisualQaContract, buildScreenQaRequirements, buildStateQaRequirements, buildResponsiveQaRequirements, buildAccessibilityQaRequirements, evaluateVisualQaEvidence, renderVisualQaMarkdown } = require("./visual_qa");
 const { buildUiUxAcceptanceGate, evaluateScorecardForAcceptance, evaluateEvidenceForAcceptance, evaluateDocsForAcceptance, summarizeAcceptanceGate } = require("./acceptance_gate");
 const { buildUiUxRegressionChecklist, buildRegressionItemsFromScreens, buildRegressionItemsFromComponents, buildRegressionItemsFromStates, summarizeRegressionChecklist, renderRegressionMarkdown } = require("./regression");
+const { readKnowledgePackManifest, buildKnowledgePackStatus, summarizeKnowledgePack, validateKnowledgePackManifest } = require("./knowledge_pack");
+const { buildCatalogHealth, validateRequiredDataFiles, validateCatalogDomains, detectEmptyDomains, detectMalformedRecords, summarizeCatalogHealth } = require("./catalog_health");
+const { buildUiUxGovernanceRegistry, listUiUxCapabilities, mapCapabilitiesToCommands, mapCapabilitiesToPlannerIntegrations, mapCapabilitiesToViberStages, summarizeGovernanceRegistry } = require("./governance_registry");
+const { buildUiUxUpgradePlan, detectUpgradeRisks, recommendNextCatalogImprovements, recommendNextIntegrationImprovements } = require("./upgrade_plan");
 
 const PLUGIN_ID = "ui_ux_intelligence";
 const EXPECTED_DATA_FILES = [
@@ -111,7 +115,7 @@ function getPluginStatus(root = process.cwd()) {
     standalone: true,
     external_github_dependency: false,
     catalog_ready: catalog.catalog_ready,
-    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit", "scorecard", "gate", "readiness", "handoff_pack", "tokens", "components", "screens", "patterns", "implementation_guidance", "prompt_pack", "evidence", "visual_qa", "acceptance_gate", "regression"],
+    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit", "scorecard", "gate", "readiness", "handoff_pack", "tokens", "components", "screens", "patterns", "implementation_guidance", "prompt_pack", "evidence", "visual_qa", "acceptance_gate", "regression", "knowledge_pack_status", "catalog_health", "governance_registry", "upgrade_plan", "governance"],
     next_action: catalog.catalog_ready
       ? "Run kvdf ui-ux-intelligence catalog --json or kvdf ui-ux-intelligence search --query \"...\" --domain all --json."
       : "Install the relocated CSV data into plugins/ui_ux_intelligence/data/ and plugins/ui_ux_intelligence/data/stacks/."
@@ -178,6 +182,23 @@ function buildAudit(input, options = {}) {
   return auditUiUxTarget(input, options);
 }
 
+function buildUiUxGovernance(options = {}) {
+  const knowledgePack = buildKnowledgePackStatus(options);
+  const catalogHealth = buildCatalogHealth(options);
+  const governanceRegistry = buildUiUxGovernanceRegistry(options);
+  const upgradePlan = buildUiUxUpgradePlan(options);
+  const status = determineGovernanceStatus([knowledgePack.status, catalogHealth.status, governanceRegistry.status, upgradePlan.status]);
+  return {
+    report_type: "ui_ux_intelligence_governance",
+    knowledge_pack: knowledgePack,
+    catalog_health: catalogHealth,
+    governance_registry: governanceRegistry,
+    upgrade_plan: upgradePlan,
+    status,
+    next_action: upgradePlan.next_action || catalogHealth.next_action || knowledgePack.next_action || governanceRegistry.next_action
+  };
+}
+
 function getCatalogReport(options = {}) {
   const root = typeof options.repoRoot === "function" ? options.repoRoot() : typeof options.root === "string" ? options.root : process.cwd();
   return getCatalogSummary({ root, refresh: Boolean(options.refresh) });
@@ -207,6 +228,13 @@ function buildMarkdownStatus(report) {
 
 function listExpectedSourceFiles() {
   return [...EXPECTED_SOURCE_FILES];
+}
+
+function determineGovernanceStatus(statuses = []) {
+  const list = (Array.isArray(statuses) ? statuses : []).map((item) => String(item || "").toLowerCase());
+  if (list.includes("blocked")) return "blocked";
+  if (list.includes("warning")) return "warning";
+  return "pass";
 }
 
 module.exports = {
@@ -259,6 +287,27 @@ module.exports = {
   auditUiUxTarget,
   auditTextContent,
   summarizeAudit,
+  readKnowledgePackManifest,
+  buildKnowledgePackStatus,
+  summarizeKnowledgePack,
+  validateKnowledgePackManifest,
+  buildCatalogHealth,
+  validateRequiredDataFiles,
+  validateCatalogDomains,
+  detectEmptyDomains,
+  detectMalformedRecords,
+  summarizeCatalogHealth,
+  buildUiUxGovernanceRegistry,
+  listUiUxCapabilities,
+  mapCapabilitiesToCommands,
+  mapCapabilitiesToPlannerIntegrations,
+  mapCapabilitiesToViberStages,
+  summarizeGovernanceRegistry,
+  buildUiUxUpgradePlan,
+  detectUpgradeRisks,
+  recommendNextCatalogImprovements,
+  recommendNextIntegrationImprovements,
+  buildUiUxGovernance,
   buildUiUxScorecard,
   scoreChecklist,
   scoreAuditFindings,
