@@ -18,11 +18,13 @@ function getPluginStatus() {
     bootstrap_version: BOOTSTRAP_VERSION,
     status,
     enabled_by_default: false,
+    assets_available: assets.available,
     assets: {
       css: assets.css_path,
       js: assets.js_path
     },
     core_dependency: false,
+    fallback_safe: true,
     standalone: true,
     external_github_dependency: false,
     next_action: assets.available
@@ -132,6 +134,32 @@ function buildBootstrapAssetReport() {
   return report;
 }
 
+function verifyBootstrapAssets() {
+  const assets = getBootstrapAssets();
+  const cssExists = fs.existsSync(assets.css);
+  const jsExists = fs.existsSync(assets.js);
+  const status = cssExists && jsExists ? "pass" : "warning";
+  const warnings = [];
+  if (!cssExists) warnings.push("Missing plugins/bootstrap_ui/assets/bootstrap.min.css.");
+  if (!jsExists) warnings.push("Missing plugins/bootstrap_ui/assets/bootstrap.bundle.min.js.");
+  return {
+    report_type: "bootstrap_ui_verify",
+    plugin_id: PLUGIN_ID,
+    status,
+    assets: {
+      css_exists: cssExists,
+      js_exists: jsExists
+    },
+    core_dependency: false,
+    node_modules_dependency: false,
+    fallback_safe: true,
+    warnings,
+    next_action: cssExists && jsExists
+      ? "Use kvdf bootstrap-ui provider when a surface explicitly opts into Bootstrap."
+      : "Restore the copied Bootstrap dist assets or rely on fallback rendering."
+  };
+}
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -145,5 +173,6 @@ module.exports = {
   getPluginStatus,
   getBootstrapAssets,
   buildBootstrapHtmlSnippet,
-  buildBootstrapAssetReport
+  buildBootstrapAssetReport,
+  verifyBootstrapAssets
 };

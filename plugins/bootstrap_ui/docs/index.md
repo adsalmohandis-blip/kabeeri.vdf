@@ -24,6 +24,8 @@ Bootstrap a hard Core dependency.
 
 - `kvdf bootstrap-ui status`
 - `kvdf bootstrap-ui assets`
+- `kvdf bootstrap-ui verify`
+- `kvdf bootstrap-ui provider`
 - `kvdf bootstrap-ui snippet`
 - `kvdf plugins install bootstrap_ui`
 - `kvdf plugins uninstall bootstrap_ui`
@@ -32,3 +34,5 @@ Bootstrap a hard Core dependency.
 
 Use this plugin only when a surface explicitly needs Bootstrap assets. Core
 dashboards, docs, and CLI flows must continue to work when the plugin is absent.
+The provider helper makes the fallback path explicit so HTML surfaces can stay
+readable and render safely even when Bootstrap is unavailable.

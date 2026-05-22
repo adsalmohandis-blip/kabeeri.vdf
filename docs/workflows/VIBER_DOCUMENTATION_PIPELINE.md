@@ -73,4 +73,7 @@ commands are report-only surfaces for handoff and publish readiness.
 
 If a surface explicitly opts into Bootstrap styling, the optional
 `bootstrap_ui` plugin can provide copied Bootstrap CSS and JavaScript assets
-and a safe snippet helper without making Bootstrap a Core dependency.
+and a safe snippet/helper/provider surface without making Bootstrap a Core
+dependency. When it is not enabled, HTML builders keep the fallback comment in
+the output so review tools can see that the surface stayed on the local HTML
+path instead of a Bootstrap-backed path.

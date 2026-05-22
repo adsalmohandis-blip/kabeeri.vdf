@@ -5156,6 +5156,8 @@ test("dashboard export creates static html and owner dashboard output", () => wi
   assert.doesNotMatch(clientHtml, /\/customer\/apps\/\d+/);
   assert.doesNotMatch(clientHtml, /KVDF Owner Dashboard/);
   assert.doesNotMatch(clientHtml, /KVDF Viber Dashboard/);
+  const dashboardHtml = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
+  assert.match(dashboardHtml, /KVDF UI assets: fallback/);
   assert.ok(fs.existsSync(path.join(dir, ".kabeeri/site/customer/apps/acme/index.html")));
   const state = JSON.parse(runKvdf(["dashboard", "state", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(state.report_type, "kvdf_viber_dashboard_state");
@@ -8367,7 +8369,9 @@ test("bootstrap_ui plugin is discoverable and the command surface is optional", 
   assert.strictEqual(status.plugin_id, "bootstrap_ui");
   assert.strictEqual(status.status, "available");
   assert.strictEqual(status.enabled_by_default, false);
+  assert.strictEqual(status.assets_available, true);
   assert.strictEqual(status.core_dependency, false);
+  assert.strictEqual(status.fallback_safe, true);
   assert.strictEqual(status.assets.css, "plugins/bootstrap_ui/assets/bootstrap.min.css");
   assert.strictEqual(status.assets.js, "plugins/bootstrap_ui/assets/bootstrap.bundle.min.js");
 
@@ -8378,6 +8382,24 @@ test("bootstrap_ui plugin is discoverable and the command surface is optional", 
   assert.ok(assets.assets.some((item) => item.type === "js" && item.path === "plugins/bootstrap_ui/assets/bootstrap.bundle.min.js"));
   assert.strictEqual(assets.third_party_notice, "plugins/bootstrap_ui/THIRD_PARTY_NOTICES.md");
 
+  const verify = JSON.parse(runKvdf(["bootstrap-ui", "verify", "--json"]).stdout);
+  assert.strictEqual(verify.report_type, "bootstrap_ui_verify");
+  assert.strictEqual(verify.status, "pass");
+  assert.strictEqual(verify.assets.css_exists, true);
+  assert.strictEqual(verify.assets.js_exists, true);
+  assert.strictEqual(verify.core_dependency, false);
+  assert.strictEqual(verify.node_modules_dependency, false);
+  assert.strictEqual(verify.fallback_safe, true);
+
+  const provider = JSON.parse(runKvdf(["bootstrap-ui", "provider", "--json"]).stdout);
+  assert.strictEqual(provider.report_type, "bootstrap_ui_provider");
+  assert.strictEqual(provider.provider, "fallback");
+  assert.strictEqual(provider.available, true);
+  assert.strictEqual(provider.enabled, false);
+  assert.strictEqual(provider.fallback_used, true);
+  assert.ok(Array.isArray(provider.assets));
+  assert.strictEqual(provider.assets.length, 0);
+
   const snippet = JSON.parse(runKvdf(["bootstrap-ui", "snippet", "--json"]).stdout);
   assert.strictEqual(snippet.report_type, "bootstrap_ui_snippet");
   assert.match(snippet.html, /bootstrap\.min\.css/);
@@ -8385,6 +8407,49 @@ test("bootstrap_ui plugin is discoverable and the command surface is optional", 
   assert.strictEqual(snippet.css_path, "plugins/bootstrap_ui/assets/bootstrap.min.css");
   assert.strictEqual(snippet.js_path, "plugins/bootstrap_ui/assets/bootstrap.bundle.min.js");
 });
+
+test("bootstrap_ui provider falls back by default and can opt into local Bootstrap assets", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "bootstrap_ui");
+
+  const fallbackProvider = JSON.parse(runKvdf(["bootstrap-ui", "provider", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(fallbackProvider.provider, "fallback");
+  assert.strictEqual(fallbackProvider.available, true);
+  assert.strictEqual(fallbackProvider.enabled, false);
+  assert.strictEqual(fallbackProvider.fallback_used, true);
+
+  runKvdf(["plugins", "install", "bootstrap_ui"], { cwd: dir });
+
+  const bootstrapProvider = JSON.parse(runKvdf(["bootstrap-ui", "provider", "--ui-provider", "bootstrap", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(bootstrapProvider.provider, "bootstrap_ui");
+  assert.strictEqual(bootstrapProvider.available, true);
+  assert.strictEqual(bootstrapProvider.enabled, true);
+  assert.strictEqual(bootstrapProvider.fallback_used, false);
+  assert.ok(bootstrapProvider.assets.includes("plugins/bootstrap_ui/assets/bootstrap.min.css"));
+  assert.ok(bootstrapProvider.assets.includes("plugins/bootstrap_ui/assets/bootstrap.bundle.min.js"));
+
+  runKvdf(["dashboard", "export", "--with-bootstrap", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: dir });
+  const dashboardHtml = fs.readFileSync(path.join(dir, "dashboard.html"), "utf8");
+  assert.match(dashboardHtml, /KVDF UI assets: bootstrap_ui/);
+  assert.match(dashboardHtml, /bootstrap\.min\.css/);
+  assert.match(dashboardHtml, /bootstrap\.bundle\.min\.js/);
+}));
+
+test("bootstrap_ui verify reports missing assets safely", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "bootstrap_ui");
+  fs.unlinkSync(path.join(dir, "plugins", "bootstrap_ui", "assets", "bootstrap.min.css"));
+  fs.unlinkSync(path.join(dir, "plugins", "bootstrap_ui", "assets", "bootstrap.bundle.min.js"));
+
+  const verify = JSON.parse(runKvdf(["bootstrap-ui", "verify", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(verify.report_type, "bootstrap_ui_verify");
+  assert.strictEqual(verify.status, "warning");
+  assert.strictEqual(verify.assets.css_exists, false);
+  assert.strictEqual(verify.assets.js_exists, false);
+  assert.strictEqual(verify.core_dependency, false);
+  assert.strictEqual(verify.node_modules_dependency, false);
+  assert.strictEqual(verify.fallback_safe, true);
+}));
 
 test("bootstrap_ui is no longer a root package dependency and Core source does not hard-require bootstrap", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
@@ -9029,6 +9094,7 @@ test("planner-visual render writes the shared mermaid browser preview without op
   assert.match(html, /Planner Visual Preview/);
   assert.match(html, /Planner visual markdown/);
   assert.match(html, /Diagram Graph/);
+  assert.match(html, /KVDF UI assets: fallback/);
   assert.match(html, /data-zoom-in/);
   assert.match(html, /data-zoom-range/);
   assert.match(html, /overflow-y: auto/);

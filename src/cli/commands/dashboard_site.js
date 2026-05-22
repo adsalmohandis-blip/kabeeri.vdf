@@ -2,6 +2,7 @@ const path = require("path");
 
 const { readJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
+const { buildOptionalAssetTags, getOptionalUiAssets } = require("../services/ui_asset_provider");
 const { summarizeUsage } = require("./usage_pricing");
 const { buildCustomerAppSummaries, buildPlannerDashboardState, collectDashboardStateForCurrentTrack } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
@@ -10,19 +11,21 @@ const { buildEvolutionSummary } = require("../services/evolution");
 const { summarizeWorkspaceContract, validateDeveloperAppWorkspace } = require("../services/app_workspace_contract");
 const { refreshAppScorecards, buildAppScorecardTableRows, buildAppScorecardSummaryLine } = require("../services/app_scorecards");
 
-function buildClientHomeHtml() {
+function buildClientHomeHtml(options = {}) {
   const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
   const apps = fileExists(".kabeeri/customer_apps.json") ? readJsonFile(".kabeeri/customer_apps.json").apps || [] : [];
   const features = fileExists(".kabeeri/features.json") ? readJsonFile(".kabeeri/features.json").features || [] : [];
   const journeys = fileExists(".kabeeri/journeys.json") ? readJsonFile(".kabeeri/journeys.json").journeys || [] : [];
   const visibleFeatures = features.filter((item) => ["ready_to_demo", "ready_to_publish"].includes(item.readiness));
   const visibleJourneys = journeys.filter((item) => item.ready_to_show || item.status === "ready_to_show");
+  const uiAssets = buildUiAssetMarkup(options);
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(project.name || "Kabeeri Client Portal")}</title>
+${indentHtmlBlock(uiAssets, 2)}
   <style>
     body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #f7f8fb; }
     header { background: #ffffff; border-bottom: 1px solid #d9dee7; padding: 28px; }
@@ -73,7 +76,7 @@ function buildClientHomeHtml() {
 `;
 }
 
-function buildCustomerAppHtml(appItem) {
+function buildCustomerAppHtml(appItem, options = {}) {
   const features = readStateArray(".kabeeri/features.json", "features");
   const journeys = readStateArray(".kabeeri/journeys.json", "journeys");
   const tasks = readStateArray(".kabeeri/tasks.json", "tasks");
@@ -90,12 +93,14 @@ function buildCustomerAppHtml(appItem) {
   };
   const linkedFeatures = features.filter((featureItem) => (appItem.feature_ids || []).includes(featureItem.id));
   const linkedJourneys = journeys.filter((journeyItem) => (appItem.journey_ids || []).includes(journeyItem.id));
+  const uiAssets = buildUiAssetMarkup(options);
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(appItem.name)}</title>
+${indentHtmlBlock(uiAssets, 2)}
   <style>
     body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #ffffff; }
     main { max-width: 860px; margin: 0 auto; padding: 42px 24px; }
@@ -171,6 +176,7 @@ function buildDeveloperAppDashboardHtml(options = {}) {
     evolutionSummary.auto_closed_changes_total || 0
   );
   const plannerState = buildPlannerDashboardState({ project });
+  const uiAssets = buildUiAssetMarkup(options);
 
   return `<!doctype html>
 <html lang="en">
@@ -178,6 +184,7 @@ function buildDeveloperAppDashboardHtml(options = {}) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)} - ${escapeHtml(dashboardTitle)}</title>
+${indentHtmlBlock(uiAssets, 2)}
   <style>
     body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: #f6f7f9; }
     header { background: linear-gradient(135deg, #0f766e, #134e4a); color: white; padding: 24px 28px; }
@@ -968,12 +975,14 @@ function renderDashboardProductHtml(state = {}, options = {}) {
   const plannerMode = state.planner && state.planner.current_planner_mode ? state.planner.current_planner_mode : "missing";
   const deliveryMode = state.planner && state.planner.delivery_mode ? state.planner.delivery_mode : "unknown";
   const sections = Object.values(state.sections || {});
+  const uiAssets = buildUiAssetMarkup(options);
   return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtml(title)}</title>
+${indentHtmlBlock(uiAssets, 2)}
   <style>
     body { margin: 0; font-family: Arial, sans-serif; color: #1f2933; background: linear-gradient(180deg, #f7f8fb 0%, #eef2f7 100%); }
     header { background: ${isOwner ? "linear-gradient(135deg, #1f2937, #334155)" : "linear-gradient(135deg, #0f766e, #134e4a)"}; color: white; padding: 28px; }
@@ -1177,6 +1186,42 @@ function buildTableEnhancementScript() {
   })();
   </script>
 `;
+}
+
+function buildUiAssetMarkup(options = {}) {
+  const selected = getOptionalUiAssets({
+    ui_provider: options.ui_provider || options["ui-provider"] || options.provider,
+    provider: options.provider,
+    withBootstrap: options.withBootstrap || options["with-bootstrap"],
+    with_bootstrap: options.with_bootstrap,
+    noBootstrap: options.noBootstrap || options["no-bootstrap"],
+    no_bootstrap: options.no_bootstrap
+  });
+  return buildOptionalAssetTags(selected, {
+    ...options,
+    document_path: resolveDashboardDocumentPath(options)
+  });
+}
+
+function resolveDashboardDocumentPath(options = {}) {
+  if (options["dashboard-output"]) return String(options["dashboard-output"]);
+  if (options.output) return String(options.output);
+  const scope = String(options.scope || "").trim().toLowerCase();
+  if (scope === "owner" || scope === "viber") {
+    return `.kabeeri/site/__kvdf/dashboard/${scope}.html`;
+  }
+  const project = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
+  if (project.workspace_kind === "developer_app") {
+    return ".kabeeri/site/__kvdf/dashboard/index.html";
+  }
+  return ".kabeeri/site/__kvdf/dashboard/index.html";
+}
+
+function indentHtmlBlock(value, spaces = 2) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+  const indent = " ".repeat(spaces);
+  return text.split("\n").map((line) => `${indent}${line}`).join("\n");
 }
 
 module.exports = {

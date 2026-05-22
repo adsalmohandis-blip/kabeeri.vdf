@@ -1445,12 +1445,14 @@ Notes:
     "bootstrap-ui": `Usage:
   kvdf bootstrap-ui status
   kvdf bootstrap-ui assets
+  kvdf bootstrap-ui verify
+  kvdf bootstrap-ui provider
   kvdf bootstrap-ui snippet
   kvdf plugins install bootstrap_ui
   kvdf plugins uninstall bootstrap_ui
 
 Notes:
-  Bootstrap UI is an optional removable asset provider plugin. It copies Bootstrap CSS and JavaScript into plugins/bootstrap_ui/assets/ so KVDF Core no longer depends on the Bootstrap package directly. Use the snippet helper only on surfaces that explicitly opt into Bootstrap assets.
+  Bootstrap UI is an optional removable asset provider plugin. It copies Bootstrap CSS and JavaScript into plugins/bootstrap_ui/assets/ so KVDF Core no longer depends on the Bootstrap package directly. Use the verify helper to check the local assets and the provider helper to choose fallback or Bootstrap on a per-surface basis. Use the snippet helper only on surfaces that explicitly opt into Bootstrap assets.
 `,
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
@@ -1519,7 +1521,7 @@ function printHelp() {
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
-    "  bootstrap-ui status|assets|snippet Optional Bootstrap UI asset provider plugin",
+    "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",
