@@ -46,6 +46,22 @@
       "expect_report_type": "ui_ux_intelligence_handoff_pack"
     },
     {
+      "command": "kvdf ui-ux-intelligence evidence --app booking --evidence \"home.png,booking-error.png\" --json",
+      "expect_report_type": "ui_ux_intelligence_evidence_manifest"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence visual-qa --idea \"Build booking app\" --app booking --json",
+      "expect_report_type": "ui_ux_intelligence_visual_qa_contract"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence acceptance-gate --idea \"Build booking app\" --app booking --json",
+      "expect_report_type": "ui_ux_intelligence_acceptance_gate"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence regression --idea \"Build booking app\" --app booking --json",
+      "expect_report_type": "ui_ux_intelligence_regression_checklist"
+    },
+    {
       "command": "kvdf ui-ux-intelligence tokens --idea \"Build booking app\" --json",
       "expect_report_type": "ui_ux_intelligence_tokens"
     },

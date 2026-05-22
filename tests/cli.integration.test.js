@@ -8569,6 +8569,10 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.strictEqual(review.ui_ux_prompt_pack.standalone, true);
   assert.strictEqual(review.ui_ux_prompt_pack.external_github_dependency, false);
   assert.ok(Array.isArray(review.ui_ux_prompt_pack.prompt_titles));
+  assert.ok(review.ui_ux_acceptance_gate);
+  assert.strictEqual(review.ui_ux_acceptance_gate.standalone, true);
+  assert.strictEqual(review.ui_ux_acceptance_gate.external_github_dependency, false);
+  assert.ok(Array.isArray(review.ui_ux_acceptance_gate.blockers));
 
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
@@ -8584,14 +8588,82 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.ok(prompt.prompt.includes("Handoff pack:"));
   assert.ok(prompt.prompt.includes("Pattern library:"));
   assert.ok(prompt.prompt.includes("Prompt pack:"));
+  assert.ok(prompt.prompt.includes("Acceptance gate:"));
+  assert.ok(prompt.prompt.includes("Visual QA:"));
+  assert.ok(prompt.prompt.includes("Evidence manifest:"));
   assert.ok(prompt.prompt.includes("Target docs:"));
   assert.ok(prompt.prompt.includes("Reminder: do not overwrite existing UI/UX docs"));
+  assert.ok(prompt.prompt.includes("Stop condition: stop until the required UI/UX evidence"));
 
   const promptWithoutUiUx = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--no-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(promptWithoutUiUx.report_type, "kvdf_planner_codex_prompt");
   assert.ok(typeof promptWithoutUiUx.prompt === "string");
   assert.ok(!promptWithoutUiUx.prompt.includes("Pattern library:"));
   assert.ok(!promptWithoutUiUx.prompt.includes("Prompt pack:"));
+  assert.ok(!promptWithoutUiUx.prompt.includes("Acceptance gate:"));
+}));
+
+test("ui_ux_intelligence evidence visual qa acceptance gate and regression stay metadata-only", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
+
+  const evidence = JSON.parse(runKvdf(["ui-ux-intelligence", "evidence", "--app", "booking", "--evidence", "home.png,booking-error.png", "--screens", "home,booking", "--states", "default,error", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(evidence.report_type, "ui_ux_intelligence_evidence_manifest");
+  assert.ok(Array.isArray(evidence.evidence_items));
+  assert.ok(evidence.evidence_items.length > 0);
+  assert.ok(evidence.summary);
+  assert.strictEqual(evidence.standalone, true);
+  assert.strictEqual(evidence.external_github_dependency, false);
+  const evidenceOutput = path.join("docs", "reports", "uiux-evidence.md");
+  const evidenceWithOutput = JSON.parse(runKvdf(["ui-ux-intelligence", "evidence", "--app", "booking", "--evidence", "home.png,booking-error.png", "--output", evidenceOutput, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(evidenceWithOutput.report_type, "ui_ux_intelligence_evidence_manifest");
+  assert.ok(fs.existsSync(path.join(dir, evidenceOutput)));
+  assert.ok(fs.readFileSync(path.join(dir, evidenceOutput), "utf8").startsWith("# UI/UX Evidence Manifest"));
+
+  const visualQa = JSON.parse(runKvdf(["ui-ux-intelligence", "visual-qa", "--idea", "Build booking app", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visualQa.report_type, "ui_ux_intelligence_visual_qa_contract");
+  assert.ok(Array.isArray(visualQa.required_screens));
+  assert.ok(Array.isArray(visualQa.required_states));
+  assert.ok(Array.isArray(visualQa.required_breakpoints));
+  assert.ok(visualQa.evidence_status);
+  assert.ok(Array.isArray(visualQa.evidence_status.missing));
+  const visualOutput = path.join("docs", "reports", "uiux-visual-qa.md");
+  const visualWithOutput = JSON.parse(runKvdf(["ui-ux-intelligence", "visual-qa", "--idea", "Build booking app", "--app", "booking", "--output", visualOutput, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visualWithOutput.report_type, "ui_ux_intelligence_visual_qa_contract");
+  assert.ok(fs.existsSync(path.join(dir, visualOutput)));
+  assert.ok(fs.readFileSync(path.join(dir, visualOutput), "utf8").startsWith("# UI/UX Visual QA Contract"));
+
+  const acceptance = JSON.parse(runKvdf(["ui-ux-intelligence", "acceptance-gate", "--idea", "Build booking app", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(acceptance.report_type, "ui_ux_intelligence_acceptance_gate");
+  assert.ok(Array.isArray(acceptance.criteria));
+  assert.ok(typeof acceptance.status === "string");
+  assert.ok(Array.isArray(acceptance.blockers));
+  assert.ok(Array.isArray(acceptance.warnings));
+  const acceptanceOutput = path.join("docs", "reports", "uiux-acceptance-gate.md");
+  const acceptanceWithOutput = JSON.parse(runKvdf(["ui-ux-intelligence", "acceptance-gate", "--idea", "Build booking app", "--app", "booking", "--output", acceptanceOutput, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(acceptanceWithOutput.report_type, "ui_ux_intelligence_acceptance_gate");
+  assert.ok(fs.existsSync(path.join(dir, acceptanceOutput)));
+  assert.ok(fs.readFileSync(path.join(dir, acceptanceOutput), "utf8").startsWith("# UI/UX Acceptance Gate"));
+
+  const strictAcceptance = JSON.parse(runKvdf(["ui-ux-intelligence", "acceptance-gate", "--idea", "Build booking app", "--app", "booking", "--strict", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(strictAcceptance.report_type, "ui_ux_intelligence_acceptance_gate");
+  assert.ok(["warning", "blocked", "pass"].includes(strictAcceptance.status));
+  assert.ok(strictAcceptance.criteria.some((item) => item.title.includes("UI/UX docs")));
+
+  const regression = JSON.parse(runKvdf(["ui-ux-intelligence", "regression", "--idea", "Build booking app", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(regression.report_type, "ui_ux_intelligence_regression_checklist");
+  assert.ok(Array.isArray(regression.items));
+  assert.ok(regression.items.length > 0);
+  assert.ok(regression.summary);
+
+  const outputFile = path.join("docs", "reports", "uiux-regression.md");
+  const withOutput = JSON.parse(runKvdf(["ui-ux-intelligence", "regression", "--idea", "Build booking app", "--app", "booking", "--output", outputFile, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(withOutput.report_type, "ui_ux_intelligence_regression_checklist");
+  assert.ok(fs.existsSync(path.join(dir, outputFile)));
+  assert.ok(fs.readFileSync(path.join(dir, outputFile), "utf8").startsWith("# UI/UX Regression Checklist"));
+
+  assert.strictEqual(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "src")), false);
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
 }));
 
 test("planner visual and dashboard state expose ui_ux_intelligence safely", () => withTempDir((dir) => {
@@ -8608,6 +8680,8 @@ test("planner visual and dashboard state expose ui_ux_intelligence safely", () =
   assert.ok(Array.isArray(dashboard.ui_ux_intelligence.target_docs));
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_ready"));
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_status"));
+  assert.ok(dashboard.ui_ux_acceptance);
+  assert.ok(["pass", "warning", "blocked", "unavailable"].includes(dashboard.ui_ux_acceptance.status));
 }));
 
 test("ui_ux_intelligence implementation artifacts generate tokens components screens and handoff packs", () => withTempDir((dir) => {

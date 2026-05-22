@@ -48,9 +48,14 @@ kvdf plugins uninstall ui_ux_intelligence
 - `patterns` turns the UI/UX plan into reusable UI pattern guidance.
 - `implementation-guidance` adds framework-aware, task-punch-friendly implementation direction without generating source code.
 - `prompt-pack` creates Codex-ready UI implementation prompts that stay task-slice oriented and do not auto-run anything. It is guidance only, not autonomous execution.
+- `evidence` accepts path-or-URL metadata for screenshots, docs, test reports, and manual notes. It does not run OCR or inspect pixels.
+- `visual-qa` turns the current UI/UX plan into a metadata-only QA contract for required screens, states, breakpoints, and accessibility evidence.
+- `acceptance-gate` evaluates docs, scorecard, evidence, and visual QA for handoff and publish readiness. Strict mode raises missing critical evidence to blockers.
+- `regression` builds a lightweight regression checklist for the key screens, components, states, responsive breakpoints, accessibility, and handoff checks.
 - Planner integration is optional: `kvdf planner docs plan|materialize --include-ui-ux-intelligence` can consume the docs sections, `kvdf planner review|visual|prompt` can surface optional summaries, and `kvdf dashboard viber state --json` can expose a safe availability summary. Use `--no-ui-ux-intelligence` when you want to suppress the provider even if it is installed.
-- `search`, `recommend`, `design-system`, `checklist`, `docs`, `audit`, `scorecard`, `gate`, `readiness`, `handoff-pack`, `tokens`, `components`, `screens`, `patterns`, `implementation-guidance`, and `prompt-pack` all work offline in the MVP.
+- `search`, `recommend`, `design-system`, `checklist`, `docs`, `audit`, `scorecard`, `gate`, `readiness`, `handoff-pack`, `tokens`, `components`, `screens`, `patterns`, `implementation-guidance`, `prompt-pack`, `evidence`, `visual-qa`, `acceptance-gate`, and `regression` all work offline in the MVP.
 - `search` uses the local catalog only and can filter by `--domain products|styles|colors|typography|ui_reasoning|ux_guidelines|charts|landing|icons|app_interface|react_performance|stacks|all`.
 - The final plugin must not depend on `_temp_meta/` at runtime and does not call any external GitHub or AI API service.
 - `audit --strict` escalates critical missing UI/UX sections to blockers for handoff review.
+- `evidence`, `visual-qa`, `acceptance-gate`, and `regression` are report commands only; they never generate production code and only write Markdown when `--output` explicitly targets an allowed docs or workspace path.
 - `handoff-pack --output` and `prompt-pack --output` are the only commands in this plugin that can write a file, and they only write Markdown when the operator explicitly requests it.

@@ -1784,6 +1784,9 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
     const checklist = runtime.generateChecklist(input, { track, app, recommendation });
     const docs = runtime.generateDocsSections(input, { track, app, stack, recommendation });
     const handoffPack = runtime.generateUiUxHandoffPack(input, { track, app, stack, recommendation, checklist });
+    const evidenceManifest = runtime.buildUiUxEvidenceManifest(input, { track, app, stack, stage: "handoff" });
+    const visualQa = runtime.buildVisualQaContract(input, { track, app, stack, recommendation, checklist, evidenceManifest });
+    const acceptanceGate = runtime.buildUiUxAcceptanceGate(input, { track, app, stack, recommendation, checklist, scorecard: handoffPack.scorecard, evidenceManifest, visualQa, handoffPack });
     const checklistSummary = runtime.summarizeChecklist(checklist);
     return {
       status: "available",
@@ -1796,6 +1799,19 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
       handoff_pack_status: handoffPack.handoff_status || "warning",
       handoff_pack_ready: handoffPack.handoff_status === "pass",
       handoff_pack_target_docs: Array.isArray(handoffPack.target_docs) ? [...handoffPack.target_docs] : [...UI_UX_INTELLIGENCE_TARGET_DOCS],
+      evidence_status: evidenceManifest.summary && evidenceManifest.summary.missing_recommended_evidence.length ? "warning" : "pass",
+      visual_qa_status: visualQa.evidence_status ? visualQa.evidence_status.status : "warning",
+      acceptance_gate_status: acceptanceGate.status || "warning",
+      acceptance_gate_available: true,
+      acceptance_gate: {
+        status: acceptanceGate.status || "warning",
+        score: acceptanceGate.score || 0,
+        grade: acceptanceGate.grade || "F",
+        blockers: Array.isArray(acceptanceGate.blockers) ? [...acceptanceGate.blockers] : [],
+        warnings: Array.isArray(acceptanceGate.warnings) ? [...acceptanceGate.warnings] : [],
+        next_action: acceptanceGate.next_action || "Resolve the acceptance blockers before UI/UX handoff."
+      },
+      regression_status: "available",
       checklist_status: checklistSummary.blockers > 0 ? "warning" : (checklistSummary.warnings > 0 ? "warning" : "pass"),
       recommendation_summary: {
         detected_product_type: recommendation.detected_product_type,
@@ -1821,6 +1837,12 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
       checklist_status: "warning",
       recommendation_summary: {},
       target_docs: [],
+      evidence_status: "unavailable",
+      visual_qa_status: "unavailable",
+      acceptance_gate_status: "unavailable",
+      acceptance_gate_available: false,
+      acceptance_gate: {},
+      regression_status: "unavailable",
       warnings: [error.message],
       next_action: "Fix the plugin runtime, then re-run the dashboard state."
     };
@@ -1944,6 +1966,12 @@ function buildViberDashboardState(context = {}, deps = {}) {
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
     current_plan_status: context.plannerState.current_plan_status || "empty",
     current_evolution: currentEvolution ? currentEvolution.change_id || currentEvolution.title || null : null,
+    ui_ux_acceptance: {
+      status: uiUxIntelligence.acceptance_gate_status || "unavailable",
+      evidence_required: true,
+      visual_qa_required: true,
+      next_action: uiUxIntelligence.acceptance_gate && uiUxIntelligence.acceptance_gate.next_action ? uiUxIntelligence.acceptance_gate.next_action : uiUxIntelligence.next_action || "Run kvdf ui-ux-intelligence acceptance-gate --idea \"...\" --json."
+    },
     ui_ux_intelligence: uiUxIntelligence,
     generated_at: new Date().toISOString()
   });

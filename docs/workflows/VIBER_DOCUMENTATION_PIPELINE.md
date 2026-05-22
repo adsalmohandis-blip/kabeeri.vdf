@@ -56,9 +56,14 @@ That summary is surfaced as `roadmap_train_summary` and pairs with the derived
 When `ui_ux_intelligence` is available, the Viber docs pipeline can optionally
 include its UI/UX recommendations, checklist summary, Markdown-ready docs
 sections, scorecard, gate, readiness, tokens, component blueprints, screen
-blueprints, pattern libraries, implementation guidance, prompt packs, and handoff-pack summary during planning or materialization. Use
+blueprints, pattern libraries, implementation guidance, prompt packs, evidence
+manifests, visual QA contracts, acceptance gates, regression checklists, and
+handoff-pack summary during planning or materialization. Use
 `--include-ui-ux-intelligence` or `--ui-ux-intelligence` to opt in, and
 `--no-ui-ux-intelligence` to suppress the provider even when installed. The
 plugin remains optional, offline, and read-only unless docs materialization is
 already writing the app docs. The handoff pack can be exported to Markdown only
-when the operator explicitly passes `handoff-pack --output <path>`. The prompt pack can likewise be exported only when `prompt-pack --output <path>` is explicitly requested.
+when the operator explicitly passes `handoff-pack --output <path>`. The prompt
+pack can likewise be exported only when `prompt-pack --output <path>` is
+explicitly requested. The evidence, visual-qa, acceptance-gate, and regression
+commands are report-only surfaces for handoff and publish readiness.

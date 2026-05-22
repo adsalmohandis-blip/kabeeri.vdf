@@ -10,6 +10,7 @@
 - lightweight UI/UX audit reporting
 - UI implementation planning artifacts: design tokens, component blueprints, screen blueprints, and handoff packs
 - UI pattern libraries, framework-aware implementation guidance, and Codex-ready prompt packs
+- UI review evidence, visual QA contracts, acceptance gates, and regression checklists
 - design-system recommendations
 - UI style recommendations
 - palette and typography guidance
@@ -49,8 +50,12 @@ The plugin also emits implementation-ready planning artifacts without generating
 - `patterns` extracts reusable UI patterns that fit the product shape.
 - `implementation-guidance` converts the planning artifacts into framework-aware implementation direction for a task punch.
 - `prompt-pack` creates Codex-ready UI implementation prompts and can export Markdown when `--output` is explicitly provided. It is guidance only; it does not execute code or change app files by itself.
+- `evidence` records screenshot, document, test-report, and metadata-only evidence without OCR or pixel inspection.
+- `visual-qa` turns the UI plan into a metadata-based QA contract for required screens, states, breakpoints, and accessibility evidence.
+- `acceptance-gate` evaluates the evidence, docs, scorecard, and visual QA contract for handoff and publish readiness.
+- `regression` builds a lightweight regression checklist for the key UI screens, components, states, and accessibility behaviors.
 
-These outputs are planning/specification artifacts only. They do not create production UI code or app source files.
+These outputs are planning/specification artifacts only. They do not create production UI code or app source files, and they do not inspect image pixels or run OCR.
 
 These commands are offline and deterministic. They do not write files unless the operator passes an explicit `--output` path to `handoff-pack` or `prompt-pack`, and even then the output is Markdown only.
 

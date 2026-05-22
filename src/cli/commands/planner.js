@@ -966,6 +966,12 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     prompt_pack_available: Boolean(ui_ux_intelligence.prompt_pack && ui_ux_intelligence.prompt_pack.available),
     prompt_pack_prompt_titles: ui_ux_intelligence.prompt_pack && Array.isArray(ui_ux_intelligence.prompt_pack.prompt_titles) ? [...ui_ux_intelligence.prompt_pack.prompt_titles] : [],
     prompt_pack_warnings: ui_ux_intelligence.prompt_pack && Array.isArray(ui_ux_intelligence.prompt_pack.warnings) ? [...ui_ux_intelligence.prompt_pack.warnings] : [],
+    evidence_status: ui_ux_intelligence.evidence_status || "unavailable",
+    visual_qa_status: ui_ux_intelligence.visual_qa_status || "unavailable",
+    acceptance_gate_status: ui_ux_intelligence.acceptance_gate_status || "unavailable",
+    acceptance_gate_available: Boolean(ui_ux_intelligence.acceptance_gate_available),
+    acceptance_gate: ui_ux_intelligence.acceptance_gate || {},
+    regression_status: ui_ux_intelligence.regression_status || "unavailable",
     next_action: ui_ux_intelligence.next_action || "Review the UI/UX intelligence output."
   } : {
     status: "unavailable",
@@ -985,6 +991,12 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     prompt_pack_available: false,
     prompt_pack_prompt_titles: [],
     prompt_pack_warnings: [],
+    evidence_status: "unavailable",
+    visual_qa_status: "unavailable",
+    acceptance_gate_status: "unavailable",
+    acceptance_gate_available: false,
+    acceptance_gate: {},
+    regression_status: "unavailable",
     next_action: "Run kvdf ui-ux-intelligence recommend --idea \"...\" --json if UI/UX guidance is needed."
   };
   const docsStatus = docsReview.docs_status;
@@ -1074,6 +1086,27 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
       prompt_titles: [],
       warnings: [],
       next_action: "Run kvdf ui-ux-intelligence prompt-pack --idea \"...\" --executor codex --json if implementation guidance is needed."
+    },
+    ui_ux_acceptance_gate: ui_ux_intelligence ? {
+      status: ui_ux_intelligence.acceptance_gate_status || "warning",
+      standalone: true,
+      external_github_dependency: false,
+      available: Boolean(ui_ux_intelligence.acceptance_gate_available),
+      score: ui_ux_intelligence.acceptance_gate ? ui_ux_intelligence.acceptance_gate.score || 0 : 0,
+      grade: ui_ux_intelligence.acceptance_gate ? ui_ux_intelligence.acceptance_gate.grade || "F" : "F",
+      blockers: ui_ux_intelligence.acceptance_gate && Array.isArray(ui_ux_intelligence.acceptance_gate.blockers) ? [...ui_ux_intelligence.acceptance_gate.blockers] : [],
+      warnings: ui_ux_intelligence.acceptance_gate && Array.isArray(ui_ux_intelligence.acceptance_gate.warnings) ? [...ui_ux_intelligence.acceptance_gate.warnings] : [],
+      next_action: ui_ux_intelligence.acceptance_gate && ui_ux_intelligence.acceptance_gate.next_action ? ui_ux_intelligence.acceptance_gate.next_action : "Resolve acceptance gate blockers before handoff."
+    } : {
+      status: "unavailable",
+      standalone: true,
+      external_github_dependency: false,
+      available: false,
+      score: 0,
+      grade: "F",
+      blockers: [],
+      warnings: [],
+      next_action: "Run kvdf ui-ux-intelligence acceptance-gate --idea \"...\" --json if UI/UX acceptance evidence is needed."
     },
     version_control_review: versionControlReview,
     publish_readiness_review: publishReadinessReview,
@@ -1206,6 +1239,7 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     ui_ux_review: review.ui_ux_review,
     ui_ux_handoff_pack: review.ui_ux_handoff_pack,
     ui_ux_prompt_pack: review.ui_ux_prompt_pack,
+    ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -2284,6 +2318,12 @@ function buildUiUxIntelligenceUnavailableSummary(reason = "Plugin unavailable or
     target_docs: [...UI_UX_INTELLIGENCE_TARGET_DOCS],
     findings: [],
     docs_ready: false,
+    evidence_status: "unavailable",
+    visual_qa_status: "unavailable",
+    acceptance_gate_status: "unavailable",
+    acceptance_gate_available: false,
+    acceptance_gate: {},
+    regression_status: "unavailable",
     handoff_pack_status: "unavailable",
     handoff_pack_ready: false,
     handoff_pack_available: false,
@@ -2336,6 +2376,12 @@ function buildUiUxIntelligenceSummary(options = {}) {
     target_docs: [],
     findings: [],
     docs_ready: false,
+    evidence_status: "unavailable",
+    visual_qa_status: "unavailable",
+    acceptance_gate_status: "unavailable",
+    acceptance_gate_available: false,
+    acceptance_gate: {},
+    regression_status: "unavailable",
     warnings: [],
     handoff_pack_status: "warning",
     handoff_pack_ready: false,
@@ -2360,6 +2406,10 @@ function buildUiUxIntelligenceSummary(options = {}) {
     const patternLibrary = runtime.buildUiPatternLibrary(input, { track, app, stack, recommendation, strict });
     const implementationGuidance = runtime.buildImplementationGuidance(input, { track, app, stack, recommendation, strict });
     const promptPack = runtime.buildUiUxPromptPack(input, { track, app, stack, recommendation, strict, executor: "codex", handoffPack });
+    const evidenceManifest = runtime.buildUiUxEvidenceManifest(input, { track, app, strict, stage: "handoff" });
+    const visualQa = runtime.buildVisualQaContract(input, { track, app, stack, recommendation, checklist, evidenceManifest, strict });
+    const acceptanceGate = runtime.buildUiUxAcceptanceGate(input, { track, app, stack, recommendation, checklist, scorecard: handoffPack.scorecard, evidenceManifest, visualQa, handoffPack, strict });
+    const regressionChecklist = runtime.buildUiUxRegressionChecklist(input, { track, app, stack, recommendation, checklist, strict });
     const implementationSummary = buildUiUxImplementationSummary(handoffPack);
     summary.recommendation_summary = {
       detected_product_type: recommendation.detected_product_type,
@@ -2408,6 +2458,19 @@ function buildUiUxIntelligenceSummary(options = {}) {
     summary.handoff_pack_ready = handoffPack.handoff_status === "pass";
     summary.handoff_pack_available = Boolean(handoffPack && handoffPack.handoff_status && handoffPack.handoff_status !== "unavailable");
     summary.handoff_pack_target_docs = Array.isArray(handoffPack.target_docs) ? [...handoffPack.target_docs] : [...summary.target_docs];
+    summary.evidence_status = evidenceManifest.summary && evidenceManifest.summary.missing_recommended_evidence.length ? "warning" : "pass";
+    summary.visual_qa_status = visualQa.evidence_status && visualQa.evidence_status.status ? visualQa.evidence_status.status : "warning";
+    summary.acceptance_gate_status = acceptanceGate.status || "warning";
+    summary.acceptance_gate_available = true;
+    summary.acceptance_gate = {
+      status: acceptanceGate.status || "warning",
+      score: acceptanceGate.score || 0,
+      grade: acceptanceGate.grade || "F",
+      blockers: Array.isArray(acceptanceGate.blockers) ? [...acceptanceGate.blockers] : [],
+      warnings: Array.isArray(acceptanceGate.warnings) ? [...acceptanceGate.warnings] : [],
+      next_action: acceptanceGate.next_action || "Resolve the acceptance blockers before UI/UX handoff."
+    };
+    summary.regression_status = regressionChecklist.summary && regressionChecklist.summary.total ? "available" : "unavailable";
     summary.next_action = "Use ui_ux_intelligence docs sections during materialization if approved.";
     summary.warnings = uniqueList([...(recommendation.warnings || []), ...(checklist.warnings || []), ...(docs.warnings || [])]);
     if (strict && summary.checklist_summary && summary.checklist_summary.summary && summary.checklist_summary.summary.blockers > 0) {
@@ -2620,6 +2683,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     ui_ux_review: review.ui_ux_review,
     ui_ux_handoff_pack: review.ui_ux_handoff_pack,
     ui_ux_prompt_pack: review.ui_ux_prompt_pack,
+    ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -8803,9 +8867,15 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.critical_states) && uiUxSummary.implementation_summary.critical_states.length ? `- Critical states: ${uiUxSummary.implementation_summary.critical_states.join("; ")}` : null,
     uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.accessibility_notes) && uiUxSummary.implementation_summary.accessibility_notes.length ? `- Accessibility reminders: ${uiUxSummary.implementation_summary.accessibility_notes.join("; ")}` : null,
     uiUxSummary.checklist_summary && uiUxSummary.checklist_summary.summary ? `- Accessibility checklist: ${uiUxSummary.checklist_summary.summary.total || 0} items, ${uiUxSummary.checklist_summary.summary.blockers || 0} blockers, ${uiUxSummary.checklist_summary.summary.warnings || 0} warnings` : null,
+    uiUxSummary.visual_qa_status ? `- Visual QA: ${uiUxSummary.visual_qa_status}` : null,
+    uiUxSummary.evidence_status ? `- Evidence manifest: ${uiUxSummary.evidence_status}` : null,
+    uiUxSummary.acceptance_gate ? `- Acceptance gate: ${uiUxSummary.acceptance_gate.status || "warning"}${typeof uiUxSummary.acceptance_gate.score === "number" ? ` (${uiUxSummary.acceptance_gate.score}/${uiUxSummary.acceptance_gate.grade || "F"})` : ""}` : null,
+    uiUxSummary.acceptance_gate && Array.isArray(uiUxSummary.acceptance_gate.blockers) && uiUxSummary.acceptance_gate.blockers.length ? `- Acceptance blockers: ${uiUxSummary.acceptance_gate.blockers.join("; ")}` : null,
+    uiUxSummary.acceptance_gate && Array.isArray(uiUxSummary.acceptance_gate.warnings) && uiUxSummary.acceptance_gate.warnings.length ? `- Acceptance warnings: ${uiUxSummary.acceptance_gate.warnings.join("; ")}` : null,
     uiUxSummary.target_docs && uiUxSummary.target_docs.length ? `- Target docs: ${uiUxSummary.target_docs.join("; ")}` : null,
     `- Next action: ${uiUxSummary.next_action || "Review the UI/UX intelligence output."}`,
-    "- Reminder: do not overwrite existing UI/UX docs unless --force or Owner approval exists."
+    "- Reminder: do not overwrite existing UI/UX docs unless --force or Owner approval exists.",
+    "- Stop condition: stop until the required UI/UX evidence, accessibility checks, and acceptance gate pass."
   ].filter(Boolean).join("\n") : null;
   return [
     heading,

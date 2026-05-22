@@ -1429,11 +1429,15 @@ Notes:
   kvdf ui-ux-intelligence patterns --idea "Build booking app"
   kvdf ui-ux-intelligence implementation-guidance --idea "Build booking app" --stack react
   kvdf ui-ux-intelligence prompt-pack --idea "Build booking app" --stack react --executor codex
+  kvdf ui-ux-intelligence evidence --app booking --evidence "home.png,booking-error.png"
+  kvdf ui-ux-intelligence visual-qa --idea "Build booking app" --app booking
+  kvdf ui-ux-intelligence acceptance-gate --idea "Build booking app" --app booking
+  kvdf ui-ux-intelligence regression --idea "Build booking app" --app booking
   kvdf plugins install ui_ux_intelligence
   kvdf plugins uninstall ui_ux_intelligence
 
 Notes:
-  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, implementation guidance, and prompt packs. Runtime data comes from plugins/ui_ux_intelligence/data/ only and it does not depend on external GitHub repositories or _temp_meta at runtime.
+  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, implementation guidance, evidence packs, acceptance gates, regression checks, and prompt packs. Runtime data comes from plugins/ui_ux_intelligence/data/ only and it does not depend on external GitHub repositories or _temp_meta at runtime.
 `
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
@@ -1501,7 +1505,7 @@ function printHelp() {
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
-    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack Optional UI/UX intelligence plugin",
+    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression Optional UI/UX intelligence plugin",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",

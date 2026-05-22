@@ -54,6 +54,10 @@ const { generateUiUxHandoffPack, buildHandoffMarkdown, mapHandoffToViberDocs } =
 const { buildUiPatternLibrary, inferRelevantPatterns, buildPatternAcceptanceCriteria, buildPatternAntiPatterns, buildPatternImplementationNotes } = require("./pattern_library");
 const { buildImplementationGuidance, buildStackGuidance, buildComponentImplementationGuidance, buildScreenImplementationGuidance, buildStateImplementationGuidance, buildAccessibilityImplementationGuidance, buildTestingImplementationGuidance } = require("./implementation_guidance");
 const { buildUiUxPromptPack, buildCodexUiImplementationPrompt, buildUiReviewPrompt, buildUiFixPrompt, renderPromptPackMarkdown } = require("./prompt_pack");
+const { buildUiUxEvidenceManifest, normalizeEvidenceItem, classifyEvidencePath, summarizeEvidenceManifest, renderEvidenceMarkdown } = require("./evidence");
+const { buildVisualQaContract, buildScreenQaRequirements, buildStateQaRequirements, buildResponsiveQaRequirements, buildAccessibilityQaRequirements, evaluateVisualQaEvidence, renderVisualQaMarkdown } = require("./visual_qa");
+const { buildUiUxAcceptanceGate, evaluateScorecardForAcceptance, evaluateEvidenceForAcceptance, evaluateDocsForAcceptance, summarizeAcceptanceGate } = require("./acceptance_gate");
+const { buildUiUxRegressionChecklist, buildRegressionItemsFromScreens, buildRegressionItemsFromComponents, buildRegressionItemsFromStates, summarizeRegressionChecklist, renderRegressionMarkdown } = require("./regression");
 
 const PLUGIN_ID = "ui_ux_intelligence";
 const EXPECTED_DATA_FILES = [
@@ -107,7 +111,7 @@ function getPluginStatus(root = process.cwd()) {
     standalone: true,
     external_github_dependency: false,
     catalog_ready: catalog.catalog_ready,
-    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit", "scorecard", "gate", "readiness", "handoff_pack", "tokens", "components", "screens", "patterns", "implementation_guidance", "prompt_pack"],
+    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit", "scorecard", "gate", "readiness", "handoff_pack", "tokens", "components", "screens", "patterns", "implementation_guidance", "prompt_pack", "evidence", "visual_qa", "acceptance_gate", "regression"],
     next_action: catalog.catalog_ready
       ? "Run kvdf ui-ux-intelligence catalog --json or kvdf ui-ux-intelligence search --query \"...\" --domain all --json."
       : "Install the relocated CSV data into plugins/ui_ux_intelligence/data/ and plugins/ui_ux_intelligence/data/stacks/."
@@ -306,6 +310,29 @@ module.exports = {
   buildUiReviewPrompt,
   buildUiFixPrompt,
   renderPromptPackMarkdown,
+  buildUiUxEvidenceManifest,
+  normalizeEvidenceItem,
+  classifyEvidencePath,
+  summarizeEvidenceManifest,
+  renderEvidenceMarkdown,
+  buildVisualQaContract,
+  buildScreenQaRequirements,
+  buildStateQaRequirements,
+  buildResponsiveQaRequirements,
+  buildAccessibilityQaRequirements,
+  evaluateVisualQaEvidence,
+  renderVisualQaMarkdown,
+  buildUiUxAcceptanceGate,
+  evaluateScorecardForAcceptance,
+  evaluateEvidenceForAcceptance,
+  evaluateDocsForAcceptance,
+  summarizeAcceptanceGate,
+  buildUiUxRegressionChecklist,
+  buildRegressionItemsFromScreens,
+  buildRegressionItemsFromComponents,
+  buildRegressionItemsFromStates,
+  summarizeRegressionChecklist,
+  renderRegressionMarkdown,
   buildMarkdownStatus,
   listExpectedSourceFiles
 };
