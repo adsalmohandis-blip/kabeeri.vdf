@@ -21,6 +21,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const PLUGIN_BUNDLE_DIRS = {
   "ai-learning": "ai_learning",
   "booking-builder": "booking_builder",
+  "bootstrap_ui": "bootstrap_ui",
   "company-profile": "company_profile",
   "ecommerce-builder": "ecommerce_builder",
   "ecommerce-mobile-app": "ecommerce_mobile_app",
@@ -8351,6 +8352,61 @@ test("ui_ux_intelligence plugin is discoverable and the status command is availa
   assert.ok(status.capabilities.includes("source-status"));
   assert.ok(status.capabilities.includes("recommend"));
   assert.ok(status.capabilities.includes("catalog"));
+});
+
+test("bootstrap_ui plugin is discoverable and the command surface is optional", () => {
+  const report = buildPluginLoaderReport();
+  const plugin = report.plugins.find((item) => item.plugin_id === "bootstrap_ui");
+  assert.ok(plugin);
+  assert.strictEqual(plugin.plugin_id, "bootstrap_ui");
+  assert.strictEqual(plugin.removable, true);
+  assert.strictEqual(plugin.enabled_by_default, false);
+
+  const status = JSON.parse(runKvdf(["bootstrap-ui", "status", "--json"]).stdout);
+  assert.strictEqual(status.report_type, "bootstrap_ui_status");
+  assert.strictEqual(status.plugin_id, "bootstrap_ui");
+  assert.strictEqual(status.status, "available");
+  assert.strictEqual(status.enabled_by_default, false);
+  assert.strictEqual(status.core_dependency, false);
+  assert.strictEqual(status.assets.css, "plugins/bootstrap_ui/assets/bootstrap.min.css");
+  assert.strictEqual(status.assets.js, "plugins/bootstrap_ui/assets/bootstrap.bundle.min.js");
+
+  const assets = JSON.parse(runKvdf(["bootstrap-ui", "assets", "--json"]).stdout);
+  assert.strictEqual(assets.report_type, "bootstrap_ui_assets");
+  assert.ok(Array.isArray(assets.assets));
+  assert.ok(assets.assets.some((item) => item.type === "css" && item.path === "plugins/bootstrap_ui/assets/bootstrap.min.css"));
+  assert.ok(assets.assets.some((item) => item.type === "js" && item.path === "plugins/bootstrap_ui/assets/bootstrap.bundle.min.js"));
+  assert.strictEqual(assets.third_party_notice, "plugins/bootstrap_ui/THIRD_PARTY_NOTICES.md");
+
+  const snippet = JSON.parse(runKvdf(["bootstrap-ui", "snippet", "--json"]).stdout);
+  assert.strictEqual(snippet.report_type, "bootstrap_ui_snippet");
+  assert.match(snippet.html, /bootstrap\.min\.css/);
+  assert.match(snippet.html, /bootstrap\.bundle\.min\.js/);
+  assert.strictEqual(snippet.css_path, "plugins/bootstrap_ui/assets/bootstrap.min.css");
+  assert.strictEqual(snippet.js_path, "plugins/bootstrap_ui/assets/bootstrap.bundle.min.js");
+});
+
+test("bootstrap_ui is no longer a root package dependency and Core source does not hard-require bootstrap", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+  const lock = JSON.parse(fs.readFileSync(path.join(repoRoot, "package-lock.json"), "utf8"));
+  assert.ok(!pkg.dependencies || !Object.prototype.hasOwnProperty.call(pkg.dependencies, "bootstrap"));
+  assert.ok(!lock.packages[""].dependencies || !Object.prototype.hasOwnProperty.call(lock.packages[""].dependencies, "bootstrap"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(lock.packages, "node_modules/bootstrap"));
+
+  const coreFiles = [
+    "bin/kvdf.js",
+    "src/cli/index.js",
+    "src/cli/ui.js",
+    "src/cli/commands/dashboard_site.js",
+    "src/cli/commands/docs_site.js",
+    "src/cli/commands/bootstrap_ui.js"
+  ];
+  for (const relativePath of coreFiles) {
+    const content = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+    assert.ok(!/require\((['"])bootstrap\1\)/.test(content), `${relativePath} should not require bootstrap`);
+    assert.ok(!/bootstrap\/dist/.test(content), `${relativePath} should not reference bootstrap dist paths`);
+    assert.ok(!/node_modules\/bootstrap/.test(content), `${relativePath} should not hard reference node_modules/bootstrap`);
+  }
 });
 
 test("ui_ux_intelligence source-status and catalog use relocated plugin data", () => withTempDir((dir) => {

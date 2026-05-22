@@ -34,9 +34,6 @@
   "engines": {
     "node": ">=18"
   },
-  "dependencies": {
-    "bootstrap": "5.3.8"
-  },
   "devDependencies": {
     "@tailwindcss/cli": "4.3.0",
     "tailwindcss": "4.3.0"

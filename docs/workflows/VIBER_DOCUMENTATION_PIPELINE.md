@@ -70,3 +70,7 @@ when the operator explicitly passes `handoff-pack --output <path>`. The prompt
 pack can likewise be exported only when `prompt-pack --output <path>` is
 explicitly requested. The evidence, visual-qa, acceptance-gate, and regression
 commands are report-only surfaces for handoff and publish readiness.
+
+If a surface explicitly opts into Bootstrap styling, the optional
+`bootstrap_ui` plugin can provide copied Bootstrap CSS and JavaScript assets
+and a safe snippet helper without making Bootstrap a Core dependency.

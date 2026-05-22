@@ -132,6 +132,9 @@ function normalizeCommandName(command) {
     "uiux-intelligence": "ui-ux-intelligence",
     uiux: "ui-ux-intelligence",
     "ui-ux": "ui-ux-intelligence",
+    "bootstrap-ui": "bootstrap-ui",
+    bootstrap_ui: "bootstrap-ui",
+    bootstrapui: "bootstrap-ui",
     evolve: "evolution",
     evolution: "evolution",
     "evolution-steward": "evolution",
@@ -1438,7 +1441,17 @@ Notes:
 
 Notes:
   UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, implementation guidance, evidence packs, acceptance gates, regression checks, and prompt packs. Runtime data comes from plugins/ui_ux_intelligence/data/ only and it does not depend on external GitHub repositories or _temp_meta at runtime.
-`
+`,
+    "bootstrap-ui": `Usage:
+  kvdf bootstrap-ui status
+  kvdf bootstrap-ui assets
+  kvdf bootstrap-ui snippet
+  kvdf plugins install bootstrap_ui
+  kvdf plugins uninstall bootstrap_ui
+
+Notes:
+  Bootstrap UI is an optional removable asset provider plugin. It copies Bootstrap CSS and JavaScript into plugins/bootstrap_ui/assets/ so KVDF Core no longer depends on the Bootstrap package directly. Use the snippet helper only on surfaces that explicitly opt into Bootstrap assets.
+`,
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
 }
@@ -1506,6 +1519,7 @@ function printHelp() {
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
+    "  bootstrap-ui status|assets|snippet Optional Bootstrap UI asset provider plugin",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",

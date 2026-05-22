@@ -238,11 +238,18 @@ kvdf ui-ux-intelligence catalog-health --json
 kvdf ui-ux-intelligence governance-registry --json
 kvdf ui-ux-intelligence upgrade-plan --json
 kvdf ui-ux-intelligence governance --json
+kvdf bootstrap-ui status
+kvdf bootstrap-ui assets
+kvdf bootstrap-ui snippet
 kvdf plugins install ui_ux_intelligence
 kvdf plugins uninstall ui_ux_intelligence
+kvdf plugins install bootstrap_ui
+kvdf plugins uninstall bootstrap_ui
 ```
 
 `ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides deterministic product detection, local catalog/search, recommendation, design-system generation, checklist generation, docs section generation, lightweight audit reporting, UI/UX scorecards, stage gates, readiness checks, handoff readiness, design tokens, component blueprints, screen blueprints, UI pattern libraries, implementation guidance, Codex-ready prompt packs, evidence manifests, visual QA contracts, acceptance gates, regression checklists, knowledge-pack status, catalog health, governance registry, and upgrade planning for Viber apps. Planner, review, visual, prompt, docs materialization, and Viber dashboard flows can optionally consume its summaries when explicitly requested, but the plugin remains removable and never becomes mandatory. Phase 1 used a flat `_temp_meta/` staging contract inside the plugin folder; phase 2 relocates the approved CSV data into `plugins/ui_ux_intelligence/data/` and `plugins/ui_ux_intelligence/data/stacks/`. The runtime never reads `_temp_meta/`. The plugin does not depend on external GitHub repositories, paid APIs, or AI APIs. The docs, audit, scorecard, gate, readiness, tokens, components, screens, patterns, implementation-guidance, prompt-pack, evidence, visual-qa, acceptance-gate, regression, knowledge-pack, catalog-health, governance-registry, upgrade-plan, and governance commands do not write files unless `handoff-pack`, `prompt-pack`, or a reporting command is given an explicit `--output` path, in which case only Markdown is written to an allowed docs or app-workspace path.
+
+`bootstrap_ui` is an optional removable Bootstrap asset provider plugin. It keeps Bootstrap out of the KVDF Core dependency graph, copies Bootstrap CSS and JavaScript into `plugins/bootstrap_ui/assets/`, and exposes a safe snippet helper for surfaces that explicitly opt in to Bootstrap assets. The plugin is offline, manifest-driven, and removable by design.
 
 The checklist command groups readiness checks across accessibility, responsive, interaction, content, layout, forms, dashboard, performance, motion, and handoff. The docs command returns Markdown-ready sections for `docs/ui-ux/UI_UX_DESIGN.md`, `docs/ui-ux/UX_PRINCIPLES.md`, `docs/ui-ux/INFORMATION_ARCHITECTURE.md`, `docs/ui-ux/USER_FLOWS.md`, `docs/ui-ux/WIREFRAMES.md`, `docs/ui-ux/UI_SPECIFICATION.md`, `docs/ui-ux/ACCESSIBILITY.md`, and `docs/delivery/QA_CHECKLIST.md`. The audit command inspects a target file or inline text, and `--strict` escalates critical missing UI/UX sections to blockers.
 
