@@ -141,6 +141,9 @@ function normalizeCommandName(command) {
     "tailwind-ui": "tailwind-ui",
     tailwind_ui: "tailwind-ui",
     tailwindui: "tailwind-ui",
+    "plugin-extraction": "plugin-extraction",
+    plugin_extraction: "plugin-extraction",
+    pluginextraction: "plugin-extraction",
     evolve: "evolution",
     evolution: "evolution",
     "evolution-steward": "evolution",
@@ -1473,6 +1476,13 @@ Notes:
 Notes:
   Bootstrap UI is an optional removable asset provider plugin. It copies Bootstrap CSS and JavaScript into plugins/bootstrap_ui/assets/ so KVDF Core no longer depends on the Bootstrap package directly. Use the verify helper to check the local assets and the provider helper to choose fallback or Bootstrap on a per-surface basis. Use the snippet helper only on surfaces that explicitly opt into Bootstrap assets.
 `,
+    "plugin-extraction": `Usage:
+  kvdf plugin-extraction audit
+  kvdf plugin-extraction audit --json
+
+Notes:
+  Plugin Extraction Audit is a read-only Core report that classifies what should stay in KVDF Core and what should move into optional removable plugins. It does not modify files and it does not require .kabeeri runtime state.
+`,
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
 }
@@ -1540,6 +1550,7 @@ function printHelp() {
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
   "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
+    "  plugin-extraction audit      Run the read-only Core plugin extraction audit",
     "  ui-dashboard-kits status|check|examples|templates|snippets|provider|recommend|html-comment Optional UI dashboard kits plugin",
     "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  tailwind-ui status|snippet|utility-map|verify Optional Tailwind UI utility CSS provider plugin",

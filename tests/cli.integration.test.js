@@ -8621,6 +8621,49 @@ test("tailwind_ui plugin is discoverable and provides guidance-only utilities", 
   assert.ok(htmlComment.comment.includes("tailwind_ui guidance-only"));
 });
 
+test("plugin extraction audit classifies Core keep surfaces and plugin candidates without writing files", () => withTempDir((dir) => {
+  const beforeEntries = fs.readdirSync(dir).sort();
+  const report = JSON.parse(runKvdf(["plugin-extraction", "audit", "--json"], { cwd: dir }).stdout);
+
+  assert.strictEqual(report.report_type, "kvdf_core_plugin_extraction_audit");
+  assert.strictEqual(report.status, "warning");
+  assert.strictEqual(report.next_action, "Start Phase 1: bootstrap_ui extraction.");
+  assert.ok(Array.isArray(report.core_keep));
+  assert.ok(Array.isArray(report.plugin_candidates));
+  assert.ok(Array.isArray(report.do_not_move));
+  assert.ok(Array.isArray(report.recommended_order));
+
+  const candidateIds = new Set(report.plugin_candidates.map((item) => item.candidate_id));
+  assert.ok(candidateIds.has("bootstrap_ui"));
+  assert.ok(candidateIds.has("tailwind_ui"));
+  assert.ok(candidateIds.has("ui_dashboard_kits"));
+  assert.ok(candidateIds.has("viber_app_builders"));
+  assert.ok(candidateIds.has("wordpress_builder"));
+  assert.ok(candidateIds.has("github_provider"));
+  assert.ok(candidateIds.has("docs_site"));
+  assert.ok(candidateIds.has("source_package"));
+  assert.ok(candidateIds.has("multi_ai_governance"));
+  assert.ok(candidateIds.has("multi_ai_communications"));
+  assert.ok(candidateIds.has("vscode"));
+  assert.ok(candidateIds.has("generator"));
+
+  const keepIds = new Set(report.core_keep.map((item) => item.item_id));
+  assert.ok(keepIds.has("planner"));
+  assert.ok(keepIds.has("task"));
+  assert.ok(keepIds.has("evolution"));
+  assert.ok(keepIds.has("validation"));
+  assert.ok(keepIds.has("plugin-loader"));
+
+  const moveIds = new Set(report.do_not_move.map((item) => item.item_id));
+  assert.ok(moveIds.has("plugin-loader"));
+  assert.ok(moveIds.has("repository-structure"));
+  assert.strictEqual(report.recommended_order[0].candidate_id, "bootstrap_ui");
+
+  const afterEntries = fs.readdirSync(dir).sort();
+  assert.deepStrictEqual(afterEntries, beforeEntries);
+  assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
+}));
+
 test("bootstrap_ui is no longer a root package dependency and Core source does not hard-require bootstrap", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
   const lock = JSON.parse(fs.readFileSync(path.join(repoRoot, "package-lock.json"), "utf8"));

@@ -38,6 +38,7 @@ kvdf source-package --help
 kvdf security-auditor --help
 kvdf ui-dashboard-kits --help
 kvdf ui-ux-intelligence --help
+kvdf plugin-extraction --help
 kvdf truth --help
 ```
 
@@ -58,6 +59,11 @@ the canonical family name first and treat aliases as compatibility notes.
 `docs/reports/KVDF_COMMAND_DEPRECATION_LEDGER.md` is the place to check which
 aliases remain intentionally supported and which canonical command they point
 to.
+
+`kvdf plugin-extraction audit` is a read-only audit command that classifies
+which Core surfaces should stay in KVDF Core and which ones should move into
+optional plugins. It does not modify files and it does not require `.kabeeri`
+runtime state.
 
 ## Workspace
 

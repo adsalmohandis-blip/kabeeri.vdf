@@ -61,6 +61,7 @@ const { uiUxIntelligence } = require("./commands/ui_ux_intelligence");
 const { uiDashboardKits } = require("./commands/ui_dashboard_kits");
 const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
+const { pluginExtraction } = require("./commands/plugin_extraction");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
 const { booking: bookingCommand } = require("./commands/booking");
@@ -386,6 +387,12 @@ function run(argv) {
   }
   if (["tailwind-ui", "tailwind_ui", "tailwindui"].includes(group)) {
     return tailwindUi(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
+  if (["plugin-extraction", "plugin_extraction", "pluginextraction"].includes(group)) {
+    return pluginExtraction(action, value, args.flags, rest, {
       table,
       repoRoot
     });
