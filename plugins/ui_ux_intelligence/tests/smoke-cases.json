@@ -16,6 +16,18 @@
     {
       "command": "kvdf ui-ux-intelligence design-system --idea \"Build ecommerce app\" --json",
       "expect_report_type": "ui_ux_intelligence_design_system"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence checklist --idea \"Build dashboard app\" --json",
+      "expect_report_type": "ui_ux_intelligence_checklist"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence docs --idea \"Build booking app\" --track vibe --app booking --json",
+      "expect_report_type": "ui_ux_intelligence_docs_sections"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md --json",
+      "expect_report_type": "ui_ux_intelligence_audit"
     }
   ]
 }

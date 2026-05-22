@@ -1,32 +1,60 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "UI UX Intelligence Checklist",
+  "title": "UI UX Intelligence Checklist Report",
   "type": "object",
-  "additionalProperties": true,
-  "required": [
-    "report_type",
-    "checklist",
-    "next_action"
-  ],
+  "required": ["report_type", "input", "checklist", "summary", "standalone", "external_github_dependency", "next_action"],
   "properties": {
     "report_type": { "const": "ui_ux_intelligence_checklist" },
+    "input": { "type": "string" },
     "checklist": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["check_id", "title", "category", "severity", "required"],
+        "required": ["check_id", "title", "category", "severity", "required", "why", "evidence_hint", "applies_to"],
         "properties": {
           "check_id": { "type": "string" },
           "title": { "type": "string" },
-          "category": {
-            "enum": ["accessibility", "responsive", "interaction", "content", "layout", "forms", "dashboard", "performance"]
-          },
+          "category": { "enum": ["accessibility", "responsive", "interaction", "content", "layout", "forms", "dashboard", "performance", "motion", "handoff"] },
           "severity": { "enum": ["info", "warning", "blocker"] },
-          "required": { "type": "boolean" }
-        },
-        "additionalProperties": true
+          "required": { "type": "boolean" },
+          "why": { "type": "string" },
+          "evidence_hint": { "type": "string" },
+          "applies_to": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
       }
     },
+    "summary": {
+      "type": "object",
+      "required": ["total", "required", "blockers", "warnings", "by_category"],
+      "properties": {
+        "total": { "type": "integer" },
+        "required": { "type": "integer" },
+        "blockers": { "type": "integer" },
+        "warnings": { "type": "integer" },
+        "by_category": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "info": { "type": "integer" },
+              "warning": { "type": "integer" },
+              "blocker": { "type": "integer" }
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
     "next_action": { "type": "string" }
-  }
+  },
+  "additionalProperties": true
 }

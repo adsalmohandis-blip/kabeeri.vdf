@@ -31,9 +31,19 @@ const {
   buildAccessibilityGuidance,
   buildPreDeliveryChecklist
 } = require("./design_system");
-const { generateChecklist } = require("./checklist");
-const { generateDocsSections } = require("./docs_adapter");
-const { auditUiUx } = require("./audit");
+const { generateChecklist, categorizeChecklistItems, summarizeChecklist } = require("./checklist");
+const {
+  generateDocsSections,
+  buildUiUxDesignSection,
+  buildUxPrinciplesSection,
+  buildInformationArchitectureSection,
+  buildUserFlowsSection,
+  buildWireframesSection,
+  buildUiSpecificationSection,
+  buildAccessibilitySection,
+  mapSectionsToViberDocs
+} = require("./docs_adapter");
+const { auditUiUxTarget, auditTextContent, summarizeAudit } = require("./audit");
 
 const PLUGIN_ID = "ui_ux_intelligence";
 const EXPECTED_DATA_FILES = [
@@ -151,7 +161,7 @@ function buildDocsSections(input, options = {}) {
 }
 
 function buildAudit(input, options = {}) {
-  return auditUiUx(input, options);
+  return auditUiUxTarget(input, options);
 }
 
 function getCatalogReport(options = {}) {
@@ -218,8 +228,23 @@ module.exports = {
   buildAccessibilityGuidance,
   buildPreDeliveryChecklist,
   buildChecklist,
+  generateChecklist,
+  categorizeChecklistItems,
+  summarizeChecklist,
   buildDocsSections,
+  generateDocsSections,
+  buildUiUxDesignSection,
+  buildUxPrinciplesSection,
+  buildInformationArchitectureSection,
+  buildUserFlowsSection,
+  buildWireframesSection,
+  buildUiSpecificationSection,
+  buildAccessibilitySection,
+  mapSectionsToViberDocs,
   buildAudit,
+  auditUiUxTarget,
+  auditTextContent,
+  summarizeAudit,
   buildMarkdownStatus,
   listExpectedSourceFiles
 };

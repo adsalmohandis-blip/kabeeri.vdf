@@ -8457,6 +8457,85 @@ test("ui_ux_intelligence recommend survives a missing optional catalog file with
   assert.ok(Array.isArray(report.icon_recommendations));
 }));
 
+test("ui_ux_intelligence checklist docs and audit stay local and produce handoff-ready output", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
+
+  const checklist = JSON.parse(runKvdf(["ui-ux-intelligence", "checklist", "--idea", "Build dashboard app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(checklist.report_type, "ui_ux_intelligence_checklist");
+  assert.ok(Array.isArray(checklist.checklist));
+  assert.ok(checklist.checklist.some((item) => item.category === "accessibility"));
+  assert.ok(checklist.checklist.some((item) => item.category === "responsive"));
+  assert.ok(checklist.checklist.some((item) => item.category === "interaction"));
+  assert.ok(checklist.summary.by_category.accessibility);
+  assert.ok(checklist.summary.by_category.responsive);
+  assert.ok(checklist.summary.by_category.interaction);
+  assert.strictEqual(checklist.standalone, true);
+  assert.strictEqual(checklist.external_github_dependency, false);
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
+
+  const docs = JSON.parse(runKvdf(["ui-ux-intelligence", "docs", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(docs.report_type, "ui_ux_intelligence_docs_sections");
+  assert.deepStrictEqual(docs.target_docs, [
+    "docs/ui-ux/UI_UX_DESIGN.md",
+    "docs/ui-ux/UX_PRINCIPLES.md",
+    "docs/ui-ux/INFORMATION_ARCHITECTURE.md",
+    "docs/ui-ux/USER_FLOWS.md",
+    "docs/ui-ux/WIREFRAMES.md",
+    "docs/ui-ux/UI_SPECIFICATION.md",
+    "docs/ui-ux/ACCESSIBILITY.md",
+    "docs/delivery/QA_CHECKLIST.md"
+  ]);
+  assert.ok(Array.isArray(docs.sections));
+  assert.strictEqual(docs.sections.length, 8);
+  assert.ok(docs.sections.every((section) => typeof section.content === "string" && section.content.includes("# ")));
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
+
+  const missingAudit = JSON.parse(runKvdf(["ui-ux-intelligence", "audit", "--target", "missing-ui-doc.md", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(missingAudit.report_type, "ui_ux_intelligence_audit");
+  assert.strictEqual(missingAudit.status, "warning");
+  assert.ok(Array.isArray(missingAudit.findings));
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
+}));
+
+test("ui_ux_intelligence audit scores rich UI text better than sparse text and strict mode can block", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
+
+  const sparseFile = path.join(dir, "sparse-ui.md");
+  const richFile = path.join(dir, "rich-ui.md");
+  fs.writeFileSync(sparseFile, "# UI\n\nShort note without much detail.\n", "utf8");
+  fs.writeFileSync(richFile, [
+    "# UI UX Design",
+    "",
+    "## Responsive",
+    "The layout stays mobile, tablet, and desktop friendly with no horizontal scrolling.",
+    "",
+    "## Accessibility",
+    "Visible focus states, keyboard navigation, contrast, semantic structure, alt text, and reduced motion are all documented.",
+    "",
+    "## States",
+    "Loading, empty state, error state, and success state are all described for the main flow.",
+    "",
+    "## Handoff",
+    "The handoff checklist, validation messages, and recovery path are all included.",
+    "",
+    "## Notes",
+    "Form validation, destructive action confirmation, and clear contrast notes are provided."
+  ].join("\n"), "utf8");
+
+  const sparse = JSON.parse(runKvdf(["ui-ux-intelligence", "audit", "--target", sparseFile, "--json"], { cwd: dir }).stdout);
+  const rich = JSON.parse(runKvdf(["ui-ux-intelligence", "audit", "--target", richFile, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(sparse.report_type, "ui_ux_intelligence_audit");
+  assert.ok(sparse.findings.length > rich.findings.length);
+  assert.ok(["pass", "warning"].includes(rich.status));
+
+  const strictBlocked = JSON.parse(runKvdf(["ui-ux-intelligence", "audit", "--target", sparseFile, "--strict", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(strictBlocked.status, "blocked");
+  assert.ok(strictBlocked.summary.blockers > 0);
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
+}));
+
 test("ui_ux_intelligence runtime stays offline and does not depend on an external repository", () => {
   const runtimeFiles = [
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "index.js"),

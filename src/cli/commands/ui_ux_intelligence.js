@@ -284,6 +284,8 @@ function renderChecklist(report, table) {
     "",
     table(["Check", "Title", "Category", "Severity", "Required"], rows.length ? rows : [["", "", "No checklist items.", "", ""]]),
     "",
+    `Summary: ${report.summary.total} total, ${report.summary.blockers} blockers, ${report.summary.warnings} warnings`,
+    "",
     `Next action: ${report.next_action}`
   ].join("\n");
 }

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "UI UX Intelligence Docs Sections Report",
+  "type": "object",
+  "required": ["report_type", "input", "track", "app", "target_docs", "sections", "standalone", "external_github_dependency", "next_action"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_docs_sections" },
+    "input": { "type": "string" },
+    "track": { "type": "string" },
+    "app": { "type": "string" },
+    "target_docs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["target_doc", "section_title", "content", "source", "applies_to_stage", "next_action"],
+        "properties": {
+          "target_doc": { "type": "string" },
+          "section_title": { "type": "string" },
+          "content": { "type": "string" },
+          "source": { "type": "string" },
+          "applies_to_stage": { "enum": ["ui_ux_design", "validation", "handoff"] },
+          "next_action": { "type": "string" }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

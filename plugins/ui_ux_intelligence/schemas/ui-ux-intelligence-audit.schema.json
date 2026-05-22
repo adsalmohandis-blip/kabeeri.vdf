@@ -1,33 +1,50 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "UI UX Intelligence Audit",
+  "title": "UI UX Intelligence Audit Report",
   "type": "object",
-  "additionalProperties": true,
-  "required": [
-    "report_type",
-    "status",
-    "target",
-    "findings",
-    "summary",
-    "next_action"
-  ],
+  "required": ["report_type", "status", "target", "findings", "summary", "standalone", "external_github_dependency", "next_action"],
   "properties": {
     "report_type": { "const": "ui_ux_intelligence_audit" },
     "status": { "enum": ["pass", "warning", "blocked"] },
     "target": { "type": "string" },
     "findings": {
       "type": "array",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object",
+        "required": ["finding_id", "severity", "category", "message", "evidence", "recommendation"],
+        "properties": {
+          "finding_id": { "type": "string" },
+          "severity": { "enum": ["info", "warning", "blocker"] },
+          "category": { "enum": ["accessibility", "responsive", "interaction", "content", "layout", "forms", "dashboard", "performance", "motion", "handoff"] },
+          "message": { "type": "string" },
+          "evidence": { "type": "string" },
+          "recommendation": { "type": "string" }
+        }
+      }
     },
     "summary": {
       "type": "object",
-      "required": ["warnings", "blockers"],
+      "required": ["warnings", "blockers", "by_category"],
       "properties": {
         "warnings": { "type": "integer" },
-        "blockers": { "type": "integer" }
-      },
-      "additionalProperties": true
+        "blockers": { "type": "integer" },
+        "by_category": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "total": { "type": "integer" },
+              "warnings": { "type": "integer" },
+              "blockers": { "type": "integer" },
+              "info": { "type": "integer" }
+            }
+          }
+        }
+      }
     },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
     "next_action": { "type": "string" }
-  }
+  },
+  "additionalProperties": true
 }
