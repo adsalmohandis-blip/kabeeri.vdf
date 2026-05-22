@@ -817,6 +817,37 @@ It does not authorize code changes by itself.
 - Must finish before next slice: no (final v1 slice).
 - Owner approval gate: required.
 
+## Post-V1 Bridge And Later Evolution
+
+This section is intentionally separate from the KVDOS v1 punch.
+It exists so the future bridge/later-evolution path is visible, but it does not
+change the fact that `impl-31` is the final KVDOS v1 slice.
+
+- Goal: define the post-v1 bridge and later-evolution work that comes after the
+  v1 launch handoff.
+- Product output: future bridge boundary and later-evolution roadmap.
+- Dependencies: `impl-31`; owner-approved v1 launch handoff complete.
+- Task IDs / titles / descriptions:
+  - `post-v1-t1` Define KVDF bridge boundary - codify how KVDOS maps to KVDF
+    after v1 ships.
+  - `post-v1-t2` Define controlled-upgrade boundary - describe later migration
+    and upgrade rules without implementing them yet.
+  - `post-v1-t3` Define ecosystem expansion boundary - frame plugin/package
+    registry, cloud runner, marketplace, enterprise, and Web3 separation rules.
+  - `post-v1-t4` Add future-track hardening review - verify the later-evolution
+    boundary stays distinct from the v1 implementation punch.
+- Allowed files/areas: `workspaces/apps/kvdos/docs/**` for planning; later
+  implementation would still require app-local branches and PRs before any code.
+- Forbidden files/areas: repo-root KVDF core files, `.vscode/settings.json`, and
+  any implementation code until a separately approved later-stage plan exists.
+- Acceptance criteria: the post-v1 bridge path is explicit; later-evolution
+  boundaries are separated from v1; no code implementation is implied here.
+- Validation commands: `git diff --check`; `git status --short --untracked-files=all`.
+- Suggested branch name: `docs/post-v1-bridge-and-later-evolution`.
+- Suggested PR title: `docs: define post-v1 bridge and later evolution`.
+- Must finish before next slice: no (this is a post-v1 future-track section).
+- Owner approval gate: required.
+
 ## Roadmap Rules
 
 - This document defines implementation slices only.
