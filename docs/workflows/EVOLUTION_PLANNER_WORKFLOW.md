@@ -34,6 +34,12 @@ Planner dashboard sync sits alongside the approval gate so dashboard state can
 show the current approved plan, visual summary, source control state,
 materialization status, and next action without becoming the source of truth.
 
+Naming Governance is layered on top of this flow. Planner-generated plans,
+versions, evolutions, and task punches now carry stable normalized IDs by
+default, while legacy IDs remain preserved for compatibility. The planner and
+dashboard layers may surface read-only naming summaries, but they do not invent
+new IDs.
+
 ## State Resync Gate
 
 Before any next-Evolution recommendation, the planner must:

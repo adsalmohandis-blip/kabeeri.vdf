@@ -66,6 +66,98 @@ function withTempDir(fn) {
   }
 }
 
+function writeNamingRuntimeFixture(dir) {
+  fs.mkdirSync(path.join(dir, ".kabeeri", "reports"), { recursive: true });
+  fs.writeFileSync(path.join(dir, ".kabeeri", "planner.json"), JSON.stringify({
+    planner_version: "1",
+    current_plan_id: "oplan-20260522-01-planner-readiness",
+    plans: [
+      {
+        plan_id: "oplan-20260522-01-planner-readiness",
+        legacy_id: "planner-plan-legacy-1",
+        planner_mode: "owner",
+        track: "framework_owner",
+        delivery_mode: "direct_main",
+        status: "proposed",
+        title: "Planner Readiness",
+        recommended_evolution: {
+          change_id: "oevo-v0-2-0-03-validation-gate",
+          track: "framework_owner",
+          title: "Validation Gate",
+          version: "v0.2.0",
+          order: 3,
+          legacy_id: "owner-evolution-legacy-1"
+        },
+        task_punch: {
+          task_id: "bad id",
+          track: "framework_owner",
+          title: "Broken Task",
+          evolution_id: "oevo-v0-2-0-03-validation-gate",
+          workstream: "frontend"
+        }
+      }
+    ]
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "evolution.json"), JSON.stringify({
+    changes: [
+      {
+        change_id: "oevo-v0-2-0-03-validation-gate",
+        track: "framework_owner",
+        title: "Validation Gate",
+        version: "v0.2.0",
+        order: 3,
+        legacy_id: "shared-legacy-collision"
+      },
+      {
+        change_id: "vevo-booking-v0-2-0-03-safety-quality-validation-gate",
+        normalized_id: "vevo-booking-v0-2-0-03-safety-quality-validation-gate",
+        track: "vibe_app_developer",
+        app_slug: "booking",
+        title: "Validation Gate",
+        version: "v0.2.0",
+        order: 3,
+        category: "safety_quality",
+        legacy_id: "shared-legacy-collision"
+      }
+    ]
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "tasks.json"), JSON.stringify({
+    tasks: [
+      {
+        task_id: "otask-oevo-v0-2-0-03-validation-gate-01-build-booking-form",
+        track: "framework_owner",
+        title: "Build Booking Form",
+        evolution_id: "oevo-v0-2-0-03-validation-gate",
+        workstream: "frontend",
+        legacy_id: "owner-task-legacy-1"
+      },
+      {
+        task_id: "otask-oevo-v0-2-0-03-validation-gate-01-build-booking-form",
+        track: "framework_owner",
+        title: "Duplicate Build Booking Form",
+        evolution_id: "oevo-v0-2-0-03-validation-gate",
+        workstream: "frontend",
+        legacy_id: "owner-task-legacy-2"
+      }
+    ]
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "task_trash.json"), JSON.stringify({
+    trash: [
+      {
+        task_id: "task-legacy-trash",
+        track: "framework_owner",
+        title: "Archived Legacy Task",
+        status: "done",
+        legacy_id: "task-legacy-trash"
+      }
+    ]
+  }, null, 2), "utf8");
+  fs.writeFileSync(path.join(dir, ".kabeeri", "reports", "naming-report.json"), JSON.stringify({
+    report_type: "naming_test_report",
+    title: "Naming report fixture"
+  }, null, 2), "utf8");
+}
+
 function scaffoldVibeWorkspace(dir, slug, { stale = false } = {}) {
   const root = path.join(dir, "workspaces", "apps", slug);
   fs.mkdirSync(path.join(root, ".kabeeri"), { recursive: true });
@@ -842,6 +934,48 @@ test("naming governance normalizes slugs and rejects invalid ids", () => {
   assert.strictEqual(invalid.valid, false);
   assert.ok(Array.isArray(invalid.errors));
   assert.ok(invalid.errors.length > 0);
+});
+
+test("naming governance scans runtime state and produces a dry-run migration plan", () => {
+  withTempDir((dir) => {
+    const previousCwd = process.cwd();
+    writeNamingRuntimeFixture(dir);
+    process.chdir(dir);
+    try {
+      const plannerBefore = fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8");
+      const evolutionBefore = fs.readFileSync(path.join(dir, ".kabeeri", "evolution.json"), "utf8");
+      const tasksBefore = fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8");
+      const trashBefore = fs.readFileSync(path.join(dir, ".kabeeri", "task_trash.json"), "utf8");
+      const validation = namingGovernance.buildNamingValidationReport();
+      const migration = namingGovernance.buildNamingMigrationPlan();
+
+      assert.strictEqual(validation.report_type, "kvdf_naming_validation");
+      assert.strictEqual(validation.status, "blocked");
+      assert.strictEqual(validation.scanned.plans > 0, true);
+      assert.strictEqual(validation.scanned.evolutions > 0, true);
+      assert.strictEqual(validation.scanned.tasks > 0, true);
+      assert.strictEqual(validation.scanned.reports > 0, true);
+      assert.ok(validation.invalid_ids.length > 0);
+      assert.ok(validation.missing_normalized_ids.length > 0);
+      assert.ok(validation.legacy_only.length > 0);
+      assert.ok(validation.duplicates.length > 0);
+      assert.ok(validation.cross_track_collisions.length > 0);
+
+      assert.strictEqual(migration.report_type, "kvdf_naming_migration_plan");
+      assert.strictEqual(migration.dry_run, true);
+      assert.ok(Array.isArray(migration.changes));
+      assert.ok(migration.changes.length > 0);
+      assert.ok(Array.isArray(migration.warnings));
+      assert.ok(migration.warnings.length > 0);
+
+      assert.strictEqual(plannerBefore, fs.readFileSync(path.join(dir, ".kabeeri", "planner.json"), "utf8"));
+      assert.strictEqual(evolutionBefore, fs.readFileSync(path.join(dir, ".kabeeri", "evolution.json"), "utf8"));
+      assert.strictEqual(tasksBefore, fs.readFileSync(path.join(dir, ".kabeeri", "tasks.json"), "utf8"));
+      assert.strictEqual(trashBefore, fs.readFileSync(path.join(dir, ".kabeeri", "task_trash.json"), "utf8"));
+    } finally {
+      process.chdir(previousCwd);
+    }
+  });
 });
 
 test("local server helpers skip serve mode in non-interactive environments", () => {

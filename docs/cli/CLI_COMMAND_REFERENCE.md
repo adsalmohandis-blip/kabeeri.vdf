@@ -67,10 +67,11 @@ which Core surfaces should stay in KVDF Core and which ones should move into
 optional plugins. It does not modify files and it does not require `.kabeeri`
 runtime state.
 
-`kvdf naming preview` and `kvdf naming validate` provide deterministic naming
-governance for plans, versions, evolutions, and tasks across the Owner and
-Viber tracks. The command family only previews and validates IDs; it does not
-write runtime state.
+`kvdf naming preview`, `kvdf naming validate`, and `kvdf naming migrate --dry-run`
+provide deterministic naming governance for plans, versions, evolutions, and
+tasks across the Owner and Viber tracks. Validation scans local runtime state,
+reports invalid or legacy-only IDs, and does not write runtime state. Dry-run
+migration only suggests normalized IDs; it does not mutate files.
 
 ## Workspace
 

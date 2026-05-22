@@ -9,6 +9,7 @@ const { readStateArray, summarizeBy } = require("../services/state_utils");
 const { readJsonLines } = require("../services/jsonl");
 const { buildTaskLifecycleState, buildTaskLifecycleBoard } = require("./task_lifecycle");
 const { buildSecurityGateState } = require("./security");
+const { buildNamingValidationReport } = require("../services/naming_governance");
 const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
 const { getPluginRuntimeStatus } = require("../services/plugin_loader");
 const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
@@ -1665,6 +1666,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
   const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
   const currentPlan = context.plannerPlan || null;
   const readiness = buildDashboardReadinessState(context, "owner");
+  const namingGovernance = buildNamingGovernanceDashboardSummary();
   const commandCenterWidgets = [
     dashboardWidget("owner_current_track", "Current Track", "status", "framework_owner", "ok", "framework_owner", "derived", "Stay on KVDF Core work."),
     dashboardWidget("owner_current_plan", "Current Planner Plan", "status", currentPlan ? currentPlan.title || currentPlan.goal || currentPlan.plan_id : "none", currentPlan ? "ok" : "empty", "framework_owner", "derived", currentPlan ? "Review the approved plan." : "Create or approve an owner plan."),
@@ -1710,6 +1712,16 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
         sourceControlRow(context)
       ], "No source control data yet.")
     ]),
+    naming_governance: createDashboardSection("naming_governance", "Naming Governance", [
+      dashboardWidget("owner_naming_governance", "Naming Governance", "status", namingGovernance.status, namingGovernance.status === "blocked" ? "warning" : namingGovernance.status === "warning" ? "warning" : "ok", "framework_owner", "derived", namingGovernance.next_action)
+    ], [
+      createDashboardTable("owner_naming_governance", "Naming Governance", ["Metric", "Value", "Next Action"], [
+        ["Status", namingGovernance.status, namingGovernance.next_action],
+        ["Invalid IDs", String(namingGovernance.invalid_ids), namingGovernance.next_action],
+        ["Missing normalized IDs", String(namingGovernance.missing_normalized_ids), "Backfill normalized_id fields while preserving legacy_id values."],
+        ["Legacy-only objects", String(namingGovernance.legacy_only), "Preserve legacy ids and add normalized_id next to them."]
+      ], "No naming governance data yet.")
+    ]),
     workflows: createDashboardSection("workflows", "Workflows", workflowWidgets(context), [
       createDashboardTable("owner_workflows", "Workflow Table", ["Workflow", "Stage", "Status", "Next Action", "Runtime File", "Owner"], workflowRows(context), "No workflow data yet.")
     ]),
@@ -1754,6 +1766,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     security_status: readiness.security_status,
     ai_learning_status: readiness.ai_learning_status,
     task_tracker: context.task_tracker_state,
+    naming_governance: namingGovernance,
     next_action: context.plannerState.next_action || "Run kvdf planner propose",
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
     current_plan_status: context.plannerState.current_plan_status || "empty",
@@ -1876,11 +1889,23 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
   }
 }
 
+function buildNamingGovernanceDashboardSummary() {
+  const report = buildNamingValidationReport();
+  return {
+    status: report.status || "unknown",
+    invalid_ids: Array.isArray(report.invalid_ids) ? report.invalid_ids.length : 0,
+    missing_normalized_ids: Array.isArray(report.missing_normalized_ids) ? report.missing_normalized_ids.length : 0,
+    legacy_only: Array.isArray(report.legacy_only) ? report.legacy_only.length : 0,
+    next_action: report.next_action || "Run kvdf naming validate --json to review naming governance."
+  };
+}
+
 function buildViberDashboardState(context = {}, deps = {}) {
   const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
   const currentPlan = context.plannerPlan || null;
   const currentApp = context.apps.find((app) => resolveWorkspaceTrack(app.workspace_kind || app.track || app.audience || "") === "vibe_app_developer") || context.apps[0] || {};
   const readiness = buildDashboardReadinessState(context, "viber");
+  const namingGovernance = buildNamingGovernanceDashboardSummary();
   const uiUxIntelligence = buildUiUxIntelligenceDashboardSummary({
     idea: context.plannerState.current_plan && context.plannerState.current_plan.goal ? context.plannerState.current_plan.goal : (currentPlan && currentPlan.goal ? currentPlan.goal : ""),
     app: currentApp.name || currentApp.username || "",
@@ -1961,6 +1986,16 @@ function buildViberDashboardState(context = {}, deps = {}) {
       ], "No source control data yet."),
       createDashboardTable("viber_handoff", "Handoff Table", ["Handoff ID", "Status", "Evidence", "Next Action"], handoffRows(context), "No handoff package yet.")
     ]),
+    naming_governance: createDashboardSection("naming_governance", "Naming Governance", [
+      dashboardWidget("viber_naming_governance", "Naming Governance", "status", namingGovernance.status, namingGovernance.status === "blocked" ? "warning" : namingGovernance.status === "warning" ? "warning" : "ok", "vibe_app_developer", "derived", namingGovernance.next_action)
+    ], [
+      createDashboardTable("viber_naming_governance", "Naming Governance", ["Metric", "Value", "Next Action"], [
+        ["Status", namingGovernance.status, namingGovernance.next_action],
+        ["Invalid IDs", String(namingGovernance.invalid_ids), namingGovernance.next_action],
+        ["Missing normalized IDs", String(namingGovernance.missing_normalized_ids), "Backfill normalized_id fields while preserving legacy_id values."],
+        ["Legacy-only objects", String(namingGovernance.legacy_only), "Preserve legacy ids and add normalized_id next to them."]
+      ], "No naming governance data yet.")
+    ]),
     ai_cost_control: createDashboardSection("ai_cost_control", "AI Cost Control", aiCostWidgets(context, "viber"), [
       createDashboardTable("viber_ai_usage", "AI Usage Table", ["Task", "Evolution", "Events", "Tokens", "Cost", "Provider", "Model", "Tracked"], aiUsageRows(context, "viber"), "No AI usage data yet.")
     ]),
@@ -1995,6 +2030,7 @@ function buildViberDashboardState(context = {}, deps = {}) {
     security_status: readiness.security_status,
     ai_learning_status: readiness.ai_learning_status,
     task_tracker: context.task_tracker_state,
+    naming_governance: namingGovernance,
     next_action: context.plannerState.next_action || "Run kvdf planner propose",
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
     current_plan_status: context.plannerState.current_plan_status || "empty",

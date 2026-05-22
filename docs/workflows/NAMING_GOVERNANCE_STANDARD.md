@@ -16,6 +16,8 @@ titles flexible for the two supported tracks:
 6. Viber IDs must always include the app slug.
 7. Slugs are derived deterministically from the supplied title or explicit slug.
 8. No ID should hardcode a human app name; use the app slug instead.
+9. After materialization, IDs and slugs are frozen for that record.
+10. Normalized IDs are preferred, but legacy IDs are preserved beside them when older runtime state still exists.
 
 ## Owner Track Patterns
 
@@ -48,8 +50,26 @@ titles flexible for the two supported tracks:
 ## CLI Surfaces
 
 - `kvdf naming preview` shows the generated ID for a proposed object.
-- `kvdf naming validate` checks representative IDs against the naming rules
-  without writing runtime state.
+- `kvdf naming validate` scans local runtime state, reports invalid IDs,
+  missing `normalized_id` values, legacy-only objects, duplicates, and
+  cross-track collisions, and does not write runtime state.
+- `kvdf naming migrate --dry-run` suggests a read-only migration plan for
+  backfilling `normalized_id` values while preserving legacy IDs.
+
+## System-Wide Validation
+
+Naming Governance is not only a planner preview feature. KVDF Core also uses
+the same rules to validate runtime state, dashboards, handoff/reporting data,
+and any derived records that still reference plans, versions, evolutions, or
+tasks.
+
+- Runtime state scanned: `.kabeeri/planner.json`, `.kabeeri/evolution.json`,
+  `.kabeeri/tasks.json`, and `.kabeeri/task_trash.json` when present.
+- Optional report and handoff references may also be scanned when safely
+  available.
+- Dashboard summaries only display read-only counts from source objects.
+- Materialized records keep their legacy IDs as compatibility metadata, but the
+  normalized ID is the preferred machine-readable key for future workflow use.
 
 ## Examples
 
@@ -57,4 +77,5 @@ titles flexible for the two supported tracks:
 kvdf naming preview --track owner --type plan --title "Planner Readiness" --json
 kvdf naming preview --track vibe --app booking --type task --title "Build Booking Form" --evolution vevo-booking-v0-2-0-03-safety-quality-validation-gate --workstream frontend --json
 kvdf naming validate --json
+kvdf naming migrate --dry-run --json
 ```

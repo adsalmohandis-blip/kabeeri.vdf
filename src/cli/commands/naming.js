@@ -9,7 +9,8 @@ const {
   buildViberTaskId,
   validateNamingId,
   explainNamingRules,
-  buildNamingValidationReport
+  buildNamingValidationReport,
+  buildNamingMigrationPlan
 } = require("../services/naming_governance");
 
 function naming(action, value, flags = {}, rest = [], deps = {}) {
@@ -17,6 +18,11 @@ function naming(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizeAction(action);
   if (mode === "preview") {
     const report = buildNamingPreviewReport(value, flags);
+    outputNamingReport(report, flags);
+    return report;
+  }
+  if (mode === "migrate") {
+    const report = buildNamingMigrationPlan(flags);
     outputNamingReport(report, flags);
     return report;
   }
@@ -123,7 +129,7 @@ function renderNamingReport(report) {
 function normalizeAction(action) {
   const value = String(action || "").trim().toLowerCase();
   if (!value) return "validate";
-  if (["preview", "validate"].includes(value)) return value;
+  if (["preview", "validate", "migrate"].includes(value)) return value;
   return value;
 }
 

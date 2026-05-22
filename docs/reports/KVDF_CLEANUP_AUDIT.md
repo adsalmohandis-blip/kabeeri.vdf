@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779479923422
-- Generated at: 2026-05-22T19:58:43.422Z
+- Report ID: kvdf-cleanup-1779481586425
+- Generated at: 2026-05-22T20:26:26.425Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -88,7 +88,7 @@ stale_docs             docs/workflows/KVDF_STATE_RESYNC.md                     6
 stale_docs             plugins/ui_ux_intelligence/_temp_meta/ui-reasoning.csv  35    34,Restaurant/Food Service,Hero-Centric + Conversion,Vibrant & Block-based + Motion-Driven,Warm colors (Orange Red Brown),Appetizing + Clear typography,Food image reveal + Menu hov
 stale_docs             plugins/ui_ux_intelligence/data/ui-reasoning.csv        35    34,Restaurant/Food Service,Hero-Centric + Conversion,Vibrant & Block-based + Motion-Driven,Warm colors (Orange Red Brown),Appetizing + Clear typography,Food image reveal + Menu hov
 stale_docs             plugins/vibe_maintainer/runtime/vibe_maintainer.js      1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },                 
-stale_docs             tests/service.unit.test.js                              79    fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                                            
+stale_docs             tests/service.unit.test.js                              171   fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                                            
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_AUDIT.md                   18    Spec drift            | 0                                                                                                                                                           
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_SUMMARY.md                 18    Spec drift            | 0                                                                                                                                                           
 spec_drift_candidates  plugins/vibe_maintainer/README.md                       9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                                                

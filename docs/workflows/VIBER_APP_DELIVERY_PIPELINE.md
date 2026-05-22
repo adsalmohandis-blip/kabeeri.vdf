@@ -59,6 +59,12 @@ No approved evolutions = no task punches.
 No valid evolution order = no task punches.
 No materialized task punch = no Codex execution.
 
+Naming Governance applies across the pipeline as a reporting layer. Viber
+plans, versions, evolutions, and tasks should show normalized IDs when they
+are available, while any legacy IDs remain visible as compatibility metadata.
+The dashboards and reports may summarize naming health, but they must not
+invent IDs or mutate runtime state.
+
 ## Documentation Layers
 
 Viber app planning uses two documentation layers that must stay aligned:

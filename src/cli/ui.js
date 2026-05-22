@@ -1514,6 +1514,7 @@ Notes:
   kvdf naming preview --track vibe --app booking --type version --version v0.1.0 --title "Foundation" --json
   kvdf naming preview --track vibe --app booking --type task --title "Build Booking Form" --evolution vevo-booking-v0-2-0-03-safety-quality-validation-gate --workstream frontend --json
   kvdf naming validate --json
+  kvdf naming migrate --dry-run --json
 
 Notes:
   Naming governance keeps machine-readable IDs and human-readable titles stable for plans, versions, evolutions, and tasks. IDs are lowercase, deterministic, and track-separated so Owner and Viber records do not collide.
@@ -1586,7 +1587,7 @@ function printHelp() {
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
     "  plugin-extraction audit      Run the read-only Core plugin extraction audit",
-    "  naming preview|validate      Preview or validate stable machine-readable naming IDs",
+    "  naming preview|validate|migrate  Preview, validate, or dry-run migrate stable machine-readable naming IDs",
     "  ui-dashboard-kits status|check|examples|templates|snippets|provider|recommend|html-comment Optional UI dashboard kits plugin",
     "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  tailwind-ui status|snippet|utility-map|verify Optional Tailwind UI utility CSS provider plugin",

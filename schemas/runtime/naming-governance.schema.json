@@ -8,7 +8,8 @@
       "type": "string",
       "enum": [
         "kvdf_naming_preview",
-        "kvdf_naming_validation"
+        "kvdf_naming_validation",
+        "kvdf_naming_migration_plan"
       ]
     },
     "track": {
@@ -40,6 +41,45 @@
     },
     "next_action": {
       "type": "string"
+    },
+    "scanned": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "invalid_ids": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "missing_normalized_ids": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "legacy_only": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "duplicates": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "cross_track_collisions": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "dry_run": {
+      "type": "boolean"
+    },
+    "changes": {
+      "type": "array",
+      "items": { "type": "object", "additionalProperties": true }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
     }
   },
   "additionalProperties": true
