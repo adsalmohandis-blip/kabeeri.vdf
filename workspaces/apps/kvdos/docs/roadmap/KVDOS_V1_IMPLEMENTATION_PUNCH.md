@@ -854,6 +854,13 @@ The later foundation slices remain ordered as approved:
 - `.vscode/settings.json` is out of scope.
 - The implementation punch is the execution form of the closed foundation stage;
   it does not reopen planning/readiness work.
+- Every `impl-*` slice remains subject to the Viber pipeline gates before
+  execution:
+  - questionnaire answers and approved brief before real planning
+  - docs/design readiness before version/evolution approval
+  - evolution ordering validation before task punches
+  - task punch review/materialization before Codex execution
+  - security, handoff, and source-control gates before implementation
 
 ## Transition Note
 
