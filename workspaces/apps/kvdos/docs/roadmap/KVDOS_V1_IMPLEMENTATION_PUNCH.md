@@ -46,6 +46,26 @@ It stays app-local to `workspaces/apps/kvdos/`.
 31. `impl-30` KVDOS Adapter Boundary And V1 Hardening
 32. `impl-31` V1 QA, Release Candidate, And Launch Handoff
 
+## Foundation Alignment Notes
+
+This roadmap matches the Commercial Foundation closeout by mapping the
+recommended first real implementation candidates into the slices above:
+
+- Local IDE Studio shell -> `impl-1` through `impl-6`
+- Local runtime state skeleton -> `impl-7` through `impl-10`
+- `app.kvdos.yaml` validation surface -> `impl-10` through `impl-12`
+- task / readiness dashboard surface -> `impl-13` through `impl-15` and the
+  audit-friendly view work in `impl-25`
+
+The later foundation slices remain ordered as approved:
+
+- cloud commercial -> `impl-16` through `impl-21`
+- safety / quality -> `impl-22` through `impl-23`
+- execution / review -> `impl-24` through `impl-27`
+- release packaging -> `impl-28` through `impl-29`
+- adapter boundary and V1 hardening -> `impl-30`
+- QA / release candidate / launch handoff -> `impl-31`
+
 ## Slice Specifications
 
 ### `impl-0` Implementation Baseline And Guardrails
@@ -364,7 +384,8 @@ It stays app-local to `workspaces/apps/kvdos/`.
 ### `impl-13` Tasking Surface
 
 - Goal: present a tasking surface for approved KVDOS work.
-- Product output: tasking UI surface.
+- Product output: tasking UI surface and the first half of the task/readiness
+  dashboard.
 - Allowed files/areas:
   - `workspaces/apps/kvdos/src/**`
   - `workspaces/apps/kvdos/tests/**`
@@ -388,7 +409,8 @@ It stays app-local to `workspaces/apps/kvdos/`.
 ### `impl-14` Approval Surface
 
 - Goal: add the owner approval surface for gated work.
-- Product output: approval UI surface.
+- Product output: approval UI surface and the second half of the
+  task/readiness dashboard.
 - Allowed files/areas:
   - `workspaces/apps/kvdos/src/**`
   - `workspaces/apps/kvdos/tests/**`
@@ -412,7 +434,8 @@ It stays app-local to `workspaces/apps/kvdos/`.
 ### `impl-15` Task / Approval Persistence
 
 - Goal: persist tasks, approvals, and state transitions locally.
-- Product output: local task/approval persistence.
+- Product output: local task/approval persistence for the task/readiness
+  dashboard.
 - Allowed files/areas:
   - `workspaces/apps/kvdos/src/**`
   - `workspaces/apps/kvdos/tests/**`
@@ -651,8 +674,8 @@ It stays app-local to `workspaces/apps/kvdos/`.
 
 ### `impl-25` Logs / Trace / Audit Skeleton
 
-- Goal: add a skeleton for logs, trace, and audit views.
-- Product output: observability skeleton.
+- Goal: add a skeleton for logs, trace, audit, and review-friendly views.
+- Product output: observability and review skeleton.
 - Allowed files/areas:
   - `workspaces/apps/kvdos/src/**`
   - `workspaces/apps/kvdos/tests/**`
@@ -771,8 +794,9 @@ It stays app-local to `workspaces/apps/kvdos/`.
 
 ### `impl-30` KVDOS Adapter Boundary And V1 Hardening
 
-- Goal: define the adapter boundary and harden v1 integration points.
-- Product output: adapter boundary and hardening pass.
+- Goal: define the adapter boundary and harden v1 integration points without
+  implementing bridge logic.
+- Product output: adapter boundary contract and hardening pass.
 - Allowed files/areas:
   - `workspaces/apps/kvdos/src/**`
   - `workspaces/apps/kvdos/tests/**`
@@ -786,6 +810,7 @@ It stays app-local to `workspaces/apps/kvdos/`.
   - adapter boundary is explicit
   - v1 hardening closes known gaps
   - the implementation remains app-local
+  - no bridge logic or controlled-upgrade behavior is implemented
 - Validation commands:
   - `git diff --check`
   - `npm test`
@@ -810,6 +835,7 @@ It stays app-local to `workspaces/apps/kvdos/`.
   - v1 is testable end-to-end
   - release candidate criteria are explicit
   - launch handoff is documented and owner-approved
+  - the handoff clearly separates launch work from any later bridge evolution
 - Validation commands:
   - `git diff --check`
   - `npm test`
@@ -826,6 +852,8 @@ It stays app-local to `workspaces/apps/kvdos/`.
 - No repo-root KVDF core files may be edited without a separate approved bridge
   decision.
 - `.vscode/settings.json` is out of scope.
+- The implementation punch is the execution form of the closed foundation stage;
+  it does not reopen planning/readiness work.
 
 ## Transition Note
 
