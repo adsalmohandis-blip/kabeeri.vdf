@@ -20,6 +20,12 @@ It does not authorize code changes by itself.
 - Repo-root KVDF core files remain out of scope unless a separate approved
   bridge decision explicitly allows them.
 - `.vscode/settings.json` is out of scope.
+- `impl-16` through `impl-21` must explicitly state whether the work is local
+  KVDOS client work, API contract work, or cloud backend work.
+- `impl-26` and `impl-27` must not be treated as available until
+  `impl-22` through `impl-25` are complete.
+- `impl-28` and `impl-29` must not be treated as available until safety,
+  execution approval, logs / audit, and release access are defined.
 
 ## `impl-0` Implementation Baseline And Guardrails
 
@@ -430,6 +436,7 @@ It does not authorize code changes by itself.
 
 - Goal: add the cloud account-facing shell entry points.
 - Product output: cloud account shell.
+- Implementation role: local KVDOS client work.
 - Dependencies: `impl-15`.
 - Task IDs / titles / descriptions:
   - `impl-16-t1` Build cloud account shell - add the account-facing container and
@@ -454,6 +461,7 @@ It does not authorize code changes by itself.
 
 - Goal: implement the cloud auth/session surface.
 - Product output: authentication session flow.
+- Implementation role: API contract work.
 - Dependencies: `impl-16`.
 - Task IDs / titles / descriptions:
   - `impl-17-t1` Build sign-in/session flow - add the first cloud authentication
@@ -478,6 +486,7 @@ It does not authorize code changes by itself.
 
 - Goal: connect subscription state to entitlement visibility.
 - Product output: subscription entitlement wiring.
+- Implementation role: API contract work.
 - Dependencies: `impl-17`.
 - Task IDs / titles / descriptions:
   - `impl-18-t1` Build entitlement model wiring - map subscription state to
@@ -502,6 +511,7 @@ It does not authorize code changes by itself.
 
 - Goal: add device activation and secure entitlement caching.
 - Product output: device activation flow.
+- Implementation role: local KVDOS client work.
 - Dependencies: `impl-18`.
 - Task IDs / titles / descriptions:
   - `impl-19-t1` Build device activation flow - add the first activation path and
@@ -526,6 +536,7 @@ It does not authorize code changes by itself.
 
 - Goal: enforce local license availability and feature gating.
 - Product output: local license gate enforcement.
+- Implementation role: local KVDOS client work.
 - Dependencies: `impl-19`.
 - Task IDs / titles / descriptions:
   - `impl-20-t1` Build local license gate - add the enforcement layer that checks
@@ -550,6 +561,7 @@ It does not authorize code changes by itself.
 
 - Goal: gate release and update access by entitlement and approval state.
 - Product output: release access controls.
+- Implementation role: API contract work.
 - Dependencies: `impl-20`.
 - Task IDs / titles / descriptions:
   - `impl-21-t1` Build release access control surface - gate release and update
@@ -673,7 +685,7 @@ It does not authorize code changes by itself.
 
 - Goal: create the local runner entry point and execution boundary.
 - Product output: local runner skeleton.
-- Dependencies: `impl-25`.
+- Dependencies: `impl-22`, `impl-23`, `impl-24`, `impl-25`.
 - Task IDs / titles / descriptions:
   - `impl-26-t1` Build runner entry module - create the local runner entry and
     wiring surface.
@@ -697,7 +709,7 @@ It does not authorize code changes by itself.
 
 - Goal: implement the approved execution path for KVDOS work.
 - Product output: approved execution loop.
-- Dependencies: `impl-26`.
+- Dependencies: `impl-22`, `impl-23`, `impl-24`, `impl-25`, `impl-26`.
 - Task IDs / titles / descriptions:
   - `impl-27-t1` Build approved execution loop - wire the execution path that only
     runs after approval.
@@ -721,7 +733,8 @@ It does not authorize code changes by itself.
 
 - Goal: create the desktop build pipeline for distributable KVDOS output.
 - Product output: desktop build pipeline.
-- Dependencies: `impl-27`.
+- Dependencies: `impl-21`, `impl-22`, `impl-23`, `impl-24`, `impl-25`, `impl-26`,
+  `impl-27`.
 - Task IDs / titles / descriptions:
   - `impl-28-t1` Build desktop pipeline config - add the build workflow and
     packaging inputs.
@@ -745,7 +758,8 @@ It does not authorize code changes by itself.
 
 - Goal: define the release packaging and update strategy path.
 - Product output: release packaging and update strategy surface.
-- Dependencies: `impl-28`.
+- Dependencies: `impl-21`, `impl-22`, `impl-23`, `impl-24`, `impl-25`, `impl-26`,
+  `impl-27`, `impl-28`.
 - Task IDs / titles / descriptions:
   - `impl-29-t1` Build release packaging workflow - add the release artifact
     packaging path.
