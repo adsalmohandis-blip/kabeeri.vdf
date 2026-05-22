@@ -955,6 +955,9 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     findings: Array.isArray(ui_ux_intelligence.findings) ? [...ui_ux_intelligence.findings] : [],
     warnings: Array.isArray(ui_ux_intelligence.warnings) ? [...ui_ux_intelligence.warnings] : [],
     target_docs: Array.isArray(ui_ux_intelligence.target_docs) ? [...ui_ux_intelligence.target_docs] : [],
+    handoff_pack_status: ui_ux_intelligence.handoff_pack_status || "warning",
+    handoff_pack_ready: Boolean(ui_ux_intelligence.handoff_pack_ready),
+    handoff_pack_target_docs: Array.isArray(ui_ux_intelligence.handoff_pack_target_docs) ? [...ui_ux_intelligence.handoff_pack_target_docs] : [],
     next_action: ui_ux_intelligence.next_action || "Review the UI/UX intelligence output."
   } : {
     status: "unavailable",
@@ -1018,6 +1021,23 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     task_quality_review: taskQualityReview,
     visual_review: visualReview,
     ui_ux_review: uiUxReview,
+    ui_ux_handoff_pack: ui_ux_intelligence ? {
+      status: ui_ux_intelligence.handoff_pack_ready ? "pass" : (ui_ux_intelligence.handoff_pack_status || "warning"),
+      standalone: true,
+      external_github_dependency: false,
+      ready: Boolean(ui_ux_intelligence.handoff_pack_ready),
+      target_docs: Array.isArray(ui_ux_intelligence.handoff_pack_target_docs) ? [...ui_ux_intelligence.handoff_pack_target_docs] : [],
+      next_action: ui_ux_intelligence.handoff_pack_ready
+        ? "Use the UI/UX handoff pack during Viber docs materialization."
+        : "Review the UI/UX handoff pack before materialization."
+    } : {
+      status: "unavailable",
+      standalone: true,
+      external_github_dependency: false,
+      ready: false,
+      target_docs: [],
+      next_action: "Run kvdf ui-ux-intelligence handoff-pack --idea \"...\" --json if UI/UX implementation guidance is needed."
+    },
     version_control_review: versionControlReview,
     publish_readiness_review: publishReadinessReview,
     train_review: trainReview,
@@ -2205,9 +2225,13 @@ function buildUiUxIntelligenceUnavailableSummary(reason = "Plugin unavailable or
     reason,
     recommendation_summary: {},
     checklist_summary: {},
+    implementation_summary: {},
     target_docs: [...UI_UX_INTELLIGENCE_TARGET_DOCS],
     findings: [],
     docs_ready: false,
+    handoff_pack_status: "unavailable",
+    handoff_pack_ready: false,
+    handoff_pack_target_docs: [...UI_UX_INTELLIGENCE_TARGET_DOCS],
     warnings: [reason],
     next_action: nextAction
   };
@@ -2241,10 +2265,14 @@ function buildUiUxIntelligenceSummary(options = {}) {
     available: true,
     recommendation_summary: {},
     checklist_summary: {},
+    implementation_summary: {},
     target_docs: [],
     findings: [],
     docs_ready: false,
     warnings: [],
+    handoff_pack_status: "warning",
+    handoff_pack_ready: false,
+    handoff_pack_target_docs: [],
     next_action: includeDetails
       ? "Use ui_ux_intelligence docs sections during materialization if approved."
       : "Use --include-ui-ux-intelligence to enrich docs, review, and prompt output."
@@ -2260,6 +2288,8 @@ function buildUiUxIntelligenceSummary(options = {}) {
     const recommendation = runtime.recommendUiUx(input, { track, app, stack, strict });
     const checklist = runtime.generateChecklist(input, { track, app, recommendation, strict });
     const docs = runtime.generateDocsSections(input, { track, app, stack, recommendation, strict });
+    const handoffPack = runtime.generateUiUxHandoffPack(input, { track, app, stack, recommendation, checklist, strict });
+    const implementationSummary = buildUiUxImplementationSummary(handoffPack);
     summary.recommendation_summary = {
       detected_product_type: recommendation.detected_product_type,
       recommended_style: recommendation.recommended_style,
@@ -2277,8 +2307,12 @@ function buildUiUxIntelligenceSummary(options = {}) {
       external_github_dependency: false
     };
     summary.checklist_summary = runtime.summarizeChecklist(checklist);
+    summary.implementation_summary = implementationSummary;
     summary.target_docs = Array.isArray(docs.target_docs) ? [...docs.target_docs] : [...summary.target_docs];
     summary.docs_ready = summary.target_docs.length > 0;
+    summary.handoff_pack_status = handoffPack.handoff_status || "warning";
+    summary.handoff_pack_ready = handoffPack.handoff_status === "pass";
+    summary.handoff_pack_target_docs = Array.isArray(handoffPack.target_docs) ? [...handoffPack.target_docs] : [...summary.target_docs];
     summary.next_action = "Use ui_ux_intelligence docs sections during materialization if approved.";
     summary.warnings = uniqueList([...(recommendation.warnings || []), ...(checklist.warnings || []), ...(docs.warnings || [])]);
     if (strict && summary.checklist_summary && summary.checklist_summary.summary && summary.checklist_summary.summary.blockers > 0) {
@@ -2322,6 +2356,38 @@ function enrichPlannerDocsPlanWithUiUxSections(docsPlan = {}, docsSections = [])
     docsPlan: { ...docsPlan, docs },
     sections_added: targetDocs.length,
     target_docs: uniqueList(targetDocs)
+  };
+}
+
+function buildUiUxImplementationSummary(handoffPack = {}) {
+  const tokens = handoffPack.tokens && handoffPack.tokens.tokens ? handoffPack.tokens.tokens : {};
+  const components = Array.isArray(handoffPack.components && handoffPack.components.components)
+    ? handoffPack.components.components.map((component) => component.name || component.component_id).filter(Boolean).slice(0, 6)
+    : [];
+  const screens = Array.isArray(handoffPack.screens && handoffPack.screens.screens)
+    ? handoffPack.screens.screens.map((screen) => screen.name || screen.screen_id).filter(Boolean).slice(0, 6)
+    : [];
+  const checklistItems = Array.isArray(handoffPack.checklist && handoffPack.checklist.checklist)
+    ? handoffPack.checklist.checklist
+    : [];
+  const criticalStates = checklistItems
+    .filter((item) => ["accessibility", "responsive", "interaction", "forms", "dashboard"].includes(item.category))
+    .map((item) => item.title)
+    .slice(0, 8);
+  const accessibilityNotes = checklistItems
+    .filter((item) => item.category === "accessibility" || item.category === "motion")
+    .map((item) => item.title)
+    .slice(0, 6);
+  return {
+    token_hints: uniqueList([
+      tokens.color ? `color.primary=${tokens.color.primary || "#1d4ed8"}` : null,
+      tokens.spacing ? `spacing.md=${tokens.spacing.scale && tokens.spacing.scale.md !== undefined ? tokens.spacing.scale.md : 12}` : null,
+      tokens.radius ? `radius.md=${tokens.radius.md !== undefined ? tokens.radius.md : 8}` : null
+    ]),
+    key_components: uniqueList(components),
+    key_screens: uniqueList(screens),
+    critical_states: uniqueList(criticalStates),
+    accessibility_notes: uniqueList(accessibilityNotes)
   };
 }
 
@@ -2453,6 +2519,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     task_quality_review: review.task_quality_review,
     visual_review: review.visual_review,
     ui_ux_review: review.ui_ux_review,
+    ui_ux_handoff_pack: review.ui_ux_handoff_pack,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -3980,6 +4047,12 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     uiUxIntelligence.recommendation_summary && uiUxIntelligence.recommendation_summary.recommended_style ? `- Recommended style: ${uiUxIntelligence.recommendation_summary.recommended_style}` : null,
     uiUxIntelligence.recommendation_summary && uiUxIntelligence.recommendation_summary.recommended_palette ? `- Recommended palette: ${uiUxIntelligence.recommendation_summary.recommended_palette}` : null,
     uiUxIntelligence.recommendation_summary && uiUxIntelligence.recommendation_summary.recommended_typography ? `- Recommended typography: ${uiUxIntelligence.recommendation_summary.recommended_typography}` : null,
+    uiUxIntelligence.handoff_pack_status ? `- Handoff pack: ${uiUxIntelligence.handoff_pack_status}${uiUxIntelligence.handoff_pack_ready ? " (ready)" : ""}` : null,
+    uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.token_hints) && uiUxIntelligence.implementation_summary.token_hints.length ? `- Token hints: ${uiUxIntelligence.implementation_summary.token_hints.join("; ")}` : null,
+    uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.key_components) && uiUxIntelligence.implementation_summary.key_components.length ? `- Key components: ${uiUxIntelligence.implementation_summary.key_components.join("; ")}` : null,
+    uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.key_screens) && uiUxIntelligence.implementation_summary.key_screens.length ? `- Key screens: ${uiUxIntelligence.implementation_summary.key_screens.join("; ")}` : null,
+    uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.critical_states) && uiUxIntelligence.implementation_summary.critical_states.length ? `- Critical states: ${uiUxIntelligence.implementation_summary.critical_states.join("; ")}` : null,
+    uiUxIntelligence.implementation_summary && Array.isArray(uiUxIntelligence.implementation_summary.accessibility_notes) && uiUxIntelligence.implementation_summary.accessibility_notes.length ? `- Accessibility reminders: ${uiUxIntelligence.implementation_summary.accessibility_notes.join("; ")}` : null,
     uiUxIntelligence.checklist_summary && uiUxIntelligence.checklist_summary.summary ? `- Checklist summary: ${uiUxIntelligence.checklist_summary.summary.total || 0} items, ${uiUxIntelligence.checklist_summary.summary.blockers || 0} blockers, ${uiUxIntelligence.checklist_summary.summary.warnings || 0} warnings` : null,
     uiUxIntelligence.target_docs && uiUxIntelligence.target_docs.length ? `- Target docs: ${uiUxIntelligence.target_docs.join("; ")}` : null,
     `- Next action: ${uiUxIntelligence.next_action || "Review the UI/UX intelligence output."}`
@@ -8597,6 +8670,12 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     uiUxSummary.recommendation_summary && Array.isArray(uiUxSummary.recommendation_summary.recommended_layout_patterns) && uiUxSummary.recommendation_summary.recommended_layout_patterns.length ? `- Layout patterns: ${uiUxSummary.recommendation_summary.recommended_layout_patterns.join("; ")}` : null,
     uiUxSummary.recommendation_summary && Array.isArray(uiUxSummary.recommendation_summary.ux_rules) && uiUxSummary.recommendation_summary.ux_rules.length ? `- UX rules: ${uiUxSummary.recommendation_summary.ux_rules.slice(0, 4).join("; ")}` : null,
     uiUxSummary.recommendation_summary && Array.isArray(uiUxSummary.recommendation_summary.anti_patterns_to_avoid) && uiUxSummary.recommendation_summary.anti_patterns_to_avoid.length ? `- Anti-patterns: ${uiUxSummary.recommendation_summary.anti_patterns_to_avoid.slice(0, 4).join("; ")}` : null,
+    uiUxSummary.handoff_pack_status ? `- Handoff pack: ${uiUxSummary.handoff_pack_status}${uiUxSummary.handoff_pack_ready ? " (ready)" : ""}` : null,
+    uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.token_hints) && uiUxSummary.implementation_summary.token_hints.length ? `- Token hints: ${uiUxSummary.implementation_summary.token_hints.join("; ")}` : null,
+    uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.key_components) && uiUxSummary.implementation_summary.key_components.length ? `- Key components: ${uiUxSummary.implementation_summary.key_components.join("; ")}` : null,
+    uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.key_screens) && uiUxSummary.implementation_summary.key_screens.length ? `- Key screens: ${uiUxSummary.implementation_summary.key_screens.join("; ")}` : null,
+    uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.critical_states) && uiUxSummary.implementation_summary.critical_states.length ? `- Critical states: ${uiUxSummary.implementation_summary.critical_states.join("; ")}` : null,
+    uiUxSummary.implementation_summary && Array.isArray(uiUxSummary.implementation_summary.accessibility_notes) && uiUxSummary.implementation_summary.accessibility_notes.length ? `- Accessibility reminders: ${uiUxSummary.implementation_summary.accessibility_notes.join("; ")}` : null,
     uiUxSummary.checklist_summary && uiUxSummary.checklist_summary.summary ? `- Accessibility checklist: ${uiUxSummary.checklist_summary.summary.total || 0} items, ${uiUxSummary.checklist_summary.summary.blockers || 0} blockers, ${uiUxSummary.checklist_summary.summary.warnings || 0} warnings` : null,
     uiUxSummary.target_docs && uiUxSummary.target_docs.length ? `- Target docs: ${uiUxSummary.target_docs.join("; ")}` : null,
     `- Next action: ${uiUxSummary.next_action || "Review the UI/UX intelligence output."}`,

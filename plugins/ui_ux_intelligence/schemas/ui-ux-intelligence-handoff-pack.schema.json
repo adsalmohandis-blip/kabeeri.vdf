@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ui_ux_intelligence_handoff_pack",
+  "type": "object",
+  "required": ["report_type", "target_docs", "markdown_sections", "handoff_status", "standalone", "external_github_dependency"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_handoff_pack" },
+    "input": { "type": "string" },
+    "app": { "type": ["string", "null"] },
+    "tokens": { "type": "object" },
+    "components": { "type": "object" },
+    "screens": { "type": "object" },
+    "checklist": { "type": "object" },
+    "scorecard": { "type": "object" },
+    "target_docs": { "type": "array", "items": { "type": "string" } },
+    "markdown_sections": { "type": "array" },
+    "handoff_status": { "type": "string" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

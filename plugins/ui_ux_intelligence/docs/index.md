@@ -8,6 +8,7 @@
 - UI/UX checklist generation
 - UI/UX docs section generation for Viber app planning
 - lightweight UI/UX audit reporting
+- UI implementation planning artifacts: design tokens, component blueprints, screen blueprints, and handoff packs
 - design-system recommendations
 - UI style recommendations
 - palette and typography guidance
@@ -36,9 +37,22 @@ The plugin also produces handoff-oriented validation material:
 - `audit --strict` can escalate critical missing sections to blockers for handoff review.
 - All three commands run offline, use only `plugins/ui_ux_intelligence/data/`, and never write to `_temp_meta/` or `.kabeeri/`.
 
+## Implementation Artifacts
+
+The plugin also emits implementation-ready planning artifacts without generating production code:
+
+- `tokens` builds framework-neutral design tokens for color, typography, spacing, radius, shadow, motion, and state.
+- `components` builds a component blueprint with states, accessibility, responsive behavior, and acceptance criteria.
+- `screens` builds a screen blueprint with information architecture and user-flow hints.
+- `handoff-pack` combines the recommendation, design system, tokens, components, screens, checklist, and scorecard into a Markdown-ready handoff bundle.
+
+These outputs are planning/specification artifacts only. They do not create production UI code or app source files.
+
+These commands are offline and deterministic. They do not write files unless the operator passes an explicit `--output` path to `handoff-pack`, and even then the output is Markdown only.
+
 ## Planner And Dashboard Integration
 
-KVDF Planner and the Viber dashboard can consume `ui_ux_intelligence` as an optional provider when the operator explicitly passes `--include-ui-ux-intelligence` or `--ui-ux-intelligence`. Planner review, visual, prompt, docs, and Viber dashboard summaries can surface the provider when it is available, but the core planner still continues normally if the plugin is missing, disabled, or intentionally suppressed with `--no-ui-ux-intelligence`.
+KVDF Planner and the Viber dashboard can consume `ui_ux_intelligence` as an optional provider when the operator explicitly passes `--include-ui-ux-intelligence` or `--ui-ux-intelligence`. Planner review, visual, prompt, docs, and Viber dashboard summaries can surface the provider when it is available, but the core planner still continues normally if the plugin is missing, disabled, or intentionally suppressed with `--no-ui-ux-intelligence`. The handoff pack and implementation artifacts are read-only planning outputs unless the operator explicitly requests Markdown export with `handoff-pack --output <path>`.
 
 The integration stays read-only unless you are already using planner docs materialization, and even then the plugin only enriches the existing Viber UI/UX docs pipeline. It never reads `_temp_meta/` at runtime and never calls external GitHub or AI APIs.
 

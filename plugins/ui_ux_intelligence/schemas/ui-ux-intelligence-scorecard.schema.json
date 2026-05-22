@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ui_ux_intelligence_scorecard",
+  "type": "object",
+  "required": ["report_type", "status", "score", "grade", "sections", "standalone", "external_github_dependency"],
+  "properties": {
+    "report_type": { "const": "ui_ux_intelligence_scorecard" },
+    "status": { "type": "string" },
+    "score": { "type": "number" },
+    "grade": { "type": "string" },
+    "sections": { "type": "object" },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

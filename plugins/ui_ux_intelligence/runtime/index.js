@@ -44,6 +44,13 @@ const {
   mapSectionsToViberDocs
 } = require("./docs_adapter");
 const { auditUiUxTarget, auditTextContent, summarizeAudit } = require("./audit");
+const { buildUiUxScorecard, scoreChecklist, scoreAuditFindings, scoreDocsCompleteness, calculateUiUxReadinessScore, summarizeScorecard } = require("./scorecard");
+const { buildUiUxGate, evaluateUiUxStageGate, evaluateUiUxHandoffGate, evaluateUiUxPublishReadinessGate } = require("./gate");
+const { buildViberUiUxReadiness, readUiUxDocsFromApp, summarizeUiUxReadiness } = require("./readiness");
+const { generateDesignTokens, buildColorTokens, buildTypographyTokens, buildSpacingTokens, buildRadiusTokens, buildShadowTokens, buildMotionTokens, buildStateTokens } = require("./tokens");
+const { generateComponentBlueprint, inferComponentSet, buildComponentStates, buildComponentAccessibility, buildComponentAcceptanceCriteria } = require("./components");
+const { generateScreenBlueprint, inferScreens, buildScreenSections, buildScreenStates, buildScreenAcceptanceCriteria } = require("./screens");
+const { generateUiUxHandoffPack, buildHandoffMarkdown, mapHandoffToViberDocs } = require("./handoff_pack");
 
 const PLUGIN_ID = "ui_ux_intelligence";
 const EXPECTED_DATA_FILES = [
@@ -97,7 +104,7 @@ function getPluginStatus(root = process.cwd()) {
     standalone: true,
     external_github_dependency: false,
     catalog_ready: catalog.catalog_ready,
-    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit"],
+    capabilities: ["source-status", "catalog", "search", "recommend", "design_system", "checklist", "docs", "audit", "scorecard", "gate", "readiness", "handoff_pack", "tokens", "components", "screens"],
     next_action: catalog.catalog_ready
       ? "Run kvdf ui-ux-intelligence catalog --json or kvdf ui-ux-intelligence search --query \"...\" --domain all --json."
       : "Install the relocated CSV data into plugins/ui_ux_intelligence/data/ and plugins/ui_ux_intelligence/data/stacks/."
@@ -245,6 +252,40 @@ module.exports = {
   auditUiUxTarget,
   auditTextContent,
   summarizeAudit,
+  buildUiUxScorecard,
+  scoreChecklist,
+  scoreAuditFindings,
+  scoreDocsCompleteness,
+  calculateUiUxReadinessScore,
+  summarizeScorecard,
+  buildUiUxGate,
+  evaluateUiUxStageGate,
+  evaluateUiUxHandoffGate,
+  evaluateUiUxPublishReadinessGate,
+  buildViberUiUxReadiness,
+  readUiUxDocsFromApp,
+  summarizeUiUxReadiness,
+  generateDesignTokens,
+  buildColorTokens,
+  buildTypographyTokens,
+  buildSpacingTokens,
+  buildRadiusTokens,
+  buildShadowTokens,
+  buildMotionTokens,
+  buildStateTokens,
+  generateComponentBlueprint,
+  inferComponentSet,
+  buildComponentStates,
+  buildComponentAccessibility,
+  buildComponentAcceptanceCriteria,
+  generateScreenBlueprint,
+  inferScreens,
+  buildScreenSections,
+  buildScreenStates,
+  buildScreenAcceptanceCriteria,
+  generateUiUxHandoffPack,
+  buildHandoffMarkdown,
+  mapHandoffToViberDocs,
   buildMarkdownStatus,
   listExpectedSourceFiles
 };

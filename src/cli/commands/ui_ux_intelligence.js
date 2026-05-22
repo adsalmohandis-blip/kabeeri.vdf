@@ -9,7 +9,15 @@ const {
   buildDesignSystem,
   buildChecklist,
   buildDocsSections,
-  buildAudit
+  buildAudit,
+  generateDesignTokens,
+  generateComponentBlueprint,
+  generateScreenBlueprint,
+  generateUiUxHandoffPack,
+  buildHandoffMarkdown,
+  buildUiUxScorecard,
+  buildUiUxGate,
+  buildViberUiUxReadiness
 } = require("../../../plugins/ui_ux_intelligence/runtime");
 
 function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
@@ -91,6 +99,56 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
     else console.log(renderJsonLike(report));
     return;
   }
+  if (mode === "scorecard") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildUiUxScorecard(input, { ...flags, target: flags.target });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "gate") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildUiUxGate(input, { ...flags, target: flags.target, stage: flags.stage || flags.gate });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "readiness") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildViberUiUxReadiness(input, { ...flags, app: flags.app || flags.app_slug, stage: flags.stage });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "handoff-pack" || mode === "handoff_pack") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildUiUxHandoffPackReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, buildHandoffMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(buildHandoffMarkdown(report));
+    return;
+  }
+  if (mode === "tokens") {
+    const input = resolveIdea(value, flags, rest);
+    const report = generateDesignTokens(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "components") {
+    const input = resolveIdea(value, flags, rest);
+    const report = generateComponentBlueprint(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "screens") {
+    const input = resolveIdea(value, flags, rest);
+    const report = generateScreenBlueprint(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
 
   throw new Error(`Unknown ui-ux-intelligence action: ${action}`);
 }
@@ -99,6 +157,7 @@ function normalizeAction(action) {
   const value = String(action || "").trim().toLowerCase();
   if (value === "design_system") return "design-system";
   if (value === "source_status") return "source-status";
+  if (value === "handoff_pack") return "handoff-pack";
   return value;
 }
 
@@ -230,6 +289,29 @@ function inspectTempMetaSourceStatus({ root, sourceRoot }) {
     temp_meta_ignored: true,
     temp_meta_found_files_total: fileNames.length + directories.length
   };
+}
+
+function buildUiUxHandoffPackReport(input, flags = {}) {
+  const report = generateUiUxHandoffPack(input, {
+    ...flags,
+    app: flags.app || flags.app_slug || flags.appSlug || ""
+  });
+  return report;
+}
+
+function writeUiUxOutput(outputPath, content, root) {
+  const resolved = path.resolve(root, outputPath);
+  const allowedRoots = [
+    path.join(root, "docs"),
+    path.join(root, "docs", "reports"),
+    path.join(root, "workspaces", "apps")
+  ].map((item) => path.resolve(item));
+  const isAllowed = allowedRoots.some((allowed) => resolved === allowed || resolved.startsWith(`${allowed}${path.sep}`));
+  if (!isAllowed) {
+    throw new Error("Unsafe output path. Use a path under docs/ or workspaces/apps/.");
+  }
+  fs.mkdirSync(path.dirname(resolved), { recursive: true });
+  fs.writeFileSync(resolved, content, "utf8");
 }
 
 function renderStatus(report) {

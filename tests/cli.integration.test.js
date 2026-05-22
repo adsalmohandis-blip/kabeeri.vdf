@@ -8508,6 +8508,8 @@ test("planner docs plan can include optional ui_ux_intelligence output", () => w
   assert.strictEqual(report.ui_ux_intelligence.standalone, true);
   assert.strictEqual(report.ui_ux_intelligence.external_github_dependency, false);
   assert.ok(Array.isArray(report.ui_ux_intelligence.target_docs));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_status"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_ready"));
 }));
 
 test("planner docs plan still works when ui_ux_intelligence is missing", () => withTempDir((dir) => {
@@ -8518,6 +8520,8 @@ test("planner docs plan still works when ui_ux_intelligence is missing", () => w
   assert.strictEqual(report.ui_ux_intelligence.standalone, true);
   assert.strictEqual(report.ui_ux_intelligence.external_github_dependency, false);
   assert.ok(Array.isArray(report.ui_ux_intelligence.warnings));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_status"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_ready"));
   const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Build booking app", "--track", "vibe", "--method", "hybrid", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(review.report_type, "kvdf_planner_review");
   assert.ok(review.ui_ux_review);
@@ -8547,15 +8551,23 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.strictEqual(review.ui_ux_review.standalone, true);
   assert.strictEqual(review.ui_ux_review.external_github_dependency, false);
   assert.ok(["pass", "warning", "unavailable"].includes(review.ui_ux_review.status));
+  assert.ok(Object.prototype.hasOwnProperty.call(review.ui_ux_review, "handoff_pack_status"));
+  assert.ok(review.ui_ux_handoff_pack);
+  assert.strictEqual(review.ui_ux_handoff_pack.standalone, true);
+  assert.strictEqual(review.ui_ux_handoff_pack.external_github_dependency, false);
 
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.ok(Object.prototype.hasOwnProperty.call(visual, "ui_ux_intelligence_status"));
   assert.ok(visual.markdown_report.includes("## UI/UX Intelligence"));
+  assert.ok(visual.markdown_report.includes("Handoff pack:"));
 
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
   assert.ok(prompt.prompt.includes("## UI/UX Intelligence"));
+  assert.ok(prompt.prompt.includes("Handoff pack:"));
+  assert.ok(prompt.prompt.includes("Target docs:"));
+  assert.ok(prompt.prompt.includes("Reminder: do not overwrite existing UI/UX docs"));
 
   const promptWithoutUiUx = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--no-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(promptWithoutUiUx.report_type, "kvdf_planner_codex_prompt");
@@ -8574,6 +8586,74 @@ test("planner visual and dashboard state expose ui_ux_intelligence safely", () =
   assert.strictEqual(dashboard.ui_ux_intelligence.external_github_dependency, false);
   assert.ok(["available", "warning", "unavailable"].includes(dashboard.ui_ux_intelligence.status));
   assert.ok(Array.isArray(dashboard.ui_ux_intelligence.target_docs));
+  assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_ready"));
+  assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_status"));
+}));
+
+test("ui_ux_intelligence implementation artifacts generate tokens components screens and handoff packs", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+
+  const tokens = JSON.parse(runKvdf(["ui-ux-intelligence", "tokens", "--idea", "Build booking app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(tokens.report_type, "ui_ux_intelligence_tokens");
+  assert.ok(tokens.tokens);
+  assert.ok(tokens.tokens.color);
+  assert.ok(tokens.tokens.typography);
+  assert.ok(tokens.tokens.spacing);
+  assert.strictEqual(tokens.standalone, true);
+  assert.strictEqual(tokens.external_github_dependency, false);
+
+  const components = JSON.parse(runKvdf(["ui-ux-intelligence", "components", "--idea", "Build booking app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(components.report_type, "ui_ux_intelligence_component_blueprint");
+  assert.ok(Array.isArray(components.components));
+  assert.ok(components.components.length > 0);
+  assert.ok(Array.isArray(components.components[0].states));
+  assert.ok(Array.isArray(components.components[0].acceptance_criteria));
+
+  const screens = JSON.parse(runKvdf(["ui-ux-intelligence", "screens", "--idea", "Build booking app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(screens.report_type, "ui_ux_intelligence_screen_blueprint");
+  assert.ok(Array.isArray(screens.screens));
+  assert.ok(screens.screens.length > 0);
+  assert.ok(Array.isArray(screens.information_architecture));
+  assert.ok(Array.isArray(screens.user_flow_summary));
+
+  const scorecard = JSON.parse(runKvdf(["ui-ux-intelligence", "scorecard", "--idea", "Build booking app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(scorecard.report_type, "ui_ux_intelligence_scorecard");
+  assert.ok(typeof scorecard.score === "number");
+  assert.ok(scorecard.grade);
+  assert.ok(scorecard.sections);
+
+  const gate = JSON.parse(runKvdf(["ui-ux-intelligence", "gate", "--app", "booking", "--stage", "ui_ux_design", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(gate.report_type, "ui_ux_intelligence_gate");
+  assert.ok(["pass", "warning", "blocked", "not_applicable"].includes(gate.status));
+
+  const readiness = JSON.parse(runKvdf(["ui-ux-intelligence", "readiness", "--app", "booking", "--stage", "handoff", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(readiness.report_type, "ui_ux_intelligence_viber_readiness");
+  assert.ok(Array.isArray(readiness.docs_checked));
+  assert.ok(Array.isArray(readiness.missing_docs));
+
+  const handoffPack = JSON.parse(runKvdf(["ui-ux-intelligence", "handoff-pack", "--idea", "Build booking app", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(handoffPack.report_type, "ui_ux_intelligence_handoff_pack");
+  assert.ok(handoffPack.tokens);
+  assert.ok(handoffPack.components);
+  assert.ok(handoffPack.screens);
+  assert.ok(handoffPack.checklist);
+  assert.ok(handoffPack.scorecard);
+  assert.ok(Array.isArray(handoffPack.target_docs));
+  assert.ok(Array.isArray(handoffPack.markdown_sections));
+  assert.strictEqual(handoffPack.standalone, true);
+  assert.strictEqual(handoffPack.external_github_dependency, false);
+  assert.strictEqual(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "src")), false);
+  assert.ok(!fs.existsSync(path.join(dir, "docs", "reports", "uiux-handoff.md")));
+
+  const outputFile = path.join("docs", "reports", "uiux-handoff.md");
+  const withOutput = JSON.parse(runKvdf(["ui-ux-intelligence", "handoff-pack", "--idea", "Build booking app", "--app", "booking", "--output", outputFile, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(withOutput.report_type, "ui_ux_intelligence_handoff_pack");
+  assert.ok(fs.existsSync(path.join(dir, outputFile)));
+  assert.ok(fs.readFileSync(path.join(dir, outputFile), "utf8").startsWith("# UI/UX Handoff Pack"));
+
+  const unsafe = runKvdf(["ui-ux-intelligence", "handoff-pack", "--idea", "Build booking app", "--app", "booking", "--output", "..\\outside.md", "--json"], { cwd: dir, expectFailure: true });
+  assert.ok(/Unsafe output path/i.test(unsafe.stderr));
 }));
 
 test("ui_ux_intelligence audit scores rich UI text better than sparse text and strict mode can block", () => withTempDir((dir) => {
@@ -8623,7 +8703,14 @@ test("ui_ux_intelligence runtime stays offline and does not depend on an externa
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "design_system.js"),
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "checklist.js"),
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "docs_adapter.js"),
-    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "audit.js")
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "audit.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "scorecard.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "gate.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "readiness.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "tokens.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "components.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "screens.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "handoff_pack.js")
   ];
   for (const file of runtimeFiles) {
     const source = fs.readFileSync(file, "utf8");

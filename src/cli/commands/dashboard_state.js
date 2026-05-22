@@ -1783,6 +1783,7 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
     const recommendation = runtime.recommendUiUx(input, { track, app, stack });
     const checklist = runtime.generateChecklist(input, { track, app, recommendation });
     const docs = runtime.generateDocsSections(input, { track, app, stack, recommendation });
+    const handoffPack = runtime.generateUiUxHandoffPack(input, { track, app, stack, recommendation, checklist });
     const checklistSummary = runtime.summarizeChecklist(checklist);
     return {
       status: "available",
@@ -1792,6 +1793,9 @@ function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "v
       available: true,
       recommendation_available: true,
       docs_ready: Array.isArray(docs.target_docs) && docs.target_docs.length > 0,
+      handoff_pack_status: handoffPack.handoff_status || "warning",
+      handoff_pack_ready: handoffPack.handoff_status === "pass",
+      handoff_pack_target_docs: Array.isArray(handoffPack.target_docs) ? [...handoffPack.target_docs] : [...UI_UX_INTELLIGENCE_TARGET_DOCS],
       checklist_status: checklistSummary.blockers > 0 ? "warning" : (checklistSummary.warnings > 0 ? "warning" : "pass"),
       recommendation_summary: {
         detected_product_type: recommendation.detected_product_type,

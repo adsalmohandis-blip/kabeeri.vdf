@@ -216,11 +216,19 @@ kvdf ui-ux-intelligence checklist --idea "Build dashboard app"
 kvdf ui-ux-intelligence docs --idea "Build booking app" --track vibe --app booking
 kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md
 kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md --strict
+kvdf ui-ux-intelligence scorecard --idea "Build booking app"
+kvdf ui-ux-intelligence gate --app booking --stage ui_ux_design
+kvdf ui-ux-intelligence readiness --app booking --stage handoff
+kvdf ui-ux-intelligence handoff-pack --idea "Build booking app" --app booking
+kvdf ui-ux-intelligence handoff-pack --idea "Build booking app" --app booking --output docs/reports/uiux-handoff.md
+kvdf ui-ux-intelligence tokens --idea "Build booking app"
+kvdf ui-ux-intelligence components --idea "Build booking app"
+kvdf ui-ux-intelligence screens --idea "Build booking app"
 kvdf plugins install ui_ux_intelligence
 kvdf plugins uninstall ui_ux_intelligence
 ```
 
-`ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides deterministic product detection, local catalog/search, recommendation, design-system generation, checklist generation, docs section generation, and lightweight audit reporting for Viber apps. Planner, review, visual, prompt, docs materialization, and Viber dashboard flows can optionally consume its summaries when explicitly requested, but the plugin remains removable and never becomes mandatory. Phase 1 used a flat `_temp_meta/` staging contract inside the plugin folder; phase 2 relocates the approved CSV data into `plugins/ui_ux_intelligence/data/` and `plugins/ui_ux_intelligence/data/stacks/`. The runtime never reads `_temp_meta/`. The plugin does not depend on external GitHub repositories, paid APIs, or AI APIs, and the docs/audit commands do not write files.
+`ui_ux_intelligence` is an optional standalone UI/UX intelligence plugin that works offline in the MVP. It provides deterministic product detection, local catalog/search, recommendation, design-system generation, checklist generation, docs section generation, lightweight audit reporting, UI/UX scorecards, stage gates, readiness checks, handoff readiness, design tokens, component blueprints, and screen blueprints for Viber apps. Planner, review, visual, prompt, docs materialization, and Viber dashboard flows can optionally consume its summaries when explicitly requested, but the plugin remains removable and never becomes mandatory. Phase 1 used a flat `_temp_meta/` staging contract inside the plugin folder; phase 2 relocates the approved CSV data into `plugins/ui_ux_intelligence/data/` and `plugins/ui_ux_intelligence/data/stacks/`. The runtime never reads `_temp_meta/`. The plugin does not depend on external GitHub repositories, paid APIs, or AI APIs. The docs, audit, scorecard, gate, readiness, tokens, components, screens, and handoff-pack commands do not write files unless `handoff-pack` is given an explicit `--output` path, in which case only Markdown is written to an allowed docs or app-workspace path.
 
 The checklist command groups readiness checks across accessibility, responsive, interaction, content, layout, forms, dashboard, performance, motion, and handoff. The docs command returns Markdown-ready sections for `docs/ui-ux/UI_UX_DESIGN.md`, `docs/ui-ux/UX_PRINCIPLES.md`, `docs/ui-ux/INFORMATION_ARCHITECTURE.md`, `docs/ui-ux/USER_FLOWS.md`, `docs/ui-ux/WIREFRAMES.md`, `docs/ui-ux/UI_SPECIFICATION.md`, `docs/ui-ux/ACCESSIBILITY.md`, and `docs/delivery/QA_CHECKLIST.md`. The audit command inspects a target file or inline text, and `--strict` escalates critical missing UI/UX sections to blockers.
 
