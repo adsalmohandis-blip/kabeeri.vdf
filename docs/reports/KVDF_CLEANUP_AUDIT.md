@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779459179042
-- Generated at: 2026-05-22T14:12:59.042Z
+- Report ID: kvdf-cleanup-1779461810979
+- Generated at: 2026-05-22T14:56:50.979Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            3041                                       
+Total files            3050                                       
 Total folders          14                                         
 Plugin total           20                                         
 Active plugins         8                                          
@@ -37,13 +37,13 @@ blocked-flows   Run the workflow inspection pass to look for blocked or waiting-
 Folder      Files  Primary extension  Role           
 ----------  -----  -----------------  ---------------
 .kabeeri    855    .md                workspace state
-plugins     539    .md                plugin bundles 
+plugins     544    .md                plugin bundles 
 knowledge   467    .md                project surface
 packs       439    .md                project surface
 docs        328    .md                documentation  
-src         148    .js                runtime source 
+src         149    .js                runtime source 
 schemas     129    .md                project surface
-workspaces  112    .md                project surface
+workspaces  115    .md                project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
 .gitignore  1      [no extension]     project surface
@@ -55,7 +55,7 @@ Extension       Files
 --------------  -----
 .md             1704 
 .json           740  
-.js             256  
+.js             265  
 .html           196  
 .docx           58   
 .csv            54   
@@ -71,7 +71,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            2059 
+Scanned files            2065 
 Dead code candidates     4    
 Stale docs candidates    6    
 Spec drift candidates    4    

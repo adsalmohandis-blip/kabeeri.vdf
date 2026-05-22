@@ -27,6 +27,9 @@
     "kvdf ui-dashboard-kits examples",
     "kvdf ui-dashboard-kits templates",
     "kvdf ui-dashboard-kits snippets",
+    "kvdf ui-dashboard-kits provider",
+    "kvdf ui-dashboard-kits recommend",
+    "kvdf ui-dashboard-kits html-comment",
     "kvdf plugins install ui_dashboard_kits",
     "kvdf plugins uninstall ui_dashboard_kits"
   ],

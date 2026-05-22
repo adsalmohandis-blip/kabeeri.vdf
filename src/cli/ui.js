@@ -1454,6 +1454,9 @@ Notes:
   kvdf ui-dashboard-kits examples
   kvdf ui-dashboard-kits templates
   kvdf ui-dashboard-kits snippets
+  kvdf ui-dashboard-kits provider
+  kvdf ui-dashboard-kits recommend --surface owner-dashboard
+  kvdf ui-dashboard-kits html-comment --surface owner-dashboard
 
 Notes:
   UI Dashboard Kits is an optional removable plugin for dashboard examples, templates, snippets, and the lightweight UI checker. The active checker logic now lives in plugins/ui_dashboard_kits/, while the legacy knowledge/design_system/ui_execution_kit/scripts/check-ui.js path delegates to it so npm run ui:check stays compatible.
@@ -1537,7 +1540,7 @@ function printHelp() {
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
   "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
-    "  ui-dashboard-kits status|check|examples|templates|snippets Optional UI dashboard kits plugin",
+    "  ui-dashboard-kits status|check|examples|templates|snippets|provider|recommend|html-comment Optional UI dashboard kits plugin",
     "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  tailwind-ui status|snippet|utility-map|verify Optional Tailwind UI utility CSS provider plugin",
     "  adr create|list|report       Track architecture decision records",

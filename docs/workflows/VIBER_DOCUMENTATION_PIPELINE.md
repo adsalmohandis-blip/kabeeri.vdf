@@ -84,8 +84,11 @@ when Tailwind is unavailable.
 The optional `ui_dashboard_kits` plugin keeps the old UI execution-kit checker,
 dashboard examples, templates, and snippets available as a removable plugin
 surface. When it is installed, docs or task-punch guidance can point developers
-to `kvdf ui-dashboard-kits check`, `examples`, `templates`, and `snippets`
-without making those rules part of KVDF Core itself.
+to `kvdf ui-dashboard-kits check`, `examples`, `templates`, `snippets`,
+`provider`, `recommend`, and `html-comment` without making those rules part of
+KVDF Core itself. Planner review, visual, and prompt surfaces can optionally
+surface the dashboard kit provider summary, but the generated docs pipeline
+still falls back safely when the plugin is missing or disabled.
 
 If a surface explicitly opts into Bootstrap styling, the optional
 `bootstrap_ui` plugin can provide copied Bootstrap CSS and JavaScript assets

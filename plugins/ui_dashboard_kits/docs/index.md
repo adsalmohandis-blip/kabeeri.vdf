@@ -1,8 +1,9 @@
 # UI Dashboard Kits
 
 `ui_dashboard_kits` is an optional removable plugin that owns UI dashboard
-example surfaces, starter templates, lightweight static checking, and small UI
-snippets for KVDF-oriented dashboard and docs work.
+example surfaces, starter templates, lightweight static checking, small UI
+snippets, and optional dashboard kit guidance for KVDF-oriented dashboard,
+docs, planner, and Viber UI work.
 
 It is guidance and validation support only. KVDF Core no longer needs the
 active UI/dashboard kit logic to run normal commands.
@@ -14,6 +15,7 @@ active UI/dashboard kit logic to run normal commands.
 - Tiny snippets that encode the UI check contract.
 - A lightweight `ui:check` replacement that keeps the old workflow working.
 - Safe metadata-only status and catalog views for discovery.
+- Optional provider and recommendation summaries for dashboard surfaces.
 
 ## Relationship To Other UI Plugins
 
@@ -22,7 +24,7 @@ active UI/dashboard kit logic to run normal commands.
 - `ui_ux_intelligence` provides product-aware recommendations, docs, prompts,
   checks, and planning guidance.
 - `ui_dashboard_kits` focuses on reusable dashboard examples, templates, and
-  validation rules.
+  validation rules plus optional dashboard surface recommendations.
 
 ## Safety Rules
 
@@ -30,6 +32,7 @@ active UI/dashboard kit logic to run normal commands.
 - No CDN links are introduced by this plugin.
 - No source code is generated.
 - The legacy Core script path now delegates to the plugin checker.
+- The provider is guidance-only and can fall back without breaking rendering.
 
 ## Files
 

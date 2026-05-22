@@ -2,6 +2,7 @@ const DEFAULT_MIN_ZOOM = 0;
 const DEFAULT_MAX_ZOOM = 1.8;
 const DEFAULT_STEP = 0.08;
 const { buildOptionalAssetTags, buildOptionalProviderHtmlComment, buildUiProviderSummary, getOptionalUiAssets } = require("./ui_asset_provider");
+const { buildDashboardKitHtmlComment } = require("./ui_kit_provider");
 
 function buildMermaidPreviewHtml({
   title,
@@ -142,7 +143,7 @@ function buildOptionalUiAssetMarkup(options = {}) {
   const comment = providerSummary.provider && providerSummary.provider !== "fallback"
     ? `${buildOptionalProviderHtmlComment(providerSummary)}\n`
     : "";
-  return `${comment}${buildOptionalAssetTags(selected, options)}`;
+  return `${buildDashboardKitHtmlComment(options)}\n${comment}${buildOptionalAssetTags(selected, options)}`;
 }
 
 function indentHtmlBlock(value, spaces = 2) {

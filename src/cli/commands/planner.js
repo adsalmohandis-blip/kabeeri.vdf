@@ -28,6 +28,7 @@ const { buildDeliveryModeRecommendation } = require("./delivery");
 const { buildAppDocsPackageTemplates } = require("../workspace");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
 const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
+const { buildDashboardKitGuidanceSummary } = require("../services/ui_kit_provider");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 const { buildPlannerTruth: buildPlannerTruthReportService } = require("../services/truth_reconciler");
@@ -864,7 +865,7 @@ function buildPlannerStrategy(method, mode, pipeline = null) {
   return base;
 }
 
-function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null, roadmap_train = null, ui_ux_intelligence = null, tailwind_ui = null, strict = false }) {
+function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null, roadmap_train = null, ui_ux_intelligence = null, tailwind_ui = null, ui_dashboard_kits = null, strict = false }) {
   const risks = [];
   const requiredFixes = [];
   let status = "pass";
@@ -1035,6 +1036,33 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     target_docs: [],
     next_action: "Run kvdf tailwind-ui provider --json if Tailwind guidance is needed."
   };
+  const uiDashboardKitsReview = ui_dashboard_kits ? {
+    status: ui_dashboard_kits.status === "available"
+      ? "pass"
+      : (ui_dashboard_kits.status === "warning" ? "warning" : "unavailable"),
+    provider: ui_dashboard_kits.provider || "fallback",
+    available: Boolean(ui_dashboard_kits.available),
+    fallback_safe: Boolean(ui_dashboard_kits.fallback_safe),
+    core_dependency: false,
+    ui_library_dependency: false,
+    recommended_kits: Array.isArray(ui_dashboard_kits.recommended_kits) ? [...ui_dashboard_kits.recommended_kits] : [],
+    recommended_widgets: Array.isArray(ui_dashboard_kits.recommended_widgets) ? [...ui_dashboard_kits.recommended_widgets] : [],
+    required_states: Array.isArray(ui_dashboard_kits.required_states) ? [...ui_dashboard_kits.required_states] : ["loading", "empty", "error"],
+    accessibility_notes: Array.isArray(ui_dashboard_kits.accessibility_notes) ? [...ui_dashboard_kits.accessibility_notes] : [],
+    next_action: ui_dashboard_kits.next_action || "Use dashboard kit guidance for optional dashboard surfaces."
+  } : {
+    status: "unavailable",
+    provider: "fallback",
+    available: true,
+    fallback_safe: true,
+    core_dependency: false,
+    ui_library_dependency: false,
+    recommended_kits: [],
+    recommended_widgets: [],
+    required_states: ["loading", "empty", "error"],
+    accessibility_notes: [],
+    next_action: "Run kvdf ui-dashboard-kits provider --json if dashboard kit guidance is needed."
+  };
   const docsStatus = docsReview.docs_status;
   if (!hasVisual) requiredFixes.push("Generate the visual planner output before execution.");
   if (!Array.isArray(task_punches) || !task_punches.length) requiredFixes.push("Generate task punches before execution.");
@@ -1086,6 +1114,7 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     visual_review: visualReview,
     ui_ux_review: uiUxReview,
     tailwind_ui_review: tailwindUiReview,
+    ui_dashboard_kits_review: uiDashboardKitsReview,
     ui_ux_governance: ui_ux_intelligence ? {
       status: "available",
       report_status: ui_ux_intelligence.governance && ui_ux_intelligence.governance.status ? ui_ux_intelligence.governance.status : "warning",
@@ -1203,6 +1232,8 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
   const disableUiUxIntelligence = Boolean(options.disableUiUxIntelligence);
   const includeTailwindUi = Boolean(options.includeTailwindUi);
   const disableTailwindUi = Boolean(options.disableTailwindUi);
+  const includeUiDashboardKits = Boolean(options.includeUiDashboardKits);
+  const disableUiDashboardKits = Boolean(options.disableUiDashboardKits);
   const uiUxIntelligence = disableUiUxIntelligence ? null : buildUiUxIntelligenceSummary({
     idea: currentPlan.goal || "",
     track: currentPlan.track || getPlannerTrack(mode),
@@ -1222,6 +1253,9 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     stack: String(options.stack || "").trim(),
     includeDetails: includeTailwindUi,
     disabled: disableTailwindUi
+  });
+  const uiDashboardKits = disableUiDashboardKits ? null : buildDashboardKitGuidanceSummary({
+    surface: mode === "vibe" ? "viber-dashboard" : "owner-dashboard"
   });
   const method = buildPlannerMethodRecommendation(currentPlan.goal || "", { mode, flags: {}, source_control: currentPlan.source_control }, context, planningMethod || "auto");
   const versionControl = buildPlannerVersionControlSummary({
@@ -1283,6 +1317,7 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     roadmap_train: roadmapTrain,
     ui_ux_intelligence: uiUxIntelligence,
     tailwind_ui: tailwindUi,
+    ui_dashboard_kits: uiDashboardKits,
     strict: Boolean(options.strict)
   });
   return attachPlannerCurrentStateSummary({
@@ -1302,6 +1337,7 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     visual_review: review.visual_review,
     ui_ux_review: review.ui_ux_review,
     tailwind_ui_review: review.tailwind_ui_review,
+    ui_dashboard_kits_review: review.ui_dashboard_kits_review,
     ui_ux_governance: review.ui_ux_governance,
     ui_ux_handoff_pack: review.ui_ux_handoff_pack,
     ui_ux_prompt_pack: review.ui_ux_prompt_pack,
@@ -2687,6 +2723,24 @@ function resolveTailwindUiFlags(flags = {}) {
   };
 }
 
+function resolveUiDashboardKitsFlags(flags = {}) {
+  const isExplicitFalse = (value) => value === false || (typeof value === "string" && ["false", "0", "off", "no"].includes(value.trim().toLowerCase()));
+  const includeFlag = flags.include_ui_dashboard_kits
+    || flags["include-ui-dashboard-kits"]
+    || flags.includeUiDashboardKits
+    || flags.ui_dashboard_kits
+    || flags.uiDashboardKits
+    || flags["ui-dashboard-kits"]
+    || flags.withUiDashboardKits
+    || flags.with_ui_dashboard_kits;
+  const disableFlag = flags.no_ui_dashboard_kits || flags["no-ui-dashboard-kits"] || flags.noUiDashboardKits || flags.noUiDashboardKit;
+  return {
+    includeDetails: resolveBooleanFlag(includeFlag),
+    disabled: resolveBooleanFlag(disableFlag) || isExplicitFalse(disableFlag),
+    surface: String(flags.surface || flags.surface_name || flags["surface-name"] || flags.target_surface || "").trim()
+  };
+}
+
 function buildTailwindUiUnavailableSummary(reason = "Tailwind UI guidance is unavailable.", nextAction = "Run kvdf tailwind-ui verify --json or install the optional tailwind_ui plugin.") {
   return {
     status: "unavailable",
@@ -2800,7 +2854,9 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
       strict: resolveBooleanFlag(flags.strict),
       stack: String(flags.stack || flags.stack_name || "").trim(),
       includeTailwindUi: resolveBooleanFlag(flags.include_tailwind_ui || flags["include-tailwind-ui"] || flags.tailwind_ui || flags["tailwind-ui"]),
-      disableTailwindUi: resolveBooleanFlag(flags.no_tailwind_ui || flags["no-tailwind-ui"])
+      disableTailwindUi: resolveBooleanFlag(flags.no_tailwind_ui || flags["no-tailwind-ui"]),
+      includeUiDashboardKits: resolveBooleanFlag(flags.include_ui_dashboard_kits || flags["include-ui-dashboard-kits"] || flags.ui_dashboard_kits || flags["ui-dashboard-kits"]),
+      disableUiDashboardKits: resolveBooleanFlag(flags.no_ui_dashboard_kits || flags["no-ui-dashboard-kits"])
     });
   }
   const goal = resolveGoal(value, flags, rest, "");
@@ -2811,6 +2867,8 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
   const disableUiUxIntelligence = resolveBooleanFlag(flags.no_ui_ux_intelligence || flags["no-ui-ux-intelligence"]);
   const includeTailwindUi = resolveBooleanFlag(flags.include_tailwind_ui || flags["include-tailwind-ui"] || flags.tailwind_ui || flags["tailwind-ui"]);
   const disableTailwindUi = resolveBooleanFlag(flags.no_tailwind_ui || flags["no-tailwind-ui"]);
+  const includeUiDashboardKits = resolveBooleanFlag(flags.include_ui_dashboard_kits || flags["include-ui-dashboard-kits"] || flags.ui_dashboard_kits || flags["ui-dashboard-kits"]);
+  const disableUiDashboardKits = resolveBooleanFlag(flags.no_ui_dashboard_kits || flags["no-ui-dashboard-kits"]);
   const uiUxTrack = normalizePlannerMode(flags.track || flags.mode || "vibe");
   const planning = buildPlannerPlanningContext(goal, { flags, ...flags }, deps, { methodFromFlags: true, rest });
   const uiUxIntelligence = disableUiUxIntelligence ? null : buildUiUxIntelligenceSummary({
@@ -2832,6 +2890,9 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     stack: String(flags.stack || flags.stack_name || "").trim(),
     includeDetails: includeTailwindUi,
     disabled: disableTailwindUi
+  });
+  const uiDashboardKits = disableUiDashboardKits ? null : buildDashboardKitGuidanceSummary({
+    surface: uiUxTrack === "vibe" ? "viber-dashboard" : "owner-dashboard"
   });
   const versionControl = buildPlannerVersionControlSummary({
     versionPlan: planning.pipeline && planning.pipeline.version_plan ? planning.pipeline.version_plan : {},
@@ -2863,6 +2924,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     latest_feedback: latestFeedback,
     ui_ux_intelligence: uiUxIntelligence,
     tailwind_ui: tailwindUi,
+    ui_dashboard_kits: uiDashboardKits,
     strict: resolveBooleanFlag(flags.strict)
   });
   return {
@@ -2886,6 +2948,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     ui_ux_prompt_pack: review.ui_ux_prompt_pack,
     ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
     tailwind_ui_review: review.tailwind_ui_review,
+    ui_dashboard_kits_review: review.ui_dashboard_kits_review,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -3158,6 +3221,10 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     includeDetails: tailwindUiFlags.includeDetails,
     disabled: tailwindUiFlags.disabled
   });
+  const uiDashboardKitsFlags = resolveUiDashboardKitsFlags(request);
+  const uiDashboardKits = uiDashboardKitsFlags.disabled ? null : buildDashboardKitGuidanceSummary({
+    surface: mode === "vibe" ? "viber-dashboard" : "owner-dashboard"
+  });
   const promptUiUxIntelligence = uiUxFlags.disabled
     ? null
     : (uiUxFlags.includeDetails
@@ -3184,7 +3251,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     nextAction: plan.next_action,
     roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
     planningPipeline: planning.pipeline,
-    tailwindUi
+    tailwindUi,
+    uiDashboardKits
   });
   const review = buildPlannerReviewSummary({
     goal,
@@ -3205,7 +3273,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     latest_feedback: latestFeedback,
     roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
     ui_ux_intelligence: uiUxIntelligence,
-    tailwind_ui: tailwindUi
+    tailwind_ui: tailwindUi,
+    ui_dashboard_kits: uiDashboardKits
   });
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
@@ -3232,6 +3301,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     review,
     visual_summary: visualSummary,
     ui_ux_intelligence: uiUxIntelligence,
+    ui_dashboard_kits: uiDashboardKits,
     tailwind_ui: tailwindUi,
     task_punch: taskPunch,
     prompt: renderCodexPrompt({
@@ -3248,14 +3318,15 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       review,
       docsStatus: docsStatus.status,
       visualSummary,
-      currentGate: planning.current_gate,
-      versionControl,
-      latestFeedback,
-      roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
-      pipelineState: visualSummary.viber_pipeline || null,
-      uiUxIntelligence: promptUiUxIntelligence,
-      tailwindUi: uiUxFlags.disabled || !tailwindUiFlags.includeDetails ? null : (tailwindUi || buildTailwindUiUnavailableSummary("Tailwind UI summary unavailable in this workspace.", "Use kvdf tailwind-ui docs-guidance --idea \"...\" --json if Tailwind guidance is needed."))
-    })
+    currentGate: planning.current_gate,
+    versionControl,
+    latestFeedback,
+    roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
+    pipelineState: visualSummary.viber_pipeline || null,
+    uiUxIntelligence: promptUiUxIntelligence,
+    uiDashboardKits,
+    tailwindUi: uiUxFlags.disabled || !tailwindUiFlags.includeDetails ? null : (tailwindUi || buildTailwindUiUnavailableSummary("Tailwind UI summary unavailable in this workspace.", "Use kvdf tailwind-ui docs-guidance --idea \"...\" --json if Tailwind guidance is needed."))
+  })
   }, context, {
     track: mode,
     app: request.app || request.app_slug || request["app-slug"] || "",
@@ -3342,6 +3413,10 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     strict: tailwindUiFlags.strict,
     disabled: tailwindUiFlags.disabled
   });
+  const uiDashboardKitsFlags = resolveUiDashboardKitsFlags(request);
+  const uiDashboardKits = uiDashboardKitsFlags.disabled ? null : buildDashboardKitGuidanceSummary({
+    surface: mode === "vibe" ? "viber-dashboard" : "owner-dashboard"
+  });
   const stateResync = buildPlannerStateResyncSummary(context, request, { track: mode, pluginId: pluginContext ? pluginContext.plugin_id : null });
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
@@ -3399,7 +3474,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     currentGate: planning.current_gate,
     nextAction: evolutionPlan.next_action,
     uiUxIntelligence,
-    tailwindUi
+    tailwindUi,
+    uiDashboardKits
   });
 }
 
@@ -3435,6 +3511,10 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     includeDetails: tailwindUiFlags.includeDetails,
     strict: tailwindUiFlags.strict,
     disabled: tailwindUiFlags.disabled
+  });
+  const uiDashboardKitsFlags = resolveUiDashboardKitsFlags(request);
+  const uiDashboardKits = uiDashboardKitsFlags.disabled ? null : buildDashboardKitGuidanceSummary({
+    surface: mode === "vibe" ? "viber-dashboard" : "owner-dashboard"
   });
   const sourceControl = currentPlan.source_control || buildPlannerSourceControl(
     { flags: {} },
@@ -3491,11 +3571,12 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     nextAction: currentPlan.next_action || evolutionPlan.next_action,
     roadmapTrain: currentPlan.roadmap_train || null,
     uiUxIntelligence,
-    tailwindUi
+    tailwindUi,
+    uiDashboardKits
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null, uiUxIntelligence = null, tailwindUi = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
@@ -3575,7 +3656,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     roadmapTrain,
     viberPipeline,
     uiUxIntelligence,
-    tailwindUi
+    tailwindUi,
+    uiDashboardKits
   });
   const report = {
     report_type: "kvdf_planner_visual",
@@ -3634,6 +3716,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     tailwind_ui_runtime_mode: tailwindUi ? tailwindUi.runtime_mode || "guidance_only" : "guidance_only",
     tailwind_ui_core_dependency: false,
     tailwind_ui_core_dev_dependency: false,
+    ui_dashboard_kits: uiDashboardKits,
     tailwind_ui: tailwindUi || null
   };
   if (pluginContext) report.plugin_context = pluginContext;
@@ -4468,7 +4551,7 @@ function determinePlannerVisualSourceOfTruth({ mode = "owner", stateResync = nul
   return "unknown";
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null, uiUxIntelligence = null, tailwindUi = null }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Execution Readiness - Vibe/App"
     : mode === "plugin"
@@ -4514,6 +4597,17 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     Array.isArray(tailwindUi.validation_notes) && tailwindUi.validation_notes.length ? `- Validation notes: ${tailwindUi.validation_notes.join("; ")}` : null,
     `- Next action: ${tailwindUi.next_action || "Use Tailwind guidance only when explicitly selected."}`
   ].filter(Boolean).join("\n") : null;
+  const uiDashboardKitsLines = uiDashboardKits ? [
+    "## UI Dashboard Kits",
+    `- Status: ${uiDashboardKits.status || "unknown"}`,
+    `- Provider: ${uiDashboardKits.provider || "fallback"}`,
+    `- Surface: ${uiDashboardKits.surface || "owner-dashboard"}`,
+    Array.isArray(uiDashboardKits.recommended_kits) && uiDashboardKits.recommended_kits.length ? `- Recommended kits: ${uiDashboardKits.recommended_kits.join("; ")}` : null,
+    Array.isArray(uiDashboardKits.recommended_widgets) && uiDashboardKits.recommended_widgets.length ? `- Recommended widgets: ${uiDashboardKits.recommended_widgets.join("; ")}` : null,
+    Array.isArray(uiDashboardKits.required_states) && uiDashboardKits.required_states.length ? `- Required states: ${uiDashboardKits.required_states.join("; ")}` : null,
+    Array.isArray(uiDashboardKits.accessibility_notes) && uiDashboardKits.accessibility_notes.length ? `- Accessibility notes: ${uiDashboardKits.accessibility_notes.join("; ")}` : null,
+    `- Next action: ${uiDashboardKits.next_action || "Use dashboard kit guidance when explicitly requested."}`
+  ].filter(Boolean).join("\n") : null;
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Provider: ${sourceControl.provider || "none"}`,
@@ -4550,6 +4644,8 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     planningMethod ? `- Method confidence: ${planningReadiness.planning_method_confidence || "unknown"}` : null,
     reviewStatus ? `- Review status: ${reviewStatus}` : null,
     docsStatus ? `- Documentation status: ${docsStatus}` : null,
+    uiDashboardKitsLines ? "" : null,
+    uiDashboardKitsLines ? uiDashboardKitsLines : null,
     tailwindLines ? "" : null,
     tailwindLines ? tailwindLines : null,
     `- Docs created total: ${docsCreatedTotal || 0}`,
@@ -8768,6 +8864,10 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     strict: tailwindUiFlags.strict,
     disabled: tailwindUiFlags.disabled
   });
+  const uiDashboardKitsFlags = resolveUiDashboardKitsFlags(request);
+  const uiDashboardKits = uiDashboardKitsFlags.disabled ? null : buildDashboardKitGuidanceSummary({
+    surface: normalizePlannerMode(currentPlan.track || currentPlan.planner_mode) === "vibe" ? "viber-dashboard" : "owner-dashboard"
+  });
   const promptUiUxIntelligence = uiUxFlags.disabled
     ? null
     : (uiUxFlags.includeDetails
@@ -8788,7 +8888,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     docs_status: currentPlan.docs_status || null,
     visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
     current_gate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || review.planning_method || "structured", sourceControl, normalizePlannerMode(currentPlan.planner_mode))
-  }, context, sourceControl, aiLearning, promptUiUxIntelligence, promptTailwindUi);
+  }, context, sourceControl, aiLearning, promptUiUxIntelligence, promptTailwindUi, uiDashboardKits);
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
@@ -8812,6 +8912,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     prompt,
     roadmap_train: roadmapTrain,
     ui_ux_intelligence: uiUxIntelligence,
+    ui_dashboard_kits: uiDashboardKits,
     tailwind_ui: tailwindUi
   }, context, {
     track: currentPlan.track || normalizePlannerMode(currentPlan.planner_mode),
@@ -9041,7 +9142,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null, uiUxIntelligence = null, tailwindUi = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -9198,6 +9299,20 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "- Reminder: Tailwind is optional and not a KVDF Core dependency.",
     "- Stop condition: do not add Tailwind to KVDF Core or use an external CDN."
   ].filter(Boolean).join("\n") : null;
+  const uiDashboardKitsSummary = uiDashboardKits && uiDashboardKits.status ? uiDashboardKits : null;
+  const uiDashboardKitsSummaryLines = uiDashboardKitsSummary ? [
+    "## UI Dashboard Kits",
+    `- Status: ${uiDashboardKitsSummary.status || "unknown"}`,
+    `- Provider: ${uiDashboardKitsSummary.provider || "fallback"}`,
+    `- Surface: ${uiDashboardKitsSummary.surface || "owner-dashboard"}`,
+    Array.isArray(uiDashboardKitsSummary.recommended_kits) && uiDashboardKitsSummary.recommended_kits.length ? `- Recommended kits: ${uiDashboardKitsSummary.recommended_kits.join("; ")}` : null,
+    Array.isArray(uiDashboardKitsSummary.recommended_widgets) && uiDashboardKitsSummary.recommended_widgets.length ? `- Recommended widgets: ${uiDashboardKitsSummary.recommended_widgets.join("; ")}` : null,
+    Array.isArray(uiDashboardKitsSummary.required_states) && uiDashboardKitsSummary.required_states.length ? `- Required states: ${uiDashboardKitsSummary.required_states.join("; ")}` : null,
+    Array.isArray(uiDashboardKitsSummary.accessibility_notes) && uiDashboardKitsSummary.accessibility_notes.length ? `- Accessibility notes: ${uiDashboardKitsSummary.accessibility_notes.join("; ")}` : null,
+    `- Next action: ${uiDashboardKitsSummary.next_action || "Use dashboard kit guidance when explicitly requested."}`,
+    "- Reminder: UI Dashboard Kits is optional and does not replace the underlying dashboard implementation.",
+    "- Stop condition: do not redesign unrelated dashboard surfaces."
+  ].filter(Boolean).join("\n") : null;
   return [
     heading,
     "",
@@ -9227,6 +9342,8 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     ...(viberPipelineLines.length ? viberPipelineLines : []),
     uiUxSummaryLines ? "" : null,
     uiUxSummaryLines || null,
+    uiDashboardKitsSummaryLines ? "" : null,
+    uiDashboardKitsSummaryLines || null,
     tailwindSummaryLines ? "" : null,
     tailwindSummaryLines || null,
     "",
@@ -11147,7 +11264,7 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
   ].join("\n");
 }
 
-function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null, uiUxIntelligence = null, tailwindUi = null) {
+function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null, uiUxIntelligence = null, tailwindUi = null, uiDashboardKits = null) {
   const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(plan.planner_mode);
   const sourcePipeline = plan.source_pipeline || plan.sourcePipeline || null;

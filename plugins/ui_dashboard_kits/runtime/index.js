@@ -1,5 +1,10 @@
 const fs = require("fs");
 const path = require("path");
+const { buildDashboardKitGuidance, buildDashboardKitHtmlComment, buildDashboardKitProviderSummary, buildDashboardSurfaceRecommendations } = require("./provider");
+const { listDashboardKits, getDashboardKit, recommendDashboardKit } = require("./kits");
+const { listExamples, getExample, summarizeExamples } = require("./examples");
+const { listTemplates, getTemplate, summarizeTemplates } = require("./templates");
+const { listSnippets, getSnippet, summarizeSnippets } = require("./snippets");
 const {
   CHECK_RULES,
   checkUiFiles,
@@ -65,6 +70,7 @@ function listMarkdownEntries(folder, kind) {
 }
 
 function getPluginStatus() {
+  const provider = buildDashboardKitProviderSummary();
   const manifestPath = resolvePluginPath("plugin.json");
   const runtimePath = resolvePluginPath("runtime", "index.js");
   const pluginPresent = Boolean(safeStat(manifestPath) && safeStat(runtimePath));
@@ -74,7 +80,9 @@ function getPluginStatus() {
     status: pluginPresent ? "available" : "warning",
     enabled_by_default: false,
     core_dependency: false,
+    ui_library_dependency: false,
     checks: [...CHECK_RULES],
+    provider,
     next_action: "Run kvdf ui-dashboard-kits check <files...>."
   };
 }
@@ -84,45 +92,33 @@ function buildUiDashboardKitsStatus() {
 }
 
 function buildExamplesReport() {
+  const examples = listExamples();
   return {
     report_type: "ui_dashboard_kits_examples",
-    examples: listMarkdownEntries("examples", "example"),
+    examples,
+    count: examples.length,
     next_action: "Use these examples as UI dashboard guidance or copy them into a task punch.",
     plugin_id: "ui_dashboard_kits"
   };
 }
 
 function buildTemplatesReport() {
+  const templates = listTemplates();
   return {
     report_type: "ui_dashboard_kits_templates",
-    templates: fs.existsSync(resolvePluginPath("templates"))
-      ? fs.readdirSync(resolvePluginPath("templates"))
-        .filter((entry) => safeStat(resolvePluginPath("templates", entry))?.isFile())
-        .sort((a, b) => a.localeCompare(b))
-        .map((entry) => ({
-          id: `template:${path.basename(entry, path.extname(entry))}`,
-          name: path.basename(entry, path.extname(entry)).replace(/[-_]/g, " "),
-          path: path.relative(pluginRoot(), resolvePluginPath("templates", entry)).replace(/\\/g, "/")
-        }))
-      : [],
+    templates,
+    count: templates.length,
     next_action: "Use these templates as starter HTML for dashboard or docs surfaces.",
     plugin_id: "ui_dashboard_kits"
   };
 }
 
 function buildSnippetsReport() {
+  const snippets = listSnippets();
   return {
     report_type: "ui_dashboard_kits_snippets",
-    snippets: fs.existsSync(resolvePluginPath("snippets"))
-      ? fs.readdirSync(resolvePluginPath("snippets"))
-        .filter((entry) => safeStat(resolvePluginPath("snippets", entry))?.isFile())
-        .sort((a, b) => a.localeCompare(b))
-        .map((entry) => ({
-          id: `snippet:${path.basename(entry, path.extname(entry))}`,
-          name: path.basename(entry, path.extname(entry)).replace(/[-_]/g, " "),
-          path: path.relative(pluginRoot(), resolvePluginPath("snippets", entry)).replace(/\\/g, "/")
-        }))
-      : [],
+    snippets,
+    count: snippets.length,
     next_action: "Use these snippets as small UI contract reminders in prompts and task punches.",
     plugin_id: "ui_dashboard_kits"
   };
@@ -141,9 +137,25 @@ module.exports = {
   buildUiDashboardKitsStatus,
   buildUiDashboardKitsCheckReport,
   buildUiDashboardKitsCheckCli,
+  buildDashboardKitProviderSummary,
+  buildDashboardKitGuidance,
+  buildDashboardKitHtmlComment,
+  buildDashboardSurfaceRecommendations,
+  listDashboardKits,
+  getDashboardKit,
+  recommendDashboardKit,
   buildExamplesReport,
   buildTemplatesReport,
   buildSnippetsReport,
+  listExamples,
+  getExample,
+  summarizeExamples,
+  listTemplates,
+  getTemplate,
+  summarizeTemplates,
+  listSnippets,
+  getSnippet,
+  summarizeSnippets,
   CHECK_RULES,
   renderUsage,
   renderCheckText,

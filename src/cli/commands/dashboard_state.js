@@ -12,6 +12,7 @@ const { buildSecurityGateState } = require("./security");
 const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
 const { getPluginRuntimeStatus } = require("../services/plugin_loader");
 const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
+const { buildDashboardKitGuidanceSummary } = require("../services/ui_kit_provider");
 
 const UI_UX_INTELLIGENCE_PLUGIN_ID = "ui_ux_intelligence";
 const UI_UX_INTELLIGENCE_TARGET_DOCS = [
@@ -1757,6 +1758,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
     current_plan_status: context.plannerState.current_plan_status || "empty",
     current_evolution: currentEvolution ? currentEvolution.change_id || currentEvolution.title || null : null,
+    ui_dashboard_kits: buildDashboardKitGuidanceSummary({ surface: "owner-dashboard" }),
     generated_at: new Date().toISOString()
   });
 }
@@ -2030,6 +2032,7 @@ function buildViberDashboardState(context = {}, deps = {}) {
       next_action: "Run kvdf ui-ux-intelligence governance --json."
     },
     ui_ux_intelligence: uiUxIntelligence,
+    ui_dashboard_kits: buildDashboardKitGuidanceSummary({ surface: "viber-dashboard" }),
     generated_at: new Date().toISOString()
   });
 }

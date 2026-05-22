@@ -20,6 +20,18 @@
     {
       "command": "kvdf ui-dashboard-kits snippets --json",
       "expect_report_type": "ui_dashboard_kits_snippets"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits provider --json",
+      "expect_report_type": "ui_dashboard_kits_provider"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits recommend --surface owner-dashboard --json",
+      "expect_report_type": "ui_dashboard_kits_recommendation"
+    },
+    {
+      "command": "kvdf ui-dashboard-kits html-comment --surface owner-dashboard --json",
+      "expect_report_type": "ui_dashboard_kits_html_comment"
     }
   ]
 }

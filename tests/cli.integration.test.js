@@ -5594,6 +5594,12 @@ test("owner and viber dashboards expose planner execution readiness views", () =
   assert.strictEqual(viberDashboard.readiness.track, "vibe_app_developer");
   assert.strictEqual(ownerDashboard.readiness.planner_mode, "owner");
   assert.strictEqual(viberDashboard.readiness.planner_mode, "vibe");
+  assert.ok(ownerDashboard.ui_dashboard_kits);
+  assert.ok(viberDashboard.ui_dashboard_kits);
+  assert.ok(["ui_dashboard_kits", "fallback"].includes(ownerDashboard.ui_dashboard_kits.provider));
+  assert.ok(["ui_dashboard_kits", "fallback"].includes(viberDashboard.ui_dashboard_kits.provider));
+  assert.strictEqual(ownerDashboard.ui_dashboard_kits.fallback_safe, true);
+  assert.strictEqual(viberDashboard.ui_dashboard_kits.fallback_safe, true);
   assert.ok(ownerDashboard.readiness.source_control_mode);
   assert.ok(viberDashboard.readiness.source_control_mode);
   assert.ok(!JSON.stringify(ownerDashboard).includes("KVDF Viber Dashboard"));
@@ -8478,6 +8484,8 @@ test("ui_dashboard_kits plugin is discoverable and the checker surfaces remain s
   assert.strictEqual(status.status, "available");
   assert.strictEqual(status.core_dependency, false);
   assert.strictEqual(status.enabled_by_default, false);
+  assert.ok(status.provider);
+  assert.strictEqual(status.ui_library_dependency, false);
   assert.ok(Array.isArray(status.checks));
   assert.ok(status.checks.includes("raw_hex_color"));
   assert.ok(status.checks.includes("data_surface_states"));
@@ -8521,9 +8529,22 @@ test("ui_dashboard_kits plugin is discoverable and the checker surfaces remain s
   const examples = JSON.parse(runKvdf(["ui-dashboard-kits", "examples", "--json"], { cwd: dir }).stdout);
   const templates = JSON.parse(runKvdf(["ui-dashboard-kits", "templates", "--json"], { cwd: dir }).stdout);
   const snippets = JSON.parse(runKvdf(["ui-dashboard-kits", "snippets", "--json"], { cwd: dir }).stdout);
+  const provider = JSON.parse(runKvdf(["ui-dashboard-kits", "provider", "--json"], { cwd: dir }).stdout);
+  const recommend = JSON.parse(runKvdf(["ui-dashboard-kits", "recommend", "--surface", "owner-dashboard", "--json"], { cwd: dir }).stdout);
+  const htmlComment = JSON.parse(runKvdf(["ui-dashboard-kits", "html-comment", "--surface", "owner-dashboard", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(examples.report_type, "ui_dashboard_kits_examples");
   assert.strictEqual(templates.report_type, "ui_dashboard_kits_templates");
   assert.strictEqual(snippets.report_type, "ui_dashboard_kits_snippets");
+  assert.strictEqual(provider.report_type, "ui_dashboard_kits_provider");
+  assert.ok(["ui_dashboard_kits", "fallback"].includes(provider.provider));
+  assert.strictEqual(provider.fallback_safe, true);
+  assert.strictEqual(provider.core_dependency, false);
+  assert.strictEqual(provider.ui_library_dependency, false);
+  assert.strictEqual(recommend.report_type, "ui_dashboard_kits_recommendation");
+  assert.strictEqual(recommend.surface, "owner-dashboard");
+  assert.ok(Array.isArray(recommend.required_states));
+  assert.strictEqual(htmlComment.report_type, "ui_dashboard_kits_html_comment");
+  assert.match(htmlComment.comment, /ui_dashboard_kits|fallback/);
   assert.deepStrictEqual(examples.examples, []);
   assert.deepStrictEqual(templates.templates, []);
   assert.deepStrictEqual(snippets.snippets, []);
@@ -9066,6 +9087,28 @@ test("planner visual and dashboard state expose ui_ux_intelligence safely", () =
   assert.strictEqual(dashboard.tailwind_ui.runtime_mode, "guidance_only");
   assert.ok(dashboard.ui_ux_acceptance);
   assert.ok(["pass", "warning", "blocked", "unavailable"].includes(dashboard.ui_ux_acceptance.status));
+  assert.ok(dashboard.ui_dashboard_kits);
+  assert.ok(["ui_dashboard_kits", "fallback"].includes(dashboard.ui_dashboard_kits.provider));
+  assert.strictEqual(dashboard.ui_dashboard_kits.fallback_safe, true);
+
+  const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Improve dashboard kits", "--track", "owner", "--method", "hybrid", "--include-ui-dashboard-kits", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "kvdf_planner_review");
+  assert.ok(review.ui_dashboard_kits_review);
+  assert.ok(["pass", "warning", "unavailable"].includes(review.ui_dashboard_kits_review.status));
+
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Improve dashboard kits", "--track", "owner", "--include-ui-dashboard-kits", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.ok(visual.ui_dashboard_kits);
+  assert.ok(["ui_dashboard_kits", "fallback"].includes(visual.ui_dashboard_kits.provider));
+
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Improve dashboard kits", "--track", "owner", "--include-ui-dashboard-kits", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
+  assert.match(prompt.prompt, /UI Dashboard Kits/);
+  assert.ok(prompt.ui_dashboard_kits);
+
+  const promptNoKit = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Improve dashboard kits", "--track", "owner", "--no-ui-dashboard-kits", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(promptNoKit.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(!/UI Dashboard Kits/.test(promptNoKit.prompt));
 }));
 
 test("ui_ux_intelligence implementation artifacts generate tokens components screens and handoff packs", () => withTempDir((dir) => {

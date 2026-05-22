@@ -3,6 +3,7 @@ const path = require("path");
 const { readJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
 const { buildOptionalAssetTags, buildOptionalProviderHtmlComment, buildUiProviderSummary, getOptionalUiAssets } = require("../services/ui_asset_provider");
+const { buildDashboardKitHtmlComment } = require("../services/ui_kit_provider");
 const { summarizeUsage } = require("./usage_pricing");
 const { buildCustomerAppSummaries, buildPlannerDashboardState, collectDashboardStateForCurrentTrack } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
@@ -1212,7 +1213,7 @@ function buildUiAssetMarkup(options = {}) {
   const comment = providerSummary.provider && providerSummary.provider !== "fallback"
     ? `${buildOptionalProviderHtmlComment(providerSummary)}\n`
     : "";
-  return `${comment}${buildOptionalAssetTags(selected, {
+  return `${buildDashboardKitHtmlComment(options)}\n${comment}${buildOptionalAssetTags(selected, {
     ...options,
     document_path: resolveDashboardDocumentPath(options)
   })}`;
