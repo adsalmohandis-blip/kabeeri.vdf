@@ -9,6 +9,7 @@
     "validate": "node src/validate.js",
     "status": "node src/status.js",
     "impl:baseline": "node src/implementation_baseline.js",
+    "studio:shell": "node src/studio_shell.js",
     "qa:ide-journey": "node src/qa_ide_journey.js",
     "desktop:dev": "npm --prefix apps/desktop run dev",
     "desktop:build": "npm --prefix apps/desktop run build",
@@ -26,6 +27,6 @@
     "studio:dependencies": "node src/studio_dependencies.js",
     "queue:status": "node src/queue_status.js",
     "check": "node tests/implementation_baseline.test.js",
-    "test": "node tests/app.test.js && node tests/runtime.test.js && node tests/tasks.test.js && node tests/studio_tasks.test.js && node tests/studio_presets.test.js && node tests/desktop_snapshot.test.js && node tests/desktop_ux.test.js && node tests/qa.test.js && node tests/implementation_baseline.test.js"
+    "test": "node tests/app.test.js && node tests/runtime.test.js && node tests/tasks.test.js && node tests/studio_tasks.test.js && node tests/studio_presets.test.js && node tests/desktop_snapshot.test.js && node tests/desktop_ux.test.js && node tests/qa.test.js && node tests/implementation_baseline.test.js && node tests/studio_shell.test.js"
   }
 }
