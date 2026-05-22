@@ -566,6 +566,11 @@ Implemented pack families include:
 - NestJS
 - Go Gin
 
+WordPress-specific planning and governance are now owned by the optional
+`wordpress_builder` plugin. Core still ships the shared prompt-pack catalog and
+compatibility wrappers, but the WordPress builder surface itself is plugin-owned
+and removable.
+
 Main commands:
 
 ```bash

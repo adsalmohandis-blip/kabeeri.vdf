@@ -96,3 +96,9 @@ and a safe snippet/helper/provider surface without making Bootstrap a Core
 dependency. When it is not enabled, HTML builders keep the fallback comment in
 the output so review tools can see that the surface stayed on the local HTML
 path instead of a Bootstrap-backed path.
+
+WordPress-specific planning and security cleanup guidance now live in the
+optional `wordpress_builder` plugin. The Viber pipeline can still reference the
+legacy `kvdf wordpress ...` command for compatibility, but new planning runs
+should prefer `kvdf wordpress-builder ...` when WordPress-specific governance
+or cleanup planning is needed.

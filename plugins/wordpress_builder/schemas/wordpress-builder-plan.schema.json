@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WordPress Builder Plan",
+  "type": "object",
+  "required": ["report_type", "idea", "site_type"],
+  "properties": {
+    "report_type": { "const": "wordpress_builder_plan" },
+    "idea": { "type": "string" },
+    "site_type": { "type": "string" },
+    "content_model": { "type": "object" },
+    "theme_strategy": { "type": "object" },
+    "plugin_strategy": { "type": "object" },
+    "security_strategy": { "type": "object" },
+    "docs_targets": { "type": "array", "items": { "type": "string" } },
+    "planner_pipeline_hint": { "type": "object" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

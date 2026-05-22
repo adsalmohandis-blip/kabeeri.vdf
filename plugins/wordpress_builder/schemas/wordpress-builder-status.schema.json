@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WordPress Builder Status",
+  "type": "object",
+  "required": ["report_type", "plugin_id", "status"],
+  "properties": {
+    "report_type": { "const": "wordpress_builder_status" },
+    "plugin_id": { "const": "wordpress_builder" },
+    "status": { "type": "string" },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "enabled_by_default": { "type": "boolean" },
+    "core_dependency": { "type": "boolean" },
+    "plugin_family": { "type": "string" },
+    "plugin_type": { "type": "string" },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

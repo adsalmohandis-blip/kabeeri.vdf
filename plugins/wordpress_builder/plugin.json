@@ -1,0 +1,36 @@
+{
+  "plugin_id": "wordpress_builder",
+  "name": "WordPress Builder",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/wordpress_builder/runtime/index.js",
+  "command_entrypoint": "plugins/wordpress_builder/runtime/index.js",
+  "removable": true,
+  "track": "vibe_app_developer",
+  "plugin_family": "app_builders",
+  "plugin_type": "wordpress_platform_builder",
+  "enabled_by_default": false,
+  "description": "Optional WordPress platform builder for site planning, theme planning, plugin planning, WooCommerce planning, CMS governance, and security cleanup planning.",
+  "required_folders": [
+    "runtime",
+    "docs",
+    "schemas",
+    "tests"
+  ],
+  "command_surface": [
+    "kvdf wordpress-builder status",
+    "kvdf wordpress-builder plan",
+    "kvdf wordpress-builder theme-plan",
+    "kvdf wordpress-builder plugin-plan",
+    "kvdf wordpress-builder woocommerce-plan",
+    "kvdf wordpress-builder security-cleanup-plan",
+    "kvdf wordpress",
+    "kvdf plugins install wordpress_builder",
+    "kvdf plugins uninstall wordpress_builder"
+  ],
+  "docs_surface": [
+    "plugins/wordpress_builder/docs/index.md",
+    "plugins/wordpress_builder/docs/cli.md"
+  ]
+}

@@ -815,6 +815,12 @@ more specific Expo prompts for tasks such as `api contract`, `deep link`,
 ## WordPress Development And Adoption
 
 ```bash
+kvdf wordpress-builder status
+kvdf wordpress-builder plan --idea "Business website with blog and services"
+kvdf wordpress-builder theme-plan --idea "Business website with blog and services"
+kvdf wordpress-builder plugin-plan --idea "Build a WooCommerce checkout add-on"
+kvdf wordpress-builder woocommerce-plan --idea "Commerce store"
+kvdf wordpress-builder security-cleanup-plan --idea "Hacked WordPress site cleanup"
 kvdf wordpress analyze --path . --staging --backup
 kvdf wordpress analyze --path existing-wordpress --json
 kvdf wordpress plan "Build a WordPress company website" --type corporate --mode new
@@ -835,18 +841,21 @@ kvdf wordpress checklist woocommerce
 kvdf prompt-pack compose wordpress --task task-001
 ```
 
+`wordpress_builder` is the plugin-owned WordPress planning surface. The legacy
+`kvdf wordpress ...` command remains as a compatibility wrapper and delegates to
+the plugin when available.
+
 WordPress support is a governed capability for three scenarios:
 
 - **New WordPress site**: Kabeeri helps classify the site type, choose the matching product blueprint, plan pages/content/CPTs/taxonomies/admin settings, scaffold a safe extension layer, create tasks, and compose the WordPress prompt pack.
 - **Existing WordPress site**: Kabeeri analyzes `wp-content`, plugins, themes, WooCommerce signals, staging/backup risk, forbidden paths, and adoption next steps before any code change.
 - **WordPress plugin development**: Kabeeri creates a plugin-specific plan, architecture map, security checklist, scoped tasks, and a production-safe scaffold under `wp-content/plugins/<plugin-slug>/`.
+- **Security cleanup**: the plugin provides a planning-only cleanup checklist and never deletes files or touches production automatically.
 
 The runtime state is stored in `.kabeeri/wordpress.json` and validated by
 `schemas/runtime/wordpress-state.schema.json`.
 
-Command dispatch now uses `src/cli/services/wordpress.js` for state
-persistence and `src/cli/services/wordpress_plans.js` for planning and
-checklist generation.
+Command dispatch now uses the optional `wordpress_builder` plugin for the WordPress planning surface, while `src/cli/services/wordpress.js` and `src/cli/services/wordpress_plans.js` continue to provide the legacy state helpers used by compatibility flows.
 
 Safety rules:
 

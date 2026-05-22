@@ -1292,7 +1292,18 @@ Notes:
   kvdf wordpress checklist woocommerce
 
 Notes:
-  WordPress support is a governed capability for building from scratch or adopting an existing site. It uses the WordPress prompt pack, product blueprints, UI/Data Design guidance, security checks, and task governance. It never edits WordPress core paths such as wp-admin or wp-includes.
+  WordPress support is a governed capability for building from scratch or adopting an existing site. It uses the WordPress prompt pack, product blueprints, UI/Data Design guidance, security checks, and task governance. The legacy command now delegates to the optional wordpress_builder plugin when available, and it never edits WordPress core paths such as wp-admin or wp-includes.
+`,
+    "wordpress-builder": `Usage:
+  kvdf wordpress-builder status
+  kvdf wordpress-builder plan --idea "Business website with blog and services"
+  kvdf wordpress-builder theme-plan --idea "Business website with blog and services"
+  kvdf wordpress-builder plugin-plan --idea "Business website with blog and services"
+  kvdf wordpress-builder woocommerce-plan --idea "Commerce store"
+  kvdf wordpress-builder security-cleanup-plan --idea "Hacked WordPress site cleanup"
+
+Notes:
+  WordPress Builder is the plugin-owned planning surface for WordPress sites, themes, plugins, WooCommerce, and security cleanup planning. It stays optional, removable, and planning-first.
 `,
     "company-profile": `Usage:
   kvdf company-profile status
@@ -1602,7 +1613,8 @@ function printHelp() {
     "  structure map|validate       Inspect and validate repository foldering",
     "  blueprint list|recommend     Map product type to modules, pages, data, and risks",
     "  data-design context|checklist Guide database modeling and review",
-    "  wordpress analyze|plan|scaffold Build or adopt WordPress sites safely",
+    "  wordpress-builder plan|theme-plan|plugin-plan WordPress builder planning",
+    "  wordpress analyze|plan|scaffold Compatibility wrapper for WordPress builder",
     "  example list|show <profile>  List or show example profiles",
     "  app list|create|status|workspace Manage customer app usernames and developer app workspaces",
     "  feature list|create|status   Manage business feature readiness",

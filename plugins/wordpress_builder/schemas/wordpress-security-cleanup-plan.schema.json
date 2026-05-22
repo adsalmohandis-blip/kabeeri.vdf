@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WordPress Security Cleanup Plan",
+  "type": "object",
+  "required": ["report_type", "scope"],
+  "properties": {
+    "report_type": { "const": "wordpress_security_cleanup_plan" },
+    "scope": { "const": "planning_only" },
+    "inspection_steps": { "type": "array", "items": { "type": "string" } },
+    "backup_steps": { "type": "array", "items": { "type": "string" } },
+    "malware_indicator_checks": { "type": "array", "items": { "type": "string" } },
+    "file_integrity_checks": { "type": "array", "items": { "type": "string" } },
+    "plugin_theme_review_steps": { "type": "array", "items": { "type": "string" } },
+    "hardening_steps": { "type": "array", "items": { "type": "string" } },
+    "do_not_do": { "type": "array", "items": { "type": "string" } },
+    "security_gate_recommendations": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

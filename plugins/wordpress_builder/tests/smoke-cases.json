@@ -1,0 +1,14 @@
+[
+  {
+    "command": "kvdf wordpress-builder status --json",
+    "report_type": "wordpress_builder_status"
+  },
+  {
+    "command": "kvdf wordpress-builder plan --idea \"Business website with blog and services\" --json",
+    "report_type": "wordpress_builder_plan"
+  },
+  {
+    "command": "kvdf wordpress-builder security-cleanup-plan --idea \"Hacked WordPress site cleanup\" --json",
+    "report_type": "wordpress_security_cleanup_plan"
+  }
+]

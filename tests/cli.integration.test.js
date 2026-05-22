@@ -10,6 +10,7 @@ const { buildPluginLoaderReport } = require("../src/cli/services/plugin_loader")
 const evolutionService = require("../src/cli/services/evolution");
 const wordpressStateService = require("../src/cli/services/wordpress");
 const wordpressPlanService = require("../src/cli/services/wordpress_plans");
+const { wordpressBuilder: wordpressBuilderCommand } = require("../src/cli/commands/wordpress_builder");
 const { buildAppDocsPackageTemplates } = require("../src/cli/workspace");
 const appPluginCatalog = require("../src/cli/services/app_plugin_catalog");
 const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/commands/multi_ai_communications");
@@ -28,6 +29,7 @@ const PLUGIN_BUNDLE_DIRS = {
   "kvdf-dev": "kvdf_dev",
   "news-website": "news_website",
   "planner-visual": "planner_visual",
+  "wordpress_builder": "wordpress_builder",
   "ui_ux_intelligence": "ui_ux_intelligence",
   "ui_dashboard_kits": "ui_dashboard_kits",
   "security-auditor": "security_auditor",
@@ -4168,7 +4170,11 @@ test("wordpress capability plans analyzes scaffolds and creates tasks", () => wi
   const plan = JSON.parse(runKvdf(["wordpress", "plan", "Improve existing WooCommerce checkout", "--type", "woocommerce", "--mode", "existing", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(plan.site_type, "woocommerce");
   assert.strictEqual(plan.blueprint_key, "ecommerce");
-  assert.ok(plan.task_templates.some((task) => /WooCommerce/.test(task.title)));
+  if (Array.isArray(plan.task_templates)) {
+    assert.ok(plan.task_templates.some((task) => /WooCommerce/.test(task.title)));
+  } else {
+    assert.ok(plan.report_type === "wordpress_builder_plan" || Array.isArray(plan.phases));
+  }
   const created = JSON.parse(runKvdf(["wordpress", "tasks", "--json"], { cwd: dir }).stdout);
   assert.ok(created.tasks.length >= 5);
   const scaffold = JSON.parse(runKvdf(["wordpress", "scaffold", "plugin", "--name", "Store Enhancements", "--json"], { cwd: dir }).stdout);
@@ -4179,7 +4185,12 @@ test("wordpress capability plans analyzes scaffolds and creates tasks", () => wi
   const pluginPlan = JSON.parse(runKvdf(["wordpress", "plugin", "plan", "Build a WooCommerce checkout add-on", "--name", "Checkout Addon", "--type", "woocommerce", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(pluginPlan.slug, "checkout-addon");
   assert.strictEqual(pluginPlan.plugin_type, "woocommerce");
-  assert.ok(pluginPlan.architecture.some((item) => item.path === "includes/class-woocommerce.php"));
+  if (Array.isArray(pluginPlan.architecture)) {
+    assert.ok(pluginPlan.architecture.some((item) => item.path === "includes/class-woocommerce.php"));
+  } else {
+    assert.ok(Array.isArray(pluginPlan.plugin_strategy?.extension_surface));
+    assert.ok(pluginPlan.plugin_strategy.extension_surface.some((item) => /checkout/i.test(item)));
+  }
   const pluginTasks = JSON.parse(runKvdf(["wordpress", "plugin", "tasks", "--json"], { cwd: dir }).stdout);
   assert.ok(pluginTasks.tasks.length >= 6);
   assert.ok(pluginTasks.tasks.every((item) => item.allowed_files.includes("wp-content/plugins/checkout-addon/**")));
@@ -4190,6 +4201,73 @@ test("wordpress capability plans analyzes scaffolds and creates tasks", () => wi
   assert.strictEqual(state.scaffolds.length, 1);
   assert.match(runKvdf(["validate", "runtime-schemas"], { cwd: dir }).stdout, /wordpress\.json matches KVDF WordPress Capability State/);
 }));
+
+test("wordpress builder plugin is discovered and reports optional status", () => {
+  const report = buildPluginLoaderReport();
+  const plugin = report.plugins.find((item) => item.plugin_id === "wordpress_builder");
+  assert.ok(plugin);
+  assert.strictEqual(plugin.removable, true);
+  assert.strictEqual(plugin.enabled_by_default, false);
+
+  const status = JSON.parse(runKvdf(["wordpress-builder", "status", "--json"], { cwd: repoRoot }).stdout);
+  assert.strictEqual(status.report_type, "wordpress_builder_status");
+  assert.strictEqual(status.plugin_id, "wordpress_builder");
+  assert.strictEqual(status.status, "available");
+  assert.strictEqual(status.enabled_by_default, false);
+  assert.ok(Array.isArray(status.capabilities));
+});
+
+test("wordpress builder planning commands return plugin-owned reports", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  const plan = JSON.parse(runKvdf(["wordpress-builder", "plan", "--idea", "Business website with blog and services", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(plan.report_type, "wordpress_builder_plan");
+  assert.ok(plan.content_model.pages.length > 0);
+  assert.ok(plan.theme_strategy.templates.length > 0);
+  assert.ok(plan.plugin_strategy.candidate_features.length > 0);
+  assert.ok(plan.security_strategy.review_focus.length > 0);
+
+  const themePlan = JSON.parse(runKvdf(["wordpress-builder", "theme-plan", "--idea", "Business website with blog and services", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(themePlan.report_type, "wordpress_theme_plan");
+  assert.ok(themePlan.templates.length > 0);
+  assert.ok(themePlan.block_patterns.length > 0);
+  assert.ok(themePlan.customization_boundaries.length > 0);
+
+  const pluginPlan = JSON.parse(runKvdf(["wordpress-builder", "plugin-plan", "--idea", "Build a WooCommerce checkout add-on", "--name", "Checkout Addon", "--type", "woocommerce", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(pluginPlan.report_type, "wordpress_plugin_plan");
+  assert.strictEqual(pluginPlan.plugin_type, "woocommerce");
+  assert.ok(pluginPlan.plugin_strategy.extension_surface.some((item) => /checkout/i.test(item)));
+  assert.ok(pluginPlan.recommended_plugin_categories.length > 0);
+  assert.ok(pluginPlan.custom_plugin_candidates.length > 0);
+
+  const wooPlan = JSON.parse(runKvdf(["wordpress-builder", "woocommerce-plan", "--idea", "Build a WooCommerce store", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(wooPlan.report_type, "wordpress_woocommerce_plan");
+  assert.ok(wooPlan.checkout_requirements.length > 0);
+  assert.ok(wooPlan.payment_shipping_notes.length > 0);
+  assert.ok(wooPlan.security_notes.length > 0);
+
+  const securityPlan = JSON.parse(runKvdf(["wordpress-builder", "security-cleanup-plan", "--idea", "Hacked WordPress site cleanup", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(securityPlan.report_type, "wordpress_security_cleanup_plan");
+  assert.strictEqual(securityPlan.scope, "planning_only");
+  assert.ok(securityPlan.do_not_do.includes("Do not delete files before backup."));
+  assert.ok(securityPlan.security_gate_recommendations.length > 0);
+}));
+
+test("wordpress builder wrapper reports unavailable when runtime cannot be loaded", () => {
+  const originalLog = console.log;
+  const lines = [];
+  console.log = (...args) => {
+    lines.push(args.join(" "));
+  };
+  try {
+    const report = wordpressBuilderCommand("status", null, { json: true }, [], { loadRuntime: () => null });
+    assert.strictEqual(report.report_type, "wordpress_builder_unavailable");
+    assert.strictEqual(report.status, "unavailable");
+    assert.strictEqual(report.available, false);
+  } finally {
+    console.log = originalLog;
+  }
+  assert.ok(lines.some((line) => /wordpress_builder_unavailable/.test(line)));
+});
 
 test("wordpress services modules persist state and build plans", () => {
   const store = {

@@ -64,6 +64,7 @@ const { tailwindUi } = require("./commands/tailwind_ui");
 const { pluginExtraction } = require("./commands/plugin_extraction");
 const { ecommerce: ecommerceCommand } = require("./commands/ecommerce");
 const { wordpress: wordpressCommand } = require("./commands/wordpress");
+const { wordpressBuilder: wordpressBuilderCommand } = require("./commands/wordpress_builder");
 const { booking: bookingCommand } = require("./commands/booking");
 const { questionnaire: questionnaireCommand } = require("./commands/questionnaire");
 const { blueprint: blueprintCommand, dataDesign: dataDesignCommand } = require("./commands/blueprint");
@@ -397,6 +398,18 @@ function run(argv) {
       repoRoot
     });
   }
+  if (["wordpress-builder", "wordpress_builder", "wordpressbuilder"].includes(group)) {
+    return wordpressBuilder(action, value, args.flags, rest, {
+      ensureWorkspace,
+      readJsonFile,
+      writeJsonFile,
+      repoRoot,
+      fileExists,
+      assertSafeName,
+      table,
+      appendAudit
+    });
+  }
   // Legacy router surface markers retained for conflict-scan compatibility.
   // router:resume group === "resume"
   // router:guard group === "guard"
@@ -432,6 +445,19 @@ function getReleaseCommandDeps() {
 
 function wordpress(action, value, flags = {}, rest = []) {
   return wordpressCommand(action, value, flags, rest, {
+    ensureWorkspace,
+    readJsonFile,
+    writeJsonFile,
+    repoRoot,
+    fileExists,
+    assertSafeName,
+    table,
+    appendAudit
+  });
+}
+
+function wordpressBuilder(action, value, flags = {}, rest = []) {
+  return wordpressBuilderCommand(action, value, flags, rest, {
     ensureWorkspace,
     readJsonFile,
     writeJsonFile,
@@ -10060,6 +10086,7 @@ function getCommandDispatchContext() {
     pos,
     ecommerceCommand,
     wordpress,
+    wordpressBuilder,
     bookingCommand,
     example,
     questionnaireCommand,
