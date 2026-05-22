@@ -1419,11 +1419,21 @@ Notes:
   kvdf ui-ux-intelligence checklist --idea "Build dashboard app"
   kvdf ui-ux-intelligence docs --idea "Build booking app" --track vibe --app booking
   kvdf ui-ux-intelligence audit --target docs/ui-ux/UI_UX_DESIGN.md
+  kvdf ui-ux-intelligence scorecard --idea "Build booking app"
+  kvdf ui-ux-intelligence gate --app booking --stage ui_ux_design
+  kvdf ui-ux-intelligence readiness --app booking --stage handoff
+  kvdf ui-ux-intelligence handoff-pack --idea "Build booking app" --app booking
+  kvdf ui-ux-intelligence tokens --idea "Build booking app"
+  kvdf ui-ux-intelligence components --idea "Build booking app"
+  kvdf ui-ux-intelligence screens --idea "Build booking app"
+  kvdf ui-ux-intelligence patterns --idea "Build booking app"
+  kvdf ui-ux-intelligence implementation-guidance --idea "Build booking app" --stack react
+  kvdf ui-ux-intelligence prompt-pack --idea "Build booking app" --stack react --executor codex
   kvdf plugins install ui_ux_intelligence
   kvdf plugins uninstall ui_ux_intelligence
 
 Notes:
-  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, and flat _temp_meta source staging. It does not depend on external GitHub repositories.
+  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, implementation guidance, and prompt packs. Runtime data comes from plugins/ui_ux_intelligence/data/ only and it does not depend on external GitHub repositories or _temp_meta at runtime.
 `
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
@@ -1491,7 +1501,7 @@ function printHelp() {
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
-    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit Optional UI/UX intelligence plugin",
+    "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack Optional UI/UX intelligence plugin",
     "  adr create|list|report       Track architecture decision records",
     "  ai-run record|accept|report  Track AI prompt run quality and waste",
     "  developer list|add           Manage human developer identities",
@@ -1527,6 +1537,7 @@ function printHelp() {
     "  planner current-state|boundary|stale-state|next|method|auto|review|resume|docs|prompt|evolution|propose|approve|current|reject|visual|pipeline Rebuild current repo/workspace state, check workspace boundaries, classify stale roadmap/report/runtime files, determine the next KVDF Core, vibe/app, or plugin Evolution, choose a planning method, review and resume planner state, catalog/plan/materialize/status/apply-stage/review docs, persist and approve plans, and generate visual/prompt outputs or an idea-to-evolution planning package",
   "  truth audit|feature          Compare source, docs, tests, runtime, and generated snapshots before trusting that a capability is implemented",
     "  plugins status|enable|disable|show Inspect and control removable plugin bundles",
+    "  owner track|system-dev       Initiate the framework-owner system development route",
     "  owner init|login|status|logout Configure and use local Owner sessions",
     "  owner session status|close    Inspect or end the active Owner session and revoke docs tokens",
     "  owner docs open|status|close  Issue or revoke the owner docs token gate",

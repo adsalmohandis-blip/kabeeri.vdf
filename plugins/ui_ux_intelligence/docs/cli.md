@@ -22,6 +22,10 @@ kvdf ui-ux-intelligence handoff-pack --idea "Build booking app" --app booking --
 kvdf ui-ux-intelligence tokens --idea "Build booking app" --json
 kvdf ui-ux-intelligence components --idea "Build booking app" --json
 kvdf ui-ux-intelligence screens --idea "Build booking app" --json
+kvdf ui-ux-intelligence patterns --idea "Build booking app" --json
+kvdf ui-ux-intelligence implementation-guidance --idea "Build booking app" --stack react --json
+kvdf ui-ux-intelligence prompt-pack --idea "Build booking app" --stack react --executor codex --json
+kvdf ui-ux-intelligence prompt-pack --idea "Build booking app" --stack react --executor codex --output docs/reports/uiux-prompt-pack.md
 kvdf plugins install ui_ux_intelligence
 kvdf plugins uninstall ui_ux_intelligence
 ```
@@ -41,9 +45,12 @@ kvdf plugins uninstall ui_ux_intelligence
 - `readiness` reads the Viber app docs workspace and summarizes UI/UX readiness for handoff or publish planning.
 - `handoff-pack` assembles the recommendation, design system, tokens, components, screens, checklist, and scorecard into a Markdown-ready handoff bundle. It does not write files unless `--output <path>` is passed, and then it only writes Markdown to an allowed docs or workspace path.
 - `tokens`, `components`, and `screens` generate implementation-planning artifacts that remain framework-neutral and do not create production code.
+- `patterns` turns the UI/UX plan into reusable UI pattern guidance.
+- `implementation-guidance` adds framework-aware, task-punch-friendly implementation direction without generating source code.
+- `prompt-pack` creates Codex-ready UI implementation prompts that stay task-slice oriented and do not auto-run anything. It is guidance only, not autonomous execution.
 - Planner integration is optional: `kvdf planner docs plan|materialize --include-ui-ux-intelligence` can consume the docs sections, `kvdf planner review|visual|prompt` can surface optional summaries, and `kvdf dashboard viber state --json` can expose a safe availability summary. Use `--no-ui-ux-intelligence` when you want to suppress the provider even if it is installed.
-- `search`, `recommend`, `design-system`, `checklist`, `docs`, `audit`, `scorecard`, `gate`, `readiness`, `handoff-pack`, `tokens`, `components`, and `screens` all work offline in the MVP.
+- `search`, `recommend`, `design-system`, `checklist`, `docs`, `audit`, `scorecard`, `gate`, `readiness`, `handoff-pack`, `tokens`, `components`, `screens`, `patterns`, `implementation-guidance`, and `prompt-pack` all work offline in the MVP.
 - `search` uses the local catalog only and can filter by `--domain products|styles|colors|typography|ui_reasoning|ux_guidelines|charts|landing|icons|app_interface|react_performance|stacks|all`.
 - The final plugin must not depend on `_temp_meta/` at runtime and does not call any external GitHub or AI API service.
 - `audit --strict` escalates critical missing UI/UX sections to blockers for handoff review.
-- `handoff-pack --output` is the only command in this plugin that can write a file, and it only writes Markdown when the operator explicitly requests it.
+- `handoff-pack --output` and `prompt-pack --output` are the only commands in this plugin that can write a file, and they only write Markdown when the operator explicitly requests it.

@@ -15,6 +15,10 @@ const {
   generateScreenBlueprint,
   generateUiUxHandoffPack,
   buildHandoffMarkdown,
+  buildUiPatternLibrary,
+  buildImplementationGuidance,
+  buildUiUxPromptPack,
+  renderPromptPackMarkdown,
   buildUiUxScorecard,
   buildUiUxGate,
   buildViberUiUxReadiness
@@ -128,6 +132,28 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
     else console.log(buildHandoffMarkdown(report));
     return;
   }
+  if (mode === "patterns") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildUiPatternLibraryReport(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "implementation-guidance" || mode === "implementation_guidance") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildImplementationGuidanceReport(input, flags);
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderJsonLike(report));
+    return;
+  }
+  if (mode === "prompt-pack" || mode === "prompt_pack") {
+    const input = resolveIdea(value, flags, rest);
+    const report = buildPromptPackReport(input, flags);
+    if (flags.output) writeUiUxOutput(flags.output, renderPromptPackMarkdown(report), process.cwd());
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(renderPromptPackMarkdown(report));
+    return;
+  }
   if (mode === "tokens") {
     const input = resolveIdea(value, flags, rest);
     const report = generateDesignTokens(input, flags);
@@ -158,6 +184,8 @@ function normalizeAction(action) {
   if (value === "design_system") return "design-system";
   if (value === "source_status") return "source-status";
   if (value === "handoff_pack") return "handoff-pack";
+  if (value === "implementation_guidance") return "implementation-guidance";
+  if (value === "prompt_pack") return "prompt-pack";
   return value;
 }
 
@@ -297,6 +325,29 @@ function buildUiUxHandoffPackReport(input, flags = {}) {
     app: flags.app || flags.app_slug || flags.appSlug || ""
   });
   return report;
+}
+
+function buildUiPatternLibraryReport(input, flags = {}) {
+  return buildUiPatternLibrary(input, {
+    ...flags,
+    stack: flags.stack || flags.stack_name || flags.framework || ""
+  });
+}
+
+function buildImplementationGuidanceReport(input, flags = {}) {
+  return buildImplementationGuidance(input, {
+    ...flags,
+    stack: flags.stack || flags.stack_name || flags.framework || ""
+  });
+}
+
+function buildPromptPackReport(input, flags = {}) {
+  return buildUiUxPromptPack(input, {
+    ...flags,
+    stack: flags.stack || flags.stack_name || flags.framework || "",
+    executor: flags.executor || flags.role || "codex",
+    app: flags.app || flags.app_slug || flags.appSlug || ""
+  });
 }
 
 function writeUiUxOutput(outputPath, content, root) {

@@ -56,6 +56,18 @@
     {
       "command": "kvdf ui-ux-intelligence screens --idea \"Build booking app\" --json",
       "expect_report_type": "ui_ux_intelligence_screen_blueprint"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence patterns --idea \"Build booking app\" --json",
+      "expect_report_type": "ui_ux_intelligence_pattern_library"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence implementation-guidance --idea \"Build booking app\" --stack react --json",
+      "expect_report_type": "ui_ux_intelligence_implementation_guidance"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence prompt-pack --idea \"Build booking app\" --stack react --executor codex --json",
+      "expect_report_type": "ui_ux_intelligence_prompt_pack"
     }
   ]
 }

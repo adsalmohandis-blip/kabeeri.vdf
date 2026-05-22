@@ -8510,6 +8510,10 @@ test("planner docs plan can include optional ui_ux_intelligence output", () => w
   assert.ok(Array.isArray(report.ui_ux_intelligence.target_docs));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_status"));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_ready"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_available"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "prompt_pack"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "prompt_pack_available"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "pattern_library_summary"));
 }));
 
 test("planner docs plan still works when ui_ux_intelligence is missing", () => withTempDir((dir) => {
@@ -8522,10 +8526,16 @@ test("planner docs plan still works when ui_ux_intelligence is missing", () => w
   assert.ok(Array.isArray(report.ui_ux_intelligence.warnings));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_status"));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_ready"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "handoff_pack_available"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "prompt_pack"));
+  assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "prompt_pack_available"));
   const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Build booking app", "--track", "vibe", "--method", "hybrid", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(review.report_type, "kvdf_planner_review");
   assert.ok(review.ui_ux_review);
   assert.strictEqual(review.ui_ux_review.status, "unavailable");
+  assert.ok(review.ui_ux_prompt_pack);
+  assert.strictEqual(review.ui_ux_prompt_pack.status, "unavailable");
+  assert.strictEqual(review.ui_ux_prompt_pack.available, false);
   assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
 }));
 
@@ -8555,23 +8565,33 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.ok(review.ui_ux_handoff_pack);
   assert.strictEqual(review.ui_ux_handoff_pack.standalone, true);
   assert.strictEqual(review.ui_ux_handoff_pack.external_github_dependency, false);
+  assert.ok(review.ui_ux_prompt_pack);
+  assert.strictEqual(review.ui_ux_prompt_pack.standalone, true);
+  assert.strictEqual(review.ui_ux_prompt_pack.external_github_dependency, false);
+  assert.ok(Array.isArray(review.ui_ux_prompt_pack.prompt_titles));
 
   const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.ok(Object.prototype.hasOwnProperty.call(visual, "ui_ux_intelligence_status"));
   assert.ok(visual.markdown_report.includes("## UI/UX Intelligence"));
   assert.ok(visual.markdown_report.includes("Handoff pack:"));
+  assert.ok(visual.markdown_report.includes("Pattern library:"));
+  assert.ok(visual.markdown_report.includes("Prompt pack:"));
 
   const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
   assert.ok(prompt.prompt.includes("## UI/UX Intelligence"));
   assert.ok(prompt.prompt.includes("Handoff pack:"));
+  assert.ok(prompt.prompt.includes("Pattern library:"));
+  assert.ok(prompt.prompt.includes("Prompt pack:"));
   assert.ok(prompt.prompt.includes("Target docs:"));
   assert.ok(prompt.prompt.includes("Reminder: do not overwrite existing UI/UX docs"));
 
   const promptWithoutUiUx = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--no-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(promptWithoutUiUx.report_type, "kvdf_planner_codex_prompt");
   assert.ok(typeof promptWithoutUiUx.prompt === "string");
+  assert.ok(!promptWithoutUiUx.prompt.includes("Pattern library:"));
+  assert.ok(!promptWithoutUiUx.prompt.includes("Prompt pack:"));
 }));
 
 test("planner visual and dashboard state expose ui_ux_intelligence safely", () => withTempDir((dir) => {
@@ -8656,6 +8676,57 @@ test("ui_ux_intelligence implementation artifacts generate tokens components scr
   assert.ok(/Unsafe output path/i.test(unsafe.stderr));
 }));
 
+test("ui_ux_intelligence patterns implementation guidance and prompt pack stay local and export markdown only when requested", () => withTempDir((dir) => {
+  copyPluginBundle(dir, "ui_ux_intelligence");
+
+  const patterns = JSON.parse(runKvdf(["ui-ux-intelligence", "patterns", "--idea", "Build booking app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(patterns.report_type, "ui_ux_intelligence_pattern_library");
+  assert.ok(Array.isArray(patterns.patterns));
+  assert.ok(patterns.patterns.length > 0);
+  assert.ok(Array.isArray(patterns.recommended_order));
+  assert.strictEqual(patterns.standalone, true);
+  assert.strictEqual(patterns.external_github_dependency, false);
+
+  const implementation = JSON.parse(runKvdf(["ui-ux-intelligence", "implementation-guidance", "--idea", "Build booking app", "--stack", "react", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(implementation.report_type, "ui_ux_intelligence_implementation_guidance");
+  assert.strictEqual(implementation.stack, "react");
+  assert.ok(Array.isArray(implementation.guidance.component_strategy));
+  assert.ok(Array.isArray(implementation.guidance.screen_strategy));
+  assert.ok(Array.isArray(implementation.guidance.anti_patterns_to_avoid));
+  assert.strictEqual(implementation.standalone, true);
+  assert.strictEqual(implementation.external_github_dependency, false);
+
+  const fallbackImplementation = JSON.parse(runKvdf(["ui-ux-intelligence", "implementation-guidance", "--idea", "Build booking app", "--stack", "unknown_stack", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(fallbackImplementation.report_type, "ui_ux_intelligence_implementation_guidance");
+  assert.strictEqual(fallbackImplementation.stack, "unknown_stack");
+  assert.ok(fallbackImplementation.guidance.component_strategy.join(" ").includes("framework-neutral"));
+
+  const promptPack = JSON.parse(runKvdf(["ui-ux-intelligence", "prompt-pack", "--idea", "Build booking app", "--stack", "react", "--executor", "codex", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(promptPack.report_type, "ui_ux_intelligence_prompt_pack");
+  assert.strictEqual(promptPack.executor, "codex");
+  assert.ok(Array.isArray(promptPack.prompts));
+  assert.ok(promptPack.prompts.length > 0);
+  assert.ok(Array.isArray(promptPack.constraints));
+  assert.ok(promptPack.prompts[0].prompt.includes("Accessibility requirements"));
+  assert.ok(promptPack.prompts[0].prompt.includes("Responsive requirements"));
+  assert.ok(promptPack.prompts[0].prompt.includes("UI states required"));
+  assert.ok(promptPack.prompts[0].prompt.includes("Anti-patterns to avoid"));
+  assert.ok(promptPack.prompts[0].prompt.includes("Stop condition"));
+  assert.ok(Array.isArray(promptPack.validation_commands));
+
+  const outputFile = path.join("docs", "reports", "uiux-prompt-pack.md");
+  const withOutput = JSON.parse(runKvdf(["ui-ux-intelligence", "prompt-pack", "--idea", "Build booking app", "--stack", "react", "--executor", "codex", "--output", outputFile, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(withOutput.report_type, "ui_ux_intelligence_prompt_pack");
+  assert.ok(fs.existsSync(path.join(dir, outputFile)));
+  assert.ok(fs.readFileSync(path.join(dir, outputFile), "utf8").startsWith("# UI/UX Prompt Pack"));
+
+  const unsafe = runKvdf(["ui-ux-intelligence", "prompt-pack", "--idea", "Build booking app", "--stack", "react", "--executor", "codex", "--output", "..\\outside.md", "--json"], { cwd: dir, expectFailure: true });
+  assert.ok(/Unsafe output path/i.test(unsafe.stderr));
+
+  assert.strictEqual(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "src")), false);
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
+}));
+
 test("ui_ux_intelligence audit scores rich UI text better than sparse text and strict mode can block", () => withTempDir((dir) => {
   copyPluginBundle(dir, "ui_ux_intelligence");
   fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
@@ -8710,7 +8781,10 @@ test("ui_ux_intelligence runtime stays offline and does not depend on an externa
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "tokens.js"),
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "components.js"),
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "screens.js"),
-    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "handoff_pack.js")
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "handoff_pack.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "pattern_library.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "implementation_guidance.js"),
+    path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "prompt_pack.js")
   ];
   for (const file of runtimeFiles) {
     const source = fs.readFileSync(file, "utf8");

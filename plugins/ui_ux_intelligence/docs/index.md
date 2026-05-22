@@ -9,6 +9,7 @@
 - UI/UX docs section generation for Viber app planning
 - lightweight UI/UX audit reporting
 - UI implementation planning artifacts: design tokens, component blueprints, screen blueprints, and handoff packs
+- UI pattern libraries, framework-aware implementation guidance, and Codex-ready prompt packs
 - design-system recommendations
 - UI style recommendations
 - palette and typography guidance
@@ -45,10 +46,13 @@ The plugin also emits implementation-ready planning artifacts without generating
 - `components` builds a component blueprint with states, accessibility, responsive behavior, and acceptance criteria.
 - `screens` builds a screen blueprint with information architecture and user-flow hints.
 - `handoff-pack` combines the recommendation, design system, tokens, components, screens, checklist, and scorecard into a Markdown-ready handoff bundle.
+- `patterns` extracts reusable UI patterns that fit the product shape.
+- `implementation-guidance` converts the planning artifacts into framework-aware implementation direction for a task punch.
+- `prompt-pack` creates Codex-ready UI implementation prompts and can export Markdown when `--output` is explicitly provided. It is guidance only; it does not execute code or change app files by itself.
 
 These outputs are planning/specification artifacts only. They do not create production UI code or app source files.
 
-These commands are offline and deterministic. They do not write files unless the operator passes an explicit `--output` path to `handoff-pack`, and even then the output is Markdown only.
+These commands are offline and deterministic. They do not write files unless the operator passes an explicit `--output` path to `handoff-pack` or `prompt-pack`, and even then the output is Markdown only.
 
 ## Planner And Dashboard Integration
 
