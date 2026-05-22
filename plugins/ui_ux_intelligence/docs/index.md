@@ -36,6 +36,12 @@ The plugin also produces handoff-oriented validation material:
 - `audit --strict` can escalate critical missing sections to blockers for handoff review.
 - All three commands run offline, use only `plugins/ui_ux_intelligence/data/`, and never write to `_temp_meta/` or `.kabeeri/`.
 
+## Planner And Dashboard Integration
+
+KVDF Planner and the Viber dashboard can consume `ui_ux_intelligence` as an optional provider when the operator explicitly passes `--include-ui-ux-intelligence` or `--ui-ux-intelligence`. Planner review, visual, prompt, docs, and Viber dashboard summaries can surface the provider when it is available, but the core planner still continues normally if the plugin is missing, disabled, or intentionally suppressed with `--no-ui-ux-intelligence`.
+
+The integration stays read-only unless you are already using planner docs materialization, and even then the plugin only enriches the existing Viber UI/UX docs pipeline. It never reads `_temp_meta/` at runtime and never calls external GitHub or AI APIs.
+
 ## Recommendation Layer
 
 The recommender turns a brief into:

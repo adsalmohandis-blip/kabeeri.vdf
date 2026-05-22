@@ -10,6 +10,19 @@ const { readJsonLines } = require("../services/jsonl");
 const { buildTaskLifecycleState, buildTaskLifecycleBoard } = require("./task_lifecycle");
 const { buildSecurityGateState } = require("./security");
 const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
+const { getPluginRuntimeStatus } = require("../services/plugin_loader");
+
+const UI_UX_INTELLIGENCE_PLUGIN_ID = "ui_ux_intelligence";
+const UI_UX_INTELLIGENCE_TARGET_DOCS = [
+  "docs/ui-ux/UI_UX_DESIGN.md",
+  "docs/ui-ux/UX_PRINCIPLES.md",
+  "docs/ui-ux/INFORMATION_ARCHITECTURE.md",
+  "docs/ui-ux/USER_FLOWS.md",
+  "docs/ui-ux/WIREFRAMES.md",
+  "docs/ui-ux/UI_SPECIFICATION.md",
+  "docs/ui-ux/ACCESSIBILITY.md",
+  "docs/delivery/QA_CHECKLIST.md"
+];
 
 function collectDashboardState(options = {}, deps = {}) {
   const {
@@ -1747,11 +1760,80 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
   });
 }
 
+function buildUiUxIntelligenceDashboardSummary({ idea = "", app = "", track = "vibe", stack = "" } = {}) {
+  const pluginStatus = getPluginRuntimeStatus(UI_UX_INTELLIGENCE_PLUGIN_ID);
+  if (!pluginStatus || !pluginStatus.available) {
+    return {
+      status: "unavailable",
+      plugin_id: UI_UX_INTELLIGENCE_PLUGIN_ID,
+      standalone: true,
+      external_github_dependency: false,
+      available: false,
+      docs_ready: false,
+      recommendation_available: false,
+      checklist_status: "unavailable",
+      recommendation_summary: {},
+      target_docs: [],
+      next_action: "Run kvdf plugins install ui_ux_intelligence if UI/UX intelligence is needed."
+    };
+  }
+  try {
+    const runtime = require(path.join(repoRoot(), "plugins", UI_UX_INTELLIGENCE_PLUGIN_ID, "runtime"));
+    const input = String(idea || app || "Viber UI/UX planning").trim();
+    const recommendation = runtime.recommendUiUx(input, { track, app, stack });
+    const checklist = runtime.generateChecklist(input, { track, app, recommendation });
+    const docs = runtime.generateDocsSections(input, { track, app, stack, recommendation });
+    const checklistSummary = runtime.summarizeChecklist(checklist);
+    return {
+      status: "available",
+      plugin_id: UI_UX_INTELLIGENCE_PLUGIN_ID,
+      standalone: true,
+      external_github_dependency: false,
+      available: true,
+      recommendation_available: true,
+      docs_ready: Array.isArray(docs.target_docs) && docs.target_docs.length > 0,
+      checklist_status: checklistSummary.blockers > 0 ? "warning" : (checklistSummary.warnings > 0 ? "warning" : "pass"),
+      recommendation_summary: {
+        detected_product_type: recommendation.detected_product_type,
+        recommended_style: recommendation.recommended_style,
+        recommended_palette: recommendation.recommended_palette,
+        recommended_typography: recommendation.recommended_typography,
+        recommended_layout_patterns: Array.isArray(recommendation.recommended_layout_patterns) ? [...recommendation.recommended_layout_patterns] : [],
+        standalone: true,
+        external_github_dependency: false
+      },
+      target_docs: Array.isArray(docs.target_docs) ? [...docs.target_docs] : [...UI_UX_INTELLIGENCE_TARGET_DOCS],
+      next_action: docs.next_action || "Use kvdf ui-ux-intelligence docs --idea \"...\" --track vibe --app <slug> --json."
+    };
+  } catch (error) {
+    return {
+      status: "warning",
+      plugin_id: UI_UX_INTELLIGENCE_PLUGIN_ID,
+      standalone: true,
+      external_github_dependency: false,
+      available: true,
+      docs_ready: false,
+      recommendation_available: false,
+      checklist_status: "warning",
+      recommendation_summary: {},
+      target_docs: [],
+      warnings: [error.message],
+      next_action: "Fix the plugin runtime, then re-run the dashboard state."
+    };
+  }
+}
+
 function buildViberDashboardState(context = {}, deps = {}) {
   const currentEvolution = context.evolutionBoard.current_evolution || context.evolutionSummary.latest_change || null;
   const currentPlan = context.plannerPlan || null;
   const currentApp = context.apps.find((app) => resolveWorkspaceTrack(app.workspace_kind || app.track || app.audience || "") === "vibe_app_developer") || context.apps[0] || {};
   const readiness = buildDashboardReadinessState(context, "viber");
+  const uiUxIntelligence = buildUiUxIntelligenceDashboardSummary({
+    idea: context.plannerState.current_plan && context.plannerState.current_plan.goal ? context.plannerState.current_plan.goal : (currentPlan && currentPlan.goal ? currentPlan.goal : ""),
+    app: currentApp.name || currentApp.username || "",
+    track: "vibe",
+    stack: String(context.plannerState.current_plan && context.plannerState.current_plan.stack || "").trim()
+  });
   const commandCenterWidgets = [
     dashboardWidget("viber_current_track", "Current Track", "status", "vibe_app_developer", "ok", "vibe_app_developer", "derived", "Stay on app/product delivery work."),
     dashboardWidget("viber_current_workspace", "Current App / Workspace", "status", currentApp.name || currentApp.username || context.project.name || "none", currentApp.username || currentApp.name ? "ok" : "empty", "vibe_app_developer", "derived", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."),
@@ -1858,6 +1940,7 @@ function buildViberDashboardState(context = {}, deps = {}) {
     current_plan_id: currentPlan ? currentPlan.plan_id || null : null,
     current_plan_status: context.plannerState.current_plan_status || "empty",
     current_evolution: currentEvolution ? currentEvolution.change_id || currentEvolution.title || null : null,
+    ui_ux_intelligence: uiUxIntelligence,
     generated_at: new Date().toISOString()
   });
 }

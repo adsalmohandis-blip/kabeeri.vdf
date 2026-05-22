@@ -8498,6 +8498,84 @@ test("ui_ux_intelligence checklist docs and audit stay local and produce handoff
   assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri")), false);
 }));
 
+test("planner docs plan can include optional ui_ux_intelligence output", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  runKvdf(["plugins", "install", "ui_ux_intelligence"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_plan");
+  assert.ok(report.ui_ux_intelligence);
+  assert.strictEqual(report.ui_ux_intelligence.standalone, true);
+  assert.strictEqual(report.ui_ux_intelligence.external_github_dependency, false);
+  assert.ok(Array.isArray(report.ui_ux_intelligence.target_docs));
+}));
+
+test("planner docs plan still works when ui_ux_intelligence is missing", () => withTempDir((dir) => {
+  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_plan");
+  assert.ok(report.ui_ux_intelligence);
+  assert.strictEqual(report.ui_ux_intelligence.status, "unavailable");
+  assert.strictEqual(report.ui_ux_intelligence.standalone, true);
+  assert.strictEqual(report.ui_ux_intelligence.external_github_dependency, false);
+  assert.ok(Array.isArray(report.ui_ux_intelligence.warnings));
+  const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Build booking app", "--track", "vibe", "--method", "hybrid", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "kvdf_planner_review");
+  assert.ok(review.ui_ux_review);
+  assert.strictEqual(review.ui_ux_review.status, "unavailable");
+  assert.ok(!fs.existsSync(path.join(dir, ".kabeeri")));
+}));
+
+test("planner docs materialize can enrich UI/UX docs in dry-run mode without writing files", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  runKvdf(["plugins", "install", "ui_ux_intelligence"], { cwd: dir });
+  const report = JSON.parse(runKvdf(["planner", "docs", "materialize", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--method", "hybrid", "--dry-run", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "kvdf_planner_docs_materialization");
+  assert.ok(report.ui_ux_intelligence);
+  assert.ok(typeof report.ui_ux_intelligence.sections_added === "number");
+  assert.strictEqual(fs.existsSync(path.join(dir, "workspaces", "apps", "booking", "docs", "ui-ux", "UI_UX_DESIGN.md")), false);
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri", "planner_docs_status.json")), false);
+}));
+
+test("planner review, visual, and prompt surface optional ui_ux_intelligence summaries", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  runKvdf(["plugins", "install", "ui_ux_intelligence"], { cwd: dir });
+  const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Build booking app", "--track", "vibe", "--method", "hybrid", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(review.report_type, "kvdf_planner_review");
+  assert.ok(review.ui_ux_review);
+  assert.strictEqual(review.ui_ux_review.standalone, true);
+  assert.strictEqual(review.ui_ux_review.external_github_dependency, false);
+  assert.ok(["pass", "warning", "unavailable"].includes(review.ui_ux_review.status));
+
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(visual.report_type, "kvdf_planner_visual");
+  assert.ok(Object.prototype.hasOwnProperty.call(visual, "ui_ux_intelligence_status"));
+  assert.ok(visual.markdown_report.includes("## UI/UX Intelligence"));
+
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(prompt.prompt.includes("## UI/UX Intelligence"));
+
+  const promptWithoutUiUx = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--no-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(promptWithoutUiUx.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(typeof promptWithoutUiUx.prompt === "string");
+}));
+
+test("planner visual and dashboard state expose ui_ux_intelligence safely", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  runKvdf(["plugins", "install", "ui_ux_intelligence"], { cwd: dir });
+
+  const dashboard = JSON.parse(runKvdf(["dashboard", "viber", "state", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(dashboard.report_type, "kvdf_viber_dashboard_state");
+  assert.ok(dashboard.ui_ux_intelligence);
+  assert.strictEqual(dashboard.ui_ux_intelligence.standalone, true);
+  assert.strictEqual(dashboard.ui_ux_intelligence.external_github_dependency, false);
+  assert.ok(["available", "warning", "unavailable"].includes(dashboard.ui_ux_intelligence.status));
+  assert.ok(Array.isArray(dashboard.ui_ux_intelligence.target_docs));
+}));
+
 test("ui_ux_intelligence audit scores rich UI text better than sparse text and strict mode can block", () => withTempDir((dir) => {
   copyPluginBundle(dir, "ui_ux_intelligence");
   fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });

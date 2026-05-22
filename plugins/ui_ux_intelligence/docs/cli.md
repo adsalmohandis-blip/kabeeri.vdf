@@ -28,6 +28,7 @@ kvdf plugins uninstall ui_ux_intelligence
 - `checklist` returns UI/UX readiness checks grouped by accessibility, responsive, interaction, content, layout, forms, dashboard, performance, motion, and handoff.
 - `docs` returns Markdown-ready sections for the Viber UI/UX docs pipeline and never writes files.
 - `audit` inspects a target UI/UX file or inline text, returns warnings or blockers, and never writes files.
+- Planner integration is optional: `kvdf planner docs plan|materialize --include-ui-ux-intelligence` can consume the docs sections, `kvdf planner review|visual|prompt` can surface optional summaries, and `kvdf dashboard viber state --json` can expose a safe availability summary. Use `--no-ui-ux-intelligence` when you want to suppress the provider even if it is installed.
 - `search`, `recommend`, `design-system`, `checklist`, `docs`, and `audit` all work offline in the MVP.
 - `search` uses the local catalog only and can filter by `--domain products|styles|colors|typography|ui_reasoning|ux_guidelines|charts|landing|icons|app_interface|react_performance|stacks|all`.
 - The final plugin must not depend on `_temp_meta/` at runtime and does not call any external GitHub or AI API service.

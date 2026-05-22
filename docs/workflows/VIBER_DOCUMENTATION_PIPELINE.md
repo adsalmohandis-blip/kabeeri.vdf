@@ -52,3 +52,11 @@ same version/stage/sprint/evolution queue on the next session without
 rebuilding it from chat or stale runtime state.
 That summary is surfaced as `roadmap_train_summary` and pairs with the derived
 `evo_sprint_queue` view when the train is present.
+
+When `ui_ux_intelligence` is available, the Viber docs pipeline can optionally
+include its UI/UX recommendations, checklist summary, and Markdown-ready docs
+sections during planning or materialization. Use
+`--include-ui-ux-intelligence` or `--ui-ux-intelligence` to opt in, and
+`--no-ui-ux-intelligence` to suppress the provider even when installed. The
+plugin remains optional, offline, and read-only unless docs materialization is
+already writing the app docs.
