@@ -8,8 +8,29 @@ const {
   normalizeText,
   searchCatalog
 } = require("./catalog");
-const { recommendUiUx } = require("./recommender");
-const { generateDesignSystem } = require("./design_system");
+const {
+  detectProductType,
+  recommendStyle,
+  recommendPalette,
+  recommendTypography,
+  recommendLayoutPatterns,
+  recommendUxRules,
+  recommendAntiPatterns,
+  recommendCharts,
+  recommendIcons,
+  recommendStackGuidance,
+  recommendUiUx
+} = require("./recommender");
+const {
+  generateDesignSystem,
+  buildColorSystem,
+  buildTypographySystem,
+  buildLayoutSystem,
+  buildComponentGuidance,
+  buildMotionRules,
+  buildAccessibilityGuidance,
+  buildPreDeliveryChecklist
+} = require("./design_system");
 const { generateChecklist } = require("./checklist");
 const { generateDocsSections } = require("./docs_adapter");
 const { auditUiUx } = require("./audit");
@@ -175,8 +196,27 @@ module.exports = {
   buildSourceStatusReport,
   getCatalogReport,
   searchUiUx,
+  detectProductType,
+  recommendStyle,
+  recommendPalette,
+  recommendTypography,
+  recommendLayoutPatterns,
+  recommendUxRules,
+  recommendAntiPatterns,
+  recommendCharts,
+  recommendIcons,
+  recommendStackGuidance,
   recommendAndBuild,
+  recommendUiUx,
   buildDesignSystem,
+  generateDesignSystem,
+  buildColorSystem,
+  buildTypographySystem,
+  buildLayoutSystem,
+  buildComponentGuidance,
+  buildMotionRules,
+  buildAccessibilityGuidance,
+  buildPreDeliveryChecklist,
   buildChecklist,
   buildDocsSections,
   buildAudit,

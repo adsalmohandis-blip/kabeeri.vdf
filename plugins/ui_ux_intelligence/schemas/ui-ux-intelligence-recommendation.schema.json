@@ -14,21 +14,55 @@
     "recommended_components",
     "ux_rules",
     "anti_patterns_to_avoid",
+    "chart_recommendations",
+    "icon_recommendations",
+    "stack_guidance",
     "accessibility_notes",
     "responsive_notes",
+    "warnings",
     "confidence",
+    "standalone",
+    "external_github_dependency",
     "next_action"
   ],
   "properties": {
     "report_type": { "const": "ui_ux_intelligence_recommendation" },
     "input": { "type": "string" },
-    "detected_product_type": { "type": "string" },
-    "recommended_style": { "type": "string" },
-    "recommended_palette_mood": { "type": "string" },
-    "recommended_typography_mood": { "type": "string" },
+    "detected_product_type": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "object" }
+      ]
+    },
+    "detected_product_type_details": { "type": "object" },
+    "recommended_style": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "object" }
+      ]
+    },
+    "recommended_style_details": { "type": "object" },
+    "recommended_palette_mood": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "object" }
+      ]
+    },
+    "recommended_palette_details": { "type": "object" },
+    "recommended_typography_mood": {
+      "anyOf": [
+        { "type": "string" },
+        { "type": "object" }
+      ]
+    },
+    "recommended_typography_details": { "type": "object" },
     "recommended_layout_patterns": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "recommended_layout_pattern_details": {
+      "type": "array",
+      "items": { "type": "object" }
     },
     "recommended_components": {
       "type": "array",
@@ -42,6 +76,18 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "chart_recommendations": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "icon_recommendations": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "stack_guidance": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
     "accessibility_notes": {
       "type": "array",
       "items": { "type": "string" }
@@ -50,7 +96,13 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
     "confidence": { "enum": ["low", "medium", "high"] },
+    "standalone": { "const": true },
+    "external_github_dependency": { "const": false },
     "next_action": { "type": "string" }
   }
 }

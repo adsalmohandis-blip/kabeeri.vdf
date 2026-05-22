@@ -5,23 +5,29 @@
   "additionalProperties": true,
   "required": [
     "report_type",
+    "input",
+    "product_type",
     "style",
     "colors",
     "typography",
-    "spacing",
-    "components",
     "layout_patterns",
+    "components",
     "motion_rules",
     "accessibility",
     "anti_patterns",
-    "pre_delivery_checklist"
+    "pre_delivery_checklist",
+    "warnings",
+    "standalone",
+    "external_github_dependency",
+    "next_action"
   ],
   "properties": {
     "report_type": { "const": "ui_ux_intelligence_design_system" },
+    "input": { "type": "string" },
+    "product_type": { "type": "object" },
     "style": { "type": "object" },
     "colors": { "type": "object" },
     "typography": { "type": "object" },
-    "spacing": { "type": "object" },
     "components": {
       "type": "array",
       "items": { "type": "string" }
@@ -30,6 +36,8 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "layout_system": { "type": "object" },
+    "component_guidance": { "type": "object" },
     "motion_rules": {
       "type": "array",
       "items": { "type": "string" }
@@ -42,6 +50,13 @@
     "pre_delivery_checklist": {
       "type": "array",
       "items": { "type": "string" }
-    }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "standalone": { "const": true },
+    "external_github_dependency": { "const": false },
+    "next_action": { "type": "string" }
   }
 }

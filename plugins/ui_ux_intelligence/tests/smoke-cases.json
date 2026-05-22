@@ -12,6 +12,10 @@
     {
       "command": "kvdf ui-ux-intelligence recommend --idea \"Build booking app for clinics\" --json",
       "expect_report_type": "ui_ux_intelligence_recommendation"
+    },
+    {
+      "command": "kvdf ui-ux-intelligence design-system --idea \"Build ecommerce app\" --json",
+      "expect_report_type": "ui_ux_intelligence_design_system"
     }
   ]
 }

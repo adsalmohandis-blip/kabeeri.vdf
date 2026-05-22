@@ -8398,6 +8398,65 @@ test("ui_ux_intelligence source-status and catalog use relocated plugin data", (
   assert.ok(missingSearch.warnings.length > 0);
 }));
 
+test("ui_ux_intelligence recommend and design-system generate deterministic local guidance", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+
+  const recommendation = JSON.parse(runKvdf(["ui-ux-intelligence", "recommend", "--idea", "Build booking app for clinics", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(recommendation.report_type, "ui_ux_intelligence_recommendation");
+  assert.strictEqual(typeof recommendation.detected_product_type, "string");
+  assert.ok(recommendation.detected_product_type_details);
+  assert.ok(recommendation.recommended_style);
+  assert.ok(recommendation.recommended_palette_mood);
+  assert.ok(recommendation.recommended_typography_mood);
+  assert.ok(Array.isArray(recommendation.recommended_layout_patterns));
+  assert.ok(Array.isArray(recommendation.recommended_components));
+  assert.ok(Array.isArray(recommendation.ux_rules));
+  assert.ok(Array.isArray(recommendation.anti_patterns_to_avoid));
+  assert.ok(Array.isArray(recommendation.chart_recommendations));
+  assert.ok(Array.isArray(recommendation.icon_recommendations));
+  assert.ok(Array.isArray(recommendation.stack_guidance));
+  assert.strictEqual(recommendation.standalone, true);
+  assert.strictEqual(recommendation.external_github_dependency, false);
+
+  const stackRecommendation = JSON.parse(runKvdf(["ui-ux-intelligence", "recommend", "--idea", "Build SaaS dashboard", "--stack", "react", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(stackRecommendation.report_type, "ui_ux_intelligence_recommendation");
+  assert.ok(Array.isArray(stackRecommendation.stack_guidance) || Array.isArray(stackRecommendation.warnings));
+  assert.ok(!stackRecommendation.stack_guidance || stackRecommendation.stack_guidance.length >= 0);
+
+  const designSystem = JSON.parse(runKvdf(["ui-ux-intelligence", "design-system", "--idea", "Build ecommerce app", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(designSystem.report_type, "ui_ux_intelligence_design_system");
+  assert.ok(designSystem.product_type);
+  assert.ok(designSystem.style);
+  assert.ok(designSystem.colors);
+  assert.ok(designSystem.typography);
+  assert.ok(Array.isArray(designSystem.layout_patterns));
+  assert.ok(Array.isArray(designSystem.components));
+  assert.ok(Array.isArray(designSystem.motion_rules));
+  assert.ok(designSystem.accessibility);
+  assert.ok(Array.isArray(designSystem.anti_patterns));
+  assert.ok(Array.isArray(designSystem.pre_delivery_checklist));
+  assert.strictEqual(designSystem.standalone, true);
+  assert.strictEqual(designSystem.external_github_dependency, false);
+
+  const first = JSON.parse(runKvdf(["ui-ux-intelligence", "recommend", "--idea", "Build booking app for clinics", "--json"], { cwd: dir }).stdout);
+  const second = JSON.parse(runKvdf(["ui-ux-intelligence", "recommend", "--idea", "Build booking app for clinics", "--json"], { cwd: dir }).stdout);
+  assert.deepStrictEqual(first, second);
+}));
+
+test("ui_ux_intelligence recommend survives a missing optional catalog file with warnings", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ui_ux_intelligence");
+  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "data", "charts.csv"), { force: true });
+
+  const report = JSON.parse(runKvdf(["ui-ux-intelligence", "recommend", "--idea", "Build dashboard app for analytics metrics", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(report.report_type, "ui_ux_intelligence_recommendation");
+  assert.ok(Array.isArray(report.warnings));
+  assert.ok(report.warnings.length > 0);
+  assert.ok(Array.isArray(report.chart_recommendations));
+  assert.ok(Array.isArray(report.icon_recommendations));
+}));
+
 test("ui_ux_intelligence runtime stays offline and does not depend on an external repository", () => {
   const runtimeFiles = [
     path.join(repoRoot, "plugins", "ui_ux_intelligence", "runtime", "index.js"),
