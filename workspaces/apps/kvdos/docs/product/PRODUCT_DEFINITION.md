@@ -74,6 +74,25 @@ It does not include cloud API code, authentication implementation, subscription
 backend code, license enforcement code, activation code, entitlement cache code,
 plan-access code, release-access code, or update-access code yet.
 
+## Local License Gate Boundary
+
+Local license-gate work for KVDOS starts as app-local documentation and
+validation.
+
+The boundary covers:
+
+- local license gate boundary
+- plan-based feature access boundary
+- offline grace policy boundary
+- invalid-license UX boundary
+- expired-license UX boundary
+- secure entitlement cache usage boundary
+- local entitlement-check boundary
+
+It does not include local license enforcement code, feature-gate code,
+entitlement-check code, offline-grace code, or invalid/expired-license UX code
+yet.
+
 ## What KVDOS Does
 
 KVDOS provides a structured workflow for:

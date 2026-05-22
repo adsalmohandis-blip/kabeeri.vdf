@@ -204,6 +204,31 @@ It does not implement:
 
 This boundary stays app-local and pre-implementation until explicitly approved.
 
+## Local License Gate Boundary
+
+Local license-gate work is documentation-first at this stage.
+
+It covers:
+
+- local license gate boundary
+- plan-based feature access boundary
+- offline grace policy boundary
+- invalid-license UX boundary
+- expired-license UX boundary
+- secure entitlement cache usage boundary
+- local entitlement-check boundary
+
+It does not implement:
+
+- local license enforcement code
+- feature-gate code
+- entitlement-check code
+- offline-grace code
+- invalid-license UX code
+- expired-license UX code
+
+This boundary stays app-local and pre-implementation until explicitly approved.
+
 ## KVDOS Core Rule
 
 Agents should not mutate project files directly.
