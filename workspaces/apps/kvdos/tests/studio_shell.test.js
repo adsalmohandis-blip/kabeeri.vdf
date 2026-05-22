@@ -35,6 +35,17 @@ test("impl-1 shell frame exposes top-level layout regions and placeholders", () 
   assert.strictEqual(frame.surface, "studio-shell");
   assert.strictEqual(frame.title, "KVDOS Local Studio");
   assert.strictEqual(frame.current_project, "alpha-project");
+  assert.strictEqual(frame.navigation.active_route, "home");
+  assert.deepStrictEqual(frame.navigation.items.map((item) => item.id), [
+    "home",
+    "projects",
+    "discovery",
+    "spec",
+    "tasks",
+    "approvals",
+    "reports",
+    "settings"
+  ]);
   assert.strictEqual(frame.layout.type, "studio-shell-frame");
   assert.deepStrictEqual(frame.layout.regions.map((region) => region.id), [
     "top-bar",
@@ -54,6 +65,7 @@ test("impl-1 shell render keeps placeholder regions only", () => {
   const formatted = formatStudioShellFrame(frame);
 
   assert.match(html, /kvdos-studio-shell/);
+  assert.match(html, /studio-primary-navigation/);
   assert.match(html, /shell-top-bar/);
   assert.match(html, /shell-left-sidebar/);
   assert.match(html, /shell-main-canvas/);
@@ -64,6 +76,7 @@ test("impl-1 shell render keeps placeholder regions only", () => {
   assert.match(formatted, /Surface: studio-shell/);
   assert.match(formatted, /Layout regions:/);
   assert.match(formatted, /top-bar: Top bar \[placeholder\]/);
+  assert.match(formatted, /Navigation title: Primary Studio Navigation/);
   assert.doesNotMatch(html, /project registry selector/i);
   assert.doesNotMatch(html, /runtime status/i);
   assert.doesNotMatch(html, /cloud login/i);

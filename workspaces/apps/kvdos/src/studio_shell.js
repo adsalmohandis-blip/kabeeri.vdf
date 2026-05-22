@@ -1,4 +1,5 @@
 const { parseCliArgs, toBoolean } = require("./lib/command_args");
+const { createStudioNavigationModel, renderStudioNavigation } = require("./studio_navigation");
 
 const studioShellMetadata = {
   surface: "studio",
@@ -8,6 +9,7 @@ const studioShellMetadata = {
 
 function createStudioShellFrame(options = {}) {
   const selectedProject = options.selectedProject || null;
+  const navigation = options.navigation || createStudioNavigationModel({ activeRoute: options.activeRoute });
   const layout = {
     type: "studio-shell-frame",
     regions: [
@@ -49,13 +51,23 @@ function createStudioShellFrame(options = {}) {
     title: studioShellMetadata.title,
     purpose: "First visible KVDOS Studio shell frame.",
     current_project: selectedProject,
+    navigation,
     layout,
     placeholder_regions: layout.regions.map((region) => ({
       id: region.id,
       label: region.label,
       purpose: region.purpose
     })),
-    shell_summary: studioShellMetadata
+    shell_summary: {
+      ...studioShellMetadata,
+      navigation_title: navigation.title,
+      active_navigation_route: navigation.active_route,
+      navigation_items: navigation.items.map((item) => ({
+        id: item.id,
+        label: item.label,
+        active: item.active
+      }))
+    }
   };
 }
 
@@ -70,6 +82,7 @@ function escapeHtml(value) {
 
 function renderStudioShellFrame(frame = createStudioShellFrame()) {
   const currentProject = frame.current_project ? escapeHtml(frame.current_project) : "No project selected";
+  const navigationMarkup = renderStudioNavigation(frame.navigation || createStudioNavigationModel());
   return [
     '<main class="kvdos-studio-shell">',
     '  <section class="shell-top-bar">',
@@ -79,8 +92,7 @@ function renderStudioShellFrame(frame = createStudioShellFrame()) {
     "  </section>",
     '  <section class="shell-layout">',
     '    <aside class="shell-left-sidebar">',
-    "      <h2>Left sidebar</h2>",
-    "      <p>Primary navigation placeholder.</p>",
+    ...navigationMarkup.split("\n").map((line) => `      ${line}`),
     "    </aside>",
     '    <section class="shell-main-canvas">',
     "      <h2>Main canvas</h2>",
@@ -115,6 +127,8 @@ function formatStudioShellFrame(frame) {
     `Title: ${frame.title}`,
     `Purpose: ${frame.purpose}`,
     `Current project: ${frame.current_project || "none"}`,
+    `Navigation title: ${frame.shell_summary.navigation_title}`,
+    `Active navigation route: ${frame.shell_summary.active_navigation_route}`,
     "Layout regions:",
     ...frame.layout.regions.map((region) => `- ${region.id}: ${region.label} [placeholder]`),
     "This shell is frame-only and does not execute tasks."
