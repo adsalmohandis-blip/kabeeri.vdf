@@ -4,6 +4,11 @@ const path = require("path");
 const PLUGIN_ID = "tailwind_ui";
 const PLUGIN_VERSION = "0.1.0";
 const TAILWIND_VERSION = "4.3.0";
+const TAILWIND_GUIDANCE_TARGET_DOCS = [
+  "docs/ui-ux/UI_SPECIFICATION.md",
+  "docs/ui-ux/ACCESSIBILITY.md",
+  "docs/delivery/QA_CHECKLIST.md"
+];
 const ROOT = path.resolve(__dirname, "..", "..", "..");
 
 function getPluginStatus() {
@@ -15,10 +20,13 @@ function getPluginStatus() {
     plugin_version: PLUGIN_VERSION,
     tailwind_version: TAILWIND_VERSION,
     status,
+    provider: "fallback",
     enabled_by_default: false,
     core_dependency: false,
     core_dev_dependency: false,
     external_cdn_dependency: false,
+    runtime_mode: "guidance_only",
+    fallback_safe: true,
     standalone: true,
     external_github_dependency: false,
     next_action: "Use kvdf tailwind-ui snippet or utility-map when a generated UI surface explicitly needs Tailwind guidance."
@@ -72,6 +80,105 @@ function buildTailwindUtilityMap(options = {}) {
     standalone: true,
     external_github_dependency: false,
     next_action: "Use this utility map as guidance for UI docs or future plugin-based HTML generation."
+  };
+}
+
+function buildTailwindProviderSummary(options = {}) {
+  void options;
+  const verification = verifyTailwindCoreDependencyRemoved();
+  const status = verification.package_json_clean && verification.package_lock_clean && !verification.node_modules_dependency ? "available" : "warning";
+  return {
+    report_type: "tailwind_ui_provider_summary",
+    plugin_id: PLUGIN_ID,
+    available: status === "available",
+    enabled_by_default: false,
+    provider: "fallback",
+    core_dependency: false,
+    core_dev_dependency: false,
+    external_cdn_dependency: false,
+    runtime_mode: "guidance_only",
+    supports: ["utility_map", "planner_guidance", "docs_guidance", "html_comment_marker"],
+    status,
+    fallback_used: true,
+    notes: verification.warnings || [],
+    next_action: status === "available"
+      ? "Use kvdf tailwind-ui planner-guidance or docs-guidance only when a project explicitly chooses Tailwind."
+      : "Remove the remaining Tailwind dependency references or rely on the guidance-only fallback mode."
+  };
+}
+
+function buildTailwindPlannerGuidance(options = {}) {
+  const provider = buildTailwindProviderSummary(options);
+  const utilityMap = buildTailwindUtilityMap(options);
+  const verification = verifyTailwindCoreDependencyRemoved(options);
+  const status = provider.status === "available" && verification.package_json_clean && verification.package_lock_clean
+    ? "available"
+    : "warning";
+  return {
+    report_type: "tailwind_ui_planner_guidance",
+    idea: String(options.idea || options.goal || "").trim(),
+    plugin_id: PLUGIN_ID,
+    status,
+    provider: provider.provider,
+    available: provider.available,
+    runtime_mode: provider.runtime_mode,
+    core_dependency: false,
+    core_dev_dependency: false,
+    external_cdn_dependency: false,
+    utility_guidance: utilityMap.utilities,
+    constraints: [
+      "Do not add Tailwind package dependency to KVDF Core.",
+      "Do not use external CDN.",
+      "Use Tailwind only when project/app explicitly chooses it."
+    ],
+    validation_notes: verification.warnings.length ? [...verification.warnings] : ["Tailwind is guidance-only and remains optional."],
+    next_action: provider.next_action
+  };
+}
+
+function buildTailwindDocsGuidance(options = {}) {
+  const provider = buildTailwindProviderSummary(options);
+  const utilityMap = buildTailwindUtilityMap(options);
+  const idea = String(options.idea || options.goal || "Tailwind guidance").trim();
+  const app = String(options.app || options.app_slug || "").trim();
+  const track = String(options.track || "").trim();
+  const sections = TAILWIND_GUIDANCE_TARGET_DOCS.map((targetDoc, index) => ({
+    target_doc: targetDoc,
+    section_title: targetDoc.split("/").pop().replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()),
+    source: PLUGIN_ID,
+    applies_to_stage: "ui_ux_design",
+    next_action: "Merge this guidance into the Viber docs pipeline if Tailwind is explicitly selected.",
+    content: [
+      `# ${targetDoc.split("/").pop().replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}`,
+      "",
+      `Tailwind guidance for ${idea}.`,
+      app ? `- App: ${app}` : null,
+      track ? `- Track: ${track}` : null,
+      `- Provider: ${provider.provider}`,
+      `- Runtime mode: ${provider.runtime_mode}`,
+      utilityMap.utilities.layout && utilityMap.utilities.layout.length ? `- Layout utilities: ${utilityMap.utilities.layout.slice(0, 4).join(", ")}` : null,
+      utilityMap.utilities.spacing && utilityMap.utilities.spacing.length ? `- Spacing utilities: ${utilityMap.utilities.spacing.slice(0, 4).join(", ")}` : null,
+      utilityMap.utilities.typography && utilityMap.utilities.typography.length ? `- Typography utilities: ${utilityMap.utilities.typography.slice(0, 4).join(", ")}` : null,
+      utilityMap.utilities.states && utilityMap.utilities.states.length ? `- State variants: ${utilityMap.utilities.states.slice(0, 4).join(", ")}` : null,
+      utilityMap.utilities.responsive && utilityMap.utilities.responsive.length ? `- Responsive variants: ${utilityMap.utilities.responsive.slice(0, 4).join(", ")}` : null,
+      index === 0 ? "- Tailwind remains optional and is not a KVDF Core dependency." : null
+    ].filter(Boolean).join("\n")
+  }));
+  return {
+    report_type: "tailwind_ui_docs_guidance",
+    idea,
+    plugin_id: PLUGIN_ID,
+    app,
+    track,
+    target_docs: [...TAILWIND_GUIDANCE_TARGET_DOCS],
+    sections,
+    provider: provider.provider,
+    status: provider.status,
+    core_dependency: false,
+    core_dev_dependency: false,
+    external_cdn_dependency: false,
+    runtime_mode: provider.runtime_mode,
+    next_action: "Use these guidance sections in the Viber docs pipeline only if the project explicitly chooses Tailwind."
   };
 }
 
@@ -158,5 +265,8 @@ module.exports = {
   buildTailwindStatus,
   buildTailwindHtmlSnippet,
   buildTailwindUtilityMap,
+  buildTailwindProviderSummary,
+  buildTailwindPlannerGuidance,
+  buildTailwindDocsGuidance,
   verifyTailwindCoreDependencyRemoved
 };

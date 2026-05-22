@@ -11,6 +11,7 @@ const { buildTaskLifecycleState, buildTaskLifecycleBoard } = require("./task_lif
 const { buildSecurityGateState } = require("./security");
 const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
 const { getPluginRuntimeStatus } = require("../services/plugin_loader");
+const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
 
 const UI_UX_INTELLIGENCE_PLUGIN_ID = "ui_ux_intelligence";
 const UI_UX_INTELLIGENCE_TARGET_DOCS = [
@@ -1884,6 +1885,12 @@ function buildViberDashboardState(context = {}, deps = {}) {
     track: "vibe",
     stack: String(context.plannerState.current_plan && context.plannerState.current_plan.stack || "").trim()
   });
+  const tailwindUiSummary = buildTailwindGuidanceSummary({
+    idea: context.plannerState.current_plan && context.plannerState.current_plan.goal ? context.plannerState.current_plan.goal : (currentPlan && currentPlan.goal ? currentPlan.goal : "KVDF UI guidance"),
+    app: currentApp.name || currentApp.username || "",
+    track: "vibe",
+    includeDetails: false
+  });
   const commandCenterWidgets = [
     dashboardWidget("viber_current_track", "Current Track", "status", "vibe_app_developer", "ok", "vibe_app_developer", "derived", "Stay on app/product delivery work."),
     dashboardWidget("viber_current_workspace", "Current App / Workspace", "status", currentApp.name || currentApp.username || context.project.name || "none", currentApp.username || currentApp.name ? "ok" : "empty", "vibe_app_developer", "derived", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."),
@@ -1995,6 +2002,21 @@ function buildViberDashboardState(context = {}, deps = {}) {
       evidence_required: true,
       visual_qa_required: true,
       next_action: uiUxIntelligence.acceptance_gate && uiUxIntelligence.acceptance_gate.next_action ? uiUxIntelligence.acceptance_gate.next_action : uiUxIntelligence.next_action || "Run kvdf ui-ux-intelligence acceptance-gate --idea \"...\" --json."
+    },
+    tailwind_ui: tailwindUiSummary ? {
+      available: Boolean(tailwindUiSummary.available),
+      provider: tailwindUiSummary.provider || "fallback",
+      runtime_mode: tailwindUiSummary.runtime_mode || "guidance_only",
+      core_dependency: false,
+      core_dev_dependency: false,
+      next_action: tailwindUiSummary.next_action || "Run kvdf tailwind-ui docs-guidance --idea \"...\" --track vibe --app <slug> --json."
+    } : {
+      available: false,
+      provider: "fallback",
+      runtime_mode: "guidance_only",
+      core_dependency: false,
+      core_dev_dependency: false,
+      next_action: "Run kvdf tailwind-ui provider --json if Tailwind guidance is needed."
     },
     ui_ux_intelligence_governance: uiUxIntelligence.governance ? {
       knowledge_pack_version: uiUxIntelligence.governance.knowledge_pack_version || null,

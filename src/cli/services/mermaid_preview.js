@@ -1,7 +1,7 @@
 const DEFAULT_MIN_ZOOM = 0;
 const DEFAULT_MAX_ZOOM = 1.8;
 const DEFAULT_STEP = 0.08;
-const { buildOptionalAssetTags, getOptionalUiAssets } = require("./ui_asset_provider");
+const { buildOptionalAssetTags, buildOptionalProviderHtmlComment, buildUiProviderSummary, getOptionalUiAssets } = require("./ui_asset_provider");
 
 function buildMermaidPreviewHtml({
   title,
@@ -119,6 +119,18 @@ function buildMermaidPreviewStatusScript(hasSource, hasRenderedDiagram) {
 }
 
 function buildOptionalUiAssetMarkup(options = {}) {
+  const providerSummary = buildUiProviderSummary({
+    ui_provider: options.ui_provider || options.provider,
+    provider: options.provider,
+    withBootstrap: options.withBootstrap || options["with-bootstrap"],
+    with_bootstrap: options.with_bootstrap,
+    noBootstrap: options.noBootstrap || options["no-bootstrap"],
+    no_bootstrap: options.no_bootstrap,
+    withTailwind: options.withTailwind || options["with-tailwind"],
+    with_tailwind: options.with_tailwind,
+    noTailwind: options.noTailwind || options["no-tailwind"],
+    no_tailwind: options.no_tailwind
+  });
   const selected = getOptionalUiAssets({
     ui_provider: options.ui_provider || options.provider,
     provider: options.provider,
@@ -127,7 +139,10 @@ function buildOptionalUiAssetMarkup(options = {}) {
     noBootstrap: options.noBootstrap || options["no-bootstrap"],
     no_bootstrap: options.no_bootstrap
   });
-  return buildOptionalAssetTags(selected, options);
+  const comment = providerSummary.provider && providerSummary.provider !== "fallback"
+    ? `${buildOptionalProviderHtmlComment(providerSummary)}\n`
+    : "";
+  return `${comment}${buildOptionalAssetTags(selected, options)}`;
 }
 
 function indentHtmlBlock(value, spaces = 2) {

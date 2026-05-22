@@ -71,6 +71,16 @@ pack can likewise be exported only when `prompt-pack --output <path>` is
 explicitly requested. The evidence, visual-qa, acceptance-gate, and regression
 commands are report-only surfaces for handoff and publish readiness.
 
+Tailwind guidance is separate from UI/UX intelligence. When an app or planner
+workflow explicitly opts into `tailwind_ui`, the docs pipeline can surface a
+read-only provider summary, planner guidance, docs guidance, and an HTML
+comment marker without making Tailwind a KVDF Core dependency. Use
+`--include-tailwind-ui` or `--tailwind-ui` to opt in, and `--no-tailwind-ui` to
+suppress the provider even when the plugin is available. Tailwind stays
+guidance-only in this phase, so the docs pipeline never runs Tailwind CLI or
+fetches CDN assets. Generated HTML continues to fall back to the local path
+when Tailwind is unavailable.
+
 If a surface explicitly opts into Bootstrap styling, the optional
 `bootstrap_ui` plugin can provide copied Bootstrap CSS and JavaScript assets
 and a safe snippet/helper/provider surface without making Bootstrap a Core

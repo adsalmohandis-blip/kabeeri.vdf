@@ -7,6 +7,7 @@ const OWNER_ROADMAP_TRAIN_STATE_FILE = ".kabeeri/owner_roadmap_train.json";
 const VIBER_RELEASE_TRAIN_FALLBACK_FILE = ".kabeeri/viber_release_train.json";
 const PLANNER_STATUSES = new Set(["proposed", "approved", "rejected", "completed"]);
 const UI_UX_INTELLIGENCE_PLUGIN_ID = "ui_ux_intelligence";
+const TAILWIND_UI_PLUGIN_ID = "tailwind_ui";
 const UI_UX_INTELLIGENCE_TARGET_DOCS = [
   "docs/ui-ux/UI_UX_DESIGN.md",
   "docs/ui-ux/UX_PRINCIPLES.md",
@@ -17,10 +18,16 @@ const UI_UX_INTELLIGENCE_TARGET_DOCS = [
   "docs/ui-ux/ACCESSIBILITY.md",
   "docs/delivery/QA_CHECKLIST.md"
 ];
+const TAILWIND_UI_TARGET_DOCS = [
+  "docs/ui-ux/UI_SPECIFICATION.md",
+  "docs/ui-ux/ACCESSIBILITY.md",
+  "docs/delivery/QA_CHECKLIST.md"
+];
 const { buildAiLearningPromptContext, buildAiLearningPromptSection } = require("./ai_learning");
 const { buildDeliveryModeRecommendation } = require("./delivery");
 const { buildAppDocsPackageTemplates } = require("../workspace");
 const { buildMermaidPreviewHtml } = require("../services/mermaid_preview");
+const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
 const { pathToFileURL } = require("url");
 const { injectFullscreenShell, openExternalUrl, shouldLaunchFullscreen, shouldOpenPreviewBrowser } = require("../services/local_server");
 const { buildPlannerTruth: buildPlannerTruthReportService } = require("../services/truth_reconciler");
@@ -857,7 +864,7 @@ function buildPlannerStrategy(method, mode, pipeline = null) {
   return base;
 }
 
-function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null, roadmap_train = null, ui_ux_intelligence = null, strict = false }) {
+function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method, source_control, documentation_files = [], visual_planning = null, task_punches = [], evolutions = [], method = null, plugin_context = null, delivery_mode = null, current_plan = null, security_gate = null, docs_plan = null, docs_status = null, version_control = null, latest_feedback = null, roadmap_train = null, ui_ux_intelligence = null, tailwind_ui = null, strict = false }) {
   const risks = [];
   const requiredFixes = [];
   let status = "pass";
@@ -999,6 +1006,35 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     regression_status: "unavailable",
     next_action: "Run kvdf ui-ux-intelligence recommend --idea \"...\" --json if UI/UX guidance is needed."
   };
+  const tailwindUiReview = tailwind_ui ? {
+    status: tailwind_ui.status === "available"
+      ? "pass"
+      : (tailwind_ui.status === "warning" ? "warning" : "unavailable"),
+    plugin_available: Boolean(tailwind_ui.available),
+    provider: tailwind_ui.provider || "fallback",
+    runtime_mode: tailwind_ui.runtime_mode || "guidance_only",
+    standalone: true,
+    external_github_dependency: false,
+    core_dependency: false,
+    core_dev_dependency: false,
+    notes: Array.isArray(tailwind_ui.notes) ? [...tailwind_ui.notes] : [],
+    utility_guidance: tailwind_ui.utility_guidance || {},
+    target_docs: Array.isArray(tailwind_ui.target_docs) ? [...tailwind_ui.target_docs] : [],
+    next_action: tailwind_ui.next_action || "Use Tailwind guidance only when the app/project explicitly selects Tailwind."
+  } : {
+    status: "unavailable",
+    plugin_available: false,
+    provider: "fallback",
+    runtime_mode: "guidance_only",
+    standalone: true,
+    external_github_dependency: false,
+    core_dependency: false,
+    core_dev_dependency: false,
+    notes: [],
+    utility_guidance: {},
+    target_docs: [],
+    next_action: "Run kvdf tailwind-ui provider --json if Tailwind guidance is needed."
+  };
   const docsStatus = docsReview.docs_status;
   if (!hasVisual) requiredFixes.push("Generate the visual planner output before execution.");
   if (!Array.isArray(task_punches) || !task_punches.length) requiredFixes.push("Generate task punches before execution.");
@@ -1049,6 +1085,7 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
     task_quality_review: taskQualityReview,
     visual_review: visualReview,
     ui_ux_review: uiUxReview,
+    tailwind_ui_review: tailwindUiReview,
     ui_ux_governance: ui_ux_intelligence ? {
       status: "available",
       report_status: ui_ux_intelligence.governance && ui_ux_intelligence.governance.status ? ui_ux_intelligence.governance.status : "warning",
@@ -1164,6 +1201,8 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
   const planningMethod = currentPlan.planning_method || currentPlan.review && currentPlan.review.planning_method || null;
   const includeUiUxIntelligence = Boolean(options.includeUiUxIntelligence);
   const disableUiUxIntelligence = Boolean(options.disableUiUxIntelligence);
+  const includeTailwindUi = Boolean(options.includeTailwindUi);
+  const disableTailwindUi = Boolean(options.disableTailwindUi);
   const uiUxIntelligence = disableUiUxIntelligence ? null : buildUiUxIntelligenceSummary({
     idea: currentPlan.goal || "",
     track: currentPlan.track || getPlannerTrack(mode),
@@ -1174,6 +1213,15 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     disabled: disableUiUxIntelligence,
     docsReadyHint: Boolean(currentPlan.docs_status && currentPlan.docs_status.status && currentPlan.docs_status.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
+  });
+  const tailwindUi = disableTailwindUi ? null : buildTailwindUiSummary({
+    idea: currentPlan.goal || "",
+    goal: currentPlan.goal || "",
+    track: currentPlan.track || getPlannerTrack(mode),
+    app: currentPlan.app_slug || "",
+    stack: String(options.stack || "").trim(),
+    includeDetails: includeTailwindUi,
+    disabled: disableTailwindUi
   });
   const method = buildPlannerMethodRecommendation(currentPlan.goal || "", { mode, flags: {}, source_control: currentPlan.source_control }, context, planningMethod || "auto");
   const versionControl = buildPlannerVersionControlSummary({
@@ -1234,6 +1282,7 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     latest_feedback: latestFeedback,
     roadmap_train: roadmapTrain,
     ui_ux_intelligence: uiUxIntelligence,
+    tailwind_ui: tailwindUi,
     strict: Boolean(options.strict)
   });
   return attachPlannerCurrentStateSummary({
@@ -1252,10 +1301,12 @@ function buildPlannerReviewFromCurrentPlan(currentPlan, context, options = {}) {
     task_quality_review: review.task_quality_review,
     visual_review: review.visual_review,
     ui_ux_review: review.ui_ux_review,
+    tailwind_ui_review: review.tailwind_ui_review,
     ui_ux_governance: review.ui_ux_governance,
     ui_ux_handoff_pack: review.ui_ux_handoff_pack,
     ui_ux_prompt_pack: review.ui_ux_prompt_pack,
     ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
+    tailwind_ui_review: review.tailwind_ui_review,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -1918,6 +1969,7 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
   }
   if (action === "plan") {
     const uiUxFlags = resolveUiUxIntelligenceFlags(flags);
+    const tailwindUiFlags = resolveTailwindUiFlags(flags);
     const uiUxIntelligence = buildUiUxIntelligenceSummary({
       idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || "",
       track: plannerMode,
@@ -1928,6 +1980,16 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
       disabled: uiUxFlags.disabled,
       docsReadyHint: false,
       targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
+    });
+    const tailwindUi = tailwindUiFlags.disabled ? null : buildTailwindUiSummary({
+      idea: sourcePipeline.idea || sourcePipeline.goal || value || flags.idea || flags.goal || "",
+      goal: sourcePipeline.goal || sourcePipeline.idea || value || flags.goal || flags.idea || "",
+      track: plannerMode,
+      app: appSlug,
+      stack: tailwindUiFlags.stack,
+      includeDetails: tailwindUiFlags.includeDetails,
+      strict: tailwindUiFlags.strict,
+      disabled: tailwindUiFlags.disabled
     });
     const report = buildPlannerDocsPlan(sourcePipeline, {
       repo_root: context.repo_root,
@@ -1943,8 +2005,14 @@ function buildPlannerDocsCommandReport(action, value, flags = {}, rest = [], dep
         ui_ux_intelligence: uiUxIntelligence
       }
       : report;
+    const reportWithTailwind = tailwindUiFlags.includeDetails && !tailwindUiFlags.disabled
+      ? {
+        ...reportWithUiUx,
+        tailwind_ui: tailwindUi
+      }
+      : reportWithUiUx;
     return attachPlannerCurrentStateSummary({
-      ...reportWithUiUx
+      ...reportWithTailwind
     }, context, { track: plannerMode, app: appSlug, plugin: pluginId });
   }
   if (action === "status") {
@@ -2607,6 +2675,84 @@ function resolveUiUxIntelligenceFlags(flags = {}) {
   };
 }
 
+function resolveTailwindUiFlags(flags = {}) {
+  const isExplicitFalse = (value) => value === false || (typeof value === "string" && ["false", "0", "off", "no"].includes(value.trim().toLowerCase()));
+  const includeFlag = flags.include_tailwind_ui || flags["include-tailwind-ui"] || flags.tailwind_ui || flags.tailwindUi || flags["tailwind-ui"];
+  const disableFlag = flags.no_tailwind_ui || flags["no-tailwind-ui"] || flags.noTailwindUi;
+  return {
+    includeDetails: resolveBooleanFlag(includeFlag),
+    disabled: resolveBooleanFlag(disableFlag) || isExplicitFalse(disableFlag),
+    stack: String(flags.stack || flags.stack_name || flags.stackName || "").trim(),
+    app: String(flags.app || flags.app_slug || flags["app-slug"] || "").trim()
+  };
+}
+
+function buildTailwindUiUnavailableSummary(reason = "Tailwind UI guidance is unavailable.", nextAction = "Run kvdf tailwind-ui verify --json or install the optional tailwind_ui plugin.") {
+  return {
+    status: "unavailable",
+    plugin_id: TAILWIND_UI_PLUGIN_ID,
+    available: false,
+    provider: "fallback",
+    runtime_mode: "guidance_only",
+    core_dependency: false,
+    core_dev_dependency: false,
+    external_cdn_dependency: false,
+    notes: [reason],
+    utility_guidance: {},
+    planner_guidance: null,
+    docs_guidance: null,
+    target_docs: [],
+    next_action: nextAction
+  };
+}
+
+function buildTailwindUiSummary(options = {}) {
+  const includeDetails = Boolean(options.includeDetails);
+  const disabled = Boolean(options.disabled);
+  if (disabled) {
+    return buildTailwindUiUnavailableSummary("Tailwind UI guidance disabled by flag.", "Omit --no-tailwind-ui to include the provider.");
+  }
+  try {
+    const guidance = buildTailwindGuidanceSummary({
+      idea: options.idea || options.goal || "",
+      goal: options.goal || options.idea || "",
+      track: options.track || "",
+      app: options.app || options.appSlug || "",
+      stack: options.stack || ""
+    });
+    const available = Boolean(guidance && guidance.available);
+    const provider = guidance && guidance.provider ? guidance.provider : "fallback";
+    const summary = {
+      status: available ? "available" : "warning",
+      plugin_id: TAILWIND_UI_PLUGIN_ID,
+      available,
+      provider,
+      runtime_mode: guidance && guidance.runtime_mode ? guidance.runtime_mode : "guidance_only",
+      core_dependency: false,
+      core_dev_dependency: false,
+      external_cdn_dependency: false,
+      fallback_used: guidance && typeof guidance.fallback_used === "boolean" ? guidance.fallback_used : provider !== TAILWIND_UI_PLUGIN_ID,
+      notes: Array.isArray(guidance && guidance.notes) ? [...guidance.notes] : [],
+      next_action: guidance && guidance.next_action ? guidance.next_action : "Use Tailwind guidance only when the project explicitly selects Tailwind."
+    };
+    if (includeDetails) {
+      summary.utility_guidance = guidance && guidance.utility_guidance ? guidance.utility_guidance : {};
+      summary.planner_guidance = guidance && guidance.planner_guidance ? guidance.planner_guidance : null;
+      summary.docs_guidance = guidance && guidance.docs_guidance ? guidance.docs_guidance : null;
+      summary.target_docs = Array.isArray(guidance && guidance.target_docs) ? [...guidance.target_docs] : [...TAILWIND_UI_TARGET_DOCS];
+      summary.validation_notes = summary.planner_guidance && Array.isArray(summary.planner_guidance.validation_notes)
+        ? [...summary.planner_guidance.validation_notes]
+        : [];
+    } else {
+      summary.target_docs = [];
+      summary.validation_notes = [];
+    }
+    return summary;
+  } catch (error) {
+    return buildTailwindUiUnavailableSummary(`Tailwind UI runtime unavailable: ${error.message}`, "Fix the Tailwind UI plugin runtime, then re-run with --include-tailwind-ui.");
+  }
+}
+
 function buildUiUxIntelligenceFallbackSections(uiUxIntelligence, input, options = {}) {
   const targetDocs = Array.isArray(options.targetDocs) && options.targetDocs.length
     ? options.targetDocs
@@ -2652,7 +2798,9 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
       includeUiUxIntelligence: resolveBooleanFlag(flags.include_ui_ux_intelligence || flags["include-ui-ux-intelligence"] || flags.ui_ux_intelligence || flags["ui-ux-intelligence"]),
       disableUiUxIntelligence: resolveBooleanFlag(flags.no_ui_ux_intelligence || flags["no-ui-ux-intelligence"]),
       strict: resolveBooleanFlag(flags.strict),
-      stack: String(flags.stack || flags.stack_name || "").trim()
+      stack: String(flags.stack || flags.stack_name || "").trim(),
+      includeTailwindUi: resolveBooleanFlag(flags.include_tailwind_ui || flags["include-tailwind-ui"] || flags.tailwind_ui || flags["tailwind-ui"]),
+      disableTailwindUi: resolveBooleanFlag(flags.no_tailwind_ui || flags["no-tailwind-ui"])
     });
   }
   const goal = resolveGoal(value, flags, rest, "");
@@ -2661,6 +2809,8 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
   }
   const includeUiUxIntelligence = resolveBooleanFlag(flags.include_ui_ux_intelligence || flags["include-ui-ux-intelligence"] || flags.ui_ux_intelligence || flags["ui-ux-intelligence"]);
   const disableUiUxIntelligence = resolveBooleanFlag(flags.no_ui_ux_intelligence || flags["no-ui-ux-intelligence"]);
+  const includeTailwindUi = resolveBooleanFlag(flags.include_tailwind_ui || flags["include-tailwind-ui"] || flags.tailwind_ui || flags["tailwind-ui"]);
+  const disableTailwindUi = resolveBooleanFlag(flags.no_tailwind_ui || flags["no-tailwind-ui"]);
   const uiUxTrack = normalizePlannerMode(flags.track || flags.mode || "vibe");
   const planning = buildPlannerPlanningContext(goal, { flags, ...flags }, deps, { methodFromFlags: true, rest });
   const uiUxIntelligence = disableUiUxIntelligence ? null : buildUiUxIntelligenceSummary({
@@ -2673,6 +2823,15 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     disabled: disableUiUxIntelligence,
     docsReadyHint: Boolean(planning && planning.pipeline && planning.pipeline.docs_status && planning.pipeline.docs_status.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
+  });
+  const tailwindUi = disableTailwindUi ? null : buildTailwindUiSummary({
+    idea: goal,
+    goal,
+    track: uiUxTrack,
+    app: normalizeAppSlug(flags.app || flags.app_slug || flags["app-slug"] || ""),
+    stack: String(flags.stack || flags.stack_name || "").trim(),
+    includeDetails: includeTailwindUi,
+    disabled: disableTailwindUi
   });
   const versionControl = buildPlannerVersionControlSummary({
     versionPlan: planning.pipeline && planning.pipeline.version_plan ? planning.pipeline.version_plan : {},
@@ -2703,6 +2862,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     version_control: versionControl,
     latest_feedback: latestFeedback,
     ui_ux_intelligence: uiUxIntelligence,
+    tailwind_ui: tailwindUi,
     strict: resolveBooleanFlag(flags.strict)
   });
   return {
@@ -2725,6 +2885,7 @@ function buildPlannerReviewReport(value, flags = {}, rest = [], deps = {}) {
     ui_ux_handoff_pack: review.ui_ux_handoff_pack,
     ui_ux_prompt_pack: review.ui_ux_prompt_pack,
     ui_ux_acceptance_gate: review.ui_ux_acceptance_gate,
+    tailwind_ui_review: review.tailwind_ui_review,
     version_control_review: review.version_control_review,
     publish_readiness_review: review.publish_readiness_review,
     risks: review.risks,
@@ -2827,6 +2988,16 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
     docsReadyHint: false,
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
   });
+  const tailwindUiFlags = resolveTailwindUiFlags(flags);
+  const tailwindUi = tailwindUiFlags.disabled ? null : buildTailwindUiSummary({
+    idea: goal || sourcePipeline.idea || sourcePipeline.goal || "",
+    goal: goal || sourcePipeline.goal || sourcePipeline.idea || "",
+    track: plannerMode,
+    app: appSlug,
+    stack: tailwindUiFlags.stack,
+    includeDetails: tailwindUiFlags.includeDetails,
+    disabled: tailwindUiFlags.disabled
+  });
   const currentState = assertPlannerWriteBoundary(context, flags, { track: plannerMode, appSlug, pluginId });
   if (plannerMode === "vibe" && !explicitAppSlug && !resolveBooleanFlag(flags.dry_run || flags["dry-run"])) {
     const error = new Error("Missing app slug for planner docs materialization. Use --app or --app-slug, or add --dry-run to preview the docs plan.");
@@ -2897,6 +3068,27 @@ function buildPlannerDocsMaterializationReport(value, flags = {}, rest = [], dep
       target_docs: uiUxIntelligence.target_docs || [],
       warnings: uniqueList(uiUxWarnings)
     },
+    tailwind_ui: tailwindUi ? {
+      status: tailwindUi.status,
+      provider: tailwindUi.provider || "fallback",
+      runtime_mode: tailwindUi.runtime_mode || "guidance_only",
+      core_dependency: false,
+      core_dev_dependency: false,
+      external_cdn_dependency: false,
+      available: Boolean(tailwindUi.available),
+      target_docs: Array.isArray(tailwindUi.target_docs) ? [...tailwindUi.target_docs] : [],
+      next_action: tailwindUi.next_action || "Use Tailwind guidance only when explicitly requested."
+    } : {
+      status: "unavailable",
+      provider: "fallback",
+      runtime_mode: "guidance_only",
+      core_dependency: false,
+      core_dev_dependency: false,
+      external_cdn_dependency: false,
+      available: false,
+      target_docs: [],
+      next_action: "Run kvdf tailwind-ui provider --json if Tailwind guidance is needed."
+    },
     next_action: "Review generated docs, then approve/materialize the first Evolution."
   }, context, { track: plannerMode, app: appSlug, plugin: pluginId });
 }
@@ -2956,6 +3148,16 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     docsReadyHint: Boolean(docsStatus && docsStatus.status && docsStatus.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
   });
+  const tailwindUiFlags = resolveTailwindUiFlags(request);
+  const tailwindUi = tailwindUiFlags.disabled ? null : buildTailwindUiSummary({
+    idea: goal,
+    goal,
+    track: mode,
+    app: String(request.app || request.app_slug || request["app-slug"] || "").trim(),
+    stack: tailwindUiFlags.stack,
+    includeDetails: tailwindUiFlags.includeDetails,
+    disabled: tailwindUiFlags.disabled
+  });
   const promptUiUxIntelligence = uiUxFlags.disabled
     ? null
     : (uiUxFlags.includeDetails
@@ -2981,7 +3183,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     currentGate: planning.current_gate,
     nextAction: plan.next_action,
     roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
-    planningPipeline: planning.pipeline
+    planningPipeline: planning.pipeline,
+    tailwindUi
   });
   const review = buildPlannerReviewSummary({
     goal,
@@ -3001,7 +3204,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     version_control: versionControl,
     latest_feedback: latestFeedback,
     roadmap_train: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
-    ui_ux_intelligence: uiUxIntelligence
+    ui_ux_intelligence: uiUxIntelligence,
+    tailwind_ui: tailwindUi
   });
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
@@ -3028,6 +3232,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     review,
     visual_summary: visualSummary,
     ui_ux_intelligence: uiUxIntelligence,
+    tailwind_ui: tailwindUi,
     task_punch: taskPunch,
     prompt: renderCodexPrompt({
       goal,
@@ -3048,7 +3253,8 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
       latestFeedback,
       roadmapTrain: planning.pipeline ? planning.pipeline.roadmap_train || null : null,
       pipelineState: visualSummary.viber_pipeline || null,
-      uiUxIntelligence: promptUiUxIntelligence
+      uiUxIntelligence: promptUiUxIntelligence,
+      tailwindUi: uiUxFlags.disabled || !tailwindUiFlags.includeDetails ? null : (tailwindUi || buildTailwindUiUnavailableSummary("Tailwind UI summary unavailable in this workspace.", "Use kvdf tailwind-ui docs-guidance --idea \"...\" --json if Tailwind guidance is needed."))
     })
   }, context, {
     track: mode,
@@ -3125,6 +3331,17 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     docsReadyHint: Boolean(planning.pipeline && planning.pipeline.docs_status && planning.pipeline.docs_status.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
   });
+  const tailwindUiFlags = resolveTailwindUiFlags(request);
+  const tailwindUi = tailwindUiFlags.disabled ? null : buildTailwindUiSummary({
+    idea: goal,
+    goal,
+    track: mode,
+    app: request.app || request.app_slug || request["app-slug"] || "",
+    stack: tailwindUiFlags.stack,
+    includeDetails: tailwindUiFlags.includeDetails,
+    strict: tailwindUiFlags.strict,
+    disabled: tailwindUiFlags.disabled
+  });
   const stateResync = buildPlannerStateResyncSummary(context, request, { track: mode, pluginId: pluginContext ? pluginContext.plugin_id : null });
   const evolutionPlan = buildPlannerEvolutionPlan(goal, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
   const taskPunch = buildPlannerTaskPunch(evolutionPlan, { ...request, mode, deliveryMode, pluginContext, sourceControl }, context);
@@ -3181,7 +3398,8 @@ function buildPlannerVisualReport(goal, request = {}, deps = {}) {
     risks: planning.method.risks,
     currentGate: planning.current_gate,
     nextAction: evolutionPlan.next_action,
-    uiUxIntelligence
+    uiUxIntelligence,
+    tailwindUi
   });
 }
 
@@ -3206,6 +3424,17 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     disabled: uiUxFlags.disabled,
     docsReadyHint: Boolean(currentPlan.docs_status && currentPlan.docs_status.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
+  });
+  const tailwindUiFlags = resolveTailwindUiFlags(request);
+  const tailwindUi = tailwindUiFlags.disabled ? null : buildTailwindUiSummary({
+    idea: goal,
+    goal,
+    track: mode,
+    app: currentPlan.app_slug || "",
+    stack: tailwindUiFlags.stack,
+    includeDetails: tailwindUiFlags.includeDetails,
+    strict: tailwindUiFlags.strict,
+    disabled: tailwindUiFlags.disabled
   });
   const sourceControl = currentPlan.source_control || buildPlannerSourceControl(
     { flags: {} },
@@ -3261,11 +3490,12 @@ function buildPlannerVisualFromCurrentReport(request = {}, deps = {}) {
     currentGate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || "structured", sourceControl, mode),
     nextAction: currentPlan.next_action || evolutionPlan.next_action,
     roadmapTrain: currentPlan.roadmap_train || null,
-    uiUxIntelligence
+    uiUxIntelligence,
+    tailwindUi
   });
 }
 
-function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null, uiUxIntelligence = null }) {
+function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, taskPunch, context, pluginContext, currentPlan = null, sourceControl = null, planningMethod = null, methodReason = "", confidence = "", review = null, docsStatus = "planned", docsStatusReport = null, docsCreatedTotal = 0, versionControl = null, risks = [], currentGate = null, nextAction = "", roadmapTrain = null, stateResync = null, planningPipeline = null, uiUxIntelligence = null, tailwindUi = null }) {
   const graph = buildPlannerVisualGraph({ mode });
   const board = buildPlannerVisualBoard({ mode, evolutionPlan, taskPunch, currentPlan, sourceControl });
   const scopeMap = buildPlannerVisualScopeMap({ mode, evolutionPlan, taskPunch, pluginContext, sourceControl });
@@ -3344,7 +3574,8 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     nextAction: nextAction || evolutionPlan.next_action || "",
     roadmapTrain,
     viberPipeline,
-    uiUxIntelligence
+    uiUxIntelligence,
+    tailwindUi
   });
   const report = {
     report_type: "kvdf_planner_visual",
@@ -3397,7 +3628,13 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     ui_ux_checklist_status: uiUxIntelligence && uiUxIntelligence.checklist_summary
       ? (uiUxIntelligence.checklist_summary.blockers > 0 ? "warning" : (uiUxIntelligence.checklist_summary.warnings > 0 ? "warning" : "pass"))
       : "unknown",
-    ui_ux_intelligence: uiUxIntelligence || null
+    ui_ux_intelligence: uiUxIntelligence || null,
+    tailwind_ui_status: tailwindUi ? tailwindUi.status || "unknown" : "unavailable",
+    tailwind_ui_provider: tailwindUi ? tailwindUi.provider || "fallback" : "fallback",
+    tailwind_ui_runtime_mode: tailwindUi ? tailwindUi.runtime_mode || "guidance_only" : "guidance_only",
+    tailwind_ui_core_dependency: false,
+    tailwind_ui_core_dev_dependency: false,
+    tailwind_ui: tailwindUi || null
   };
   if (pluginContext) report.plugin_context = pluginContext;
   return report;
@@ -4231,7 +4468,7 @@ function determinePlannerVisualSourceOfTruth({ mode = "owner", stateResync = nul
   return "unknown";
 }
 
-function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null, uiUxIntelligence = null }) {
+function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, graph, board, scopeMap, validationCommands, stopCondition, sourceControl, planningMethod, methodReason, reviewStatus, docsStatus, docsCreatedTotal, docsStatusReport = null, versionControl, planningReadiness = {}, executionReadiness = {}, risks, currentGate, nextAction, roadmapTrain = null, viberPipeline = null, uiUxIntelligence = null, tailwindUi = null }) {
   const title = mode === "vibe"
     ? "KVDF Planner Visual Execution Readiness - Vibe/App"
     : mode === "plugin"
@@ -4267,6 +4504,15 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     uiUxIntelligence.checklist_summary && uiUxIntelligence.checklist_summary.summary ? `- Checklist summary: ${uiUxIntelligence.checklist_summary.summary.total || 0} items, ${uiUxIntelligence.checklist_summary.summary.blockers || 0} blockers, ${uiUxIntelligence.checklist_summary.summary.warnings || 0} warnings` : null,
     uiUxIntelligence.target_docs && uiUxIntelligence.target_docs.length ? `- Target docs: ${uiUxIntelligence.target_docs.join("; ")}` : null,
     `- Next action: ${uiUxIntelligence.next_action || "Review the UI/UX intelligence output."}`
+  ].filter(Boolean).join("\n") : null;
+  const tailwindLines = tailwindUi ? [
+    "## Tailwind UI",
+    `- Status: ${tailwindUi.status || "unknown"}`,
+    `- Provider: ${tailwindUi.provider || "fallback"}`,
+    `- Runtime mode: ${tailwindUi.runtime_mode || "guidance_only"}`,
+    Array.isArray(tailwindUi.target_docs) && tailwindUi.target_docs.length ? `- Target docs: ${tailwindUi.target_docs.join("; ")}` : null,
+    Array.isArray(tailwindUi.validation_notes) && tailwindUi.validation_notes.length ? `- Validation notes: ${tailwindUi.validation_notes.join("; ")}` : null,
+    `- Next action: ${tailwindUi.next_action || "Use Tailwind guidance only when explicitly selected."}`
   ].filter(Boolean).join("\n") : null;
   const sourceControlLines = sourceControl ? [
     `- Enabled: ${sourceControl.enabled ? "yes" : "no"}`,
@@ -4304,6 +4550,8 @@ function buildPlannerVisualMarkdown({ goal, mode, deliveryMode, evolutionPlan, g
     planningMethod ? `- Method confidence: ${planningReadiness.planning_method_confidence || "unknown"}` : null,
     reviewStatus ? `- Review status: ${reviewStatus}` : null,
     docsStatus ? `- Documentation status: ${docsStatus}` : null,
+    tailwindLines ? "" : null,
+    tailwindLines ? tailwindLines : null,
     `- Docs created total: ${docsCreatedTotal || 0}`,
     `- Stop condition note: ${executionReadiness.publish_readiness ? executionReadiness.publish_readiness.rule : "KVDF does not auto-publish."}`,
     versionControl && versionControl.current_version ? `- Current version: ${versionControl.current_version.version_id || versionControl.current_version.title || "unknown"}` : null,
@@ -8509,10 +8757,26 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     docsReadyHint: Boolean(currentPlan.docs_status && currentPlan.docs_status.status && currentPlan.docs_status.status !== "missing"),
     targetDocsHint: UI_UX_INTELLIGENCE_TARGET_DOCS
   });
+  const tailwindUiFlags = resolveTailwindUiFlags(request);
+  const tailwindUi = tailwindUiFlags.disabled ? null : buildTailwindUiSummary({
+    idea: currentPlan.goal || "",
+    goal: currentPlan.goal || "",
+    track: normalizePlannerMode(currentPlan.track || currentPlan.planner_mode),
+    app: currentPlan.app_slug || "",
+    stack: tailwindUiFlags.stack,
+    includeDetails: tailwindUiFlags.includeDetails,
+    strict: tailwindUiFlags.strict,
+    disabled: tailwindUiFlags.disabled
+  });
   const promptUiUxIntelligence = uiUxFlags.disabled
     ? null
     : (uiUxFlags.includeDetails
       ? (uiUxIntelligence || buildUiUxIntelligenceUnavailableSummary("UI/UX intelligence summary unavailable in this workspace.", "Use ui_ux_intelligence docs sections during materialization if approved."))
+      : null);
+  const promptTailwindUi = tailwindUiFlags.disabled
+    ? null
+    : (tailwindUiFlags.includeDetails
+      ? (tailwindUi || buildTailwindUiUnavailableSummary("Tailwind UI summary unavailable in this workspace.", "Use kvdf tailwind-ui docs-guidance --idea \"...\" --json if Tailwind guidance is needed."))
       : null);
   const prompt = renderPlannerPromptFromPlan({
     ...currentPlan,
@@ -8524,7 +8788,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     docs_status: currentPlan.docs_status || null,
     visual_planning: currentPlan.visual_planning || currentPlan.visual || null,
     current_gate: currentPlan.current_gate || buildPlannerCurrentGate(currentPlan.planning_method || review.planning_method || "structured", sourceControl, normalizePlannerMode(currentPlan.planner_mode))
-  }, context, sourceControl, aiLearning, promptUiUxIntelligence);
+  }, context, sourceControl, aiLearning, promptUiUxIntelligence, promptTailwindUi);
   return attachPlannerCurrentStateSummary({
     report_type: "kvdf_planner_codex_prompt",
     generated_at: new Date().toISOString(),
@@ -8547,7 +8811,8 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     task_punch: currentPlan.task_punch || null,
     prompt,
     roadmap_train: roadmapTrain,
-    ui_ux_intelligence: uiUxIntelligence
+    ui_ux_intelligence: uiUxIntelligence,
+    tailwind_ui: tailwindUi
   }, context, {
     track: currentPlan.track || normalizePlannerMode(currentPlan.planner_mode),
     app: normalizeAppSlug(currentPlan.app_slug || ""),
@@ -8776,7 +9041,7 @@ function taskPunchItem(id, title, allowedFiles, forbiddenFiles, acceptanceCriter
   };
 }
 
-function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null, uiUxIntelligence = null }) {
+function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceControl, aiLearning = null, planningMethod = null, methodReason = "", review = null, docsStatus = null, visualSummary = null, currentGate = null, versionControl = null, latestFeedback = null, roadmapTrain = null, pipelineState = null, uiUxIntelligence = null, tailwindUi = null }) {
   const heading = mode === "vibe"
     ? "CODEx PROMPT — KVDF Vibe/App Delivery"
     : mode === "plugin"
@@ -8920,6 +9185,19 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     "- Reminder: do not overwrite existing UI/UX docs unless --force or Owner approval exists.",
     "- Stop condition: stop until the required UI/UX evidence, accessibility checks, and acceptance gate pass."
   ].filter(Boolean).join("\n") : null;
+  const tailwindSummary = tailwindUi && tailwindUi.status ? tailwindUi : null;
+  const tailwindSummaryLines = tailwindSummary ? [
+    "## Tailwind UI",
+    `- Status: ${tailwindSummary.status || "unknown"}`,
+    `- Provider: ${tailwindSummary.provider || "fallback"}`,
+    `- Runtime mode: ${tailwindSummary.runtime_mode || "guidance_only"}`,
+    tailwindSummary.utility_guidance && typeof tailwindSummary.utility_guidance === "object" ? `- Utility guidance: ${Object.keys(tailwindSummary.utility_guidance).join("; ")}` : null,
+    tailwindSummary.planner_guidance && tailwindSummary.planner_guidance.validation_notes && tailwindSummary.planner_guidance.validation_notes.length ? `- Validation notes: ${tailwindSummary.planner_guidance.validation_notes.join("; ")}` : null,
+    tailwindSummary.docs_guidance && Array.isArray(tailwindSummary.docs_guidance.target_docs) && tailwindSummary.docs_guidance.target_docs.length ? `- Target docs: ${tailwindSummary.docs_guidance.target_docs.join("; ")}` : null,
+    `- Next action: ${tailwindSummary.next_action || "Use Tailwind guidance only when explicitly selected."}`,
+    "- Reminder: Tailwind is optional and not a KVDF Core dependency.",
+    "- Stop condition: do not add Tailwind to KVDF Core or use an external CDN."
+  ].filter(Boolean).join("\n") : null;
   return [
     heading,
     "",
@@ -8949,6 +9227,8 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
     ...(viberPipelineLines.length ? viberPipelineLines : []),
     uiUxSummaryLines ? "" : null,
     uiUxSummaryLines || null,
+    tailwindSummaryLines ? "" : null,
+    tailwindSummaryLines || null,
     "",
     "Scope:",
     "Allowed files:",
@@ -10867,7 +11147,7 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
   ].join("\n");
 }
 
-function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null, uiUxIntelligence = null) {
+function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLearning = null, uiUxIntelligence = null, tailwindUi = null) {
   const goal = plan.goal || (plan.recommended_evolution && plan.recommended_evolution.title) || "Approved planner plan";
   const mode = normalizePlannerMode(plan.planner_mode);
   const sourcePipeline = plan.source_pipeline || plan.sourcePipeline || null;
@@ -10965,7 +11245,8 @@ function renderPlannerPromptFromPlan(plan, context, sourceControl = null, aiLear
     latestFeedback: plan.latest_feedback || readPlannerLatestFeedback(context.repo_root, normalizeAppSlug(plan.app_slug || "")),
     roadmapTrain,
     pipelineState,
-    uiUxIntelligence
+    uiUxIntelligence,
+    tailwindUi
   });
 }
 
