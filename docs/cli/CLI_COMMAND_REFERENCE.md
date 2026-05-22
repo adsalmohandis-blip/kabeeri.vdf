@@ -1128,6 +1128,10 @@ same:
 - `framework-*` translates tokens and compositions into Bootstrap, Tailwind,
   Bulma, Foundation, MUI, Ant Design, daisyUI, or shadcn/ui implementation
   guidance.
+
+Optional UI provider plugins such as `bootstrap-ui` and `tailwind-ui` keep UI
+asset and utility guidance out of KVDF Core while still providing local,
+removable helpers for surfaces that explicitly opt in.
 - `ui-questions` and `ui-decisions` turn developer/client answers into density,
   navigation, surface style, tone, variant, adapter, and composition decisions.
 - `playbook*` selects the default UI direction for a Kabeeri product blueprint.

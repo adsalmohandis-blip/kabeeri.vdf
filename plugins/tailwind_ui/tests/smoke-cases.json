@@ -1,0 +1,21 @@
+{
+  "plugin_id": "tailwind_ui",
+  "smoke_cases": [
+    {
+      "command": "kvdf tailwind-ui status --json",
+      "expect_report_type": "tailwind_ui_status"
+    },
+    {
+      "command": "kvdf tailwind-ui snippet --json",
+      "expect_report_type": "tailwind_ui_snippet"
+    },
+    {
+      "command": "kvdf tailwind-ui utility-map --json",
+      "expect_report_type": "tailwind_ui_utility_map"
+    },
+    {
+      "command": "kvdf tailwind-ui verify --json",
+      "expect_report_type": "tailwind_ui_verify"
+    }
+  ]
+}

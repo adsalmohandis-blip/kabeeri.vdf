@@ -8451,6 +8451,49 @@ test("bootstrap_ui verify reports missing assets safely", () => withTempDir((dir
   assert.strictEqual(verify.fallback_safe, true);
 }));
 
+test("tailwind_ui plugin is discoverable and provides guidance-only utilities", () => {
+  const report = buildPluginLoaderReport();
+  const plugin = report.plugins.find((item) => item.plugin_id === "tailwind_ui");
+  assert.ok(plugin);
+  assert.strictEqual(plugin.plugin_id, "tailwind_ui");
+  assert.strictEqual(plugin.removable, true);
+  assert.strictEqual(plugin.enabled_by_default, false);
+
+  const status = JSON.parse(runKvdf(["tailwind-ui", "status", "--json"]).stdout);
+  assert.strictEqual(status.report_type, "tailwind_ui_status");
+  assert.strictEqual(status.plugin_id, "tailwind_ui");
+  assert.strictEqual(status.status, "available");
+  assert.strictEqual(status.enabled_by_default, false);
+  assert.strictEqual(status.core_dependency, false);
+  assert.strictEqual(status.core_dev_dependency, false);
+  assert.strictEqual(status.external_cdn_dependency, false);
+
+  const utilityMap = JSON.parse(runKvdf(["tailwind-ui", "utility-map", "--json"]).stdout);
+  assert.strictEqual(utilityMap.report_type, "tailwind_ui_utility_map");
+  assert.ok(Array.isArray(utilityMap.utilities.layout));
+  assert.ok(Array.isArray(utilityMap.utilities.spacing));
+  assert.ok(Array.isArray(utilityMap.utilities.typography));
+  assert.ok(Array.isArray(utilityMap.utilities.color));
+  assert.ok(Array.isArray(utilityMap.utilities.states));
+  assert.ok(Array.isArray(utilityMap.utilities.responsive));
+
+  const verify = JSON.parse(runKvdf(["tailwind-ui", "verify", "--json"]).stdout);
+  assert.strictEqual(verify.report_type, "tailwind_ui_verify");
+  assert.strictEqual(verify.status, "pass");
+  assert.strictEqual(verify.package_json_clean, true);
+  assert.strictEqual(verify.package_lock_clean, true);
+  assert.strictEqual(verify.core_dependency, false);
+  assert.strictEqual(verify.core_dev_dependency, false);
+  assert.strictEqual(verify.node_modules_dependency, false);
+  assert.strictEqual(verify.fallback_safe, true);
+
+  const snippet = JSON.parse(runKvdf(["tailwind-ui", "snippet", "--json"]).stdout);
+  assert.strictEqual(snippet.report_type, "tailwind_ui_snippet");
+  assert.strictEqual(snippet.mode, "guidance_only");
+  assert.strictEqual(snippet.note, "Tailwind is optional and not bundled as a KVDF Core dependency.");
+  assert.match(snippet.html, /Tailwind UI/);
+});
+
 test("bootstrap_ui is no longer a root package dependency and Core source does not hard-require bootstrap", () => {
   const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
   const lock = JSON.parse(fs.readFileSync(path.join(repoRoot, "package-lock.json"), "utf8"));
@@ -8471,6 +8514,32 @@ test("bootstrap_ui is no longer a root package dependency and Core source does n
     assert.ok(!/require\((['"])bootstrap\1\)/.test(content), `${relativePath} should not require bootstrap`);
     assert.ok(!/bootstrap\/dist/.test(content), `${relativePath} should not reference bootstrap dist paths`);
     assert.ok(!/node_modules\/bootstrap/.test(content), `${relativePath} should not hard reference node_modules/bootstrap`);
+  }
+});
+
+test("tailwind_ui is no longer a root package dependency and Core source does not hard-require tailwind", () => {
+  const pkg = JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8"));
+  const lock = JSON.parse(fs.readFileSync(path.join(repoRoot, "package-lock.json"), "utf8"));
+  assert.ok(!pkg.devDependencies || !Object.prototype.hasOwnProperty.call(pkg.devDependencies, "@tailwindcss/cli"));
+  assert.ok(!pkg.devDependencies || !Object.prototype.hasOwnProperty.call(pkg.devDependencies, "tailwindcss"));
+  assert.ok(!lock.packages[""].devDependencies || !Object.prototype.hasOwnProperty.call(lock.packages[""].devDependencies, "@tailwindcss/cli"));
+  assert.ok(!lock.packages[""].devDependencies || !Object.prototype.hasOwnProperty.call(lock.packages[""].devDependencies, "tailwindcss"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(lock.packages, "node_modules/@tailwindcss/cli"));
+  assert.ok(!Object.prototype.hasOwnProperty.call(lock.packages, "node_modules/tailwindcss"));
+
+  const coreFiles = [
+    "bin/kvdf.js",
+    "src/cli/index.js",
+    "src/cli/ui.js",
+    "src/cli/commands/dashboard_site.js",
+    "src/cli/commands/docs_site.js",
+    "src/cli/services/mermaid_preview.js"
+  ];
+  for (const relativePath of coreFiles) {
+    const content = fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
+    assert.ok(!/require\((['"])tailwindcss\1\)/.test(content), `${relativePath} should not require tailwindcss`);
+    assert.ok(!/require\((['"])@tailwindcss\/cli\1\)/.test(content), `${relativePath} should not require @tailwindcss/cli`);
+    assert.ok(!/node_modules\/tailwindcss/.test(content), `${relativePath} should not hard reference node_modules/tailwindcss`);
   }
 });
 

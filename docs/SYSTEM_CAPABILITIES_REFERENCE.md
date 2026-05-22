@@ -906,6 +906,10 @@ Project UI Playbooks gives every product blueprint a default UI direction; and
 Creative Variant Intelligence keeps similar products visually distinct without
 breaking accessibility, performance, RTL, content, motion, or governance rules.
 
+Optional UI provider plugins such as `bootstrap_ui` and `tailwind_ui` now keep
+Bootstrap and Tailwind out of KVDF Core dependencies while still offering
+local, removable guidance for surfaces that explicitly opt in.
+
 Main references:
 
 - `knowledge/design_sources/`

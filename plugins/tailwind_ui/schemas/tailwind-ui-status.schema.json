@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tailwind UI Status",
+  "type": "object",
+  "required": [
+    "report_type",
+    "plugin_id",
+    "status",
+    "enabled_by_default",
+    "core_dependency",
+    "core_dev_dependency",
+    "external_cdn_dependency",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "const": "tailwind_ui_status" },
+    "plugin_id": { "const": "tailwind_ui" },
+    "status": { "enum": ["available", "warning", "blocked"] },
+    "enabled_by_default": { "type": "boolean" },
+    "core_dependency": { "type": "boolean" },
+    "core_dev_dependency": { "type": "boolean" },
+    "external_cdn_dependency": { "type": "boolean" },
+    "standalone": { "type": "boolean" },
+    "external_github_dependency": { "type": "boolean" },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}
