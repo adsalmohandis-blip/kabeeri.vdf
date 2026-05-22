@@ -8492,6 +8492,34 @@ test("tailwind_ui plugin is discoverable and provides guidance-only utilities", 
   assert.strictEqual(snippet.mode, "guidance_only");
   assert.strictEqual(snippet.note, "Tailwind is optional and not bundled as a KVDF Core dependency.");
   assert.match(snippet.html, /Tailwind UI/);
+
+  const provider = JSON.parse(runKvdf(["tailwind-ui", "provider", "--json"]).stdout);
+  assert.strictEqual(provider.report_type, "tailwind_ui_provider");
+  assert.ok(["tailwind_ui", "fallback"].includes(provider.provider));
+  assert.strictEqual(provider.available, true);
+  assert.strictEqual(provider.core_dependency, false);
+  assert.strictEqual(provider.core_dev_dependency, false);
+  assert.strictEqual(provider.runtime_mode, "guidance_only");
+  assert.strictEqual(provider.fallback_used, provider.provider !== "tailwind_ui");
+
+  const plannerGuidance = JSON.parse(runKvdf(["tailwind-ui", "planner-guidance", "--idea", "Build booking app", "--json"]).stdout);
+  assert.strictEqual(plannerGuidance.report_type, "tailwind_ui_planner_guidance");
+  assert.ok(["available", "warning"].includes(plannerGuidance.status));
+  assert.ok(plannerGuidance.utility_guidance);
+  assert.ok(Array.isArray(plannerGuidance.constraints));
+  assert.ok(Array.isArray(plannerGuidance.validation_notes));
+
+  const docsGuidance = JSON.parse(runKvdf(["tailwind-ui", "docs-guidance", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--json"]).stdout);
+  assert.strictEqual(docsGuidance.report_type, "tailwind_ui_docs_guidance");
+  assert.ok(Array.isArray(docsGuidance.target_docs));
+  assert.ok(docsGuidance.target_docs.length > 0);
+  assert.ok(Array.isArray(docsGuidance.sections));
+  assert.ok(docsGuidance.sections.length > 0);
+
+  const htmlComment = JSON.parse(runKvdf(["tailwind-ui", "html-comment", "--json"]).stdout);
+  assert.strictEqual(htmlComment.report_type, "tailwind_ui_html_comment");
+  assert.strictEqual(htmlComment.fallback_comment, "<!-- KVDF UI provider: fallback -->");
+  assert.ok(htmlComment.comment.includes("tailwind_ui guidance-only"));
 });
 
 test("bootstrap_ui is no longer a root package dependency and Core source does not hard-require bootstrap", () => {
@@ -8692,7 +8720,7 @@ test("planner docs plan can include optional ui_ux_intelligence output", () => w
   runKvdf(["init"], { cwd: dir });
   copyPluginBundle(dir, "ui_ux_intelligence");
   runKvdf(["plugins", "install", "ui_ux_intelligence"], { cwd: dir });
-  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  const report = JSON.parse(runKvdf(["planner", "docs", "plan", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--include-ui-ux-intelligence", "--include-tailwind-ui", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(report.report_type, "kvdf_planner_docs_plan");
   assert.ok(report.ui_ux_intelligence);
   assert.strictEqual(report.ui_ux_intelligence.standalone, true);
@@ -8706,6 +8734,10 @@ test("planner docs plan can include optional ui_ux_intelligence output", () => w
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "pattern_library_summary"));
   assert.ok(Object.prototype.hasOwnProperty.call(report.ui_ux_intelligence, "governance"));
   assert.strictEqual(report.ui_ux_intelligence.governance.status, "available");
+  assert.ok(report.tailwind_ui);
+  assert.strictEqual(report.tailwind_ui.core_dependency, false);
+  assert.strictEqual(report.tailwind_ui.core_dev_dependency, false);
+  assert.strictEqual(report.tailwind_ui.runtime_mode, "guidance_only");
 }));
 
 test("planner docs plan still works when ui_ux_intelligence is missing", () => withTempDir((dir) => {
@@ -8802,11 +8834,11 @@ test("planner docs materialize can enrich UI/UX docs in dry-run mode without wri
   assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri", "planner_docs_status.json")), false);
 }));
 
-test("planner review, visual, and prompt surface optional ui_ux_intelligence summaries", () => withTempDir((dir) => {
+test("planner review, visual, prompt, and tailwind guidance surface optional ui_ux_intelligence summaries", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   copyPluginBundle(dir, "ui_ux_intelligence");
   runKvdf(["plugins", "install", "ui_ux_intelligence"], { cwd: dir });
-  const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Build booking app", "--track", "vibe", "--method", "hybrid", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  const review = JSON.parse(runKvdf(["planner", "review", "--goal", "Build booking app", "--track", "vibe", "--method", "hybrid", "--include-ui-ux-intelligence", "--include-tailwind-ui", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(review.report_type, "kvdf_planner_review");
   assert.ok(review.ui_ux_review);
   assert.strictEqual(review.ui_ux_review.standalone, true);
@@ -8826,19 +8858,26 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.ok(Array.isArray(review.ui_ux_acceptance_gate.blockers));
   assert.ok(review.ui_ux_governance);
   assert.strictEqual(review.ui_ux_governance.status, "available");
+  assert.ok(review.tailwind_ui_review);
+  assert.strictEqual(review.tailwind_ui_review.core_dependency, false);
+  assert.strictEqual(review.tailwind_ui_review.core_dev_dependency, false);
+  assert.ok(["pass", "warning", "unavailable"].includes(review.tailwind_ui_review.status));
 
-  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  const visual = JSON.parse(runKvdf(["planner", "visual", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--include-tailwind-ui", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(visual.report_type, "kvdf_planner_visual");
   assert.ok(Object.prototype.hasOwnProperty.call(visual, "ui_ux_intelligence_status"));
+  assert.ok(Object.prototype.hasOwnProperty.call(visual, "tailwind_ui_status"));
   assert.ok(visual.markdown_report.includes("## UI/UX Intelligence"));
+  assert.ok(visual.markdown_report.includes("## Tailwind UI"));
   assert.ok(visual.markdown_report.includes("Governance:"));
   assert.ok(visual.markdown_report.includes("Handoff pack:"));
   assert.ok(visual.markdown_report.includes("Pattern library:"));
   assert.ok(visual.markdown_report.includes("Prompt pack:"));
 
-  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--include-ui-ux-intelligence", "--include-tailwind-ui", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(prompt.report_type, "kvdf_planner_codex_prompt");
   assert.ok(prompt.prompt.includes("## UI/UX Intelligence"));
+  assert.ok(prompt.prompt.includes("## Tailwind UI"));
   assert.ok(prompt.prompt.includes("Governance:"));
   assert.ok(prompt.prompt.includes("Handoff pack:"));
   assert.ok(prompt.prompt.includes("Pattern library:"));
@@ -8849,6 +8888,11 @@ test("planner review, visual, and prompt surface optional ui_ux_intelligence sum
   assert.ok(prompt.prompt.includes("Target docs:"));
   assert.ok(prompt.prompt.includes("Reminder: do not overwrite existing UI/UX docs"));
   assert.ok(prompt.prompt.includes("Stop condition: stop until the required UI/UX evidence"));
+
+  const promptWithoutTailwind = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--no-tailwind-ui", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(promptWithoutTailwind.report_type, "kvdf_planner_codex_prompt");
+  assert.ok(typeof promptWithoutTailwind.prompt === "string");
+  assert.ok(!promptWithoutTailwind.prompt.includes("## Tailwind UI"));
 
   const promptWithoutUiUx = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--no-ui-ux-intelligence", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(promptWithoutUiUx.report_type, "kvdf_planner_codex_prompt");
@@ -8937,9 +8981,14 @@ test("planner visual and dashboard state expose ui_ux_intelligence safely", () =
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "handoff_pack_status"));
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard.ui_ux_intelligence, "governance"));
   assert.ok(Object.prototype.hasOwnProperty.call(dashboard, "ui_ux_intelligence_governance"));
+  assert.ok(dashboard.tailwind_ui);
+  assert.ok(["tailwind_ui", "fallback"].includes(dashboard.tailwind_ui.provider));
+  assert.strictEqual(dashboard.tailwind_ui.core_dependency, false);
+  assert.strictEqual(dashboard.tailwind_ui.core_dev_dependency, false);
+  assert.strictEqual(dashboard.tailwind_ui.runtime_mode, "guidance_only");
   assert.ok(dashboard.ui_ux_acceptance);
   assert.ok(["pass", "warning", "blocked", "unavailable"].includes(dashboard.ui_ux_acceptance.status));
-})); 
+}));
 
 test("ui_ux_intelligence implementation artifacts generate tokens components screens and handoff packs", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });

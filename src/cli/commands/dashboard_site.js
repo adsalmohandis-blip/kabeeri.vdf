@@ -2,7 +2,7 @@ const path = require("path");
 
 const { readJsonFile } = require("../workspace");
 const { fileExists, repoRoot, writeTextFile } = require("../fs_utils");
-const { buildOptionalAssetTags, getOptionalUiAssets } = require("../services/ui_asset_provider");
+const { buildOptionalAssetTags, buildOptionalProviderHtmlComment, buildUiProviderSummary, getOptionalUiAssets } = require("../services/ui_asset_provider");
 const { summarizeUsage } = require("./usage_pricing");
 const { buildCustomerAppSummaries, buildPlannerDashboardState, collectDashboardStateForCurrentTrack } = require("./dashboard_state");
 const { buildDashboardActionItems } = require("./dashboard");
@@ -1189,6 +1189,18 @@ function buildTableEnhancementScript() {
 }
 
 function buildUiAssetMarkup(options = {}) {
+  const providerSummary = buildUiProviderSummary({
+    ui_provider: options.ui_provider || options["ui-provider"] || options.provider,
+    provider: options.provider,
+    withBootstrap: options.withBootstrap || options["with-bootstrap"],
+    with_bootstrap: options.with_bootstrap,
+    noBootstrap: options.noBootstrap || options["no-bootstrap"],
+    no_bootstrap: options.no_bootstrap,
+    withTailwind: options.withTailwind || options["with-tailwind"],
+    with_tailwind: options.with_tailwind,
+    noTailwind: options.noTailwind || options["no-tailwind"],
+    no_tailwind: options.no_tailwind
+  });
   const selected = getOptionalUiAssets({
     ui_provider: options.ui_provider || options["ui-provider"] || options.provider,
     provider: options.provider,
@@ -1197,10 +1209,13 @@ function buildUiAssetMarkup(options = {}) {
     noBootstrap: options.noBootstrap || options["no-bootstrap"],
     no_bootstrap: options.no_bootstrap
   });
-  return buildOptionalAssetTags(selected, {
+  const comment = providerSummary.provider && providerSummary.provider !== "fallback"
+    ? `${buildOptionalProviderHtmlComment(providerSummary)}\n`
+    : "";
+  return `${comment}${buildOptionalAssetTags(selected, {
     ...options,
     document_path: resolveDashboardDocumentPath(options)
-  });
+  })}`;
 }
 
 function resolveDashboardDocumentPath(options = {}) {
