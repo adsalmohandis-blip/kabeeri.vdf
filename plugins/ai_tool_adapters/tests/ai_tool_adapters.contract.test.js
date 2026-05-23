@@ -12,8 +12,12 @@ const { scanKnownTools } = require("../commands/tool_scan");
 assert.strictEqual(pluginManifest.plugin_id, "ai_tool_adapters");
 assert.strictEqual(pluginManifest.enabled_by_default, true);
 assert.strictEqual(typeof bootstrap.aiToolAdapters, "function");
+assert.ok(bootstrap.provider);
+assert.strictEqual(typeof bootstrap.provider.getProviderInfo, "function");
 assert.strictEqual(typeof runtime.aiToolAdapters, "function");
-assert.strictEqual(bootstrap.provider, undefined);
+assert.strictEqual(typeof runtime.getProviderInfo, "function");
+assert.strictEqual(typeof runtime.canRunContract, "function");
+assert.strictEqual(typeof runtime.runContract, "function");
 
 const defaultState = runtime.createDefaultAiToolAdaptersState();
 assert.strictEqual(defaultState.policies.execution_default, "disabled");

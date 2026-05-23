@@ -9142,6 +9142,58 @@ test("ai_tool_adapters governed runner validates contracts, blocks by default, a
   assert.strictEqual(parsedLast.tool_id, "node");
 }));
 
+test("ai_tool_adapters provider api reports tool readiness and evidence safely", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ai_tool_adapters");
+
+  const contractPath = path.join(dir, "ai-tool-provider-contract.json");
+  fs.writeFileSync(contractPath, JSON.stringify({
+    contract_id: "ai-run-contract-002",
+    requested_by: "multi_ai_governance",
+    task_id: "task-002",
+    assignment_id: "mai-asg-002",
+    tool_id: "node",
+    working_directory: ".",
+    command: "node",
+    args: [],
+    stdin: null,
+    allowed_commands: ["node"],
+    forbidden_commands: ["rm", "del", "format", "shutdown", "powershell Remove-Item"],
+    allowed_files: [],
+    forbidden_files: [".env", ".kabeeri/owner_auth.json"],
+    timeout_seconds: 900,
+    capture_stdout: true,
+    capture_stderr: true,
+    evidence_required: true
+  }, null, 2), "utf8");
+
+  runKvdf(["ai-tool-adapters", "scan", "--json"], { cwd: dir });
+
+  const providerReport = JSON.parse(runKvdf(["ai-tool-adapters", "provider", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(providerReport.report_type, "ai_tool_adapters_provider");
+  assert.strictEqual(providerReport.provider_id, "ai_tool_adapters");
+  assert.ok(Array.isArray(providerReport.available_tools));
+  assert.ok(Array.isArray(providerReport.latest_runs));
+  assert.ok(providerReport.integration_status);
+  assert.strictEqual(providerReport.integration_status.authority_plugin_id, "multi_ai_governance");
+
+  const capabilitiesReport = JSON.parse(runKvdf(["ai-tool-adapters", "capabilities", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(capabilitiesReport.report_type, "ai_tool_adapters_capabilities");
+  assert.ok(Array.isArray(capabilitiesReport.tools));
+  assert.ok(capabilitiesReport.tools.some((tool) => tool.tool_id === "node"));
+
+  const canRunReport = JSON.parse(runKvdf(["ai-tool-adapters", "can-run", "--contract", contractPath, "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(canRunReport.report_type, "ai_tool_adapters_can_run");
+  assert.strictEqual(canRunReport.status, "blocked");
+  assert.strictEqual(canRunReport.execution_enabled, false);
+  assert.ok(Array.isArray(canRunReport.blockers));
+
+  const evidenceMissing = JSON.parse(runKvdf(["ai-tool-adapters", "evidence", "--run", "ai-tool-run-999", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(evidenceMissing.report_type, "ai_tool_adapters_evidence");
+  assert.strictEqual(evidenceMissing.found, false);
+  assert.strictEqual(evidenceMissing.run, null);
+}));
+
 test("tailwind_ui plugin is discoverable and provides guidance-only utilities", () => {
   const report = buildPluginLoaderReport();
   const plugin = report.plugins.find((item) => item.plugin_id === "tailwind_ui");

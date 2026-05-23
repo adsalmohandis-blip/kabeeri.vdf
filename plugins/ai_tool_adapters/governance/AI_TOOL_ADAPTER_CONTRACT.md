@@ -50,6 +50,18 @@ Phase 2 adds a governed runner contract, but not autonomous tool behavior.
 - this plugin only runs the tool that was explicitly contracted
 - shell execution stays disabled; use direct command spawning only
 
+## Phase 3 Provider API
+
+Phase 3 adds a provider API for capability lookups and integration checks.
+
+- the provider can list registered tools and their capabilities
+- the provider can validate whether a contract is ready to run
+- the provider can return evidence from `.kabeeri/ai_tool_runs.jsonl`
+- the provider can call the governed runner, but it still does not approve assignments
+- `multi_ai_governance` stays the authority layer
+- the provider remains optional and removable
+- the provider does not decide task ownership, task approval, or merge approval
+
 ## Safety Rules
 
 - do not execute tools during discovery

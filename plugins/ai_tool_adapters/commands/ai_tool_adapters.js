@@ -15,8 +15,10 @@ const {
   buildRunReport,
   buildRunShowReport,
   buildRunsReport,
-  buildTestReport
+  buildTestReport,
+  readRunContractFromFile
 } = require("./run_contract");
+const provider = require("../provider");
 
 async function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
   void deps;
@@ -55,6 +57,25 @@ async function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
       editor: flags.editor || "unknown"
     });
     outputReport(report, flags, renderToolText);
+    return report;
+  }
+
+  if (normalizedAction === "provider") {
+    const report = provider.buildAdapterProviderReport({ state: ensureStateFile() });
+    outputReport(report, flags, renderProviderText);
+    return report;
+  }
+
+  if (normalizedAction === "capabilities") {
+    const report = buildCapabilitiesReport(ensureStateFile());
+    outputReport(report, flags, renderCapabilitiesText);
+    return report;
+  }
+
+  if (normalizedAction === "can-run") {
+    const contractPath = String(flags.contract || value || rest[0] || "").trim();
+    const report = buildCanRunContractReport(contractPath, { state: ensureStateFile() });
+    outputReport(report, flags, renderCanRunText);
     return report;
   }
 
@@ -112,6 +133,19 @@ async function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
     }
     const report = buildRunShowReport(runId);
     outputReport(report, flags, renderRunText);
+    return report;
+  }
+
+  if (normalizedAction === "evidence") {
+    const runId = String(flags.run || flags.id || value || rest[0] || "").trim();
+    if (!runId) {
+      const report = buildMissingEvidenceArgumentReport();
+      outputReport(report, flags, renderWarningText);
+      return report;
+    }
+    const evidence = provider.getRunEvidence(runId);
+    const report = buildEvidenceReport(runId, evidence);
+    outputReport(report, flags, renderEvidenceText);
     return report;
   }
 
@@ -241,6 +275,45 @@ function renderRunsText(report) {
   ].join("\n");
 }
 
+function renderProviderText(report) {
+  return [
+    "AI Tool Adapters Provider",
+    `Provider: ${report.provider_id}`,
+    `Tools: ${report.tools_count}`,
+    `Execution-enabled tools: ${report.execution_enabled_count}`,
+    `Integration: ${report.integration_status && report.integration_status.status ? report.integration_status.status : "unknown"}`,
+    report.next_action
+  ].join("\n");
+}
+
+function renderCapabilitiesText(report) {
+  return [
+    "AI Tool Adapter Capabilities",
+    `Tools: ${report.tools.length}`,
+    ...report.tools.map((tool) => `- ${tool.tool_id}: ${tool.capabilities.join(", ")}`),
+    report.next_action
+  ].join("\n");
+}
+
+function renderCanRunText(report) {
+  return [
+    "AI Tool Adapter Run Readiness",
+    `Status: ${report.status}`,
+    `Valid: ${report.valid ? "yes" : "no"}`,
+    `Execution enabled: ${report.execution_enabled ? "yes" : "no"}`,
+    report.next_action
+  ].join("\n");
+}
+
+function renderEvidenceText(report) {
+  return [
+    "AI Tool Adapter Run Evidence",
+    report.found ? `Run: ${report.run_id}` : `Run not found: ${report.run_id || "unknown"}`,
+    report.found ? `Status: ${report.run.status}` : "Status: missing",
+    report.next_action
+  ].join("\n");
+}
+
 function renderWarningText(report) {
   return report.next_action || "AI Tool Adapters needs an argument.";
 }
@@ -267,6 +340,98 @@ function buildMissingRunArgumentReport() {
   };
 }
 
+function buildMissingEvidenceArgumentReport() {
+  return {
+    report_type: "ai_tool_adapters_evidence",
+    plugin_id: "ai_tool_adapters",
+    status: "warning",
+    found: false,
+    run_id: null,
+    run: null,
+    next_action: "Missing run id for ai-tool-adapters evidence."
+  };
+}
+
+function buildCapabilitiesReport(state) {
+  const tools = provider.listAvailableTools({ state });
+  return {
+    report_type: "ai_tool_adapters_capabilities",
+    plugin_id: "ai_tool_adapters",
+    status: tools.length ? "available" : "warning",
+    provider_id: "ai_tool_adapters",
+    tools,
+    count: tools.length,
+    next_action: tools.length
+      ? "Use ai-tool-adapters can-run with a governed contract to verify readiness."
+      : "Run ai-tool-adapters scan to detect tools before inspecting capabilities."
+  };
+}
+
+function buildCanRunContractReport(contractPath, options = {}) {
+  if (!contractPath) {
+    return {
+      report_type: "ai_tool_adapters_can_run",
+      plugin_id: "ai_tool_adapters",
+      status: "warning",
+      valid: false,
+      contract: null,
+      tool: null,
+      blockers: ["missing contract path"],
+      warnings: [],
+      policy_checks: [],
+      execution_enabled: false,
+      next_action: "Provide --contract <path> to inspect a run contract."
+    };
+  }
+  let contract;
+  try {
+    contract = readRunContractFromFile(contractPath);
+  } catch (error) {
+    return {
+      report_type: "ai_tool_adapters_can_run",
+      plugin_id: "ai_tool_adapters",
+      status: "blocked",
+      valid: false,
+      contract_path: contractPath,
+      contract: null,
+      tool: null,
+      blockers: [error.message],
+      warnings: [],
+      policy_checks: [],
+      execution_enabled: false,
+      next_action: "Provide a valid run contract before asking if it can run."
+    };
+  }
+  const report = provider.canRunContract(contract, options);
+  return {
+    ...report,
+    contract_path: contractPath
+  };
+}
+
+function buildEvidenceReport(runId, evidence) {
+  if (!evidence) {
+    return {
+      report_type: "ai_tool_adapters_evidence",
+      plugin_id: "ai_tool_adapters",
+      status: "warning",
+      found: false,
+      run_id: runId || null,
+      run: null,
+      next_action: "Run ai-tool-adapters runs or rerun a governed contract to create evidence."
+    };
+  }
+  return {
+    report_type: "ai_tool_adapters_evidence",
+    plugin_id: "ai_tool_adapters",
+    status: "available",
+    found: true,
+    run_id: runId,
+    run: evidence,
+    next_action: "Use the evidence record to review policy checks and redactions."
+  };
+}
+
 module.exports = {
   aiToolAdapters,
   normalizeAction,
@@ -279,6 +444,14 @@ module.exports = {
   renderContractText,
   renderRunText,
   renderRunsText,
+  renderProviderText,
+  renderCapabilitiesText,
+  renderCanRunText,
+  renderEvidenceText,
   buildMissingToolArgumentReport,
-  buildMissingRunArgumentReport
+  buildMissingRunArgumentReport,
+  buildMissingEvidenceArgumentReport,
+  buildCapabilitiesReport,
+  buildCanRunContractReport,
+  buildEvidenceReport
 };

@@ -1997,13 +1997,17 @@ kvdf ai-tool-adapters status
 kvdf ai-tool-adapters scan
 kvdf ai-tool-adapters list
 kvdf ai-tool-adapters register --tool codex --path auto --editor vscode
+kvdf ai-tool-adapters provider
+kvdf ai-tool-adapters capabilities
+kvdf ai-tool-adapters can-run --contract .kabeeri/ai_tool_run_contract.json
 kvdf ai-tool-adapters test --tool node --contract .kabeeri/ai_tool_run_contract.json
 kvdf ai-tool-adapters run --tool node --contract .kabeeri/ai_tool_run_contract.json --confirm
+kvdf ai-tool-adapters evidence --run ai-tool-run-001
 kvdf ai-tool-adapters runs
 kvdf ai-tool-adapters run-show ai-tool-run-001
 kvdf ai-tool-adapters enable-execution --tool node --confirm
 kvdf ai-tool-adapters disable-execution --tool node
 ```
 
-`ai_tool_adapters` discovers and registers local tools in `.kabeeri/ai_tool_adapters.json` and writes governed run evidence to `.kabeeri/ai_tool_runs.jsonl`. Execution remains disabled by default; a tool must be explicitly enabled and run through a valid contract with `--confirm`. `multi_ai_governance` remains the authority layer for assignments and run authorization.
+`ai_tool_adapters` discovers and registers local tools in `.kabeeri/ai_tool_adapters.json`, exposes a provider API for capability summaries and contract readiness, and writes governed run evidence to `.kabeeri/ai_tool_runs.jsonl`. Execution remains disabled by default; a tool must be explicitly enabled and run through a valid contract with `--confirm`. `multi_ai_governance` remains the authority layer for assignments and run authorization, and may consume the provider API without delegating authority to it.
 

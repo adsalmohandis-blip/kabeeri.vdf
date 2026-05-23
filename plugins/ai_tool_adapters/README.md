@@ -18,6 +18,15 @@ Phase 2 adds governed runner contracts and evidence logging:
 - keep `multi_ai_governance` as the authority layer
 - keep execution disabled until a registry entry is explicitly enabled
 
+Phase 3 adds the provider API and the optional integration contract for
+`multi_ai_governance`:
+
+- expose tool capability and readiness data
+- validate whether a contract can run without approving assignments
+- read run evidence from the local JSONL log
+- keep `multi_ai_governance` as the authority layer
+- keep this plugin focused on capability, contract checks, and evidence
+
 ## Commands
 
 - `kvdf ai-tool-adapters status`
@@ -30,6 +39,10 @@ Phase 2 adds governed runner contracts and evidence logging:
 - `kvdf ai-tool-adapters run --tool <tool-id> --contract <path> --confirm`
 - `kvdf ai-tool-adapters runs`
 - `kvdf ai-tool-adapters run-show <run-id>`
+- `kvdf ai-tool-adapters provider`
+- `kvdf ai-tool-adapters capabilities`
+- `kvdf ai-tool-adapters can-run --contract <path>`
+- `kvdf ai-tool-adapters evidence --run <run-id>`
 - `kvdf ai-tool-adapters enable-execution --tool <tool-id> --confirm`
 - `kvdf ai-tool-adapters disable-execution --tool <tool-id>`
 
@@ -39,6 +52,8 @@ This plugin connects to AI tools. It does not govern assignments.
 
 `multi_ai_governance` governs authority, leader sessions, queues, merges, and collaboration rules.
 `multi_ai_governance` also owns any future assignment contract that authorizes a run.
+The provider API is optional and can be consumed by `multi_ai_governance`, but it
+does not approve work or create assignments by itself.
 
 ## Runtime State
 

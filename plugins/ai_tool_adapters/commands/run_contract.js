@@ -281,6 +281,60 @@ function buildRunEventBase({ runId, contract, tool, status, startedAt, endedAt, 
   };
 }
 
+function buildRunReportFromValidation(validation, flags = {}, options = {}) {
+  if (!validation.tool) {
+    const event = buildBlockedRunEvent(validation, validation.blockers[0] || "tool not found");
+    return buildRunReportFromEvent(event, true, "Register or scan the tool before running it.");
+  }
+
+  if (validation.tool.execution_enabled !== true) {
+    const event = buildBlockedRunEvent(validation, validation.blockers[0] || `tool execution disabled: ${validation.tool.tool_id}`);
+    return buildRunReportFromEvent(event, true, "Run kvdf ai-tool-adapters enable-execution --tool <tool-id> --confirm first.");
+  }
+
+  if (flags.confirm !== true) {
+    const event = buildBlockedRunEvent(validation, "missing --confirm");
+    return buildRunReportFromEvent(event, true, "Re-run with --confirm after reviewing the contract.");
+  }
+
+  if (!validation.valid) {
+    const event = buildBlockedRunEvent(validation, validation.blockers[0] || "run contract validation failed");
+    return buildRunReportFromEvent(event, true, "Fix the contract blockers before running.");
+  }
+
+  return executeValidContract(validation, {
+    evidence_required: validation.contract.evidence_required !== false,
+    ...options
+  }).then((event) => buildRunReportFromEvent(
+    event,
+    false,
+    event.status === "blocked" && String(event.error || "").includes("deferred")
+      ? "Execution is deferred in this phase; review the evidence log or revisit the contract later."
+      : event.status === "completed"
+        ? "Review the evidence log and disable execution when finished."
+        : event.status === "timed_out"
+          ? "Review the timeout evidence and adjust the contract if needed."
+          : "Review the failure evidence and retry after fixing the contract or tool."
+  ));
+}
+
+async function buildRunReportFromContract(contract, flags = {}, options = {}) {
+  const state = options.state || registry.ensureStateFile();
+  const normalizedContract = normalizeRunContract(contract);
+  if (!normalizedContract.tool_id) {
+    const validation = {
+      contract: normalizedContract,
+      tool: null,
+      policy_checks: [],
+      blockers: ["missing tool_id"]
+    };
+    const event = buildBlockedRunEvent(validation, validation.blockers[0]);
+    return buildRunReportFromEvent(event, true, "Provide a tool_id in the run contract before running.");
+  }
+  const validation = validateRunContract(normalizedContract, { state, confirm: flags.confirm === true });
+  return buildRunReportFromValidation(validation, flags, options);
+}
+
 async function executeValidContract(validation, options = {}) {
   const runId = runner.nextRunId();
   const startedAt = new Date();
@@ -363,20 +417,6 @@ async function buildRunReport(toolId, contractPath, flags = {}, options = {}) {
     return buildRunReportFromEvent(event, true, "Register or scan the tool before running it.");
   }
 
-  if (tool.execution_enabled !== true) {
-    const contract = contractPath ? normalizeRunContract(readRunContractFromFile(contractPath)) : { contract_id: null, tool_id: tool.tool_id };
-    const validation = { contract, tool, policy_checks: [], blockers: [`tool execution disabled: ${tool.tool_id}`] };
-    const event = buildBlockedRunEvent(validation, validation.blockers[0]);
-    return buildRunReportFromEvent(event, true, "Run kvdf ai-tool-adapters enable-execution --tool <tool-id> --confirm first.");
-  }
-
-  if (!flags.confirm) {
-    const contract = contractPath ? normalizeRunContract(readRunContractFromFile(contractPath)) : { contract_id: null, tool_id: tool.tool_id };
-    const validation = { contract, tool, policy_checks: [], blockers: ["missing --confirm"] };
-    const event = buildBlockedRunEvent(validation, validation.blockers[0]);
-    return buildRunReportFromEvent(event, true, "Re-run with --confirm after reviewing the contract.");
-  }
-
   if (!contractPath) {
     const validation = { contract: { contract_id: null, tool_id: tool.tool_id }, tool, policy_checks: [], blockers: ["missing contract path"] };
     const event = buildBlockedRunEvent(validation, validation.blockers[0]);
@@ -391,24 +431,8 @@ async function buildRunReport(toolId, contractPath, flags = {}, options = {}) {
     const event = buildBlockedRunEvent(validation, validation.blockers[0]);
     return buildRunReportFromEvent(event, true, "Provide a valid run contract before running.");
   }
-  const validation = validateRunContract(contract, { state, confirm: true });
-  if (!validation.valid) {
-    const event = buildBlockedRunEvent(validation, validation.blockers[0]);
-    return buildRunReportFromEvent(event, true, "Fix the contract blockers before running.");
-  }
-
-  const event = await executeValidContract(validation, { evidence_required: validation.contract.evidence_required });
-  return buildRunReportFromEvent(
-    event,
-    false,
-    event.status === "blocked" && String(event.error || "").includes("deferred")
-      ? "Execution is deferred in this phase; review the evidence log or revisit the contract later."
-      : event.status === "completed"
-        ? "Review the evidence log and disable execution when finished."
-        : event.status === "timed_out"
-          ? "Review the timeout evidence and adjust the contract if needed."
-          : "Review the failure evidence and retry after fixing the contract or tool."
-  );
+  contract = { ...contract, tool_id: contract.tool_id || tool.tool_id };
+  return buildRunReportFromContract(contract, flags, { ...options, state });
 }
 
 function buildRunsReport() {
@@ -494,6 +518,7 @@ module.exports = {
   validateRunContract,
   buildRunContractReport,
   buildTestReport,
+  buildRunReportFromContract,
   buildRunReport,
   buildRunsReport,
   buildRunShowReport,

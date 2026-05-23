@@ -23,7 +23,15 @@
     "ai_tool_registry",
     "ai_tool_scan",
     "ai_tool_capability_contract",
-    "ai_tool_run_contract_later"
+    "ai_tool_run_contract_later",
+    "ai_tool_runner",
+    "ai_tool_provider_api"
+  ],
+  "consumed_by": [
+    {
+      "plugin_id": "multi_ai_governance",
+      "purpose": "Governed assignment execution through registered AI tools"
+    }
   ],
   "command_surface": [
     "kvdf ai-tool-adapters status",
@@ -32,11 +40,17 @@
     "kvdf ai-tool-adapters register",
     "kvdf ai-tool-adapters unregister",
     "kvdf ai-tool-adapters show",
+    "kvdf ai-tool-adapters provider",
+    "kvdf ai-tool-adapters capabilities",
+    "kvdf ai-tool-adapters can-run",
+    "kvdf ai-tool-adapters evidence",
     "kvdf plugins install ai_tool_adapters",
     "kvdf plugins uninstall ai_tool_adapters"
   ],
   "docs_surface": [
     "plugins/ai_tool_adapters/README.md",
-    "plugins/ai_tool_adapters/governance/AI_TOOL_ADAPTER_CONTRACT.md"
+    "plugins/ai_tool_adapters/governance/AI_TOOL_ADAPTER_CONTRACT.md",
+    "plugins/ai_tool_adapters/integrations/provider_api.md",
+    "plugins/ai_tool_adapters/integrations/multi_ai_governance_contract.md"
   ]
 }

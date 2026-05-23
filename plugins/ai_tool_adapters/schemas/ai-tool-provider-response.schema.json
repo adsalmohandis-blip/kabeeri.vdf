@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Adapters Provider Response",
+  "type": "object",
+  "required": [
+    "report_type",
+    "provider_id",
+    "plugin_id",
+    "tools_count",
+    "available_tools",
+    "execution_enabled_count",
+    "latest_runs",
+    "integration_status"
+  ],
+  "additionalProperties": true,
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "ai_tool_adapters_provider"
+    },
+    "provider_id": {
+      "type": "string",
+      "const": "ai_tool_adapters"
+    },
+    "plugin_id": {
+      "type": "string",
+      "const": "ai_tool_adapters"
+    },
+    "tools_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "available_tools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/toolSummary" }
+    },
+    "execution_enabled_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "latest_runs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/runSummary" }
+    },
+    "integration_status": {
+      "type": "object",
+      "required": ["provider_api", "authority_plugin_id", "dependency_type", "status"],
+      "additionalProperties": true,
+      "properties": {
+        "provider_api": {
+          "type": "string",
+          "enum": ["available"]
+        },
+        "authority_plugin_id": {
+          "type": "string",
+          "const": "multi_ai_governance"
+        },
+        "dependency_type": {
+          "type": "string",
+          "enum": ["optional"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ready", "warning", "blocked"]
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "next_action": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "toolSummary": {
+      "type": "object",
+      "required": ["tool_id", "tool_type", "display_name", "command", "status", "capabilities", "execution_enabled"],
+      "additionalProperties": true,
+      "properties": {
+        "tool_id": { "type": "string" },
+        "tool_type": { "type": "string" },
+        "display_name": { "type": "string" },
+        "command": { "type": "string" },
+        "resolved_path": { "type": ["string", "null"] },
+        "editor": { "type": "string" },
+        "status": { "type": "string" },
+        "capabilities": { "type": "array", "items": { "type": "string" } },
+        "execution_enabled": { "type": "boolean" },
+        "detected_at": { "type": ["string", "null"] },
+        "registered_at": { "type": ["string", "null"] },
+        "last_checked_at": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "runSummary": {
+      "type": "object",
+      "required": ["run_id", "event_id", "tool_id", "status", "command"],
+      "additionalProperties": true,
+      "properties": {
+        "run_id": { "type": "string" },
+        "event_id": { "type": "string" },
+        "contract_id": { "type": ["string", "null"] },
+        "tool_id": { "type": ["string", "null"] },
+        "task_id": { "type": ["string", "null"] },
+        "assignment_id": { "type": ["string", "null"] },
+        "status": { "type": "string" },
+        "command": { "type": ["string", "null"] },
+        "args_count": { "type": "integer", "minimum": 0 },
+        "working_directory": { "type": "string" },
+        "started_at": { "type": ["string", "null"] },
+        "ended_at": { "type": ["string", "null"] },
+        "duration_ms": { "type": "integer", "minimum": 0 },
+        "exit_code": { "type": ["integer", "null"] },
+        "signal": { "type": ["string", "null"] },
+        "error": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

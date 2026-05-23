@@ -3,6 +3,7 @@ const registry = require("../commands/tool_registry");
 const scanner = require("../commands/tool_scan");
 const runContract = require("../commands/run_contract");
 const runner = require("../commands/tool_runner");
+const provider = require("../provider");
 
 function getPluginStatus() {
   return buildAiToolAdaptersStatus();
@@ -90,6 +91,16 @@ module.exports = {
   buildAiToolAdaptersRunShowReport,
   buildAiToolAdaptersEnableExecutionReport,
   buildAiToolAdaptersDisableExecutionReport,
+  provider,
+  getProviderInfo: provider.getProviderInfo,
+  ensureState: provider.ensureState,
+  listAvailableTools: provider.listAvailableTools,
+  getToolCapabilities: provider.getToolCapabilities,
+  canRunContract: provider.canRunContract,
+  runContract: provider.runContract,
+  getRunEvidence: provider.getRunEvidence,
+  buildAdapterProviderReport: provider.buildAdapterProviderReport,
+  buildAiToolAdaptersProviderReport: provider.buildAdapterProviderReport,
   aiToolAdapters,
   loadAiToolAdaptersState: registry.readState,
   ensureAiToolAdaptersState: registry.ensureStateFile,
@@ -107,6 +118,7 @@ module.exports = {
   loadRunContractFromFile: runContract.readRunContractFromFile,
   normalizeRunContract: runContract.normalizeRunContract,
   validateRunContract: runContract.validateRunContract,
+  buildRunReportFromContract: runContract.buildRunReportFromContract,
   createDefaultRunContract: runContract.createDefaultRunContract,
   redactSensitiveText: runner.redactSensitiveText,
   appendAiToolRunEvent: runner.appendRunEvent,
