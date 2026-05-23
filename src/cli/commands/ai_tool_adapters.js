@@ -1,6 +1,11 @@
+const { getPluginRuntimeStatus } = require("../services/plugin_loader");
 const { loadPluginBootstrap } = require("../services/plugin_mounts");
 
 function loadAiToolAdaptersBundle() {
+  const plugin = getPluginRuntimeStatus("ai_tool_adapters");
+  if (!plugin || !plugin.available || !plugin.enabled) {
+    return null;
+  }
   return loadPluginBootstrap("ai_tool_adapters", { allowSourceFallback: true });
 }
 
@@ -10,10 +15,10 @@ function buildUnavailableAiToolAdaptersReport(action) {
     plugin_id: "ai_tool_adapters",
     status: "unavailable",
     available: false,
-    enabled_by_default: true,
+    enabled_by_default: false,
     execution_enabled: false,
     requested_action: action || null,
-    next_action: "Install or enable ai_tool_adapters to use local AI tool registry commands."
+    next_action: "AI Tool Adapters plugin is not installed or enabled. Run `kvdf plugins install ai_tool_adapters` first."
   };
 }
 

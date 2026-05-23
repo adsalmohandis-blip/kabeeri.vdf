@@ -2011,3 +2011,5 @@ kvdf ai-tool-adapters disable-execution --tool node
 
 `ai_tool_adapters` discovers and registers local tools in `.kabeeri/ai_tool_adapters.json`, exposes a provider API for capability summaries and contract readiness, and writes governed run evidence to `.kabeeri/ai_tool_runs.jsonl`. Execution remains disabled by default; a tool must be explicitly enabled and run through a valid contract with `--confirm`. `multi_ai_governance` remains the authority layer for assignments and run authorization, and may consume the provider API without delegating authority to it.
 
+Core routes to the `ai_tool_adapters` plugin. The plugin is optional but canonical. No Core fallback executes AI tools. If the plugin is missing or disabled, execution-related commands fail closed with the unavailable report and the install hint.
+

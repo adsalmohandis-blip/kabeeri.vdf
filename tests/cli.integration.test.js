@@ -9039,6 +9039,32 @@ test("ai_tool_adapters plugin discovers local tools and keeps execution disabled
   assert.strictEqual(missing.report_type, "ai_tool_adapters_show");
   assert.strictEqual(missing.found, false);
   assert.strictEqual(missing.tool, null);
+
+  const aliasStatus = JSON.parse(runKvdf(["ai-tools", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(aliasStatus.report_type, "ai_tool_adapters_status");
+  assert.strictEqual(aliasStatus.plugin_id, "ai_tool_adapters");
+}));
+
+test("ai_tool_adapters fails closed when disabled or missing", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ai_tool_adapters");
+
+  const pluginsPath = path.join(dir, ".kabeeri", "plugins.json");
+  const pluginsState = JSON.parse(fs.readFileSync(pluginsPath, "utf8"));
+  pluginsState.enabled_plugins = (pluginsState.enabled_plugins || []).filter((pluginId) => pluginId !== "ai_tool_adapters");
+  pluginsState.disabled_plugins = Array.from(new Set([...(pluginsState.disabled_plugins || []), "ai_tool_adapters"])).sort();
+  fs.writeFileSync(pluginsPath, `${JSON.stringify(pluginsState, null, 2)}\n`, "utf8");
+
+  const disabledStatus = JSON.parse(runKvdf(["ai-tool-adapters", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(disabledStatus.report_type, "ai_tool_adapters_unavailable");
+  assert.strictEqual(disabledStatus.status, "unavailable");
+  assert.strictEqual(disabledStatus.available, false);
+  assert.strictEqual(disabledStatus.execution_enabled, false);
+  assert.match(disabledStatus.next_action, /AI Tool Adapters plugin is not installed or enabled/);
+
+  const aliasDisabledStatus = JSON.parse(runKvdf(["ai-tools", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(aliasDisabledStatus.report_type, "ai_tool_adapters_unavailable");
+  assert.strictEqual(aliasDisabledStatus.status, "unavailable");
 }));
 
 test("ai_tool_adapters governed runner validates contracts, blocks by default, and writes evidence when enabled", async () => withTempDir(async (dir) => {

@@ -39,6 +39,7 @@ const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/
 const { buildBootContext } = require("../src/core/bootstrap");
 require("../plugins/ai_tool_adapters/tests/ai_tool_adapters.contract.test");
 require("../plugins/ai_tool_adapters/tests/ai_tool_provider.contract.test");
+require("../plugins/ai_tool_adapters/tests/fail_closed.contract.test");
 require("../plugins/ai_tool_adapters/tests/ai_tool_runner.contract.test");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");

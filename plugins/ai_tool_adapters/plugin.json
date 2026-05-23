@@ -50,6 +50,7 @@
   "docs_surface": [
     "plugins/ai_tool_adapters/README.md",
     "plugins/ai_tool_adapters/governance/AI_TOOL_ADAPTER_CONTRACT.md",
+    "plugins/ai_tool_adapters/governance/FAIL_CLOSED_POLICY.md",
     "plugins/ai_tool_adapters/integrations/provider_api.md",
     "plugins/ai_tool_adapters/integrations/multi_ai_governance_contract.md"
   ]
