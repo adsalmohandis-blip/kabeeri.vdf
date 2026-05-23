@@ -1,0 +1,42 @@
+{
+  "plugin_id": "ai_tool_adapters",
+  "name": "AI Tool Adapters",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/ai_tool_adapters/runtime/index.js",
+  "command_entrypoint": "plugins/ai_tool_adapters/runtime/index.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "integration_plugin",
+  "plugin_type": "ai_tool_adapters",
+  "enabled_by_default": true,
+  "description": "Optional discovery and registration plugin for local AI tools. Phase 1 only covers tool discovery and registry state, not execution.",
+  "required_folders": [
+    "commands",
+    "governance",
+    "runtime",
+    "schemas",
+    "tests"
+  ],
+  "provides": [
+    "ai_tool_registry",
+    "ai_tool_scan",
+    "ai_tool_capability_contract",
+    "ai_tool_run_contract_later"
+  ],
+  "command_surface": [
+    "kvdf ai-tool-adapters status",
+    "kvdf ai-tool-adapters scan",
+    "kvdf ai-tool-adapters list",
+    "kvdf ai-tool-adapters register",
+    "kvdf ai-tool-adapters unregister",
+    "kvdf ai-tool-adapters show",
+    "kvdf plugins install ai_tool_adapters",
+    "kvdf plugins uninstall ai_tool_adapters"
+  ],
+  "docs_surface": [
+    "plugins/ai_tool_adapters/README.md",
+    "plugins/ai_tool_adapters/governance/AI_TOOL_ADAPTER_CONTRACT.md"
+  ]
+}

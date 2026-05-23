@@ -1,0 +1,12 @@
+{
+  "version": "v1",
+  "generated_at": null,
+  "updated_at": null,
+  "tools": [],
+  "scan_history": [],
+  "policies": {
+    "execution_default": "disabled",
+    "manual_registration_allowed": true,
+    "external_dependencies_allowed": false
+  }
+}

@@ -141,6 +141,10 @@ function normalizeCommandName(command) {
     "ui-dashboard-kits": "ui-dashboard-kits",
     ui_dashboard_kits: "ui-dashboard-kits",
     uidashboardkits: "ui-dashboard-kits",
+    "ai-tool-adapters": "ai-tool-adapters",
+    ai_tool_adapters: "ai-tool-adapters",
+    aitooladapters: "ai-tool-adapters",
+    "ai-tools": "ai-tool-adapters",
     "bootstrap-ui": "bootstrap-ui",
     bootstrap_ui: "bootstrap-ui",
     bootstrapui: "bootstrap-ui",
@@ -650,6 +654,17 @@ Notes:
 Multi-AI Governance keeps Evolution as the global priority governor, gives the first active AI entry Leader orchestration status, stores agent hub entries and leader leases with heartbeat and call tracking, can sync and distribute the active Evolution temporary queue across workers, advances queue slices through a durable lifecycle, and records semantic merge bundles with semantic surface plans so several AI tools can work from the same repo without trampling each other. The Leader does not execute by default; execution requires explicit Owner delegation for a scoped slice. If the Leader disappears or stops answering calls, the hub promotes the next active agent after the lease rules are exceeded.
   kvdf multi-ai agent next --ai <agent-id> --count <n> lets a worker claim the next available Evolution priorities in order, so AI tools can pull from the live priority list instead of waiting for a manual task handoff.
 The conversation relay layer is separate from leader calls: use it for durable agent-to-agent messages, inboxes, replies, and closing threads without relying on chat history.
+`,
+    "ai-tool-adapters": `Usage:
+  kvdf ai-tool-adapters status
+  kvdf ai-tool-adapters scan
+  kvdf ai-tool-adapters list
+  kvdf ai-tool-adapters register --tool codex --path auto --editor vscode
+  kvdf ai-tool-adapters unregister --tool codex
+  kvdf ai-tool-adapters show codex
+
+Notes:
+  AI Tool Adapters discovers and registers local AI tools only. It does not execute tools in Phase 1. multi_ai_governance still owns assignments, authority, and queue behavior.
 `,
     schedule: `Usage:
   kvdf schedule status
@@ -1597,12 +1612,14 @@ function printHelp() {
     "  change report|status|show|list          Build the change-control report for risks, change requests, and mitigation notes",
     "  workstream list|show|add     Manage workstream runtime boundaries",
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
+    "  ai-tool-adapters status|scan|list|register|unregister|show Discover and register local AI tools without executing them",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
     "  plugin-extraction audit      Run the read-only Core plugin extraction audit",
     "  naming preview|validate|migrate  Preview, validate, or dry-run migrate stable machine-readable naming IDs",
     "  ui-dashboard-kits status|check|examples|templates|snippets|provider|recommend|html-comment Optional UI dashboard kits plugin",
+    "  ai-tool-adapters status|scan|list|register|unregister|show Optional AI tool adapters discovery and registry plugin",
     "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  tailwind-ui status|snippet|utility-map|verify Optional Tailwind UI utility CSS provider plugin",
     "  adr create|list|report       Track architecture decision records",

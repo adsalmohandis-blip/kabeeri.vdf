@@ -37,6 +37,7 @@ const { buildMermaidPreviewHtml } = require("../src/cli/services/mermaid_preview
 const { openPlannerPreview, buildPlannerPreviewHtml } = require("../src/cli/commands/planner");
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
 const { buildBootContext } = require("../src/core/bootstrap");
+require("../plugins/ai_tool_adapters/tests/ai_tool_adapters.contract.test");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");
 const { repoRoot } = require("../src/cli/fs_utils");

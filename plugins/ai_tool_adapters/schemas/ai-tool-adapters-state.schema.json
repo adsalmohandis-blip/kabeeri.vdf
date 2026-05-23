@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Adapters State",
+  "type": "object",
+  "required": ["version", "generated_at", "updated_at", "tools", "scan_history", "policies"],
+  "additionalProperties": true,
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "generated_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "tools": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/toolRecord" }
+    },
+    "scan_history": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/scanHistoryEntry" }
+    },
+    "policies": {
+      "type": "object",
+      "required": ["execution_default", "manual_registration_allowed", "external_dependencies_allowed"],
+      "additionalProperties": true,
+      "properties": {
+        "execution_default": { "type": "string", "enum": ["disabled"] },
+        "manual_registration_allowed": { "type": "boolean" },
+        "external_dependencies_allowed": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "toolRecord": {
+      "type": "object",
+      "required": [
+        "tool_id",
+        "tool_type",
+        "display_name",
+        "command",
+        "resolved_path",
+        "editor",
+        "status",
+        "capabilities",
+        "execution_enabled",
+        "detected_at",
+        "registered_at",
+        "last_checked_at",
+        "notes"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "tool_id": { "type": "string" },
+        "tool_type": { "type": "string" },
+        "display_name": { "type": "string" },
+        "command": { "type": "string" },
+        "resolved_path": { "type": ["string", "null"] },
+        "editor": { "type": "string" },
+        "status": { "type": "string", "enum": ["detected", "registered", "missing", "disabled"] },
+        "capabilities": { "type": "array", "items": { "type": "string" } },
+        "execution_enabled": { "type": "boolean" },
+        "detected_at": { "type": ["string", "null"] },
+        "registered_at": { "type": ["string", "null"] },
+        "last_checked_at": { "type": ["string", "null"] },
+        "notes": { "type": ["string", "null"] }
+      }
+    },
+    "scanHistoryEntry": {
+      "type": "object",
+      "required": ["scanned_at", "candidates", "detected_tools", "missing_tools"],
+      "additionalProperties": true,
+      "properties": {
+        "scanned_at": { "type": "string" },
+        "candidates": { "type": "array", "items": { "type": "object" } },
+        "detected_tools": { "type": "array", "items": { "type": "string" } },
+        "missing_tools": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

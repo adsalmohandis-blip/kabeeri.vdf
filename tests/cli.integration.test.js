@@ -8908,6 +8908,71 @@ test("ui_dashboard_kits plugin is discoverable and the checker surfaces remain s
   assert.deepStrictEqual(snippets.snippets, []);
 }));
 
+test("ai_tool_adapters plugin discovers local tools and keeps execution disabled", () => withTempDir((dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ai_tool_adapters");
+
+  const previousCwd = process.cwd();
+  process.chdir(dir);
+  try {
+    const report = buildPluginLoaderReport();
+    const plugin = report.plugins.find((item) => item.plugin_id === "ai_tool_adapters");
+    assert.ok(plugin);
+    assert.strictEqual(plugin.removable, true);
+    assert.strictEqual(plugin.enabled_by_default, true);
+    assert.strictEqual(plugin.plugin_type, "ai_tool_adapters");
+    assert.strictEqual(plugin.status, "enabled");
+  } finally {
+    process.chdir(previousCwd);
+  }
+
+  const status = JSON.parse(runKvdf(["ai-tool-adapters", "status", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(status.report_type, "ai_tool_adapters_status");
+  assert.strictEqual(status.plugin_id, "ai_tool_adapters");
+  assert.strictEqual(status.status, "available");
+  assert.strictEqual(status.enabled_by_default, true);
+  assert.strictEqual(status.execution_default, "disabled");
+  assert.strictEqual(status.policies.external_dependencies_allowed, false);
+  assert.strictEqual(status.execution_enabled, false);
+
+  const scan = JSON.parse(runKvdf(["ai-tool-adapters", "scan", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(scan.report_type, "ai_tool_adapters_scan");
+  assert.strictEqual(scan.execution_enabled, false);
+  assert.ok(Array.isArray(scan.candidates));
+  assert.ok(Array.isArray(scan.detected_tools));
+  assert.ok(Array.isArray(scan.missing_tools));
+
+  const list = JSON.parse(runKvdf(["ai-tool-adapters", "list", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(list.report_type, "ai_tool_adapters_list");
+  assert.ok(Array.isArray(list.tools));
+
+  const register = JSON.parse(runKvdf(["ai-tool-adapters", "register", "--tool", "codex", "--path", "auto", "--editor", "vscode", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(register.report_type, "ai_tool_adapters_register");
+  assert.strictEqual(register.execution_enabled, false);
+  assert.ok(register.tool);
+  assert.strictEqual(register.tool.tool_id, "codex");
+  assert.strictEqual(register.tool.execution_enabled, false);
+  assert.strictEqual(register.tool.editor, "vscode");
+  assert.ok(["registered", "missing"].includes(register.tool.status));
+
+  const show = JSON.parse(runKvdf(["ai-tool-adapters", "show", "codex", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(show.report_type, "ai_tool_adapters_show");
+  assert.strictEqual(show.tool_id, "codex");
+  assert.ok(show.tool);
+  assert.strictEqual(show.tool.execution_enabled, false);
+
+  const unregister = JSON.parse(runKvdf(["ai-tool-adapters", "unregister", "--tool", "codex", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(unregister.report_type, "ai_tool_adapters_unregister");
+  assert.strictEqual(unregister.execution_enabled, false);
+  assert.ok(unregister.tool);
+  assert.strictEqual(unregister.tool.status, "disabled");
+
+  const missing = JSON.parse(runKvdf(["ai-tool-adapters", "show", "missing-tool", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(missing.report_type, "ai_tool_adapters_show");
+  assert.strictEqual(missing.found, false);
+  assert.strictEqual(missing.tool, null);
+}));
+
 test("tailwind_ui plugin is discoverable and provides guidance-only utilities", () => {
   const report = buildPluginLoaderReport();
   const plugin = report.plugins.find((item) => item.plugin_id === "tailwind_ui");

@@ -62,6 +62,7 @@ const { uiUxIntelligence } = require("./commands/ui_ux_intelligence");
 const { uiDashboardKits } = require("./commands/ui_dashboard_kits");
 const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
+const { aiToolAdapters } = require("./commands/ai_tool_adapters");
 const { pluginExtraction } = require("./commands/plugin_extraction");
 const { naming } = require("./commands/naming");
 const { githubProvider } = require("./commands/github_provider");
@@ -394,6 +395,9 @@ function run(argv) {
       table,
       repoRoot
     });
+  }
+  if (["ai-tool-adapters", "ai_tool_adapters", "aitooladapters", "ai-tools"].includes(group)) {
+    return aiToolAdapters(action, value, args.flags, rest, {});
   }
   if (["github-provider", "github_provider", "githubprovider"].includes(group)) {
     return githubProvider(action, value, args.flags, rest, {
@@ -10153,6 +10157,7 @@ function getCommandDispatchContext() {
     session,
     multiAiCommunications,
     multiAiGovernance,
+    aiToolAdapters,
     acceptance,
     audit,
     memory,
