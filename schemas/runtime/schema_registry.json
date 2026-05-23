@@ -156,6 +156,7 @@
     { "path": ".kabeeri/ai_runs/prompt_runs.jsonl", "schema": "schemas/runtime/ai-run.schema.json" },
     { "path": ".kabeeri/ai_runs/accepted_runs.jsonl", "schema": "schemas/runtime/ai-run-review.schema.json" },
     { "path": ".kabeeri/ai_runs/rejected_runs.jsonl", "schema": "schemas/runtime/ai-run-review.schema.json" },
+    { "path": ".kabeeri/ai_tool_runs.jsonl", "schema": "plugins/ai_tool_adapters/schemas/ai-tool-run-event.schema.json" },
     { "path": ".kabeeri/interactions/user_intents.jsonl", "schema": "schemas/runtime/vibe-intent.schema.json" },
     { "path": ".kabeeri/memory/decisions.jsonl", "schema": "schemas/runtime/memory-record.schema.json" },
     { "path": ".kabeeri/memory/assumptions.jsonl", "schema": "schemas/runtime/memory-record.schema.json" },

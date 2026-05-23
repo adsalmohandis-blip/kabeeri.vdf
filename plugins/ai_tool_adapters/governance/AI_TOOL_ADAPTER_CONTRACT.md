@@ -38,10 +38,23 @@ Default policy for Phase 1:
 - `manual_registration_allowed`: `true`
 - `external_dependencies_allowed`: `false`
 
+## Phase 2 Runner Policy
+
+Phase 2 adds a governed runner contract, but not autonomous tool behavior.
+
+- execution still requires a valid contract
+- execution still requires `--confirm`
+- execution still respects `execution_enabled`
+- evidence is appended to `.kabeeri/ai_tool_runs.jsonl`
+- `multi_ai_governance` remains the authority layer for assignments
+- this plugin only runs the tool that was explicitly contracted
+- shell execution stays disabled; use direct command spawning only
+
 ## Safety Rules
 
 - do not execute tools during discovery
 - do not enable execution in Phase 1
+- do not bypass run-contract validation in Phase 2
 - do not depend on external libraries
 - keep registry changes local to the workspace
 

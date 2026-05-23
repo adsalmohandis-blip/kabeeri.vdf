@@ -10,6 +10,14 @@ Phase 1 is discovery and registration only:
 - never execute tools
 - keep `execution_enabled` false by default
 
+Phase 2 adds governed runner contracts and evidence logging:
+
+- require an explicit run contract before execution
+- require `--confirm` for any run attempt
+- append evidence to `.kabeeri/ai_tool_runs.jsonl`
+- keep `multi_ai_governance` as the authority layer
+- keep execution disabled until a registry entry is explicitly enabled
+
 ## Commands
 
 - `kvdf ai-tool-adapters status`
@@ -18,12 +26,19 @@ Phase 1 is discovery and registration only:
 - `kvdf ai-tool-adapters register --tool <tool> --path <path|auto> --editor <editor>`
 - `kvdf ai-tool-adapters unregister --tool <tool-id>`
 - `kvdf ai-tool-adapters show <tool-id>`
+- `kvdf ai-tool-adapters test --tool <tool-id>`
+- `kvdf ai-tool-adapters run --tool <tool-id> --contract <path> --confirm`
+- `kvdf ai-tool-adapters runs`
+- `kvdf ai-tool-adapters run-show <run-id>`
+- `kvdf ai-tool-adapters enable-execution --tool <tool-id> --confirm`
+- `kvdf ai-tool-adapters disable-execution --tool <tool-id>`
 
 ## Boundary
 
 This plugin connects to AI tools. It does not govern assignments.
 
 `multi_ai_governance` governs authority, leader sessions, queues, merges, and collaboration rules.
+`multi_ai_governance` also owns any future assignment contract that authorizes a run.
 
 ## Runtime State
 
@@ -32,3 +47,8 @@ The local runtime state lives in:
 `.kabeeri/ai_tool_adapters.json`
 
 That file is local workspace state only and is not a published source artifact.
+Run evidence logs live in:
+
+`.kabeeri/ai_tool_runs.jsonl`
+
+That file is append-only evidence for governed runner attempts.

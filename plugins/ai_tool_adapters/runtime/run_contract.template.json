@@ -1,0 +1,28 @@
+{
+  "contract_id": null,
+  "requested_by": "manual",
+  "task_id": null,
+  "assignment_id": null,
+  "tool_id": null,
+  "working_directory": ".",
+  "command": null,
+  "args": [],
+  "stdin": null,
+  "allowed_commands": [],
+  "forbidden_commands": [
+    "rm",
+    "del",
+    "format",
+    "shutdown",
+    "powershell Remove-Item"
+  ],
+  "allowed_files": [],
+  "forbidden_files": [
+    ".env",
+    ".kabeeri/owner_auth.json"
+  ],
+  "timeout_seconds": 900,
+  "capture_stdout": true,
+  "capture_stderr": true,
+  "evidence_required": true
+}

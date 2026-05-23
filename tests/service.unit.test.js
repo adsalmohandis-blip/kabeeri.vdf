@@ -38,6 +38,7 @@ const { openPlannerPreview, buildPlannerPreviewHtml } = require("../src/cli/comm
 const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/cli/services/text");
 const { buildBootContext } = require("../src/core/bootstrap");
 require("../plugins/ai_tool_adapters/tests/ai_tool_adapters.contract.test");
+require("../plugins/ai_tool_adapters/tests/ai_tool_runner.contract.test");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");
 const { repoRoot } = require("../src/cli/fs_utils");

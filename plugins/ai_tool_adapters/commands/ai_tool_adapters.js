@@ -1,6 +1,24 @@
-const { buildListReport, buildScanReport, buildShowReport, buildStatusReport, ensureStateFile, registerTool, runScanAndRegister, unregisterTool } = require("./tool_registry");
+const {
+  buildListReport,
+  buildScanReport,
+  buildShowReport,
+  buildStatusReport,
+  ensureStateFile,
+  registerTool,
+  runScanAndRegister,
+  unregisterTool
+} = require("./tool_registry");
+const {
+  buildDisableExecutionReport,
+  buildEnableExecutionReport,
+  buildRunContractReport,
+  buildRunReport,
+  buildRunShowReport,
+  buildRunsReport,
+  buildTestReport
+} = require("./run_contract");
 
-function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
+async function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
   void deps;
   const normalizedAction = normalizeAction(action);
 
@@ -64,6 +82,81 @@ function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
     return report;
   }
 
+  if (normalizedAction === "test") {
+    const toolId = String(flags.tool || value || rest[0] || "").trim();
+    const report = buildTestReport(toolId, flags.contract || null, { state: ensureStateFile() });
+    outputReport(report, flags, renderContractText);
+    return report;
+  }
+
+  if (normalizedAction === "run") {
+    const toolId = String(flags.tool || value || rest[0] || "").trim();
+    const contractPath = String(flags.contract || rest[0] || "").trim();
+    const report = await buildRunReport(toolId, contractPath, { confirm: Boolean(flags.confirm) }, { state: ensureStateFile() });
+    outputReport(report, flags, renderRunText);
+    return report;
+  }
+
+  if (normalizedAction === "runs") {
+    const report = buildRunsReport();
+    outputReport(report, flags, renderRunsText);
+    return report;
+  }
+
+  if (normalizedAction === "run-show") {
+    const runId = String(value || flags.id || flags.run || rest[0] || "").trim();
+    if (!runId) {
+      const report = buildMissingRunArgumentReport();
+      outputReport(report, flags, renderWarningText);
+      return report;
+    }
+    const report = buildRunShowReport(runId);
+    outputReport(report, flags, renderRunText);
+    return report;
+  }
+
+  if (normalizedAction === "enable-execution") {
+    const toolId = String(flags.tool || value || rest[0] || "").trim();
+    if (!toolId) {
+      const report = buildMissingToolArgumentReport("enable-execution");
+      outputReport(report, flags, renderWarningText);
+      return report;
+    }
+    if (!flags.confirm) {
+      const report = {
+        report_type: "ai_tool_adapters_enable_execution",
+        plugin_id: "ai_tool_adapters",
+        status: "blocked",
+        tool_id: toolId,
+        execution_enabled: false,
+        next_action: "Re-run enable-execution with --confirm to toggle the registry flag."
+      };
+      outputReport(report, flags, renderWarningText);
+      return report;
+    }
+    const report = buildEnableExecutionReport(toolId);
+    outputReport(report, flags, renderToolText);
+    return report;
+  }
+
+  if (normalizedAction === "disable-execution") {
+    const toolId = String(flags.tool || value || rest[0] || "").trim();
+    if (!toolId) {
+      const report = buildMissingToolArgumentReport("disable-execution");
+      outputReport(report, flags, renderWarningText);
+      return report;
+    }
+    const report = buildDisableExecutionReport(toolId);
+    outputReport(report, flags, renderToolText);
+    return report;
+  }
+
+  if (normalizedAction === "contract") {
+    const report = buildRunContractReport(flags.contract || value || rest[0] || null, { confirm: Boolean(flags.confirm) });
+    outputReport(report, flags, renderContractText);
+    return report;
+  }
+
   throw new Error(`Unknown ai-tool-adapters action: ${action}`);
 }
 
@@ -118,6 +211,36 @@ function renderToolText(report) {
   ].join("\n");
 }
 
+function renderContractText(report) {
+  return [
+    `Run Contract: ${report.contract_path || "n/a"}`,
+    `Status: ${report.status}`,
+    `Valid: ${report.valid ? "yes" : "no"}`,
+    report.next_action
+  ].join("\n");
+}
+
+function renderRunText(report) {
+  return [
+    `Run: ${report.run_id || "n/a"}`,
+    `Status: ${report.status}`,
+    `Tool: ${report.tool_id || "n/a"}`,
+    report.next_action
+  ].join("\n");
+}
+
+function renderRunsText(report) {
+  return [
+    "AI Tool Adapter Runs",
+    `Total: ${report.count}`,
+    `Completed: ${report.status_counts.completed || 0}`,
+    `Failed: ${report.status_counts.failed || 0}`,
+    `Timed out: ${report.status_counts.timed_out || 0}`,
+    `Blocked: ${report.status_counts.blocked || 0}`,
+    report.next_action
+  ].join("\n");
+}
+
 function renderWarningText(report) {
   return report.next_action || "AI Tool Adapters needs an argument.";
 }
@@ -132,6 +255,18 @@ function buildMissingToolArgumentReport(action) {
   };
 }
 
+function buildMissingRunArgumentReport() {
+  return {
+    report_type: "ai_tool_adapters_run_show",
+    plugin_id: "ai_tool_adapters",
+    status: "warning",
+    found: false,
+    run_id: null,
+    run: null,
+    next_action: "Missing run id for ai-tool-adapters run-show."
+  };
+}
+
 module.exports = {
   aiToolAdapters,
   normalizeAction,
@@ -141,5 +276,9 @@ module.exports = {
   renderListText,
   renderToolText,
   renderWarningText,
-  buildMissingToolArgumentReport
+  renderContractText,
+  renderRunText,
+  renderRunsText,
+  buildMissingToolArgumentReport,
+  buildMissingRunArgumentReport
 };

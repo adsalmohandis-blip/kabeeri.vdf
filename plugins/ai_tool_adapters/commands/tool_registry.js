@@ -61,7 +61,7 @@ function normalizeToolRecord(tool = {}) {
     capabilities: Array.isArray(tool.capabilities) && tool.capabilities.length
       ? Array.from(new Set(tool.capabilities))
       : (descriptor ? descriptor.capabilities.slice() : ["terminal_assist"]),
-    execution_enabled: false,
+    execution_enabled: Boolean(tool.execution_enabled),
     detected_at: tool.detected_at ?? null,
     registered_at: tool.registered_at ?? null,
     last_checked_at: tool.last_checked_at ?? null,
@@ -137,6 +137,23 @@ function disableTool(state, toolId) {
   record.last_checked_at = new Date().toISOString();
   record.notes = record.notes || "Disabled by unregister command.";
   next.updated_at = record.last_checked_at;
+  if (!next.generated_at) next.generated_at = next.updated_at;
+  return { state: writeState(next), tool: normalizeToolRecord(record) };
+}
+
+function setToolExecutionEnabled(state, toolId, enabled) {
+  const next = normalizeState(state);
+  const record = findTool(next, toolId);
+  if (!record) {
+    return { state: next, tool: null };
+  }
+  record.execution_enabled = Boolean(enabled);
+  if (enabled && record.status === "disabled") {
+    record.status = "registered";
+  }
+  record.last_checked_at = new Date().toISOString();
+  record.updated_at = record.last_checked_at;
+  next.updated_at = record.updated_at;
   if (!next.generated_at) next.generated_at = next.updated_at;
   return { state: writeState(next), tool: normalizeToolRecord(record) };
 }
@@ -331,6 +348,7 @@ module.exports = {
   findTool,
   upsertTool,
   disableTool,
+  setToolExecutionEnabled,
   buildCounts,
   buildStatusReport,
   buildListReport,

@@ -139,6 +139,63 @@ function runKvdf(args, options = {}) {
   return result;
 }
 
+async function runKvdfAsync(args, options = {}) {
+  const cwd = options.cwd || repoRoot;
+  const previousCwd = process.cwd();
+  const mergedEnv = { ...(options.env || {}) };
+  mergedEnv.KVDF_DISABLE_GIT_SPAWN = "1";
+  mergedEnv.KVDF_NO_OPEN = "1";
+  const previousEnv = {};
+  const previousLog = console.log;
+  const previousError = console.error;
+  const previousExitCode = process.exitCode;
+  const stdout = [];
+  const stderr = [];
+  let status = 0;
+  let thrown = null;
+  process.chdir(cwd);
+  process.exitCode = undefined;
+  for (const [key, value] of Object.entries(mergedEnv)) {
+    previousEnv[key] = Object.prototype.hasOwnProperty.call(process.env, key) ? process.env[key] : undefined;
+    process.env[key] = String(value);
+  }
+  console.log = (...values) => stdout.push(util.format(...values));
+  console.error = (...values) => stderr.push(util.format(...values));
+  try {
+    await Promise.resolve(run(args));
+  } catch (error) {
+    status = 1;
+    thrown = error;
+    stderr.push(`Error: ${error.message}`);
+  } finally {
+    if (status === 0 && typeof process.exitCode === "number" && process.exitCode !== 0) {
+      status = process.exitCode;
+    }
+    console.log = previousLog;
+    console.error = previousError;
+    process.chdir(previousCwd);
+    process.exitCode = previousExitCode;
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+  const result = {
+    status,
+    stdout: stdout.join("\n") ? `${stdout.join("\n")}\n` : "",
+    stderr: stderr.join("\n") ? `${stderr.join("\n")}\n` : ""
+  };
+  if (thrown && !options.expectFailure) {
+    assert.fail(`kvdf ${args.join(" ")} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+  }
+  if (options.expectFailure) {
+    assert.notStrictEqual(status, 0, `Expected failure for kvdf ${args.join(" ")}`);
+    return result;
+  }
+  assert.strictEqual(status, 0, `kvdf ${args.join(" ")} failed\nSTDOUT:\n${result.stdout}\nSTDERR:\n${result.stderr}`);
+  return result;
+}
+
 function writeFakeGitRepo(dir, { remoteUrl = null, branch = "main", mergeRef = null } = {}) {
   const gitDir = path.join(dir, ".git");
   fs.mkdirSync(path.join(gitDir, "refs", "heads"), { recursive: true });
@@ -159,10 +216,21 @@ function writeKvdfCoreRepoFixture(dir) {
 
 function withTempDir(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kvdf-test-"));
+  let asyncCleanup = false;
   try {
-    return fn(dir);
+    const result = fn(dir);
+    if (result && typeof result.then === "function") {
+      asyncCleanup = true;
+      return result.finally(() => {
+        fs.rmSync(dir, { recursive: true, force: true });
+      });
+    }
+    return result;
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    // The synchronous path cleans up immediately; async callers clean up in finally() above.
+    if (!asyncCleanup) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   }
 }
 
@@ -8973,6 +9041,107 @@ test("ai_tool_adapters plugin discovers local tools and keeps execution disabled
   assert.strictEqual(missing.tool, null);
 }));
 
+test("ai_tool_adapters governed runner validates contracts, blocks by default, and writes evidence when enabled", async () => withTempDir(async (dir) => {
+  runKvdf(["init"], { cwd: dir });
+  copyPluginBundle(dir, "ai_tool_adapters");
+
+  const contractPath = path.join(dir, "ai-tool-run-contract.json");
+  fs.writeFileSync(contractPath, JSON.stringify({
+    contract_id: "ai-run-contract-001",
+    requested_by: "manual",
+    task_id: "task-001",
+    assignment_id: "mai-asg-001",
+    tool_id: "node",
+    working_directory: ".",
+    command: "node",
+    args: ["-e", "process.stdout.write('runner-ok')"],
+    allowed_commands: ["node"],
+    forbidden_commands: ["rm", "del", "format", "shutdown", "powershell Remove-Item"],
+    allowed_files: [],
+    forbidden_files: [".env", ".kabeeri/owner_auth.json"],
+    timeout_seconds: 900,
+    capture_stdout: true,
+    capture_stderr: true,
+    evidence_required: true
+  }, null, 2), "utf8");
+
+  const scan = JSON.parse(runKvdf(["ai-tool-adapters", "scan", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(scan.report_type, "ai_tool_adapters_scan");
+  assert.ok(scan.detected_tools.some((toolId) => toolId === "node"));
+
+  const testBeforeEnable = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "test", "--tool", "node", "--contract", contractPath, "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(testBeforeEnable.report_type, "ai_tool_adapters_test");
+  assert.strictEqual(testBeforeEnable.tool_id, "node");
+  assert.strictEqual(testBeforeEnable.tool_available, true);
+  assert.strictEqual(testBeforeEnable.execution_enabled, false);
+  assert.strictEqual(testBeforeEnable.ready_to_run, false);
+  assert.strictEqual(testBeforeEnable.status, "blocked");
+  assert.ok(testBeforeEnable.blockers.includes("tool execution disabled: node"));
+  assert.strictEqual(fs.existsSync(path.join(dir, ".kabeeri", "ai_tool_runs.jsonl")), false);
+
+  const noConfirm = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "run", "--tool", "node", "--contract", contractPath, "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(noConfirm.report_type, "ai_tool_adapters_run");
+  assert.strictEqual(noConfirm.status, "blocked");
+  assert.strictEqual(noConfirm.dry_run, true);
+  assert.ok(
+    noConfirm.error.includes("missing --confirm") ||
+    noConfirm.error.includes("tool execution disabled")
+  );
+
+  const enable = JSON.parse(runKvdf(["ai-tool-adapters", "enable-execution", "--tool", "node", "--confirm", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(enable.report_type, "ai_tool_adapters_enable_execution");
+  assert.strictEqual(enable.execution_enabled, true);
+  assert.strictEqual(enable.tool.execution_enabled, true);
+
+  const missingContract = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "run", "--tool", "node", "--confirm", "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(missingContract.report_type, "ai_tool_adapters_run");
+  assert.strictEqual(missingContract.status, "blocked");
+  assert.strictEqual(missingContract.dry_run, true);
+  assert.ok(missingContract.error.includes("missing contract path"));
+
+  const unregisteredTool = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "run", "--tool", "codex-local", "--contract", contractPath, "--confirm", "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(unregisteredTool.report_type, "ai_tool_adapters_run");
+  assert.strictEqual(unregisteredTool.status, "blocked");
+  assert.strictEqual(unregisteredTool.dry_run, true);
+  assert.ok(unregisteredTool.error.includes("tool not found"));
+
+  const confirmedRun = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "run", "--tool", "node", "--contract", contractPath, "--confirm", "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(confirmedRun.report_type, "ai_tool_adapters_run");
+  assert.strictEqual(confirmedRun.status, "blocked");
+  assert.strictEqual(confirmedRun.dry_run, false);
+  assert.strictEqual(confirmedRun.tool_id, "node");
+  assert.ok(confirmedRun.run_id);
+  assert.ok(confirmedRun.error.includes("deferred in this phase"));
+  assert.deepStrictEqual(confirmedRun.redactions_applied, []);
+
+  const runs = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "runs", "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(runs.report_type, "ai_tool_adapters_runs");
+  assert.ok(runs.count >= 4);
+  assert.ok(Array.isArray(runs.runs));
+  assert.ok(runs.runs.some((item) => item.run_id === confirmedRun.run_id));
+
+  const show = JSON.parse((await runKvdfAsync(["ai-tool-adapters", "run-show", confirmedRun.run_id, "--json"], { cwd: dir })).stdout);
+  assert.strictEqual(show.report_type, "ai_tool_adapters_run_show");
+  assert.strictEqual(show.found, true);
+  assert.strictEqual(show.run.run_id, confirmedRun.run_id);
+  assert.strictEqual(show.run.status, "blocked");
+  assert.strictEqual(show.run.tool_id, "node");
+
+  const disabled = JSON.parse(runKvdf(["ai-tool-adapters", "disable-execution", "--tool", "node", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(disabled.report_type, "ai_tool_adapters_disable_execution");
+  assert.strictEqual(disabled.execution_enabled, false);
+  assert.strictEqual(disabled.tool.execution_enabled, false);
+
+  const runsPath = path.join(dir, ".kabeeri", "ai_tool_runs.jsonl");
+  assert.ok(fs.existsSync(runsPath));
+  const runLines = fs.readFileSync(runsPath, "utf8").trim().split(/\r?\n/).filter(Boolean);
+  assert.ok(runLines.length >= 4);
+  const parsedLast = JSON.parse(runLines[runLines.length - 1]);
+  assert.strictEqual(parsedLast.run_id, confirmedRun.run_id);
+  assert.strictEqual(parsedLast.status, "blocked");
+  assert.strictEqual(parsedLast.tool_id, "node");
+}));
+
 test("tailwind_ui plugin is discoverable and provides guidance-only utilities", () => {
   const report = buildPluginLoaderReport();
   const plugin = report.plugins.find((item) => item.plugin_id === "tailwind_ui");
@@ -10069,19 +10238,24 @@ test("planner prompt and visual outputs expose normalized naming ids", () => wit
 }));
 
 let failed = 0;
-for (const item of tests) {
-  try {
-    item.fn();
-    console.log(`OK ${item.name}`);
-  } catch (error) {
-    failed += 1;
-    console.error(`FAIL ${item.name}`);
-    console.error(error.stack || error.message);
+(async () => {
+  for (const item of tests) {
+    try {
+      await item.fn();
+      console.log(`OK ${item.name}`);
+    } catch (error) {
+      failed += 1;
+      console.error(`FAIL ${item.name}`);
+      console.error(error.stack || error.message);
+    }
   }
-}
 
-if (failed > 0) {
+  if (failed > 0) {
+    process.exitCode = 1;
+  } else {
+    console.log(`All ${tests.length} integration tests passed.`);
+  }
+})().catch((error) => {
   process.exitCode = 1;
-} else {
-  console.log(`All ${tests.length} integration tests passed.`);
-}
+  console.error(error.stack || error.message);
+});

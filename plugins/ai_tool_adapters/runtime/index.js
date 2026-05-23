@@ -1,6 +1,8 @@
 const commandModule = require("../commands/ai_tool_adapters");
 const registry = require("../commands/tool_registry");
 const scanner = require("../commands/tool_scan");
+const runContract = require("../commands/run_contract");
+const runner = require("../commands/tool_runner");
 
 function getPluginStatus() {
   return buildAiToolAdaptersStatus();
@@ -35,6 +37,38 @@ function buildAiToolAdaptersUnregisterReport(toolId, options = {}) {
   return registry.unregisterTool(toolId);
 }
 
+function buildAiToolAdaptersTestReport(toolId, contractPath, options = {}) {
+  return runContract.buildTestReport(toolId, contractPath, options);
+}
+
+function buildAiToolAdaptersRunContractReport(contractPath, options = {}) {
+  return runContract.buildRunContractReport(contractPath, options);
+}
+
+function buildAiToolAdaptersRunReport(toolId, contractPath, flags = {}, options = {}) {
+  return runContract.buildRunReport(toolId, contractPath, flags, options);
+}
+
+function buildAiToolAdaptersRunsReport(options = {}) {
+  void options;
+  return runContract.buildRunsReport();
+}
+
+function buildAiToolAdaptersRunShowReport(runId, options = {}) {
+  void options;
+  return runContract.buildRunShowReport(runId);
+}
+
+function buildAiToolAdaptersEnableExecutionReport(toolId, options = {}) {
+  void options;
+  return runContract.buildEnableExecutionReport(toolId);
+}
+
+function buildAiToolAdaptersDisableExecutionReport(toolId, options = {}) {
+  void options;
+  return runContract.buildDisableExecutionReport(toolId);
+}
+
 function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
   return commandModule.aiToolAdapters(action, value, flags, rest, deps);
 }
@@ -49,6 +83,13 @@ module.exports = {
   buildAiToolAdaptersShowReport,
   buildAiToolAdaptersRegisterReport,
   buildAiToolAdaptersUnregisterReport,
+  buildAiToolAdaptersTestReport,
+  buildAiToolAdaptersRunContractReport,
+  buildAiToolAdaptersRunReport,
+  buildAiToolAdaptersRunsReport,
+  buildAiToolAdaptersRunShowReport,
+  buildAiToolAdaptersEnableExecutionReport,
+  buildAiToolAdaptersDisableExecutionReport,
   aiToolAdapters,
   loadAiToolAdaptersState: registry.readState,
   ensureAiToolAdaptersState: registry.ensureStateFile,
@@ -62,5 +103,14 @@ module.exports = {
   normalizeEditor: scanner.normalizeEditor,
   toolTypeForCommand: scanner.toolTypeForCommand,
   displayNameForCommand: scanner.displayNameForCommand,
-  capabilitiesForCommand: scanner.capabilitiesForCommand
+  capabilitiesForCommand: scanner.capabilitiesForCommand,
+  loadRunContractFromFile: runContract.readRunContractFromFile,
+  normalizeRunContract: runContract.normalizeRunContract,
+  validateRunContract: runContract.validateRunContract,
+  createDefaultRunContract: runContract.createDefaultRunContract,
+  redactSensitiveText: runner.redactSensitiveText,
+  appendAiToolRunEvent: runner.appendRunEvent,
+  readAiToolRunEvents: runner.readRunEvents,
+  nextAiToolRunId: runner.nextRunId,
+  executeAiToolRun: runner.executeSpawn
 };

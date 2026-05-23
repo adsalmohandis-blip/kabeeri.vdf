@@ -662,9 +662,15 @@ The conversation relay layer is separate from leader calls: use it for durable a
   kvdf ai-tool-adapters register --tool codex --path auto --editor vscode
   kvdf ai-tool-adapters unregister --tool codex
   kvdf ai-tool-adapters show codex
+  kvdf ai-tool-adapters test --tool node --contract .kabeeri/ai_tool_run_contract.json
+  kvdf ai-tool-adapters run --tool node --contract .kabeeri/ai_tool_run_contract.json --confirm
+  kvdf ai-tool-adapters runs
+  kvdf ai-tool-adapters run-show ai-tool-run-001
+  kvdf ai-tool-adapters enable-execution --tool node --confirm
+  kvdf ai-tool-adapters disable-execution --tool node
 
 Notes:
-  AI Tool Adapters discovers and registers local AI tools only. It does not execute tools in Phase 1. multi_ai_governance still owns assignments, authority, and queue behavior.
+  AI Tool Adapters discovers and registers local AI tools. Phase 2 adds governed runner contracts and evidence logging, but execution still requires a valid contract, --confirm, and execution_enabled=true. multi_ai_governance still owns assignments, authority, and queue behavior.
 `,
     schedule: `Usage:
   kvdf schedule status
@@ -1613,6 +1619,7 @@ function printHelp() {
     "  workstream list|show|add     Manage workstream runtime boundaries",
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
     "  ai-tool-adapters status|scan|list|register|unregister|show Discover and register local AI tools without executing them",
+    "  ai-tool-adapters test|run|runs|run-show|enable-execution|disable-execution Governed runner contract and evidence logging",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
@@ -1620,6 +1627,7 @@ function printHelp() {
     "  naming preview|validate|migrate  Preview, validate, or dry-run migrate stable machine-readable naming IDs",
     "  ui-dashboard-kits status|check|examples|templates|snippets|provider|recommend|html-comment Optional UI dashboard kits plugin",
     "  ai-tool-adapters status|scan|list|register|unregister|show Optional AI tool adapters discovery and registry plugin",
+    "  ai-tool-adapters test|run|runs|run-show|enable-execution|disable-execution Optional governed runner contract and evidence plugin",
     "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  tailwind-ui status|snippet|utility-map|verify Optional Tailwind UI utility CSS provider plugin",
     "  adr create|list|report       Track architecture decision records",

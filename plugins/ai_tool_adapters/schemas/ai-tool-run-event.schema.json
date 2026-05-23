@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Run Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "run_id",
+    "contract_id",
+    "tool_id",
+    "status",
+    "command",
+    "args_count",
+    "working_directory",
+    "started_at",
+    "ended_at",
+    "duration_ms",
+    "exit_code",
+    "signal",
+    "stdout_excerpt",
+    "stderr_excerpt",
+    "redactions_applied",
+    "policy_checks",
+    "error"
+  ],
+  "properties": {
+    "event_id": { "type": "string", "minLength": 1 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "contract_id": { "type": ["string", "null"] },
+    "tool_id": { "type": "string", "minLength": 1 },
+    "task_id": { "type": ["string", "null"] },
+    "assignment_id": { "type": ["string", "null"] },
+    "status": {
+      "type": "string",
+      "enum": ["blocked", "started", "completed", "failed", "timed_out"]
+    },
+    "command": { "type": "string", "minLength": 1 },
+    "args_count": { "type": "integer", "minimum": 0 },
+    "working_directory": { "type": "string", "minLength": 1 },
+    "started_at": { "type": ["string", "null"] },
+    "ended_at": { "type": ["string", "null"] },
+    "duration_ms": { "type": "integer", "minimum": 0 },
+    "exit_code": { "type": ["integer", "null"] },
+    "signal": { "type": ["string", "null"] },
+    "stdout_excerpt": { "type": "string" },
+    "stderr_excerpt": { "type": "string" },
+    "redactions_applied": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "policy_checks": {
+      "type": "array",
+      "items": {}
+    },
+    "error": { "type": ["string", "null"] }
+  }
+}

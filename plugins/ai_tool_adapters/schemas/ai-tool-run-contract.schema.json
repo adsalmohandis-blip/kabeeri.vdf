@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Run Contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_id",
+    "requested_by",
+    "tool_id",
+    "working_directory",
+    "command",
+    "args",
+    "allowed_commands",
+    "forbidden_commands",
+    "allowed_files",
+    "forbidden_files",
+    "timeout_seconds",
+    "capture_stdout",
+    "capture_stderr",
+    "evidence_required"
+  ],
+  "properties": {
+    "contract_id": { "type": "string", "minLength": 1 },
+    "requested_by": { "type": "string", "enum": ["multi_ai_governance", "manual"] },
+    "task_id": { "type": ["string", "null"] },
+    "assignment_id": { "type": ["string", "null"] },
+    "tool_id": { "type": "string", "minLength": 1 },
+    "working_directory": { "type": "string", "minLength": 1 },
+    "command": { "type": "string", "minLength": 1 },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "stdin": { "type": ["string", "null"] },
+    "allowed_commands": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "forbidden_commands": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "allowed_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "forbidden_files": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    },
+    "timeout_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1800
+    },
+    "capture_stdout": { "type": "boolean" },
+    "capture_stderr": { "type": "boolean" },
+    "evidence_required": { "type": "boolean" }
+  }
+}

@@ -13,6 +13,13 @@ module.exports = {
   buildAiToolAdaptersShowReport: runtime.buildAiToolAdaptersShowReport,
   buildAiToolAdaptersRegisterReport: runtime.buildAiToolAdaptersRegisterReport,
   buildAiToolAdaptersUnregisterReport: runtime.buildAiToolAdaptersUnregisterReport,
+  buildAiToolAdaptersTestReport: runtime.buildAiToolAdaptersTestReport,
+  buildAiToolAdaptersRunContractReport: runtime.buildAiToolAdaptersRunContractReport,
+  buildAiToolAdaptersRunReport: runtime.buildAiToolAdaptersRunReport,
+  buildAiToolAdaptersRunsReport: runtime.buildAiToolAdaptersRunsReport,
+  buildAiToolAdaptersRunShowReport: runtime.buildAiToolAdaptersRunShowReport,
+  buildAiToolAdaptersEnableExecutionReport: runtime.buildAiToolAdaptersEnableExecutionReport,
+  buildAiToolAdaptersDisableExecutionReport: runtime.buildAiToolAdaptersDisableExecutionReport,
   scanKnownTools: runtime.scanKnownTools,
   resolveExecutableOnPath: runtime.resolveExecutableOnPath
 };
