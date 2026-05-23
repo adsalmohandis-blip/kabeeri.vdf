@@ -102,8 +102,9 @@ workspace resolves to KVDF Core Git, the track boundary still wins and branch /
 push / PR remain blocked until the app has its own repository.
 
 The canonical GitHub remote-provider implementation lives in the optional
-`github_provider` plugin. Legacy `github` and `github_sync` bundles are
-compatibility wrappers only.
+`github_provider` plugin. The legacy `github` and `github_sync` plugin bundles
+have been retired; `kvdf github` remains only as a compatibility command
+wrapper.
 
 ## Planner Integration
 

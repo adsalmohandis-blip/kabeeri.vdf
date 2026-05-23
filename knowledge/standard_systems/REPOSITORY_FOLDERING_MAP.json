@@ -54,7 +54,7 @@
       "group": "plugins",
       "target_path": "plugins/",
       "description": "Optional removable bundles that extend KVDF behavior without becoming part of the core runtime.",
-      "current_paths": ["plugins/", "plugins/kvdf_dev/", "plugins/github/", "plugins/github_sync/", "plugins/vscode_extension/", "plugins/multi_ai_governance/"],
+      "current_paths": ["plugins/", "plugins/kvdf_dev/", "plugins/github_provider/", "plugins/vscode_extension/", "plugins/multi_ai_governance/"],
       "laravel_analogy": "packages/ or optional service providers"
     },
     {
@@ -128,8 +128,7 @@
     "templates/": "packs/templates/",
     "examples/": "packs/examples/",
     "prompt_packs/": "packs/prompt_packs/",
-    "github_sync/": "plugins/github_sync/",
-    "github/": "plugins/github/",
+    "github_provider/": "plugins/github_provider/",
     "vscode_extension/": "plugins/vscode_extension/",
     "platform_integration/": "docs/reports/platform_integration/",
     "multi_ai_governance/": "plugins/multi_ai_governance/",

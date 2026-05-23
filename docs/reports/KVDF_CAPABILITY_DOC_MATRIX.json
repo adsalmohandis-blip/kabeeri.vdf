@@ -1,6 +1,6 @@
 {
   "report_type": "kvdf_capability_doc_matrix",
-  "generated_at": "2026-05-23T00:23:55.589Z",
+  "generated_at": "2026-05-23T00:50:06.695Z",
   "report_path": "docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json",
   "source": "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
   "source_reference": [
@@ -1009,10 +1009,11 @@
       "owner": "backend",
       "docs_links": [
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "plugins/github_sync/",
+        "plugins/github_provider/",
         "knowledge/governance/MULTI_AI_GOVERNANCE.md"
       ],
       "cli_links": [
+        "kvdf github-provider",
         "kvdf github",
         "kvdf sync",
         "kvdf multi-ai"
@@ -1048,10 +1049,11 @@
       "owner": "backend",
       "docs_links": [
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "plugins/github_sync/",
+        "plugins/github_provider/",
         "knowledge/governance/MULTI_AI_GOVERNANCE.md"
       ],
       "cli_links": [
+        "kvdf github-provider",
         "kvdf github",
         "kvdf sync",
         "kvdf multi-ai"
@@ -1682,10 +1684,11 @@
       "owner": "docs",
       "docs_links": [
         "docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "plugins/github_sync/",
+        "plugins/github_provider/",
         "knowledge/governance/MULTI_AI_GOVERNANCE.md"
       ],
       "cli_links": [
+        "kvdf github-provider",
         "kvdf github",
         "kvdf sync",
         "kvdf multi-ai"

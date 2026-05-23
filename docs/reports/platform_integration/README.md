@@ -7,7 +7,7 @@ The active runtime and product documentation has moved to:
 
 - `../../cli/CLI_COMMAND_REFERENCE.md`
 - `../dashboard/LIVE_DASHBOARD_RUNTIME.md`
-- `../../../plugins/github_sync/`
+- `../../../plugins/github_provider/`
 - `../../../plugins/vscode_extension/`
 - `../../../knowledge/governance/`
 - `../../../knowledge/ai_cost_control/`
@@ -26,7 +26,7 @@ runtime documentation:
 | Historical folder | Current reference |
 | --- | --- |
 | `v2_1_local_state/` | `.kabeeri/`, `src/cli/workspace.js`, `kvdf init` |
-| `v2_2_github_integration/` | `../../../plugins/github_sync/`, `../../../plugins/github/`, `kvdf github` |
+| `v2_2_github_integration/` | `../../../plugins/github_provider/`, `kvdf github-provider`, `kvdf github` |
 | `v2_3_vscode_integration/` | `../../../plugins/vscode_extension/`, `kvdf vscode` |
 | `v2_4_technical_dashboard/` | `../dashboard/LIVE_DASHBOARD_RUNTIME.md`, `kvdf dashboard` |
 | `v2_5_business_dashboard/` | `kvdf feature`, `kvdf journey`, dashboard state |

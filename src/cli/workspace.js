@@ -825,7 +825,7 @@ function createWorkspace({ profile, mode, lang }) {
     ["questionnaires/missing_answers_report.json", { generated_at: null, missing: [] }],
     ["plugins.json", {
       plugin_loader_version: 1,
-      enabled_plugins: ["github", "github_sync", "kvdf-dev", "multi_ai_governance"],
+      enabled_plugins: ["kvdf-dev", "multi_ai_governance"],
       disabled_plugins: [
         "blog",
         "booking-builder",

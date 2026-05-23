@@ -1471,7 +1471,7 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
     ["policy-gates", "Policy Gates", "Safety gates for verification and writing operations must be available to the shared runtime.", ["kvdf policy"], ["schemas/policy*.json", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["runtime-schema-registry", "Runtime Schema Registry", "Schema coverage is a platform contract and belongs in core.", ["kvdf validate runtime-schemas"], ["schemas/runtime/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["live-dashboard", "Live Dashboard", "Dashboard state is shared output for both tracks.", ["kvdf dashboard"], ["docs/reports/dashboard/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["github-team-sync-preflight", "GitHub Team Sync Preflight", "Sync readiness is a shared release safety check.", ["kvdf sync"], ["plugins/github_sync/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["github-provider-readiness", "GitHub Provider Readiness", "GitHub remote-provider readiness is a shared release safety check.", ["kvdf github-provider"], ["plugins/github_provider/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["security-governance", "Security Governance", "Secret scanning and secure release checks guard every track.", ["kvdf security"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", ".kabeeri/security/"]],
     ["migration-safety", "Migration Safety", "Migration and rollback records are shared runtime safety behavior.", ["kvdf migration"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", ".kabeeri/migrations/"]],
     ["validation-and-doctor", "Validation And Doctor", "Repository health and runtime integrity checks belong in the shared core.", ["kvdf doctor", "kvdf validate"], ["docs/SYSTEM_CAPABILITIES_REFERENCE.md", "docs/cli/CLI_COMMAND_REFERENCE.md"]],
@@ -1513,7 +1513,7 @@ function buildKVDFFeaturePartitionMatrix(options = {}) {
     ["adr-ai-run-history", "ADR And AI Run History", "Architecture decisions and AI runs support app/project delivery.", ["kvdf adr", "kvdf ai-run"], ["knowledge/project_intelligence/ADR_AI_RUN_HISTORY_RUNTIME.md", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["ai-cost-control", "AI Cost Control", "Model routing and budgets are app/project execution controls.", ["kvdf usage", "kvdf preflight"], ["knowledge/ai_cost_control/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["vscode-integration", "VS Code Integration", "Workspace scaffolding and command helpers are app developer conveniences.", ["kvdf vscode"], ["plugins/vscode_extension/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
-    ["github-sync", "GitHub Sync", "Issue and release syncing supports application delivery workflows.", ["kvdf github"], ["plugins/github_sync/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
+    ["github-provider", "GitHub Provider", "Issue, PR, release, and handoff planning supports application delivery workflows.", ["kvdf github-provider", "kvdf github"], ["plugins/github_provider/", "docs/SYSTEM_CAPABILITIES_REFERENCE.md"]],
     ["roadmap-plan-inspection", "Roadmap And Plan Inspection", "Plan inspection helps app delivery sessions understand imported milestones.", ["kvdf plan"], ["docs/reports/platform_integration/", "docs/codex_context/"]]
   ];
 

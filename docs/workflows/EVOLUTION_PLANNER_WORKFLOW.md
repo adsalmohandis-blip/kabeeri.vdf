@@ -194,8 +194,9 @@ Accepted modes include:
 - Git branch + PR
 
 GitHub is treated as an optional remote/provider plugin, not as the same thing
-as Git. The canonical GitHub provider plugin is `github_provider`; legacy
-`github` and `github_sync` bundles are compatibility wrappers only.
+as Git. The canonical GitHub provider plugin is `github_provider`; the legacy
+`github` and `github_sync` plugin bundles have been retired, while `kvdf github`
+remains as a compatibility command wrapper.
 
 The Idea to Evolution Pipeline also carries the same source control object so
 version slices, evolutions, and task punches can stay aligned with the selected

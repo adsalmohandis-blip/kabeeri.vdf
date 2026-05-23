@@ -390,7 +390,7 @@ function buildCapabilityDocMatrixLinks(item) {
     "D. Backend, Data, and APIs": ["knowledge/standard_systems/DATA_DESIGN_BLUEPRINT.json", "knowledge/delivery_modes/"],
     "E. Admin, Settings, and Customization": ["knowledge/governance/APP_BOUNDARY_GOVERNANCE.md", "knowledge/governance/WORKSTREAM_GOVERNANCE.md"],
     "F. Engagement, Content, and Growth": ["knowledge/questionnaires/", "docs/site/"],
-    "G. Commerce and Plugins": ["plugins/github_sync/", "knowledge/governance/MULTI_AI_GOVERNANCE.md"],
+    "G. Commerce and Plugins": ["plugins/github_provider/", "knowledge/governance/MULTI_AI_GOVERNANCE.md"],
     "H. Quality, Security, and Compliance": ["knowledge/governance/EXECUTION_SCOPE_GOVERNANCE.md", "knowledge/task_tracking/TRACEABILITY.md"],
     "I. Operations and Release": ["docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md", "docs/reports/DOCS_SITE_SYNC_REPORT.json"],
     "J. Kabeeri Control Layer": ["knowledge/governance/EVOLUTION_STEWARD.md", "docs/reports/EVOLUTION_PRIORITIES_SUMMARY.md"]
@@ -403,7 +403,7 @@ function buildCapabilityDocMatrixLinks(item) {
     "D. Backend, Data, and APIs": ["kvdf data-design", "kvdf structured", "kvdf agile"],
     "E. Admin, Settings, and Customization": ["kvdf dashboard", "kvdf policy", "kvdf task"],
     "F. Engagement, Content, and Growth": ["kvdf docs", "kvdf capture", "kvdf questionnaire"],
-    "G. Commerce and Plugins": ["kvdf github", "kvdf sync", "kvdf multi-ai"],
+    "G. Commerce and Plugins": ["kvdf github-provider", "kvdf github", "kvdf sync", "kvdf multi-ai"],
     "H. Quality, Security, and Compliance": ["kvdf validate", "kvdf security", "kvdf policy"],
     "I. Operations and Release": ["kvdf release", "kvdf handoff", "kvdf reports"],
     "J. Kabeeri Control Layer": ["kvdf evolution", "kvdf capability", "kvdf trace"]

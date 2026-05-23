@@ -17,7 +17,7 @@ The execution source of truth for AI and CLI work is the shared operating contra
 | `core` | Runtime code, CLI handlers, command entrypoints | `src/`, `bin/`, `src/cli/` |
 | `knowledge` | Product intelligence, governance, delivery systems, design guidance | `knowledge/standard_systems/`, `knowledge/project_intelligence/`, `knowledge/questionnaires/`, `knowledge/delivery_modes/`, `knowledge/agile_delivery/`, `knowledge/governance/`, `knowledge/task_tracking/`, `knowledge/vibe_ux/`, `knowledge/design_system/`, `knowledge/design_system/ui_ux_reference/` |
 | `packs` | Exportable templates, generators, examples, prompt packs | `packs/generators/`, `packs/templates/`, `packs/examples/`, `packs/prompt_packs/` |
-| `plugins` | GitHub, VS Code, and multi-AI plugin bundles | `plugins/github_sync/`, `plugins/github/`, `plugins/vscode_extension/`, `plugins/multi_ai_governance/` |
+| `plugins` | GitHub provider, VS Code, and multi-AI plugin bundles | `plugins/github_provider/`, `plugins/vscode_extension/`, `plugins/multi_ai_governance/` |
 | `docs/reports` | Historical reports, dashboard runtime docs, platform plan archives, and enforcement matrices | `docs/reports/dashboard/`, `docs/reports/platform_integration/` |
 | `contracts` | JSON schemas and runtime contracts | `schemas/` |
 | `documentation` | Human docs and references | `docs/`, `docs/site/`, `docs/codex_context/`, root readmes |

@@ -6673,8 +6673,8 @@ test("github provider plugin is canonical and exposes provider planning commands
   const canonicalProviders = report.plugins.filter((item) => item.canonical_provider);
   assert.strictEqual(canonicalProviders.length, 1);
   assert.strictEqual(canonicalProviders[0].plugin_id, "github_provider");
-  assert.ok(report.plugins.some((item) => item.plugin_id === "github" && item.superseded_by === "github_provider"));
-  assert.ok(report.plugins.some((item) => item.plugin_id === "github_sync" && item.superseded_by === "github_provider"));
+  assert.ok(!report.plugins.some((item) => item.plugin_id === "github"));
+  assert.ok(!report.plugins.some((item) => item.plugin_id === "github_sync"));
 
   const status = JSON.parse(runKvdf(["github-provider", "status", "--json"]).stdout);
   assert.strictEqual(status.report_type, "github_provider_status");
@@ -6842,7 +6842,7 @@ test("capability registry exposes the canonical area map, plugins, and runtime b
   assert.ok(registry.areas.some((area) => area.area_id === "kvdf_development_pipeline_dev"));
   assert.ok(registry.areas.some((area) => area.area_id === "vibe_development_pipeline_dev"));
   assert.ok(registry.areas.some((area) => area.area_id === "plugins_dev"));
-  assert.strictEqual(registry.areas.find((area) => area.area_id === "plugins_dev").capabilities.length, 13);
+  assert.strictEqual(registry.areas.find((area) => area.area_id === "plugins_dev").capabilities.length, 12);
   assert.ok(registry.areas.find((area) => area.area_id === "kvdf_development_pipeline_dev").capabilities.some((capability) => capability.capability_id === "direct_to_main_delivery"));
   assert.ok(registry.runtime_boundaries.some((item) => item.path === ".kabeeri/" && item.classification === "runtime_only"));
   assert.ok(!registry.runtime_boundaries.some((item) => item.path === ".kabeeri/" && item.classification === "source_code"));

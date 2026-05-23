@@ -321,9 +321,11 @@ answer to four questions:
 At the moment, no user-facing command is deprecated. Compatibility aliases are
 retained for convenience, and the release publish path still exists through both
 `kvdf release publish` and `kvdf github release publish` because both routes
-must respect the same release and GitHub write gates. If alias noise starts to
-hide the canonical flow, update the ledger and this reference together instead
-of adding more ad hoc phrasing elsewhere.
+must respect the same release and GitHub write gates. The canonical GitHub
+provider plugin is `github_provider`; the retired `github` and `github_sync`
+plugin bundles no longer exist. If alias noise starts to hide the canonical
+flow, update the ledger and this reference together instead of adding more ad
+hoc phrasing elsewhere.
 
 Command layer size matters. Keep the visible command surface small enough that
 operators can read it in one pass, then push long-form narrative into the
