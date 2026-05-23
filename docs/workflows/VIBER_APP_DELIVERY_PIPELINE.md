@@ -168,6 +168,9 @@ The pipeline also enforces final execution gates before any Codex run:
 - security gate comes before execution
 - handoff gate comes before execution and handoff
 - source-control gate is mode-driven and optional in local-only mode
+- if a Viber app workspace resolves Git to the KVDF Core repository, the
+  source-control gate blocks branch, push, and PR behavior until the app is
+  moved to its own repository or kept local-only
 - validation gate lists the expected validation commands but does not pass before execution
 - warning-level execution gates still block by default unless the Owner explicitly approves them
 

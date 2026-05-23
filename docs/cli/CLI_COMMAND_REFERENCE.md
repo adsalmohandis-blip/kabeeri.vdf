@@ -178,6 +178,7 @@ kvdf planner train readiness --track vibe --app booking --version v1.0.0 --json
   kvdf planner next --track vibe --source-control none --json
   kvdf planner next --track owner --source-control git --sc-mode branch --json
   kvdf planner next --track vibe --source-control git --remote-provider github --sc-mode branch-pr --json
+  kvdf source-control context --track vibe --app booking --json
   kvdf planner-visual render --from-current
   kvdf planner-visual export --goal "Build app flow" --track vibe
   kvdf planner evolution --goal "Add planner layer" --track owner --json
@@ -301,6 +302,7 @@ The checklist command groups readiness checks across accessibility, responsive, 
 The `ui-dashboard-kits` checker is a thin optional plugin surface that keeps the classic UI execution rules available while the active logic lives outside KVDF Core. It checks for raw hex colors, inline color styles, Bootstrap button accessibility issues, and missing loading, empty, and error states for data-driven surfaces. Its examples, templates, snippets, provider, recommend, and html-comment surfaces are metadata-only and are intended for copy/paste guidance or prompt-pack references.
 
 `kvdf planner pipeline` is the deterministic idea-to-evolution planning surface. It stays track-aware, reuses the shared source-control contract, and keeps direct-to-main, local-only, and branch/PR behavior provider-driven instead of assumed. For Viber/App Track, the same command is also the execution-readiness gate, so the generated prompt and visual report stay blocked until the plan is approved and materialized. The Viber pipeline now surfaces `docs_design_gates` for documentation architecture, folder materialization, file compatibility, system design, database design, UI/UX design, and version-plan readiness, plus `version_evolution_gates` for version plan, evolution ordering, task-punch readiness, and task-punch review. The Viber docs model treats foldered planner docs as primary and the portable numbered docs package as canonical long-term product knowledge.
+The planner also carries a `git_context` classification so Viber app work can tell whether Git resolves to KVDF Core, a standalone app repo, a linked external repo, or a parent-repo-blocked app workspace before it ever suggests branch or PR work.
 
 See `docs/reports/KVDF_TWO_TRACK_RESTRUCTURE.md` for the canonical track map and session cycle summary.
 See `knowledge/governance/TRACK_ROUTING_GOVERNANCE.md` for the route and block rules that decide which track activates at entry.

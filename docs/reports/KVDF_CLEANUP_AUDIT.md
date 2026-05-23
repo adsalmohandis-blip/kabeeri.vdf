@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779481586425
-- Generated at: 2026-05-22T20:26:26.425Z
+- Report ID: kvdf-cleanup-1779495684928
+- Generated at: 2026-05-23T00:21:24.928Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            3031                                       
+Total files            3033                                       
 Total folders          14                                         
 Plugin total           22                                         
 Active plugins         8                                          
@@ -41,7 +41,7 @@ plugins     578    .md                plugin bundles
 knowledge   467    .md                project surface
 packs       439    .md                project surface
 docs        331    .md                documentation  
-src         154    .js                runtime source 
+src         156    .js                runtime source 
 schemas     130    .md                project surface
 workspaces  53     .json              project surface
 tests       2      .js                tests          
@@ -55,7 +55,7 @@ Extension       Files
 --------------  -----
 .md             1657 
 .json           753  
-.js             280  
+.js             282  
 .html           196  
 .docx           58   
 .csv            54   
@@ -71,7 +71,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            2108 
+Scanned files            2110 
 Dead code candidates     4    
 Stale docs candidates    6    
 Spec drift candidates    4    

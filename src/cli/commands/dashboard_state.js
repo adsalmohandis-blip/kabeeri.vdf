@@ -854,6 +854,7 @@ function normalizePlannerSourceControl(sourceControl = null) {
     current_branch: resolved.current_branch || null,
     requires_owner_approval: resolved.requires_owner_approval !== false,
     replaceable_provider: resolved.replaceable_provider !== false,
+    git_context: resolved.git_context || null,
     notes: Array.isArray(resolved.notes) ? [...resolved.notes] : []
   };
 }
@@ -1409,38 +1410,45 @@ function buildDashboardSourceControl(dashboardType, plannerState, deps = {}) {
   const git = readGitRepositoryState(repoRoot());
   const currentBranch = git.available ? git.current_branch || null : null;
   const sourceControl = normalizePlannerSourceControl(plannerState ? plannerState.source_control : null);
+  const parentRepoBlocked = Boolean(sourceControl.git_context && sourceControl.git_context.classification === "app_workspace_inside_kvdf_repo");
   if (dashboardType === "viber") {
     return {
       ...sourceControl,
       provider: sourceControl.provider || "none",
       remote_provider: sourceControl.remote_provider || "none",
-      mode: sourceControl.mode && sourceControl.mode !== "none" ? sourceControl.mode : "local_first",
-      branching_enabled: Boolean(sourceControl.branching_enabled),
-      pr_enabled: Boolean(sourceControl.pr_enabled),
+      mode: parentRepoBlocked
+        ? (sourceControl.mode === "local_only" ? "local_only" : "parent_repo_blocked")
+        : (sourceControl.mode && sourceControl.mode !== "none" ? sourceControl.mode : "local_first"),
+      branching_enabled: parentRepoBlocked ? false : Boolean(sourceControl.branching_enabled),
+      pr_enabled: parentRepoBlocked ? false : Boolean(sourceControl.pr_enabled),
       current_branch: sourceControl.current_branch || currentBranch,
       default_branch: sourceControl.default_branch || "main",
       notes: [
         ...(sourceControl.notes || []),
         "Viber/App dashboards default to local-first delivery and keep Git optional.",
-        "Branching and pull requests stay optional unless the selected plan enables them."
+        "Branching and pull requests stay optional unless the selected plan enables them.",
+        parentRepoBlocked ? "Git resolves to the KVDF Core repository, so branch, push, and PR actions are blocked for Viber/App workspaces." : null
       ]
     };
   }
   return {
-    ...sourceControl,
-    provider: git.available ? sourceControl.provider || "git" : "none",
-    remote_provider: sourceControl.remote_provider || "none",
-    mode: sourceControl.mode && sourceControl.mode !== "none" ? sourceControl.mode : "direct_main",
-    branching_enabled: Boolean(sourceControl.branching_enabled),
-    pr_enabled: Boolean(sourceControl.pr_enabled),
-    current_branch: sourceControl.current_branch || currentBranch,
-    default_branch: sourceControl.default_branch || "main",
-    notes: [
-      ...(sourceControl.notes || []),
-      "Owner dashboards default to direct-to-main source control.",
-      "KVDOS and runtime state remain out of the commit path."
-    ]
-  };
+      ...sourceControl,
+      provider: git.available ? sourceControl.provider || "git" : "none",
+      remote_provider: sourceControl.remote_provider || "none",
+      mode: parentRepoBlocked
+        ? (sourceControl.mode === "local_only" ? "local_only" : "parent_repo_blocked")
+        : (sourceControl.mode && sourceControl.mode !== "none" ? sourceControl.mode : "direct_main"),
+      branching_enabled: parentRepoBlocked ? false : Boolean(sourceControl.branching_enabled),
+      pr_enabled: parentRepoBlocked ? false : Boolean(sourceControl.pr_enabled),
+      current_branch: sourceControl.current_branch || currentBranch,
+      default_branch: sourceControl.default_branch || "main",
+      notes: [
+        ...(sourceControl.notes || []),
+        "Owner dashboards default to direct-to-main source control.",
+        "KVDOS and runtime state remain out of the commit path.",
+        parentRepoBlocked ? "Git resolves to the KVDF Core repository, so branch, push, and PR actions are blocked for this workspace." : null
+      ]
+    };
 }
 
 function readDashboardAiLearningSummary() {
@@ -2315,18 +2323,25 @@ function taskPunchRows(context, viber = false) {
 
 function sourceControlWidgets(context, dashboardType = "owner") {
   const source = context.sourceControl || {};
+  const gitContext = source.git_context || {};
   return [
     dashboardWidget(`${dashboardType}_sc_provider`, "Provider", "status", source.provider || "none", source.provider === "none" ? "warning" : "ok", context.workspace_track, "derived", "Show the correct provider mode."),
     dashboardWidget(`${dashboardType}_sc_remote`, "Remote Provider", "status", source.remote_provider || "none", "ok", context.workspace_track, "derived", "Optional remote is fine for this track."),
     dashboardWidget(`${dashboardType}_sc_mode`, "Mode", "status", source.mode || (dashboardType === "viber" ? "local_first" : "direct_main"), "ok", context.workspace_track, "derived", "Keep the track's preferred mode visible."),
     dashboardWidget(`${dashboardType}_sc_branching`, "Branching Enabled", "status", source.branching_enabled ? "yes" : "no", source.branching_enabled ? "ok" : "warning", context.workspace_track, "derived", "Branching is optional and should be explicit."),
     dashboardWidget(`${dashboardType}_sc_pr`, "PR Enabled", "status", source.pr_enabled ? "yes" : "no", source.pr_enabled ? "ok" : "warning", context.workspace_track, "derived", "PRs stay optional unless explicitly enabled."),
-    dashboardWidget(`${dashboardType}_sc_branch`, "Current Branch", "status", source.current_branch || "none", "ok", context.workspace_track, "derived", "Show the live branch when Git exists.")
+    dashboardWidget(`${dashboardType}_sc_branch`, "Current Branch", "status", source.current_branch || "none", "ok", context.workspace_track, "derived", "Show the live branch when Git exists."),
+    dashboardWidget(`${dashboardType}_sc_context`, "Git Context", "status", gitContext.classification || "unknown", gitContext.classification === "app_workspace_inside_kvdf_repo" ? "warning" : "ok", context.workspace_track, "derived", gitContext.reason || "Show the current Git boundary classification."),
+    dashboardWidget(`${dashboardType}_sc_push_allowed`, "Push Allowed", "status", gitContext.push_allowed ? "yes" : "no", gitContext.push_allowed ? "ok" : "warning", context.workspace_track, "derived", gitContext.next_action || "Show whether a push is safe."),
+    dashboardWidget(`${dashboardType}_sc_branch_allowed`, "Branch Allowed", "status", gitContext.branch_allowed ? "yes" : "no", gitContext.branch_allowed ? "ok" : "warning", context.workspace_track, "derived", gitContext.next_action || "Show whether branching is safe."),
+    dashboardWidget(`${dashboardType}_sc_pr_allowed`, "PR Allowed", "status", gitContext.pr_allowed ? "yes" : "no", gitContext.pr_allowed ? "ok" : "warning", context.workspace_track, "derived", gitContext.next_action || "Show whether a PR is safe."),
+    dashboardWidget(`${dashboardType}_sc_next_action`, "Git Next Action", "action", gitContext.next_action || source.next_action || "Review the source-control boundary.", "ok", context.workspace_track, "derived", "Show the next safe source-control step.")
   ];
 }
 
 function sourceControlRow(context) {
   const source = context.sourceControl || {};
+  const gitContext = source.git_context || {};
   return [[
     source.provider || "none",
     source.remote_provider || "none",
@@ -2335,7 +2350,7 @@ function sourceControlRow(context) {
     source.pr_enabled ? "enabled" : "disabled",
     source.current_branch || context.git.current_branch || "none",
     source.default_branch || "main",
-    (source.notes || []).join(" ")
+    (source.notes || []).join(" ") || gitContext.reason || ""
   ]];
 }
 

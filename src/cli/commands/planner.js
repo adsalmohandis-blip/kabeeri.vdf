@@ -42,6 +42,7 @@ const { buildEvolutionOrderValidationReport } = require("./evolution");
 const { readGitHeadCommit, readGitRepositoryState } = require("../services/git_snapshot");
 const { getPluginSourcePath } = require("../services/plugin_mounts");
 const { repoRoot } = require("../fs_utils");
+const { buildGitContext } = require("../services/source_control_context");
 
 const MODE_ALIASES = {
   owner: "owner",
@@ -905,11 +906,19 @@ function buildPlannerReviewSummary({ goal, planner_mode, track, planning_method,
   const hasVisual = Boolean(visual_planning && visual_planning.graph && visual_planning.board);
   const hasPrompt = Boolean(goal && goal.trim());
   const sourceControlMode = source_control ? String(source_control.mode || "local_only") : "local_only";
+  const sourceControlGitContext = source_control && source_control.git_context ? source_control.git_context : null;
+  const sourceControlParentRepoBlocked = Boolean(sourceControlGitContext && sourceControlGitContext.classification === "app_workspace_inside_kvdf_repo");
   const sourceControlReview = {
     status: source_control ? "pass" : "warning",
     summary: source_control ? summarizeSourceControl(source_control) : "No source control context recorded.",
     notes: source_control ? (source_control.notes || []) : ["Source control context is not available."]
   };
+  if (sourceControlParentRepoBlocked) {
+    sourceControlReview.status = "blocked";
+    sourceControlReview.notes.push(sourceControlGitContext.reason || "Git resolves to the KVDF Core repository for this app workspace.");
+    status = "blocked";
+    requiredFixes.push(sourceControlGitContext.next_action || "Use local-only mode or link the app to its own Git repository.");
+  }
   const scopeReview = {
     status: planner_mode ? "pass" : "blocked",
     track,
@@ -3339,6 +3348,7 @@ function buildPlannerPromptReport(goal, request = {}, deps = {}) {
     track: plan.track,
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    git_context: sourceControl && sourceControl.git_context ? sourceControl.git_context : null,
     ai_learning: aiLearning,
     planning_method: planning.method.recommended_method,
     method_reason: planning.method.reason,
@@ -3775,6 +3785,7 @@ function buildPlannerVisualPayload({ goal, mode, deliveryMode, evolutionPlan, ta
     delivery_mode: deliveryMode,
     goal,
     source_control: sourceControl,
+    git_context: sourceControl && sourceControl.git_context ? sourceControl.git_context : null,
     graph,
     board,
     scope_map: scopeMap,
@@ -5118,6 +5129,7 @@ function buildIdeaToEvolutionPipelineReport(idea, request = {}, deps = {}) {
     track: firstEvolution.track || getPlannerTrack(mode),
     delivery_mode: deliveryMode,
     source_control: sourceControl,
+    git_context: sourceControl && sourceControl.git_context ? sourceControl.git_context : null,
     naming: buildPlannerNamingSummary({
       plan: planIdentitySource,
       evolutionPlan: firstEvolution,
@@ -5312,13 +5324,20 @@ function buildViberPipelineState({
 
 function buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, executionAllowed) {
   const base = sourceControl || buildPlannerSourceControl({ flags: { "source-control": "none", "sc-mode": "none" } }, { git_state: { available: false, is_repo: false, root: null, current_branch: null } }, "vibe", "local_first", null);
-  const normalizedMode = normalizeSourceControlMode(base.mode || (mode === "vibe" ? "local_only" : "direct_main")) || (mode === "vibe" ? "local_only" : "direct_main");
+  let normalizedMode = normalizeSourceControlMode(base.mode || (mode === "vibe" ? "local_only" : "direct_main")) || (mode === "vibe" ? "local_only" : "direct_main");
   const remoteProvider = String(base.remote_provider || "none");
   const provider = String(base.provider || "none");
+  const gitContext = base.git_context || null;
+  const parentRepoBlocked = normalizedMode === "parent_repo_blocked" || Boolean(gitContext && gitContext.classification === "app_workspace_inside_kvdf_repo");
+  if (parentRepoBlocked && normalizedMode !== "local_only") {
+    normalizedMode = "parent_repo_blocked";
+  }
   const branchingEnabled = Boolean(base.branching_enabled) && normalizedMode !== "local_only";
   const prEnabled = Boolean(base.pr_enabled) && normalizedMode === "branch_pr";
   let nextSourceControlAction = "Keep the pipeline file-first and local-first until approval and materialization are complete.";
-  if (normalizedMode === "local_only") {
+  if (parentRepoBlocked) {
+    nextSourceControlAction = "Use local-only mode or link the app to its own Git repository before branch, push, or PR work.";
+  } else if (normalizedMode === "local_only") {
     nextSourceControlAction = "Keep the changes local; branch, PR, commit, and push are not required for this Viber pipeline.";
   } else if (normalizedMode === "direct_main") {
     nextSourceControlAction = executionAllowed
@@ -5348,7 +5367,8 @@ function buildViberPipelineSourceControl(sourceControl, mode, deliveryMode, exec
     current_branch: base.current_branch || null,
     requires_owner_approval: true,
     replaceable_provider: true,
-    notes: Array.isArray(base.notes) ? [...base.notes] : []
+    notes: Array.isArray(base.notes) ? [...base.notes] : [],
+    git_context: gitContext
   };
 }
 
@@ -5897,14 +5917,24 @@ function buildViberExecutionGates({
   });
 
   const sourceMode = normalizeSourceControlMode(sourceControl && sourceControl.mode ? sourceControl.mode : "local_only") || "local_only";
+  const gitContext = sourceControl && sourceControl.git_context ? sourceControl.git_context : null;
+  const parentRepoBlocked = sourceMode === "parent_repo_blocked" || (
+    Boolean(gitContext && gitContext.classification === "app_workspace_inside_kvdf_repo") &&
+    sourceMode !== "local_only" &&
+    sourceMode !== "none"
+  );
   const sourceControlEvidence = [];
   if (sourceControl && sourceControl.mode) sourceControlEvidence.push(`mode:${sourceMode}`);
   if (sourceControl && sourceControl.remote_provider) sourceControlEvidence.push(`remote:${sourceControl.remote_provider}`);
   if (sourceControl && sourceControl.provider_plugin) sourceControlEvidence.push(`provider_plugin:${sourceControl.provider_plugin}`);
+  if (gitContext && gitContext.classification) sourceControlEvidence.push(`git_context:${gitContext.classification}`);
   const sourceControlWarnings = [];
   const sourceControlBlockers = [];
   let sourceControlStatus = "warning";
-  if (sourceMode === "local_only") {
+  if (parentRepoBlocked) {
+    sourceControlStatus = "blocked";
+    sourceControlBlockers.push(gitContext && gitContext.reason ? gitContext.reason : "Viber app workspace is inside the KVDF Core repository.");
+  } else if (sourceMode === "local_only") {
     sourceControlStatus = "ready";
     sourceControlEvidence.push("local_only");
   } else if (sourceMode === "direct_main") {
@@ -5929,6 +5959,8 @@ function buildViberExecutionGates({
     warnings: sourceControlWarnings,
     nextAction: sourceMode === "local_only"
       ? "Keep the changes local; commit, push, branch, and PR are not required."
+      : parentRepoBlocked
+        ? "Use local-only mode or link the app to its own Git repository before branch, push, or PR work."
       : sourceMode === "direct_main"
         ? "Validate, then commit and push to main after approval and materialization."
         : sourceMode === "branch"
@@ -9169,6 +9201,7 @@ function buildPlannerPromptFromCurrentPlan(request = {}, deps = {}) {
     track: currentPlan.track,
     delivery_mode: currentPlan.delivery_mode,
     source_control: sourceControl,
+    git_context: sourceControl && sourceControl.git_context ? sourceControl.git_context : null,
     ai_learning: aiLearning,
     plan_id: currentPlan.plan_id,
     goal: currentPlan.goal,
@@ -9710,14 +9743,20 @@ function renderCodexPrompt({ goal, mode, plan, taskPunch, pluginContext, sourceC
 }
 
 function buildPromptContextLines(mode, pluginContext, sourceControl) {
+  const gitContext = sourceControl && sourceControl.git_context ? sourceControl.git_context : null;
+  const parentRepoBlocked = gitContext && gitContext.classification === "app_workspace_inside_kvdf_repo";
   const sourceControlLines = sourceControl ? [
     `- Source control: ${summarizeSourceControl(sourceControl)}`,
     `- Source control enabled: ${sourceControl.enabled ? "yes" : "no"}`,
     `- Source control provider: ${sourceControl.provider || "none"}`,
     `- Remote provider: ${sourceControl.remote_provider || "none"}`,
     `- Branching enabled: ${sourceControl.branching_enabled ? "yes" : "no"}`,
-    `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`
-  ] : [];
+    `- PR enabled: ${sourceControl.pr_enabled ? "yes" : "no"}`,
+    gitContext ? `- Git context: ${gitContext.classification || "unknown"}` : null,
+    gitContext ? `- Push allowed: ${gitContext.push_allowed ? "yes" : "no"}` : null,
+    gitContext ? `- Branch allowed: ${gitContext.branch_allowed ? "yes" : "no"}` : null,
+    gitContext ? `- PR allowed: ${gitContext.pr_allowed ? "yes" : "no"}` : null
+  ].filter(Boolean) : [];
   if (mode === "vibe") {
     return [
       "- Track: Vibe App Developer",
@@ -9726,8 +9765,9 @@ function buildPromptContextLines(mode, pluginContext, sourceControl) {
       "- No branch / no PR unless explicitly enabled",
       "- Do not touch KVDF Core unless the Owner explicitly asks for framework work",
       "- GitHub handoff is optional and never the default",
-      "- The Owner is the only active KVDF Core developer for framework work"
-    ];
+      "- The Owner is the only active KVDF Core developer for framework work",
+      parentRepoBlocked ? "- Do not run git branch, commit, push, or PR commands from this app workspace because Git resolves to the KVDF Core repository." : null
+    ].filter(Boolean);
   }
   if (mode === "plugin") {
     return [
@@ -9753,9 +9793,19 @@ function buildPromptContextLines(mode, pluginContext, sourceControl) {
 
 function buildPromptCommitLines(mode, plan, pluginContext, sourceControl) {
   const sc = sourceControl || {};
+  const gitContext = sc.git_context || null;
+  const parentRepoBlocked = gitContext && gitContext.classification === "app_workspace_inside_kvdf_repo";
   const sourceControlMode = normalizeSourceControlMode(sc.mode) || (sc.enabled === false || sc.provider === "none" ? "local_only" : null);
   const remoteProvider = String(sc.remote_provider || "none");
   const deliveryMode = String(plan.delivery_mode || "").trim().toLowerCase();
+  if (parentRepoBlocked || sourceControlMode === "parent_repo_blocked") {
+    return [
+      "Run validation.",
+      "Keep the changes local.",
+      "Do not run git branch, commit, push, or PR commands from this app workspace because Git resolves to the KVDF Core repository.",
+      "Use local-only handoff or link the app to its own Git repository."
+    ];
+  }
   if (sourceControlMode === "local_only" || sourceControlMode === "none" || sc.enabled === false || sc.provider === "none") {
     return [
       "Run validation.",
@@ -10659,12 +10709,62 @@ function normalizeRemoteProvider(value) {
 function normalizeSourceControlMode(value) {
   const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
   if (!normalized) return null;
-  if (normalized === "local_only" || normalized === "direct_main" || normalized === "branch" || normalized === "branch_pr" || normalized === "none") return normalized;
+  if (normalized === "local_only" || normalized === "direct_main" || normalized === "branch" || normalized === "branch_pr" || normalized === "parent_repo_blocked" || normalized === "none") return normalized;
   return null;
 }
 
+function isPathInside(childPath, parentPath) {
+  if (!childPath || !parentPath) return false;
+  const relative = path.relative(path.resolve(parentPath), path.resolve(childPath));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
+function normalizePath(value) {
+  return path.resolve(String(value || ""));
+}
+
+function isAppWorkspacePath(candidatePath, appSlug) {
+  const normalizedAppSlug = normalizeAppSlug(appSlug || "");
+  if (!normalizedAppSlug) return false;
+  const parts = path.resolve(String(candidatePath || "")).split(path.sep).filter(Boolean).map((segment) => segment.toLowerCase());
+  const suffix = ["workspaces", "apps", normalizedAppSlug].map((segment) => String(segment).toLowerCase());
+  if (parts.length < suffix.length) return false;
+  return suffix.every((segment, index) => parts[parts.length - suffix.length + index] === segment);
+}
+
+function getWorkspaceAppSlug(candidatePath) {
+  const parts = path.resolve(String(candidatePath || "")).split(path.sep).filter(Boolean);
+  if (parts.length < 3) return "";
+  const tail = parts.slice(-3);
+  if (tail[0].toLowerCase() !== "workspaces" || tail[1].toLowerCase() !== "apps") return "";
+  return normalizeAppSlug(tail[2]);
+}
+
 function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", deliveryMode = getDeliveryMode(mode), pluginContext = null) {
-  const gitState = context.git_state || { available: false, is_repo: false, root: null, current_branch: null };
+  const executionCwd = context.execution_cwd || context.repo_root || process.cwd();
+  const requestFlags = request.flags || {};
+  const requestAppSlug = normalizeAppSlug(
+    request.app ||
+    request.app_slug ||
+    request["app-slug"] ||
+    requestFlags.app ||
+    requestFlags.app_slug ||
+    requestFlags["app-slug"] ||
+    ""
+  );
+  const workspaceAppSlug = getWorkspaceAppSlug(executionCwd);
+  const appSlug = requestAppSlug || workspaceAppSlug;
+  const executionGitState = safeBuild(() => readGitRepositoryState(executionCwd));
+  const gitState = executionGitState && executionGitState.is_repo
+    ? executionGitState
+    : (context.git_state || { available: false, is_repo: false, root: null, current_branch: null });
+  const gitContext = buildGitContext({
+    cwd: executionCwd,
+    track: mode,
+    app: appSlug,
+    appSlug,
+    gitRepository: gitState
+  });
   const gitRepoDetected = Boolean(gitState && gitState.is_repo);
   const requestedProvider = normalizeSourceControlProvider(readPlannerFlag(request.flags || {}, "source-control", "source_control"));
   const requestedMode = normalizeSourceControlMode(readPlannerFlag(request.flags || {}, "sc-mode", "sc_mode"));
@@ -10674,10 +10774,39 @@ function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", d
     ? "local_only"
     : "direct_main";
   const explicitLocalOnly = requestedMode === "none" || requestedProvider === "none";
-  const sourceControlMode = gitRepoDetected
+  let sourceControlMode = gitRepoDetected
     ? (explicitLocalOnly ? "local_only" : (requestedMode || defaultMode))
     : "local_only";
-  const wantsLocalOnly = !gitRepoDetected || sourceControlMode === "local_only" || explicitLocalOnly;
+  const appWorkspaceSlug = appSlug || workspaceAppSlug;
+  const cwdIsAppWorkspace = isAppWorkspacePath(executionCwd, appWorkspaceSlug);
+  const workspacePathLooksLikeApp = Boolean(appWorkspaceSlug);
+  const parentRepoBlocked = gitContext.classification === "app_workspace_inside_kvdf_repo" || (
+    cwdIsAppWorkspace &&
+    gitRepoDetected &&
+    gitState.root &&
+    normalizePath(gitState.root) !== normalizePath(executionCwd) &&
+    sourceControlMode !== "local_only" &&
+    sourceControlMode !== "none"
+  ) || (
+    workspacePathLooksLikeApp &&
+    gitRepoDetected &&
+    gitState.root &&
+    normalizePath(gitState.root) !== normalizePath(executionCwd) &&
+    sourceControlMode !== "local_only" &&
+    sourceControlMode !== "none"
+  );
+  if (parentRepoBlocked && gitContext.classification !== "app_workspace_inside_kvdf_repo" && workspacePathLooksLikeApp) {
+    gitContext.classification = "app_workspace_inside_kvdf_repo";
+    gitContext.push_allowed = false;
+    gitContext.branch_allowed = false;
+    gitContext.pr_allowed = false;
+    gitContext.reason = "Viber app workspace is inside the KVDF Core repository. Git operations would target KVDF Core, so push/branch/PR are blocked.";
+    gitContext.next_action = "Use local-only mode or link the app to its own Git repository.";
+  }
+  if (parentRepoBlocked && !explicitLocalOnly && sourceControlMode !== "local_only") {
+    sourceControlMode = "parent_repo_blocked";
+  }
+  const wantsLocalOnly = !gitRepoDetected || sourceControlMode === "local_only" || explicitLocalOnly || sourceControlMode === "parent_repo_blocked";
   const defaultProvider = wantsLocalOnly ? "none" : "git";
   const provider = wantsLocalOnly ? "none" : (requestedProvider || defaultProvider);
   const remoteProvider = wantsLocalOnly ? "none" : (requestedRemote || "none");
@@ -10708,6 +10837,9 @@ function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", d
   if (remoteProvider === "github") {
     notes.push("GitHub is an optional remote/provider plugin, not the same thing as Git.");
   }
+  if (parentRepoBlocked) {
+    notes.push(gitContext.reason || "Viber app workspace is inside the KVDF Core repository.");
+  }
   if (!enabled) {
     notes.push("Source control is disabled for this plan.");
   }
@@ -10720,10 +10852,11 @@ function buildPlannerSourceControl(request = {}, context = {}, mode = "owner", d
     branching_enabled: branchingEnabled,
     pr_enabled: prEnabled,
     default_branch: "main",
-    current_branch: enabled ? gitState.current_branch || null : null,
+    current_branch: enabled ? gitState.current_branch || null : (gitContext.current_branch || null),
     requires_owner_approval: true,
     replaceable_provider: true,
-    notes
+    notes,
+    git_context: gitContext
   };
 }
 

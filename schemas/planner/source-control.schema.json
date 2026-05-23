@@ -32,7 +32,7 @@
     },
     "mode": {
       "type": "string",
-      "enum": ["none", "local_only", "direct_main", "branch", "branch_pr"]
+      "enum": ["none", "local_only", "direct_main", "branch", "branch_pr", "parent_repo_blocked"]
     },
     "branching_enabled": { "type": "boolean" },
     "pr_enabled": { "type": "boolean" },
@@ -40,6 +40,10 @@
     "current_branch": { "type": ["string", "null"] },
     "requires_owner_approval": { "type": "boolean" },
     "replaceable_provider": { "type": "boolean" },
+    "git_context": {
+      "type": ["object", "null"],
+      "additionalProperties": true
+    },
     "notes": {
       "type": "array",
       "items": { "type": "string" }

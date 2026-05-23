@@ -78,6 +78,12 @@ function normalizeCommandName(command) {
     "source-package": "source-package",
     source_package: "source-package",
     sourcepackage: "source-package",
+    "source-control": "source-control",
+    source_control: "source-control",
+    sourcecontrol: "source-control",
+    "git-context": "source-control",
+    git_context: "source-control",
+    gitcontext: "source-control",
     company_profile: "company-profile",
     news_website: "news-website",
     ecommerce_mobile_app: "ecommerce-mobile-app",
@@ -1279,6 +1285,13 @@ Notes:
   GitHub is optional. \`kvdf github\` is preserved as a compatibility wrapper
   while \`kvdf github-provider\` is the canonical provider surface.
 `,
+    "source-control": `Usage:
+  kvdf source-control context --track vibe --app booking --json
+  kvdf source-control context --track owner --json
+
+Notes:
+  Source-control context classifies the current Git boundary, distinguishes KVDF Core from app workspaces, and blocks branch/push/PR operations when a Viber workspace is resolving Git to the KVDF Core repository. Use it to confirm whether local-only, direct-main, branch, or branch+PR delivery is actually safe before planning execution.
+`,
     sync: `Usage:
   kvdf sync status
   kvdf sync status --json
@@ -1567,7 +1580,8 @@ function printHelp() {
   "  cleaner relocate             Preview or apply the file and folder relocation plan",
   "  cleaner report               Show the short cleanup summary from the saved audit",
   "  vibe-maintainer fast|slow|cleanup|inspect|report|relocate|approve|execute|finalize Scope-aware app maintenance for vibe developers",
-  "  source-package study|inventory|map|source-map|placement|normalize|compare|verify Inspect the KVDF_New_Features_Docs source package",
+    "  source-package study|inventory|map|source-map|placement|normalize|compare|verify Inspect the KVDF_New_Features_Docs source package",
+    "  source-control context        Classify Git context and block unsafe KVDF Core branch/push/PR operations",
     "  docs generate|workflow|manifest|contracts|coverage|validate Manage the docs site generation workflow artifacts",
     "  software-design list|show|index|compare Inspect the permanent software design reference",
     "  docs-generator list|show|index|compare Inspect the permanent docs generator reference",

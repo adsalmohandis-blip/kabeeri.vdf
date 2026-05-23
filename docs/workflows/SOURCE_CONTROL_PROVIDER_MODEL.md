@@ -70,6 +70,21 @@ handoff.
 - must protect `.kabeeri/plugin-links/`
 - must keep plugin manifest, docs, runtime, schemas, and tests in parity
 
+### Viber/App Git Boundary Guard
+
+When a Viber app workspace lives inside `workspaces/apps/<app-slug>` but the
+Git root resolves to the KVDF Core repository, the workspace must be treated as
+parent-repo blocked. In that case:
+
+- branch, push, and PR actions are blocked for the app workspace
+- local-only planning remains valid
+- the source-control context report explains that the parent repo is KVDF Core
+- the safe next action is to use local-only mode or link the app to its own Git
+  repository
+
+Use `kvdf source-control context --track vibe --app <app-slug> --json` to
+inspect the Git boundary before planning or prompting branch/PR work.
+
 ## Provider Replacement
 
 The model is intentionally replaceable.
@@ -82,6 +97,10 @@ control providers by expressing delivery as:
 - mode
 - branch/PR capability
 
+GitHub provider plugins do not override the Viber/App boundary guard. If the
+workspace resolves to KVDF Core Git, the track boundary still wins and branch /
+push / PR remain blocked until the app has its own repository.
+
 The canonical GitHub remote-provider implementation lives in the optional
 `github_provider` plugin. Legacy `github` and `github_sync` bundles are
 compatibility wrappers only.
@@ -91,6 +110,10 @@ compatibility wrappers only.
 Planner outputs, Codex prompts, visual planner reports, and materialization
 artifacts all carry the same `source_control` object so the whole workflow stays
 consistent.
+
+That object may also include a `git_context` report so Viber/App work can see
+whether the current folder is KVDF Core, a standalone app repo, a linked
+external repo, or a parent-repo-blocked app workspace.
 
 That object is the source of truth for:
 

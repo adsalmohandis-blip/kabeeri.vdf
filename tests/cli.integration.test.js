@@ -149,6 +149,14 @@ function writeFakeGitRepo(dir, { remoteUrl = null, branch = "main", mergeRef = n
   fs.writeFileSync(path.join(gitDir, "config"), `[core]\n\trepositoryformatversion = 0\n\tbare = false\n${remoteSection}${branchSection}`, "utf8");
 }
 
+function writeKvdfCoreRepoFixture(dir) {
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({ name: "kabeeri-vdf" }, null, 2), "utf8");
+  fs.mkdirSync(path.join(dir, "src", "cli"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "src", "cli", "index.js"), "// kvdf fixture\n", "utf8");
+  fs.mkdirSync(path.join(dir, "docs", "cli"), { recursive: true });
+  fs.writeFileSync(path.join(dir, "docs", "cli", "CLI_COMMAND_REFERENCE.md"), "# kvdf fixture\n", "utf8");
+}
+
 function withTempDir(fn) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kvdf-test-"));
   try {
@@ -8485,6 +8493,82 @@ test("planner pipeline supports source-control modes without making GitHub manda
   assert.strictEqual(branchPr.viber_pipeline.execution_gates.source_control_gate.status, "ready");
   assert.ok(branchPr.viber_pipeline.execution_gates.source_control_gate.evidence.includes("remote:github"));
 })); 
+
+test("source-control context blocks vibe app workspaces that resolve Git to KVDF Core", () => withTempDir((dir) => {
+  writeKvdfCoreRepoFixture(dir);
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/core.git" });
+  const appDir = path.join(dir, "workspaces", "apps", "booking");
+  fs.mkdirSync(appDir, { recursive: true });
+  fs.writeFileSync(path.join(appDir, "package.json"), JSON.stringify({ name: "booking" }, null, 2), "utf8");
+
+  const context = JSON.parse(runKvdf(["source-control", "context", "--track", "vibe", "--app", "booking", "--json"], { cwd: appDir }).stdout);
+  assert.strictEqual(context.report_type, "kvdf_source_control_context");
+  assert.strictEqual(context.git_context.classification, "app_workspace_inside_kvdf_repo");
+  assert.strictEqual(context.git_context.push_allowed, false);
+  assert.strictEqual(context.git_context.branch_allowed, false);
+  assert.strictEqual(context.git_context.pr_allowed, false);
+
+  const blocked = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--app-slug", "booking", "--source-control", "git", "--sc-mode", "branch", "--json"], { cwd: appDir }).stdout);
+  assert.strictEqual(blocked.viber_pipeline.source_control.mode, "parent_repo_blocked");
+  assert.strictEqual(blocked.viber_pipeline.source_control.git_context.classification, "app_workspace_inside_kvdf_repo");
+  assert.strictEqual(blocked.viber_pipeline.execution_gates.source_control_gate.status, "blocked");
+  assert.ok(blocked.viber_pipeline.execution_gates.source_control_gate.blockers.some((item) => /KVDF Core repository/i.test(item)));
+}));
+
+test("planner prompt blocks branch and PR instructions when Viber Git resolves to KVDF Core", () => withTempDir((dir) => {
+  writeKvdfCoreRepoFixture(dir);
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/core.git" });
+  const appDir = path.join(dir, "workspaces", "apps", "booking");
+  fs.mkdirSync(appDir, { recursive: true });
+  fs.writeFileSync(path.join(appDir, "package.json"), JSON.stringify({ name: "booking" }, null, 2), "utf8");
+
+  const prompt = JSON.parse(runKvdf(["planner", "prompt", "--goal", "Build booking app", "--track", "vibe", "--app", "booking", "--app-slug", "booking", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"], { cwd: appDir }).stdout);
+  assert.strictEqual(prompt.source_control.mode, "parent_repo_blocked");
+  assert.match(prompt.prompt, /Do not run git branch, commit, push, or PR commands from this app workspace because Git resolves to the KVDF Core repository\./);
+  assert.doesNotMatch(prompt.prompt, /git push origin main/i);
+  assert.doesNotMatch(prompt.prompt, /git checkout -b/i);
+  assert.doesNotMatch(prompt.prompt, /GitHub PR/i);
+}));
+
+test("planner pipeline keeps local-only valid even when the app workspace resolves Git to KVDF Core", () => withTempDir((dir) => {
+  writeKvdfCoreRepoFixture(dir);
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/core.git" });
+  const appDir = path.join(dir, "workspaces", "apps", "booking");
+  fs.mkdirSync(appDir, { recursive: true });
+  fs.writeFileSync(path.join(appDir, "package.json"), JSON.stringify({ name: "booking" }, null, 2), "utf8");
+
+  const localOnly = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--app-slug", "booking", "--source-control", "none", "--json"], { cwd: appDir }).stdout);
+  assert.strictEqual(localOnly.viber_pipeline.source_control.mode, "local_only");
+  assert.strictEqual(localOnly.viber_pipeline.source_control.git_context.classification, "app_workspace_inside_kvdf_repo");
+  assert.strictEqual(localOnly.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+  assert.ok(localOnly.viber_pipeline.execution_gates.source_control_gate.evidence.includes("local_only"));
+}));
+
+test("owner track still treats KVDF Core as kvdf_core_repo and keeps direct-main valid", () => withTempDir((dir) => {
+  writeKvdfCoreRepoFixture(dir);
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/core.git" });
+
+  const ownerContext = JSON.parse(runKvdf(["source-control", "context", "--track", "owner", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(ownerContext.git_context.classification, "kvdf_core_repo");
+
+  const ownerPipeline = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Improve KVDF planner", "--track", "owner", "--source-control", "git", "--sc-mode", "direct-main", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(ownerPipeline.source_control.mode, "direct_main");
+  assert.strictEqual(ownerPipeline.source_control.git_context.classification, "kvdf_core_repo");
+}));
+
+test("standalone app repos can branch and PR when the repo has its own git root", () => withTempDir((dir) => {
+  writeFakeGitRepo(dir, { remoteUrl: "https://github.com/example/booking.git" });
+  fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify({ name: "booking" }, null, 2), "utf8");
+
+  const context = JSON.parse(runKvdf(["source-control", "context", "--track", "vibe", "--app", "booking", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(context.git_context.classification, "standalone_app_repo");
+  assert.strictEqual(context.git_context.branch_allowed, true);
+  assert.strictEqual(context.git_context.pr_allowed, true);
+
+  const branchPr = JSON.parse(runKvdf(["planner", "pipeline", "--idea", "Build booking app", "--track", "vibe", "--app", "booking", "--app-slug", "booking", "--source-control", "git", "--remote-provider", "github", "--sc-mode", "branch-pr", "--json"], { cwd: dir }).stdout);
+  assert.strictEqual(branchPr.viber_pipeline.source_control.mode, "branch_pr");
+  assert.strictEqual(branchPr.viber_pipeline.execution_gates.source_control_gate.status, "ready");
+}));
 
 test("planner pipeline exposes structured agile and hybrid planning policies", () => {
   const structured = JSON.parse(runKvdf(["planner", "pipeline", "--goal", "Enterprise vibe app", "--track", "vibe", "--method", "structured", "--json"]).stdout);

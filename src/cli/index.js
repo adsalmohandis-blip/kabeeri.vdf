@@ -30,6 +30,7 @@ const { generator } = require("./commands/generator");
 const { vscode } = require("./commands/vscode");
 const { docsSite } = require("./commands/docs_site");
 const { sourcePackage } = require("./commands/source_package");
+const { sourceControl } = require("./commands/source_control");
 const { projectProfile, buildProjectProfileRecommendation, persistProjectProfileRecommendation } = require("./commands/project_profile");
 const { project: projectCommand } = require("./commands/project");
 const { buildTaskLifecycleState, buildTaskLifecycleBoard, renderTaskLifecycleState, renderTaskLifecycleBoard, readTaskLifecycleTrash } = require("./commands/task_lifecycle");
@@ -404,6 +405,12 @@ function run(argv) {
   }
   if (["plugin-extraction", "plugin_extraction", "pluginextraction"].includes(group)) {
     return pluginExtraction(action, value, args.flags, rest, {
+      table,
+      repoRoot
+    });
+  }
+  if (["source-control", "source_control", "sourcecontrol", "git-context", "gitcontext"].includes(group)) {
+    return sourceControl(action, value, args.flags, rest, {
       table,
       repoRoot
     });

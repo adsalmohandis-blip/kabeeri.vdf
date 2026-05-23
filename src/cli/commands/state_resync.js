@@ -11,6 +11,7 @@ const {
   readGitRecentCommits,
   readGitLatestTags
 } = require("../services/git_snapshot");
+const { buildGitContext } = require("../services/source_control_context");
 
 const CURRENT_STATE_REPORT_PATH = ".kabeeri/state_resync/current_state_report.json";
 const STATE_RESYNC_HISTORY_PATH = ".kabeeri/state_resync/state_resync_history.json";
@@ -284,6 +285,7 @@ function buildSourceOfTruthPriority(track) {
 
 function buildSourceControlSummary({ cwd, track, gitRepository, headCommit }) {
   const remoteUrls = readGitRemoteUrls(cwd);
+  const gitContext = buildGitContext({ cwd, track, gitRepository });
   const mode = track === "vibe_app_developer"
     ? "local_first"
     : track === "plugin"
@@ -302,6 +304,7 @@ function buildSourceControlSummary({ cwd, track, gitRepository, headCommit }) {
     latest_main_commit: headCommit || null,
     requires_owner_approval: track !== "framework_owner",
     replaceable_provider: true,
+    git_context: gitContext,
     notes: remoteUrls.length
       ? ["GitHub is optional secondary provider/plugin evidence only when enabled."]
       : ["State Resync is file-first, not GitHub-first."]
