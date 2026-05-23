@@ -77,6 +77,7 @@ test("kvdos v1.0 planning docs exist", () => {
     "status",
     "impl:baseline",
     "studio:shell",
+    "workspace:model",
     "qa:ide-journey",
     "desktop:dev",
     "desktop:build",
