@@ -2,30 +2,9 @@
 
 ## Product Definition
 
-KVDOS is a commercial, local-first, cloud-controlled AI Software Factory OS.
+KVDOS is a commercial hybrid AI Software Factory OS.
 
 It is designed to turn a software idea into a governed, auditable, executable development workflow using discovery, specs, task queues, agents, patches, sandbox execution, and quality gates.
-
-The discovery/spec planning surface is documentation-first. Questionnaire flow,
-blueprint/spec notes, and `app.kvdos.yaml` validation are aligned in docs
-before any UI or generator implementation.
-
-The tasking/approval planning surface is also documentation-first. Task queue
-notes, FIFO ordering notes, approval panel notes, reports panel notes, audit
-trail notes, and task-derivation rules are aligned in docs before any queue or
-approval UI implementation.
-
-The cloud-commercial planning surface is also documentation-first. Cloud
-account notes, authentication notes, subscription notes, license entitlement
-notes, device activation notes, secure entitlement cache notes, plan-access
-notes, release-access notes, and update-access notes are aligned in docs before
-any cloud API or commercial-control implementation.
-
-The local-license-gate planning surface is also documentation-first. Local
-license gate notes, plan-based feature access notes, offline grace notes,
-invalid-license UX notes, expired-license UX notes, secure entitlement cache
-usage notes, and local entitlement-check notes are aligned in docs before any
-local enforcement or feature-gate implementation.
 
 > Note: this strategy document is a product plan. The current repository state is
 > a local-first Studio and task-governance foundation, not a complete execution
@@ -38,7 +17,7 @@ KVDOS is not a traditional IDE in its first versions.
 The initial product is:
 
 ```text
-Local IDE Studio + Local Runtime + Cloud subscription/license control
+Local Studio + Local Runner + Cloud-managed licensing/sync
 ```
 
 ## Relationship With Kabeeri VDF
@@ -122,10 +101,6 @@ Commercial layer for:
 - organizations
 - subscriptions
 - licenses
-- device activation
-- release/download access control
-- offline grace policy
-- secure entitlement cache
 - package registry
 - marketplace
 - team sync
@@ -133,25 +108,10 @@ Commercial layer for:
 
 ## First Strategic Rule
 
-Do not build a full IDE first, but do not defer the commercial gate past v1.
+Do not build a full IDE first.
 
-Build a local project studio and runner that works with existing editors, while
-also shipping the subscription and license control required for commercial v1.
-
-Keep the discovery/spec boundary app-local and pre-implementation until the
-related slice is explicitly approved for build-out.
-
-Keep the tasking/approval boundary app-local and pre-implementation until the
-related slice is explicitly approved for build-out.
-
-Keep the cloud-commercial boundary app-local and pre-implementation until the
-related slice is explicitly approved for build-out.
-
-Keep the local-license-gate boundary app-local and pre-implementation until the
-related slice is explicitly approved for build-out.
+Build a local project studio and runner that works with existing editors.
 
 ## Success Definition for v1
 
-KVDOS v1 is agency-ready when a small software agency can use it to generate,
-review, test, export, and commercially activate a CRM or clinic-management MVP
-through a governed task/agent workflow.
+KVDOS v1 is agency-ready when a small software agency can use it to generate, review, test, and export a CRM or clinic-management MVP through a governed task/agent workflow.

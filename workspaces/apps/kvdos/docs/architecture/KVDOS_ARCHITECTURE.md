@@ -8,16 +8,12 @@ KVDOS is designed as a hybrid commercial AI Software Factory OS.
 
 ```text
 KVDOS Cloud
-  accounts / subscriptions / licenses / activation / packages / updates / teams
+  accounts / billing / licenses / packages / teams
         |
         | optional sync
         v
 KVDOS Studio
   UI / approvals / project control / task visibility
-        |
-        v
-KVDOS Local Runtime
-  .kvdos state / sqlite / audit / entitlement cache
         |
         v
 KVDOS Runner
@@ -40,9 +36,7 @@ The first architecture should focus on:
 
 ```text
 Local Studio
-Local Runtime
 Local Runner
-Cloud commercial control
 Core task system
 app.kvdos.yaml
 VDF boundary
@@ -81,10 +75,7 @@ core/vdf_bridge
 
 ```text
 cloud_services/licensing
-cloud_services/auth
 cloud_services/billing
-cloud_services/entitlement
-cloud_services/device_activation
 cloud_services/package_registry
 cloud_services/marketplace
 cloud_services/team_sync
@@ -97,7 +88,6 @@ cloud_services/update_server
 .kvdos/
   manifest.json
   app.kvdos.yaml
-  entitlement-cache.json
   discovery/
   blueprint/
   tasks/
@@ -110,20 +100,6 @@ cloud_services/update_server
   learning/
 ```
 
-## Local Runtime Boundary
-
-The `e2-p1` local runtime boundary is documented in
-[docs/runtime/LOCAL_RUNTIME_BOUNDARY.md](../runtime/LOCAL_RUNTIME_BOUNDARY.md).
-
-It defines the durable local state layer for KVDOS, including:
-
-- the SQLite-backed runtime model as a planning boundary
-- the `.kvdos` workspace state area
-- workspace, project, task, report, approval, and audit records
-
-This boundary does not implement runtime services, database tables, or
-execution behavior yet.
-
 ## Main Spec
 
 ```text
@@ -131,103 +107,6 @@ app.kvdos.yaml
 ```
 
 This file should become the primary product specification for generated applications.
-
-## Discovery And Spec Boundary
-
-Discovery and spec work is documentation-first at this stage.
-
-It covers:
-
-- questionnaire flow
-- blueprint/spec derivation
-- `app.kvdos.yaml` validation
-- source-of-truth alignment against app-local KVDOS docs
-
-It does not implement:
-
-- questionnaire UI code
-- blueprint/spec generator code
-- `app.kvdos.yaml` generation logic
-
-This boundary stays app-local and pre-implementation until explicitly approved.
-
-## Tasking And Approval Boundary
-
-Tasking and approval work is documentation-first at this stage.
-
-It covers:
-
-- task queue boundary
-- FIFO ordering boundary
-- approval panel boundary
-- reports panel boundary
-- audit trail boundary
-- task derivation rules
-- approval checkpoint rules
-
-It does not implement:
-
-- task queue behavior code
-- approval UI code
-- reports UI code
-- audit implementation code
-
-This boundary stays app-local and pre-implementation until explicitly approved.
-
-## Cloud Commercial Boundary
-
-Cloud commercial work is documentation-first at this stage.
-
-It covers:
-
-- cloud account boundary
-- authentication boundary
-- subscription boundary
-- license entitlement boundary
-- device activation boundary
-- secure entitlement cache boundary
-- plan-access boundary
-- release-access boundary
-- update-access boundary
-
-It does not implement:
-
-- cloud API code
-- authentication implementation
-- subscription backend code
-- license enforcement code
-- activation code
-- entitlement cache code
-- plan-access code
-- release-access code
-- update-access code
-
-This boundary stays app-local and pre-implementation until explicitly approved.
-
-## Local License Gate Boundary
-
-Local license-gate work is documentation-first at this stage.
-
-It covers:
-
-- local license gate boundary
-- plan-based feature access boundary
-- offline grace policy boundary
-- invalid-license UX boundary
-- expired-license UX boundary
-- secure entitlement cache usage boundary
-- local entitlement-check boundary
-
-It does not implement:
-
-- local license enforcement code
-- feature-gate code
-- entitlement-check code
-- offline-grace code
-- invalid-license UX code
-- expired-license UX code
-
-This boundary stays app-local and pre-implementation until explicitly approved.
 
 ## KVDOS Core Rule
 

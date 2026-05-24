@@ -19,10 +19,6 @@ KVDF is the governance/tooling layer used to build and support KVDOS.
 
 | Document | Purpose |
 | --- | --- |
-| [KVDOS Commercial Foundation Stage Plan](./KVDOS_VERSION_PLAN.md) | Stage-level bundle plan above the evolution slices |
-| [KVDOS Evolution Plan](./KVDOS_EVOLUTION_PLAN.md) | Slice-level source of truth before task derivation |
-| [KVDOS Evolution Task Punch](./KVDOS_EVOLUTION_TASK_PUNCH.md) | Derived planning-only punch list for approved evolution slices |
-| [KVDOS Implementation Readiness Queue](./KVDOS_IMPLEMENTATION_READINESS_QUEUE.md) | Build-readiness queue that prepares implementation tasks |
 | [V1_0_EVOLUTIONS.md](./V1_0_EVOLUTIONS.md) | Canonical index for the shipped foundation plus the v1.0 hardening evolutions |
 | [V1_2_DESKTOP_ARCHITECTURE_DECISION.md](./V1_2_DESKTOP_ARCHITECTURE_DECISION.md) | The completed desktop / IDE decision record |
 | [V1_3_DESKTOP_STUDIO_SKELETON.md](./V1_3_DESKTOP_STUDIO_SKELETON.md) | The completed desktop Studio preview package |
@@ -31,6 +27,42 @@ KVDF is the governance/tooling layer used to build and support KVDOS.
 | [Desktop Packaging Roadmap](../desktop/DESKTOP_PACKAGING_ROADMAP.md) | The planned packaging track after live snapshot UX validation |
 | [V1_X_EVOLUTIONS.md](./V1_X_EVOLUTIONS.md) | Completed desktop track, later packaging track, later local-execution track, and later bridge/plugin/cloud planning tracks |
 | [V2_0_PLATFORM_EVOLUTIONS.md](./V2_0_PLATFORM_EVOLUTIONS.md) | Commercial platform direction after the local-first foundation |
+| [KVDOS UI/UX Evolution Track](./KVDOS_UIUX_EVOLUTION_TRACK.md) | The UI/UX evolution package required to deliver the full studio shell, pages, flows, and developer surfaces |
+| [KVDOS UI/UX Version Ladder](./KVDOS_UIUX_VERSION_LADDER.md) | The versioned delivery map for the UI/UX evolution package, including the older desktop prerequisites |
+| [KVDOS UI/UX ux-0 Execution Pack](./KVDOS_UIUX_UX0_EXECUTION_PACK.md) | The first concrete execution slice for the shared shell contract |
+| [KVDOS UI/UX Recreated Evolution Set](./KVDOS_UIUX_RECREATED_EVOLUTION_SET.md) | The single consolidated evolution map that combines the legacy desktop evolutions with the recreated UI/UX version ladder |
+| [KVDOS Recreated UI/UX Task Punch](./KVDOS_UIUX_RECREATED_TASK_PUNCH.md) | The consolidated task-punch map for the recreated UI/UX evolution set |
+| [KVDOS UI/UX Version-By-Version Punch](./KVDOS_UIUX_VERSION_BY_VERSION_PUNCH.md) | The strict build order from version bundle to punch slice |
+| [KVDOS UI/UX JSON Exports](./generated-uiux-json-clean/KVDOS_UIUX_RECREATED_INDEX.json) | Machine-readable JSON exports for every recreated evo and task |
+| [KVDOS UI/UX Micro Task Punch](./KVDOS_UIUX_MICRO_TASK_PUNCH.md) | The atomic IDE-side micro-task punch layer |
+| [KVDOS UI/UX Micro JSON Exports](./generated-uiux-micro-json-clean/KVDOS_UIUX_MICRO_INDEX.json) | Machine-readable JSON exports for every micro evo and micro task |
+| [KVDOS Cloud Micro Task Punch](./KVDOS_CLOUD_MICRO_TASK_PUNCH.md) | The atomic cloud-side micro-task punch layer |
+| [KVDOS UI/UX Task Punch](./KVDOS_UIUX_TASK_PUNCH.md) | The slice-by-slice punch map for the full UI/UX evolution track |
+| [KVDOS UI/UX Spec Completion Track](./KVDOS_UIUX_SPEC_COMPLETION_TRACK.md) | The missing-spec evolution package for page-by-page detail, states, and interaction rules |
+| [KVDOS UI/UX Spec Completion Task Punch](./KVDOS_UIUX_SPEC_COMPLETION_TASK_PUNCH.md) | The slice-by-slice punch map for the missing-spec completion track |
+| [KVDOS UI/UX Page Matrix](./KVDOS_UIUX_PAGE_MATRIX.md) | The first page-by-page matrix for the launch, home, and workspace surfaces |
+| [KVDOS UI/UX Page Microcopy](./KVDOS_UIUX_PAGE_MICROCOPY.md) | The desktop-side exact button and helper copy annex |
+| [KVDOS UI Page Button Catalog](./KVDOS_UI_PAGE_BUTTON_CATALOG.md) | The desktop-side exact primary button catalog |
+| [KVDOS UI Implementation Component Matrix](./KVDOS_UI_IMPLEMENTATION_COMPONENT_MATRIX.md) | The desktop-side implementation-ready component and data contract matrix |
+| [KVDOS UI State Tables](./KVDOS_UI_STATE_TABLES.md) | The desktop-side page state tables |
+| [KVDOS Cloud UI/UX Track](./KVDOS_CLOUD_UIUX_TRACK.md) | The cloud-side UI/UX package for public, user, and admin dashboard surfaces |
+| [KVDOS Cloud UI/UX Task Punch](./KVDOS_CLOUD_UIUX_TASK_PUNCH.md) | The slice-by-slice punch map for the cloud UI/UX track |
+| [KVDOS Cloud Page Matrix](./KVDOS_CLOUD_PAGE_MATRIX.md) | The page-by-page cloud matrix covering user and admin dashboard pages |
+| [KVDOS Cloud User Flows](./KVDOS_CLOUD_USER_FLOWS.md) | The cloud-side user flow documentation |
+| [KVDOS Cloud User Flows Visual](./KVDOS_CLOUD_USER_FLOWS_VISUAL.md) | The cloud-side visual flow companion |
+| [KVDOS Cloud UI Component Inventory](./KVDOS_CLOUD_UI_COMPONENT_INVENTORY.md) | The cloud-side UI component inventory |
+| [KVDOS Cloud Page Microcopy](./KVDOS_CLOUD_PAGE_MICROCOPY.md) | The cloud-side exact button and helper copy annex |
+| [KVDOS Cloud Implementation Component Matrix](./KVDOS_CLOUD_IMPLEMENTATION_COMPONENT_MATRIX.md) | The cloud-side implementation-ready component and data contract matrix |
+| [KVDOS Cloud State Tables](./KVDOS_CLOUD_STATE_TABLES.md) | The cloud-side page state tables |
+| [KVDOS Cloud UI Wireframe Order](./KVDOS_CLOUD_UI_WIREFRAME_ORDER.md) | The cloud-side page hierarchy and wireframe order |
+| [KVDOS Cloud Spec Page Matrix](./KVDOS_CLOUD_SPEC_PAGE_MATRIX.md) | The cloud-side spec completion page matrix bridge |
+| [KVDOS Cloud Spec Completion Track](./KVDOS_CLOUD_SPEC_COMPLETION_TRACK.md) | The missing-spec cloud package for recovery, billing, activation, and admin detail |
+| [KVDOS Cloud Spec Completion Task Punch](./KVDOS_CLOUD_SPEC_COMPLETION_TASK_PUNCH.md) | The slice-by-slice punch map for the cloud missing-spec completion track |
+| [KVDOS Cloud To Desktop Crosswalk](./KVDOS_CLOUD_TO_DESKTOP_CROSSWALK.md) | The shared-concept mapping between cloud and desktop surfaces |
+| [KVDOS Shared State Crosswalk](./KVDOS_SHARED_STATE_CROSSWALK.md) | The shared state mapping between cloud and desktop surfaces |
+| [KVDOS Missing States Checklist](./KVDOS_MISSING_STATES_CHECKLIST.md) | The residual state review checklist for desktop and cloud |
+| [KVDOS UI/UX Combined Roadmap Summary](./KVDOS_UIUX_COMBINED_ROADMAP_SUMMARY.md) | The short combined summary of the desktop and cloud UI/UX plan |
+| [KVDOS UI/UX Master Roadmap Index](./KVDOS_UIUX_MASTER_ROADMAP_INDEX.md) | The single ordered index for all UI/UX annexes |
 | [FUTURE_ONLY_TRACKS.md](./FUTURE_ONLY_TRACKS.md) | Tracks that must stay future-only until explicitly approved |
 | [EVOLUTION_EXECUTION_RULES.md](./EVOLUTION_EXECUTION_RULES.md) | Planning and execution rules for all evolutions |
 | [EVOLUTION_DEPENDENCY_MAP.md](./EVOLUTION_DEPENDENCY_MAP.md) | Dependency overview across the full roadmap |

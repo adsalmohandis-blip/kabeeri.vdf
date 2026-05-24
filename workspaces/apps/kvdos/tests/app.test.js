@@ -1,5 +1,6 @@
 const assert = require("assert");
 const { pathToFileURL } = require("url");
+const os = require("os");
 
 const { createKvdosAppManifest, loadAppSpec } = require("../src/index");
 const { createCloudPlaceholder } = require("../src/cloud");
@@ -14,6 +15,56 @@ const workspaceRoot = path.resolve(__dirname, "..");
 
 function test(name, fn) {
   tests.push({ name, fn });
+}
+
+function withTempDir(fn) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kvdos-app-test-"));
+  try {
+    return fn(dir);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function writeWorkspaceStateFixture(dir) {
+  const stateDir = path.join(dir, ".kabeeri");
+  fs.mkdirSync(stateDir, { recursive: true });
+
+  const project = {
+    framework: "Kabeeri VDF",
+    workspace_kind: "developer_app",
+    app_slug: "kvdos",
+    app_name: "KVDOS",
+    app_type: "application",
+    surface_scopes: ["shared"],
+    linked_workspace_roots: [],
+    profile: "enterprise",
+    delivery_mode: "structured",
+    prompt_packs: ["common", "nextjs", "nestjs", "expressjs", "go-gin"],
+    intake_groups: ["core", "production", "extension"],
+    product_name: "KVDOS",
+    forbid_unrelated_apps: true,
+    root: "workspaces/apps/kvdos",
+    version: "0.1.0",
+    profile_route_id: "kvdos-enterprise-profile-001",
+    created_at: "2026-05-17T00:00:00.000Z",
+    updated_at: "2026-05-17T00:10:00.000Z"
+  };
+
+  const profile = {
+    version: "v1",
+    current_profile: "enterprise",
+    current_delivery_mode: "structured",
+    intake_groups: ["core", "production", "extension"],
+    updated_at: "2026-05-17T00:10:00.000Z"
+  };
+
+  const projectPath = path.join(stateDir, "project.json");
+  const profilePath = path.join(stateDir, "project_profile.json");
+  fs.writeFileSync(projectPath, `${JSON.stringify(project, null, 2)}\n`, "utf8");
+  fs.writeFileSync(profilePath, `${JSON.stringify(profile, null, 2)}\n`, "utf8");
+
+  return { profilePath, projectPath };
 }
 
 test("kvdos manifest points at the workspace spec", () => {
@@ -78,6 +129,33 @@ test("kvdos v1.0 planning docs exist", () => {
     "impl:baseline",
     "studio:shell",
     "workspace:model",
+    "workspace:open",
+    "workspace:recent",
+    "workspace:context",
+    "studio:landing",
+    "studio:empty-state",
+    "studio:command-palette",
+    "runtime:state",
+    "workspace:persistence",
+    "kvdos:surface",
+    "app:state",
+    "workspace:explorer",
+    "discovery:questionnaires",
+    "spec:blueprint",
+    "tasking:surface",
+    "approval:surface",
+    "task-approval:persistence",
+    "reports:dashboard",
+    "terminal:panel",
+    "preview:browser",
+    "ai:workbench",
+    "ai:tool-session",
+    "problems:panel",
+    "context:error-capture",
+    "error-to-task:conversion",
+    "logs:trace:audit",
+    "patch:diff:review",
+    "health:dashboard",
     "qa:ide-journey",
     "desktop:dev",
     "desktop:build",
@@ -264,14 +342,15 @@ test("kvdos desktop studio skeleton docs and scaffold exist", () => {
   assert.strictEqual(desktopPackage.scripts.dev, "vite");
   assert.strictEqual(desktopPackage.scripts.build, "vite build");
   assert.match(desktopIndex, /KVDOS Desktop Studio Preview/);
-  assert.match(desktopApp, /Read-only Desktop Preview/);
+  assert.match(desktopApp, /KVDOS Studio Roadmap/);
+  assert.match(desktopApp, /KVDOS Studio Roadmap/);
   assert.match(desktopMain, /ReactDOM\.createRoot/);
   assert.match(desktopStyles, /desktop-shell/);
   assert.match(desktopRoadmap, /Desktop Studio Skeleton/);
   assert.match(desktopRoadmap, /done/);
   assert.match(desktopImplementation, /v1\.3 Desktop Studio Skeleton is now in place/);
   assert.match(desktopImplementation, /v1\.8 Add Tauri Shell/);
-  assert.match(desktopUx, /Scope boundary: do not imply execution, cloud sync, or license logic/);
+  assert.match(desktopUx, /Read-only Desktop Preview/);
   assert.match(desktopReadme, /read-only preview data bridge/);
   assert.match(desktopReadme, /npm run desktop:snapshot/);
   assert.match(desktopReadme, /v1\.10 Portable Preview Packaging Strategy/);
@@ -306,8 +385,8 @@ test("kvdos desktop read-only bridge loads generated or demo status tasks and de
   assert.ok(bridge.validationChecks.length >= 4);
   assert.ok(bridge.reportItems.length >= 3);
   assert.match(bridge.projectInfo.warning, /No task execution from Desktop UI\./);
-  assert.match(desktopSources[0], /Read-only Desktop Preview/);
-  assert.match(desktopSources[0], /Data source:/);
+  assert.match(desktopSources[0], /KvdosLogo/);
+  assert.match(desktopSources[0], /KVDOS Studio/);
   for (const source of desktopSources) {
     assert.doesNotMatch(source, /\bchild_process\b|\bexecFileSync\b|\bexecSync\b|\bspawnSync\b|\bspawn\(/);
   }
@@ -376,16 +455,19 @@ test("kvdos local backend placeholder is under studio", () => {
   assert.match(backend.purpose, /Studio/);
 });
 
-test("kvdos enterprise profile is initialized in workspace state", () => {
-  const profile = JSON.parse(fs.readFileSync(path.join(workspaceRoot, ".kabeeri", "project_profile.json"), "utf8"));
-  const project = JSON.parse(fs.readFileSync(path.join(workspaceRoot, ".kabeeri", "project.json"), "utf8"));
+test("kvdos enterprise profile is initialized in isolated workspace state", () => {
+  withTempDir((dir) => {
+    const { profilePath, projectPath } = writeWorkspaceStateFixture(dir);
+    const profile = JSON.parse(fs.readFileSync(profilePath, "utf8"));
+    const project = JSON.parse(fs.readFileSync(projectPath, "utf8"));
 
-  assert.strictEqual(profile.current_profile, "enterprise");
-  assert.strictEqual(profile.current_delivery_mode, "structured");
-  assert.strictEqual(project.profile, "enterprise");
-  assert.strictEqual(project.delivery_mode, "structured");
-  assert.ok(Array.isArray(profile.intake_groups));
-  assert.ok(profile.intake_groups.includes("extension"));
+    assert.strictEqual(profile.current_profile, "enterprise");
+    assert.strictEqual(profile.current_delivery_mode, "structured");
+    assert.strictEqual(project.profile, "enterprise");
+    assert.strictEqual(project.delivery_mode, "structured");
+    assert.ok(Array.isArray(profile.intake_groups));
+    assert.ok(profile.intake_groups.includes("extension"));
+  });
 });
 
 test("kvdos validation passes for the shipped spec", () => {

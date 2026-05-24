@@ -9,89 +9,15 @@
 - Canonical status: Not canonical until merged and approved by owner
 
 > Note: this document describes the intended product definition and not the
-> current shipped feature set. The current workspace release is a local-first
-> Studio foundation. The v1 product boundary includes cloud login,
-> subscriptions, licenses, activation, and release access control, while the
-> discovery/spec boundary remains documentation-first and app-local.
+> current shipped feature set. The current workspace release is local-first and
+> does not include execution, agents, cloud licensing, marketplace, or
+> enterprise automation yet.
 
 ## Product Definition
 
-KVDOS is a local-first, cloud-controlled IDE and control layer for AI-assisted
-software creation, maintenance, and publishing.
+KVDOS is a local-first, cloud-connected IDE and control layer for AI-assisted software creation, maintenance, and publishing.
 
 It is designed for developers, agencies, and serious AI-assisted teams that want to turn an idea into a governed, reviewable, publish-ready software product.
-
-## Discovery And Spec Boundary
-
-Discovery and spec work for KVDOS starts as app-local documentation and
-validation.
-
-The boundary covers:
-
-- questionnaire flow
-- blueprint/spec derivation
-- `app.kvdos.yaml` validation
-
-It does not include questionnaire UI code, blueprint/spec generator code, or
-`app.kvdos.yaml` generation logic yet.
-
-## Tasking And Approval Boundary
-
-Tasking and approval work for KVDOS starts as app-local documentation and
-validation.
-
-The boundary covers:
-
-- task queue boundary
-- FIFO ordering boundary
-- approval panel boundary
-- reports panel boundary
-- audit trail boundary
-- task derivation rules
-- approval checkpoint rules
-
-It does not include task queue behavior code, approval UI code, reports UI code,
-or audit implementation code yet.
-
-## Cloud Commercial Boundary
-
-Cloud commercial work for KVDOS starts as app-local documentation and
-validation.
-
-The boundary covers:
-
-- cloud account boundary
-- authentication boundary
-- subscription boundary
-- license entitlement boundary
-- device activation boundary
-- secure entitlement cache boundary
-- plan-access boundary
-- release-access boundary
-- update-access boundary
-
-It does not include cloud API code, authentication implementation, subscription
-backend code, license enforcement code, activation code, entitlement cache code,
-plan-access code, release-access code, or update-access code yet.
-
-## Local License Gate Boundary
-
-Local license-gate work for KVDOS starts as app-local documentation and
-validation.
-
-The boundary covers:
-
-- local license gate boundary
-- plan-based feature access boundary
-- offline grace policy boundary
-- invalid-license UX boundary
-- expired-license UX boundary
-- secure entitlement cache usage boundary
-- local entitlement-check boundary
-
-It does not include local license enforcement code, feature-gate code,
-entitlement-check code, offline-grace code, or invalid/expired-license UX code
-yet.
 
 ## What KVDOS Does
 
@@ -137,14 +63,14 @@ The first product priority should be agencies and serious AI-assisted developers
 KVDOS starts as:
 
 ```text
-Local IDE Studio + Local Runtime + Cloud subscription/license control
+Local Studio + Local Runner + Cloud-managed licensing/sync
 ```
 
 KVDOS is not intended to replace VS Code in its first versions. Users may still write and review code in VS Code, Cursor, Codex-enabled workflows, or other editors while KVDOS governs the project workflow.
 
-The current KVDOS workspace is intentionally narrower than the eventual v1
-commercial boundary: app spec validation, local task persistence, Studio
-browsing, dependency navigation, and read-only readiness reporting.
+The current shipped KVDOS workspace is intentionally narrower: app spec
+validation, local task persistence, Studio browsing, dependency navigation, and
+read-only readiness reporting.
 
 ## Main Product Promise
 
@@ -160,16 +86,16 @@ Idea -> Discovery -> Blueprint -> app.kvdos.yaml -> Tasks -> AI execution -> Rev
 
 ## Non-Goals for the First Version
 
-KVDOS should not try to deliver every later platform layer at once.
+KVDOS should not try to deliver all commercial layers at once.
 
 Delay:
 
 - full IDE replacement
 - full marketplace
 - enterprise self-hosting
+- advanced evolution system
 - cloud runner
 - Web3 or token systems
-- advanced evolution system
 - many app templates
 - automatic risky cleanup
 
@@ -178,6 +104,3 @@ Delay:
 KVDF is the open-source governance core used to help build and manage KVDOS.
 
 KVDOS is the commercial product described by this repository.
-
-Discovery/spec boundary work stays app-local to `workspaces/apps/kvdos/` until
-explicitly approved for implementation.
