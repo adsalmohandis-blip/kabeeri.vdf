@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-dashboard-report.schema.json",
+  "title": "Wi-Fi Data Sharing Dashboard Report",
+  "type": "object",
+  "required": ["report_type", "plugin_id", "generated_at", "status", "summary", "nodes", "latest_transfers", "latest_policy_results", "warnings", "next_actions"],
+  "properties": {
+    "report_type": { "type": "string", "const": "wifi_data_sharing_dashboard" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "generated_at": { "type": "string" },
+    "status": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["local_node_initialized", "candidates_count", "trusted_nodes_count", "revoked_nodes_count", "packages_count", "outbox_count", "inbox_count", "quarantine_count", "completed_transfers", "failed_transfers", "policy_blockers"],
+      "properties": {
+        "local_node_initialized": { "type": "boolean" },
+        "candidates_count": { "type": "integer" },
+        "trusted_nodes_count": { "type": "integer" },
+        "revoked_nodes_count": { "type": "integer" },
+        "packages_count": { "type": "integer" },
+        "outbox_count": { "type": "integer" },
+        "inbox_count": { "type": "integer" },
+        "quarantine_count": { "type": "integer" },
+        "completed_transfers": { "type": "integer" },
+        "failed_transfers": { "type": "integer" },
+        "policy_blockers": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "provider": { "type": "object" },
+    "local_node": { "type": "object" },
+    "nodes": { "type": "array", "items": { "type": "object" } },
+    "latest_packages": { "type": "array", "items": { "type": "object" } },
+    "latest_inbox": { "type": "array", "items": { "type": "object" } },
+    "latest_outbox": { "type": "array", "items": { "type": "object" } },
+    "latest_transfers": { "type": "array", "items": { "type": "object" } },
+    "latest_transfer_sessions": { "type": "array", "items": { "type": "object" } },
+    "latest_policy_results": { "type": "array", "items": { "type": "object" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "next_actions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

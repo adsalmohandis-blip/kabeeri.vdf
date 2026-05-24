@@ -11,6 +11,7 @@ const runner = require("../commands/tool_runner");
 const runContract = require("../commands/run_contract");
 
 assert.strictEqual(manifest.plugin_id, "ai_tool_adapters");
+assert.strictEqual(manifest.name, "AI Tool Adapter");
 assert.strictEqual(typeof bootstrap.aiToolAdapters, "function");
 assert.strictEqual(typeof runtime.aiToolAdapters, "function");
 assert.strictEqual(typeof runtime.buildAiToolAdaptersRunReport, "function");

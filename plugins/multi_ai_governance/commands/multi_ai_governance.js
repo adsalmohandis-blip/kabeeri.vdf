@@ -10,9 +10,17 @@ const {
   buildGovernanceCandidatePool,
   resolvePlannedWorkersForDistribution: resolvePlannedWorkersForDistributionService
 } = require("../../../src/cli/services/ai_planner");
+const wifiPackets = require("./wifi_packets");
 
 function multiAiGovernance(action, value, flags = {}, deps = {}) {
   const { appendAudit, rest = [] } = deps;
+  ensureWorkspace();
+  if (isWifiPacketAction(action)) {
+    const report = wifiPackets.multiAiWifiPackets(action, value, flags, rest, { appendAudit });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(wifiPackets.renderWifiPacketsReport(report));
+    return report;
+  }
   ensureWorkspace();
   const file = ".kabeeri/multi_ai_governance.json";
   if (!localFileExists(file)) writeJsonFile(file, defaultMultiAiGovernanceState());
@@ -78,6 +86,10 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
   }
 
   throw new Error(`Unknown multi-ai action: ${action}`);
+}
+
+function isWifiPacketAction(action) {
+  return ["wifi", "wifi_packets", "wifi-packets"].includes(String(action || "").trim().toLowerCase());
 }
 
 function handleLeaderAction(state, value, flags, appendAudit, rest = []) {

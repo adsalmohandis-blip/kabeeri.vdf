@@ -1,6 +1,6 @@
-# AI Tool Adapters Provider API
+# AI Tool Adapter Provider API
 
-`ai_tool_adapters` exposes a read-only provider API for capability discovery,
+`ai_tool_adapter` exposes a read-only provider API for capability discovery,
 contract readiness, governed run evidence, and optional integration with
 `multi_ai_governance`.
 

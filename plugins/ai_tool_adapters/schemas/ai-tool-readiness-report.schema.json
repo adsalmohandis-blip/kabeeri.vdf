@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Adapter Readiness Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "generated_at",
+    "status",
+    "checks",
+    "blockers",
+    "warnings",
+    "next_action"
+  ],
+  "properties": {
+    "report_type": { "type": "string", "const": "ai_tool_adapters_readiness" },
+    "generated_at": { "type": "string" },
+    "status": { "enum": ["ready", "partial", "blocked"] },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "status", "message"],
+        "additionalProperties": true,
+        "properties": {
+          "check_id": { "type": "string" },
+          "status": { "enum": ["pass", "warn", "fail"] },
+          "message": { "type": "string" }
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_action": { "type": "string" }
+  }
+}

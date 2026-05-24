@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-trusted-node.schema.json",
+  "title": "Wi-Fi Trusted Node",
+  "type": "object",
+  "required": ["node_id", "trust_status", "trusted_at", "revoked_at", "revocation_reason", "transfer_allowed"],
+  "properties": {
+    "node_id": { "type": "string" },
+    "display_name": { "type": ["string", "null"] },
+    "hostname": { "type": ["string", "null"] },
+    "address": { "type": ["string", "null"] },
+    "platform": { "type": ["string", "null"] },
+    "trust_status": { "type": "string", "enum": ["trusted", "revoked"] },
+    "trusted_at": { "type": ["string", "null"] },
+    "revoked_at": { "type": ["string", "null"] },
+    "revocation_reason": { "type": ["string", "null"] },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "transfer_allowed": { "type": "boolean" },
+    "pairing_id": { "type": ["string", "null"] },
+    "pairing_verified_at": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

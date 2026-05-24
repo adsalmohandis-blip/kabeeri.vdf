@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-data-sharing-state.schema.json",
+  "title": "Wi-Fi Data Sharing State",
+  "type": "object",
+  "required": ["version", "plugin_id", "local_node", "discovery", "pairing_sessions", "trusted_nodes", "transfers", "transfer_server", "policies"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "local_node": {
+      "type": "object",
+      "required": ["node_id", "display_name", "hostname", "platform", "kvdf_version", "trust_role", "status"],
+      "properties": {
+        "node_id": { "type": ["string", "null"] },
+        "display_name": { "type": ["string", "null"] },
+        "hostname": { "type": ["string", "null"] },
+        "platform": { "type": ["string", "null"] },
+        "kvdf_version": { "type": ["string", "null"] },
+        "trust_role": { "type": "string", "enum": ["owner", "worker", "unknown"] },
+        "status": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "discovery": {
+      "type": "object",
+      "required": ["enabled", "mode", "last_scan_at", "known_candidates"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "mode": { "type": "string" },
+        "last_scan_at": { "type": ["string", "null"] },
+        "known_candidates": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "additionalProperties": true
+    },
+    "pairing_sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pairing_id", "candidate_node_id", "pairing_code_hash", "status", "created_at", "expires_at", "verified_at"],
+        "properties": {
+          "pairing_id": { "type": "string" },
+          "candidate_node_id": { "type": "string" },
+          "pairing_code_hash": { "type": "string" },
+          "pairing_code_salt": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "verified", "expired", "cancelled"] },
+          "created_at": { "type": "string" },
+          "expires_at": { "type": "string" },
+          "verified_at": { "type": ["string", "null"] },
+          "pairing_verified": { "type": "boolean" },
+          "candidate_snapshot": { "type": "object" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "trusted_nodes": { "type": "array", "items": { "type": "object" } },
+    "transfers": { "type": "array", "items": { "type": "object" } },
+    "transfer_server": {
+      "type": "object",
+      "required": ["status", "port", "started_at", "updated_at"],
+      "properties": {
+        "status": { "type": "string" },
+        "port": { "type": ["integer", "null"] },
+        "started_at": { "type": ["string", "null"] },
+        "updated_at": { "type": ["string", "null"] }
+      },
+      "additionalProperties": true
+    },
+    "policies": {
+      "type": "object",
+      "required": ["external_dependencies_allowed", "network_default", "pairing_required", "data_transfer_default", "max_package_bytes"],
+      "properties": {
+        "external_dependencies_allowed": { "type": "boolean" },
+        "network_default": { "type": "string" },
+        "pairing_required": { "type": "boolean" },
+        "data_transfer_default": { "type": "string" },
+        "max_package_bytes": { "type": "integer" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

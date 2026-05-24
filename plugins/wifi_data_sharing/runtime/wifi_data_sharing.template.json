@@ -1,0 +1,37 @@
+{
+  "version": "v1",
+  "plugin_id": "wifi_data_sharing",
+  "created_at": null,
+  "updated_at": null,
+  "local_node": {
+    "node_id": null,
+    "display_name": null,
+    "hostname": null,
+    "platform": null,
+    "kvdf_version": null,
+    "trust_role": "unknown",
+    "status": "uninitialized"
+  },
+  "discovery": {
+    "enabled": false,
+    "mode": "disabled",
+    "last_scan_at": null,
+    "known_candidates": []
+  },
+  "pairing_sessions": [],
+  "trusted_nodes": [],
+  "transfers": [],
+  "transfer_server": {
+    "status": "stopped",
+    "port": null,
+    "started_at": null,
+    "updated_at": null
+  },
+  "policies": {
+    "external_dependencies_allowed": false,
+    "network_default": "disabled",
+    "pairing_required": true,
+    "data_transfer_default": "disabled",
+    "max_package_bytes": 10485760
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-data-provider-response.schema.json",
+  "title": "Wi-Fi Data Sharing Provider Report",
+  "type": "object",
+  "required": ["report_type", "plugin_id", "provider_id", "generated_at", "status", "provider_info", "local_node", "summary", "capabilities", "integration_status", "readiness", "warnings", "next_action"],
+  "properties": {
+    "report_type": { "type": "string", "const": "wifi_data_sharing_provider" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "provider_id": { "const": "wifi_data_sharing" },
+    "generated_at": { "type": "string" },
+    "status": { "type": "string", "enum": ["ready", "partial", "blocked"] },
+    "provider_info": { "type": "object" },
+    "local_node": { "type": "object" },
+    "summary": {
+      "type": "object",
+      "required": ["local_node_initialized", "candidates_count", "trusted_nodes_count", "revoked_nodes_count", "packages_count", "inbox_count", "quarantine_count", "transfers_count", "transfer_server_status", "transfer_server_port", "policy_blockers"],
+      "properties": {
+        "local_node_initialized": { "type": "boolean" },
+        "candidates_count": { "type": "integer" },
+        "trusted_nodes_count": { "type": "integer" },
+        "revoked_nodes_count": { "type": "integer" },
+        "packages_count": { "type": "integer" },
+        "inbox_count": { "type": "integer" },
+        "quarantine_count": { "type": "integer" },
+        "transfers_count": { "type": "integer" },
+        "transfer_server_status": { "type": "string" },
+        "transfer_server_port": { "type": ["integer", "null"] },
+        "policy_blockers": { "type": "integer" }
+      },
+      "additionalProperties": true
+    },
+    "capabilities": { "type": "array", "items": { "type": "string" } },
+    "candidates": { "type": "array", "items": { "type": "object" } },
+    "trusted_nodes": { "type": "array", "items": { "type": "object" } },
+    "inbox": { "type": "array", "items": { "type": "object" } },
+    "packages": { "type": "array", "items": { "type": "object" } },
+    "transfers": { "type": "array", "items": { "type": "object" } },
+    "integration_status": { "type": "object" },
+    "readiness": { "type": "object" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

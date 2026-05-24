@@ -642,6 +642,9 @@ GET  /updates/latest
 
 # 9. KVDOS Studio
 
+The UI/UX delivery plan, version map, and evo sequence for this surface now
+live under [docs/kvdos/uiux/](docs/kvdos/uiux/README.md).
+
 ## 9.1 Structure
 
 ```text
@@ -810,6 +813,9 @@ Secret access requests
 ---
 
 # 10. KVDOS Runner
+
+The UI/UX delivery plan, version map, and evo sequence for this surface are
+shared with the broader KVDOS UI pack under [docs/kvdos/uiux/](docs/kvdos/uiux/README.md).
 
 ## 10.1 Structure
 

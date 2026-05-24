@@ -378,7 +378,7 @@ The command separates the current application npm root from the Kabeeri engine r
 
 For framework owner development, `resume` also shows the Evolution Steward next priority, the top ordered development priorities, a parsed `OWNER_DEVELOPMENT_STATE.md` checkpoint, a compact git diff summary, and one exact next action for the current session. This is the required first-session view before continuing framework work.
 
-Use `kvdf entry` or `kvdf start` when you want automatic routing into the correct track without choosing it yourself. Use `kvdf track status` to inspect the active track state, and `kvdf track route` to persist the current routing decision into `.kabeeri/session_track.json`.
+Use `kvdf entry` or `kvdf start` when you want automatic routing into the correct track without choosing it yourself. Use `kvdf track status` to inspect the active track state, and `kvdf track route` to persist the current routing decision into `.kabeeri/session_track.json`. All three commands also accept `--workspace <path>` so an automation shell can point KVDF at a specific app workspace even when the current shell root is the framework repository.
 
 Use `kvdf onboarding` when you want the guided first-session route in a compact form. It shows the current workspace path, the safe first steps, the enter/route/resume sequence, and the commands you should run before touching code. The command also writes `.kabeeri/reports/session_onboarding.json`, and `kvdf onboarding report` reloads that persisted onboarding report when you want the saved first-session guide instead of regenerating it.
 
@@ -713,6 +713,13 @@ future session can read without rebuilding the route from chat memory.
 
 ```bash
 kvdf multi-ai status
+kvdf multi-ai wifi status
+kvdf multi-ai wifi nodes
+kvdf multi-ai wifi packet create --type assignment_packet --queue multi-ai-queue-001
+kvdf multi-ai wifi packet send --packet multi-ai-wifi-assignment_packet-multi-ai-queue-001 --to node-001 --confirm
+kvdf multi-ai wifi packet inbox
+kvdf multi-ai wifi packet inspect <package-id>
+kvdf multi-ai wifi packet consume <package-id> --confirm
 kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
 kvdf multi-ai leader transfer --ai agent-002
 kvdf multi-ai leader end
@@ -757,7 +764,10 @@ execution requires explicit Owner delegation for a scoped slice. Worker-only
 tools such as Gemini may still join the hub, but they remain non-leader
 participants unless leadership is explicitly allowed. If the Leader disappears
 or stops answering calls, the hub promotes the next active leader-eligible
-agent after the lease rules are exceeded.
+agent after the lease rules are exceeded. Optional wifi packet workflow can
+create transport-only governance packets, send them through trusted LAN nodes,
+and record inbox or consume receipts without auto-applying them back into
+governance state.
 
 `kvdf multi-ai agent next --ai <agent-id> --count <n>` lets a worker claim the
 next available Evolution priorities in order, so AI tools can pull from the
@@ -1990,26 +2000,94 @@ release command runs.
 kvdf doctor
 ```
 
-## 34. AI Tool Adapters
+## 34. AI Tool Adapter
 
 ```bash
-kvdf ai-tool-adapters status
-kvdf ai-tool-adapters scan
-kvdf ai-tool-adapters list
-kvdf ai-tool-adapters register --tool codex --path auto --editor vscode
-kvdf ai-tool-adapters provider
-kvdf ai-tool-adapters capabilities
-kvdf ai-tool-adapters can-run --contract .kabeeri/ai_tool_run_contract.json
-kvdf ai-tool-adapters test --tool node --contract .kabeeri/ai_tool_run_contract.json
-kvdf ai-tool-adapters run --tool node --contract .kabeeri/ai_tool_run_contract.json --confirm
-kvdf ai-tool-adapters evidence --run ai-tool-run-001
-kvdf ai-tool-adapters runs
-kvdf ai-tool-adapters run-show ai-tool-run-001
-kvdf ai-tool-adapters enable-execution --tool node --confirm
-kvdf ai-tool-adapters disable-execution --tool node
+kvdf ai-tool-adapter status
+kvdf ai-tool-adapter scan
+kvdf ai-tool-adapter list
+kvdf ai-tool-adapter register --tool codex --path auto --editor vscode
+kvdf ai-tool-adapter provider
+kvdf ai-tool-adapter capabilities
+kvdf ai-tool-adapter can-run --contract .kabeeri/ai_tool_run_contract.json
+kvdf ai-tool-adapter test --tool node --contract .kabeeri/ai_tool_run_contract.json
+kvdf ai-tool-adapter run --tool node --contract .kabeeri/ai_tool_run_contract.json --confirm
+kvdf ai-tool-adapter dashboard
+kvdf ai-tool-adapter readiness
+kvdf ai-tool-adapter evidence
+kvdf ai-tool-adapter policy --contract .kabeeri/ai_tool_run_contract.json
+kvdf ai-tool-adapter policy-results
+kvdf ai-tool-adapter policy-show ai-tool-policy-001
+kvdf ai-tool-adapter evidence --run ai-tool-run-001
+kvdf ai-tool-adapter runs
+kvdf ai-tool-adapter run-show ai-tool-run-001
+kvdf ai-tool-adapter audit
+kvdf ai-tool-adapter enable-execution --tool node --confirm
+kvdf ai-tool-adapter disable-execution --tool node
 ```
 
-`ai_tool_adapters` discovers and registers local tools in `.kabeeri/ai_tool_adapters.json`, exposes a provider API for capability summaries and contract readiness, and writes governed run evidence to `.kabeeri/ai_tool_runs.jsonl`. Execution remains disabled by default; a tool must be explicitly enabled and run through a valid contract with `--confirm`. `multi_ai_governance` remains the authority layer for assignments and run authorization, and may consume the provider API without delegating authority to it.
+`ai_tool_adapter` discovers and registers local tools in `.kabeeri/ai_tool_adapters.json`, validates governed run contracts, records policy results in `.kabeeri/ai_tool_policy_results.json`, exposes a provider API for capability summaries and contract readiness, and writes governed run evidence to `.kabeeri/ai_tool_runs.jsonl`. It also publishes read-only dashboard, readiness, evidence, and audit reports under `.kabeeri/reports/` so the current tool state is visible without opening the plugin internals. Execution remains disabled by default; a tool must be explicitly enabled and run through a valid contract with `--confirm`. `multi_ai_governance` remains the authority layer for assignments and run authorization, and may consume the provider API without delegating authority to it. The policy gate is local safety only: it can block unsafe contracts, warn on confirm-required execution, and never approves work on behalf of the authority layer. Visibility reports do not equal owner approval.
 
-Core routes to the `ai_tool_adapters` plugin. The plugin is optional but canonical. No Core fallback executes AI tools. If the plugin is missing or disabled, execution-related commands fail closed with the unavailable report and the install hint.
+Core routes to the `ai_tool_adapter` plugin surface. The bundle is optional but canonical. No Core fallback executes AI tools. If the plugin is missing or disabled, execution-related commands fail closed with the unavailable report and the install hint. Legacy `ai-tool-adapters` command aliases are still accepted.
+
+## 35. Wi-Fi Data Sharing
+
+```bash
+kvdf wifi-data-sharing status
+kvdf wifi-data-sharing init --name "Owner Laptop" --role owner
+kvdf wifi-data-sharing state
+kvdf wifi-data-sharing reset --confirm
+kvdf wifi-data-sharing policy
+kvdf wifi-data-sharing discover --timeout 5000
+kvdf wifi-data-sharing discover --json
+kvdf wifi-data-sharing advertise --duration 10000
+kvdf wifi-data-sharing candidates
+kvdf wifi-data-sharing candidates --json
+kvdf wifi-data-sharing provider
+kvdf wifi-data-sharing provider --json
+kvdf wifi-data-sharing readiness
+kvdf wifi-data-sharing readiness --json
+kvdf wifi-data-sharing dashboard
+kvdf wifi-data-sharing dashboard --json
+kvdf wifi-data-sharing audit
+kvdf wifi-data-sharing audit --json
+kvdf wifi-data-sharing evidence
+kvdf wifi-data-sharing evidence --package <package-id>
+kvdf wifi-data-sharing simulate two-node
+kvdf wifi-data-sharing simulate two-node --json
+kvdf wifi-data-sharing simulate transfer --size 1024
+kvdf wifi-data-sharing simulate security
+kvdf wifi-data-sharing pairing create --node <candidate-node-id>
+kvdf wifi-data-sharing pairing verify --node <candidate-node-id> --code <code>
+kvdf wifi-data-sharing trust --node <node-id> --confirm
+kvdf wifi-data-sharing revoke --node <node-id> --reason "..."
+kvdf wifi-data-sharing trusted
+kvdf wifi-data-sharing trusted --json
+kvdf wifi-data-sharing node show <node-id>
+kvdf wifi-data-sharing server start --port 47633
+kvdf wifi-data-sharing server status
+kvdf wifi-data-sharing package create --type <type> --input <path> --title "<title>"
+kvdf wifi-data-sharing send --package <package-id> --to <node-id> --confirm
+kvdf wifi-data-sharing inbox
+kvdf wifi-data-sharing inbox show <package-id>
+kvdf wifi-data-sharing inbox accept <package-id> --confirm
+kvdf wifi-data-sharing inbox reject <package-id> --reason "..."
+kvdf wifi-data-sharing outbox
+kvdf wifi-data-sharing outbox show <package-id>
+kvdf wifi-data-sharing outbox retry <package-id> --confirm
+kvdf wifi-data-sharing outbox cancel <package-id> --reason "..."
+kvdf wifi-data-sharing transfers
+kvdf wifi-data-sharing transfer show <transfer-id>
+kvdf wifi-data-sharing transfer resume --session <session-id> --confirm
+kvdf wifi-data-sharing transfer sessions
+kvdf wifi-data-sharing transfer clean --confirm
+kvdf wifi-data-sharing security check --package <package-id>
+kvdf wifi-data-sharing security results
+kvdf wifi-data-sharing quarantine
+kvdf wifi-data-sharing quarantine show <package-id>
+kvdf wifi-data-sharing quarantine release <package-id> --confirm
+kvdf wifi-data-sharing quarantine reject <package-id> --reason "..."
+```
+
+`wifi_data_sharing` is the removable local Wi-Fi/LAN sharing plugin for trusted KVDF and KVDOS nodes. Phase 1 covers node identity, local state, policy visibility, and the thin Core route. Phase 2 adds LAN discovery only. Phase 3 adds owner-controlled pairing and a trusted node registry. Phase 4 adds bounded package transfer, inbox review, and TCP frame helpers while still keeping received data quarantined until explicit acceptance. Phase 5 adds the provider API and optional `multi_ai_governance` integration contract. Phase 6 adds transfer security gates and quarantine policy enforcement so packages are reviewed before release. Phase 7 adds resumable transfer, outbox lifecycle, and transfer-session cleanup so interrupted transfers can be retried without mutating AI governance. Phase 8 adds dashboard, evidence, audit, and readiness reporting so local LAN sharing stays visible without adding new network behavior. Phase 9 adds local two-node simulation and stress tests so the plugin can verify discovery, pairing, package transfer, security gates, inbox/quarantine, and provider contracts without real Wi-Fi hardware. The plugin does not govern AI work, assign tasks, or replace `multi_ai_governance`. Core routes to the plugin and fails closed when the plugin is missing or disabled.
 

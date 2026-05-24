@@ -1,13 +1,13 @@
-# ai_tool_adapters and multi_ai_governance Contract
+# ai_tool_adapter and multi_ai_governance Contract
 
 This document defines the optional integration boundary between the capability
 provider and the authority governor.
 
 ## Roles
 
-### ai_tool_adapters
+### ai_tool_adapter
 
-`ai_tool_adapters` provides capability.
+`ai_tool_adapter` provides capability.
 
 It can:
 
@@ -42,11 +42,11 @@ It decides:
 2. `multi_ai_governance` may call `provider.canRunContract(contract)` to confirm
    that the tool contract is valid and ready.
 3. After owner approval, `multi_ai_governance` may call `provider.runContract(contract)`.
-4. `ai_tool_adapters` records the governed run evidence in
+4. `ai_tool_adapter` records the governed run evidence in
    `.kabeeri/ai_tool_runs.jsonl`.
 
 ## Boundary Rule
 
-`ai_tool_adapters` does not decide authority. It only tells the authority layer
+`ai_tool_adapter` does not decide authority. It only tells the authority layer
 whether a registered tool can accept a governed contract and it records the
 resulting run evidence.

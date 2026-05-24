@@ -1,6 +1,8 @@
 const fs = require("fs");
 
+const promptPacks = require("./commands/adapter_packs");
 const registry = require("./commands/tool_registry");
+const toolScan = require("./commands/tool_scan");
 const runContract = require("./commands/run_contract");
 const runner = require("./commands/tool_runner");
 
@@ -9,15 +11,30 @@ const AUTHORITY_PLUGIN_ID = "multi_ai_governance";
 const LATEST_RUN_LIMIT = 5;
 
 function getProviderInfo() {
+  const state = registry.ensureStateFile();
+  const catalog = toolScan.buildAdapterCatalogReport(state.tools || []);
+  const packCatalog = registry.buildAdaptationPackReport(state);
+  const promptCatalog = registry.buildPromptCatalogReport(state);
   return {
     provider_id: PROVIDER_ID,
     plugin_id: PROVIDER_ID,
+    plugin_name: "AI Tool Adapter",
+    display_name: "AI Tool Adapter",
     provider_role: "ai_tool_capability_provider",
     authority_plugin_id: AUTHORITY_PLUGIN_ID,
     authority_role: "governance",
     execution_default: "disabled",
     state_file: registry.STATE_FILE,
     runs_file: runner.RUNS_FILE,
+    adapter_catalog_count: catalog.count,
+    adapter_catalog_installed_count: catalog.installed_count || 0,
+    adaptation_pack_count: packCatalog.count,
+    adaptation_pack_installed_count: packCatalog.installed_count || 0,
+    prompt_profile_count: promptCatalog.count,
+    prompt_composition_supported: true,
+    supported_adapter_families: catalog.summary.by_family,
+    supported_adapter_surfaces: catalog.summary.by_surface,
+    supported_adapter_activation_states: catalog.summary.by_activation,
     available: true,
     enabled_by_default: true
   };
@@ -45,7 +62,7 @@ function getToolCapabilities(toolId, options = {}) {
       capabilities: [],
       execution_enabled: false,
       status: "warning",
-      next_action: "Run ai-tool-adapters scan or register the tool before requesting capabilities."
+      next_action: "Run ai-tool-adapter scan or register the tool before requesting capabilities."
     };
   }
   return {
@@ -104,24 +121,52 @@ function getRunEvidence(runId) {
 
 function buildAdapterProviderReport(options = {}) {
   const tools = listAvailableTools(options);
+  const state = ensureState(options);
+  const catalog = toolScan.buildAdapterCatalogReport(state.tools || []);
+  const packCatalog = registry.buildAdaptationPackReport(state);
+  const promptCatalog = registry.buildPromptCatalogReport(state);
   const runEvents = runner.readRunEvents().slice(-LATEST_RUN_LIMIT).reverse().map((event) => summarizeRunEvent(event));
   return {
     report_type: "ai_tool_adapters_provider",
     provider_id: PROVIDER_ID,
     plugin_id: PROVIDER_ID,
+    plugin_name: "AI Tool Adapter",
+    display_name: "AI Tool Adapter",
     tools_count: tools.length,
     available_tools: tools,
     execution_enabled_count: tools.filter((tool) => tool.execution_enabled).length,
+    adapter_catalog_count: catalog.count,
+    adapter_catalog_installed_count: catalog.installed_count || 0,
+    adaptation_pack_count: packCatalog.count,
+    adaptation_pack_installed_count: packCatalog.installed_count || 0,
+    prompt_profile_count: promptCatalog.count,
+    prompt_composition_supported: true,
+    adapter_catalog_summary: catalog.summary,
+    adaptation_pack_catalog: packCatalog.packs || [],
+    prompt_profile_catalog: promptCatalog.prompt_profiles || [],
     latest_runs: runEvents,
     integration_status: {
       provider_api: "available",
       authority_plugin_id: AUTHORITY_PLUGIN_ID,
       dependency_type: "optional",
       status: "ready",
-      note: "Capability is provided by ai_tool_adapters; authority remains in multi_ai_governance."
+      note: "Capability is provided by ai_tool_adapter; authority remains in multi_ai_governance."
     },
-    next_action: "Use multi_ai_governance to authorize an assignment, then call ai_tool_adapters runContract with a validated contract."
+    next_action: "Use multi_ai_governance to authorize an assignment, then call ai_tool_adapter runContract with a validated contract."
   };
+}
+
+function buildAdapterCatalogReport() {
+  return toolScan.buildAdapterCatalogReport();
+}
+
+function buildPromptCompositionReport(input = {}, options = {}) {
+  return promptPacks.buildPromptCompositionReport(input, options);
+}
+
+function buildPromptBlueprintReport(input = {}, options = {}) {
+  const report = promptPacks.buildPromptCompositionReport(input, options);
+  return report.prompt_blueprint || report;
 }
 
 function buildCanRunReport(validation, ready) {
@@ -138,7 +183,7 @@ function buildCanRunReport(validation, ready) {
     policy_checks: Array.isArray(validation.policy_checks) ? validation.policy_checks.slice() : [],
     execution_enabled: Boolean(validation.tool && validation.tool.execution_enabled),
     next_action: ready
-      ? "multi_ai_governance can approve the assignment, then call ai_tool_adapters runContract with --confirm."
+      ? "multi_ai_governance can approve the assignment, then call ai_tool_adapter runContract with --confirm."
       : "Fix the blockers before requesting a governed run."
   };
 }
@@ -247,10 +292,21 @@ function summarizeTool(tool) {
   if (!tool) return null;
   return {
     tool_id: tool.tool_id,
+    platform_name: tool.platform_name ?? null,
     tool_type: tool.tool_type,
     display_name: tool.display_name,
     command: tool.command,
+    commands: Array.isArray(tool.commands) ? tool.commands.slice() : [],
     resolved_path: tool.resolved_path ?? null,
+    resolved_command: tool.resolved_command ?? null,
+    adapter_family: tool.adapter_family ?? null,
+    adapter_surface: tool.adapter_surface ?? null,
+    adaptation_pack_id: tool.adaptation_pack_id ?? null,
+    adaptation_pack_name: tool.adaptation_pack_name ?? null,
+    adaptation_pack: tool.adaptation_pack ?? null,
+    prompt_profile_id: tool.prompt_profile_id ?? null,
+    prompt_profile: tool.prompt_profile ?? null,
+    activation_state: tool.activation_state ?? null,
     editor: tool.editor,
     status: tool.status,
     capabilities: Array.isArray(tool.capabilities) ? tool.capabilities.slice() : [],
@@ -293,5 +349,8 @@ module.exports = {
   canRunContract,
   runContract: runContractWithProvider,
   getRunEvidence,
-  buildAdapterProviderReport
+  buildAdapterProviderReport,
+  buildAdapterCatalogReport,
+  buildPromptCompositionReport,
+  buildPromptBlueprintReport
 };

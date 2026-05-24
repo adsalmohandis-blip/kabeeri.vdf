@@ -1,21 +1,24 @@
 # AI Tool Adapter Contract
 
-`ai_tool_adapters` is the local discovery and registration layer for AI tools.
+`ai_tool_adapter` is the local discovery and registration layer for AI tools.
+The bundle lives in `plugins/ai_tool_adapters/` for compatibility, but the
+public-facing identity is singular.
 
 ## What It Does
 
 - detects common AI and developer tools on `PATH`
 - records a local registry of discovered or manually registered tools
 - summarizes the tools available in the current workspace
-- keeps `execution_enabled` disabled in Phase 1
+- keeps `execution_enabled` disabled by default until explicitly changed
 
 ## What It Does Not Do
 
-- it does not execute tools
+- it does not execute tools by default
 - it does not assign tasks
 - it does not claim authority over agents or queues
 - it does not replace `multi_ai_governance`
 - it does not add external dependencies
+- it does not become a general shell wrapper
 
 ## Governance Boundary
 
@@ -32,43 +35,22 @@ It does not govern who is allowed to work.
 
 ## Runtime Policy
 
-Default policy for Phase 1:
+Default policy:
 
 - `execution_default`: `disabled`
 - `manual_registration_allowed`: `true`
 - `external_dependencies_allowed`: `false`
 
-## Phase 2 Runner Policy
+## Governed Runner Boundary
 
-Phase 2 adds a governed runner contract, but not autonomous tool behavior.
+The plugin only runs a local tool when all of the following are true:
 
-- execution still requires a valid contract
-- execution still requires `--confirm`
-- execution still respects `execution_enabled`
-- evidence is appended to `.kabeeri/ai_tool_runs.jsonl`
-- `multi_ai_governance` remains the authority layer for assignments
-- this plugin only runs the tool that was explicitly contracted
-- shell execution stays disabled; use direct command spawning only
-
-## Phase 3 Provider API
-
-Phase 3 adds a provider API for capability lookups and integration checks.
-
-- the provider can list registered tools and their capabilities
-- the provider can validate whether a contract is ready to run
-- the provider can return evidence from `.kabeeri/ai_tool_runs.jsonl`
-- the provider can call the governed runner, but it still does not approve assignments
-- `multi_ai_governance` stays the authority layer
-- the provider remains optional and removable
-- the provider does not decide task ownership, task approval, or merge approval
-
-## Safety Rules
-
-- do not execute tools during discovery
-- do not enable execution in Phase 1
-- do not bypass run-contract validation in Phase 2
-- do not depend on external libraries
-- keep registry changes local to the workspace
+- a valid run contract exists
+- the tool is registered
+- execution is enabled for that tool
+- policy evaluation passes
+- `--confirm` is provided
+- the command is executed through direct spawn with `shell: false`
 
 ## State File
 
@@ -76,4 +58,4 @@ The plugin owns the local state file:
 
 `.kabeeri/ai_tool_adapters.json`
 
-The state file is a registry and scan history, not a task authority store.
+The state file is registry and scan history data, not task authority data.

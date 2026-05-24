@@ -1,8 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 const {
-  KNOWN_TOOL_CANDIDATES,
   buildRegisteredToolFromInput,
+  buildAdapterCatalogReport,
+  buildAdaptationPackCatalogReport,
+  buildPromptCatalogReport,
+  adaptationPackForCommand,
+  getAdapterProfileForCommand,
   normalizeScanHistoryEntry,
   normalizeToolId,
   scanKnownTools
@@ -48,15 +52,29 @@ function normalizePolicies(policies = {}) {
 
 function normalizeToolRecord(tool = {}) {
   const now = new Date().toISOString();
-  const descriptor = KNOWN_TOOL_CANDIDATES.find((item) => item.command === String(tool.command || "").trim()) || null;
+  const descriptor = getAdapterProfileForCommand(tool.command || tool.platform_name || tool.resolved_command || tool.tool_id || "") || null;
   const command = String(tool.command || (descriptor ? descriptor.command : tool.tool_id || "")).trim();
+  const adaptationPack = adaptationPackForCommand(command);
   return {
     tool_id: normalizeToolId(tool.tool_id || command),
+    platform_name: tool.platform_name || (descriptor ? descriptor.platform_name : null),
     tool_type: tool.tool_type || (descriptor ? descriptor.tool_type : "custom_tool"),
     display_name: tool.display_name || (descriptor ? descriptor.display_name : command || "Unknown Tool"),
     command,
+    commands: Array.isArray(tool.commands) && tool.commands.length
+      ? Array.from(new Set(tool.commands.map((item) => String(item).trim()).filter(Boolean)))
+      : (descriptor && Array.isArray(descriptor.commands) ? descriptor.commands.slice() : [command]),
+    resolved_command: tool.resolved_command || (descriptor ? descriptor.command : command),
     resolved_path: tool.resolved_path ?? null,
-    editor: String(tool.editor || "unknown").trim() || "unknown",
+    adapter_family: tool.adapter_family || (descriptor ? descriptor.adapter_family : "custom"),
+    adapter_surface: tool.adapter_surface || (descriptor ? descriptor.adapter_surface : "cli"),
+    adaptation_pack_id: tool.adaptation_pack_id || (adaptationPack ? adaptationPack.adaptation_pack_id : null),
+    adaptation_pack_name: tool.adaptation_pack_name || (adaptationPack ? adaptationPack.display_name : null),
+    adaptation_pack: tool.adaptation_pack || adaptationPack,
+    prompt_profile_id: tool.prompt_profile_id || (adaptationPack && adaptationPack.prompt_profile ? adaptationPack.prompt_profile.prompt_profile_id : null),
+    prompt_profile: tool.prompt_profile || (adaptationPack ? adaptationPack.prompt_profile : null),
+    activation_state: tool.activation_state || (tool.resolved_path ? "installed" : (adaptationPack ? "missing" : "unknown")),
+    editor: String(tool.editor || (descriptor && descriptor.adapter_surface === "editor" ? "cursor" : "unknown")).trim() || "unknown",
     status: ["detected", "registered", "missing", "disabled"].includes(tool.status) ? tool.status : "missing",
     capabilities: Array.isArray(tool.capabilities) && tool.capabilities.length
       ? Array.from(new Set(tool.capabilities))
@@ -111,7 +129,7 @@ function ensureStateFile() {
 
 function findTool(state, toolId) {
   const normalizedId = normalizeToolId(toolId);
-  return (state.tools || []).find((tool) => tool.tool_id === normalizedId || tool.command === toolId) || null;
+  return (state.tools || []).find((tool) => tool.tool_id === normalizedId || tool.command === toolId || tool.resolved_command === toolId) || null;
 }
 
 function upsertTool(state, toolRecord) {
@@ -159,18 +177,31 @@ function setToolExecutionEnabled(state, toolId, enabled) {
 }
 
 function buildCounts(tools = []) {
+  const byFamily = {};
+  const bySurface = {};
+  for (const tool of tools) {
+    const family = String(tool.adapter_family || "custom");
+    const surface = String(tool.adapter_surface || "cli");
+    byFamily[family] = (byFamily[family] || 0) + 1;
+    bySurface[surface] = (bySurface[surface] || 0) + 1;
+  }
   return {
     total: tools.length,
     detected: tools.filter((tool) => tool.status === "detected").length,
     registered: tools.filter((tool) => tool.status === "registered").length,
     missing: tools.filter((tool) => tool.status === "missing").length,
-    disabled: tools.filter((tool) => tool.status === "disabled").length
+    disabled: tools.filter((tool) => tool.status === "disabled").length,
+    by_family: byFamily,
+    by_surface: bySurface
   };
 }
 
 function buildStatusReport(state = ensureStateFile()) {
   const normalized = normalizeState(state);
   const counts = buildCounts(normalized.tools);
+  const catalog = buildAdapterCatalogReport(normalized.tools);
+  const packCatalog = buildAdaptationPackReport(normalized.tools);
+  const promptCatalog = buildPromptCatalogReport(normalized);
   return {
     report_type: "ai_tool_adapters_status",
     plugin_id: "ai_tool_adapters",
@@ -181,19 +212,32 @@ function buildStatusReport(state = ensureStateFile()) {
     execution_default: normalized.policies.execution_default,
     policies: normalized.policies,
     tools: counts,
+    adapter_catalog_size: catalog.count,
+    adapter_catalog_installed_count: catalog.installed_count || 0,
+    supported_adapter_families: catalog.summary.by_family,
+    supported_adapter_surfaces: catalog.summary.by_surface,
+    supported_adapter_activation_states: catalog.summary.by_activation,
+    adaptation_pack_count: packCatalog.count,
+    adaptation_pack_installed_count: packCatalog.installed_count || 0,
+    prompt_profile_count: promptCatalog.count,
     execution_enabled: false,
-    next_action: "Run kvdf ai-tool-adapters scan --json to detect local AI tools."
+    next_action: "Run kvdf ai-tool-adapter scan --json to detect local AI tools and compare them against the adapter catalog."
   };
 }
 
 function buildListReport(state = ensureStateFile()) {
   const normalized = normalizeState(state);
+  const counts = buildCounts(normalized.tools);
   return {
     report_type: "ai_tool_adapters_list",
     plugin_id: "ai_tool_adapters",
     tools: normalized.tools,
     count: normalized.tools.length,
-    next_action: "Run kvdf ai-tool-adapters scan --json to refresh detected tools."
+    adapter_families: counts.by_family,
+    adapter_surfaces: counts.by_surface,
+    adapter_activation_states: buildAdapterCatalogReport(normalized.tools).summary.by_activation,
+    prompt_profile_count: buildPromptCatalogReportWrapper(normalized).count,
+    next_action: "Run kvdf ai-tool-adapter scan --json to refresh detected tools."
   };
 }
 
@@ -205,7 +249,7 @@ function buildMissingToolReport(toolId) {
     found: false,
     tool_id: normalizeToolId(toolId),
     tool: null,
-    next_action: "Run kvdf ai-tool-adapters scan --json or register the tool manually."
+    next_action: "Run kvdf ai-tool-adapter scan --json or register the tool manually."
   };
 }
 
@@ -221,8 +265,8 @@ function buildShowReport(toolId, state = ensureStateFile()) {
     tool_id: tool.tool_id,
     tool,
     next_action: tool.status === "disabled"
-      ? "Run kvdf ai-tool-adapters register --tool <tool> to reactivate the registry entry."
-      : "Run kvdf ai-tool-adapters scan --json to refresh the local detection record."
+      ? "Run kvdf ai-tool-adapter register --tool <tool> to reactivate the registry entry."
+      : "Run kvdf ai-tool-adapter scan --json to refresh the local detection record."
   };
 }
 
@@ -234,6 +278,15 @@ function mergeDetectedTools(state, detectedTools, now = new Date().toISOString()
     if (existing) {
       existing.last_checked_at = now;
       existing.resolved_path = tool.resolved_path || existing.resolved_path;
+      existing.resolved_command = tool.resolved_command || existing.resolved_command;
+      existing.adapter_family = tool.adapter_family || existing.adapter_family;
+      existing.adapter_surface = tool.adapter_surface || existing.adapter_surface;
+      existing.adaptation_pack_id = tool.adaptation_pack_id || existing.adaptation_pack_id;
+      existing.adaptation_pack_name = tool.adaptation_pack_name || existing.adaptation_pack_name;
+      existing.adaptation_pack = tool.adaptation_pack || existing.adaptation_pack;
+      existing.prompt_profile_id = tool.prompt_profile_id || existing.prompt_profile_id;
+      existing.prompt_profile = tool.prompt_profile || existing.prompt_profile;
+      existing.activation_state = tool.activation_state || existing.activation_state;
       if (existing.status !== "disabled") {
         existing.status = existing.status === "registered" ? "registered" : "detected";
         if (!existing.detected_at) existing.detected_at = tool.detected_at || now;
@@ -258,13 +311,23 @@ function mergeDetectedTools(state, detectedTools, now = new Date().toISOString()
     scanned_at: now,
     candidates: detectedTools.map((tool) => ({
       tool_id: tool.tool_id,
+      platform_name: tool.platform_name,
       tool_type: tool.tool_type,
       command: tool.command,
+      resolved_command: tool.resolved_command,
       resolved_path: tool.resolved_path,
       detected: Boolean(tool.resolved_path),
       editor: tool.editor,
       status: tool.status,
-      capabilities: tool.capabilities
+      capabilities: tool.capabilities,
+      adapter_family: tool.adapter_family,
+      adapter_surface: tool.adapter_surface,
+      adaptation_pack_id: tool.adaptation_pack_id,
+      adaptation_pack_name: tool.adaptation_pack_name,
+      adaptation_pack: tool.adaptation_pack,
+      prompt_profile_id: tool.prompt_profile_id,
+      prompt_profile: tool.prompt_profile,
+      activation_state: tool.activation_state
     })),
     detected_tools: detectedTools.filter((tool) => tool.resolved_path).map((tool) => tool.tool_id),
     missing_tools: detectedTools.filter((tool) => !tool.resolved_path).map((tool) => tool.tool_id),
@@ -301,6 +364,10 @@ function buildUnregisterReport(toolRecord) {
 }
 
 function buildScanReport(state, detectedTools, scanHistoryEntry, added = []) {
+  const counts = buildCounts(detectedTools);
+  const catalog = buildAdapterCatalogReport(detectedTools);
+  const packCatalog = buildAdaptationPackReport({ tools: detectedTools });
+  const promptCatalog = buildPromptCatalogReportWrapper({ tools: detectedTools });
   return {
     report_type: "ai_tool_adapters_scan",
     plugin_id: "ai_tool_adapters",
@@ -311,6 +378,13 @@ function buildScanReport(state, detectedTools, scanHistoryEntry, added = []) {
     missing_tools: scanHistoryEntry.missing_tools,
     tools_added: added,
     tools_total: state.tools.length,
+    adapter_families: counts.by_family,
+    adapter_surfaces: counts.by_surface,
+    adapter_activation_states: counts.by_family ? catalog.summary.by_activation : {},
+    adapter_catalog_installed_count: catalog.installed_count || 0,
+    adaptation_pack_count: packCatalog.count,
+    adaptation_pack_installed_count: packCatalog.installed_count || 0,
+    prompt_profile_count: promptCatalog.count,
     execution_enabled: false,
     next_action: "Review the detected tools, then use register only for registry updates. Tool execution remains disabled."
   };
@@ -333,6 +407,21 @@ function unregisterTool(toolId) {
   const state = ensureStateFile();
   const result = disableTool(state, toolId);
   return buildUnregisterReport(result.tool);
+}
+
+function buildCatalogReport(state = null) {
+  const tools = state && Array.isArray(state.tools) ? state.tools : [];
+  return buildAdapterCatalogReport(tools);
+}
+
+function buildAdaptationPackReport(state = null) {
+  const tools = state && Array.isArray(state.tools) ? state.tools : [];
+  return buildAdaptationPackCatalogReport(tools);
+}
+
+function buildPromptCatalogReportWrapper(state = null) {
+  const tools = state && Array.isArray(state.tools) ? state.tools : [];
+  return buildPromptCatalogReport(tools);
 }
 
 module.exports = {
@@ -358,6 +447,9 @@ module.exports = {
   buildRegisterReport,
   buildUnregisterReport,
   buildScanReport,
+  buildCatalogReport,
+  buildAdaptationPackReport,
+  buildPromptCatalogReport: buildPromptCatalogReportWrapper,
   runScanAndRegister,
   registerTool,
   unregisterTool

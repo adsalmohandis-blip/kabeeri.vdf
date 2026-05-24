@@ -1,4 +1,4 @@
-const { buildResumeReport, buildSessionEntryRoute, entry: entryCommand } = require("./resume");
+const { buildResumeReport, buildSessionEntryRoute, entry: entryCommand, withSessionWorkspace } = require("./resume");
 const { table } = require("../ui");
 
 function track(action, value, flags = {}) {
@@ -6,28 +6,30 @@ function track(action, value, flags = {}) {
     return entryCommand(action, value, flags);
   }
 
-  const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
-  const route = buildSessionEntryRoute(report);
-  const payload = {
-    report_type: "session_track_status",
-    generated_at: new Date().toISOString(),
-    mode: report.mode,
-    current_root: report.current_root,
-    primary_track: report.primary_track,
-    track_context: report.track_context,
-    session_track: report.session_track,
-    entry_route: route,
-    next_exact_action: report.next_exact_action,
-    recommended_commands: report.recommended_commands,
-    warnings: report.warnings
-  };
+  return withSessionWorkspace(flags, () => {
+    const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
+    const route = buildSessionEntryRoute(report);
+    const payload = {
+      report_type: "session_track_status",
+      generated_at: new Date().toISOString(),
+      mode: report.mode,
+      current_root: report.current_root,
+      primary_track: report.primary_track,
+      track_context: report.track_context,
+      session_track: report.session_track,
+      entry_route: route,
+      next_exact_action: report.next_exact_action,
+      recommended_commands: report.recommended_commands,
+      warnings: report.warnings
+    };
 
-  if (flags.json) {
-    console.log(JSON.stringify(payload, null, 2));
-    return;
-  }
+    if (flags.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
 
-  renderTrackStatus(payload);
+    renderTrackStatus(payload);
+  });
 }
 
 function renderTrackStatus(payload) {

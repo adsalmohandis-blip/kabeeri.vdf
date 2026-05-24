@@ -63,6 +63,7 @@ const { uiDashboardKits } = require("./commands/ui_dashboard_kits");
 const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
 const { aiToolAdapters } = require("./commands/ai_tool_adapters");
+const { wifiDataSharing } = require("./commands/wifi_data_sharing");
 const { pluginExtraction } = require("./commands/plugin_extraction");
 const { naming } = require("./commands/naming");
 const { githubProvider } = require("./commands/github_provider");
@@ -396,8 +397,11 @@ function run(argv) {
       repoRoot
     });
   }
-  if (["ai-tool-adapters", "ai_tool_adapters", "aitooladapters", "ai-tools"].includes(group)) {
+  if (["ai-tool-adapter", "ai-tool-adapters", "ai_tool_adapter", "ai_tool_adapters", "aitooladapter", "aitooladapters", "ai-tools"].includes(group)) {
     return aiToolAdapters(action, value, args.flags, rest, {});
+  }
+  if (["wifi-data-sharing", "wifi_data_sharing", "wifi-share", "wifidata", "wifidatasharing"].includes(group)) {
+    return wifiDataSharing(action, value, args.flags, rest, {});
   }
   if (["github-provider", "github_provider", "githubprovider"].includes(group)) {
     return githubProvider(action, value, args.flags, rest, {
@@ -10158,6 +10162,7 @@ function getCommandDispatchContext() {
     multiAiCommunications,
     multiAiGovernance,
     aiToolAdapters,
+    wifiDataSharing,
     acceptance,
     audit,
     memory,

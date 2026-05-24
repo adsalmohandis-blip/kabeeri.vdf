@@ -1,0 +1,28 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-transfer-session.schema.json",
+  "title": "Wi-Fi Transfer Session",
+  "type": "object",
+  "required": ["session_id", "package_id", "status", "chunk_size_bytes", "total_chunks", "completed_chunks", "sha256"],
+  "properties": {
+    "session_id": { "type": "string" },
+    "package_id": { "type": "string" },
+    "source_node_id": { "type": ["string", "null"] },
+    "target_node_id": { "type": ["string", "null"] },
+    "status": { "type": "string", "enum": ["queued", "sending", "partially_sent", "sent", "failed", "cancelled"] },
+    "chunk_size_bytes": { "type": "number" },
+    "total_chunks": { "type": "number" },
+    "completed_chunks": {
+      "type": "array",
+      "items": { "type": "number" }
+    },
+    "sha256": { "type": "string" },
+    "started_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "completed_at": { "type": ["string", "null"] },
+    "retry_count": { "type": ["number", "null"] },
+    "last_error": { "type": ["string", "null"] },
+    "chunk_manifest": { "type": ["object", "null"] }
+  },
+  "additionalProperties": true
+}

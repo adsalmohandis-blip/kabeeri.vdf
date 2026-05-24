@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Multi-AI Wi-Fi Governance Packet",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["packet_id", "packet_type", "source", "target_plugin", "payload", "created_at", "status"],
+  "properties": {
+    "packet_id": { "type": "string" },
+    "packet_type": {
+      "type": "string",
+      "enum": [
+        "assignment_packet",
+        "queue_status_packet",
+        "evidence_packet",
+        "merge_preview_packet",
+        "owner_decision_packet",
+        "heartbeat_packet"
+      ]
+    },
+    "source": { "const": "multi_ai_governance" },
+    "target_plugin": { "const": "multi_ai_governance" },
+    "queue_id": { "type": ["string", "null"] },
+    "assignment_id": { "type": ["string", "null"] },
+    "leader_session_id": { "type": ["string", "null"] },
+    "created_by_node_id": { "type": ["string", "null"] },
+    "title": { "type": ["string", "null"] },
+    "payload": { "type": ["object", "array", "string", "number", "boolean", "null"] },
+    "created_at": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["created", "sent", "received", "inspected", "consumed", "rejected"]
+    },
+    "package_id": { "type": ["string", "null"] },
+    "target_node_id": { "type": ["string", "null"] },
+    "sent_at": { "type": ["string", "null"] },
+    "received_at": { "type": ["string", "null"] },
+    "inspected_at": { "type": ["string", "null"] },
+    "consumed_at": { "type": ["string", "null"] },
+    "rejected_at": { "type": ["string", "null"] }
+  }
+}

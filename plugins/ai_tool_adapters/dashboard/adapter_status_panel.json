@@ -1,0 +1,14 @@
+{
+  "panel_id": "adapter_status_panel",
+  "title": "Adapter Status",
+  "report_type": "ai_tool_adapters_dashboard",
+  "description": "Summarizes discovered, registered, and execution-enabled AI tools without running anything.",
+  "metrics": [
+    "tools_count",
+    "detected_tools",
+    "registered_tools",
+    "execution_enabled_tools"
+  ],
+  "empty_state": "No AI tools are registered yet. Run scan to detect local tools.",
+  "next_action": "Use ai-tool-adapter scan or register to refresh the registry."
+}

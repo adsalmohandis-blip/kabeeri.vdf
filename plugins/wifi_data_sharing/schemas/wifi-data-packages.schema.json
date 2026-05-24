@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-data-packages.schema.json",
+  "title": "Wi-Fi Data Packages Index",
+  "type": "object",
+  "required": ["version", "plugin_id", "packages"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "packages": {
+      "type": "array",
+      "items": { "$ref": "./wifi-data-package.schema.json" }
+    }
+  },
+  "additionalProperties": true
+}

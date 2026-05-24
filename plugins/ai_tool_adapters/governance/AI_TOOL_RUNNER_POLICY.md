@@ -1,6 +1,7 @@
 # AI Tool Runner Policy
 
-`ai_tool_adapters` may run a local tool only when a valid run contract has been supplied and the registry entry has been explicitly enabled.
+`ai_tool_adapter` may run a local tool only when a valid run contract has been
+supplied and the registry entry has been explicitly enabled.
 
 ## Policy Summary
 

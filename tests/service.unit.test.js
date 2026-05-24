@@ -39,8 +39,14 @@ const { detectLanguage, matchesWords, resolveOutputLanguage } = require("../src/
 const { buildBootContext } = require("../src/core/bootstrap");
 require("../plugins/ai_tool_adapters/tests/ai_tool_adapters.contract.test");
 require("../plugins/ai_tool_adapters/tests/ai_tool_provider.contract.test");
+require("../plugins/ai_tool_adapters/tests/dashboard_readiness.contract.test");
 require("../plugins/ai_tool_adapters/tests/fail_closed.contract.test");
 require("../plugins/ai_tool_adapters/tests/ai_tool_runner.contract.test");
+require("../plugins/ai_tool_adapters/tests/policy_gate.contract.test");
+require("../plugins/wifi_data_sharing/tests/wifi_data_sharing.contract.test");
+require("../plugins/wifi_data_sharing/tests/pairing.contract.test");
+require("../plugins/wifi_data_sharing/tests/transfer.contract.test");
+require("../plugins/wifi_data_sharing/tests/provider_integration.contract.test");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");
 const { repoRoot } = require("../src/cli/fs_utils");
@@ -980,6 +986,15 @@ test("naming governance scans runtime state and produces a dry-run migration pla
       process.chdir(previousCwd);
     }
   });
+});
+
+test("ai tool adapters run command consults the policy gate before continuing", () => {
+  const source = fs.readFileSync(path.join(repoRoot(), "plugins", "ai_tool_adapters", "commands", "ai_tool_adapters.js"), "utf8");
+  const policyIndex = source.indexOf("policyGate.evaluateContract");
+  const runIndex = source.lastIndexOf("buildRunReport(");
+  assert.ok(policyIndex >= 0);
+  assert.ok(runIndex >= 0);
+  assert.ok(policyIndex < runIndex);
 });
 
 test("local server helpers skip serve mode in non-interactive environments", () => {

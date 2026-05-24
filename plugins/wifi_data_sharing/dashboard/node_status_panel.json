@@ -1,0 +1,27 @@
+{
+  "panel_id": "node_status_panel",
+  "title": "Node Status",
+  "description": "Shows the local node identity, discovery posture, and trust readiness for Wi-Fi data sharing.",
+  "data_sources": [
+    ".kabeeri/wifi_data_sharing.json",
+    ".kabeeri/wifi_data_discovery.jsonl",
+    ".kabeeri/wifi_data_pairing.jsonl",
+    ".kabeeri/reports/wifi_data_sharing_dashboard.json"
+  ],
+  "fields": [
+    "local_node.node_id",
+    "local_node.display_name",
+    "local_node.hostname",
+    "local_node.platform",
+    "discovery.enabled",
+    "discovery.mode",
+    "trusted_nodes_count",
+    "revoked_nodes_count"
+  ],
+  "empty_state": "Initialize the local node before discovering or trusting LAN peers.",
+  "next_actions": [
+    "kvdf wifi-data-sharing init --name <name> --role owner|worker",
+    "kvdf wifi-data-sharing discover --timeout 5000",
+    "kvdf wifi-data-sharing pairing create --node <candidate-node-id>"
+  ]
+}

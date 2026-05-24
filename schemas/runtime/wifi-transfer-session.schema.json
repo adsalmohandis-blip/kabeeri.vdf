@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-transfer-session.schema.json",
+  "title": "Wi-Fi Transfer Sessions State",
+  "type": "object",
+  "required": ["version", "plugin_id", "transfer_sessions"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "transfer_sessions": {
+      "type": "array",
+      "items": { "$ref": "../../plugins/wifi_data_sharing/schemas/wifi-transfer-session.schema.json" }
+    }
+  },
+  "additionalProperties": true
+}

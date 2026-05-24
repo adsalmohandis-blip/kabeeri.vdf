@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-data-dashboard-report.schema.json",
+  "title": "Wi-Fi Data Sharing Dashboard Report",
+  "type": "object",
+  "required": ["report_type", "plugin_id", "generated_at", "status", "summary", "provider", "local_node", "nodes", "latest_packages", "latest_inbox", "latest_transfers", "warnings", "next_actions"],
+  "properties": {
+    "report_type": { "type": "string", "const": "wifi_data_sharing_dashboard" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "generated_at": { "type": "string" },
+    "status": { "type": "string" },
+    "summary": { "type": "object" },
+    "provider": { "type": "object" },
+    "local_node": { "type": "object" },
+    "nodes": { "type": "array", "items": { "type": "object" } },
+    "latest_packages": { "type": "array", "items": { "type": "object" } },
+    "latest_inbox": { "type": "array", "items": { "type": "object" } },
+    "latest_transfers": { "type": "array", "items": { "type": "object" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "next_actions": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

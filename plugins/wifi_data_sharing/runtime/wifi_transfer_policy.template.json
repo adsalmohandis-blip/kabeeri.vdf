@@ -1,0 +1,45 @@
+{
+  "version": "v1",
+  "plugin_id": "wifi_data_sharing",
+  "max_package_age_ms": 604800000,
+  "allowed_package_types": [
+    "generic_json",
+    "assignment_packet",
+    "evidence_packet",
+    "state_snapshot",
+    "text_note",
+    "file_blob"
+  ],
+  "blocked_executable_extensions": [
+    ".exe",
+    ".bat",
+    ".cmd",
+    ".ps1",
+    ".sh",
+    ".msi",
+    ".dll"
+  ],
+  "suspicious_markers": [
+    "rm -rf",
+    "powershell",
+    "Invoke-WebRequest",
+    "curl | sh",
+    "wget | sh",
+    "eval(",
+    "base64 -d",
+    "chmod +x"
+  ],
+  "secret_markers": [
+    "ghp_",
+    "xoxb-",
+    "xoxp-",
+    "AKIA",
+    "-----BEGIN PRIVATE KEY-----",
+    "-----BEGIN OPENSSH PRIVATE KEY-----"
+  ],
+  "notes": [
+    "Trusted nodes are still reviewed package-by-package.",
+    "No package is auto-applied.",
+    "Manual inbox review remains required."
+  ]
+}

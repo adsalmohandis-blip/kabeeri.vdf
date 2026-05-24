@@ -1,0 +1,12 @@
+{
+  "panel_id": "policy_gate_panel",
+  "title": "Policy Gate",
+  "report_type": "ai_tool_adapters_dashboard",
+  "description": "Displays policy result visibility for governed tool-run contracts.",
+  "metrics": [
+    "policy_results_count",
+    "policy_blockers"
+  ],
+  "empty_state": "No policy results are recorded yet.",
+  "next_action": "Run ai-tool-adapter policy --contract <path> to record policy checks."
+}

@@ -4,6 +4,10 @@ const scanner = require("../commands/tool_scan");
 const runContract = require("../commands/run_contract");
 const runner = require("../commands/tool_runner");
 const provider = require("../provider");
+const dashboard = require("../commands/dashboard");
+const readiness = require("../commands/readiness");
+const evidence = require("../commands/evidence");
+const audit = require("../commands/audit");
 
 function getPluginStatus() {
   return buildAiToolAdaptersStatus();
@@ -22,6 +26,26 @@ function buildAiToolAdaptersScanReport(options = {}) {
 
 function buildAiToolAdaptersListReport(options = {}) {
   return registry.buildListReport(options.state || registry.ensureStateFile());
+}
+
+function buildAiToolAdaptersCatalogReport(options = {}) {
+  return registry.buildCatalogReport(options.state || registry.ensureStateFile());
+}
+
+function buildAiToolAdaptersAdaptationPackReport(options = {}) {
+  return registry.buildAdaptationPackReport(options.state || registry.ensureStateFile());
+}
+
+function buildAiToolAdaptersPromptCatalogReport(options = {}) {
+  return registry.buildPromptCatalogReport(options.state || registry.ensureStateFile());
+}
+
+function buildAiToolAdaptersPromptCompositionReport(input = {}, options = {}) {
+  return provider.buildPromptCompositionReport(input, options);
+}
+
+function buildAiToolAdaptersPromptBlueprintReport(input = {}, options = {}) {
+  return provider.buildPromptBlueprintReport(input, options);
 }
 
 function buildAiToolAdaptersShowReport(toolId, options = {}) {
@@ -70,6 +94,22 @@ function buildAiToolAdaptersDisableExecutionReport(toolId, options = {}) {
   return runContract.buildDisableExecutionReport(toolId);
 }
 
+function buildAiToolAdaptersDashboardReport(options = {}) {
+  return dashboard.buildDashboardReport(options);
+}
+
+function buildAiToolAdaptersReadinessReport(options = {}) {
+  return readiness.buildReadinessReport(options);
+}
+
+function buildAiToolAdaptersEvidenceReport(options = {}) {
+  return evidence.buildEvidenceReport(options);
+}
+
+function buildAiToolAdaptersAuditReport(options = {}) {
+  return audit.buildAuditReport(options);
+}
+
 function aiToolAdapters(action, value, flags = {}, rest = [], deps = {}) {
   return commandModule.aiToolAdapters(action, value, flags, rest, deps);
 }
@@ -80,6 +120,11 @@ module.exports = {
   getPluginStatus,
   buildAiToolAdaptersStatus,
   buildAiToolAdaptersScanReport,
+  buildAiToolAdaptersCatalogReport,
+  buildAiToolAdaptersAdaptationPackReport,
+  buildAiToolAdaptersPromptCatalogReport,
+  buildAiToolAdaptersPromptCompositionReport,
+  buildAiToolAdaptersPromptBlueprintReport,
   buildAiToolAdaptersListReport,
   buildAiToolAdaptersShowReport,
   buildAiToolAdaptersRegisterReport,
@@ -91,6 +136,10 @@ module.exports = {
   buildAiToolAdaptersRunShowReport,
   buildAiToolAdaptersEnableExecutionReport,
   buildAiToolAdaptersDisableExecutionReport,
+  buildAiToolAdaptersDashboardReport,
+  buildAiToolAdaptersReadinessReport,
+  buildAiToolAdaptersEvidenceReport,
+  buildAiToolAdaptersAuditReport,
   provider,
   getProviderInfo: provider.getProviderInfo,
   ensureState: provider.ensureState,

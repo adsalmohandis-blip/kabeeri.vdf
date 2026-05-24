@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-outbox-state.schema.json",
+  "title": "Wi-Fi Data Outbox State",
+  "type": "object",
+  "required": ["version", "plugin_id", "outbox"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "outbox": {
+      "type": "array",
+      "items": { "$ref": "../../plugins/wifi_data_sharing/schemas/wifi-outbox-state.schema.json#/properties/outbox/items" }
+    }
+  },
+  "additionalProperties": true
+}

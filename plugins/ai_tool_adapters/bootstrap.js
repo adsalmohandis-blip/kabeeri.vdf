@@ -2,7 +2,7 @@ const runtime = require("./runtime");
 
 module.exports = {
   plugin_id: "ai_tool_adapters",
-  name: "AI Tool Adapters",
+  name: "AI Tool Adapter",
   command_entrypoint: "plugins/ai_tool_adapters/runtime/index.js",
   runtime_entrypoint: "plugins/ai_tool_adapters/runtime/index.js",
   provider: runtime.provider,
@@ -19,6 +19,11 @@ module.exports = {
   getPluginStatus: runtime.getPluginStatus,
   buildAiToolAdaptersStatus: runtime.buildAiToolAdaptersStatus,
   buildAiToolAdaptersScanReport: runtime.buildAiToolAdaptersScanReport,
+  buildAiToolAdaptersCatalogReport: runtime.buildAiToolAdaptersCatalogReport,
+  buildAiToolAdaptersAdaptationPackReport: runtime.buildAiToolAdaptersAdaptationPackReport,
+  buildAiToolAdaptersPromptCatalogReport: runtime.buildAiToolAdaptersPromptCatalogReport,
+  buildAiToolAdaptersPromptCompositionReport: runtime.buildAiToolAdaptersPromptCompositionReport,
+  buildAiToolAdaptersPromptBlueprintReport: runtime.buildAiToolAdaptersPromptBlueprintReport,
   buildAiToolAdaptersListReport: runtime.buildAiToolAdaptersListReport,
   buildAiToolAdaptersShowReport: runtime.buildAiToolAdaptersShowReport,
   buildAiToolAdaptersRegisterReport: runtime.buildAiToolAdaptersRegisterReport,
@@ -30,6 +35,10 @@ module.exports = {
   buildAiToolAdaptersRunShowReport: runtime.buildAiToolAdaptersRunShowReport,
   buildAiToolAdaptersEnableExecutionReport: runtime.buildAiToolAdaptersEnableExecutionReport,
   buildAiToolAdaptersDisableExecutionReport: runtime.buildAiToolAdaptersDisableExecutionReport,
+  buildAiToolAdaptersDashboardReport: runtime.buildAiToolAdaptersDashboardReport,
+  buildAiToolAdaptersReadinessReport: runtime.buildAiToolAdaptersReadinessReport,
+  buildAiToolAdaptersEvidenceReport: runtime.buildAiToolAdaptersEvidenceReport,
+  buildAiToolAdaptersAuditReport: runtime.buildAiToolAdaptersAuditReport,
   scanKnownTools: runtime.scanKnownTools,
   resolveExecutableOnPath: runtime.resolveExecutableOnPath
 };

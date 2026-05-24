@@ -1,0 +1,23 @@
+{
+  "panel_id": "security_status_panel",
+  "title": "Security Status",
+  "description": "Highlights the transfer policy, quarantine state, and security-review posture for Wi-Fi package sharing.",
+  "data_sources": [
+    ".kabeeri/wifi_transfer_policy_results.json",
+    ".kabeeri/wifi_data_quarantine.json",
+    ".kabeeri/wifi_data_inbox.json"
+  ],
+  "fields": [
+    "policy_blockers",
+    "policy_results_count",
+    "quarantine_count",
+    "blocked_count",
+    "warnings"
+  ],
+  "empty_state": "Run a security check on a package before the dashboard can show policy posture.",
+  "next_actions": [
+    "kvdf wifi-data-sharing security check --package <package-id>",
+    "kvdf wifi-data-sharing quarantine",
+    "kvdf wifi-data-sharing inbox"
+  ]
+}

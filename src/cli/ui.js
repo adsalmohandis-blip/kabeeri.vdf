@@ -141,10 +141,13 @@ function normalizeCommandName(command) {
     "ui-dashboard-kits": "ui-dashboard-kits",
     ui_dashboard_kits: "ui-dashboard-kits",
     uidashboardkits: "ui-dashboard-kits",
-    "ai-tool-adapters": "ai-tool-adapters",
-    ai_tool_adapters: "ai-tool-adapters",
-    aitooladapters: "ai-tool-adapters",
-    "ai-tools": "ai-tool-adapters",
+    "ai-tool-adapter": "ai-tool-adapter",
+    "ai-tool-adapters": "ai-tool-adapter",
+    ai_tool_adapter: "ai-tool-adapter",
+    ai_tool_adapters: "ai-tool-adapter",
+    aitooladapter: "ai-tool-adapter",
+    aitooladapters: "ai-tool-adapter",
+    "ai-tools": "ai-tool-adapter",
     "bootstrap-ui": "bootstrap-ui",
     bootstrap_ui: "bootstrap-ui",
     bootstrapui: "bootstrap-ui",
@@ -204,6 +207,7 @@ function printCommandHelp(command) {
   kvdf resume
   kvdf resume --json
   kvdf resume --scan
+  kvdf resume --workspace <path>
   kvdf start
   kvdf entry
   kvdf track status
@@ -212,10 +216,12 @@ function printCommandHelp(command) {
 
   Notes:
   Resume is the safe first command for a new AI/developer session. It detects whether the current folder is Kabeeri framework source, a user application workspace, or an application folder without .kabeeri state. It also separates the app npm root from the Kabeeri engine root to avoid Next.js/npm confusion and shows the primary track for the session. Use entry/start when you want Kabeeri to auto-route the session into the correct track without asking you to choose.
+  Use --workspace <path> when you want to load a specific app workspace from a different shell root.
 `,
     entry: `Usage:
   kvdf entry
   kvdf entry --json
+  kvdf entry --workspace <path>
   kvdf start
 
 Notes:
@@ -226,6 +232,8 @@ Notes:
   kvdf track status --json
   kvdf track route
   kvdf track route --json
+  kvdf track status --workspace <path>
+  kvdf track route --workspace <path>
 
 Notes:
   Track shows the current session track and the route that would be activated for the current workspace. Use route to persist the current entry decision into .kabeeri/session_track.json.
@@ -234,6 +242,7 @@ Notes:
   kvdf onboarding
   kvdf onboarding report
   kvdf onboarding --json
+  kvdf onboarding --workspace <path>
 
 Notes:
   Onboarding shows the guided first-session route for the current workspace. It summarizes the safe opening steps, the enter/route/resume sequence, commands, guardrails, and a persisted session onboarding report for framework-owner or app-developer work.
@@ -655,26 +664,30 @@ Multi-AI Governance keeps Evolution as the global priority governor, gives the f
   kvdf multi-ai agent next --ai <agent-id> --count <n> lets a worker claim the next available Evolution priorities in order, so AI tools can pull from the live priority list instead of waiting for a manual task handoff.
 The conversation relay layer is separate from leader calls: use it for durable agent-to-agent messages, inboxes, replies, and closing threads without relying on chat history.
 `,
-    "ai-tool-adapters": `Usage:
-  kvdf ai-tool-adapters status
-  kvdf ai-tool-adapters scan
-  kvdf ai-tool-adapters list
-  kvdf ai-tool-adapters register --tool codex --path auto --editor vscode
-  kvdf ai-tool-adapters unregister --tool codex
-  kvdf ai-tool-adapters show codex
-  kvdf ai-tool-adapters provider
-  kvdf ai-tool-adapters capabilities
-  kvdf ai-tool-adapters can-run --contract .kabeeri/ai_tool_run_contract.json
-  kvdf ai-tool-adapters test --tool node --contract .kabeeri/ai_tool_run_contract.json
-  kvdf ai-tool-adapters run --tool node --contract .kabeeri/ai_tool_run_contract.json --confirm
-  kvdf ai-tool-adapters evidence --run ai-tool-run-001
-  kvdf ai-tool-adapters runs
-  kvdf ai-tool-adapters run-show ai-tool-run-001
-  kvdf ai-tool-adapters enable-execution --tool node --confirm
-  kvdf ai-tool-adapters disable-execution --tool node
+    "ai-tool-adapter": `Usage:
+  kvdf ai-tool-adapter status
+  kvdf ai-tool-adapter scan
+  kvdf ai-tool-adapter list
+  kvdf ai-tool-adapter register --tool codex --path auto --editor vscode
+  kvdf ai-tool-adapter unregister --tool codex
+  kvdf ai-tool-adapter show codex
+  kvdf ai-tool-adapter provider
+  kvdf ai-tool-adapter capabilities
+  kvdf ai-tool-adapter can-run --contract .kabeeri/ai_tool_run_contract.json
+  kvdf ai-tool-adapter test --tool node --contract .kabeeri/ai_tool_run_contract.json
+  kvdf ai-tool-adapter run --tool node --contract .kabeeri/ai_tool_run_contract.json --confirm
+  kvdf ai-tool-adapter dashboard
+  kvdf ai-tool-adapter readiness
+  kvdf ai-tool-adapter evidence --run ai-tool-run-001
+  kvdf ai-tool-adapter runs
+  kvdf ai-tool-adapter run-show ai-tool-run-001
+  kvdf ai-tool-adapter audit
+  kvdf ai-tool-adapter enable-execution --tool node --confirm
+  kvdf ai-tool-adapter disable-execution --tool node
 
 Notes:
-  AI Tool Adapters discovers and registers local AI tools. Phase 2 adds governed runner contracts and evidence logging; Phase 3 adds the provider API, capability summaries, and multi_ai_governance integration contract. Execution still requires a valid contract, --confirm, and execution_enabled=true. multi_ai_governance still owns assignments, authority, and queue behavior.
+  AI Tool Adapter discovers and registers local AI tools. Phase 2 adds governed runner contracts and evidence logging; Phase 3 adds the provider API, capability summaries, and multi_ai_governance integration contract. Execution still requires a valid contract, --confirm, and execution_enabled=true. multi_ai_governance still owns assignments, authority, and queue behavior.
+  Legacy ai-tool-adapters and ai_tool_adapters aliases still route here for compatibility.
 `,
     schedule: `Usage:
   kvdf schedule status
@@ -1622,18 +1635,20 @@ function printHelp() {
     "  change report|status|show|list          Build the change-control report for risks, change requests, and mitigation notes",
     "  workstream list|show|add     Manage workstream runtime boundaries",
     "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
-    "  ai-tool-adapters status|scan|list|register|unregister|show Discover and register local AI tools without executing them",
-    "  ai-tool-adapters provider|capabilities|can-run|evidence Provider API and governed run readiness",
-    "  ai-tool-adapters test|run|runs|run-show|enable-execution|disable-execution Governed runner contract and evidence logging",
+    "  ai-tool-adapter status|scan|list|register|unregister|show Discover and register local AI tools without executing them",
+    "  ai-tool-adapter provider|capabilities|can-run Provider API and governed run readiness",
+    "  ai-tool-adapter dashboard|readiness|evidence|audit Visibility, audit, and readiness reports",
+    "  ai-tool-adapter test|run|runs|run-show|enable-execution|disable-execution Governed runner contract and evidence logging",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
     "  plugin-extraction audit      Run the read-only Core plugin extraction audit",
     "  naming preview|validate|migrate  Preview, validate, or dry-run migrate stable machine-readable naming IDs",
     "  ui-dashboard-kits status|check|examples|templates|snippets|provider|recommend|html-comment Optional UI dashboard kits plugin",
-    "  ai-tool-adapters status|scan|list|register|unregister|show Optional AI tool adapters discovery and registry plugin",
-    "  ai-tool-adapters provider|capabilities|can-run|evidence Optional provider API and integration contract plugin",
-    "  ai-tool-adapters test|run|runs|run-show|enable-execution|disable-execution Optional governed runner contract and evidence plugin",
+    "  ai-tool-adapter status|scan|list|register|unregister|show Optional AI tool adapter discovery and registry plugin",
+    "  ai-tool-adapter provider|capabilities|can-run Optional provider API and integration contract plugin",
+    "  ai-tool-adapter dashboard|readiness|evidence|audit Optional visibility and audit plugin",
+    "  ai-tool-adapter test|run|runs|run-show|enable-execution|disable-execution Optional governed runner contract and evidence plugin",
     "  bootstrap-ui status|assets|verify|provider|snippet Optional Bootstrap UI asset provider plugin",
     "  tailwind-ui status|snippet|utility-map|verify Optional Tailwind UI utility CSS provider plugin",
     "  adr create|list|report       Track architecture decision records",

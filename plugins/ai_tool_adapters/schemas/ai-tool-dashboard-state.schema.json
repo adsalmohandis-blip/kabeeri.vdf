@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Adapter Dashboard Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "report_type",
+    "generated_at",
+    "plugin_id",
+    "summary",
+    "tools",
+    "latest_runs",
+    "latest_policy_results",
+    "warnings",
+    "next_actions"
+  ],
+  "properties": {
+    "report_type": { "type": "string", "const": "ai_tool_adapters_dashboard" },
+    "generated_at": { "type": "string" },
+    "plugin_id": { "type": "string", "const": "ai_tool_adapters" },
+    "summary": {
+      "type": "object",
+      "required": [
+        "tools_count",
+        "detected_tools",
+        "registered_tools",
+        "execution_enabled_tools",
+        "runs_count",
+        "completed_runs",
+        "blocked_runs",
+        "failed_runs",
+        "policy_results_count",
+        "policy_blockers"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "tools_count": { "type": "integer", "minimum": 0 },
+        "detected_tools": { "type": "integer", "minimum": 0 },
+        "registered_tools": { "type": "integer", "minimum": 0 },
+        "execution_enabled_tools": { "type": "integer", "minimum": 0 },
+        "runs_count": { "type": "integer", "minimum": 0 },
+        "completed_runs": { "type": "integer", "minimum": 0 },
+        "blocked_runs": { "type": "integer", "minimum": 0 },
+        "failed_runs": { "type": "integer", "minimum": 0 },
+        "policy_results_count": { "type": "integer", "minimum": 0 },
+        "policy_blockers": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "tools": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "latest_runs": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "latest_policy_results": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "warnings": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

@@ -13,12 +13,13 @@ function buildUnavailableAiToolAdaptersReport(action) {
   return {
     report_type: "ai_tool_adapters_unavailable",
     plugin_id: "ai_tool_adapters",
+    plugin_name: "AI Tool Adapter",
     status: "unavailable",
     available: false,
     enabled_by_default: false,
     execution_enabled: false,
     requested_action: action || null,
-    next_action: "AI Tool Adapters plugin is not installed or enabled. Run `kvdf plugins install ai_tool_adapters` first."
+    next_action: "AI Tool Adapter plugin is not installed or enabled. Run `kvdf plugins install ai_tool_adapters` first."
   };
 }
 

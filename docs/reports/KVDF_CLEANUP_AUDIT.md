@@ -1,7 +1,7 @@
 # KVDF System Cleanup Audit
 
-- Report ID: kvdf-cleanup-1779529491166
-- Generated at: 2026-05-23T09:44:51.166Z
+- Report ID: kvdf-cleanup-1779580019828
+- Generated at: 2026-05-23T23:46:59.828Z
 - Approval status: pending
 - Next exact action: Run `kvdf maintenance slow` to review the strict maintenance inspection and relocation evidence.
 
@@ -11,7 +11,7 @@ Metric                 Value
 ---------------------  -------------------------------------------
 Workspace root         D:\My Project Ideas\kabeeri.vdf\kabeeri-vdf
 Workflow mode          slow                                       
-Total files            3044                                       
+Total files            3068                                       
 Total folders          14                                         
 Plugin total           21                                         
 Active plugins         7                                          
@@ -36,13 +36,13 @@ blocked-flows   Run the workflow inspection pass to look for blocked or waiting-
 
 Folder      Files  Primary extension  Role           
 ----------  -----  -----------------  ---------------
-.kabeeri    856    .md                workspace state
-plugins     587    .md                plugin bundles 
+.kabeeri    859    .md                workspace state
+plugins     607    .md                plugin bundles 
 knowledge   467    .md                project surface
 packs       439    .md                project surface
 docs        331    .md                documentation  
 src         157    .js                runtime source 
-schemas     130    .md                project surface
+schemas     131    .md                project surface
 workspaces  53     .json              project surface
 tests       2      .js                tests          
 .github     1      .yml               project surface
@@ -53,9 +53,9 @@ bin         1      .js                project surface
 
 Extension       Files
 --------------  -----
-.md             1655 
-.json           758  
-.js             290  
+.md             1661 
+.json           769  
+.js             297  
 .html           196  
 .docx           58   
 .csv            54   
@@ -71,7 +71,7 @@ Extension       Files
 Metric                   Value
 -----------------------  -----
 Analysis mode            slow 
-Scanned files            2120 
+Scanned files            2141 
 Dead code candidates     4    
 Stale docs candidates    6    
 Spec drift candidates    4    
@@ -88,7 +88,7 @@ stale_docs             docs/workflows/KVDF_STATE_RESYNC.md                     6
 stale_docs             plugins/ui_ux_intelligence/_temp_meta/ui-reasoning.csv  35    34,Restaurant/Food Service,Hero-Centric + Conversion,Vibrant & Block-based + Motion-Driven,Warm colors (Orange Red Brown),Appetizing + Clear typography,Food image reveal + Menu hov
 stale_docs             plugins/ui_ux_intelligence/data/ui-reasoning.csv        35    34,Restaurant/Food Service,Hero-Centric + Conversion,Vibrant & Block-based + Motion-Driven,Warm colors (Orange Red Brown),Appetizing + Clear typography,Food image reveal + Menu hov
 stale_docs             plugins/vibe_maintainer/runtime/vibe_maintainer.js      1014  { category: "stale_docs", pattern: /\b(TBD|TODO|FIXME|future only|planned only|legacy alias|compatibility alias|stale wording|outdated|old info|old wording)\b/i },                 
-stale_docs             tests/service.unit.test.js                              175   fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                                            
+stale_docs             tests/service.unit.test.js                              177   fs.writeFileSync(path.join(root, "README.md"), stale ? "# Legacy notes and outdated wording\n" : `# ${slug}\n`, "utf8");                                                            
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_AUDIT.md                   18    Spec drift            | 0                                                                                                                                                           
 spec_drift_candidates  docs/reports/VIBE_MAINTAINER_SUMMARY.md                 18    Spec drift            | 0                                                                                                                                                           
 spec_drift_candidates  plugins/vibe_maintainer/README.md                       9     - review stale docs, dead code, spec drift, and blocked-flow signals                                                                                                                

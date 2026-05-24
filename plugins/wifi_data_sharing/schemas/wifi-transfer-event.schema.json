@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-transfer-event.schema.json",
+  "title": "Wi-Fi Transfer Event",
+  "type": "object",
+  "required": ["event_type", "transfer_id", "package_id"],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "package_created",
+        "package_sent",
+        "package_received",
+        "package_accepted",
+        "package_rejected",
+        "package_quarantined",
+        "package_quarantine_released",
+        "outbox_retry",
+        "outbox_cancelled",
+        "transfer_session_sent",
+        "transfer_session_resumed",
+        "transfer_session_cleaned",
+        "server_started",
+        "server_status"
+      ]
+    },
+    "transfer_id": { "type": ["string", "null"] },
+    "package_id": { "type": ["string", "null"] },
+    "package_type": { "type": ["string", "null"] },
+    "source_node_id": { "type": ["string", "null"] },
+    "target_node_id": { "type": ["string", "null"] },
+    "created_at": { "type": ["string", "null"] },
+    "sent_at": { "type": ["string", "null"] },
+    "received_at": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}

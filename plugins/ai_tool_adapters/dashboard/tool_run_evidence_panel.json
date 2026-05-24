@@ -1,0 +1,14 @@
+{
+  "panel_id": "tool_run_evidence_panel",
+  "title": "Tool Run Evidence",
+  "report_type": "ai_tool_adapters_dashboard",
+  "description": "Shows the latest governed run evidence and whether runs completed, failed, or were blocked.",
+  "metrics": [
+    "runs_count",
+    "completed_runs",
+    "blocked_runs",
+    "failed_runs"
+  ],
+  "empty_state": "No run evidence exists yet. A governed run will create the first event.",
+  "next_action": "Use evidence or run-show after a governed contract is evaluated."
+}

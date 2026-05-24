@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-pairing-session.schema.json",
+  "title": "Wi-Fi Pairing Session",
+  "type": "object",
+  "required": ["pairing_id", "candidate_node_id", "pairing_code_hash", "status", "created_at", "expires_at", "verified_at"],
+  "properties": {
+    "pairing_id": { "type": "string" },
+    "candidate_node_id": { "type": "string" },
+    "pairing_code_hash": { "type": "string" },
+    "pairing_code_salt": { "type": "string" },
+    "status": { "type": "string", "enum": ["pending", "verified", "expired", "cancelled"] },
+    "created_at": { "type": "string" },
+    "expires_at": { "type": "string" },
+    "verified_at": { "type": ["string", "null"] },
+    "pairing_verified": { "type": "boolean" },
+    "candidate_snapshot": { "type": "object" }
+  },
+  "additionalProperties": true
+}

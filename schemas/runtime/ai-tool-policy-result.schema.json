@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AI Tool Adapters Policy Results State",
+  "type": "object",
+  "required": ["version", "updated_at", "results"],
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "policy_result_id",
+          "contract_id",
+          "tool_id",
+          "status",
+          "generated_at",
+          "checks",
+          "blockers",
+          "warnings",
+          "next_action"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "policy_result_id": { "type": "string" },
+          "contract_id": { "type": ["string", "null"] },
+          "tool_id": { "type": ["string", "null"] },
+          "status": {
+            "enum": ["pass", "warn", "fail", "blocked"]
+          },
+          "generated_at": { "type": "string" },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["check_id", "status", "severity", "message"],
+              "additionalProperties": true,
+              "properties": {
+                "check_id": { "type": "string" },
+                "status": {
+                  "enum": ["pass", "warn", "fail", "blocked"]
+                },
+                "severity": {
+                  "enum": ["info", "warn", "fail", "block"]
+                },
+                "message": { "type": "string" },
+                "details": {}
+              }
+            }
+          },
+          "blockers": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "warnings": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "next_action": { "type": "string" }
+        }
+      }
+    }
+  }
+}

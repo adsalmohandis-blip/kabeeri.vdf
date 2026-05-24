@@ -36,6 +36,13 @@
     "kvdf multi-ai queue",
     "kvdf multi-ai relay",
     "kvdf multi-ai sync",
+    "kvdf multi-ai wifi status",
+    "kvdf multi-ai wifi nodes",
+    "kvdf multi-ai wifi packet create",
+    "kvdf multi-ai wifi packet send",
+    "kvdf multi-ai wifi packet inbox",
+    "kvdf multi-ai wifi packet inspect",
+    "kvdf multi-ai wifi packet consume",
     "kvdf plugins install multi_ai_governance",
     "kvdf plugins enable multi_ai_governance",
     "kvdf plugins uninstall multi_ai_governance",
@@ -45,6 +52,7 @@
     "plugins/multi_ai_governance/README.md",
     "plugins/multi_ai_governance/commands/README.md",
     "plugins/multi_ai_governance/docs/index.md",
+    "plugins/multi_ai_governance/governance/WIFI_GOVERNANCE_PACKET_POLICY.md",
     "plugins/multi_ai_governance/V4_0_UPDATED_PLAN.md",
     "plugins/multi_ai_governance/milestones_and_issues.v4.0.0.json"
   ],
@@ -56,6 +64,16 @@
         "owner_laptop_execution",
         "tool_assignment_execution",
         "remote_worker_execution"
+      ],
+      "dependency_type": "optional"
+    },
+    {
+      "plugin_id": "wifi_data_sharing",
+      "purpose": "Local Wi-Fi/LAN data sharing for distributed governed AI work",
+      "required_for": [
+        "wifi_node_discovery",
+        "remote_worker_packet_transfer",
+        "distributed_assignment_evidence_transfer"
       ],
       "dependency_type": "optional"
     }

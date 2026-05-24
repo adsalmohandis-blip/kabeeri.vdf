@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-data-package.schema.json",
+  "title": "Wi-Fi Data Package",
+  "type": "object",
+  "required": ["package_id", "package_type", "title", "created_by_node_id", "target_node_id", "payload", "payload_encoding", "payload_size_bytes", "sha256", "created_at", "status"],
+  "properties": {
+    "package_id": { "type": "string" },
+    "package_type": {
+      "type": "string",
+      "enum": ["generic_json", "assignment_packet", "evidence_packet", "state_snapshot", "text_note", "file_blob"]
+    },
+    "title": { "type": "string" },
+    "created_by_node_id": { "type": "string" },
+    "target_node_id": { "type": ["string", "null"] },
+    "source_path": { "type": ["string", "null"] },
+    "payload": {
+      "type": ["object", "string", "null"]
+    },
+    "payload_encoding": { "type": "string", "enum": ["json", "text", "base64"] },
+    "payload_size_bytes": { "type": "integer", "minimum": 0 },
+    "sha256": { "type": "string" },
+    "created_at": { "type": "string" },
+    "status": { "type": "string", "enum": ["created", "sent", "received", "accepted", "rejected"] }
+  },
+  "additionalProperties": true
+}

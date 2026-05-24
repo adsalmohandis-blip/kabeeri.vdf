@@ -1,0 +1,43 @@
+﻿{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-data-outbox.schema.json",
+  "title": "Wi-Fi Data Outbox Index",
+  "type": "object",
+  "required": ["version", "plugin_id", "outbox"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "outbox": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["package_id", "status"],
+        "properties": {
+          "outbox_id": { "type": ["string", "null"] },
+          "package_id": { "type": "string" },
+          "transfer_id": { "type": ["string", "null"] },
+          "session_id": { "type": ["string", "null"] },
+          "source_node_id": { "type": ["string", "null"] },
+          "target_node_id": { "type": ["string", "null"] },
+          "package_type": { "type": ["string", "null"] },
+          "title": { "type": ["string", "null"] },
+          "payload_size_bytes": { "type": ["number", "null"] },
+          "sha256": { "type": ["string", "null"] },
+          "transfer_mode": { "type": ["string", "null"], "enum": ["single_frame", "chunked", null] },
+          "status": { "type": "string" },
+          "retry_count": { "type": ["number", "null"] },
+          "created_at": { "type": ["string", "null"] },
+          "updated_at": { "type": ["string", "null"] },
+          "last_attempt_at": { "type": ["string", "null"] },
+          "last_error": { "type": ["string", "null"] },
+          "cancelled_at": { "type": ["string", "null"] },
+          "cancel_reason": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

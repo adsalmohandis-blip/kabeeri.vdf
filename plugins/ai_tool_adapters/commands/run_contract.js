@@ -154,6 +154,8 @@ function matchesRegisteredToolCommand(command, tool) {
   if (!command || !tool) return false;
   const normalizedCommand = String(command).trim();
   if (normalizedCommand === String(tool.command || "").trim()) return true;
+  if (normalizedCommand === String(tool.resolved_command || "").trim()) return true;
+  if (Array.isArray(tool.commands) && tool.commands.some((item) => String(item || "").trim() === normalizedCommand)) return true;
   if (tool.resolved_path) {
     const normalizedPath = normalizePath(tool.resolved_path);
     if (normalizePath(normalizedCommand) === normalizedPath) return true;
@@ -209,7 +211,7 @@ function buildRunContractReport(contractPath, options = {}) {
     warnings: validation.warnings,
     policy_checks: validation.policy_checks,
     next_action: validation.valid
-      ? "Run kvdf ai-tool-adapters run --tool <tool-id> --contract <path> --confirm to execute the contract."
+      ? "Run kvdf ai-tool-adapter run --tool <tool-id> --contract <path> --confirm to execute the contract."
       : "Fix the blocked policy checks before running the contract."
   };
 }
@@ -251,7 +253,7 @@ function buildTestReport(toolId, contractPath, options = {}) {
     blockers,
     warnings,
     next_action: ready
-      ? "Run kvdf ai-tool-adapters run --tool <tool-id> --contract <path> --confirm to execute."
+      ? "Run kvdf ai-tool-adapter run --tool <tool-id> --contract <path> --confirm to execute."
       : "Enable execution and provide a valid contract before running."
   };
 }
@@ -289,7 +291,7 @@ function buildRunReportFromValidation(validation, flags = {}, options = {}) {
 
   if (validation.tool.execution_enabled !== true) {
     const event = buildBlockedRunEvent(validation, validation.blockers[0] || `tool execution disabled: ${validation.tool.tool_id}`);
-    return buildRunReportFromEvent(event, true, "Run kvdf ai-tool-adapters enable-execution --tool <tool-id> --confirm first.");
+    return buildRunReportFromEvent(event, true, "Run kvdf ai-tool-adapter enable-execution --tool <tool-id> --confirm first.");
   }
 
   if (flags.confirm !== true) {
@@ -450,7 +452,7 @@ function buildRunsReport() {
     runs,
     status_counts: counts,
     next_action: runs.length
-      ? "Use kvdf ai-tool-adapters run-show <run-id> --json to inspect one evidence record."
+      ? "Use kvdf ai-tool-adapter run-show <run-id> --json to inspect one evidence record."
       : "Run a governed tool contract to start evidence logging."
   };
 }
@@ -466,7 +468,7 @@ function buildRunShowReport(runId) {
       found: false,
       run_id: runId || null,
       run: null,
-      next_action: "Run ai-tool-adapters runs or rerun the contract to create evidence."
+      next_action: "Run ai-tool-adapter runs or rerun the contract to create evidence."
     };
   }
   return {

@@ -1,25 +1,25 @@
-# AI Tool Adapters Fail-Closed Policy
+# AI Tool Adapter Fail-Closed Policy
 
-`ai_tool_adapters` is the canonical optional plugin for AI tool discovery,
+`ai_tool_adapter` is the canonical optional plugin for AI tool discovery,
 registration, provider summaries, contract validation, governed execution, and
 run evidence. KVDF Core only routes to the plugin and never emulates its tool
 logic.
 
 ## Fail-Closed Rules
 
-- If a tool is not registered, it is `unknown`.
-- If execution is not enabled, it cannot run.
-- If there is no run contract, it cannot run.
-- If the `ai_tool_adapters` plugin is missing or disabled, execution-related
-  commands fail closed.
-- Core must not create `.kabeeri/ai_tool_adapters.json`.
-- Core must not append `.kabeeri/ai_tool_runs.jsonl`.
+- if a tool is not registered, it is `unknown`
+- if execution is not enabled, it cannot run
+- if there is no run contract, it cannot run
+- if the `ai_tool_adapters` plugin is missing or disabled, execution-related
+  commands fail closed
+- Core must not create `.kabeeri/ai_tool_adapters.json`
+- Core must not append `.kabeeri/ai_tool_runs.jsonl`
 
 ## Core Boundary
 
 Core may:
 
-- route `kvdf ai-tool-adapters` and `kvdf ai-tools` to the plugin
+- route `kvdf ai-tool-adapter` and legacy `kvdf ai-tool-adapters` aliases to the plugin
 - show a read-only unavailable report when the plugin is missing or disabled
 - validate CLI schema and command wiring
 

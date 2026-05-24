@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-quarantine-state.schema.json",
+  "title": "Wi-Fi Data Quarantine State",
+  "type": "object",
+  "required": ["version", "plugin_id", "quarantine"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "quarantine": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["package_id", "status"],
+        "properties": {
+          "package_id": { "type": "string" },
+          "transfer_id": { "type": ["string", "null"] },
+          "source_node_id": { "type": ["string", "null"] },
+          "target_node_id": { "type": ["string", "null"] },
+          "package_type": { "type": ["string", "null"] },
+          "title": { "type": ["string", "null"] },
+          "status": { "type": "string", "enum": ["quarantined", "released", "rejected"] },
+          "quarantined_at": { "type": ["string", "null"] },
+          "released_at": { "type": ["string", "null"] },
+          "rejected_at": { "type": ["string", "null"] },
+          "rejection_reason": { "type": ["string", "null"] },
+          "review_required": { "type": ["boolean", "null"] },
+          "security_result_id": { "type": ["string", "null"] },
+          "security_status": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -12,7 +12,7 @@ assert.ok(fs.existsSync(wrapperPath), "Core wrapper file must exist.");
 
 const wrapperSource = fs.readFileSync(wrapperPath, "utf8");
 assert.ok(wrapperSource.includes('loadPluginBootstrap("ai_tool_adapters"'), "Wrapper should route through the plugin mount/loader path.");
-assert.ok(wrapperSource.includes("AI Tool Adapters plugin is not installed or enabled."), "Wrapper should fail closed with a clear unavailable message.");
+assert.ok(wrapperSource.includes("AI Tool Adapter plugin is not installed or enabled."), "Wrapper should fail closed with a clear unavailable message.");
 assert.ok(!wrapperSource.includes("process.env.PATH"), "Wrapper must not contain tool scanner implementation details.");
 assert.ok(!wrapperSource.includes("PATHEXT"), "Wrapper must not contain platform scanner implementation details.");
 assert.ok(!wrapperSource.includes("resolveExecutableOnPath"), "Wrapper must not contain registry/scanner logic.");
@@ -29,4 +29,3 @@ assert.strictEqual(typeof bootstrap.provider, "object");
 const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
 assert.ok(!packageJson.dependencies || !Object.prototype.hasOwnProperty.call(packageJson.dependencies, "ai_tool_adapters"));
 assert.ok(!packageJson.devDependencies || !Object.prototype.hasOwnProperty.call(packageJson.devDependencies, "ai_tool_adapters"));
-

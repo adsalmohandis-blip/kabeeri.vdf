@@ -1,0 +1,245 @@
+const dgram = require("dgram");
+const os = require("os");
+
+const DEFAULT_DISCOVERY_PORT = 47632;
+const PROTOCOL = "kvdf-wifi-data-sharing";
+const PROTOCOL_VERSION = "v1";
+const DEFAULT_SERVICE_NAME = "wifi_data_sharing";
+
+function buildDiscoveryMessage({ state, message_type, capabilities = ["discovery"], sent_at, transfer_enabled = false, pairing_required = true, service_name = DEFAULT_SERVICE_NAME, port = DEFAULT_DISCOVERY_PORT } = {}) {
+  const local = state && state.local_node ? state.local_node : {};
+  return {
+    protocol: PROTOCOL,
+    protocol_version: PROTOCOL_VERSION,
+    message_type: message_type || "announce",
+    service_name,
+    node_id: local.node_id || null,
+    display_name: local.display_name || os.hostname(),
+    hostname: local.hostname || os.hostname(),
+    platform: local.platform || process.platform,
+    kvdf_version: local.kvdf_version || null,
+    plugin_version: "0.1.0",
+    capabilities,
+    pairing_required,
+    transfer_enabled,
+    port,
+    sent_at: sent_at || new Date().toISOString()
+  };
+}
+
+function buildQueryMessage(options = {}) {
+  return buildDiscoveryMessage({
+    ...options,
+    message_type: "query",
+    capabilities: ["discovery"],
+    transfer_enabled: false,
+    pairing_required: true
+  });
+}
+
+function buildAnnounceMessage(options = {}) {
+  return buildDiscoveryMessage({
+    ...options,
+    message_type: "announce",
+    capabilities: ["discovery"],
+    transfer_enabled: false,
+    pairing_required: true
+  });
+}
+
+function buildResponseMessage(options = {}) {
+  return buildDiscoveryMessage({
+    ...options,
+    message_type: "response",
+    capabilities: ["discovery"],
+    transfer_enabled: false,
+    pairing_required: true
+  });
+}
+
+function serializeDiscoveryMessage(message) {
+  return Buffer.from(`${JSON.stringify(message)}\n`, "utf8");
+}
+
+function parseDiscoveryMessage(input) {
+  try {
+    const raw = Buffer.isBuffer(input) ? input.toString("utf8") : String(input || "");
+    const text = raw.trim();
+    if (!text) return null;
+    const parsed = JSON.parse(text);
+    if (!parsed || parsed.protocol !== PROTOCOL || parsed.protocol_version !== PROTOCOL_VERSION) return null;
+    if (!["announce", "query", "response"].includes(parsed.message_type)) return null;
+    if (parsed.service_name !== DEFAULT_SERVICE_NAME) return null;
+    return parsed;
+  } catch (error) {
+    return null;
+  }
+}
+
+function normalizeCandidate(message, remote, now = new Date().toISOString()) {
+  return {
+    node_id: message.node_id,
+    display_name: message.display_name || null,
+    hostname: message.hostname || null,
+    address: remote.address || null,
+    port: Number(remote.port || message.port || DEFAULT_DISCOVERY_PORT),
+    platform: message.platform || null,
+    first_seen_at: now,
+    last_seen_at: now,
+    trust_status: "candidate",
+    pairing_required: Boolean(message.pairing_required),
+    transfer_enabled: Boolean(message.transfer_enabled),
+    kvdf_version: message.kvdf_version || null,
+    plugin_version: message.plugin_version || "0.1.0",
+    capabilities: Array.isArray(message.capabilities) ? message.capabilities.slice() : ["discovery"]
+  };
+}
+
+function createSocket({ loopback = false } = {}) {
+  const socket = dgram.createSocket("udp4");
+  socket.on("error", () => {});
+  socket.bind(0);
+  return { socket, loopback };
+}
+
+function sendMessage(socket, message, { loopback = false, port = DEFAULT_DISCOVERY_PORT } = {}) {
+  const payload = serializeDiscoveryMessage(message);
+  return new Promise((resolve, reject) => {
+    const targetHost = loopback ? "127.0.0.1" : "255.255.255.255";
+    try {
+      socket.setBroadcast(!loopback);
+      socket.send(payload, 0, payload.length, port, targetHost, (error) => {
+        if (error) reject(error);
+        else resolve();
+      });
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function closeSocket(socket) {
+  return new Promise((resolve) => {
+    try {
+      socket.close(() => resolve());
+    } catch (error) {
+      resolve();
+    }
+  });
+}
+
+function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCandidate } = {}) {
+  const candidates = [];
+  const start = Date.now();
+  return new Promise((resolve) => {
+    const timer = setTimeout(async () => {
+      socket.removeAllListeners("message");
+      await closeSocket(socket);
+      resolve({ candidates, elapsed_ms: Date.now() - start, loopback, warnings: [] });
+    }, Math.max(1, Number(timeoutMs) || 5000));
+
+    socket.on("message", (buffer, remote) => {
+      const parsed = parseDiscoveryMessage(buffer);
+      if (!parsed) return;
+      if (state && state.local_node && parsed.node_id && parsed.node_id === state.local_node.node_id) return;
+      if (parsed.message_type === "query") return;
+      const candidate = normalizeCandidate(parsed, remote);
+      const index = candidates.findIndex((item) => item.node_id === candidate.node_id);
+      if (index >= 0) {
+        candidates[index] = {
+          ...candidates[index],
+          ...candidate,
+          first_seen_at: candidates[index].first_seen_at || candidate.first_seen_at
+        };
+      } else {
+        candidates.push(candidate);
+      }
+      if (typeof onCandidate === "function") onCandidate(candidate, parsed, remote);
+    });
+    socket.on("error", async () => {
+      clearTimeout(timer);
+      socket.removeAllListeners("message");
+      await closeSocket(socket);
+      resolve({ candidates, elapsed_ms: Date.now() - start, loopback, warnings: ["UDP discovery was blocked or unavailable."] });
+    });
+  });
+}
+
+async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, port = DEFAULT_DISCOVERY_PORT, onCandidate } = {}) {
+  const { socket } = createSocket({ loopback });
+  const query = buildQueryMessage({ state, port });
+  const listenPromise = listenForCandidates(socket, { state, timeoutMs, loopback, onCandidate });
+  await sendMessage(socket, query, { loopback, port }).catch(() => {});
+  return listenPromise;
+}
+
+async function advertisePresence({ state, durationMs = 10000, loopback = false, port = DEFAULT_DISCOVERY_PORT, intervalMs = 1000, onCandidate } = {}) {
+  const { socket } = createSocket({ loopback });
+  const announce = buildAnnounceMessage({ state, port });
+  const startedAt = Date.now();
+  const candidates = [];
+  const warnings = [];
+  let closed = false;
+
+  const finish = async () => {
+    if (closed) return;
+    closed = true;
+    await closeSocket(socket);
+  };
+
+  socket.on("message", (buffer, remote) => {
+    const parsed = parseDiscoveryMessage(buffer);
+    if (!parsed || parsed.message_type !== "query") return;
+    if (state && state.local_node && parsed.node_id && parsed.node_id === state.local_node.node_id) return;
+    const response = buildResponseMessage({ state, port });
+    sendMessage(socket, response, { loopback, port }).catch(() => {});
+    const candidate = normalizeCandidate(parsed, remote);
+    const index = candidates.findIndex((item) => item.node_id === candidate.node_id);
+    if (index >= 0) {
+      candidates[index] = {
+        ...candidates[index],
+        ...candidate,
+        first_seen_at: candidates[index].first_seen_at || candidate.first_seen_at
+      };
+    } else {
+      candidates.push(candidate);
+    }
+    if (typeof onCandidate === "function") onCandidate(candidate, parsed, remote);
+  });
+
+  socket.on("error", () => {
+    warnings.push("UDP advertisement was blocked or unavailable.");
+  });
+
+  const timer = setInterval(() => {
+    sendMessage(socket, announce, { loopback, port }).catch(() => {});
+  }, Math.max(250, Number(intervalMs) || 1000));
+
+  await sendMessage(socket, announce, { loopback, port }).catch(() => {});
+  await new Promise((resolve) => setTimeout(resolve, Math.max(1, Number(durationMs) || 10000)));
+  clearInterval(timer);
+  await finish();
+  return {
+    candidates,
+    warnings,
+    elapsed_ms: Date.now() - startedAt,
+    loopback,
+    advertised: true
+  };
+}
+
+module.exports = {
+  DEFAULT_DISCOVERY_PORT,
+  PROTOCOL,
+  PROTOCOL_VERSION,
+  DEFAULT_SERVICE_NAME,
+  buildDiscoveryMessage,
+  buildQueryMessage,
+  buildAnnounceMessage,
+  buildResponseMessage,
+  serializeDiscoveryMessage,
+  parseDiscoveryMessage,
+  normalizeCandidate,
+  discoverCandidates,
+  advertisePresence
+};

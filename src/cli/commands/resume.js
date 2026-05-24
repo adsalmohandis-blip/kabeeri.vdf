@@ -14,58 +14,64 @@ const ONBOARDING_REPORT_FILE = ".kabeeri/reports/session_onboarding.json";
 const SESSION_TRACE_REPORT_FILE = ".kabeeri/reports/session_trace.json";
 
 function resume(action, value, flags = {}) {
-  const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
-  const route = buildSessionEntryRoute(report);
-  persistSessionTrack(route, report, "resume");
-  writeSessionTrace(report, route, "resume");
-  if (flags.json) {
-    console.log(JSON.stringify(report, null, 2));
-    return;
-  }
-  renderResumeReport(report);
+  return withSessionWorkspace(flags, () => {
+    const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
+    const route = buildSessionEntryRoute(report);
+    persistSessionTrack(route, report, "resume");
+    writeSessionTrace(report, route, "resume");
+    if (flags.json) {
+      console.log(JSON.stringify(report, null, 2));
+      return;
+    }
+    renderResumeReport(report);
+  });
 }
 
 function entry(action, value, flags = {}) {
-  const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
-  const route = buildSessionEntryRoute(report);
-  persistSessionTrack(route, report, "entry");
-  writeSessionTrace(report, route, "entry");
-  const payload = {
-    ...report,
-    report_type: "session_entry_route",
-    generated_at: new Date().toISOString(),
-    entry_route: route
-  };
-  if (flags.json) {
-    console.log(JSON.stringify(payload, null, 2));
-    return;
-  }
-  renderEntryReport(payload);
+  return withSessionWorkspace(flags, () => {
+    const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
+    const route = buildSessionEntryRoute(report);
+    persistSessionTrack(route, report, "entry");
+    writeSessionTrace(report, route, "entry");
+    const payload = {
+      ...report,
+      report_type: "session_entry_route",
+      generated_at: new Date().toISOString(),
+      entry_route: route
+    };
+    if (flags.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
+    renderEntryReport(payload);
+  });
 }
 
 function onboarding(action, value, flags = {}) {
-  const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
-  const route = buildSessionEntryRoute(report);
-  const guide = buildOnboardingGuide(report, route);
-  const payload = buildOnboardingPayload(report, route, guide);
-  if (action === "report") {
-    const existing = readOnboardingReport();
-    const persisted = existing || writeOnboardingReport(payload);
-    if (flags.json) {
-      console.log(JSON.stringify(persisted, null, 2));
+  return withSessionWorkspace(flags, () => {
+    const report = buildResumeReport({ scan: Boolean(flags.scan || flags.check || action === "scan") });
+    const route = buildSessionEntryRoute(report);
+    const guide = buildOnboardingGuide(report, route);
+    const payload = buildOnboardingPayload(report, route, guide);
+    if (action === "report") {
+      const existing = readOnboardingReport();
+      const persisted = existing || writeOnboardingReport(payload);
+      if (flags.json) {
+        console.log(JSON.stringify(persisted, null, 2));
+        return;
+      }
+      renderOnboardingReport(persisted, report);
       return;
     }
-    renderOnboardingReport(persisted, report);
-    return;
-  }
-  persistSessionTrack(route, report, "onboarding");
-  writeSessionTrace(report, route, "onboarding", payload);
-  writeOnboardingReport(payload);
-  if (flags.json) {
-    console.log(JSON.stringify(payload, null, 2));
-    return;
-  }
-  renderOnboardingReport(payload, report);
+    persistSessionTrack(route, report, "onboarding");
+    writeSessionTrace(report, route, "onboarding", payload);
+    writeOnboardingReport(payload);
+    if (flags.json) {
+      console.log(JSON.stringify(payload, null, 2));
+      return;
+    }
+    renderOnboardingReport(payload, report);
+  });
 }
 
 function buildOnboardingPayload(report, route, guide) {
@@ -172,6 +178,29 @@ function buildResumeReport(options = {}) {
     recommended_commands: buildResumeCommands({ mode, hasWorkspace, appStack, pluginLoader }),
     scan: checks
   };
+}
+
+function resolveSessionWorkspaceRoot(flags = {}) {
+  const explicit = flags.workspace || flags.root || flags.cwd || flags["workspace-root"] || flags["workspace_root"];
+  if (!explicit) return process.cwd();
+  return path.resolve(process.cwd(), String(explicit));
+}
+
+function withSessionWorkspace(flags, fn) {
+  const targetRoot = resolveSessionWorkspaceRoot(flags);
+  const currentRoot = process.cwd();
+  if (!fs.existsSync(targetRoot)) {
+    throw new Error(`Workspace root not found: ${targetRoot}`);
+  }
+  if (path.resolve(currentRoot) === path.resolve(targetRoot)) {
+    return fn();
+  }
+  process.chdir(targetRoot);
+  try {
+    return fn();
+  } finally {
+    process.chdir(currentRoot);
+  }
 }
 
 function buildSessionEntryRoute(report) {
@@ -1147,5 +1176,7 @@ module.exports = {
   buildResumeReport,
   buildSessionEntryRoute,
   buildTrackContext,
-  readOnboardingReport
+  readOnboardingReport,
+  resolveSessionWorkspaceRoot,
+  withSessionWorkspace
 };

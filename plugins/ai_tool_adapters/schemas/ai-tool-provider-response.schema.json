@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "AI Tool Adapters Provider Response",
+  "title": "AI Tool Adapter Provider Response",
   "type": "object",
   "required": [
     "report_type",
@@ -35,6 +35,10 @@
       "items": { "$ref": "#/$defs/toolSummary" }
     },
     "execution_enabled_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "prompt_profile_count": {
       "type": "integer",
       "minimum": 0
     },
@@ -84,6 +88,11 @@
         "command": { "type": "string" },
         "resolved_path": { "type": ["string", "null"] },
         "editor": { "type": "string" },
+        "activation_state": { "type": ["string", "null"] },
+        "adaptation_pack_id": { "type": ["string", "null"] },
+        "adaptation_pack_name": { "type": ["string", "null"] },
+        "prompt_profile_id": { "type": ["string", "null"] },
+        "prompt_profile": { "type": ["object", "null"] },
         "status": { "type": "string" },
         "capabilities": { "type": "array", "items": { "type": "string" } },
         "execution_enabled": { "type": "boolean" },

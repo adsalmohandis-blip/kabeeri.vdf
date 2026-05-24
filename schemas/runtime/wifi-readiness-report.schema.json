@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-readiness-report.schema.json",
+  "title": "Wi-Fi Data Sharing Readiness Report",
+  "type": "object",
+  "required": ["report_type", "plugin_id", "generated_at", "status", "checks", "blockers", "warnings", "next_action"],
+  "properties": {
+    "report_type": { "type": "string", "const": "wifi_data_sharing_readiness" },
+    "plugin_id": { "const": "wifi_data_sharing" },
+    "generated_at": { "type": "string" },
+    "status": { "type": "string", "enum": ["ready", "partial", "blocked"] },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["check_id", "status", "message"],
+        "properties": {
+          "check_id": { "type": "string" },
+          "status": { "type": "string", "enum": ["pass", "warn", "fail"] },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "blockers": { "type": "array", "items": { "type": "string" } },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "next_action": { "type": "string" }
+  },
+  "additionalProperties": true
+}

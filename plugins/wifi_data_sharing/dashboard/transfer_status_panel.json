@@ -1,0 +1,26 @@
+{
+  "panel_id": "transfer_status_panel",
+  "title": "Transfer Status",
+  "description": "Summarizes package transfer, outbox, inbox, and transfer-session health for trusted Wi-Fi nodes.",
+  "data_sources": [
+    ".kabeeri/wifi_data_packages.json",
+    ".kabeeri/wifi_data_inbox.json",
+    ".kabeeri/wifi_data_outbox.json",
+    ".kabeeri/wifi_transfer_sessions.json",
+    ".kabeeri/wifi_data_transfers.jsonl"
+  ],
+  "fields": [
+    "packages_count",
+    "inbox_count",
+    "outbox_count",
+    "transfer_sessions_count",
+    "completed_transfers",
+    "failed_transfers"
+  ],
+  "empty_state": "Create a bounded package and trust a LAN node before transfer data appears here.",
+  "next_actions": [
+    "kvdf wifi-data-sharing package create --type generic_json --input <path> --title \"<title>\"",
+    "kvdf wifi-data-sharing send --package <package-id> --to <node-id> --confirm",
+    "kvdf wifi-data-sharing transfer sessions"
+  ]
+}

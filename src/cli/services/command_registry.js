@@ -170,6 +170,20 @@ const COMMAND_REGISTRY = [
     cli_role: "Canonicalize plugin state and keep it persisted."
   },
   {
+    key: "wifi-data-sharing",
+    aliases: ["wifi_data_sharing", "wifidata", "wifi-share"],
+    category: "integration",
+    stage: "local-network",
+    owner: "shared",
+    purpose: "Manage local Wi-Fi/LAN node identity, policy visibility, discovery, pairing, trusted nodes, bounded package transfer, inbox review, dashboard visibility, audit traces, evidence summaries, and local simulation/stress verification for trusted KVDF/KVDOS nodes.",
+    prerequisites: ["The wifi_data_sharing plugin exists and can read or create its state file."],
+    outputs: ["Local node identity", "discovery status", "candidate list", "pairing sessions", "trusted node registry", "provider status", "readiness report", "dashboard report", "audit report", "evidence summary", "simulation report", "package inbox", "package outbox", "transfer sessions", "package catalog", "transfer log", "policy posture", "security policy results", "quarantine review state"],
+    next_commands: ["kvdf wifi-data-sharing status", "kvdf wifi-data-sharing init", "kvdf wifi-data-sharing discover", "kvdf wifi-data-sharing provider", "kvdf wifi-data-sharing readiness", "kvdf wifi-data-sharing dashboard", "kvdf wifi-data-sharing audit", "kvdf wifi-data-sharing evidence", "kvdf wifi-data-sharing simulate two-node", "kvdf wifi-data-sharing simulate transfer --size 1024", "kvdf wifi-data-sharing simulate security", "kvdf wifi-data-sharing pairing create", "kvdf wifi-data-sharing pairing verify", "kvdf wifi-data-sharing trust", "kvdf wifi-data-sharing trusted", "kvdf wifi-data-sharing candidates", "kvdf wifi-data-sharing policy", "kvdf wifi-data-sharing package create", "kvdf wifi-data-sharing send", "kvdf wifi-data-sharing inbox", "kvdf wifi-data-sharing outbox", "kvdf wifi-data-sharing transfer sessions", "kvdf wifi-data-sharing transfers", "kvdf wifi-data-sharing security check", "kvdf wifi-data-sharing security results", "kvdf wifi-data-sharing quarantine", "kvdf wifi-data-sharing server start", "kvdf wifi-data-sharing server status"],
+    file_dependencies: [".kabeeri/wifi_data_sharing.json", ".kabeeri/wifi_data_discovery.jsonl", ".kabeeri/wifi_data_packages.json", ".kabeeri/wifi_data_inbox.json", ".kabeeri/wifi_data_outbox.json", ".kabeeri/wifi_transfer_sessions.json", ".kabeeri/wifi_data_transfers.jsonl", ".kabeeri/wifi_transfer_policy_results.json", ".kabeeri/wifi_data_quarantine.json", ".kabeeri/reports/wifi_data_sharing_provider.json", ".kabeeri/reports/wifi_data_sharing_readiness.json", ".kabeeri/reports/wifi_data_sharing_dashboard.json", ".kabeeri/reports/wifi_data_sharing_audit.json"],
+    ai_role: "Use local Wi-Fi/LAN state to inspect candidates and policy without granting trust or transferring data.",
+    cli_role: "Route all Wi-Fi data sharing operations through the removable plugin and keep Core thin."
+  },
+  {
     key: "contract",
     aliases: ["operator", "ai-contract"],
     category: "governance",

@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Multi-AI Wi-Fi Packets State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "plugin_id", "packets", "receipts"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "const": "multi_ai_governance" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "packets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}

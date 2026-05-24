@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wifi-discovery-event.schema.json",
+  "title": "Wi-Fi Data Sharing Discovery Event",
+  "type": "object",
+  "required": ["event_type", "protocol", "protocol_version", "service_name", "node_id", "observed_at", "trust_status"],
+  "properties": {
+    "event_type": { "type": "string" },
+    "protocol": { "const": "kvdf-wifi-data-sharing" },
+    "protocol_version": { "const": "v1" },
+    "service_name": { "const": "wifi_data_sharing" },
+    "node_id": { "type": ["string", "null"] },
+    "display_name": { "type": ["string", "null"] },
+    "hostname": { "type": ["string", "null"] },
+    "platform": { "type": ["string", "null"] },
+    "address": { "type": ["string", "null"] },
+    "port": { "type": ["integer", "null"] },
+    "sent_at": { "type": ["string", "null"] },
+    "observed_at": { "type": "string" },
+    "trust_status": { "type": "string" }
+  },
+  "additionalProperties": true
+}
