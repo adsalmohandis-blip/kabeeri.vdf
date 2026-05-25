@@ -15,7 +15,7 @@
 - `listInbox(options)`
 - `getPackage(packageId)`
 - `buildProviderReport(options)`
-- `buildReadinessReport(options)`
+- `buildReadinessReport()`
 
 ## Responsibilities
 
@@ -33,7 +33,8 @@ Later plugins, including `multi_ai_governance`, should:
 2. create a package descriptor or packet payload,
 3. check `canSendPackage(...)`,
 4. send the package only after explicit confirmation,
-5. review the inbox/quarantine before any explicit consume step.
+5. review the inbox/quarantine before any explicit consume or apply step,
+6. use the provider and readiness reports for visibility only.
 
 ## Safety Notes
 

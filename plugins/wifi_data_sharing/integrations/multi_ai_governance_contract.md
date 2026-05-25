@@ -9,7 +9,7 @@
 - `wifi_data_sharing` does not approve tasks, assignments, merges, owners, or workers.
 - `wifi_data_sharing` does not replace queue planning or merge authority.
 - Received packages always land in inbox/quarantine first.
-- `multi_ai_governance` must explicitly consume inbox packages later; nothing auto-applies.
+- `multi_ai_governance` must explicitly consume inbox packages or apply bridge records; nothing auto-applies.
 
 ## Integration Flow
 
@@ -18,7 +18,7 @@
 3. `canSendPackage(...)` checks trust, package type, size, and policy.
 4. `sendPackage(...)` sends the package only after confirmation.
 5. The receiving side stores the package in inbox/quarantine.
-6. `multi_ai_governance` may inspect the packet payload, audit the receipt, or later consume the packet record with an explicit approve/reject decision.
+6. `multi_ai_governance` may inspect the packet payload, audit the receipt, or explicitly consume the packet record with an approve/reject decision.
 
 ## Optional Nature
 
@@ -36,5 +36,5 @@
 ## Safety Notes
 
 - No remote packet should auto-promote itself to governance authority.
-- No inbox package should mutate multi-AI state unless a future explicit consume path records an explicit approval decision and a future safe apply path exists.
+- No inbox package or apply bridge record should mutate multi-AI state unless an explicit consume path records an approval decision and a separate apply bridge action is confirmed.
 - This contract is for transport and evidence only.
