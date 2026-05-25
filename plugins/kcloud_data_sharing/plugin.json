@@ -20,7 +20,18 @@
     "kcloud_project_config",
     "kcloud_runtime_contract",
     "kcloud_data_transmit_status",
-    "kcloud_data_receive_status"
+    "kcloud_data_receive_status",
+    "kcloud_event_schema",
+    "kcloud_outbox_queue",
+    "kcloud_inbox_queue",
+    "kcloud_ack_log",
+    "kcloud_dead_letter",
+    "kcloud_sync_cursor",
+    "kcloud_transmit_engine",
+    "kcloud_receive_engine",
+    "kcloud_sync_engine",
+    "kcloud_governance_adapter",
+    "kcloud_readiness_report"
   ],
   "consumed_by": [
     {
@@ -30,7 +41,21 @@
   ],
   "command_surface": [
     "kvdf kcloud status",
-    "kvdf kcloud init"
+    "kvdf kcloud init",
+    "kvdf kcloud queue-outbox",
+    "kvdf kcloud queue-inbox",
+    "kvdf kcloud inspect-events",
+    "kvdf kcloud outbox",
+    "kvdf kcloud inbox",
+    "kvdf kcloud transmit",
+    "kvdf kcloud transmit-one",
+    "kvdf kcloud retry-failed",
+    "kvdf kcloud receive",
+    "kvdf kcloud receive-one",
+    "kvdf kcloud ack-received",
+    "kvdf kcloud sync",
+    "kvdf kcloud audit",
+    "kvdf kcloud readiness"
   ],
   "docs_surface": [
     "plugins/kcloud_data_sharing/README.md"

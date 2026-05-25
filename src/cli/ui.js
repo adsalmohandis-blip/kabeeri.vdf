@@ -689,6 +689,27 @@ Notes:
   AI Tool Adapter discovers and registers local AI tools. Phase 2 adds governed runner contracts and evidence logging; Phase 3 adds the provider API, capability summaries, and multi_ai_governance integration contract. Execution still requires a valid contract, --confirm, and execution_enabled=true. multi_ai_governance still owns assignments, authority, and queue behavior.
   Legacy ai-tool-adapters and ai_tool_adapters aliases still route here for compatibility.
 `,
+    kcloud: `Usage:
+  kvdf kcloud status
+  kvdf kcloud init
+  kvdf kcloud queue-outbox
+  kvdf kcloud queue-inbox
+  kvdf kcloud inspect-events
+  kvdf kcloud outbox
+  kvdf kcloud inbox
+  kvdf kcloud transmit
+  kvdf kcloud transmit-one <event_id>
+  kvdf kcloud retry-failed
+  kvdf kcloud receive
+  kvdf kcloud receive-one <event_id>
+  kvdf kcloud ack-received <event_id>
+  kvdf kcloud sync
+  kvdf kcloud audit
+  kvdf kcloud readiness
+
+Notes:
+  KCloud Data Sharing is the local cloud transport shell. It creates the local .kabeeri/kcloud/ contract, stores events as JSONL, and keeps multi_ai_governance as the authority layer.
+`,
     schedule: `Usage:
   kvdf schedule status
   kvdf schedule route task-001 --to temp
@@ -1639,6 +1660,7 @@ function printHelp() {
     "  ai-tool-adapter provider|capabilities|can-run Provider API and governed run readiness",
     "  ai-tool-adapter dashboard|readiness|evidence|audit Visibility, audit, and readiness reports",
     "  ai-tool-adapter test|run|runs|run-show|enable-execution|disable-execution Governed runner contract and evidence logging",
+    "  kcloud status|init|queue-outbox|queue-inbox|inspect-events|outbox|inbox|transmit|transmit-one|retry-failed|receive|receive-one|ack-received|sync|audit|readiness Local KCloud storage shell for governed cloud event queues",
     "  memory add|list|summary      Manage v5 project memory records",
     "  learn capture|fast-path|export|import|review|promote|reject|shared|cache|metadata|list|prompt-context Record recurring AI mistakes, exports, shared learning, and cache sync",
     "  ui-ux-intelligence status|source-status|search|recommend|design-system|checklist|docs|audit|scorecard|gate|readiness|handoff-pack|tokens|components|screens|patterns|implementation-guidance|prompt-pack|evidence|visual-qa|acceptance-gate|regression|knowledge-pack|catalog-health|governance-registry|upgrade-plan|governance Optional UI/UX intelligence plugin",
