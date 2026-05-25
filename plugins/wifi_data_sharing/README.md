@@ -21,7 +21,7 @@ Phase 4 responsibilities:
 - bounded package transfer between trusted nodes
 - inbox quarantine and review
 
-Later responsibilities:
+Roadmap:
 - provider API surfaces
 - future integration with governed packet workflows
 - transfer security gates and quarantine policy enforcement

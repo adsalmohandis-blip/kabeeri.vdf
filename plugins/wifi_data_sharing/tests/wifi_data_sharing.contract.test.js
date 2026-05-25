@@ -35,6 +35,7 @@ test("plugin manifest exists and declares wifi_data_sharing", () => {
   assert.strictEqual(manifest.plugin_id, "wifi_data_sharing");
   assert.strictEqual(manifest.removable, true);
   assert.ok(Array.isArray(manifest.provides));
+  assert.strictEqual(manifest.provides.some((capability) => String(capability).endsWith("_later")), false);
 });
 
 test("bootstrap exports wifiDataSharing", () => {

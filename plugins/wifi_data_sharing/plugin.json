@@ -23,10 +23,6 @@
   ],
   "provides": [
     "lan_node_identity",
-    "lan_node_discovery_later",
-    "trusted_node_registry_later",
-    "data_package_transfer_later",
-    "wifi_data_provider_api_later",
     "wifi_data_provider_api",
     "lan_node_discovery",
     "trusted_node_registry",
