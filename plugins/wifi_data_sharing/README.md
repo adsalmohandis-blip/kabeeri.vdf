@@ -21,14 +21,13 @@ Phase 4 responsibilities:
 - bounded package transfer between trusted nodes
 - inbox quarantine and review
 
-Roadmap:
+Phase 5-11 responsibilities:
 - provider API surfaces
-- future integration with governed packet workflows
+- optional integration contract and packet workflow with `multi_ai_governance`
 - transfer security gates and quarantine policy enforcement
 - resumable transfer sessions and outbox lifecycle
 - provider dashboard and readiness reporting
 - audit and evidence reports for local LAN sharing traceability
-- optional integration contract for multi_ai_governance
 - local two-node simulation and stress tests for contract verification
 
 Phase 12 responsibilities:
@@ -40,6 +39,8 @@ Phase 13 responsibilities:
 - health, release, and integrity reporting
 - explicit backup and restore workflow
 - release hardening without changing the authority model
+
+The documented phase surface is now implemented and covered by contract tests.
 
 ## Commands
 
