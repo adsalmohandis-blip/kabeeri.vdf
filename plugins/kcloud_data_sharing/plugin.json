@@ -1,0 +1,38 @@
+{
+  "plugin_id": "kcloud_data_sharing",
+  "name": "KCloud Data Sharing",
+  "plugin_version": "0.1.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "runtime_entrypoint": "plugins/kcloud_data_sharing/bootstrap.js",
+  "command_entrypoint": "plugins/kcloud_data_sharing/bootstrap.js",
+  "removable": true,
+  "track": "shared",
+  "plugin_family": "integration_plugin",
+  "plugin_type": "kcloud_data_sharing",
+  "enabled_by_default": true,
+  "description": "Cloud transport shell for governed Kabeeri/KVDOS cloud data sharing. Governance stays in multi_ai_governance; this plugin only carries cloud data in and out.",
+  "required_folders": [
+    "src",
+    "tests"
+  ],
+  "provides": [
+    "kcloud_project_config",
+    "kcloud_runtime_contract",
+    "kcloud_data_transmit_status",
+    "kcloud_data_receive_status"
+  ],
+  "consumed_by": [
+    {
+      "plugin_id": "multi_ai_governance",
+      "purpose": "Transmit and receive governed cloud data after policy approval"
+    }
+  ],
+  "command_surface": [
+    "kvdf kcloud status",
+    "kvdf kcloud init"
+  ],
+  "docs_surface": [
+    "plugins/kcloud_data_sharing/README.md"
+  ]
+}

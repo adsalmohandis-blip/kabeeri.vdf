@@ -64,6 +64,7 @@ const { bootstrapUi } = require("./commands/bootstrap_ui");
 const { tailwindUi } = require("./commands/tailwind_ui");
 const { aiToolAdapters } = require("./commands/ai_tool_adapters");
 const { wifiDataSharing } = require("./commands/wifi_data_sharing");
+const { kcloudDataSharing } = require("./commands/kcloud");
 const { pluginExtraction } = require("./commands/plugin_extraction");
 const { naming } = require("./commands/naming");
 const { githubProvider } = require("./commands/github_provider");
@@ -402,6 +403,9 @@ function run(argv) {
   }
   if (["wifi-data-sharing", "wifi_data_sharing", "wifi-share", "wifidata", "wifidatasharing"].includes(group)) {
     return wifiDataSharing(action, value, args.flags, rest, {});
+  }
+  if (["kcloud", "kcloud-data-sharing", "kcloud_data_sharing", "kclouddatasharing"].includes(group)) {
+    return kcloudDataSharing(action, value, args.flags, rest, {});
   }
   if (["github-provider", "github_provider", "githubprovider"].includes(group)) {
     return githubProvider(action, value, args.flags, rest, {
@@ -10163,6 +10167,7 @@ function getCommandDispatchContext() {
     multiAiGovernance,
     aiToolAdapters,
     wifiDataSharing,
+    kcloudDataSharing,
     acceptance,
     audit,
     memory,
