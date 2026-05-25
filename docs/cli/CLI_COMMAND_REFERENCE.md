@@ -2054,6 +2054,9 @@ kvdf wifi-data-sharing audit --json
 kvdf wifi-data-sharing evidence
 kvdf wifi-data-sharing evidence --package <package-id>
 kvdf wifi-data-sharing apply --package <packet-id> --confirm
+kvdf wifi-data-sharing apply show <packet-id>
+kvdf wifi-data-sharing apply reject <packet-id> --reason "..."
+kvdf wifi-data-sharing apply cancel <packet-id>
 kvdf wifi-data-sharing applied
 kvdf wifi-data-sharing health
 kvdf wifi-data-sharing release report
