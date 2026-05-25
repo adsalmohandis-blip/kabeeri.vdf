@@ -9,6 +9,12 @@ const securityGate = require("./commands/security_gate");
 const quarantine = require("./commands/quarantine");
 const outbox = require("./commands/outbox");
 const retry = require("./commands/retry");
+const apply = require("./commands/apply");
+const applied = require("./commands/applied");
+const health = require("./commands/health");
+const release = require("./commands/release");
+const backup = require("./commands/backup");
+const restore = require("./commands/restore");
 const provider = require("./commands/provider");
 const readiness = require("./commands/readiness");
 const dashboard = require("./commands/dashboard");
@@ -34,6 +40,12 @@ module.exports = {
   quarantine,
   outbox,
   retry,
+  apply,
+  applied,
+  health,
+  release,
+  backup,
+  restore,
   provider,
   readiness,
   dashboard,
@@ -64,6 +76,13 @@ module.exports = {
   buildWifiDataSharingQuarantineReport: quarantine.buildQuarantineReport,
   buildWifiDataSharingOutboxReport: outbox.buildOutboxReport,
   buildWifiDataSharingTransferSessionsReport: retry.buildTransferSessionsReport,
+  buildWifiDataSharingApplyReport: apply.buildApplyReport,
+  buildWifiDataSharingAppliedReport: applied.buildAppliedReport,
+  buildWifiDataSharingHealthReport: health.buildHealthReport,
+  buildWifiDataSharingReleaseReport: release.buildReleaseReport,
+  buildWifiDataSharingIntegrityReport: release.buildIntegrityReport,
+  buildWifiDataSharingBackupReport: backup.buildBackupReport,
+  buildWifiDataSharingRestoreReport: restore.buildRestoreReport,
   buildWifiDataSharingTransfersReport: transfer.buildTransfersReport,
   buildWifiDataSharingServerReport: transfer.buildServerReport,
   buildWifiDataSharingProviderReport: provider.buildProviderReport,

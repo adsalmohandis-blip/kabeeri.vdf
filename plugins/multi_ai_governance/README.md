@@ -21,7 +21,10 @@ the bundle.
 exchange. It does not change the governance authority of this bundle. The
 `kvdf multi-ai wifi ...` commands create packet metadata, inspect or consume
 packet receipts, and route sends through the optional wifi provider without
-auto-applying anything back into multi-AI state.
+auto-applying anything back into multi-AI state. Phase 11 makes packet
+consume record an explicit `approve` or `reject` decision so the authority
+model stays with `multi_ai_governance` while the transport layer remains
+read-only.
 
 ## Plugin Contract
 
@@ -43,7 +46,7 @@ auto-applying anything back into multi-AI state.
 - `kvdf multi-ai wifi packet send`
 - `kvdf multi-ai wifi packet inbox`
 - `kvdf multi-ai wifi packet inspect`
-- `kvdf multi-ai wifi packet consume`
+- `kvdf multi-ai wifi packet consume --confirm --decision approve|reject`
 - `kvdf plugins install multi_ai_governance`
 - `kvdf plugins enable multi_ai_governance`
 - `kvdf plugins uninstall multi_ai_governance`

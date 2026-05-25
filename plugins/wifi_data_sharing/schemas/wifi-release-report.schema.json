@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Data Sharing Release Report",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["report_type", "status", "checks", "blockers", "warnings"],
+  "properties": {
+    "report_type": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "version": { "type": ["string", "null"] },
+    "generated_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "status": { "type": "string" },
+    "checks": { "type": "array" },
+    "blockers": { "type": "array" },
+    "warnings": { "type": "array" },
+    "summary": { "type": "object" },
+    "backups": { "type": "array" },
+    "integrity": { "type": ["object", "null"] },
+    "next_action": { "type": ["string", "null"] }
+  }
+}
+

@@ -31,6 +31,16 @@ Later responsibilities:
 - optional integration contract for multi_ai_governance
 - local two-node simulation and stress tests for contract verification
 
+Phase 12 responsibilities:
+- explicit apply bridge for already approved packets
+- plugin-owned applied record ledger
+- manual reject and cancel actions for bridge records
+
+Phase 13 responsibilities:
+- health, release, and integrity reporting
+- explicit backup and restore workflow
+- release hardening without changing the authority model
+
 ## Commands
 
 ```bash
@@ -74,6 +84,13 @@ kvdf wifi-data-sharing readiness
 kvdf wifi-data-sharing dashboard
 kvdf wifi-data-sharing audit
 kvdf wifi-data-sharing evidence
+kvdf wifi-data-sharing apply --package <packet-id> --confirm
+kvdf wifi-data-sharing applied
+kvdf wifi-data-sharing health
+kvdf wifi-data-sharing release report
+kvdf wifi-data-sharing backup create
+kvdf wifi-data-sharing backup restore <backup-id>
+kvdf wifi-data-sharing integrity check
 kvdf wifi-data-sharing simulate two-node
 kvdf wifi-data-sharing simulate two-node --json
 kvdf wifi-data-sharing simulate transfer --size 1024
@@ -92,6 +109,8 @@ kvdf wifi-data-sharing simulate security
 - Package transfer uses integrity hashes and bounded payloads.
 - Outbox retries and transfer sessions are manual and durable.
 - Dashboard, readiness, audit, and evidence reports are visibility-only and do not change network or trust state.
+- Apply bridge records are explicit evidence only and do not mutate `multi_ai_governance`.
+- Health, release, integrity, backup, and restore are local hardening tools and never auto-publish or auto-apply.
 - Simulation is local-only, deterministic, and uses temp workspaces instead of real Wi-Fi.
 - `multi_ai_governance` is not modified by this plugin.
 - The provider API is intentionally optional and is designed for other removable plugins to consume.

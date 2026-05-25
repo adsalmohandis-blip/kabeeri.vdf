@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Data Sharing Apply Event",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["event_type", "created_at"],
+  "properties": {
+    "event_type": { "type": "string" },
+    "apply_id": { "type": ["string", "null"] },
+    "packet_id": { "type": ["string", "null"] },
+    "package_id": { "type": ["string", "null"] },
+    "status": { "type": ["string", "null"] },
+    "decision": { "type": ["string", "null"] },
+    "reason": { "type": ["string", "null"] },
+    "applied_at": { "type": ["string", "null"] },
+    "applied_by": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "authority_model": { "type": ["string", "null"] },
+    "created_at": { "type": "string" }
+  }
+}
+

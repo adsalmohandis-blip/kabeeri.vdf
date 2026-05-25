@@ -103,6 +103,9 @@ function routePacketAction(packetAction, flags, rest, deps) {
     return buildWifiPacketConsumeReport({
       identifier: flags.package || flags.package_id || flags.packet || flags.packet_id || rest[0] || null,
       confirm: Boolean(flags.confirm),
+      decision: flags.decision || flags.decision_type || flags.result || rest[1] || null,
+      reason: flags.reason || flags.note || rest.slice(2).join(" ") || null,
+      decidedBy: flags.by || flags.decided_by || flags.approved_by || flags.actor || null,
       packetState: deps.packetState,
       wifiClient: deps.wifiClient,
       governanceState: deps.governanceState,
@@ -344,9 +347,10 @@ function buildWifiPacketInboxReport({ packetState = readPacketState(), wifiClien
     .map((item) => {
       const mapped = resolvePacketRecord(item.package_id, { packetState, wifiClient, packageRecord: item }).packet || null;
       const packet = mapped || buildPacketRecordFromInboxItem(item);
+      const status = packet && packet.status ? packet.status : item.status || "received";
       const updated = upsertPacketRecord(packetState, {
         ...packet,
-        status: packet.status === "consumed" ? packet.status : "received",
+        status: status === "approved" || status === "rejected" ? status : status === "consumed" ? status : "received",
         package_id: item.package_id,
         target_node_id: item.target_node_id || null,
         received_at: item.received_at || new Date().toISOString(),
@@ -357,13 +361,16 @@ function buildWifiPacketInboxReport({ packetState = readPacketState(), wifiClien
         package_id: item.package_id,
         packet_type: updated.packet_type,
         title: item.title || updated.title || null,
-        status: item.status || updated.status || "received",
+        status: updated.status || item.status || "received",
         source_node_id: item.source_node_id || null,
         target_node_id: item.target_node_id || null,
         quarantined: item.quarantined !== false,
         received_at: item.received_at || null,
         accepted_at: item.accepted_at || null,
-        rejected_at: item.rejected_at || null
+        rejected_at: item.rejected_at || null,
+        decision: updated.application_decision ? updated.application_decision.decision || null : null,
+        decision_reason: updated.decision_reason || null,
+        application_decision: updated.application_decision || null
       };
     });
   return {
@@ -375,9 +382,10 @@ function buildWifiPacketInboxReport({ packetState = readPacketState(), wifiClien
       total: packets.length,
       received: packets.filter((item) => item.status === "received").length,
       accepted: packets.filter((item) => item.status === "accepted").length,
+      approved: packets.filter((item) => item.status === "approved").length,
       rejected: packets.filter((item) => item.status === "rejected").length
     },
-    next_action: "Use inspect to view a packet and consume to record a receipt without auto-applying governance state."
+    next_action: "Use inspect to view a packet and consume with --confirm --decision approve|reject to record a decision without auto-applying governance state."
   };
 }
 
@@ -395,13 +403,17 @@ function buildWifiPacketInspectReport({ identifier, packetState = readPacketStat
     packet,
     package: resolved.packageRecord || null,
     payload: packet.payload || null,
-    next_action: "Inspection is read-only. Use consume with --confirm if you want to record a receipt."
+    next_action: "Inspection is read-only. Use consume with --confirm --decision approve|reject to record an explicit application decision."
   };
 }
 
-function buildWifiPacketConsumeReport({ identifier, confirm = false, packetState = ensurePacketState(), wifiClient = wifiClientModule, governanceState = normalizeGovernanceState(), appendAudit = null } = {}) {
+function buildWifiPacketConsumeReport({ identifier, confirm = false, decision = null, reason = null, decidedBy = null, packetState = ensurePacketState(), wifiClient = wifiClientModule, governanceState = normalizeGovernanceState(), appendAudit = null } = {}) {
   if (!confirm) {
     return buildBlockedPacketReport("Packet consume requires --confirm.", "consume");
+  }
+  const consumeDecision = normalizeConsumeDecision(decision);
+  if (!consumeDecision) {
+    return buildBlockedPacketReport("Packet consume requires --decision approve|reject.", "consume");
   }
   const resolved = resolvePacketRecord(identifier, { packetState, wifiClient, governanceState });
   if (!resolved.packet) {
@@ -412,10 +424,23 @@ function buildWifiPacketConsumeReport({ identifier, confirm = false, packetState
     return buildBlockedPacketReport("Only packets targeting multi_ai_governance can be consumed here.", "consume");
   }
   const now = new Date().toISOString();
+  const applicationDecision = consumeDecision === "approved" ? "approved" : "rejected";
   const updated = upsertPacketRecord(packetState, {
     ...packet,
-    status: "consumed",
+    status: applicationDecision,
     consumed_at: now,
+    approved_at: applicationDecision === "approved" ? now : packet.approved_at || null,
+    rejected_at: applicationDecision === "rejected" ? now : packet.rejected_at || null,
+    decision_reason: reason || packet.decision_reason || null,
+    application_decision: {
+      decision: applicationDecision,
+      reason: reason || null,
+      decided_at: now,
+      decided_by: resolveDecisionActor(decidedBy),
+      application_applied: false,
+      authority_model: "multi_ai_governance",
+      effect: applicationDecision === "approved" ? "eligible_for_future_application" : "do_not_apply"
+    },
     updated_at: now
   });
   const receipt = recordPacketReceipt(packetState, {
@@ -423,13 +448,26 @@ function buildWifiPacketConsumeReport({ identifier, confirm = false, packetState
     package_id: updated.package_id || resolved.packageRecord && resolved.packageRecord.package_id || null,
     action: "consume",
     created_at: now,
-    status: "recorded",
+    status: applicationDecision,
     target_plugin: updated.target_plugin,
     target_node_id: updated.target_node_id || null,
-    source: "multi_ai_governance"
+    source: "multi_ai_governance",
+    decision: applicationDecision,
+    decision_reason: reason || null,
+    application_applied: false,
+    decided_by: resolveDecisionActor(decidedBy),
+    approved_at: applicationDecision === "approved" ? now : null,
+    rejected_at: applicationDecision === "rejected" ? now : null
   });
   if (appendAudit) {
-    appendAudit("multi_ai.wifi_packet_consumed", "multi_ai", updated.packet_id, `Receipt recorded for governance packet ${updated.packet_id}`);
+    appendAudit(
+      applicationDecision === "approved" ? "multi_ai.wifi_packet_application_approved" : "multi_ai.wifi_packet_application_rejected",
+      "multi_ai",
+      updated.packet_id,
+      applicationDecision === "approved"
+        ? `Approval recorded for governance packet ${updated.packet_id}`
+        : `Rejection recorded for governance packet ${updated.packet_id}`
+    );
   }
   return {
     report_type: "multi_ai_wifi_packet_consumed",
@@ -437,7 +475,10 @@ function buildWifiPacketConsumeReport({ identifier, confirm = false, packetState
     status: "ok",
     packet: updated,
     receipt,
-    next_action: "Receipt recorded only. The packet did not auto-apply to multi_ai_governance state."
+    decision: applicationDecision,
+    next_action: applicationDecision === "approved"
+      ? "Approval recorded only. The packet did not auto-apply to multi_ai_governance state."
+      : "Rejection recorded only. The packet will not be applied to multi_ai_governance state."
   };
 }
 
@@ -454,11 +495,13 @@ function buildWifiPacketWorkflowReport({ packetState = readPacketState() } = {})
       sent: packets.filter((item) => item.status === "sent").length,
       received: packets.filter((item) => item.status === "received").length,
       inspected: packets.filter((item) => item.status === "inspected").length,
+      approved: packets.filter((item) => item.status === "approved").length,
+      rejected: packets.filter((item) => item.status === "rejected").length,
       consumed: packets.filter((item) => item.status === "consumed").length,
-      rejected: packets.filter((item) => item.status === "rejected").length
+      review_decisions: packets.filter((item) => item.status === "approved" || item.status === "rejected").length
     },
     next_action: packets.length
-      ? "Use `kvdf multi-ai wifi packet inspect <package-id>` or `consume --confirm` to review a packet."
+      ? "Use `kvdf multi-ai wifi packet inspect <package-id>` or `consume --confirm --decision approve|reject` to explicitly approve or reject application."
       : "Create a governance packet with `kvdf multi-ai wifi packet create --type <type> --queue <queue-id>`."
   };
 }
@@ -517,7 +560,7 @@ function renderWifiPacketsReport(report) {
     return `Inspected packet: ${report.packet && report.packet.packet_id ? report.packet.packet_id : "unknown"}`;
   }
   if (report.report_type === "multi_ai_wifi_packet_consumed") {
-    return `Consumed packet receipt recorded: ${report.packet && report.packet.packet_id ? report.packet.packet_id : "unknown"}`;
+    return `Packet application ${report.decision || "recorded"}: ${report.packet && report.packet.packet_id ? report.packet.packet_id : "unknown"}`;
   }
   if (report.report_type === "multi_ai_wifi_packet_workflow") {
     const packets = Array.isArray(report.packets) ? report.packets : [];
@@ -766,6 +809,18 @@ function normalizePacketType(packetType) {
   return String(packetType || "").trim().toLowerCase();
 }
 
+function normalizeConsumeDecision(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["approve", "approved", "allow", "accepted"].includes(normalized)) return "approved";
+  if (["reject", "rejected", "deny", "denied"].includes(normalized)) return "rejected";
+  return null;
+}
+
+function resolveDecisionActor(value) {
+  const normalized = String(value || "").trim();
+  return normalized || "owner";
+}
+
 function buildNextPacketId(packetState) {
   const packets = Array.isArray(packetState && packetState.packets) ? packetState.packets : [];
   return `multi-ai-wifi-packet-${String(packets.length + 1).padStart(3, "0")}`;
@@ -864,6 +919,12 @@ function recordPacketReceipt(packetState, receipt) {
     source: receipt.source || "multi_ai_governance",
     target_plugin: receipt.target_plugin || "multi_ai_governance",
     target_node_id: receipt.target_node_id || null,
+    decision: receipt.decision || null,
+    decision_reason: receipt.decision_reason || null,
+    application_applied: Boolean(receipt.application_applied),
+    decided_by: receipt.decided_by || null,
+    approved_at: receipt.approved_at || null,
+    rejected_at: receipt.rejected_at || null,
     created_at: receipt.created_at || new Date().toISOString(),
     updated_at: receipt.updated_at || receipt.created_at || new Date().toISOString()
   };

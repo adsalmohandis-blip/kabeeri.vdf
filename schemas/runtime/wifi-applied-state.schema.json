@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Data Sharing Applied State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "plugin_id", "applied"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "applied": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}
+

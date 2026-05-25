@@ -719,7 +719,7 @@ kvdf multi-ai wifi packet create --type assignment_packet --queue multi-ai-queue
 kvdf multi-ai wifi packet send --packet multi-ai-wifi-assignment_packet-multi-ai-queue-001 --to node-001 --confirm
 kvdf multi-ai wifi packet inbox
 kvdf multi-ai wifi packet inspect <package-id>
-kvdf multi-ai wifi packet consume <package-id> --confirm
+kvdf multi-ai wifi packet consume <package-id> --confirm --decision approve|reject
 kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
 kvdf multi-ai leader transfer --ai agent-002
 kvdf multi-ai leader end
@@ -2053,6 +2053,13 @@ kvdf wifi-data-sharing audit
 kvdf wifi-data-sharing audit --json
 kvdf wifi-data-sharing evidence
 kvdf wifi-data-sharing evidence --package <package-id>
+kvdf wifi-data-sharing apply --package <packet-id> --confirm
+kvdf wifi-data-sharing applied
+kvdf wifi-data-sharing health
+kvdf wifi-data-sharing release report
+kvdf wifi-data-sharing backup create
+kvdf wifi-data-sharing backup restore <backup-id>
+kvdf wifi-data-sharing integrity check
 kvdf wifi-data-sharing simulate two-node
 kvdf wifi-data-sharing simulate two-node --json
 kvdf wifi-data-sharing simulate transfer --size 1024
@@ -2087,7 +2094,10 @@ kvdf wifi-data-sharing quarantine
 kvdf wifi-data-sharing quarantine show <package-id>
 kvdf wifi-data-sharing quarantine release <package-id> --confirm
 kvdf wifi-data-sharing quarantine reject <package-id> --reason "..."
+kvdf wifi-data-sharing backup
+kvdf wifi-data-sharing backup --json
+kvdf wifi-data-sharing restore <backup-id> --confirm
 ```
 
-`wifi_data_sharing` is the removable local Wi-Fi/LAN sharing plugin for trusted KVDF and KVDOS nodes. Phase 1 covers node identity, local state, policy visibility, and the thin Core route. Phase 2 adds LAN discovery only. Phase 3 adds owner-controlled pairing and a trusted node registry. Phase 4 adds bounded package transfer, inbox review, and TCP frame helpers while still keeping received data quarantined until explicit acceptance. Phase 5 adds the provider API and optional `multi_ai_governance` integration contract. Phase 6 adds transfer security gates and quarantine policy enforcement so packages are reviewed before release. Phase 7 adds resumable transfer, outbox lifecycle, and transfer-session cleanup so interrupted transfers can be retried without mutating AI governance. Phase 8 adds dashboard, evidence, audit, and readiness reporting so local LAN sharing stays visible without adding new network behavior. Phase 9 adds local two-node simulation and stress tests so the plugin can verify discovery, pairing, package transfer, security gates, inbox/quarantine, and provider contracts without real Wi-Fi hardware. The plugin does not govern AI work, assign tasks, or replace `multi_ai_governance`. Core routes to the plugin and fails closed when the plugin is missing or disabled.
+`wifi_data_sharing` is the removable local Wi-Fi/LAN sharing plugin for trusted KVDF and KVDOS nodes. Phase 1 covers node identity, local state, policy visibility, and the thin Core route. Phase 2 adds LAN discovery only. Phase 3 adds owner-controlled pairing and a trusted node registry. Phase 4 adds bounded package transfer, inbox review, and TCP frame helpers while still keeping received data quarantined until explicit acceptance. Phase 5 adds the provider API and optional `multi_ai_governance` integration contract. Phase 6 adds transfer security gates and quarantine policy enforcement so packages are reviewed before release. Phase 7 adds resumable transfer, outbox lifecycle, and transfer-session cleanup so interrupted transfers can be retried without mutating AI governance. Phase 8 adds dashboard, evidence, audit, and readiness reporting so local LAN sharing stays visible without adding new network behavior. Phase 9 adds local two-node simulation and stress tests so the plugin can verify discovery, pairing, package transfer, security gates, inbox/quarantine, and provider contracts without real Wi-Fi hardware. Phase 10 adds the optional multi-AI packet workflow over wifi transport. Phase 11 makes packet consume record an explicit `approve` or `reject` decision without changing the authority model or auto-applying anything to governance state. Phase 12 adds an explicit apply bridge for already approved packets, plus bridge-level apply/reject/cancel records. Phase 13 adds health, release readiness, integrity checks, and backup/restore hardening without changing the authority model. The plugin does not govern AI work, assign tasks, or replace `multi_ai_governance`. Core routes to the plugin and fails closed when the plugin is missing or disabled.
 

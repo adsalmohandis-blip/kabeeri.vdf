@@ -15,6 +15,11 @@ const OUTBOX_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_outbox.json");
 const TRANSFER_SESSIONS_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_transfer_sessions.json");
 const PACKAGES_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_packages.json");
 const INBOX_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_inbox.json");
+const APPLIED_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_applied.json");
+const APPLY_EVENTS_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_apply_events.jsonl");
+const RELEASE_REPORT_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_release_report.json");
+const INTEGRITY_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_integrity.json");
+const BACKUPS_DIR = path.join(REPO_ROOT, ".kabeeri", "wifi_data_backups");
 const TEMPLATE_FILE = path.join(REPO_ROOT, "plugins", "wifi_data_sharing", "runtime", "wifi_data_sharing.template.json");
 
 function repoRoot() {
@@ -60,6 +65,26 @@ function getPackagesFile() {
 
 function getInboxFile() {
   return path.join(repoRoot(), ".kabeeri", "wifi_data_inbox.json");
+}
+
+function getAppliedFile() {
+  return path.join(repoRoot(), ".kabeeri", "wifi_data_applied.json");
+}
+
+function getApplyEventsFile() {
+  return path.join(repoRoot(), ".kabeeri", "wifi_data_apply_events.jsonl");
+}
+
+function getReleaseReportFile() {
+  return path.join(repoRoot(), ".kabeeri", "wifi_data_release_report.json");
+}
+
+function getIntegrityFile() {
+  return path.join(repoRoot(), ".kabeeri", "wifi_data_integrity.json");
+}
+
+function getBackupsDir() {
+  return path.join(repoRoot(), ".kabeeri", "wifi_data_backups");
 }
 
 function getTemplateFile() {
@@ -178,6 +203,11 @@ function appendWifiDataTransferEvent(event) {
   fs.appendFileSync(getTransferLogFile(), `${JSON.stringify(event)}\n`, "utf8");
 }
 
+function appendWifiDataApplyEvent(event) {
+  ensureWorkspace();
+  fs.appendFileSync(getApplyEventsFile(), `${JSON.stringify(event)}\n`, "utf8");
+}
+
 function readJsonFile(file, fallback) {
   if (!fs.existsSync(file)) return fallback;
   return JSON.parse(fs.readFileSync(file, "utf8"));
@@ -246,6 +276,36 @@ function defaultWifiTransferSessionsState() {
     created_at: null,
     updated_at: null,
     transfer_sessions: []
+  };
+}
+
+function defaultWifiDataAppliedState() {
+  return {
+    version: "v1",
+    plugin_id: "wifi_data_sharing",
+    created_at: null,
+    updated_at: null,
+    applied: []
+  };
+}
+
+function defaultWifiDataReleaseReportState() {
+  return {
+    version: "v1",
+    plugin_id: "wifi_data_sharing",
+    created_at: null,
+    updated_at: null,
+    report: null
+  };
+}
+
+function defaultWifiDataIntegrityState() {
+  return {
+    version: "v1",
+    plugin_id: "wifi_data_sharing",
+    created_at: null,
+    updated_at: null,
+    report: null
   };
 }
 
@@ -399,6 +459,98 @@ function findWifiTransferSessionRecord(sessionId) {
   return (Array.isArray(state.transfer_sessions) ? state.transfer_sessions : []).find((item) => item.session_id === sessionId) || null;
 }
 
+function readWifiDataAppliedState() {
+  return readJsonFile(getAppliedFile(), defaultWifiDataAppliedState());
+}
+
+function writeWifiDataAppliedState(state) {
+  return writeJsonFile(getAppliedFile(), {
+    ...defaultWifiDataAppliedState(),
+    ...(state || {}),
+    applied: Array.isArray(state && state.applied) ? state.applied : []
+  });
+}
+
+function upsertWifiDataAppliedRecord(record) {
+  const current = readWifiDataAppliedState();
+  const applied = Array.isArray(current.applied) ? current.applied.slice() : [];
+  const index = applied.findIndex((item) => item.apply_id === record.apply_id || item.package_id === record.package_id);
+  if (index >= 0) applied[index] = { ...applied[index], ...record };
+  else applied.push(record);
+  writeWifiDataAppliedState({
+    ...current,
+    created_at: current.created_at || record.created_at || new Date().toISOString(),
+    updated_at: record.updated_at || record.created_at || new Date().toISOString(),
+    applied
+  });
+  return record;
+}
+
+function findWifiDataAppliedRecord(packageId) {
+  if (!packageId) return null;
+  const state = readWifiDataAppliedState();
+  return (Array.isArray(state.applied) ? state.applied : []).find((item) => (
+    item.package_id === packageId
+    || item.packet_id === packageId
+    || item.apply_id === packageId
+  )) || null;
+}
+
+function writeWifiDataReleaseReport(report) {
+  return writeJsonFile(getReleaseReportFile(), {
+    ...defaultWifiDataReleaseReportState(),
+    version: report && report.version ? report.version : "v1",
+    plugin_id: "wifi_data_sharing",
+    created_at: report && report.created_at ? report.created_at : new Date().toISOString(),
+    updated_at: report && report.updated_at ? report.updated_at : new Date().toISOString(),
+    report: report || null
+  });
+}
+
+function readWifiDataReleaseReport() {
+  return readJsonFile(getReleaseReportFile(), defaultWifiDataReleaseReportState());
+}
+
+function writeWifiDataIntegrityReport(report) {
+  return writeJsonFile(getIntegrityFile(), {
+    ...defaultWifiDataIntegrityState(),
+    version: report && report.version ? report.version : "v1",
+    plugin_id: "wifi_data_sharing",
+    created_at: report && report.created_at ? report.created_at : new Date().toISOString(),
+    updated_at: report && report.updated_at ? report.updated_at : new Date().toISOString(),
+    report: report || null
+  });
+}
+
+function readWifiDataIntegrityReport() {
+  return readJsonFile(getIntegrityFile(), defaultWifiDataIntegrityState());
+}
+
+function listWifiDataBackups() {
+  const dir = getBackupsDir();
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => {
+      const backupDir = path.join(dir, entry.name);
+      const manifestFile = path.join(backupDir, "manifest.json");
+      let manifest = null;
+      if (fs.existsSync(manifestFile)) {
+        try {
+          manifest = JSON.parse(fs.readFileSync(manifestFile, "utf8"));
+        } catch (error) {
+          manifest = { backup_id: entry.name, status: "corrupt", error: error.message };
+        }
+      }
+      return {
+        backup_id: entry.name,
+        path: backupDir,
+        manifest
+      };
+    })
+    .sort((left, right) => String(right.backup_id).localeCompare(String(left.backup_id)));
+}
+
 function mergeKnownCandidate(state, candidate) {
   state.discovery = state.discovery || defaultWifiDataSharingState().discovery;
   const current = Array.isArray(state.discovery.known_candidates) ? state.discovery.known_candidates : [];
@@ -506,6 +658,7 @@ module.exports = {
   appendWifiDataDiscoveryEvent,
   appendWifiDataPairingEvent,
   appendWifiDataTransferEvent,
+  appendWifiDataApplyEvent,
   appendWifiTransferPolicyResult,
   readWifiDataPackagesState,
   writeWifiDataPackagesState,
@@ -519,6 +672,15 @@ module.exports = {
   writeWifiTransferSessionsState,
   upsertWifiTransferSessionRecord,
   findWifiTransferSessionRecord,
+  readWifiDataAppliedState,
+  writeWifiDataAppliedState,
+  upsertWifiDataAppliedRecord,
+  findWifiDataAppliedRecord,
+  readWifiDataReleaseReport,
+  writeWifiDataReleaseReport,
+  readWifiDataIntegrityReport,
+  writeWifiDataIntegrityReport,
+  listWifiDataBackups,
   readWifiTransferPolicyResultsState,
   writeWifiTransferPolicyResultsState,
   readWifiDataQuarantineState,
@@ -538,6 +700,11 @@ module.exports = {
   getTransferSessionsFile,
   getPackagesFile,
   getInboxFile,
+  getAppliedFile,
+  getApplyEventsFile,
+  getReleaseReportFile,
+  getIntegrityFile,
+  getBackupsDir,
   mergeKnownCandidate,
   normalizeTrustRole,
   generateNodeId

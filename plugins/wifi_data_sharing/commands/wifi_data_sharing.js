@@ -16,6 +16,12 @@ const { wifiDataSecurityGate, buildSecurityResultsReport } = require("./security
 const { wifiDataQuarantine, buildQuarantineReport, buildQuarantineItemReport } = require("./quarantine");
 const { wifiDataOutbox } = require("./outbox");
 const { wifiDataTransferRetry } = require("./retry");
+const { wifiDataSharingApply, buildApplyReport, buildAppliedReport, buildAppliedItemReport, buildApplyActionReport } = require("./apply");
+const { wifiDataSharingApplied } = require("./applied");
+const { wifiDataSharingHealth, buildHealthReport } = require("./health");
+const { wifiDataSharingRelease, buildReleaseReport, buildIntegrityReport } = require("./release");
+const { wifiDataSharingBackup, buildBackupReport } = require("./backup");
+const { wifiDataSharingRestore, buildRestoreReport } = require("./restore");
 const { wifiDataSharingProvider, buildProviderReport } = require("./provider");
 const { wifiDataSharingReadiness, buildReadinessReport } = require("./readiness");
 const { wifiDataSharingDashboard, buildDashboardReport } = require("./dashboard");
@@ -73,6 +79,36 @@ function wifiDataSharing(action, value, flags = {}, rest = [], deps = {}) {
   }
   if (normalized === "provider") {
     const report = wifiDataSharingProvider(normalized, value, flags, rest);
+    return report;
+  }
+  if (normalized === "apply") {
+    const report = wifiDataSharingApply(normalized, value, flags, rest);
+    outputReport(report, flags);
+    return report;
+  }
+  if (normalized === "applied") {
+    const report = wifiDataSharingApplied(normalized, value, flags, rest);
+    outputReport(report, flags);
+    return report;
+  }
+  if (normalized === "health") {
+    const report = wifiDataSharingHealth(normalized, value, flags, rest);
+    outputReport(report, flags);
+    return report;
+  }
+  if (normalized === "release" || normalized === "integrity") {
+    const report = wifiDataSharingRelease(normalized, value, flags, rest);
+    outputReport(report, flags);
+    return report;
+  }
+  if (normalized === "backup") {
+    const report = wifiDataSharingBackup(normalized, value, flags, rest);
+    outputReport(report, flags);
+    return report;
+  }
+  if (normalized === "restore") {
+    const report = wifiDataSharingRestore(normalized, value, flags, rest);
+    outputReport(report, flags);
     return report;
   }
   if (normalized === "readiness") {
@@ -239,6 +275,101 @@ function outputReport(report, flags) {
       `Packages: ${report.summary.packages_count}`,
       `Outbox: ${report.summary.outbox_count}`,
       `Transfer sessions: ${report.summary.transfer_sessions_count}`,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_apply") {
+    console.log([
+      "Wi-Fi Data Sharing Apply",
+      `Status: ${report.status}`,
+      report.applied_record ? `Apply ID: ${report.applied_record.apply_id}` : null,
+      report.packet ? `Packet: ${report.packet.packet_id || report.packet.package_id || "unknown"}` : null,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_applied") {
+    const applied = Array.isArray(report.applied) ? report.applied : [];
+    console.log([
+      "Wi-Fi Data Sharing Applied Records",
+      `Total: ${report.counts.total}`,
+      `Applied: ${report.counts.applied}`,
+      `Rejected: ${report.counts.rejected}`,
+      `Cancelled: ${report.counts.cancelled}`,
+      ...(applied.length ? applied.slice(0, 5).map((item) => `- ${item.apply_id} (${item.status}) ${item.packet_id || item.package_id || ""}`.trim()) : ["- none"]),
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_applied_item") {
+    console.log([
+      "Wi-Fi Data Sharing Applied Record",
+      `Status: ${report.status}`,
+      report.applied_record ? `Apply ID: ${report.applied_record.apply_id}` : null,
+      report.applied_record ? `Packet: ${report.applied_record.packet_id || report.applied_record.package_id || "unknown"}` : null,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_apply_action") {
+    console.log([
+      `Wi-Fi Data Sharing Apply ${String(report.action || "").toUpperCase()}`,
+      `Status: ${report.status}`,
+      report.applied_record ? `Apply ID: ${report.applied_record.apply_id}` : null,
+      report.reason ? `Reason: ${report.reason}` : null,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_apply_blocked") {
+    console.log([
+      "Wi-Fi Data Sharing Apply",
+      `Status: ${report.status}`,
+      report.message ? `Message: ${report.message}` : null,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_health") {
+    console.log([
+      "Wi-Fi Data Sharing Health",
+      `Status: ${report.status}`,
+      `Backups: ${report.summary.backup_count}`,
+      `Release status: ${report.summary.release_status}`,
+      `Integrity status: ${report.summary.integrity_status}`,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && (report.report_type === "wifi_data_sharing_release_report" || report.report_type === "wifi_data_sharing_integrity")) {
+    const isIntegrity = report.report_type === "wifi_data_sharing_integrity";
+    console.log([
+      isIntegrity ? "Wi-Fi Data Sharing Integrity" : "Wi-Fi Data Sharing Release Report",
+      `Status: ${report.status}`,
+      isIntegrity ? `Checked: ${report.summary.checked_count || 0}` : `Backups: ${report.summary.backup_count || 0}`,
+      isIntegrity ? `Present: ${report.summary.present_count || 0}` : `Applied records: ${report.summary.applied_count || 0}`,
+      isIntegrity ? null : `Integrity status: ${report.summary.integrity_status || "unknown"}`,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_backup") {
+    console.log([
+      "Wi-Fi Data Sharing Backup",
+      `Status: ${report.status}`,
+      `Backups: ${Array.isArray(report.backups) ? report.backups.length : 0}`,
+      report.backup ? `Backup ID: ${report.backup.backup_id}` : null,
+      report.next_action ? `Next: ${report.next_action}` : null
+    ].filter(Boolean).join("\n"));
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_restore" || report && report.report_type === "wifi_data_sharing_restore_blocked") {
+    console.log([
+      "Wi-Fi Data Sharing Restore",
+      `Status: ${report.status}`,
+      report.backup_id ? `Backup: ${report.backup_id}` : null,
+      report.message ? `Message: ${report.message}` : null,
       report.next_action ? `Next: ${report.next_action}` : null
     ].filter(Boolean).join("\n"));
     return;
@@ -538,6 +669,15 @@ module.exports = {
   buildWifiDataSharingPolicyReport,
   buildWifiDataSharingStateReport,
   buildWifiDataSharingCandidatesReport,
+  buildApplyReport,
+  buildAppliedReport,
+  buildAppliedItemReport,
+  buildApplyActionReport,
+  buildHealthReport,
+  buildReleaseReport,
+  buildIntegrityReport,
+  buildBackupReport,
+  buildRestoreReport,
   buildProviderReport,
   buildReadinessReport,
   buildDashboardReport,

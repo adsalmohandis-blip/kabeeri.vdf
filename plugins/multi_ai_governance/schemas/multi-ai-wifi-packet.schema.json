@@ -28,7 +28,7 @@
     "created_at": { "type": "string" },
     "status": {
       "type": "string",
-      "enum": ["created", "sent", "received", "inspected", "consumed", "rejected"]
+      "enum": ["created", "sent", "received", "inspected", "approved", "rejected", "consumed"]
     },
     "package_id": { "type": ["string", "null"] },
     "target_node_id": { "type": ["string", "null"] },
@@ -36,6 +36,21 @@
     "received_at": { "type": ["string", "null"] },
     "inspected_at": { "type": ["string", "null"] },
     "consumed_at": { "type": ["string", "null"] },
-    "rejected_at": { "type": ["string", "null"] }
+    "approved_at": { "type": ["string", "null"] },
+    "rejected_at": { "type": ["string", "null"] },
+    "decision_reason": { "type": ["string", "null"] },
+    "application_decision": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "decision": { "type": "string", "enum": ["approved", "rejected"] },
+        "reason": { "type": ["string", "null"] },
+        "decided_at": { "type": ["string", "null"] },
+        "decided_by": { "type": ["string", "null"] },
+        "application_applied": { "type": "boolean" },
+        "authority_model": { "type": ["string", "null"] },
+        "effect": { "type": ["string", "null"] }
+      }
+    }
   }
 }

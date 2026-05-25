@@ -41,6 +41,13 @@ function getProviderInfo() {
         "wifi_data_outbox",
         "wifi_transfer_sessions",
         "resumable_transfer",
+        "wifi_data_apply_bridge",
+        "wifi_data_applied_records",
+        "wifi_data_health",
+        "wifi_data_release_readiness",
+        "wifi_data_backup",
+        "wifi_data_restore",
+        "wifi_data_integrity",
         "wifi_data_dashboard",
         "wifi_data_audit",
         "wifi_data_evidence",
@@ -162,6 +169,10 @@ function buildProviderReport(options = {}) {
   const transferSessionsReport = retry.buildTransferSessionsReport();
   const policyResultsState = state.readWifiTransferPolicyResultsState ? state.readWifiTransferPolicyResultsState() : { policy_results: [] };
   const quarantineState = state.readWifiDataQuarantineState ? state.readWifiDataQuarantineState() : { quarantine: [] };
+  const appliedState = state.readWifiDataAppliedState ? state.readWifiDataAppliedState() : { applied: [] };
+  const releaseReport = state.readWifiDataReleaseReport ? state.readWifiDataReleaseReport() : { report: null };
+  const integrityReport = state.readWifiDataIntegrityReport ? state.readWifiDataIntegrityReport() : { report: null };
+  const backups = state.listWifiDataBackups ? state.listWifiDataBackups() : [];
   const readiness = collectReadinessChecks();
   const status = readiness.blockers.length ? "blocked" : readiness.warnings.length ? "partial" : (localNode.node_id ? "ready" : "partial");
   const report = {
@@ -182,11 +193,15 @@ function buildProviderReport(options = {}) {
       outbox_count: Array.isArray(outboxReport.outbox) ? outboxReport.outbox.length : 0,
       quarantine_count: inbox.filter((item) => item.quarantined !== false).length,
       quarantine_records_count: Array.isArray(quarantineState.quarantine) ? quarantineState.quarantine.length : 0,
+      applied_count: Array.isArray(appliedState.applied) ? appliedState.applied.length : 0,
+      backup_count: backups.length,
       policy_results_count: Array.isArray(policyResultsState.policy_results) ? policyResultsState.policy_results.length : 0,
       transfers_count: Array.isArray(transfersReport.transfers) ? transfersReport.transfers.length : 0,
       transfer_sessions_count: Array.isArray(transferSessionsReport.transfer_sessions) ? transferSessionsReport.transfer_sessions.length : 0,
       transfer_server_status: current.transfer_server ? current.transfer_server.status : "stopped",
       transfer_server_port: current.transfer_server ? current.transfer_server.port : null,
+      release_status: releaseReport && releaseReport.report ? releaseReport.report.status : "missing",
+      integrity_status: integrityReport && integrityReport.report ? integrityReport.report.status : "missing",
       policy_blockers: readiness.blockers.length
     },
     capabilities: providerInfo.capabilities,
@@ -232,6 +247,11 @@ function collectReadinessChecks() {
   const transferAvailable = typeof transfer.createPackage === "function" && typeof transfer.sendPackage === "function" && typeof transfer.wifiDataTransfer === "function";
   const outboxAvailable = typeof outbox.buildOutboxReport === "function" && typeof outbox.wifiDataOutbox === "function";
   const transferSessionsAvailable = typeof retry.buildTransferSessionsReport === "function" && typeof retry.resumeTransferSession === "function";
+  const applyAvailable = typeof require("./commands/apply").buildApplyReport === "function" && typeof require("./commands/apply").buildAppliedReport === "function";
+  const healthAvailable = typeof require("./commands/health").buildHealthReport === "function";
+  const releaseAvailable = typeof require("./commands/release").buildReleaseReport === "function" && typeof require("./commands/release").buildIntegrityReport === "function";
+  const backupAvailable = typeof require("./commands/backup").buildBackupReport === "function" && typeof require("./commands/backup").createBackup === "function";
+  const restoreAvailable = typeof require("./commands/restore").buildRestoreReport === "function";
   const securityGateAvailable = typeof securityGate.wifiDataSecurityGate === "function" && typeof securityGate.checkPackageSecurity === "function";
   const quarantineAvailable = typeof quarantine.wifiDataQuarantine === "function" && typeof quarantine.buildQuarantineReport === "function";
   const dashboardAvailable = fs.existsSync(path.join(__dirname, "commands", "dashboard.js"));
@@ -251,6 +271,11 @@ function collectReadinessChecks() {
   pushCheck(checks, "transfer_available", transferAvailable ? "pass" : "fail", transferAvailable ? "Package transfer commands are available." : "Package transfer commands are unavailable.");
   pushCheck(checks, "outbox_available", outboxAvailable ? "pass" : "fail", outboxAvailable ? "Outbox commands are available." : "Outbox commands are unavailable.");
   pushCheck(checks, "transfer_sessions_available", transferSessionsAvailable ? "pass" : "fail", transferSessionsAvailable ? "Transfer session commands are available." : "Transfer session commands are unavailable.");
+  pushCheck(checks, "apply_available", applyAvailable ? "pass" : "fail", applyAvailable ? "Apply bridge commands are available." : "Apply bridge commands are unavailable.");
+  pushCheck(checks, "health_available", healthAvailable ? "pass" : "fail", healthAvailable ? "Health commands are available." : "Health commands are unavailable.");
+  pushCheck(checks, "release_available", releaseAvailable ? "pass" : "fail", releaseAvailable ? "Release and integrity commands are available." : "Release and integrity commands are unavailable.");
+  pushCheck(checks, "backup_available", backupAvailable ? "pass" : "fail", backupAvailable ? "Backup commands are available." : "Backup commands are unavailable.");
+  pushCheck(checks, "restore_available", restoreAvailable ? "pass" : "fail", restoreAvailable ? "Restore commands are available." : "Restore commands are unavailable.");
   pushCheck(checks, "security_gate_available", securityGateAvailable ? "pass" : "fail", securityGateAvailable ? "Security gate commands are available." : "Security gate commands are unavailable.");
   pushCheck(checks, "quarantine_available", quarantineAvailable ? "pass" : "fail", quarantineAvailable ? "Quarantine commands are available." : "Quarantine commands are unavailable.");
   pushCheck(checks, "dashboard_available", dashboardAvailable ? "pass" : "fail", dashboardAvailable ? "Dashboard commands are available." : "Dashboard commands are unavailable.");
@@ -351,7 +376,7 @@ function buildIntegrationStatus() {
     plugin_id: "multi_ai_governance",
     dependency_type: "optional",
     status: "available",
-    purpose: "Send governed assignment and evidence packets between trusted local nodes.",
+    purpose: "Send governed assignment and evidence packets between trusted local nodes without transferring authority.",
     next_action: "Use the multi_ai_governance client when you are ready to consume this provider."
   };
 }

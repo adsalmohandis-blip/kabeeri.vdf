@@ -22,9 +22,13 @@ function renderProviderText(report) {
     `Trusted nodes: ${report.summary.trusted_nodes_count}`,
     `Revoked nodes: ${report.summary.revoked_nodes_count}`,
     `Packages: ${report.summary.packages_count}`,
+    `Applied bridge records: ${report.summary.applied_count}`,
+    `Backups: ${report.summary.backup_count}`,
     `Inbox: ${report.summary.inbox_count}`,
     `Quarantine: ${report.summary.quarantine_count}`,
     `Transfers: ${report.summary.transfers_count}`,
+    `Release status: ${report.summary.release_status}`,
+    `Integrity status: ${report.summary.integrity_status}`,
     `Integration: ${report.integration_status && report.integration_status.status ? report.integration_status.status : "unknown"}`,
     `Next action: ${report.next_action}`
   ].join("\n");

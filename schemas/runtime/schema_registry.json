@@ -6,7 +6,8 @@
     { "pattern": ".kabeeri/**/*.example.json", "reason": "Example JSON state files are documentation fixtures." },
     { "pattern": ".kabeeri/**/*.example.jsonl", "reason": "Example JSONL state files are documentation fixtures." },
     { "pattern": ".kabeeri/**/site/**", "reason": "Generated docs site assets are not runtime state." },
-    { "pattern": ".kabeeri/plugin-mounts/**", "reason": "Legacy copied plugin mounts from the prior bundle-mirroring model." }
+    { "pattern": ".kabeeri/plugin-mounts/**", "reason": "Legacy copied plugin mounts from the prior bundle-mirroring model." },
+    { "pattern": ".kabeeri/wifi_data_backups/**", "reason": "Backup archives are release artifacts, not active runtime state." }
   ],
   "state_files": [
     { "path": ".kabeeri/project.json", "schema": "schemas/runtime/project-state.schema.json" },
@@ -52,9 +53,13 @@
     { "path": ".kabeeri/wifi_data_inbox.json", "schema": "schemas/runtime/wifi-data-inbox.schema.json" },
     { "path": ".kabeeri/wifi_data_outbox.json", "schema": "schemas/runtime/wifi-outbox-state.schema.json" },
     { "path": ".kabeeri/wifi_transfer_sessions.json", "schema": "schemas/runtime/wifi-transfer-session.schema.json" },
+    { "path": ".kabeeri/wifi_data_applied.json", "schema": "schemas/runtime/wifi-applied-state.schema.json" },
+    { "path": ".kabeeri/wifi_data_release_report.json", "schema": "schemas/runtime/wifi-release-report.schema.json" },
+    { "path": ".kabeeri/wifi_data_integrity.json", "schema": "schemas/runtime/wifi-integrity-report.schema.json" },
     { "path": ".kabeeri/wifi_data_discovery.jsonl", "schema": "schemas/runtime/wifi-discovery-event.schema.json" },
     { "path": ".kabeeri/wifi_data_pairing.jsonl", "schema": "schemas/runtime/wifi-pairing-event.schema.json" },
     { "path": ".kabeeri/wifi_data_transfers.jsonl", "schema": "schemas/runtime/wifi-transfer-event.schema.json" },
+    { "path": ".kabeeri/wifi_data_apply_events.jsonl", "schema": "schemas/runtime/wifi-apply-event.schema.json" },
     { "path": ".kabeeri/wifi_transfer_policy_results.json", "schema": "schemas/runtime/wifi-transfer-policy-result.schema.json" },
     { "path": ".kabeeri/wifi_data_quarantine.json", "schema": "schemas/runtime/wifi-quarantine-state.schema.json" },
     { "path": ".kabeeri/reports/wifi_data_sharing_provider.json", "schema": "schemas/runtime/wifi-data-provider-response.schema.json" },

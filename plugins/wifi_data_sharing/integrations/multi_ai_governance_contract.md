@@ -18,7 +18,7 @@
 3. `canSendPackage(...)` checks trust, package type, size, and policy.
 4. `sendPackage(...)` sends the package only after confirmation.
 5. The receiving side stores the package in inbox/quarantine.
-6. `multi_ai_governance` may inspect the packet payload, audit the receipt, or later consume the packet record.
+6. `multi_ai_governance` may inspect the packet payload, audit the receipt, or later consume the packet record with an explicit approve/reject decision.
 
 ## Optional Nature
 
@@ -31,10 +31,10 @@
 - Governance packets are envelopes around the actual multi-AI intent.
 - Packet types include assignment, queue status, evidence, merge preview, owner decision, and heartbeat messages.
 - Receiving a packet through wifi does not approve it.
-- Consuming a packet records a receipt or audit note only; it does not automatically mutate queues or merges.
+- Consuming a packet records an explicit approve/reject decision plus a receipt; it still does not automatically mutate queues or merges.
 
 ## Safety Notes
 
 - No remote packet should auto-promote itself to governance authority.
-- No inbox package should mutate multi-AI state unless a future explicit consume path approves it.
+- No inbox package should mutate multi-AI state unless a future explicit consume path records an explicit approval decision and a future safe apply path exists.
 - This contract is for transport and evidence only.
