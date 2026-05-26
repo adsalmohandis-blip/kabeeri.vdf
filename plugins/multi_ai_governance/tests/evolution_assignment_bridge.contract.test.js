@@ -949,6 +949,9 @@ test("evolution session worker rejoins after timeout and the master records reco
   assert.strictEqual(masterReport.recovery_result.status, "recovered");
   assert.ok(Array.isArray(masterReport.recovery_result.recovered_worker_ids));
   assert.deepStrictEqual(masterReport.recovery_result.recovered_worker_ids, ["wifi-node-worker"]);
+  const workerRendered = bootstrap.renderMultiAiEvolutionAssignmentSessionReport(secondWorkerReport);
+  assert.match(workerRendered, /Master overview:/i);
+  assert.match(workerRendered, /pending|completed/i);
   const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
   assert.ok(Array.isArray(sessionState.recovery_events));
   assert.ok(sessionState.recovery_events.some((item) => item && item.target_node_id === "wifi-node-worker"));

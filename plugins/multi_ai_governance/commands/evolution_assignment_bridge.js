@@ -818,6 +818,9 @@ function renderEvolutionAssignmentSessionReport(report) {
     lines.push(
       `Worker pool view: ${workerPool.ready_worker_count || 0} ready / ${workerPool.trusted_worker_count || 0} trusted / ${workerPool.discovered_worker_count || 0} discovered / ${workerPool.stale_worker_count || 0} stale`
     );
+    lines.push(
+      `Master overview: ${masterSummary.active_workers || 0} active / ${masterSummary.stale_workers || 0} stale / ${masterSummary.recovered_workers || 0} recovered / ${masterSummary.pending_assignments || 0} pending / ${masterSummary.completed_assignments || 0} completed`
+    );
     lines.push(`Join request: ${report.join_request_result ? report.join_request_result.status || "requested" : sessionRecordStatusFromReport(report)}`);
     lines.push(`Heartbeat: ${report.heartbeat_result ? report.heartbeat_result.status || "sent" : "waiting"}`);
     lines.push(`Completion: ${report.completion_result ? report.completion_result.status || "sent" : "waiting"}`);
