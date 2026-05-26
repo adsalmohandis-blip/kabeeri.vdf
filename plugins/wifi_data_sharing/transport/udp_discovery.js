@@ -152,6 +152,7 @@ function resolveDiscoveryTargets({ loopback = false, port = DEFAULT_DISCOVERY_PO
     }];
   }
   const broadcasts = new Set();
+  const probes = new Set();
   for (const interfaces of Object.values(os.networkInterfaces() || {})) {
     for (const item of Array.isArray(interfaces) ? interfaces : []) {
       if (!item || item.internal) continue;
@@ -159,12 +160,19 @@ function resolveDiscoveryTargets({ loopback = false, port = DEFAULT_DISCOVERY_PO
       const computedBroadcast = computeIpv4BroadcastAddress(item.address, item.netmask);
       if (item.broadcast) broadcasts.add(String(item.broadcast));
       if (computedBroadcast) broadcasts.add(computedBroadcast);
+      for (const target of computeIpv4SubnetProbeAddresses(item.address, item.netmask)) {
+        probes.add(target);
+      }
     }
   }
   if (!broadcasts.size) {
     broadcasts.add("255.255.255.255");
   }
-  return Array.from(broadcasts).map((host) => ({
+  const targets = [
+    ...Array.from(broadcasts),
+    ...Array.from(probes)
+  ];
+  return targets.map((host) => ({
     host,
     port: Number(port || DEFAULT_DISCOVERY_PORT)
   }));
@@ -187,6 +195,41 @@ function parseIpv4Address(value) {
     return null;
   }
   return parts;
+}
+
+function ipv4PartsToNumber(parts) {
+  return ((parts[0] << 24) >>> 0) + ((parts[1] << 16) >>> 0) + ((parts[2] << 8) >>> 0) + (parts[3] >>> 0);
+}
+
+function ipv4NumberToParts(value) {
+  return [
+    (value >>> 24) & 255,
+    (value >>> 16) & 255,
+    (value >>> 8) & 255,
+    value & 255
+  ];
+}
+
+function computeIpv4SubnetProbeAddresses(address, netmask) {
+  const ipParts = parseIpv4Address(address);
+  const maskParts = parseIpv4Address(netmask);
+  if (!ipParts || !maskParts) return [];
+  const ipNumber = ipv4PartsToNumber(ipParts);
+  const maskNumber = ipv4PartsToNumber(maskParts);
+  const hostMask = (~maskNumber) >>> 0;
+  if (!hostMask) return [];
+  const hostBits = Math.round(Math.log2(hostMask + 1));
+  if (!Number.isFinite(hostBits) || hostBits <= 0 || hostBits > 8) return [];
+  const networkNumber = ipNumber & maskNumber;
+  const broadcastNumber = (networkNumber | hostMask) >>> 0;
+  const targets = [];
+  const maxHosts = Math.min(254, Math.max(0, (1 << hostBits) - 2));
+  for (let offset = 1; offset <= maxHosts; offset += 1) {
+    const candidate = (networkNumber + offset) >>> 0;
+    if (candidate === ipNumber || candidate === broadcastNumber) continue;
+    targets.push(ipv4NumberToParts(candidate).join("."));
+  }
+  return targets;
 }
 
 function closeSocket(socket) {
@@ -312,6 +355,7 @@ module.exports = {
   parseDiscoveryMessage,
   normalizeCandidate,
   computeIpv4BroadcastAddress,
+  computeIpv4SubnetProbeAddresses,
   resolveDiscoveryTargets,
   discoverCandidates,
   advertisePresence

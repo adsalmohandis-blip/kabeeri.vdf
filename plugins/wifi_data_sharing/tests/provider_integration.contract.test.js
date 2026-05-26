@@ -166,6 +166,13 @@ test("discovery targets include subnet-directed broadcast addresses when interfa
   }
 });
 
+test("discovery subnet probes include local-subnet host addresses when broadcast is insufficient", () => {
+  const probes = udpDiscovery.computeIpv4SubnetProbeAddresses("192.168.1.5", "255.255.255.0");
+  assert.ok(Array.isArray(probes));
+  assert.ok(probes.includes("192.168.1.1"));
+  assert.ok(!probes.includes("192.168.1.5"));
+});
+
 test("multi_ai_governance manifest has optional wifi_data_sharing integration", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "multi_ai_governance", "plugin.json"), "utf8"));
   const optional = Array.isArray(manifest.optional_integrations) ? manifest.optional_integrations : [];
