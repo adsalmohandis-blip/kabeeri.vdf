@@ -108,6 +108,13 @@ function buildEvolutionAssignmentBridgeReport(state = {}, flags = {}, deps = {},
     },
     recovery_result: null
   });
+  const assignmentFreshness = buildEvolutionAssignmentFreshness({
+    current_assignment: currentAssignment,
+    worker_pool: {
+      stale_worker_count: 0
+    },
+    recovery_result: null
+  });
   const sessionHealth = buildEvolutionSessionHealth({
     status: decision.decision === "allow" ? "ready" : decision.decision === "warn" ? "attention" : decision.decision === "require_owner_approval" ? "attention" : "blocked",
     decision: decision.decision,
@@ -149,6 +156,8 @@ function buildEvolutionAssignmentBridgeReport(state = {}, flags = {}, deps = {},
     },
     case_matrix: caseMatrix,
     master_summary: masterSummary,
+    assignment_freshness: assignmentFreshness.freshness,
+    assignment_freshness_reason: assignmentFreshness.reason,
     session_health: sessionHealth.health,
     session_health_reason: sessionHealth.reason,
     distribution_plan: {
@@ -277,6 +286,12 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     recovery_result: recoveryResult,
     completed_assignment_ids: sessionRecord.completed_assignment_ids
   });
+  const assignmentFreshness = buildEvolutionAssignmentFreshness({
+    current_assignment: bridgeReport.current_assignment,
+    worker_pool: workerPool,
+    recovery_result: recoveryResult,
+    recovery_status: sessionRecord.recovery_status || null
+  });
   const sessionHealth = buildEvolutionSessionHealth({
     status: sessionRole === "master"
       ? (workerPool.stale_worker_count > 0 ? "attention" : (bridgeReport.status || "ready"))
@@ -285,6 +300,8 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     role: sessionRole,
     worker_pool: workerPool,
     master_summary: masterSummary,
+    assignment_freshness: assignmentFreshness.freshness,
+    assignment_freshness_reason: assignmentFreshness.reason,
     recovery_result: recoveryResult,
     recovery_status: sessionRecord.recovery_status || null,
     current_assignment: bridgeReport.current_assignment,
@@ -655,6 +672,8 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     target_node: targetNode,
     worker_pool: workerPool,
     master_summary: masterSummary,
+    assignment_freshness: assignmentFreshness.freshness,
+    assignment_freshness_reason: assignmentFreshness.reason,
     session_health: sessionHealth.health,
     session_health_reason: sessionHealth.reason,
     current_assignment: bridgeReport.current_assignment,
@@ -764,11 +783,42 @@ function buildEvolutionSessionHealth(report = {}) {
   };
 }
 
+function buildEvolutionAssignmentFreshness(report = {}) {
+  const assignment = report.current_assignment || {};
+  const assignmentStatus = String(assignment.status || "").trim().toLowerCase();
+  const workerPool = report.worker_pool || {};
+  const recoveryResult = report.recovery_result || null;
+  const recoveredWorkerCount = Array.isArray(recoveryResult && recoveryResult.recovered_worker_ids) ? recoveryResult.recovered_worker_ids.length : 0;
+  if (recoveredWorkerCount > 0 || String(report.recovery_status || "").trim().toLowerCase() === "recovered") {
+    return {
+      freshness: "recovered",
+      reason: "The current assignment was reactivated after a worker recovery event."
+    };
+  }
+  if (["completed", "applied"].includes(assignmentStatus)) {
+    return {
+      freshness: "fresh",
+      reason: "The current assignment is up to date and has a final applied or completed state."
+    };
+  }
+  if (Number(workerPool.stale_worker_count || 0) > 0) {
+    return {
+      freshness: "stale",
+      reason: "The current assignment is still active, but one or more assigned workers are stale."
+    };
+  }
+  return {
+    freshness: "fresh",
+    reason: "The current assignment is active and has not fallen behind."
+  };
+}
+
 function renderEvolutionAssignmentBridgeReport(report) {
   const assignment = report.current_assignment || {};
   const workerIds = Array.isArray(assignment.worker_ai_ids) ? assignment.worker_ai_ids : [];
   const cases = Array.isArray(report.case_matrix) ? report.case_matrix : [];
   const masterSummary = report.master_summary || buildEvolutionMasterSummary(report);
+  const assignmentFreshness = report.assignment_freshness || buildEvolutionAssignmentFreshness(report);
   const sessionHealth = report.session_health || buildEvolutionSessionHealth(report);
   const lines = [
     "Evolution Assignment Bridge",
@@ -783,6 +833,7 @@ function renderEvolutionAssignmentBridgeReport(report) {
     `Push authority: ${assignment.push_policy && assignment.push_policy.master_only ? "master_only" : "shared"}`,
     `Owner approval: ${report.requires_owner_approval ? "required" : "not required"}`,
     `Risk level: ${report.risk_level || "low"}`,
+    `Assignment freshness: ${assignmentFreshness.freshness || "fresh"}${assignmentFreshness.reason ? ` - ${assignmentFreshness.reason}` : ""}`,
     `Session health: ${sessionHealth.health || "healthy"}${sessionHealth.reason ? ` - ${sessionHealth.reason}` : ""}`,
     "",
     "Master summary:",
@@ -830,6 +881,7 @@ function renderEvolutionAssignmentSessionReport(report) {
   const masterRole = report.role === "master";
   const workerPool = report.worker_pool || {};
   const masterSummary = report.master_summary || buildEvolutionMasterSummary(report);
+  const assignmentFreshness = report.assignment_freshness || buildEvolutionAssignmentFreshness(report);
   const sessionHealth = report.session_health || buildEvolutionSessionHealth(report);
   const targetNodeIds = Array.isArray(report.target_node_ids) ? report.target_node_ids : [];
   const broadcastResults = Array.isArray(report.broadcast_results) ? report.broadcast_results : [];
@@ -854,6 +906,9 @@ function renderEvolutionAssignmentSessionReport(report) {
     );
     lines.push(
       `Master summary: ${masterSummary.active_workers || 0} active / ${masterSummary.stale_workers || 0} stale / ${masterSummary.recovered_workers || 0} recovered / ${masterSummary.pending_assignments || 0} pending / ${masterSummary.completed_assignments || 0} completed`
+    );
+    lines.push(
+      `Assignment freshness: ${assignmentFreshness.freshness || "fresh"}${assignmentFreshness.reason ? ` - ${assignmentFreshness.reason}` : ""}`
     );
     if (Array.isArray(workerPool.ready_workers) && workerPool.ready_workers.length) {
       lines.push("Ready workers:");
@@ -901,6 +956,7 @@ function renderEvolutionAssignmentSessionReport(report) {
     lines.push(`Heartbeat: ${report.heartbeat_result ? report.heartbeat_result.status || "sent" : "waiting"}`);
     lines.push(`Completion: ${report.completion_result ? report.completion_result.status || "sent" : "waiting"}`);
     lines.push(`Recovery: ${report.recovery_result && report.recovery_result.recovered_worker_ids && report.recovery_result.recovered_worker_ids.length ? `recovered ${report.recovery_result.recovered_worker_ids.join(", ")}` : "waiting"}`);
+    lines.push(`Assignment freshness: ${assignmentFreshness.freshness || "fresh"}${assignmentFreshness.reason ? ` - ${assignmentFreshness.reason}` : ""}`);
     lines.push("Worker prompt:");
     lines.push(report.worker_prompt || "No worker prompt available.");
     lines.push("", "Inbox:");

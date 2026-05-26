@@ -16,6 +16,8 @@ be translated into a safe, master-led task assignment plan.
   completed counts.
 - Surfaces a session health indicator so the master view can distinguish
   healthy, attention, and recovery states at a glance.
+- Surfaces an assignment freshness indicator so the current assignment can be
+  tracked separately from the overall session health.
 
 ## Commands
 

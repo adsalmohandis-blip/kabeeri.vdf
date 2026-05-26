@@ -42,6 +42,8 @@ This workflow keeps one machine as the master laptop and one or more machines as
 - The worker session report should show a master overview line so the worker can see whether the current assignment is pending, completed, or recovering.
 - Both master and worker session views should show a session health indicator
   such as `healthy`, `attention`, or `recovery`.
+- Both views should also show assignment freshness separately from session
+  health so the current task state can be read at a glance.
 
 ## Outputs
 
