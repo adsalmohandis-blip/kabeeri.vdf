@@ -155,11 +155,35 @@ function sendPackage(packageId, targetNodeId, options = {}) {
   if (canSend.status === "blocked") {
     return canSend;
   }
+  if (Boolean(options.bootstrap) && !String(targetNodeId || "").trim()) {
+    return transfer.sendBootstrapPacket({
+      packageId,
+      targetNodeId,
+      confirm: Boolean(options.confirm),
+      loopback: Boolean(options.loopback)
+    });
+  }
   return transfer.sendPackage({
     packageId,
     targetNodeId,
     confirm: Boolean(options.confirm),
     bootstrap: Boolean(options.bootstrap),
+    loopback: Boolean(options.loopback)
+  });
+}
+
+function sendBootstrapPacket(packageId, targetNodeId, options = {}) {
+  const canSend = canSendPackage(packageId, targetNodeId, {
+    ...options,
+    bootstrap: true
+  });
+  if (canSend.status === "blocked") {
+    return canSend;
+  }
+  return transfer.sendBootstrapPacket({
+    packageId,
+    targetNodeId,
+    confirm: Boolean(options.confirm),
     loopback: Boolean(options.loopback)
   });
 }
@@ -335,6 +359,7 @@ function providerExportsApiAvailable() {
     canSendPackage,
     createPackage,
     sendPackage,
+    sendBootstrapPacket,
     listInbox,
     getPackage,
     buildProviderReport,
@@ -657,6 +682,7 @@ module.exports = {
   canSendPackage,
   createPackage,
   sendPackage,
+  sendBootstrapPacket,
   listInbox,
   getPackage,
   buildProviderReport,

@@ -162,6 +162,33 @@ test("worker join bootstrap packets can be broadcast without a discovered master
   assert.strictEqual(sent.status, "ok");
 }));
 
+test("bootstrap transport emits a direct worker join control packet when no master target is visible", () => withTempRepo((dir) => {
+  state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
+  const input = path.join(dir, "payload.json");
+  fs.writeFileSync(input, JSON.stringify({ ready: true }, null, 2), "utf8");
+  const created = transfer.createPackage({
+    packageType: "worker_join_request",
+    inputPath: input,
+    title: "Worker join request"
+  });
+  let captured = null;
+  const report = transfer.sendBootstrapPacket({
+    packageId: created.package.package_id,
+    confirm: true,
+    loopback: true,
+    transport: async (packet, target) => {
+      captured = { packet, target };
+    }
+  });
+  assert.strictEqual(report.status, "ok");
+  assert.ok(captured);
+  assert.strictEqual(captured.packet.message_type, "worker_join_request");
+  assert.strictEqual(captured.packet.packet_type, "worker_join_request");
+  assert.strictEqual(captured.packet.bootstrap, true);
+  assert.strictEqual(captured.packet.service_name, "wifi_data_sharing");
+  assert.strictEqual(captured.target.loopback, true);
+}));
+
 test("discovery targets include subnet-directed broadcast addresses when interface broadcast is missing", () => {
   const originalInterfaces = os.networkInterfaces;
   os.networkInterfaces = () => ({

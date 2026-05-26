@@ -180,6 +180,73 @@ test("wifi worker discovery bootstrap scans and advertises together", () => {
   });
 });
 
+test("worker join request uses direct bootstrap transport when no master target is visible", () => {
+  const calls = [];
+  return withPatchedWifiClientBootstrap({
+    getPluginRuntimeStatus: () => ({ available: true, enabled: true }),
+    loadPluginBootstrap: () => ({
+      discovery: {
+        runDiscoverCommand: () => {
+          calls.push("discover");
+          return Promise.resolve({
+            status: "ok",
+            mode: "discover",
+            candidates: []
+          });
+        },
+        runAdvertiseCommand: () => {
+          calls.push("advertise");
+          return Promise.resolve({
+            status: "ok",
+            mode: "advertise",
+            candidates: []
+          });
+        }
+      },
+      providerApi: {
+        getProviderInfo: () => ({ provider_id: "wifi_data_sharing" }),
+        listCandidates: () => [],
+        listTrustedNodes: () => [],
+        canSendPackage: () => ({ status: "pass", can_send: true, bootstrap_packet: true }),
+        createPackage: (input) => ({
+          status: "ok",
+          package: {
+            package_id: "wifi-pkg-join-001",
+            package_type: input.packageType,
+            title: input.title,
+            payload: input.payload,
+            payload_encoding: input.payloadEncoding || "json"
+          }
+        }),
+        sendBootstrapPacket: (packageId, targetNodeId, options) => {
+          calls.push({ type: "sendBootstrapPacket", packageId, targetNodeId, options });
+          return {
+            status: "ok",
+            package_id: packageId,
+            packet_id: packageId,
+            target_node_id: targetNodeId,
+            sent_at: new Date().toISOString()
+          };
+        }
+      }
+    })
+  }, (wifiClient) => {
+    const result = wifiClient.sendWorkerJoinRequest({
+      title: "Worker join request",
+      session_id: "session-001",
+      worker_ai_ids: ["kilo-001"],
+      assignment_id: "assignment-001",
+      assignment_signature: "signature-001"
+    }, null, { confirm: true, bootstrap: true });
+    assert.strictEqual(result.status, "ok");
+    assert.strictEqual(result.packet_id, "wifi-pkg-join-001");
+    const bootstrapCall = calls.find((item) => item && item.type === "sendBootstrapPacket");
+    assert.ok(bootstrapCall);
+    assert.strictEqual(bootstrapCall.packageId, "wifi-pkg-join-001");
+    assert.strictEqual(bootstrapCall.targetNodeId, null);
+  });
+});
+
 test("safe evolution priorities can be assigned to the master/worker bridge", () => withTempRepo((dir) => {
   const audit = [];
   const auditAppend = appendAudit(audit);

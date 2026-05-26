@@ -154,7 +154,7 @@ function sendWorkerResult(packet, targetNodeId, options = {}) {
 
 function sendWorkerSessionPacket(packetType, packet, targetNodeId, options = {}) {
   const provider = getWifiDataSharingProvider();
-  if (!provider || typeof provider.canSendPackage !== "function" || typeof provider.createPackage !== "function" || typeof provider.sendPackage !== "function") {
+  if (!provider || typeof provider.canSendPackage !== "function" || typeof provider.createPackage !== "function" || (typeof provider.sendPackage !== "function" && typeof provider.sendBootstrapPacket !== "function")) {
     return {
       status: "blocked",
       available: false,
@@ -190,6 +190,19 @@ function sendWorkerSessionPacket(packetType, packet, targetNodeId, options = {})
     bootstrap: bootstrapPacket || Boolean(options.bootstrap)
   });
   if (!created || created.status === "blocked") return created;
+  if (bootstrapPacket && !targetNodeId && typeof provider.sendBootstrapPacket === "function") {
+    return provider.sendBootstrapPacket(created.package.package_id, targetNodeId, {
+      ...options,
+      confirm: true
+    });
+  }
+  if (typeof provider.sendPackage !== "function") {
+    return {
+      status: "blocked",
+      available: false,
+      next_action: `The ${packetType} cannot be sent.`
+    };
+  }
   return provider.sendPackage(created.package.package_id, targetNodeId, {
     ...options,
     bootstrap: bootstrapPacket || Boolean(options.bootstrap)

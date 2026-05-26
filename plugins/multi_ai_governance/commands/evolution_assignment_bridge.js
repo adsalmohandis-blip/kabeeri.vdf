@@ -1706,14 +1706,9 @@ function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClie
     ...trustedWorkers,
     ...discoveredWorkers
   ], localNode);
-  if (!masterTargetNode || !masterTargetNode.node_id) {
-    return {
-      status: "waiting",
-      next_action: "Discover the master laptop first, then send the worker heartbeat."
-    };
-  }
+  const targetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
   const recentHeartbeat = sessionRecord.last_heartbeat_at && Date.now() - Date.parse(sessionRecord.last_heartbeat_at) < Math.max(1000, Number(flags.heartbeat_interval_ms || flags["heartbeat-interval-ms"] || 5000));
-  if (recentHeartbeat && sessionRecord.heartbeat_target_node_id === masterTargetNode.node_id) {
+  if (recentHeartbeat && sessionRecord.heartbeat_target_node_id === targetNodeId) {
     return {
       status: "cached",
       packet_id: sessionRecord.heartbeat_packet_id || null,
@@ -1732,7 +1727,7 @@ function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClie
       session_id: sessionRecord.session_id,
       ready_flag: true,
       sender_node_id: localNode ? localNode.node_id || null : null,
-      target_node_id: masterTargetNode.node_id,
+      target_node_id: targetNodeId,
       worker_ai_ids: Array.isArray(bridgeReport.current_assignment && bridgeReport.current_assignment.worker_ai_ids) ? bridgeReport.current_assignment.worker_ai_ids.slice() : [],
       worker_pool: workerPool || null,
       assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
@@ -1748,7 +1743,7 @@ function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClie
     },
     payload_encoding: "json"
   };
-  const result = wifiClient.sendWorkerHeartbeat(packet, masterTargetNode.node_id, {
+  const result = wifiClient.sendWorkerHeartbeat(packet, targetNodeId, {
     confirm: true,
     ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
   });
@@ -1761,9 +1756,11 @@ function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClie
   return {
     status: "sent",
     packet_id: result.package_id || result.packet_id || null,
-    target_node_id: masterTargetNode.node_id,
+    target_node_id: targetNodeId,
     sent_at: generatedAt,
-    next_action: "Worker heartbeat sent. Keep the worker session running."
+    next_action: targetNodeId
+      ? "Worker heartbeat sent. Keep the worker session running."
+      : "Worker heartbeat broadcast onto the LAN. Keep the worker session running until the master captures it."
   };
 }
 
@@ -1801,12 +1798,7 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
     ...trustedWorkers,
     ...discoveredWorkers
   ], localNode);
-  if (!masterTargetNode || !masterTargetNode.node_id) {
-    return {
-      status: "waiting",
-      next_action: "Discover the master laptop first, then send the worker completion packet."
-    };
-  }
+  const targetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
   const resultStatus = String(flags.result_status || flags.status || "completed").trim().toLowerCase() || "completed";
   const packet = {
     packet_type: "worker_result",
@@ -1817,7 +1809,7 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
       session_role: "worker",
       session_id: sessionRecord.session_id,
       sender_node_id: localNode ? localNode.node_id || null : null,
-      target_node_id: masterTargetNode.node_id,
+      target_node_id: targetNodeId,
       worker_ai_ids: Array.isArray(bridgeReport.current_assignment && bridgeReport.current_assignment.worker_ai_ids) ? bridgeReport.current_assignment.worker_ai_ids.slice() : [],
       worker_pool: workerPool || null,
       assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
@@ -1839,7 +1831,7 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
     },
     payload_encoding: "json"
   };
-  const result = wifiClient.sendWorkerResult(packet, masterTargetNode.node_id, {
+  const result = wifiClient.sendWorkerResult(packet, targetNodeId, {
     confirm: true,
     ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
   });
@@ -1850,9 +1842,9 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
     };
   }
   if (appendAudit) {
-    appendAudit("multi_ai.evolution_worker_result_packet", "multi_ai_evolution_assignment", sessionRecord.session_id, `Worker result packet sent to ${masterTargetNode.node_id}`, {
+    appendAudit("multi_ai.evolution_worker_result_packet", "multi_ai_evolution_assignment", sessionRecord.session_id, `Worker result packet sent to ${targetNodeId || "master broadcast"}`, {
       packet_id: result.package_id || result.packet_id || null,
-      target_node_id: masterTargetNode.node_id,
+      target_node_id: targetNodeId,
       result_status: resultStatus
     });
   }
@@ -1860,9 +1852,11 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
     status: resultStatus,
     result_status: resultStatus,
     packet_id: result.package_id || result.packet_id || null,
-    target_node_id: masterTargetNode.node_id,
+    target_node_id: targetNodeId,
     sent_at: generatedAt,
-    next_action: "Worker result sent to the master laptop."
+    next_action: targetNodeId
+      ? "Worker result sent to the master laptop."
+      : "Worker result broadcast onto the LAN. Keep the worker session running until the master captures it."
   };
 }
 

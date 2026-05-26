@@ -184,6 +184,14 @@ function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = fal
     : null;
   const targetNode = trustedTargetNode || candidateTargetNode || null;
   const allowBootstrap = Boolean(bootstrap) && BOOTSTRAP_PACKAGE_TYPES.has(packageRecord.package_type);
+  if (allowBootstrap && !targetNode) {
+    return sendBootstrapPacket({
+      packageId,
+      targetNodeId,
+      confirm,
+      loopback
+    });
+  }
   if (!targetNode && !allowBootstrap) {
     return buildBlockedSendReport(
       "Target node is not trusted.",
@@ -350,6 +358,128 @@ function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = fal
     outbox: outboxRecord,
     transfer_session: transferSession,
     inbox_record: inboxRecord,
+    next_action: `Run \`kvdf wifi-data-sharing inbox show ${packageId}\` to review the received package.`
+  };
+}
+
+function sendBootstrapPacket({ packageId, targetNodeId, confirm = false, loopback = false, port = DEFAULT_DISCOVERY_PORT, transport = sendTransportPacket } = {}) {
+  const state = ensureWifiDataSharingState();
+  assertInitialized(state);
+  if (!confirm) {
+    return buildBlockedSendReport("Send requires --confirm.", packageId, targetNodeId);
+  }
+  const packageRecord = findPackage(packageId);
+  if (!packageRecord) {
+    return buildBlockedSendReport("Package not found.", packageId, targetNodeId);
+  }
+  if (!ALLOWED_PACKAGE_TYPES.has(packageRecord.package_type)) {
+    return buildBlockedSendReport("Unsupported package type.", packageId, targetNodeId);
+  }
+  if (!BOOTSTRAP_PACKAGE_TYPES.has(packageRecord.package_type)) {
+    return buildBlockedSendReport("Package type is not bootstrap eligible.", packageId, targetNodeId);
+  }
+  if (Number(packageRecord.payload_size_bytes || 0) > state.policies.max_package_bytes) {
+    return buildBlockedSendReport("Package exceeds the allowed size limit.", packageId, targetNodeId);
+  }
+  if (!verifyPackageHash(packageRecord)) {
+    return buildBlockedSendReport("Package hash validation failed.", packageId, targetNodeId);
+  }
+  const now = new Date().toISOString();
+  const transferId = buildNextTransferId();
+  const outboxId = buildNextOutboxId();
+  const transferRecord = {
+    transfer_id: transferId,
+    package_id: packageId,
+    source_node_id: state.local_node.node_id,
+    target_node_id: targetNodeId || null,
+    package_type: packageRecord.package_type,
+    title: packageRecord.title,
+    payload_size_bytes: packageRecord.payload_size_bytes,
+    sha256: packageRecord.sha256,
+    status: "sent",
+    created_at: packageRecord.created_at || now,
+    sent_at: now,
+    received_at: now,
+    transport: "bootstrap_lan_transport",
+    confirm_required: true,
+    bootstrap_packet: true,
+    transfer_mode: "bootstrap_direct",
+    outbox_id: outboxId,
+    session_id: null
+  };
+  const outboxRecord = upsertWifiDataOutboxRecord({
+    outbox_id: outboxId,
+    package_id: packageId,
+    transfer_id: transferId,
+    session_id: null,
+    source_node_id: state.local_node.node_id,
+    target_node_id: targetNodeId || null,
+    package_type: packageRecord.package_type,
+    title: packageRecord.title,
+    payload_size_bytes: packageRecord.payload_size_bytes,
+    sha256: packageRecord.sha256,
+    transfer_mode: "bootstrap_direct",
+    status: "sent",
+    retry_count: 0,
+    created_at: now,
+    updated_at: now,
+    last_attempt_at: now,
+    last_error: null
+  });
+  const directPacket = {
+    protocol: "kvdf-wifi-data-sharing",
+    protocol_version: "v1",
+    service_name: "wifi_data_sharing",
+    message_type: packageRecord.package_type,
+    packet_type: packageRecord.package_type,
+    package_id: packageRecord.package_id,
+    package_type: packageRecord.package_type,
+    title: packageRecord.title,
+    payload: packageRecord.payload,
+    payload_encoding: packageRecord.payload_encoding,
+    sha256: packageRecord.sha256,
+    source_node_id: state.local_node.node_id,
+    target_node_id: targetNodeId || null,
+    bootstrap: true,
+    sent_at: now
+  };
+  appendWifiDataTransferEvent({
+    event_type: "bootstrap_packet_sent",
+    transfer_id: transferId,
+    package_id: packageId,
+    source_node_id: state.local_node.node_id,
+    target_node_id: targetNodeId || null,
+    package_type: packageRecord.package_type,
+    sent_at: now
+  });
+  updatePackageStatus(packageId, "sent", { target_node_id: targetNodeId || null });
+  void transport(directPacket, targetNodeId && state.discovery && Array.isArray(state.discovery.known_candidates)
+    ? {
+        loopback: Boolean(loopback),
+        targetHost: targetNodeId ? (findTrustedNodeRecord(state, targetNodeId) || {}).address || null : null,
+        targetPort: targetNodeId ? Number((findTrustedNodeRecord(state, targetNodeId) || {}).port || port || DEFAULT_DISCOVERY_PORT) : Number(port || DEFAULT_DISCOVERY_PORT)
+      }
+    : {
+        loopback: Boolean(loopback),
+        port: Number(port || DEFAULT_DISCOVERY_PORT)
+      }).catch(() => {});
+  appendWifiDataTransferEvent({
+    event_type: "bootstrap_packet_dispatched",
+    transfer_id: transferId,
+    package_id: packageId,
+    source_node_id: state.local_node.node_id,
+    target_node_id: targetNodeId || null,
+    package_type: packageRecord.package_type,
+    sent_at: now
+  });
+  writeTransferSummary(transferRecord);
+  return {
+    report_type: "wifi_data_sharing_send",
+    plugin_id: "wifi_data_sharing",
+    status: "ok",
+    transfer: transferRecord,
+    outbox: outboxRecord,
+    inbox_record: null,
     next_action: `Run \`kvdf wifi-data-sharing inbox show ${packageId}\` to review the received package.`
   };
 }
@@ -830,6 +960,7 @@ module.exports = {
   buildTransferReport,
   buildServerReport,
   startTransferServer,
+  sendBootstrapPacket,
   getPackage,
   getInboxRecord,
   listInboxRecords,
