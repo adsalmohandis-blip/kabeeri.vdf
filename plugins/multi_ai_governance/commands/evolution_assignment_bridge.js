@@ -1597,23 +1597,20 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
     ...trustedWorkers,
     ...discoveredWorkers
   ], localNode);
-  if (!masterTargetNode || !masterTargetNode.node_id) {
-    return {
-      status: "waiting",
-      next_action: "Discover the master laptop first, then join the worker session."
-    };
-  }
   const joinRequestTimeoutMs = resolveEvolutionWorkerJoinRequestTimeoutMs(flags, sessionRecord);
   const recentJoinRequest = sessionRecord.join_request_at && Number.isFinite(Date.parse(sessionRecord.join_request_at))
     ? (Date.now() - Date.parse(sessionRecord.join_request_at)) < joinRequestTimeoutMs
     : false;
-  if (sessionRecord.join_request_target_node_id && sessionRecord.join_request_target_node_id === masterTargetNode.node_id && sessionRecord.join_request_status === "requested" && recentJoinRequest) {
+  const joinTargetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
+  if (sessionRecord.join_request_status === "requested" && recentJoinRequest && (sessionRecord.join_request_target_node_id || null) === joinTargetNodeId) {
     return {
       status: "cached",
       packet_id: sessionRecord.join_request_packet_id || null,
       target_node_id: sessionRecord.join_request_target_node_id || null,
       sent_at: sessionRecord.join_request_at || generatedAt,
-      next_action: "Worker join request already sent. Keep waiting for the master assignment."
+      next_action: joinTargetNodeId
+        ? "Worker join request already sent. Keep waiting for the master assignment."
+        : "Worker join request already broadcast onto the LAN. Keep waiting for the master to capture it."
     };
   }
   const packet = {
@@ -1626,7 +1623,7 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
       session_id: sessionRecord.session_id,
       ready_flag: true,
       sender_node_id: localNode ? localNode.node_id || null : null,
-      target_node_id: masterTargetNode.node_id,
+      target_node_id: joinTargetNodeId,
       worker_ai_ids: Array.isArray(bridgeReport.current_assignment && bridgeReport.current_assignment.worker_ai_ids) ? bridgeReport.current_assignment.worker_ai_ids.slice() : [],
       worker_pool: workerPool || null,
       assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
@@ -1642,9 +1639,10 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
     },
     payload_encoding: "json"
   };
-  const result = wifiClient.sendWorkerJoinRequest(packet, masterTargetNode.node_id, {
+  const result = wifiClient.sendWorkerJoinRequest(packet, joinTargetNodeId, {
     confirm: true,
-    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
+    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved)),
+    bootstrap: true
   });
   if (!result || result.status === "blocked") {
     return result || {
@@ -1655,9 +1653,11 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
   return {
     status: "requested",
     packet_id: result.package_id || result.packet_id || null,
-    target_node_id: masterTargetNode.node_id,
+    target_node_id: joinTargetNodeId,
     sent_at: generatedAt,
-    next_action: "Worker join request sent. Wait for the master to assign the next evolution task."
+    next_action: joinTargetNodeId
+      ? "Worker join request sent. Wait for the master to assign the next evolution task."
+      : "Worker join request broadcast onto the LAN. Wait for the master to capture it."
   };
 }
 

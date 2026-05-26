@@ -12,6 +12,8 @@ const {
   appendWifiDataDiscoveryEvent,
   writeWifiDataSharingState
 } = require("./state");
+const { ingestTransportPacket } = require("./transfer");
+const { upsertTrustedNode, findTrustedNodeRecord } = require("./trusted_nodes");
 
 function recordDiscovery(state, candidate, message, remote, mode) {
   const now = new Date().toISOString();
@@ -44,6 +46,53 @@ function recordDiscovery(state, candidate, message, remote, mode) {
   return nextState;
 }
 
+function recordInboundPacket(state, packet, remote, mode) {
+  const now = new Date().toISOString();
+  ingestTransportPacket(packet, remote, {
+    localNodeId: state && state.local_node ? state.local_node.node_id || null : null
+  });
+  const packetType = String(packet.packet_type || packet.message_type || "").trim().toLowerCase();
+  const senderNodeId = String(packet.source_node_id || packet.node_id || packet.sender_node_id || "").trim();
+  if (senderNodeId && ["worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(packetType)) {
+    const existing = findTrustedNodeRecord(state, senderNodeId) || {};
+    upsertTrustedNode(state, {
+      ...existing,
+      node_id: senderNodeId,
+      display_name: packet.display_name || existing.display_name || packet.hostname || existing.hostname || senderNodeId,
+      hostname: packet.hostname || existing.hostname || null,
+      address: remote.address || existing.address || null,
+      port: Number(remote.port || packet.port || existing.port || DEFAULT_DISCOVERY_PORT),
+      platform: packet.platform || existing.platform || null,
+      trust_role: existing.trust_role || "worker",
+      trust_status: "trusted",
+      trusted_at: existing.trusted_at || now,
+      paired_at: existing.paired_at || now,
+      owner_approved: true,
+      last_seen_at: now,
+      capabilities: Array.isArray(packet.capabilities) ? packet.capabilities.slice() : Array.isArray(existing.capabilities) ? existing.capabilities.slice() : [],
+      transfer_allowed: true
+    });
+  }
+  appendWifiDataDiscoveryEvent({
+    event_type: `${mode}_packet`,
+    protocol: packet.protocol || null,
+    protocol_version: packet.protocol_version || null,
+    service_name: packet.service_name || null,
+    packet_type: packet.packet_type || packet.message_type || null,
+    package_id: packet.package_id || packet.packet_id || null,
+    node_id: packet.source_node_id || packet.node_id || null,
+    display_name: packet.display_name || null,
+    hostname: packet.hostname || null,
+    platform: packet.platform || null,
+    address: remote.address || null,
+    port: Number(remote.port || packet.port || DEFAULT_DISCOVERY_PORT),
+    sent_at: packet.sent_at || now,
+    observed_at: now,
+    trust_status: "candidate"
+  });
+  return state;
+}
+
 async function runDiscoverCommand(flags = {}) {
   const state = ensureWifiDataSharingState();
   if (!state.local_node || !state.local_node.node_id) {
@@ -60,7 +109,8 @@ async function runDiscoverCommand(flags = {}) {
     state,
     timeoutMs,
     loopback,
-    onCandidate: (candidate, message, remote) => recordDiscovery(state, candidate, message, remote, "discover")
+    onCandidate: (candidate, message, remote) => recordDiscovery(state, candidate, message, remote, "discover"),
+    onPacket: (packet, remote) => recordInboundPacket(state, packet, remote, "discover")
   });
   const refreshed = ensureWifiDataSharingState();
   refreshed.discovery.enabled = true;
@@ -99,7 +149,8 @@ async function runAdvertiseCommand(flags = {}) {
     state,
     durationMs,
     loopback,
-    onCandidate: (candidate, message, remote) => recordDiscovery(state, candidate, message, remote, "advertise")
+    onCandidate: (candidate, message, remote) => recordDiscovery(state, candidate, message, remote, "advertise"),
+    onPacket: (packet, remote) => recordInboundPacket(state, packet, remote, "advertise")
   });
   const refreshed = ensureWifiDataSharingState();
   refreshed.discovery.enabled = true;
@@ -143,5 +194,6 @@ module.exports = {
   buildDiscoveryMessageForTests,
   parseDiscoveryMessageForTests,
   buildWifiDataSharingCandidatesFromState,
-  recordDiscovery
+  recordDiscovery,
+  recordInboundPacket
 };

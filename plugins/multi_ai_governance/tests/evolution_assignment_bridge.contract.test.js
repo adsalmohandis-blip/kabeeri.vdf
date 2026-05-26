@@ -792,6 +792,85 @@ test("evolution session worker sends a join request and master sees the ready wo
   assert.strictEqual(masterReport.target_node_ids[0], "wifi-node-worker");
 }));
 
+test("evolution session worker broadcasts a bootstrap join request when no master target is discovered", () => withTempRepo((dir) => {
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Allow the worker laptop to broadcast its ready flag.");
+
+  let joinPacket = null;
+  const workerWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker" },
+        next_action: "ok"
+      };
+    },
+    refreshWifiDataSharingDiscovery(mode) {
+      return {
+        status: "ok",
+        mode,
+        candidates: []
+      };
+    },
+    listCandidates() {
+      return [];
+    },
+    listTrustedWifiNodes() {
+      return [];
+    },
+    listWifiDataSharingInbox() {
+      return [];
+    },
+    canSendGovernancePacket(packet, targetNodeId, options = {}) {
+      assert.strictEqual(packet.packet_type, "worker_join_request");
+      assert.strictEqual(targetNodeId, null);
+      assert.strictEqual(options.bootstrap, true);
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
+      joinPacket = { packet, targetNodeId, options };
+      return {
+        status: "ok",
+        package_id: "join-001",
+        packet_id: "join-001",
+        inbox_record: {
+          package_id: "join-001",
+          packet_id: "join-001",
+          package_type: "worker_join_request",
+          target_node_id: targetNodeId,
+          payload: packet.payload,
+          received_at: new Date().toISOString(),
+          status: "requested"
+        }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return {
+        listInbox() {
+          return [];
+        }
+      };
+    }
+  };
+
+  const workerReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker"
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(workerReport.join_request_result.status, "requested");
+  assert.strictEqual(workerReport.join_request_result.target_node_id, null);
+  assert.ok(joinPacket);
+  assert.strictEqual(joinPacket.targetNodeId, null);
+  assert.strictEqual(joinPacket.options.bootstrap, true);
+  assert.strictEqual(workerReport.worker_pool.join_request_count >= 0, true);
+}));
+
 test("evolution session worker rejoins after timeout and the master records recovery", () => withTempRepo((dir) => {
   registerBaseWorkspace(dir);
   seedEvolutionPriority(dir, "Task Trash System", "Allow a stale worker to rejoin safely.");

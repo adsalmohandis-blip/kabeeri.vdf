@@ -144,6 +144,24 @@ test("worker join bootstrap packets can target a discovered master without pre-e
   assert.strictEqual(sent.status, "ok");
 }));
 
+test("worker join bootstrap packets can be broadcast without a discovered master target", () => withTempRepo((dir) => {
+  const current = state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
+  const input = path.join(dir, "payload.json");
+  fs.writeFileSync(input, JSON.stringify({ ready: true }, null, 2), "utf8");
+  const created = transfer.createPackage({
+    packageType: "worker_join_request",
+    inputPath: input,
+    title: "Worker join request"
+  });
+  const report = provider.canSendPackage(created.package, null, { bootstrap: true });
+  assert.ok(["pass", "warn"].includes(report.status));
+  assert.strictEqual(report.can_send, true);
+  assert.strictEqual(report.bootstrap_packet, true);
+  assert.strictEqual(report.target_node_id, null);
+  const sent = provider.sendPackage(created.package.package_id, null, { bootstrap: true, confirm: true, loopback: true });
+  assert.strictEqual(sent.status, "ok");
+}));
+
 test("discovery targets include subnet-directed broadcast addresses when interface broadcast is missing", () => {
   const originalInterfaces = os.networkInterfaces;
   os.networkInterfaces = () => ({

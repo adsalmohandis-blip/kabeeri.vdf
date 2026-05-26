@@ -33,6 +33,7 @@ const {
   packageRequiresChunking,
   DEFAULT_CHUNK_THRESHOLD_BYTES
 } = require("../transport/chunked_transfer");
+const { DEFAULT_DISCOVERY_PORT, sendTransportPacket } = require("../transport/udp_discovery");
 
 const ALLOWED_PACKAGE_TYPES = new Set([
   "generic_json",
@@ -158,7 +159,7 @@ function createPackage({ packageType, inputPath, title, payload = null, payloadE
   };
 }
 
-function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = false }) {
+function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = false, loopback = false }) {
   const state = ensureWifiDataSharingState();
   assertInitialized(state);
   if (!confirm) {
@@ -183,19 +184,17 @@ function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = fal
     : null;
   const targetNode = trustedTargetNode || candidateTargetNode || null;
   const allowBootstrap = Boolean(bootstrap) && BOOTSTRAP_PACKAGE_TYPES.has(packageRecord.package_type);
-  if (!targetNode) {
+  if (!targetNode && !allowBootstrap) {
     return buildBlockedSendReport(
-      allowBootstrap
-        ? "Target node must be discoverable before sending a bootstrap packet."
-        : "Target node is not trusted.",
+      "Target node is not trusted.",
       packageId,
       targetNodeId
     );
   }
-  if (targetNode.trust_status === "revoked") {
+  if (targetNode && targetNode.trust_status === "revoked") {
     return buildBlockedSendReport("Target node is revoked.", packageId, targetNodeId);
   }
-  if (targetNode.trust_status !== "trusted" && !allowBootstrap) {
+  if (targetNode && targetNode.trust_status !== "trusted" && !allowBootstrap) {
     return buildBlockedSendReport("Target node is not trusted.", packageId, targetNodeId);
   }
   const now = new Date().toISOString();
@@ -319,6 +318,30 @@ function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = fal
     transport: transferMode
   });
   writeTransferSummary(transferRecord);
+  void sendTransportPacket({
+    protocol: "kvdf-wifi-data-sharing",
+    protocol_version: "v1",
+    service_name: "wifi_data_sharing",
+    message_type: "package",
+    packet_type: packageRecord.package_type,
+    package_id: packageRecord.package_id,
+    package_type: packageRecord.package_type,
+    title: packageRecord.title,
+    payload: packageRecord.payload,
+    payload_encoding: packageRecord.payload_encoding,
+    sha256: packageRecord.sha256,
+    source_node_id: state.local_node.node_id,
+    target_node_id: targetNodeId || null,
+    bootstrap: allowBootstrap,
+    sent_at: now
+  }, targetNode && targetNode.address ? {
+    loopback: Boolean(loopback),
+    targetHost: targetNode.address,
+    targetPort: Number(targetNode.port || DEFAULT_DISCOVERY_PORT)
+  } : {
+    loopback: Boolean(loopback),
+    port: DEFAULT_DISCOVERY_PORT
+  }).catch(() => {});
   return {
     report_type: "wifi_data_sharing_send",
     plugin_id: "wifi_data_sharing",
@@ -696,6 +719,39 @@ function storeInboxRecord(record) {
   return normalized;
 }
 
+function ingestTransportPacket(packet, remote = {}, options = {}) {
+  const now = new Date().toISOString();
+  const packageId = packet && (packet.package_id || packet.packet_id) ? String(packet.package_id || packet.packet_id) : buildNextPackageId();
+  const inboxRecord = storeInboxRecord({
+    package_id: packageId,
+    package_type: packet && packet.package_type ? packet.package_type : packet && packet.packet_type ? packet.packet_type : "generic_json",
+    title: packet && packet.title ? packet.title : packet && packet.message_type ? packet.message_type : "network packet",
+    payload: packet && Object.prototype.hasOwnProperty.call(packet, "payload") ? packet.payload : packet || {},
+    payload_encoding: packet && packet.payload_encoding ? packet.payload_encoding : "json",
+    sha256: packet && packet.sha256 ? packet.sha256 : null,
+    source_node_id: packet && packet.source_node_id ? packet.source_node_id : null,
+    target_node_id: packet && packet.target_node_id ? packet.target_node_id : (options.localNodeId || null),
+    transfer_id: packet && packet.transfer_id ? packet.transfer_id : null,
+    received_at: now,
+    status: "received",
+    quarantined: true,
+    review_required: true,
+    bootstrap: Boolean(packet && packet.bootstrap),
+    received_from_address: remote && remote.address ? remote.address : null,
+    received_from_port: remote && remote.port ? remote.port : null
+  });
+  appendWifiDataTransferEvent({
+    event_type: "packet_received",
+    transfer_id: packet && packet.transfer_id ? packet.transfer_id : null,
+    package_id: packageId,
+    source_node_id: packet && packet.source_node_id ? packet.source_node_id : null,
+    target_node_id: inboxRecord.target_node_id || options.localNodeId || null,
+    package_type: inboxRecord.package_type,
+    received_at: now
+  });
+  return inboxRecord;
+}
+
 function writeTransferSummary(record) {
   const state = readWifiDataSharingState();
   const transfers = Array.isArray(state.transfers) ? state.transfers.slice() : [];
@@ -779,6 +835,7 @@ module.exports = {
   listInboxRecords,
   verifyPackageHash,
   storeInboxRecord,
+  ingestTransportPacket,
   updatePackageStatus,
   writeTransferSummary,
   buildBlockedSendReport,

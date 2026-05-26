@@ -69,7 +69,6 @@ function parseDiscoveryMessage(input) {
     if (!text) return null;
     const parsed = JSON.parse(text);
     if (!parsed || parsed.protocol !== PROTOCOL || parsed.protocol_version !== PROTOCOL_VERSION) return null;
-    if (!["announce", "query", "response"].includes(parsed.message_type)) return null;
     if (parsed.service_name !== DEFAULT_SERVICE_NAME) return null;
     return parsed;
   } catch (error) {
@@ -242,7 +241,7 @@ function closeSocket(socket) {
   });
 }
 
-function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCandidate } = {}) {
+function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCandidate, onPacket } = {}) {
   const candidates = [];
   const start = Date.now();
   return new Promise((resolve) => {
@@ -256,7 +255,12 @@ function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCan
       const parsed = parseDiscoveryMessage(buffer);
       if (!parsed) return;
       if (state && state.local_node && parsed.node_id && parsed.node_id === state.local_node.node_id) return;
-      if (parsed.message_type === "query") return;
+      const messageType = String(parsed.message_type || "").trim().toLowerCase();
+      if (messageType === "query") return;
+      if (["package", "worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(messageType)) {
+        if (typeof onPacket === "function") onPacket(parsed, remote);
+        return;
+      }
       const candidate = normalizeCandidate(parsed, remote);
       const index = candidates.findIndex((item) => item.node_id === candidate.node_id);
       if (index >= 0) {
@@ -279,15 +283,15 @@ function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCan
   });
 }
 
-async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, port = DEFAULT_DISCOVERY_PORT, onCandidate } = {}) {
+async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, port = DEFAULT_DISCOVERY_PORT, onCandidate, onPacket } = {}) {
   const { socket } = createSocket({ loopback, port });
   const query = buildQueryMessage({ state, port });
-  const listenPromise = listenForCandidates(socket, { state, timeoutMs, loopback, onCandidate });
+  const listenPromise = listenForCandidates(socket, { state, timeoutMs, loopback, onCandidate, onPacket });
   await sendMessage(socket, query, { loopback, port }).catch(() => {});
   return listenPromise;
 }
 
-async function advertisePresence({ state, durationMs = 10000, loopback = false, port = DEFAULT_DISCOVERY_PORT, intervalMs = 1000, onCandidate } = {}) {
+async function advertisePresence({ state, durationMs = 10000, loopback = false, port = DEFAULT_DISCOVERY_PORT, intervalMs = 1000, onCandidate, onPacket } = {}) {
   const { socket } = createSocket({ loopback, port });
   const announce = buildAnnounceMessage({ state, port });
   const startedAt = Date.now();
@@ -303,8 +307,14 @@ async function advertisePresence({ state, durationMs = 10000, loopback = false, 
 
   socket.on("message", (buffer, remote) => {
     const parsed = parseDiscoveryMessage(buffer);
-    if (!parsed || parsed.message_type !== "query") return;
+    if (!parsed) return;
+    const messageType = String(parsed.message_type || "").trim().toLowerCase();
     if (state && state.local_node && parsed.node_id && parsed.node_id === state.local_node.node_id) return;
+    if (["package", "worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(messageType)) {
+      if (typeof onPacket === "function") onPacket(parsed, remote);
+      return;
+    }
+    if (messageType !== "query") return;
     const response = buildResponseMessage({ state, port });
     sendMessage(socket, response, { loopback, port, targetHost: remote.address, targetPort: remote.port }).catch(() => {});
     const candidate = normalizeCandidate(parsed, remote);
@@ -342,6 +352,15 @@ async function advertisePresence({ state, durationMs = 10000, loopback = false, 
   };
 }
 
+async function sendTransportPacket(message, { loopback = false, port = DEFAULT_DISCOVERY_PORT, targetHost = null, targetPort = null } = {}) {
+  const { socket } = createSocket({ loopback, port });
+  try {
+    await sendMessage(socket, message, { loopback, port, targetHost, targetPort });
+  } finally {
+    await closeSocket(socket);
+  }
+}
+
 module.exports = {
   DEFAULT_DISCOVERY_PORT,
   PROTOCOL,
@@ -357,6 +376,7 @@ module.exports = {
   computeIpv4BroadcastAddress,
   computeIpv4SubnetProbeAddresses,
   resolveDiscoveryTargets,
+  sendTransportPacket,
   discoverCandidates,
   advertisePresence
 };

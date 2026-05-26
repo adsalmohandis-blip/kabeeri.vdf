@@ -159,7 +159,8 @@ function sendPackage(packageId, targetNodeId, options = {}) {
     packageId,
     targetNodeId,
     confirm: Boolean(options.confirm),
-    bootstrap: Boolean(options.bootstrap)
+    bootstrap: Boolean(options.bootstrap),
+    loopback: Boolean(options.loopback)
   });
 }
 
@@ -515,10 +516,11 @@ function evaluateCanSendPackage(packageDescriptor, targetNodeId, options = {}) {
     return buildBlockedCanSendReport("Package descriptor is required.", normalized, targetNodeId);
   }
   const targetId = String(targetNodeId || normalized.target_node_id || options.targetNodeId || options.target_node_id || "").trim();
-  if (!targetId) {
+  const packageType = String(normalized.package_type || normalized.packet_type || "").trim().toLowerCase();
+  const allowBootstrap = Boolean(options.bootstrap) && BOOTSTRAP_PACKAGE_TYPES.has(packageType);
+  if (!targetId && !allowBootstrap) {
     return buildBlockedCanSendReport("Target node id is required.", normalized, targetNodeId);
   }
-  const packageType = String(normalized.package_type || normalized.packet_type || "").trim().toLowerCase();
   if (!transfer.ALLOWED_PACKAGE_TYPES.has(packageType)) {
     return buildBlockedCanSendReport(`Unsupported package type: ${packageType || "unknown"}.`, normalized, targetId);
   }
@@ -527,20 +529,17 @@ function evaluateCanSendPackage(packageDescriptor, targetNodeId, options = {}) {
     ? current.discovery.known_candidates.find((item) => item && item.node_id === targetId)
     : null;
   const targetNode = trustedTargetNode || discoveredTargetNode || null;
-  const allowBootstrap = Boolean(options.bootstrap) && BOOTSTRAP_PACKAGE_TYPES.has(packageType);
-  if (!targetNode) {
+  if (!targetNode && !allowBootstrap) {
     return buildBlockedCanSendReport(
-      allowBootstrap
-        ? "Target node must be discoverable before sending a bootstrap worker packet."
-        : "Target node is not trusted.",
+      "Target node is not trusted.",
       normalized,
       targetId
     );
   }
-  if (targetNode.trust_status === "revoked") {
+  if (targetNode && targetNode.trust_status === "revoked") {
     return buildBlockedCanSendReport("Target node is revoked.", normalized, targetId);
   }
-  if (targetNode.trust_status !== "trusted" && !allowBootstrap) {
+  if (targetNode && targetNode.trust_status !== "trusted" && !allowBootstrap) {
     return buildBlockedCanSendReport("Target node is not trusted.", normalized, targetId);
   }
   const packageSizeBytes = resolvePackageSize(normalized);
@@ -565,13 +564,15 @@ function evaluateCanSendPackage(packageDescriptor, targetNodeId, options = {}) {
     package_id: normalized.package_id || normalized.packet_id || null,
     package_type: packageType,
     package_size_bytes: packageSizeBytes,
-    target_node_id: targetId,
-    target_trust_status: targetNode.trust_status,
+    target_node_id: targetId || null,
+    target_trust_status: targetNode ? targetNode.trust_status : (allowBootstrap ? "broadcast" : null),
     bootstrap_packet: allowBootstrap,
     transfer_mode: transferMode,
     blockers: [],
     warnings,
-    next_action: `Run \`kvdf wifi-data-sharing send --package ${normalized.package_id || normalized.packet_id || "<package-id>"} --to ${targetId} --confirm\` to deliver it.`
+    next_action: allowBootstrap && !targetId
+      ? `Run \`kvdf wifi-data-sharing send --package ${normalized.package_id || normalized.packet_id || "<package-id>"} --confirm\` to broadcast the bootstrap packet on the LAN.`
+      : `Run \`kvdf wifi-data-sharing send --package ${normalized.package_id || normalized.packet_id || "<package-id>"} --to ${targetId} --confirm\` to deliver it.`
   };
 }
 
