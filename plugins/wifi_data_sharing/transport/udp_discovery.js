@@ -97,20 +97,21 @@ function normalizeCandidate(message, remote, now = new Date().toISOString()) {
   };
 }
 
-function createSocket({ loopback = false } = {}) {
-  const socket = dgram.createSocket("udp4");
+function createSocket({ loopback = false, port = DEFAULT_DISCOVERY_PORT } = {}) {
+  const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
   socket.on("error", () => {});
-  socket.bind(0);
+  socket.bind(Number(port) || DEFAULT_DISCOVERY_PORT);
   return { socket, loopback };
 }
 
-function sendMessage(socket, message, { loopback = false, port = DEFAULT_DISCOVERY_PORT } = {}) {
+function sendMessage(socket, message, { loopback = false, port = DEFAULT_DISCOVERY_PORT, targetHost = null, targetPort = null } = {}) {
   const payload = serializeDiscoveryMessage(message);
   return new Promise((resolve, reject) => {
-    const targetHost = loopback ? "127.0.0.1" : "255.255.255.255";
+    const resolvedHost = targetHost || (loopback ? "127.0.0.1" : "255.255.255.255");
+    const resolvedPort = Number(targetPort || port || DEFAULT_DISCOVERY_PORT);
     try {
       socket.setBroadcast(!loopback);
-      socket.send(payload, 0, payload.length, port, targetHost, (error) => {
+      socket.send(payload, 0, payload.length, resolvedPort, resolvedHost, (error) => {
         if (error) reject(error);
         else resolve();
       });
@@ -168,7 +169,7 @@ function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCan
 }
 
 async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, port = DEFAULT_DISCOVERY_PORT, onCandidate } = {}) {
-  const { socket } = createSocket({ loopback });
+  const { socket } = createSocket({ loopback, port });
   const query = buildQueryMessage({ state, port });
   const listenPromise = listenForCandidates(socket, { state, timeoutMs, loopback, onCandidate });
   await sendMessage(socket, query, { loopback, port }).catch(() => {});
@@ -176,7 +177,7 @@ async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, p
 }
 
 async function advertisePresence({ state, durationMs = 10000, loopback = false, port = DEFAULT_DISCOVERY_PORT, intervalMs = 1000, onCandidate } = {}) {
-  const { socket } = createSocket({ loopback });
+  const { socket } = createSocket({ loopback, port });
   const announce = buildAnnounceMessage({ state, port });
   const startedAt = Date.now();
   const candidates = [];
@@ -194,7 +195,7 @@ async function advertisePresence({ state, durationMs = 10000, loopback = false, 
     if (!parsed || parsed.message_type !== "query") return;
     if (state && state.local_node && parsed.node_id && parsed.node_id === state.local_node.node_id) return;
     const response = buildResponseMessage({ state, port });
-    sendMessage(socket, response, { loopback, port }).catch(() => {});
+    sendMessage(socket, response, { loopback, port, targetHost: remote.address, targetPort: remote.port }).catch(() => {});
     const candidate = normalizeCandidate(parsed, remote);
     const index = candidates.findIndex((item) => item.node_id === candidate.node_id);
     if (index >= 0) {
