@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evolution Assignment Session State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "master_session", "worker_session", "broadcasts", "receipts", "updated_at"],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "master_session": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["session_id", "role", "mode", "status", "created_at", "updated_at"],
+          "properties": {
+            "session_id": { "type": "string" },
+            "role": { "type": "string" },
+            "mode": { "type": "string" },
+            "status": { "type": "string" },
+            "watch_mode": { "type": "boolean" },
+            "last_broadcast_signature": { "type": ["string", "null"] },
+            "last_broadcast_packet_id": { "type": ["string", "null"] },
+            "last_broadcast_packet_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "last_broadcast_targets": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "last_broadcast_at": { "type": ["string", "null"] },
+            "target_node_id": { "type": ["string", "null"] },
+            "target_node_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "worker_pool": {
+              "anyOf": [
+                { "type": "null" },
+                { "type": "object", "additionalProperties": true }
+              ]
+            },
+            "last_discovery_mode": { "type": ["string", "null"] },
+            "last_discovery_at": { "type": ["string", "null"] },
+            "created_at": { "type": "string" },
+            "updated_at": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "worker_session": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["session_id", "role", "mode", "status", "created_at", "updated_at"],
+          "properties": {
+            "session_id": { "type": "string" },
+            "role": { "type": "string" },
+            "mode": { "type": "string" },
+            "status": { "type": "string" },
+            "watch_mode": { "type": "boolean" },
+            "last_received_signature": { "type": ["string", "null"] },
+            "last_received_packet_id": { "type": ["string", "null"] },
+            "last_received_at": { "type": ["string", "null"] },
+            "applied_assignment_id": { "type": ["string", "null"] },
+            "target_node_id": { "type": ["string", "null"] },
+            "target_node_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "worker_pool": {
+              "anyOf": [
+                { "type": "null" },
+                { "type": "object", "additionalProperties": true }
+              ]
+            },
+            "last_discovery_mode": { "type": ["string", "null"] },
+            "last_discovery_at": { "type": ["string", "null"] },
+            "created_at": { "type": "string" },
+            "updated_at": { "type": "string" }
+          }
+        }
+      ]
+    },
+    "broadcasts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["status", "created_at"],
+        "properties": {
+          "packet_id": { "type": ["string", "null"] },
+          "assignment_id": { "type": ["string", "null"] },
+          "assignment_signature": { "type": ["string", "null"] },
+          "target_node_id": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "join_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["status", "created_at"],
+        "properties": {
+          "packet_id": { "type": ["string", "null"] },
+          "target_node_id": { "type": ["string", "null"] },
+          "assignment_id": { "type": ["string", "null"] },
+          "assignment_signature": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["status", "created_at"],
+        "properties": {
+          "packet_id": { "type": ["string", "null"] },
+          "assignment_id": { "type": ["string", "null"] },
+          "assignment_signature": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    }
+  }
+}

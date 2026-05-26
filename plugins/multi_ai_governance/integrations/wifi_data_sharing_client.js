@@ -39,6 +39,102 @@ function listTrustedWifiNodes() {
   return provider.listTrustedNodes();
 }
 
+function listWifiDataSharingCandidates() {
+  const provider = getWifiDataSharingProvider();
+  if (!provider || typeof provider.listCandidates !== "function") return [];
+  return provider.listCandidates();
+}
+
+function listWifiDataSharingInbox() {
+  const provider = getWifiDataSharingProvider();
+  if (!provider || typeof provider.listInbox !== "function") return [];
+  return provider.listInbox({ limit: 100 });
+}
+
+function refreshWifiDataSharingDiscovery(mode = "discover", flags = {}) {
+  const bootstrap = loadPluginBootstrap("wifi_data_sharing", { allowSourceFallback: true });
+  if (!bootstrap) {
+    return {
+      status: "blocked",
+      available: false,
+      next_action: "wifi_data_sharing is not available."
+    };
+  }
+  const discovery = bootstrap.discovery;
+  if (!discovery) {
+    return {
+      status: "blocked",
+      available: false,
+      next_action: "wifi_data_sharing discovery commands are unavailable."
+    };
+  }
+  if (mode === "advertise" && typeof discovery.runAdvertiseCommand === "function") {
+    return discovery.runAdvertiseCommand(flags);
+  }
+  if (typeof discovery.runDiscoverCommand === "function") {
+    return discovery.runDiscoverCommand(flags);
+  }
+  return {
+    status: "blocked",
+    available: false,
+    next_action: "wifi_data_sharing discovery commands are unavailable."
+  };
+}
+
+function sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
+  const provider = getWifiDataSharingProvider();
+  if (!provider || typeof provider.canSendPackage !== "function" || typeof provider.createPackage !== "function" || typeof provider.sendPackage !== "function") {
+    return {
+      status: "blocked",
+      available: false,
+      next_action: "wifi_data_sharing is not available."
+    };
+  }
+  const payload = normalizeWorkerJoinRequest(packet);
+  const packageDescriptor = {
+    packet_type: "worker_join_request",
+    title: payload.title,
+    payload,
+    payload_encoding: "json"
+  };
+  const allowed = provider.canSendPackage(packageDescriptor, targetNodeId, options);
+  if (!allowed || allowed.status === "blocked" || allowed.can_send === false) {
+    return allowed || {
+      status: "blocked",
+      can_send: false,
+      next_action: "The worker join request cannot be sent."
+    };
+  }
+  const created = provider.createPackage({
+    packageType: "worker_join_request",
+    title: payload.title,
+    payload,
+    payloadEncoding: "json"
+  }, options);
+  if (!created || created.status === "blocked") return created;
+  return provider.sendPackage(created.package.package_id, targetNodeId, options);
+}
+
+function normalizeWorkerJoinRequest(packet = {}) {
+  const payload = packet && typeof packet === "object" ? packet : {};
+  return {
+    report_type: "multi_ai_evolution_worker_join_request",
+    title: payload.title || "Evolution worker join request",
+    request_id: payload.request_id || null,
+    session_role: payload.session_role || "worker",
+    session_id: payload.session_id || null,
+    worker_ai_ids: Array.isArray(payload.worker_ai_ids) ? payload.worker_ai_ids.slice() : [],
+    worker_pool: payload.worker_pool && typeof payload.worker_pool === "object" ? { ...payload.worker_pool } : null,
+    assignment_signature: payload.assignment_signature || null,
+    assignment_id: payload.assignment_id || null,
+    worker_prompt: payload.worker_prompt || null,
+    ready_flag: payload.ready_flag === undefined ? true : Boolean(payload.ready_flag),
+    source_machine: payload.source_machine && typeof payload.source_machine === "object" ? { ...payload.source_machine } : null,
+    requested_at: payload.requested_at || new Date().toISOString(),
+    status: payload.status || "requested"
+  };
+}
+
 function canSendGovernancePacket(packet, targetNodeId, options = {}) {
   const provider = getWifiDataSharingProvider();
   if (!provider || typeof provider.canSendPackage !== "function") {
@@ -105,6 +201,10 @@ module.exports = {
   getWifiDataSharingProvider,
   buildWifiDataSharingIntegrationStatus,
   listTrustedWifiNodes,
+  listWifiDataSharingCandidates,
+  listWifiDataSharingInbox,
+  refreshWifiDataSharingDiscovery,
+  sendWorkerJoinRequest,
   canSendGovernancePacket,
   sendGovernancePacket,
   buildUnavailableIntegrationStatus,

@@ -10,6 +10,7 @@
 - `wifi_data_sharing` does not replace queue planning or merge authority.
 - Received packages always land in inbox/quarantine first.
 - `multi_ai_governance` must explicitly consume inbox packages or apply bridge records; nothing auto-applies.
+- The evolution session automation may use `assignment_packet` envelopes to move master/worker startup state across the LAN, but the packet still only becomes authoritative after `multi_ai_governance` approves or applies it.
 
 ## Integration Flow
 
@@ -19,6 +20,7 @@
 4. `sendPackage(...)` sends the package only after confirmation.
 5. The receiving side stores the package in inbox/quarantine.
 6. `multi_ai_governance` may inspect the packet payload, audit the receipt, or explicitly consume the packet record with an approve/reject decision.
+7. The session watchers may keep broadcasting or reading the inbox, but they still do not change authority or auto-promote transport into governance.
 
 ## Optional Nature
 

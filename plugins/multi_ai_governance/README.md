@@ -13,6 +13,7 @@ It provides the operational contract for:
 - token, lock, assignment, and audit governance
 - Evolution assignment bridge for owner/developer task distribution
 - Evolution two-laptop workflow report for master/worker handoff
+- Evolution session automation for master/worker startup and Wi-Fi broadcast/apply handoff
 - IDE window governance for same-workspace AI tools
 - local project governance for the same machine/repo across IDEs, terminals, and local agents
 - Wi-Fi/LAN governance through the optional `wifi_data_sharing` transport plugin
@@ -50,6 +51,7 @@ while the transport layer remains read-only.
 - `kvdf multi-ai evolution status`
 - `kvdf multi-ai evolution assign`
 - `kvdf multi-ai evolution workflow`
+- `kvdf multi-ai evolution session`
 - `kvdf multi-ai ide status`
 - `kvdf multi-ai ide register`
 - `kvdf multi-ai ide tool status`

@@ -68,6 +68,7 @@
     { "path": ".kabeeri/reports/wifi_data_sharing_audit.json", "schema": "schemas/runtime/generic-report-state.schema.json" },
     { "path": ".kabeeri/multi_ai_governance.json", "schema": "schemas/runtime/multi-ai-governance-state.schema.json" },
     { "path": ".kabeeri/multi_ai_governance/evolution_assignments.json", "schema": "schemas/runtime/evolution-assignments-state.schema.json" },
+    { "path": ".kabeeri/multi_ai_governance/evolution_sessions.json", "schema": "schemas/runtime/evolution-sessions-state.schema.json" },
     { "path": ".kabeeri/multi_ai_wifi_packets.json", "schema": "schemas/runtime/multi-ai-wifi-packets-state.schema.json" },
     { "path": ".kabeeri/developers.json", "schema": "schemas/runtime/identities-state.schema.json" },
     { "path": ".kabeeri/agents.json", "schema": "schemas/runtime/identities-state.schema.json" },

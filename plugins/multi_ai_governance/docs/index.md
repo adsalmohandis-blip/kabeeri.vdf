@@ -20,6 +20,7 @@ Evolution bridge docs:
 
 - [Evolution Assignment Bridge](EVOLUTION_ASSIGNMENT_BRIDGE.md)
 - [Evolution Two-Laptop Workflow](EVOLUTION_TWO_LAPTOP_WORKFLOW.md)
+- [Evolution Session Automation](EVOLUTION_SESSION_AUTOMATION.md)
 
 Case 1 docs:
 

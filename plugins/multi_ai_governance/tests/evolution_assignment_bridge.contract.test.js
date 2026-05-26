@@ -114,6 +114,8 @@ test("bootstrap exposes the evolution assignment bridge", () => {
   assert.strictEqual(typeof bootstrap.renderMultiAiEvolutionAssignmentBridgeReport, "function");
   assert.strictEqual(typeof bootstrap.buildMultiAiEvolutionAssignmentWorkflowReport, "function");
   assert.strictEqual(typeof bootstrap.renderMultiAiEvolutionAssignmentWorkflowReport, "function");
+  assert.strictEqual(typeof bootstrap.buildMultiAiEvolutionAssignmentSessionReport, "function");
+  assert.strictEqual(typeof bootstrap.renderMultiAiEvolutionAssignmentSessionReport, "function");
 });
 
 test("safe evolution priorities can be assigned to the master/worker bridge", () => withTempRepo((dir) => {
@@ -238,4 +240,481 @@ test("evolution workflow command renders the master checklist and worker prompt"
   assert.match(report.worker_prompt, /Edit only leased files/i);
   assert.strictEqual(report.master_laptop.push_authority, "master_laptop");
   assert.strictEqual(report.worker_laptop.role, "worker_only");
+}));
+
+test("evolution session master automatically broadcasts the assignment packet to the worker node", () => withTempRepo((dir) => {
+  const wire = { sent: [] };
+  const audit = [];
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Move completed tasks into a recoverable trash bucket.");
+
+  const masterWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-master", display_name: "Master Laptop" },
+        next_action: "ok"
+      };
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_status: "trusted" }
+      ];
+    },
+    canSendGovernancePacket(packet, targetNodeId) {
+      assert.strictEqual(targetNodeId, "wifi-node-worker");
+      assert.strictEqual(packet.packet_type, "assignment_packet");
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket(packet, targetNodeId) {
+      const packageId = `pkg-${String(wire.sent.length + 1).padStart(3, "0")}`;
+      wire.sent.push({ packet, targetNodeId, packageId });
+      return {
+        status: "ok",
+        package_id: packageId,
+        packet_id: packageId,
+        transfer: {
+          package_id: packageId,
+          sent_at: new Date().toISOString()
+        },
+        outbox: { package_id: packageId },
+        inbox_record: { package_id: packageId }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return null;
+    }
+  };
+
+  const report = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "master"
+  }, {
+    wifiClient: masterWifiClient
+  }, {
+    appendAudit: appendAudit(audit)
+  }));
+
+  assert.strictEqual(report.report_type, "multi_ai_evolution_assignment_session");
+  assert.strictEqual(report.role, "master");
+  assert.strictEqual(report.broadcast_result.status, "ok");
+  assert.strictEqual(wire.sent.length, 1);
+  const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
+  assert.ok(sessionState.master_session);
+  assert.strictEqual(sessionState.master_session.last_broadcast_packet_id, "pkg-001");
+  assert.ok(Array.isArray(sessionState.broadcasts));
+  assert.strictEqual(sessionState.broadcasts.length, 1);
+  assert.ok(audit.some((entry) => entry.eventType === "multi_ai.evolution_session_broadcast"));
+}));
+
+test("evolution session master discovers and broadcasts to all ready worker nodes", () => withTempRepo((dir) => {
+  const wire = { sent: [] };
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Move completed tasks into a recoverable trash bucket.");
+
+  const masterWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-master", display_name: "Master Laptop" },
+        next_action: "ok"
+      };
+    },
+    refreshWifiDataSharingDiscovery(mode) {
+      return {
+        status: "ok",
+        mode,
+        candidates: [
+          { node_id: "wifi-node-worker-a", display_name: "Worker A", trust_status: "trusted" },
+          { node_id: "wifi-node-worker-b", display_name: "Worker B", trust_status: "trusted" }
+        ]
+      };
+    },
+    listCandidates() {
+      return [
+        { node_id: "wifi-node-worker-a", display_name: "Worker A", trust_status: "candidate" },
+        { node_id: "wifi-node-worker-b", display_name: "Worker B", trust_status: "candidate" }
+      ];
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-worker-a", display_name: "Worker A", trust_status: "trusted" },
+        { node_id: "wifi-node-worker-b", display_name: "Worker B", trust_status: "trusted" }
+      ];
+    },
+    canSendGovernancePacket(packet, targetNodeId) {
+      assert.ok(["wifi-node-worker-a", "wifi-node-worker-b"].includes(targetNodeId));
+      assert.strictEqual(packet.packet_type, "assignment_packet");
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket(packet, targetNodeId) {
+      const packageId = `pkg-${String(wire.sent.length + 1).padStart(3, "0")}`;
+      wire.sent.push({ packet, targetNodeId, packageId });
+      return {
+        status: "ok",
+        package_id: packageId,
+        packet_id: packageId,
+        transfer: {
+          package_id: packageId,
+          sent_at: new Date().toISOString()
+        },
+        outbox: { package_id: packageId },
+        inbox_record: { package_id: packageId }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return null;
+    }
+  };
+
+  const report = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "master"
+  }, {
+    wifiClient: masterWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(report.report_type, "multi_ai_evolution_assignment_session");
+  assert.strictEqual(report.role, "master");
+  assert.strictEqual(report.worker_pool.ready_worker_count, 2);
+  assert.deepStrictEqual(report.target_node_ids.sort(), ["wifi-node-worker-a", "wifi-node-worker-b"]);
+  assert.strictEqual(report.broadcast_results.length, 2);
+  assert.strictEqual(wire.sent.length, 2);
+  const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
+  assert.ok(sessionState.master_session);
+  assert.deepStrictEqual((sessionState.master_session.target_node_ids || []).sort(), ["wifi-node-worker-a", "wifi-node-worker-b"]);
+  assert.ok(Array.isArray(sessionState.broadcasts));
+  assert.strictEqual(sessionState.broadcasts.length, 2);
+}));
+
+test("evolution session watch mode keeps the master broadcast loop alive", () => withTempRepo((dir) => {
+  const wire = { sent: [] };
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Move completed tasks into a recoverable trash bucket.");
+
+  const masterWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-master", display_name: "Master Laptop" },
+        next_action: "ok"
+      };
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_status: "trusted" }
+      ];
+    },
+    canSendGovernancePacket(packet, targetNodeId) {
+      assert.strictEqual(targetNodeId, "wifi-node-worker");
+      assert.strictEqual(packet.packet_type, "assignment_packet");
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket(packet, targetNodeId) {
+      const packageId = `pkg-${String(wire.sent.length + 1).padStart(3, "0")}`;
+      wire.sent.push({ packet, targetNodeId, packageId });
+      return {
+        status: "ok",
+        package_id: packageId,
+        packet_id: packageId,
+        transfer: { package_id: packageId, sent_at: new Date().toISOString() },
+        outbox: { package_id: packageId },
+        inbox_record: { package_id: packageId }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return null;
+    }
+  };
+
+  const watchReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "watch", {
+    json: true,
+    role: "master",
+    iterations: 1
+  }, {
+    wifiClient: masterWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(watchReport.report_type, "multi_ai_relay_watch");
+  assert.strictEqual(watchReport.render_count, 1);
+  assert.strictEqual(wire.sent.length, 1);
+  const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
+  assert.ok(sessionState.master_session);
+  assert.strictEqual(sessionState.master_session.last_broadcast_packet_id, "pkg-001");
+}));
+
+test("evolution session worker applies the assignment packet from the inbox without manual paste", () => withTempRepo((dir) => {
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Move completed tasks into a recoverable trash bucket.");
+
+  const wire = { sent: [] };
+  const masterWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-master", display_name: "Master Laptop" },
+        next_action: "ok"
+      };
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_status: "trusted" }
+      ];
+    },
+    canSendGovernancePacket() {
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket(packet, targetNodeId) {
+      const packageId = `pkg-${String(wire.sent.length + 1).padStart(3, "0")}`;
+      const payload = packet.payload || {};
+      wire.sent.push({ packet, targetNodeId, packageId, payload });
+      return {
+        status: "ok",
+        package_id: packageId,
+        packet_id: packageId,
+        transfer: { package_id: packageId, sent_at: new Date().toISOString() },
+        outbox: { package_id: packageId },
+        inbox_record: {
+          package_id: packageId,
+          packet_id: packageId,
+          package_type: packet.packet_type,
+          target_plugin: "multi_ai_governance",
+          target_node_id: targetNodeId,
+          payload,
+          received_at: new Date().toISOString(),
+          status: "received"
+        }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return null;
+    }
+  };
+
+  const masterReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "master"
+  }, {
+    wifiClient: masterWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  const workerWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-worker", display_name: "Worker Laptop" },
+        next_action: "ok"
+      };
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-master", display_name: "Master Laptop", trust_status: "trusted" }
+      ];
+    },
+    canSendGovernancePacket() {
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket() {
+      return { status: "ok" };
+    },
+    getWifiDataSharingProvider() {
+      return {
+        listInbox() {
+          return wire.sent.map(({ packageId, payload, targetNodeId }) => ({
+            package_id: packageId,
+            packet_id: packageId,
+            package_type: "assignment_packet",
+            target_plugin: "multi_ai_governance",
+            target_node_id: targetNodeId,
+            payload,
+            received_at: new Date().toISOString(),
+            status: "received"
+          }));
+        }
+      };
+    }
+  };
+
+  const workerReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker"
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(masterReport.role, "master");
+  assert.strictEqual(workerReport.role, "worker");
+  assert.strictEqual(workerReport.receipt_result.status, "applied");
+  const bridgeState = readState(dir, ".kabeeri/multi_ai_governance/evolution_assignments.json");
+  assert.strictEqual(bridgeState.current_assignment.status, "applied");
+  const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
+  assert.ok(sessionState.worker_session);
+  assert.strictEqual(sessionState.worker_session.last_received_packet_id, "pkg-001");
+  assert.strictEqual(sessionState.worker_session.applied_assignment_id, bridgeState.current_assignment.assignment_id);
+}));
+
+test("evolution session worker sends a join request and master sees the ready worker", () => withTempRepo((dir) => {
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Allow the worker laptop to raise its ready flag.");
+
+  const wire = { joinRequests: [] };
+  const workerWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker" },
+        next_action: "ok"
+      };
+    },
+    refreshWifiDataSharingDiscovery(mode) {
+      return {
+        status: "ok",
+        mode,
+        candidates: [
+          { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner", trust_status: "trusted" }
+        ]
+      };
+    },
+    listCandidates() {
+      return [
+        { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner", trust_status: "trusted" }
+      ];
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner", trust_status: "trusted" }
+      ];
+    },
+    listWifiDataSharingInbox() {
+      return [];
+    },
+    canSendGovernancePacket(packet, targetNodeId) {
+      assert.strictEqual(targetNodeId, "wifi-node-master");
+      assert.strictEqual(packet.packet_type, "worker_join_request");
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendWorkerJoinRequest(packet, targetNodeId) {
+      const packageId = `join-${String(wire.joinRequests.length + 1).padStart(3, "0")}`;
+      wire.joinRequests.push({
+        packet_id: packageId,
+        package_id: packageId,
+        packet_type: "worker_join_request",
+        target_node_id: targetNodeId,
+        sender_node_id: packet.payload.sender_node_id,
+        payload: packet.payload,
+        received_at: new Date().toISOString(),
+        status: "requested"
+      });
+      return {
+        status: "ok",
+        package_id: packageId,
+        packet_id: packageId,
+        inbox_record: {
+          package_id: packageId,
+          packet_id: packageId,
+          package_type: "worker_join_request",
+          target_plugin: "multi_ai_governance",
+          target_node_id: targetNodeId,
+          payload: packet.payload,
+          received_at: new Date().toISOString(),
+          status: "requested"
+        }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return {
+        listInbox() {
+          return [];
+        }
+      };
+    }
+  };
+
+  const workerReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker"
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  const masterWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner" },
+        next_action: "ok"
+      };
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker", trust_status: "trusted" }
+      ];
+    },
+    listWifiDataSharingInbox() {
+      return wire.joinRequests.map((request) => ({
+        packet_id: request.packet_id,
+        package_id: request.package_id,
+        packet_type: request.packet_type,
+        target_node_id: request.target_node_id,
+        sender_node_id: request.sender_node_id,
+        payload: request.payload,
+        status: request.status,
+        received_at: request.received_at
+      }));
+    },
+    canSendGovernancePacket() {
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket() {
+      return { status: "ok", package_id: "pkg-001", packet_id: "pkg-001" };
+    },
+    getWifiDataSharingProvider() {
+      return {
+        listInbox() {
+          return wire.joinRequests.map((request) => ({
+            packet_id: request.packet_id,
+            package_id: request.package_id,
+            packet_type: request.packet_type,
+            target_node_id: request.target_node_id,
+            sender_node_id: request.sender_node_id,
+            payload: request.payload,
+            status: request.status,
+            received_at: request.received_at
+          }));
+        }
+      };
+    }
+  };
+
+  const masterReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "master"
+  }, {
+    wifiClient: masterWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(workerReport.join_request_result.status, "requested");
+  assert.strictEqual(wire.joinRequests.length, 1);
+  assert.strictEqual(masterReport.worker_pool.join_request_count, 1);
+  assert.deepStrictEqual(masterReport.worker_pool.join_request_worker_ids, ["wifi-node-worker"]);
+  assert.strictEqual(masterReport.target_node_ids[0], "wifi-node-worker");
 }));

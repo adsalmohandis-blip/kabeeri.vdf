@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const { ensureWorkspace, readJsonFile, writeJsonFile } = require("../../../src/cli/workspace");
 const { repoRoot } = require("../../../src/cli/fs_utils");
+const { watchMultiAiRelay } = require("../../../src/cli/services/multi_ai_relay");
 const { synchronizeRelayWithGovernance } = require("./multi_ai_communications");
 const { ensureEvolutionDevelopmentPriorities } = require("../../../src/cli/services/evolution");
 const {
@@ -1380,6 +1381,58 @@ function handleEvolutionBridgeAction(state, value, flags, appendAudit, rest = []
       );
     }
     return workflowReport;
+  }
+
+  if (["session", "startup", "watch", "bootstrap"].includes(subaction)) {
+    const sessionOperation = subaction === "watch" || isTruthyFlag(flags.watch) ? "watch" : "session";
+    const sessionDeps = {
+      ...deps,
+      appendAudit
+    };
+    const sessionReport = evolutionAssignmentBridge.buildEvolutionAssignmentSessionReport(state, flags, sessionDeps, {
+      operation: sessionOperation,
+      role: flags.role || flags.mode || rest[0] || "master"
+    });
+    if (sessionOperation === "watch") {
+      const result = watchMultiAiRelay(".kabeeri/multi_ai_governance/evolution_sessions.json", {
+        iterations: flags.iterations,
+        interval: flags.interval
+      }, {
+        readReport: () => evolutionAssignmentBridge.buildEvolutionAssignmentSessionReport(readJsonFile(".kabeeri/multi_ai_governance.json"), flags, sessionDeps, {
+          operation: "watch",
+          role: flags.role || flags.mode || rest[0] || "master"
+        }),
+        renderReport: (report) => evolutionAssignmentBridge.renderEvolutionAssignmentSessionReport(report)
+      });
+      if (appendAudit) {
+        appendAudit(
+          "multi_ai.evolution_assignment_session_watch",
+          "multi_ai_evolution_assignment",
+          sessionReport.current_assignment ? sessionReport.current_assignment.assignment_id : "multi-ai-evolution-assignment",
+          `Evolution assignment session watch completed: ${result.render_count} render(s)`,
+          {
+            decision: sessionReport.decision,
+            role: sessionReport.role,
+            target_node_id: sessionReport.target_node_id || null
+          }
+        );
+      }
+      return result;
+    }
+    if (appendAudit) {
+      appendAudit(
+        "multi_ai.evolution_assignment_session",
+        "multi_ai_evolution_assignment",
+        sessionReport.current_assignment ? sessionReport.current_assignment.assignment_id : "multi-ai-evolution-assignment",
+        `Evolution assignment session initialized: ${sessionReport.status}`,
+        {
+          decision: sessionReport.decision,
+          role: sessionReport.role,
+          target_node_id: sessionReport.target_node_id || null
+        }
+      );
+    }
+    return sessionReport;
   }
 
   if (["assign", "distribute", "plan", "route", "lead"].includes(subaction)) {

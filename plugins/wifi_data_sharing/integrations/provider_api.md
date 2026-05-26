@@ -34,7 +34,8 @@ Later plugins, including `multi_ai_governance`, should:
 3. check `canSendPackage(...)`,
 4. send the package only after explicit confirmation,
 5. review the inbox/quarantine before any explicit consume or apply step,
-6. use the provider and readiness reports for visibility only.
+6. use the provider and readiness reports for visibility only,
+7. allow governed session packets such as `assignment_packet` to move over the LAN when another plugin owns the policy and approval layer.
 
 ## Safety Notes
 

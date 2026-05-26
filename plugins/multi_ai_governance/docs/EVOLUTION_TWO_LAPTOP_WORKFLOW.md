@@ -22,10 +22,13 @@ This workflow keeps one machine as the master laptop and one or more machines as
 
 1. On the master laptop, run `kvdf multi-ai evolution status`.
 2. If the bridge decision is safe, run `kvdf multi-ai evolution assign`.
-3. Copy the worker prompt from `kvdf multi-ai evolution workflow` and send it to the worker laptop.
-4. On the worker laptop, accept only the assigned scope and run the relevant tests.
-5. Return the diff and test results to the master laptop.
-6. Review on the master laptop, then commit and push only from here.
+3. Start the session watcher on the master laptop with `kvdf multi-ai evolution session master --watch`.
+4. Start the session watcher on the worker laptop with `kvdf multi-ai evolution session worker --watch`.
+5. The master laptop scans the LAN, discovers trusted ready worker nodes, and broadcasts the approved assignment packet automatically over Wi-Fi/LAN.
+6. The worker laptop advertises readiness, watches the inbox, applies the approved assignment packet, and keeps waiting for later broadcasts.
+7. Accept only the assigned scope and run the relevant tests.
+8. Return the diff and test results to the master laptop.
+9. Review on the master laptop, then commit and push only from here.
 
 ## Safety Rules
 
@@ -42,4 +45,4 @@ The workflow command prints:
 - the master checklist
 - the worker prompt
 - the next safe action
-
+- the session broadcast or inbox status when the watch mode is running
