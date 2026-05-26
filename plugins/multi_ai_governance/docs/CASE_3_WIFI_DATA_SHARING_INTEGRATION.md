@@ -27,6 +27,8 @@
 - `wifi_data_sharing` does not decide permissions.
 - `wifi_data_sharing` does not approve tasks or leases.
 - `wifi_data_sharing` does not become governance authority.
+- `multi_ai_governance` does not let node mapping bypass pairing approval or
+  directly grant trust.
 - `multi_ai_governance` may consume trusted transport metadata from `wifi_data_sharing`, but it owns the decision.
 
 ## Packet Flow

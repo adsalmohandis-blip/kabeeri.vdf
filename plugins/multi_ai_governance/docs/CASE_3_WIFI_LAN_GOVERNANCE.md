@@ -56,6 +56,8 @@ Node mapping and trust are recorded under:
 ## What It Does
 
 - Maps observed LAN peers into governance identities.
+- `kvdf multi-ai wifi map-node` only records identity metadata; it does not
+  directly grant trust. Trust still flows through pairing approval.
 - Separates untrusted, pairing-requested, trusted, revoked, expired, and blocked nodes.
 - Requires owner approval before high-risk Wi-Fi/LAN actions.
 - Keeps distributed leases separate from IDE-window and local-project leases, while still checking for conflicts across layers.

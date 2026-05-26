@@ -207,6 +207,8 @@ function mapWifiNode(flags = {}, deps = {}, appendAudit = null) {
   const trustState = readWifiTrustState();
   const wifiNodeId = resolveWifiNodeId(flags);
   const governanceNodeId = resolveGovernanceNodeId(flags, wifiNodeId);
+  const requestedTrustStatus = normalizeTrustStatus(getFlag(flags, "trust_status", "trust-status", "trustStatus", "trust") || "untrusted");
+  const trustStatus = "untrusted";
   const record = {
     wifi_node_id: wifiNodeId,
     governance_node_id: governanceNodeId,
@@ -216,7 +218,8 @@ function mapWifiNode(flags = {}, deps = {}, appendAudit = null) {
     hostname: String(getFlag(flags, "hostname", "host") || "").trim() || null,
     local_ip: String(getFlag(flags, "local_ip", "local-ip", "localIp", "ip", "address") || "").trim() || null,
     wifi_data_sharing_peer_id: String(getFlag(flags, "wifi_data_sharing_peer_id", "wifi-data-sharing-peer-id", "wifiDataSharingPeerId", "peer_id", "peer-id", "peerId", "peer") || "").trim() || null,
-    trust_status: normalizeTrustStatus(getFlag(flags, "trust_status", "trust-status", "trustStatus", "trust") || "untrusted"),
+    trust_status: trustStatus,
+    requested_trust_status: requestedTrustStatus,
     owner_approved: isTruthyFlag(getFlag(flags, "owner_approved", "owner-approved", "ownerApproved", "approved", "confirm")),
     paired_at: getFlag(flags, "paired_at", "paired-at", "pairedAt") || null,
     last_seen_at: now,
@@ -245,12 +248,13 @@ function mapWifiNode(flags = {}, deps = {}, appendAudit = null) {
     governance_node_id: record.governance_node_id,
     machine_id: record.machine_id,
     project_id: record.project_id,
-    trust_status: record.trust_status,
+    trust_status: trustStatus,
     owner_approved: record.owner_approved,
     paired_at: record.paired_at,
     last_seen_at: now,
     status: record.status,
-    capabilities: record.capabilities
+    capabilities: record.capabilities,
+    requested_trust_status: requestedTrustStatus
   }, "wifi_node_id");
   trustState.updated_at = now;
   writeWifiTrustState(trustState);
@@ -260,7 +264,7 @@ function mapWifiNode(flags = {}, deps = {}, appendAudit = null) {
     generated_at: now,
     status: "ok",
     wifi_node: record,
-    next_action: record.trust_status === "trusted"
+    next_action: trustStatus === "trusted"
       ? "Issue a Wi-Fi task token with `kvdf multi-ai wifi token issue`."
       : "Request pairing approval before issuing governed Wi-Fi tokens."
   };

@@ -194,6 +194,25 @@ test("mapping a wifi_data_sharing node to governance identity persists state", (
   assert.strictEqual(nodesState.nodes[0].trust_status, "untrusted");
 }));
 
+test("mapping cannot directly grant Wi-Fi trust without pairing approval", () => withTempRepo(() => {
+  const report = wifiLanGovernance.mapWifiNode({
+    wifi_node_id: "wifi-node-trusted-attempt",
+    governance_node_id: "gov-node-trusted-attempt",
+    project: "project-001",
+    machine: "machine-001",
+    node_type: "developer_machine",
+    hostname: "NODE-TRUST-ATTEMPT",
+    trust_status: "trusted",
+    owner_approved: true
+  }, {}, () => {});
+
+  assert.strictEqual(report.wifi_node.trust_status, "untrusted");
+  assert.strictEqual(report.wifi_node.requested_trust_status, "trusted");
+  const trust = wifiLanGovernance.buildWifiTrustStatusReport({ wifi_node_id: "wifi-node-trusted-attempt" });
+  assert.strictEqual(trust.trust_records[0].trust_status, "untrusted");
+  assert.strictEqual(trust.trust_records[0].requested_trust_status, "trusted");
+}));
+
 test("pairing request approval promotes trust and permissions", () => withTempRepo(() => {
   wifiLanGovernance.mapWifiNode({
     wifi_node_id: "wifi-node-001",
