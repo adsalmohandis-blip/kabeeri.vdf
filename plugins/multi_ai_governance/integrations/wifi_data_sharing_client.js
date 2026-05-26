@@ -68,6 +68,26 @@ function refreshWifiDataSharingDiscovery(mode = "discover", flags = {}) {
       next_action: "wifi_data_sharing discovery commands are unavailable."
     };
   }
+  if (mode === "master") {
+    const advertiseResult = typeof discovery.runAdvertiseCommand === "function"
+      ? discovery.runAdvertiseCommand(flags)
+      : null;
+    const discoverResult = typeof discovery.runDiscoverCommand === "function"
+      ? discovery.runDiscoverCommand(flags)
+      : null;
+    return {
+      status: advertiseResult && advertiseResult.status === "blocked"
+        ? advertiseResult.status
+        : discoverResult && discoverResult.status === "blocked"
+          ? discoverResult.status
+          : "ok",
+      available: true,
+      mode,
+      advertise_result: advertiseResult,
+      discover_result: discoverResult,
+      next_action: "The master laptop advertises itself and scans for trusted worker nodes."
+    };
+  }
   if (mode === "advertise" && typeof discovery.runAdvertiseCommand === "function") {
     return discovery.runAdvertiseCommand(flags);
   }

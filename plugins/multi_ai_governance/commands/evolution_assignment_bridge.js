@@ -1417,7 +1417,7 @@ function refreshEvolutionSessionDiscovery({ wifiClient, sessionRole, sessionReco
   if (!wifiClient || typeof wifiClient.refreshWifiDataSharingDiscovery !== "function") {
     return null;
   }
-  const mode = sessionRole === "worker" ? "advertise" : "discover";
+  const mode = sessionRole === "worker" ? "advertise" : "master";
   const result = wifiClient.refreshWifiDataSharingDiscovery(mode, flags);
   if (result && result.status && sessionRecord) {
     sessionRecord.last_discovery_mode = mode;

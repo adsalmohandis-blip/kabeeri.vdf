@@ -14,8 +14,9 @@ workflow for a master laptop and a worker laptop.
 ## How It Works
 
 1. The master laptop runs the bridge and evaluates the current Evolution priority.
-2. The master laptop starts a session watcher that broadcasts the approved
-   assignment packet to the trusted worker node.
+2. The master laptop starts a session watcher that advertises itself on Wi-Fi/LAN,
+   discovers trusted worker nodes, and broadcasts the approved assignment packet
+   to the trusted worker node.
 3. The worker laptop starts a session watcher that advertises readiness and
    reads the Wi-Fi inbox.
 4. The worker laptop sends a bootstrap `worker_join_request` packet so the
