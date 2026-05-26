@@ -5,6 +5,10 @@ function resolveRepoRootFromCli() {
   if (!cliEntry) {
     throw new Error("KVDF Dev runtime blocked: unable to resolve CLI entrypoint.");
   }
+  const normalized = cliEntry.replace(/\\/g, "/").toLowerCase();
+  if (normalized.endsWith("/src/cli/index.js")) {
+    return path.dirname(path.dirname(path.dirname(cliEntry)));
+  }
   return path.dirname(path.dirname(cliEntry));
 }
 

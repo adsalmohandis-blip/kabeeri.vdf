@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Machine State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "machine_id": { "type": ["string", "null"] },
+    "hostname": { "type": ["string", "null"] },
+    "platform": { "type": ["string", "null"] },
+    "release": { "type": ["string", "null"] },
+    "repo_root": { "type": ["string", "null"] },
+    "runtime_root": { "type": ["string", "null"] },
+    "owner_id": { "type": ["string", "null"] },
+    "status": {
+      "type": "string",
+      "enum": ["inactive", "active", "suspended"]
+    },
+    "last_seen_at": { "type": ["string", "null"] }
+  }
+}

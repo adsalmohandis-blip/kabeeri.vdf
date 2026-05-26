@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Approval Requests State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "requests"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "request_id",
+          "decision_id",
+          "machine_id",
+          "project_id",
+          "client_id",
+          "session_id",
+          "path",
+          "reason",
+          "status",
+          "requested_at"
+        ],
+        "properties": {
+          "request_id": { "type": "string" },
+          "decision_id": { "type": ["string", "null"] },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "client_id": { "type": ["string", "null"] },
+          "session_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "branch": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "reason": { "type": "string" },
+          "status": { "type": "string" },
+          "requested_at": { "type": "string" },
+          "resolved_at": { "type": ["string", "null"] },
+          "resolved_by": { "type": ["string", "null"] },
+          "resolution": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

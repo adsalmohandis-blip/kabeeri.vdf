@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Audit Log State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "records"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "event_id",
+          "timestamp",
+          "actor_id",
+          "actor_role",
+          "event_type",
+          "entity_type",
+          "entity_id",
+          "summary",
+          "metadata"
+        ],
+        "properties": {
+          "event_id": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "actor_id": { "type": "string" },
+          "actor_role": { "type": "string" },
+          "event_type": { "type": "string" },
+          "entity_type": { "type": "string" },
+          "entity_id": { "type": ["string", "null"] },
+          "summary": { "type": "string" },
+          "metadata": { "type": "object", "additionalProperties": true }
+        }
+      }
+    }
+  }
+}

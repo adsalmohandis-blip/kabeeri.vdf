@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Trust Runtime State",
+  "type": "object",
+  "required": ["version", "trust_records"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "trust_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kcloud_node_id", "governance_cloud_node_id", "trust_status", "status"],
+        "properties": {
+          "kcloud_trust_id": { "type": ["string", "null"] },
+          "kcloud_node_id": { "type": "string" },
+          "governance_cloud_node_id": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "trust_status": { "type": "string" },
+          "owner_approved": { "type": "boolean" },
+          "last_synced_at": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "capabilities": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

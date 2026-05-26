@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Policy Decisions Runtime State",
+  "type": "object",
+  "required": ["version", "decisions"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["decision_id", "decision", "reason", "risk_level", "requires_owner_approval", "evidence_id", "timestamp"],
+        "properties": {
+          "decision_id": { "type": "string" },
+          "decision": { "type": "string" },
+          "reason": { "type": "string" },
+          "risk_level": { "type": "string" },
+          "requires_owner_approval": { "type": "boolean" },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "wifi_node_id": { "type": ["string", "null"] },
+          "governance_node_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "wifi_task_token_id": { "type": ["string", "null"] },
+          "wifi_lease_id": { "type": ["string", "null"] },
+          "packet_id": { "type": ["string", "null"] },
+          "evidence_id": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "status": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

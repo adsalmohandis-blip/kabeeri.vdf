@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Identity Map Runtime State",
+  "type": "object",
+  "required": ["version", "mappings"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kcloud_node_id", "governance_cloud_node_id", "tenant_id", "status"],
+        "properties": {
+          "kcloud_node_id": { "type": "string" },
+          "governance_cloud_node_id": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "organization_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "cloud_project_id": { "type": ["string", "null"] },
+          "machine_id": { "type": ["string", "null"] },
+          "local_project_id": { "type": ["string", "null"] },
+          "owner_id": { "type": ["string", "null"] },
+          "user_id": { "type": ["string", "null"] },
+          "role_id": { "type": ["string", "null"] },
+          "kcloud_peer_id": { "type": ["string", "null"] },
+          "trust_status": { "type": ["string", "null"] },
+          "owner_approved": { "type": ["boolean", "null"] },
+          "last_synced_at": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "capabilities": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

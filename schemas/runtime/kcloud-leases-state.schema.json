@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Leases Runtime State",
+  "type": "object",
+  "required": ["version", "leases"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "leases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kcloud_lease_id", "tenant_id", "project_id", "task_id", "kcloud_node_id", "lease_type", "scope", "status"],
+        "properties": {
+          "kcloud_lease_id": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "kcloud_node_id": { "type": "string" },
+          "agent_id": { "type": ["string", "null"] },
+          "tool_id": { "type": ["string", "null"] },
+          "lease_type": { "type": "string" },
+          "scope": { "type": "string" },
+          "branch": { "type": ["string", "null"] },
+          "cloud_channel": { "type": ["string", "null"] },
+          "cloud_runner_id": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "expires_at": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "allowed_paths": { "type": "array", "items": { "type": "string" } },
+          "denied_paths": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

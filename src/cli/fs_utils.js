@@ -2,7 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 function repoRoot() {
-  return process.cwd();
+  return path.resolve(process.env.KVDF_REPO_ROOT || process.cwd());
 }
 
 function packageRoot() {

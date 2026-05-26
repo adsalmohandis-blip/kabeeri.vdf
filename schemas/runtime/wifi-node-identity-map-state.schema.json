@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Node Identity Map Runtime State",
+  "type": "object",
+  "required": ["version", "mappings"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "mappings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["wifi_node_id", "governance_node_id"],
+        "properties": {
+          "wifi_node_id": { "type": "string" },
+          "governance_node_id": { "type": "string" },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "wifi_data_sharing_peer_id": { "type": ["string", "null"] },
+          "mapped_at": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Approval Rules Runtime State",
+  "type": "object",
+  "required": ["version", "approval_rules"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "approval_rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kcloud_approval_rule_id": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "action": { "type": ["string", "null"] },
+          "risk_level": { "type": ["string", "null"] },
+          "requires_owner_approval": { "type": "boolean" },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

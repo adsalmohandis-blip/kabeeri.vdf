@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Trust Runtime State",
+  "type": "object",
+  "required": ["version", "trust_records"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "trust_records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["wifi_node_id", "governance_node_id", "trust_status"],
+        "properties": {
+          "trust_record_id": { "type": ["string", "null"] },
+          "wifi_node_id": { "type": "string" },
+          "governance_node_id": { "type": "string" },
+          "project_id": { "type": ["string", "null"] },
+          "trust_status": { "type": "string" },
+          "owner_approved": { "type": "boolean" },
+          "paired_at": { "type": ["string", "null"] },
+          "last_seen_at": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"] },
+          "capabilities": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

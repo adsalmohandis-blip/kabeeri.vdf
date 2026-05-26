@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Revocations Runtime State",
+  "type": "object",
+  "required": ["version", "revocations"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "revocations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["revocation_id", "wifi_node_id", "revoked_at", "status"],
+        "properties": {
+          "revocation_id": { "type": "string" },
+          "pairing_request_id": { "type": ["string", "null"] },
+          "wifi_node_id": { "type": "string" },
+          "governance_node_id": { "type": "string" },
+          "owner_id": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "revoked_at": { "type": "string" },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

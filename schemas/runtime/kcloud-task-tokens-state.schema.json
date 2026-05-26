@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Task Tokens Runtime State",
+  "type": "object",
+  "required": ["version", "tokens"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "tokens": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kcloud_task_token_id", "tenant_id", "kcloud_node_id", "risk_level", "created_at", "status"],
+        "properties": {
+          "kcloud_task_token_id": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "kcloud_node_id": { "type": "string" },
+          "agent_id": { "type": ["string", "null"] },
+          "tool_id": { "type": ["string", "null"] },
+          "allowed_actions": { "type": "array", "items": { "type": "string" } },
+          "denied_actions": { "type": "array", "items": { "type": "string" } },
+          "allowed_paths": { "type": "array", "items": { "type": "string" } },
+          "denied_paths": { "type": "array", "items": { "type": "string" } },
+          "max_runtime_seconds": { "type": ["number", "null"] },
+          "max_cost": { "type": ["number", "null"] },
+          "risk_level": { "type": "string" },
+          "created_at": { "type": "string" },
+          "expires_at": { "type": ["string", "null"] },
+          "status": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

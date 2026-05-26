@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Clients State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "clients"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "clients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "client_id",
+          "client_type",
+          "machine_id",
+          "project_id",
+          "repo_root",
+          "process_hint",
+          "status",
+          "last_seen_at",
+          "capabilities"
+        ],
+        "properties": {
+          "client_id": { "type": "string" },
+          "client_type": {
+            "type": "string",
+            "enum": [
+              "vscode",
+              "cursor",
+              "webstorm",
+              "visual_studio",
+              "zed",
+              "terminal",
+              "local_agent",
+              "local_script",
+              "github_desktop",
+              "unknown_editor",
+              "unknown_ai_tool"
+            ]
+          },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "repo_root": { "type": ["string", "null"] },
+          "process_hint": { "type": ["string", "null"] },
+          "ide_window_id": { "type": ["string", "null"] },
+          "agent_id": { "type": ["string", "null"] },
+          "tool_id": { "type": ["string", "null"] },
+          "active_task_id": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "last_seen_at": { "type": "string" },
+          "capabilities": { "type": "array", "items": { "type": "string" } },
+          "session_id": { "type": ["string", "null"] },
+          "created_at": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

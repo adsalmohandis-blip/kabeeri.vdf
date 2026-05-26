@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF IDE Window Sessions State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "sessions"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "created_at": {
+      "type": ["string", "null"]
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "ide_window_id",
+          "workspace_id",
+          "project_id",
+          "repo_root",
+          "active_task_id",
+          "owner_id",
+          "opened_at",
+          "last_seen_at",
+          "status"
+        ],
+        "properties": {
+          "ide_window_id": { "type": "string" },
+          "workspace_id": { "type": "string" },
+          "project_id": { "type": ["string", "null"] },
+          "repo_root": { "type": "string" },
+          "active_task_id": { "type": ["string", "null"] },
+          "owner_id": { "type": ["string", "null"] },
+          "opened_at": { "type": "string" },
+          "last_seen_at": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF IDE Agent Sessions State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "sessions"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "created_at": {
+      "type": ["string", "null"]
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    },
+    "sessions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "agent_id",
+          "tool_id",
+          "session_id",
+          "ide_window_id",
+          "workspace_id",
+          "task_id",
+          "status",
+          "opened_at",
+          "last_seen_at",
+          "capabilities"
+        ],
+        "properties": {
+          "agent_id": { "type": "string" },
+          "agent_name": { "type": ["string", "null"] },
+          "tool_id": { "type": "string" },
+          "session_id": { "type": "string" },
+          "ide_window_id": { "type": ["string", "null"] },
+          "workspace_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "opened_at": { "type": "string" },
+          "last_seen_at": { "type": "string" },
+          "capabilities": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

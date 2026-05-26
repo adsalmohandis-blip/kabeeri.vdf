@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Conflicts State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "conflicts"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "conflict_id",
+          "lease_id",
+          "machine_id",
+          "project_id",
+          "client_id",
+          "session_id",
+          "task_id",
+          "conflict_type",
+          "severity",
+          "created_at",
+          "status"
+        ],
+        "properties": {
+          "conflict_id": { "type": "string" },
+          "lease_id": { "type": ["string", "null"] },
+          "other_lease_id": { "type": ["string", "null"] },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "client_id": { "type": ["string", "null"] },
+          "session_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "branch": { "type": ["string", "null"] },
+          "conflict_type": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "path": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  }
+}

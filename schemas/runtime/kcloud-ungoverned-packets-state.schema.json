@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Ungoverned Packets Runtime State",
+  "type": "object",
+  "required": ["version", "packets"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "packets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kcloud_ungoverned_packet_id", "packet_id", "decision", "reason", "created_at", "status"],
+        "properties": {
+          "kcloud_ungoverned_packet_id": { "type": "string" },
+          "packet_id": { "type": "string" },
+          "decision": { "type": "string" },
+          "reason": { "type": "string" },
+          "risk_level": { "type": "string" },
+          "requires_owner_approval": { "type": "boolean" },
+          "created_at": { "type": "string" },
+          "status": { "type": "string" },
+          "payload": { "type": ["object", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

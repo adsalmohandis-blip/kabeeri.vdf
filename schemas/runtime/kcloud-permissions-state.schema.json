@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Permissions Runtime State",
+  "type": "object",
+  "required": ["version", "permissions"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "permissions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["kcloud_permission_id", "status", "risk_level"],
+        "properties": {
+          "kcloud_permission_id": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "organization_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "cloud_project_id": { "type": ["string", "null"] },
+          "kcloud_node_id": { "type": ["string", "null"] },
+          "user_id": { "type": ["string", "null"] },
+          "role_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "allowed_actions": { "type": "array", "items": { "type": "string" } },
+          "denied_actions": { "type": "array", "items": { "type": "string" } },
+          "allowed_paths": { "type": "array", "items": { "type": "string" } },
+          "denied_paths": { "type": "array", "items": { "type": "string" } },
+          "allowed_cloud_channels": { "type": "array", "items": { "type": "string" } },
+          "denied_cloud_channels": { "type": "array", "items": { "type": "string" } },
+          "risk_level": { "type": "string" },
+          "approval_required": { "type": "boolean" },
+          "expires_at": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "created_at": { "type": ["string", "null"] },
+          "updated_at": { "type": ["string", "null"] },
+          "revoked_at": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

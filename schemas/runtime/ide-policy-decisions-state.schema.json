@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF IDE Policy Decisions State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "decisions"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "created_at": {
+      "type": ["string", "null"]
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "decision_id",
+          "ide_window_id",
+          "workspace_id",
+          "tool_id",
+          "agent_id",
+          "task_id",
+          "path",
+          "action",
+          "decision",
+          "reason",
+          "risk_level",
+          "requires_owner_approval",
+          "evidence_id",
+          "timestamp"
+        ],
+        "properties": {
+          "decision_id": { "type": "string" },
+          "ide_window_id": { "type": ["string", "null"] },
+          "workspace_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "repo_root": { "type": ["string", "null"] },
+          "tool_id": { "type": ["string", "null"] },
+          "tool_name": { "type": ["string", "null"] },
+          "agent_id": { "type": ["string", "null"] },
+          "session_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "action": { "type": "string" },
+          "decision": {
+            "type": "string",
+            "enum": ["allow", "warn", "block", "require_owner_approval"]
+          },
+          "reason": { "type": "string" },
+          "risk_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "requires_owner_approval": { "type": "boolean" },
+          "evidence_id": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "lease_id": { "type": ["string", "null"] },
+          "conflict_id": { "type": ["string", "null"] },
+          "status": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}

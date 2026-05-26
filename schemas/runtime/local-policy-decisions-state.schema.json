@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Policy Decisions State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "decisions"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "decision_id",
+          "machine_id",
+          "project_id",
+          "client_id",
+          "session_id",
+          "action",
+          "decision",
+          "reason",
+          "risk_level",
+          "requires_owner_approval",
+          "evidence_id",
+          "timestamp",
+          "status"
+        ],
+        "properties": {
+          "decision_id": { "type": "string" },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "client_id": { "type": ["string", "null"] },
+          "session_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "branch": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "local_lease_id": { "type": ["string", "null"] },
+          "conflict_id": { "type": ["string", "null"] },
+          "referenced_ide_lease_id": { "type": ["string", "null"] },
+          "referenced_ide_window_id": { "type": ["string", "null"] },
+          "action": { "type": "string" },
+          "decision": {
+            "type": "string",
+            "enum": ["allow", "warn", "block", "require_owner_approval"]
+          },
+          "reason": { "type": "string" },
+          "risk_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high"]
+          },
+          "requires_owner_approval": { "type": "boolean" },
+          "evidence_id": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      }
+    }
+  }
+}

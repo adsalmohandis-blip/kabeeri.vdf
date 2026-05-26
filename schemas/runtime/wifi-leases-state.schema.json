@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Leases Runtime State",
+  "type": "object",
+  "required": ["version", "leases"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "leases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["wifi_lease_id", "project_id", "task_id", "wifi_node_id", "lease_type", "scope", "status"],
+        "properties": {
+          "wifi_lease_id": { "type": "string" },
+          "project_id": { "type": "string" },
+          "task_id": { "type": "string" },
+          "wifi_node_id": { "type": "string" },
+          "governance_node_id": { "type": "string" },
+          "lease_type": { "type": "string" },
+          "scope": { "type": "string" },
+          "branch": { "type": ["string", "null"] },
+          "local_service": { "type": ["string", "null"] },
+          "device_id": { "type": ["string", "null"] },
+          "port": { "type": ["string", "null"] },
+          "created_at": { "type": "string" },
+          "expires_at": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "allowed_paths": { "type": "array", "items": { "type": "string" } },
+          "denied_paths": { "type": "array", "items": { "type": "string" } },
+          "allowed_services": { "type": "array", "items": { "type": "string" } },
+          "denied_services": { "type": "array", "items": { "type": "string" } },
+          "allowed_devices": { "type": "array", "items": { "type": "string" } },
+          "denied_devices": { "type": "array", "items": { "type": "string" } }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

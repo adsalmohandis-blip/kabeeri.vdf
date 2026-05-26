@@ -403,7 +403,7 @@ function buildCapabilityDocMatrixLinks(item) {
     "D. Backend, Data, and APIs": ["kvdf data-design", "kvdf structured", "kvdf agile"],
     "E. Admin, Settings, and Customization": ["kvdf dashboard", "kvdf policy", "kvdf task"],
     "F. Engagement, Content, and Growth": ["kvdf docs", "kvdf capture", "kvdf questionnaire"],
-    "G. Commerce and Plugins": ["kvdf github-provider", "kvdf github", "kvdf sync", "kvdf multi-ai"],
+    "G. Commerce and Plugins": ["kvdf github-provider", "kvdf github", "kvdf sync", "kvdf multi-ai", "kvdf multi-ai github-provider"],
     "H. Quality, Security, and Compliance": ["kvdf validate", "kvdf security", "kvdf policy"],
     "I. Operations and Release": ["kvdf release", "kvdf handoff", "kvdf reports"],
     "J. Kabeeri Control Layer": ["kvdf evolution", "kvdf capability", "kvdf trace"]

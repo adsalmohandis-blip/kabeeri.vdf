@@ -1,6 +1,6 @@
 # Wi-Fi Governance Packet Policy
 
-`multi_ai_governance` may create governance packets and send them through `wifi_data_sharing` when the optional transport plugin is available.
+`multi_ai_governance` may create governance packets and send them through `wifi_data_sharing` when the optional transport plugin is available. Case 3 extends this boundary into Wi-Fi/LAN node identity, trust, pairing, permissions, task tokens, leases, conflicts, and policy checks without moving transport authority into `wifi_data_sharing`.
 
 ## Boundaries
 
@@ -9,6 +9,7 @@
 - `wifi_data_sharing` does not make leadership, queue, merge, or approval decisions.
 - `wifi_data_sharing` only moves packets between trusted local nodes and lands received data in inbox/quarantine first.
 - Packet receive or consume never auto-applies to leader sessions, queues, merges, or assignments.
+- Wi-Fi/LAN trust, leases, and owner approval remain in `multi_ai_governance`.
 
 ## Allowed Packet Types
 

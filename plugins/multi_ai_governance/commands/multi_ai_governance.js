@@ -10,15 +10,43 @@ const {
   buildGovernanceCandidatePool,
   resolvePlannedWorkersForDistribution: resolvePlannedWorkersForDistributionService
 } = require("../../../src/cli/services/ai_planner");
-const wifiPackets = require("./wifi_packets");
+const wifiGovernance = require("./wifi_lan_governance");
+const ideWindowGovernance = require("./ide_window_governance");
+const localProjectGovernance = require("./local_project_governance");
+const kcloudGovernance = require("./kcloud_governance");
+const githubProviderGovernance = require("./github_provider_governance");
 
 function multiAiGovernance(action, value, flags = {}, deps = {}) {
   const { appendAudit, rest = [] } = deps;
   ensureWorkspace();
-  if (isWifiPacketAction(action)) {
-    const report = wifiPackets.multiAiWifiPackets(action, value, flags, rest, { appendAudit });
+  if (isWifiAction(action)) {
+    const report = wifiGovernance.multiAiWifiGovernance(action, value, flags, rest, { appendAudit });
     if (flags.json) console.log(JSON.stringify(report, null, 2));
-    else console.log(wifiPackets.renderWifiPacketsReport(report));
+    else console.log(wifiGovernance.renderWifiLanReport ? wifiGovernance.renderWifiLanReport(report) : JSON.stringify(report, null, 2));
+    return report;
+  }
+  if (isIdeAction(action)) {
+    const report = ideWindowGovernance.multiAiIdeGovernance(action, value, flags, rest, { appendAudit });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(ideWindowGovernance.renderIdeReport ? ideWindowGovernance.renderIdeReport(report) : JSON.stringify(report, null, 2));
+    return report;
+  }
+  if (isLocalAction(action)) {
+    const report = localProjectGovernance.multiAiLocalGovernance(action, value, flags, rest, { appendAudit });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(localProjectGovernance.renderLocalReport ? localProjectGovernance.renderLocalReport(report) : JSON.stringify(report, null, 2));
+    return report;
+  }
+  if (isKcloudAction(action)) {
+    const report = kcloudGovernance.multiAiKcloudGovernance(action, value, flags, rest, { appendAudit });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(kcloudGovernance.renderKcloudReport ? kcloudGovernance.renderKcloudReport(report) : JSON.stringify(report, null, 2));
+    return report;
+  }
+  if (isGithubProviderAction(action)) {
+    const report = githubProviderGovernance.multiAiGithubProviderGovernance(action, value, flags, rest, { appendAudit });
+    if (flags.json) console.log(JSON.stringify(report, null, 2));
+    else console.log(githubProviderGovernance.renderGithubProviderReport ? githubProviderGovernance.renderGithubProviderReport(report) : JSON.stringify(report, null, 2));
     return report;
   }
   ensureWorkspace();
@@ -88,8 +116,24 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
   throw new Error(`Unknown multi-ai action: ${action}`);
 }
 
-function isWifiPacketAction(action) {
+function isWifiAction(action) {
   return ["wifi", "wifi_packets", "wifi-packets"].includes(String(action || "").trim().toLowerCase());
+}
+
+function isIdeAction(action) {
+  return ["ide", "ide-window", "ide_window"].includes(String(action || "").trim().toLowerCase());
+}
+
+function isLocalAction(action) {
+  return ["local", "project", "workspace", "project-local", "local-project"].includes(String(action || "").trim().toLowerCase());
+}
+
+function isKcloudAction(action) {
+  return ["kcloud", "kcloud_data", "kcloud-data", "cloud"].includes(String(action || "").trim().toLowerCase());
+}
+
+function isGithubProviderAction(action) {
+  return ["github-provider", "github_provider", "githubprovider", "github", "github-provider-governance"].includes(String(action || "").trim().toLowerCase());
 }
 
 function handleLeaderAction(state, value, flags, appendAudit, rest = []) {

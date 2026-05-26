@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Project State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "machine_id": { "type": ["string", "null"] },
+    "project_id": { "type": ["string", "null"] },
+    "repo_root": { "type": ["string", "null"] },
+    "runtime_root": { "type": ["string", "null"] },
+    "git_remote": { "type": ["string", "null"] },
+    "default_branch": { "type": ["string", "null"] },
+    "current_branch": { "type": ["string", "null"] },
+    "owner_id": { "type": ["string", "null"] },
+    "status": {
+      "type": "string",
+      "enum": ["inactive", "active", "suspended"]
+    },
+    "last_seen_at": { "type": ["string", "null"] }
+  }
+}

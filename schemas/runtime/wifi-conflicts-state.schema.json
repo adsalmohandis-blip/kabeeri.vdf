@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Conflicts Runtime State",
+  "type": "object",
+  "required": ["version", "conflicts"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["conflict_id", "conflict_type", "status"],
+        "properties": {
+          "conflict_id": { "type": "string" },
+          "conflict_key": { "type": ["string", "null"] },
+          "conflict_type": { "type": "string" },
+          "project_id": { "type": ["string", "null"] },
+          "machine_id": { "type": ["string", "null"] },
+          "wifi_node_id": { "type": ["string", "null"] },
+          "governance_node_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "lease_id": { "type": ["string", "null"] },
+          "local_lease_id": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "scope": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "summary": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "detected_at": { "type": ["string", "null"] },
+          "resolved_at": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

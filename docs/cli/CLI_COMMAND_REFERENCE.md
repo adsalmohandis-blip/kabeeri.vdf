@@ -715,11 +715,75 @@ future session can read without rebuilding the route from chat memory.
 kvdf multi-ai status
 kvdf multi-ai wifi status
 kvdf multi-ai wifi nodes
+kvdf multi-ai wifi map-node
+kvdf multi-ai wifi trust status
+kvdf multi-ai wifi pair request
+kvdf multi-ai wifi pair approve
+kvdf multi-ai wifi pair deny
+kvdf multi-ai wifi revoke
+kvdf multi-ai wifi permissions
+kvdf multi-ai wifi token issue
+kvdf multi-ai wifi token status
+kvdf multi-ai wifi lease status
+kvdf multi-ai wifi lease create
+kvdf multi-ai wifi release
+kvdf multi-ai wifi conflicts
+kvdf multi-ai wifi policy check
 kvdf multi-ai wifi packet create --type assignment_packet --queue multi-ai-queue-001
 kvdf multi-ai wifi packet send --packet multi-ai-wifi-assignment_packet-multi-ai-queue-001 --to node-001 --confirm
 kvdf multi-ai wifi packet inbox
 kvdf multi-ai wifi packet inspect <package-id>
 kvdf multi-ai wifi packet consume <package-id> --confirm --decision approve|reject
+kvdf multi-ai kcloud status
+kvdf multi-ai kcloud nodes
+kvdf multi-ai kcloud map-node --kcloud-node-id cloud-node-001 --trust trusted
+kvdf multi-ai kcloud map-project --cloud-project-id cloud-project-001 --project project-001
+kvdf multi-ai kcloud trust status
+kvdf multi-ai kcloud permissions
+kvdf multi-ai kcloud permissions grant --kcloud-node-id cloud-node-001 --role reviewer --allowed-actions read_cloud_project_state
+kvdf multi-ai kcloud token issue --kcloud-node-id cloud-node-001 --task task-001
+kvdf multi-ai kcloud token status
+kvdf multi-ai kcloud approval status
+kvdf multi-ai kcloud lease create --kcloud-node-id cloud-node-001 --task task-001 --lease-type file --scope src/app/page.ts
+kvdf multi-ai kcloud lease status
+kvdf multi-ai kcloud release
+kvdf multi-ai kcloud conflicts
+kvdf multi-ai kcloud packet check --kcloud-node-id cloud-node-001 --task task-001 --path src/app/page.ts
+kvdf multi-ai kcloud policy check --kcloud-node-id cloud-node-001 --task task-001 --path src/app/page.ts
+kvdf multi-ai kcloud audit
+kvdf multi-ai kcloud evidence
+kvdf multi-ai github-provider status
+kvdf multi-ai github-provider map-repo
+kvdf multi-ai github-provider sync status
+kvdf multi-ai github-provider operation request
+kvdf multi-ai github-provider operation status
+kvdf multi-ai github-provider operation execute
+kvdf multi-ai github-provider risk check
+kvdf multi-ai github-provider issue sync
+kvdf multi-ai github-provider pr sync
+kvdf multi-ai github-provider check run
+kvdf multi-ai github-provider comment
+kvdf multi-ai github-provider label
+kvdf multi-ai github-provider policy check
+kvdf multi-ai github-provider approval status
+kvdf multi-ai github-provider audit
+kvdf multi-ai github-provider evidence
+kvdf multi-ai ide status
+kvdf multi-ai ide register --window ide-window-001 --workspace workspace-001 --project project-001
+kvdf multi-ai ide tool register --tool codex --agent agent-codex-001 --session ide-session-001
+kvdf multi-ai ide agent register --agent agent-codex-001 --session ide-session-001
+kvdf multi-ai ide lease create --type file --scope src/app/page.ts --tool codex --agent agent-codex-001 --task task-001
+kvdf multi-ai ide conflicts
+kvdf multi-ai ide policy check --path src/app/page.ts --tool codex --agent agent-codex-001 --task task-001
+kvdf multi-ai local status
+kvdf multi-ai local register --project project-001 --owner owner-001
+kvdf multi-ai local client register --client vscode --tool codex --agent agent-codex-001 --project project-001
+kvdf multi-ai local session register --client vscode --tool codex --agent agent-codex-001 --project project-001
+kvdf multi-ai local heartbeat --client vscode --tool codex --agent agent-codex-001
+kvdf multi-ai local lease create --type branch --scope feature/local-governance --client vscode --tool codex --agent agent-codex-001
+kvdf multi-ai local conflicts
+kvdf multi-ai local scan
+kvdf multi-ai local policy check --path src/app/page.ts --client vscode --tool codex --agent agent-codex-001 --task task-001
 kvdf multi-ai leader start --ai agent-001 --name "Claude Sonnet"
 kvdf multi-ai leader transfer --ai agent-002
 kvdf multi-ai leader end
@@ -767,7 +831,10 @@ or stops answering calls, the hub promotes the next active leader-eligible
 agent after the lease rules are exceeded. Optional wifi packet workflow can
 create transport-only governance packets, send them through trusted LAN nodes,
 and record inbox or consume receipts without auto-applying them back into
-governance state.
+governance state. Case 1 extends the same authority layer into IDE window
+governance so tools sharing one workspace register presence, claim task/file/
+folder leases, detect same-file conflicts, warn on ungoverned edits, and
+require owner approval for high-risk IDE actions.
 
 `kvdf multi-ai agent next --ai <agent-id> --count <n>` lets a worker claim the
 next available Evolution priorities in order, so AI tools can pull from the
@@ -1936,6 +2003,8 @@ kvdf github config show
 `kvdf github-provider` is the canonical GitHub remote-provider surface. `kvdf github` remains as a compatibility wrapper for the legacy sync/report surface.
 
 These commands do not write to GitHub by default. `github report` is the trace surface for the local sync adapter and reads the same `.kabeeri` state that powers the dry-run and confirmed write flows.
+
+`kvdf multi-ai github-provider` is the governance surface for GitHub-connected AI work. It keeps policy, task binding, approval, audit, and evidence in `multi_ai_governance` while delegating GitHub operations to `github_provider` only after approval.
 
 ## GitHub Confirmed Sync
 

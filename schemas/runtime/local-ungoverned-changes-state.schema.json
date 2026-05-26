@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KVDF Local Ungoverned Changes State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "changes"],
+  "properties": {
+    "version": { "type": "string", "const": "v1" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "change_id",
+          "machine_id",
+          "project_id",
+          "client_id",
+          "session_id",
+          "path",
+          "status",
+          "detected_at"
+        ],
+        "properties": {
+          "change_id": { "type": "string" },
+          "machine_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "client_id": { "type": ["string", "null"] },
+          "session_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "path": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "reason": { "type": ["string", "null"] },
+          "referenced_ide_lease_id": { "type": ["string", "null"] },
+          "referenced_ide_window_id": { "type": ["string", "null"] },
+          "detected_at": { "type": "string" }
+        }
+      }
+    }
+  }
+}

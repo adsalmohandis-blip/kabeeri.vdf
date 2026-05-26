@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Packet Evidence Runtime State",
+  "type": "object",
+  "required": ["version", "records"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["evidence_id", "decision_id", "timestamp"],
+        "properties": {
+          "evidence_id": { "type": "string" },
+          "decision_id": { "type": "string" },
+          "packet_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "wifi_node_id": { "type": ["string", "null"] },
+          "governance_node_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "wifi_task_token_id": { "type": ["string", "null"] },
+          "wifi_lease_id": { "type": ["string", "null"] },
+          "decision": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "timestamp": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

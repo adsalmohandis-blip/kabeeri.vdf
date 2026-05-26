@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "KCloud Conflicts Runtime State",
+  "type": "object",
+  "required": ["version", "conflicts"],
+  "properties": {
+    "version": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "conflicts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["conflict_id", "conflict_type", "reason", "status", "created_at"],
+        "properties": {
+          "conflict_id": { "type": "string" },
+          "conflict_type": { "type": "string" },
+          "tenant_id": { "type": ["string", "null"] },
+          "organization_id": { "type": ["string", "null"] },
+          "project_id": { "type": ["string", "null"] },
+          "cloud_project_id": { "type": ["string", "null"] },
+          "kcloud_node_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "kcloud_lease_id": { "type": ["string", "null"] },
+          "packet_id": { "type": ["string", "null"] },
+          "scope": { "type": ["string", "null"] },
+          "reason": { "type": "string" },
+          "status": { "type": "string" },
+          "created_at": { "type": "string" },
+          "other_id": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

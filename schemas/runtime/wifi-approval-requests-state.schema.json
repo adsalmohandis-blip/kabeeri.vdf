@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Wi-Fi Approval Requests Runtime State",
+  "type": "object",
+  "required": ["version", "requests"],
+  "properties": {
+    "version": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "created_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["request_id", "decision_id", "status", "requested_at"],
+        "properties": {
+          "request_id": { "type": "string" },
+          "decision_id": { "type": "string" },
+          "project_id": { "type": ["string", "null"] },
+          "wifi_node_id": { "type": ["string", "null"] },
+          "governance_node_id": { "type": ["string", "null"] },
+          "task_id": { "type": ["string", "null"] },
+          "packet_id": { "type": ["string", "null"] },
+          "reason": { "type": ["string", "null"] },
+          "status": { "type": "string" },
+          "requested_at": { "type": "string" },
+          "resolved_at": { "type": ["string", "null"] },
+          "resolved_by": { "type": ["string", "null"] },
+          "resolution": { "type": ["string", "null"] }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
