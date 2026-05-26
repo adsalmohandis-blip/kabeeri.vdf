@@ -106,19 +106,87 @@ function createSocket({ loopback = false, port = DEFAULT_DISCOVERY_PORT } = {}) 
 
 function sendMessage(socket, message, { loopback = false, port = DEFAULT_DISCOVERY_PORT, targetHost = null, targetPort = null } = {}) {
   const payload = serializeDiscoveryMessage(message);
+  const targets = resolveDiscoveryTargets({ loopback, port, targetHost, targetPort });
   return new Promise((resolve, reject) => {
-    const resolvedHost = targetHost || (loopback ? "127.0.0.1" : "255.255.255.255");
-    const resolvedPort = Number(targetPort || port || DEFAULT_DISCOVERY_PORT);
     try {
       socket.setBroadcast(!loopback);
-      socket.send(payload, 0, payload.length, resolvedPort, resolvedHost, (error) => {
-        if (error) reject(error);
-        else resolve();
-      });
+      if (!targets.length) {
+        resolve();
+        return;
+      }
+      let pending = targets.length;
+      let done = false;
+      const finish = (error) => {
+        if (done) return;
+        if (error) {
+          done = true;
+          reject(error);
+          return;
+        }
+        pending -= 1;
+        if (pending <= 0) {
+          done = true;
+          resolve();
+        }
+      };
+      for (const target of targets) {
+        socket.send(payload, 0, payload.length, target.port, target.host, (error) => finish(error));
+      }
     } catch (error) {
       reject(error);
     }
   });
+}
+
+function resolveDiscoveryTargets({ loopback = false, port = DEFAULT_DISCOVERY_PORT, targetHost = null, targetPort = null } = {}) {
+  if (targetHost) {
+    return [{
+      host: targetHost,
+      port: Number(targetPort || port || DEFAULT_DISCOVERY_PORT)
+    }];
+  }
+  if (loopback) {
+    return [{
+      host: "127.0.0.1",
+      port: Number(port || DEFAULT_DISCOVERY_PORT)
+    }];
+  }
+  const broadcasts = new Set();
+  for (const interfaces of Object.values(os.networkInterfaces() || {})) {
+    for (const item of Array.isArray(interfaces) ? interfaces : []) {
+      if (!item || item.internal) continue;
+      if (String(item.family || "").toLowerCase() !== "ipv4" && item.family !== 4) continue;
+      const computedBroadcast = computeIpv4BroadcastAddress(item.address, item.netmask);
+      if (item.broadcast) broadcasts.add(String(item.broadcast));
+      if (computedBroadcast) broadcasts.add(computedBroadcast);
+    }
+  }
+  if (!broadcasts.size) {
+    broadcasts.add("255.255.255.255");
+  }
+  return Array.from(broadcasts).map((host) => ({
+    host,
+    port: Number(port || DEFAULT_DISCOVERY_PORT)
+  }));
+}
+
+function computeIpv4BroadcastAddress(address, netmask) {
+  const ipParts = parseIpv4Address(address);
+  const maskParts = parseIpv4Address(netmask);
+  if (!ipParts || !maskParts) return null;
+  const broadcastParts = ipParts.map((part, index) => ((part & maskParts[index]) | (~maskParts[index] & 255)) & 255);
+  return broadcastParts.join(".");
+}
+
+function parseIpv4Address(value) {
+  const parts = String(value || "")
+    .trim()
+    .split(".")
+    .map((part) => Number(part));
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+    return null;
+  }
+  return parts;
 }
 
 function closeSocket(socket) {
@@ -243,6 +311,8 @@ module.exports = {
   serializeDiscoveryMessage,
   parseDiscoveryMessage,
   normalizeCandidate,
+  computeIpv4BroadcastAddress,
+  resolveDiscoveryTargets,
   discoverCandidates,
   advertisePresence
 };

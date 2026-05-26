@@ -6,6 +6,7 @@ const path = require("path");
 const provider = require("../provider");
 const state = require("../commands/state");
 const transfer = require("../commands/transfer");
+const udpDiscovery = require("../transport/udp_discovery");
 const multiAiBootstrap = require("../../multi_ai_governance/bootstrap");
 const wifiClientPath = "../../multi_ai_governance/integrations/wifi_data_sharing_client";
 
@@ -142,6 +143,28 @@ test("worker join bootstrap packets can target a discovered master without pre-e
   const sent = provider.sendPackage(joinPacket.package.package_id, "wifi-node-master", { bootstrap: true, confirm: true });
   assert.strictEqual(sent.status, "ok");
 }));
+
+test("discovery targets include subnet-directed broadcast addresses when interface broadcast is missing", () => {
+  const originalInterfaces = os.networkInterfaces;
+  os.networkInterfaces = () => ({
+    WiFi: [
+      {
+        address: "192.168.1.5",
+        netmask: "255.255.255.0",
+        family: "IPv4",
+        mac: "ec:63:d7:db:88:f5",
+        internal: false,
+        cidr: "192.168.1.5/24"
+      }
+    ]
+  });
+  try {
+    const targets = udpDiscovery.resolveDiscoveryTargets();
+    assert.ok(targets.some((item) => item && item.host === "192.168.1.255"));
+  } finally {
+    os.networkInterfaces = originalInterfaces;
+  }
+});
 
 test("multi_ai_governance manifest has optional wifi_data_sharing integration", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "multi_ai_governance", "plugin.json"), "utf8"));
