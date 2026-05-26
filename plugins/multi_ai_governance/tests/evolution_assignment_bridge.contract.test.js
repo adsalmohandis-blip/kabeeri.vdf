@@ -871,6 +871,90 @@ test("evolution session worker broadcasts a bootstrap join request when no maste
   assert.strictEqual(workerReport.worker_pool.join_request_count >= 0, true);
 }));
 
+test("evolution session worker retries bootstrap join requests when no master target is visible", () => withTempRepo((dir) => {
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Allow the worker laptop to rebroadcast its ready flag.");
+
+  let joinCalls = 0;
+  const workerWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker" },
+        next_action: "ok"
+      };
+    },
+    refreshWifiDataSharingDiscovery(mode) {
+      return {
+        status: "ok",
+        mode,
+        candidates: []
+      };
+    },
+    listCandidates() {
+      return [];
+    },
+    listTrustedWifiNodes() {
+      return [];
+    },
+    listWifiDataSharingInbox() {
+      return [];
+    },
+    canSendGovernancePacket() {
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
+      joinCalls += 1;
+      assert.strictEqual(targetNodeId, null);
+      assert.strictEqual(options.bootstrap, true);
+      return {
+        status: "ok",
+        package_id: `join-${String(joinCalls).padStart(3, "0")}`,
+        packet_id: `join-${String(joinCalls).padStart(3, "0")}`,
+        inbox_record: {
+          package_id: `join-${String(joinCalls).padStart(3, "0")}`,
+          packet_id: `join-${String(joinCalls).padStart(3, "0")}`,
+          packet_type: "worker_join_request",
+          target_node_id: null,
+          payload: packet.payload,
+          received_at: new Date().toISOString(),
+          status: "requested"
+        }
+      };
+    },
+    getWifiDataSharingProvider() {
+      return { listInbox() { return []; } };
+    }
+  };
+
+  const firstReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker"
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(firstReport.join_request_result.status, "requested");
+  assert.strictEqual(joinCalls, 1);
+
+  const secondReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker",
+    refresh: true,
+    "join-request-retry-ms": 1
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(secondReport.join_request_result.status, "requested");
+  assert.strictEqual(joinCalls, 2);
+}));
+
 test("evolution session worker rejoins after timeout and the master records recovery", () => withTempRepo((dir) => {
   registerBaseWorkspace(dir);
   seedEvolutionPriority(dir, "Task Trash System", "Allow a stale worker to rejoin safely.");

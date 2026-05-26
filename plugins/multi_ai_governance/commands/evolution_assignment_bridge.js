@@ -1598,10 +1598,11 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
     ...discoveredWorkers
   ], localNode);
   const joinRequestTimeoutMs = resolveEvolutionWorkerJoinRequestTimeoutMs(flags, sessionRecord);
-  const recentJoinRequest = sessionRecord.join_request_at && Number.isFinite(Date.parse(sessionRecord.join_request_at))
-    ? (Date.now() - Date.parse(sessionRecord.join_request_at)) < joinRequestTimeoutMs
-    : false;
   const joinTargetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
+  const bootstrapRetryMs = resolveEvolutionWorkerJoinRetryMs(flags, sessionRecord, joinTargetNodeId);
+  const recentJoinRequest = sessionRecord.join_request_at && Number.isFinite(Date.parse(sessionRecord.join_request_at))
+    ? !Boolean(isTruthyFlag(flags.refresh) || isTruthyFlag(flags.force_refresh) || isTruthyFlag(flags.watch)) && (Date.now() - Date.parse(sessionRecord.join_request_at)) < bootstrapRetryMs
+    : false;
   if (sessionRecord.join_request_status === "requested" && recentJoinRequest && (sessionRecord.join_request_target_node_id || null) === joinTargetNodeId) {
     return {
       status: "cached",
@@ -1674,6 +1675,21 @@ function resolveEvolutionWorkerJoinRequestTimeoutMs(flags = {}, sessionRecord = 
     if (Number.isFinite(value) && value > 0) return Math.max(1000, value);
   }
   return 120000;
+}
+
+function resolveEvolutionWorkerJoinRetryMs(flags = {}, sessionRecord = null, joinTargetNodeId = null) {
+  const candidates = [
+    flags.join_request_retry_ms,
+    flags["join-request-retry-ms"],
+    sessionRecord && sessionRecord.join_request_retry_ms,
+    flags.discovery_interval_ms,
+    flags["discovery-interval-ms"]
+  ];
+  for (const candidate of candidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value) && value > 0) return Math.max(1000, value);
+  }
+  return joinTargetNodeId ? 120000 : 15000;
 }
 
 function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClient, transportStatus, workerPool, flags = {}, generatedAt, workerPrompt } = {}) {
