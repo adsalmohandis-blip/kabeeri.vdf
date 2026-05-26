@@ -1,0 +1,17 @@
+﻿flowchart LR
+  W[Worker Laptop] -->|1. advertise readiness| T[Wi-Fi / LAN Transport]
+  W -->|2. discover master| T
+  W -->|3. worker_join_request| T
+
+  T -->|4. discovery / packet ingress| M[Master Laptop]
+  M -->|5. see candidate or join packet| M
+  M -->|6. trust / pair / promote| M
+  M -->|7. assignment_packet| T
+
+  T -->|8. assignment_packet| W
+  W -->|9. heartbeat packets| T
+  W -->|10. worker_result / completion| T
+  T -->|11. completion acknowledgement| M
+
+  G[multi_ai_governance] -. decides policy / trust / approval / review .-> M
+  G -. does not execute work .-> W

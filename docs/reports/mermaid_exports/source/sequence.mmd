@@ -1,0 +1,20 @@
+﻿sequenceDiagram
+  participant Worker as Worker Laptop
+  participant LAN as Wi-Fi / LAN Transport
+  participant Master as Master Laptop
+  participant Gov as multi_ai_governance
+
+  Worker->>LAN: advertise readiness
+  Worker->>LAN: discover master
+  Worker->>LAN: worker_join_request (bootstrap)
+  LAN->>Master: join request packet
+  Master->>Gov: evaluate worker join / trust / assignment policy
+  Gov-->>Master: allow / warn / block / require_owner_approval
+  Master->>LAN: assignment_packet
+  LAN->>Worker: assignment_packet
+  Worker->>LAN: heartbeat packets
+  LAN->>Master: heartbeat packets
+  Worker->>LAN: worker_result / completion
+  LAN->>Master: completion packet
+  Master->>Gov: acknowledge and review result
+  Gov-->>Master: final decision / review state

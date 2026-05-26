@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+    <svg viewBox="0 0 654 1778" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Planner visual diagram">
+      <defs>
+        <marker id="kvdf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+        </marker>
+      </defs>
+      <g><path d="M 164 90 C 164 114, 490 128, 490 152" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 218 C 490 242, 164 256, 164 280" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 218 C 490 242, 490 384, 490 408" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 346 C 164 370, 164 512, 164 536" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 474 C 490 498, 164 512, 164 536" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 602 C 164 626, 490 640, 490 664" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 858 C 164 882, 490 896, 490 920" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 986 C 490 1010, 164 1024, 164 1048" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 1114 C 164 1138, 490 1152, 490 1176" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 1242 C 490 1266, 164 1280, 164 1304" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 1370 C 164 1394, 490 1408, 490 1432" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 1498 C 490 1522, 164 1536, 164 1560" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 1626 C 164 1650, 490 1664, 490 1688" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path></g>
+      <g>
+      <g transform="translate(24, 24)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">B</text>
+        
+      </g>
+      <g transform="translate(350, 152)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Refresh Wi-Fi/LAN</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Discovery Via Wifi Data Sharing</text>
+      </g>
+      <g transform="translate(24, 280)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Advertise Master</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">On Network</text>
+      </g>
+      <g transform="translate(350, 408)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Scan For</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Workers</text>
+      </g>
+      <g transform="translate(24, 536)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Collect Discovered</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Candidates</text>
+      </g>
+      <g transform="translate(350, 664)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Build Worker</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Pool View</text>
+      </g>
+      <g transform="translate(24, 792)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">M</text>
+        
+      </g>
+      <g transform="translate(350, 920)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Materialize Approved</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Assignment Packet</text>
+      </g>
+      <g transform="translate(24, 1048)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Send Assignment</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Packet To Worker</text>
+      </g>
+      <g transform="translate(350, 1176)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Receive Heartbeat</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Packets</text>
+      </g>
+      <g transform="translate(24, 1304)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Receive Completion/result</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Packet</text>
+      </g>
+      <g transform="translate(350, 1432)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Acknowledge Completion</text>
+        
+      </g>
+      <g transform="translate(24, 1560)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Review Result</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Locally</text>
+      </g>
+      <g transform="translate(350, 1688)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Commit And</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Push Only From Master Laptop</text>
+      </g></g>
+    </svg>

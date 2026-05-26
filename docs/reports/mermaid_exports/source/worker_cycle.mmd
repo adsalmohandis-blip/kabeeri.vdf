@@ -1,0 +1,16 @@
+﻿flowchart TD
+  A[Start worker session\nkvdf multi-ai evolution session worker --watch] --> B[Load local project and Wi-Fi runtime state]
+  B --> C[Advertise readiness on Wi-Fi/LAN]
+  B --> D[Actively discover master on Wi-Fi/LAN]
+  C --> E[Send bootstrap worker_join_request]
+  D --> E
+  E --> F{Master visible or join accepted?}
+  F -- No --> G[Keep retrying in readiness mode]
+  G --> C
+  F -- Yes --> H[Wait for assignment packet]
+  H --> I[Accept only approved scoped task]
+  I --> J[Edit only leased files]
+  J --> K[Run assigned tests]
+  K --> L[Send heartbeat packets while working]
+  L --> M[Send completion/result packet]
+  M --> N[Wait for master acknowledgement]

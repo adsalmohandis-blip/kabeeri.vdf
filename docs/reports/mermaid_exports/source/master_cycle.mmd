@@ -1,0 +1,21 @@
+﻿flowchart TD
+  A[Start master session\nkvdf multi-ai evolution session master --watch] --> B[Load local governance state from .kabeeri]
+  B --> C[Refresh Wi-Fi/LAN discovery via wifi_data_sharing]
+  C --> D[Advertise master on network]
+  C --> E[Scan for workers]
+  D --> F[Collect discovered candidates]
+  E --> F
+  F --> G[Build worker pool view]
+  G --> H{Any trusted or ready worker?}
+  H -- No --> I[Stay in attention/warn\nkeep scanning]
+  H -- Yes --> J[Ingest join requests / heartbeats / results]
+  J --> K{Worker join request received?}
+  K -- No --> L[Continue watching]
+  K -- Yes --> M[Promote worker to trusted pool]
+  M --> N[Materialize approved assignment packet]
+  N --> O[Send assignment packet to worker]
+  O --> P[Receive heartbeat packets]
+  P --> Q[Receive completion/result packet]
+  Q --> R[Acknowledge completion]
+  R --> S[Review result locally]
+  S --> T[Commit and push only from master laptop]

@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+    <svg viewBox="0 0 654 1522" preserveAspectRatio="xMinYMin meet" role="img" aria-label="Planner visual diagram">
+      <defs>
+        <marker id="kvdf-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"></path>
+        </marker>
+      </defs>
+      <g><path d="M 164 90 C 164 114, 490 128, 490 152" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 90 C 164 114, 164 256, 164 280" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 218 C 490 242, 490 384, 490 408" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 346 C 164 370, 490 384, 490 408" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 602 C 164 626, 490 128, 490 152" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 730 C 490 754, 164 768, 164 792" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 858 C 164 882, 490 896, 490 920" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 986 C 490 1010, 164 1024, 164 1048" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 1114 C 164 1138, 490 1152, 490 1176" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 490 1242 C 490 1266, 164 1280, 164 1304" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path><path d="M 164 1370 C 164 1394, 490 1408, 490 1432" fill="none" stroke="#64748b" stroke-width="2.2" marker-end="url(#kvdf-arrow)" vector-effect="non-scaling-stroke"></path></g>
+      <g>
+      <g transform="translate(24, 24)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">B</text>
+        
+      </g>
+      <g transform="translate(350, 152)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Advertise Readiness</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">On Wi-Fi/LAN</text>
+      </g>
+      <g transform="translate(24, 280)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Actively Discover</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Master On Wi-Fi/LAN</text>
+      </g>
+      <g transform="translate(350, 408)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Send Bootstrap</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Worker Join Request</text>
+      </g>
+      <g transform="translate(24, 536)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">G</text>
+        
+      </g>
+      <g transform="translate(350, 664)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">H</text>
+        
+      </g>
+      <g transform="translate(24, 792)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Accept Only</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Approved Scoped Task</text>
+      </g>
+      <g transform="translate(350, 920)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Edit Only</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Leased Files</text>
+      </g>
+      <g transform="translate(24, 1048)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Run Assigned</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Tests</text>
+      </g>
+      <g transform="translate(350, 1176)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Send Heartbeat</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Packets While Working</text>
+      </g>
+      <g transform="translate(24, 1304)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Send Completion/result</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Packet</text>
+      </g>
+      <g transform="translate(350, 1432)">
+        <rect rx="16" ry="16" width="280" height="66" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.6" vector-effect="non-scaling-stroke"></rect>
+        <text x="140" y="27" text-anchor="middle" font-size="16" font-weight="650" fill="#0f172a">Wait For</text>
+        <text x="140" y="49" text-anchor="middle" font-size="13" fill="#475569">Master Acknowledgement</text>
+      </g></g>
+    </svg>
