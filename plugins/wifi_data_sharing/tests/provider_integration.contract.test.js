@@ -97,6 +97,52 @@ test("canSendPackage blocks revoked node", () => withTempRepo((dir) => {
   assert.strictEqual(report.can_send, false);
 }));
 
+test("worker join bootstrap packets can target a discovered master without pre-existing trust", () => withTempRepo((dir) => {
+  const current = state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
+  state.writeWifiDataSharingState({
+    ...current,
+    discovery: {
+      ...(current.discovery || {}),
+      enabled: true,
+      mode: "advertise",
+      known_candidates: [
+        {
+          node_id: "wifi-node-master",
+          display_name: "Master Laptop",
+          hostname: "MASTER",
+          platform: "win32",
+          trust_role: "owner",
+          trust_status: "candidate",
+          first_seen_at: new Date().toISOString(),
+          last_seen_at: new Date().toISOString()
+        }
+      ]
+    },
+    trusted_nodes: []
+  });
+  const joinPacket = transfer.createPackage({
+    packageType: "worker_join_request",
+    title: "Worker join request",
+    payload: {
+      report_type: "multi_ai_evolution_worker_join_request",
+      session_id: "session-001",
+      sender_node_id: current.local_node.node_id,
+      target_node_id: "wifi-node-master",
+      ready_flag: true
+    },
+    payloadEncoding: "json"
+  });
+  const blocked = provider.canSendPackage(joinPacket.package, "wifi-node-master");
+  assert.strictEqual(blocked.status, "blocked");
+  assert.match(blocked.next_action, /trusted/i);
+  const allowed = provider.canSendPackage(joinPacket.package, "wifi-node-master", { bootstrap: true });
+  assert.ok(["pass", "warn"].includes(allowed.status));
+  assert.strictEqual(allowed.can_send, true);
+  assert.strictEqual(allowed.bootstrap_packet, true);
+  const sent = provider.sendPackage(joinPacket.package.package_id, "wifi-node-master", { bootstrap: true, confirm: true });
+  assert.strictEqual(sent.status, "ok");
+}));
+
 test("multi_ai_governance manifest has optional wifi_data_sharing integration", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "..", "multi_ai_governance", "plugin.json"), "utf8"));
   const optional = Array.isArray(manifest.optional_integrations) ? manifest.optional_integrations : [];

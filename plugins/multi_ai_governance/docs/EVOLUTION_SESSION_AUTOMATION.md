@@ -18,11 +18,13 @@ workflow for a master laptop and a worker laptop.
    assignment packet to the trusted worker node.
 3. The worker laptop starts a session watcher that advertises readiness and
    reads the Wi-Fi inbox.
-4. When the master discovers trusted ready worker nodes, it broadcasts the
+4. The worker laptop sends a bootstrap `worker_join_request` packet so the
+   master can see the worker even before trust is finalized.
+5. When the master discovers trusted ready worker nodes, it broadcasts the
    approved assignment packet to all of them automatically.
-5. The worker laptop also sends periodic heartbeats so the master can tell
+6. The worker laptop also sends periodic heartbeats so the master can tell
    which workers are fresh, ready, or stale.
-6. When a worker receives an approved assignment packet, it records the
+7. When a worker receives an approved assignment packet, it records the
    applied assignment locally, can submit a completion packet back to the
    master, and keeps waiting for later broadcasts.
 
@@ -50,6 +52,8 @@ kvdf multi-ai evolution session worker --watch
 - If the bridge decision is blocked, the session does not broadcast.
 - If a worker stops heartbeating, the master requeues the assignment to a
   fresh ready worker instead of reusing the stale node.
+- The worker join packet is a governed bootstrap packet. It helps the worker
+  become visible to the master without turning discovery into trust.
 - If a worker comes back after a timeout, it can send a fresh join request and
   the master records the worker as recovered.
 - If the worker sends a completion packet, the master records the completion

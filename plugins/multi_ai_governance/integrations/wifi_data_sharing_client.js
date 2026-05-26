@@ -103,13 +103,17 @@ function sendWorkerSessionPacket(packetType, packet, targetNodeId, options = {})
     };
   }
   const payload = normalizeWorkerSessionPacket(packetType, packet);
+  const bootstrapPacket = ["worker_join_request", "worker_heartbeat", "worker_result"].includes(String(packetType || "").trim().toLowerCase());
   const packageDescriptor = {
     packet_type: packetType,
     title: payload.title,
     payload,
     payload_encoding: "json"
   };
-  const allowed = provider.canSendPackage(packageDescriptor, targetNodeId, options);
+  const allowed = provider.canSendPackage(packageDescriptor, targetNodeId, {
+    ...options,
+    bootstrap: bootstrapPacket || Boolean(options.bootstrap)
+  });
   if (!allowed || allowed.status === "blocked" || allowed.can_send === false) {
     return allowed || {
       status: "blocked",
@@ -122,9 +126,15 @@ function sendWorkerSessionPacket(packetType, packet, targetNodeId, options = {})
     title: payload.title,
     payload,
     payloadEncoding: "json"
-  }, options);
+  }, {
+    ...options,
+    bootstrap: bootstrapPacket || Boolean(options.bootstrap)
+  });
   if (!created || created.status === "blocked") return created;
-  return provider.sendPackage(created.package.package_id, targetNodeId, options);
+  return provider.sendPackage(created.package.package_id, targetNodeId, {
+    ...options,
+    bootstrap: bootstrapPacket || Boolean(options.bootstrap)
+  });
 }
 
 function normalizeWorkerJoinRequest(packet = {}) {

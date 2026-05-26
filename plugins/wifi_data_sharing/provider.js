@@ -19,6 +19,12 @@ const ALLOWED_CORE_MODULES = new Set(
     .filter(Boolean)
 );
 
+const BOOTSTRAP_PACKAGE_TYPES = new Set([
+  "worker_join_request",
+  "worker_heartbeat",
+  "worker_result"
+]);
+
 function getProviderInfo() {
   return {
     provider_id: manifest.plugin_id,
@@ -152,7 +158,8 @@ function sendPackage(packageId, targetNodeId, options = {}) {
   return transfer.sendPackage({
     packageId,
     targetNodeId,
-    confirm: Boolean(options.confirm)
+    confirm: Boolean(options.confirm),
+    bootstrap: Boolean(options.bootstrap)
   });
 }
 
@@ -511,19 +518,30 @@ function evaluateCanSendPackage(packageDescriptor, targetNodeId, options = {}) {
   if (!targetId) {
     return buildBlockedCanSendReport("Target node id is required.", normalized, targetNodeId);
   }
-  const targetNode = trustedNodes.findTrustedNodeRecord(current, targetId);
+  const packageType = String(normalized.package_type || normalized.packet_type || "").trim().toLowerCase();
+  if (!transfer.ALLOWED_PACKAGE_TYPES.has(packageType)) {
+    return buildBlockedCanSendReport(`Unsupported package type: ${packageType || "unknown"}.`, normalized, targetId);
+  }
+  const trustedTargetNode = trustedNodes.findTrustedNodeRecord(current, targetId);
+  const discoveredTargetNode = Array.isArray(current.discovery && current.discovery.known_candidates)
+    ? current.discovery.known_candidates.find((item) => item && item.node_id === targetId)
+    : null;
+  const targetNode = trustedTargetNode || discoveredTargetNode || null;
+  const allowBootstrap = Boolean(options.bootstrap) && BOOTSTRAP_PACKAGE_TYPES.has(packageType);
   if (!targetNode) {
-    return buildBlockedCanSendReport("Target node is not trusted.", normalized, targetId);
+    return buildBlockedCanSendReport(
+      allowBootstrap
+        ? "Target node must be discoverable before sending a bootstrap worker packet."
+        : "Target node is not trusted.",
+      normalized,
+      targetId
+    );
   }
   if (targetNode.trust_status === "revoked") {
     return buildBlockedCanSendReport("Target node is revoked.", normalized, targetId);
   }
-  if (targetNode.trust_status !== "trusted") {
+  if (targetNode.trust_status !== "trusted" && !allowBootstrap) {
     return buildBlockedCanSendReport("Target node is not trusted.", normalized, targetId);
-  }
-  const packageType = String(normalized.package_type || normalized.packet_type || "").trim().toLowerCase();
-  if (!transfer.ALLOWED_PACKAGE_TYPES.has(packageType)) {
-    return buildBlockedCanSendReport(`Unsupported package type: ${packageType || "unknown"}.`, normalized, targetId);
   }
   const packageSizeBytes = resolvePackageSize(normalized);
   if (packageSizeBytes > Number(current.policies && current.policies.max_package_bytes ? current.policies.max_package_bytes : transfer.PACKAGE_SIZE_LIMIT)) {
@@ -549,6 +567,7 @@ function evaluateCanSendPackage(packageDescriptor, targetNodeId, options = {}) {
     package_size_bytes: packageSizeBytes,
     target_node_id: targetId,
     target_trust_status: targetNode.trust_status,
+    bootstrap_packet: allowBootstrap,
     transfer_mode: transferMode,
     blockers: [],
     warnings,

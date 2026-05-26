@@ -37,10 +37,19 @@ const {
 const ALLOWED_PACKAGE_TYPES = new Set([
   "generic_json",
   "assignment_packet",
+  "worker_join_request",
+  "worker_heartbeat",
+  "worker_result",
   "evidence_packet",
   "state_snapshot",
   "text_note",
   "file_blob"
+]);
+
+const BOOTSTRAP_PACKAGE_TYPES = new Set([
+  "worker_join_request",
+  "worker_heartbeat",
+  "worker_result"
 ]);
 
 const DEFAULT_TCP_PORT = 47633;
@@ -149,7 +158,7 @@ function createPackage({ packageType, inputPath, title, payload = null, payloadE
   };
 }
 
-function sendPackage({ packageId, targetNodeId, confirm = false }) {
+function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = false }) {
   const state = ensureWifiDataSharingState();
   assertInitialized(state);
   if (!confirm) {
@@ -168,14 +177,25 @@ function sendPackage({ packageId, targetNodeId, confirm = false }) {
   if (!verifyPackageHash(packageRecord)) {
     return buildBlockedSendReport("Package hash validation failed.", packageId, targetNodeId);
   }
-  const targetNode = findTrustedNodeRecord(state, targetNodeId);
+  const trustedTargetNode = findTrustedNodeRecord(state, targetNodeId);
+  const candidateTargetNode = Array.isArray(state.discovery && state.discovery.known_candidates)
+    ? state.discovery.known_candidates.find((item) => item && item.node_id === targetNodeId)
+    : null;
+  const targetNode = trustedTargetNode || candidateTargetNode || null;
+  const allowBootstrap = Boolean(bootstrap) && BOOTSTRAP_PACKAGE_TYPES.has(packageRecord.package_type);
   if (!targetNode) {
-    return buildBlockedSendReport("Target node is not trusted.", packageId, targetNodeId);
+    return buildBlockedSendReport(
+      allowBootstrap
+        ? "Target node must be discoverable before sending a bootstrap packet."
+        : "Target node is not trusted.",
+      packageId,
+      targetNodeId
+    );
   }
   if (targetNode.trust_status === "revoked") {
     return buildBlockedSendReport("Target node is revoked.", packageId, targetNodeId);
   }
-  if (targetNode.trust_status !== "trusted") {
+  if (targetNode.trust_status !== "trusted" && !allowBootstrap) {
     return buildBlockedSendReport("Target node is not trusted.", packageId, targetNodeId);
   }
   const now = new Date().toISOString();
@@ -202,6 +222,7 @@ function sendPackage({ packageId, targetNodeId, confirm = false }) {
     received_at: now,
     transport: "local_transfer",
     confirm_required: true,
+    bootstrap_packet: allowBootstrap,
     transfer_mode: transferMode,
     outbox_id: outboxId,
     session_id: sessionId
