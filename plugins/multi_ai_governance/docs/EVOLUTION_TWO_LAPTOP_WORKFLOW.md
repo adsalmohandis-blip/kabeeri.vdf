@@ -40,6 +40,8 @@ This workflow keeps one machine as the master laptop and one or more machines as
 - If a worker stops heartbeating, do not assign new work until the worker is fresh again or the assignment is requeued.
 - If a worker times out and then rejoins, the master should treat it as a recovered worker and return it to the pool only after a fresh join or heartbeat.
 - The worker session report should show a master overview line so the worker can see whether the current assignment is pending, completed, or recovering.
+- Both master and worker session views should show a session health indicator
+  such as `healthy`, `attention`, or `recovery`.
 
 ## Outputs
 

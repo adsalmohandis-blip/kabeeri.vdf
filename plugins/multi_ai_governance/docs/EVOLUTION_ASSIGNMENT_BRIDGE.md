@@ -14,6 +14,8 @@ be translated into a safe, master-led task assignment plan.
 - Records the assignment plan under `.kabeeri/multi_ai_governance/`.
 - Surfaces a master status summary with active, stale, recovered, pending, and
   completed counts.
+- Surfaces a session health indicator so the master view can distinguish
+  healthy, attention, and recovery states at a glance.
 
 ## Commands
 

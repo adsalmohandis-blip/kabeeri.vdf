@@ -140,6 +140,8 @@ test("safe evolution priorities can be assigned to the master/worker bridge", ()
   assert.strictEqual(statusReport.master_summary.active_workers, 1);
   assert.strictEqual(statusReport.master_summary.stale_workers, 0);
   assert.strictEqual(statusReport.master_summary.pending_assignments, 1);
+  assert.strictEqual(statusReport.session_health, "attention");
+  assert.match(bootstrap.renderMultiAiEvolutionAssignmentBridgeReport(statusReport), /Session health:/i);
 
   assert.strictEqual(assignReport.report_type, "multi_ai_evolution_assignment_bridge");
   assert.ok(assignReport.distribution_plan.should_distribute);
@@ -1189,14 +1191,17 @@ test("evolution session worker sends heartbeat and completion packets and the ma
   assert.strictEqual(workerReport.join_request_result.status, "requested");
   assert.strictEqual(workerReport.heartbeat_result.status, "sent");
   assert.strictEqual(workerReport.completion_result.status, "completed");
+  assert.strictEqual(workerReport.session_health, "attention");
   assert.strictEqual(wire.joinRequests.length, 1);
   assert.strictEqual(wire.heartbeats.length, 1);
   assert.strictEqual(wire.results.length, 1);
   assert.strictEqual(masterReport.worker_pool.ready_worker_count, 1);
   assert.ok(Array.isArray(masterReport.heartbeats) && masterReport.heartbeats.length >= 1);
   assert.ok(Array.isArray(masterReport.results) && masterReport.results.length >= 1);
+  assert.strictEqual(masterReport.session_health, "attention");
   assert.strictEqual(masterReport.current_assignment.status, "completed");
   assert.strictEqual(masterReport.completion_result.result_status, "completed");
+  assert.match(bootstrap.renderMultiAiEvolutionAssignmentSessionReport(workerReport), /Session health:/i);
   const bridgeState = readState(dir, ".kabeeri/multi_ai_governance/evolution_assignments.json");
   assert.strictEqual(bridgeState.current_assignment.status, "completed");
   const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
@@ -1267,5 +1272,6 @@ test("stale evolution workers are requeued instead of being assigned again", () 
 
   assert.strictEqual(report.worker_pool.stale_worker_count, 1);
   assert.strictEqual(report.worker_pool.ready_worker_count, 0);
+  assert.strictEqual(report.session_health, "attention");
   assert.match(report.next_action, /Stale worker heartbeats detected/i);
 }));
