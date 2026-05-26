@@ -2248,12 +2248,13 @@ function buildWorkerPrompt(report, workerIds = []) {
     "",
     "Worker steps:",
     "1. Start `kvdf multi-ai evolution session worker --watch` on the worker laptop.",
-    "2. Accept only the assigned task scope.",
-    "3. Edit only leased files.",
-    "4. Run the relevant tests.",
-    "5. Report changed files, results, blockers, and risks.",
-    "6. If the work is complete, send the worker completion packet to the master laptop.",
-    "7. Wait for the master laptop to review and push."
+    "2. Keep advertising readiness and actively discover the master laptop on Wi-Fi/LAN.",
+    "3. Accept only the assigned task scope after the master is visible.",
+    "4. Edit only leased files.",
+    "5. Run the relevant tests.",
+    "6. Report changed files, results, blockers, and risks.",
+    "7. If the work is complete, send the worker completion packet to the master laptop.",
+    "8. Wait for the master laptop to review and push."
   ].join("\n");
 }
 

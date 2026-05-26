@@ -8,6 +8,8 @@ const bootstrap = require("../bootstrap");
 const multiAiGovernance = require("../commands/multi_ai_governance");
 const ideGovernance = require("../commands/ide_window_governance");
 const localGovernance = require("../commands/local_project_governance");
+const pluginLoader = require("../../../src/cli/services/plugin_loader");
+const pluginMounts = require("../../../src/cli/services/plugin_mounts");
 
 function test(name, fn) {
   try {
@@ -64,6 +66,23 @@ function silenceConsole(fn) {
   }
 }
 
+function withPatchedWifiClientBootstrap(patch, fn) {
+  const wifiClientPath = require.resolve("../integrations/wifi_data_sharing_client");
+  const originalGetStatus = pluginLoader.getPluginRuntimeStatus;
+  const originalLoadBootstrap = pluginMounts.loadPluginBootstrap;
+  delete require.cache[wifiClientPath];
+  pluginLoader.getPluginRuntimeStatus = patch.getPluginRuntimeStatus || originalGetStatus;
+  pluginMounts.loadPluginBootstrap = patch.loadPluginBootstrap || originalLoadBootstrap;
+  try {
+    const wifiClient = require("../integrations/wifi_data_sharing_client");
+    return fn(wifiClient);
+  } finally {
+    pluginLoader.getPluginRuntimeStatus = originalGetStatus;
+    pluginMounts.loadPluginBootstrap = originalLoadBootstrap;
+    delete require.cache[wifiClientPath];
+  }
+}
+
 function seedEvolutionPriority(dir, title, summary) {
   const state = {
     development_priorities: [
@@ -116,6 +135,49 @@ test("bootstrap exposes the evolution assignment bridge", () => {
   assert.strictEqual(typeof bootstrap.renderMultiAiEvolutionAssignmentWorkflowReport, "function");
   assert.strictEqual(typeof bootstrap.buildMultiAiEvolutionAssignmentSessionReport, "function");
   assert.strictEqual(typeof bootstrap.renderMultiAiEvolutionAssignmentSessionReport, "function");
+});
+
+test("wifi worker discovery bootstrap scans and advertises together", () => {
+  const calls = [];
+  return withPatchedWifiClientBootstrap({
+    getPluginRuntimeStatus: () => ({ available: true, enabled: true }),
+    loadPluginBootstrap: () => ({
+      discovery: {
+        runDiscoverCommand: () => {
+          calls.push("discover");
+          return Promise.resolve({
+            status: "ok",
+            mode: "discover",
+            candidates: [{ node_id: "wifi-node-master", trust_role: "owner" }]
+          });
+        },
+        runAdvertiseCommand: () => {
+          calls.push("advertise");
+          return Promise.resolve({
+            status: "ok",
+            mode: "advertise",
+            candidates: [{ node_id: "wifi-node-worker", trust_role: "worker" }]
+          });
+        }
+      },
+      providerApi: {
+        getProviderInfo: () => ({ provider_id: "wifi_data_sharing" }),
+        listCandidates: () => [{ node_id: "wifi-node-master", trust_role: "owner" }],
+        listTrustedNodes: () => [{ node_id: "wifi-node-master", trust_role: "owner" }]
+      }
+    })
+  }, (wifiClient) => {
+    const result = wifiClient.refreshWifiDataSharingDiscovery("worker", { watch: true });
+    assert.strictEqual(result.status, "ok");
+    assert.strictEqual(result.mode, "worker");
+    assert.ok(result.discover_result);
+    assert.ok(result.advertise_result);
+    assert.strictEqual(result.discover_result.status, "started");
+    assert.strictEqual(result.advertise_result.status, "started");
+    assert.deepStrictEqual(result.candidates, [{ node_id: "wifi-node-master", trust_role: "owner" }]);
+    assert.deepStrictEqual(result.trusted_nodes, [{ node_id: "wifi-node-master", trust_role: "owner" }]);
+    assert.deepStrictEqual(calls, ["discover", "advertise"]);
+  });
 });
 
 test("safe evolution priorities can be assigned to the master/worker bridge", () => withTempRepo((dir) => {

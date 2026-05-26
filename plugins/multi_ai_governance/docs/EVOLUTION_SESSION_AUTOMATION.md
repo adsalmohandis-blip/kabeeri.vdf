@@ -17,8 +17,8 @@ workflow for a master laptop and a worker laptop.
 2. The master laptop starts a session watcher that advertises itself on Wi-Fi/LAN,
    discovers trusted worker nodes, and broadcasts the approved assignment packet
    to the trusted worker node.
-3. The worker laptop starts a session watcher that advertises readiness and
-   reads the Wi-Fi inbox.
+3. The worker laptop starts a session watcher that advertises readiness,
+   actively discovers the master on Wi-Fi/LAN, and reads the Wi-Fi inbox.
 4. The worker laptop sends a bootstrap `worker_join_request` packet so the
    master can see the worker even before trust is finalized.
 5. When the master discovers trusted ready worker nodes, it broadcasts the

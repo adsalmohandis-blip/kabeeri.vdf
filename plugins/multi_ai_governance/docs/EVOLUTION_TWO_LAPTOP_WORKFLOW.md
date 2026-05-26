@@ -24,7 +24,7 @@ This workflow keeps one machine as the master laptop and one or more machines as
 2. If the bridge decision is safe, run `kvdf multi-ai evolution assign`.
 3. Start the session watcher on the master laptop with `kvdf multi-ai evolution session master --watch`.
 4. Start the session watcher on the worker laptop with `kvdf multi-ai evolution session worker --watch`.
-5. The worker laptop sends a bootstrap join request over Wi-Fi/LAN so the master can see it even before trust is finalized.
+5. The worker laptop advertises readiness, discovers the master over Wi-Fi/LAN, and sends a bootstrap join request so the master can see it even before trust is finalized.
 6. The master laptop advertises itself, scans the LAN, discovers trusted ready worker nodes, and broadcasts the approved assignment packet automatically over Wi-Fi/LAN.
 6. The worker laptop advertises readiness, sends periodic heartbeats, watches the inbox, applies the approved assignment packet, and can submit a completion packet back to the master.
 7. If a worker goes stale, the master requeues the assignment to a fresh ready worker rather than reusing the stale node.

@@ -68,31 +68,70 @@ function refreshWifiDataSharingDiscovery(mode = "discover", flags = {}) {
       next_action: "wifi_data_sharing discovery commands are unavailable."
     };
   }
+  const startAndForget = (task) => {
+    if (!task || typeof task.then !== "function") return null;
+    task.catch(() => {});
+    return task;
+  };
+  const buildStartedReport = (currentMode, nextAction, extras = {}) => ({
+    status: "ok",
+    available: true,
+    mode: currentMode,
+    discovery_started: Boolean(extras.discover_started),
+    advertise_started: Boolean(extras.advertise_started),
+    candidates: listWifiDataSharingCandidates(),
+    trusted_nodes: listTrustedWifiNodes(),
+    next_action: nextAction,
+    ...extras
+  });
   if (mode === "master") {
     const advertiseResult = typeof discovery.runAdvertiseCommand === "function"
-      ? discovery.runAdvertiseCommand(flags)
+      ? startAndForget(discovery.runAdvertiseCommand(flags))
       : null;
     const discoverResult = typeof discovery.runDiscoverCommand === "function"
-      ? discovery.runDiscoverCommand(flags)
+      ? startAndForget(discovery.runDiscoverCommand(flags))
       : null;
-    return {
-      status: advertiseResult && advertiseResult.status === "blocked"
-        ? advertiseResult.status
-        : discoverResult && discoverResult.status === "blocked"
-          ? discoverResult.status
-          : "ok",
-      available: true,
-      mode,
-      advertise_result: advertiseResult,
-      discover_result: discoverResult,
-      next_action: "The master laptop advertises itself and scans for trusted worker nodes."
-    };
+    return buildStartedReport(mode, "The master laptop advertises itself and scans for trusted worker nodes.", {
+      advertise_started: Boolean(advertiseResult),
+      discover_started: Boolean(discoverResult),
+      advertise_result: advertiseResult ? { status: "started", mode: "advertise" } : null,
+      discover_result: discoverResult ? { status: "started", mode: "discover" } : null
+    });
+  }
+  if (mode === "worker") {
+    const discoverResult = typeof discovery.runDiscoverCommand === "function"
+      ? startAndForget(discovery.runDiscoverCommand(flags))
+      : null;
+    const advertiseResult = typeof discovery.runAdvertiseCommand === "function"
+      ? startAndForget(discovery.runAdvertiseCommand(flags))
+      : null;
+    return buildStartedReport(mode, "The worker laptop advertises itself, discovers the master laptop, and waits for a trusted join.", {
+      discover_started: Boolean(discoverResult),
+      advertise_started: Boolean(advertiseResult),
+      discover_result: discoverResult ? { status: "started", mode: "discover" } : null,
+      advertise_result: advertiseResult ? { status: "started", mode: "advertise" } : null
+    });
   }
   if (mode === "advertise" && typeof discovery.runAdvertiseCommand === "function") {
-    return discovery.runAdvertiseCommand(flags);
+    const advertiseResult = startAndForget(discovery.runAdvertiseCommand(flags));
+    return buildStartedReport(mode, "The node advertises itself on Wi-Fi/LAN.", {
+      advertise_started: Boolean(advertiseResult),
+      advertise_result: advertiseResult ? { status: "started", mode: "advertise" } : null
+    });
+  }
+  if (mode === "discover" && typeof discovery.runDiscoverCommand === "function") {
+    const discoverResult = startAndForget(discovery.runDiscoverCommand(flags));
+    return buildStartedReport(mode, "The node scans the LAN for trusted candidates.", {
+      discover_started: Boolean(discoverResult),
+      discover_result: discoverResult ? { status: "started", mode: "discover" } : null
+    });
   }
   if (typeof discovery.runDiscoverCommand === "function") {
-    return discovery.runDiscoverCommand(flags);
+    const discoverResult = startAndForget(discovery.runDiscoverCommand(flags));
+    return buildStartedReport("discover", "The node scans the LAN for trusted candidates.", {
+      discover_started: Boolean(discoverResult),
+      discover_result: discoverResult ? { status: "started", mode: "discover" } : null
+    });
   }
   return {
     status: "blocked",
