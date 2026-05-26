@@ -644,6 +644,9 @@ Notes:
   kvdf multi-ai conversation close --conversation multi-ai-conversation-001
   kvdf multi-ai sync
   kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
+  kvdf multi-ai evolution status
+  kvdf multi-ai evolution assign
+  kvdf multi-ai evolution workflow
   kvdf multi-ai queue add --ai agent-001 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
   kvdf multi-ai queue list
   kvdf multi-ai queue start multi-ai-queue-001
@@ -660,7 +663,7 @@ Notes:
   kvdf schedule route task-001 --to deferred
 
 Notes:
-Multi-AI Governance keeps Evolution as the global priority governor, gives the first active AI entry Leader orchestration status, stores agent hub entries and leader leases with heartbeat and call tracking, can sync and distribute the active Evolution temporary queue across workers, advances queue slices through a durable lifecycle, and records semantic merge bundles with semantic surface plans so several AI tools can work from the same repo without trampling each other. The Leader does not execute by default; execution requires explicit Owner delegation for a scoped slice. If the Leader disappears or stops answering calls, the hub promotes the next active agent after the lease rules are exceeded.
+Multi-AI Governance keeps Evolution as the global priority governor, gives the first active AI entry Leader orchestration status, stores agent hub entries and leader leases with heartbeat and call tracking, can sync and distribute the active Evolution temporary queue across workers, advances queue slices through a durable lifecycle, and records semantic merge bundles with semantic surface plans so several AI tools can work from the same repo without trampling each other. The Evolution assignment bridge now links the owner/developer pipeline to governed worker assignment so the master laptop can stay the canonical output owner while distribution remains conflict-free, and kvdf multi-ai evolution workflow prints a ready-to-use master checklist plus worker prompt. The Leader does not execute by default; execution requires explicit Owner delegation for a scoped slice. If the Leader disappears or stops answering calls, the hub promotes the next active agent after the lease rules are exceeded.
   kvdf multi-ai agent next --ai <agent-id> --count <n> lets a worker claim the next available Evolution priorities in order, so AI tools can pull from the live priority list instead of waiting for a manual task handoff.
 The conversation relay layer is separate from leader calls: use it for durable agent-to-agent messages, inboxes, replies, and closing threads without relying on chat history.
 `,
@@ -1655,7 +1658,7 @@ function printHelp() {
     "  trace report|status|show|list          Build the end-to-end traceability report for tasks, assessments, ADRs, AI runs, docs, and tests",
     "  change report|status|show|list          Build the change-control report for risks, change requests, and mitigation notes",
     "  workstream list|show|add     Manage workstream runtime boundaries",
-    "  multi-ai status|leader|agent|conversation|queue|merge|sync Orchestrate multi-AI governance, leader sessions, queues, and merges",
+  "  multi-ai status|leader|agent|conversation|queue|merge|sync|evolution Orchestrate multi-AI governance, leader sessions, queues, merges, and Evolution-led assignment planning; use `multi-ai evolution workflow` for the master/worker handoff prompt",
     "  ai-tool-adapter status|scan|list|register|unregister|show Discover and register local AI tools without executing them",
     "  ai-tool-adapter provider|capabilities|can-run Provider API and governed run readiness",
     "  ai-tool-adapter dashboard|readiness|evidence|audit Visibility, audit, and readiness reports",

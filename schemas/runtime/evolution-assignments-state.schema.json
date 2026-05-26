@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evolution Assignment Bridge State",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["version", "current_assignment", "assignments", "updated_at"],
+  "properties": {
+    "version": {
+      "type": "string"
+    },
+    "current_assignment": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "assignment_id",
+            "assignment_signature",
+            "evolution_priority_id",
+            "leader_ai_id",
+            "worker_ai_ids",
+            "assignment_mode",
+            "status",
+            "reason",
+            "next_action",
+            "created_at",
+            "updated_at"
+          ],
+          "properties": {
+            "assignment_id": { "type": "string" },
+            "assignment_signature": { "type": "string" },
+            "evolution_priority_id": { "type": ["string", "null"] },
+            "evolution_priority_title": { "type": ["string", "null"] },
+            "track": { "type": ["string", "null"] },
+            "leader_ai_id": { "type": ["string", "null"] },
+            "leader_session_id": { "type": ["string", "null"] },
+            "worker_ai_ids": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "assignment_mode": { "type": "string" },
+            "publication_policy": { "type": "object" },
+            "push_policy": { "type": "object" },
+            "case_summary": { "type": "array" },
+            "blocked_cases": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "requires_owner_approval": { "type": "boolean" },
+            "risk_level": { "type": "string" },
+            "status": { "type": "string" },
+            "reason": { "type": "string" },
+            "next_action": { "type": "string" },
+            "created_at": { "type": "string" },
+            "updated_at": { "type": "string" },
+            "generated_at": { "type": ["string", "null"] },
+            "applied_at": { "type": ["string", "null"] },
+            "distribution_result": { "type": ["object", "null"] }
+          }
+        }
+      ]
+    },
+    "assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "assignment_id",
+          "assignment_signature",
+          "evolution_priority_id",
+          "leader_ai_id",
+          "worker_ai_ids",
+          "assignment_mode",
+          "status",
+          "reason",
+          "next_action",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "assignment_id": { "type": "string" },
+          "assignment_signature": { "type": "string" },
+          "evolution_priority_id": { "type": ["string", "null"] },
+          "evolution_priority_title": { "type": ["string", "null"] },
+          "track": { "type": ["string", "null"] },
+          "leader_ai_id": { "type": ["string", "null"] },
+          "leader_session_id": { "type": ["string", "null"] },
+          "worker_ai_ids": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "assignment_mode": { "type": "string" },
+          "publication_policy": { "type": "object" },
+          "push_policy": { "type": "object" },
+          "case_summary": { "type": "array" },
+          "blocked_cases": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "requires_owner_approval": { "type": "boolean" },
+          "risk_level": { "type": "string" },
+          "status": { "type": "string" },
+          "reason": { "type": "string" },
+          "next_action": { "type": "string" },
+          "created_at": { "type": "string" },
+          "updated_at": { "type": "string" },
+          "generated_at": { "type": ["string", "null"] },
+          "applied_at": { "type": ["string", "null"] },
+          "distribution_result": { "type": ["object", "null"] }
+        }
+      }
+    },
+    "updated_at": {
+      "type": ["string", "null"]
+    }
+  }
+}

@@ -3,6 +3,7 @@
 The `multi-ai` command surface is owned by this bundle.
 
 - `multi_ai_governance.js`: leader sessions, agents, queues, merges, and sync.
+- `evolution_assignment_bridge.js`: Evolution-led master/worker task assignment across the governance cases and the generated two-laptop workflow handoff report.
 - `multi_ai_communications.js`: conversations, relay inboxes, and message flow.
 - `ide_window_governance.js`: IDE window sessions, tool presence, leases, conflicts, and policy decisions.
 - `local_project_governance.js`: project-wide machine, client, session, lease, conflict, and policy governance across IDEs and terminals.

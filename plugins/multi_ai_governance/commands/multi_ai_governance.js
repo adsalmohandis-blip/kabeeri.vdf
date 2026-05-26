@@ -15,9 +15,14 @@ const ideWindowGovernance = require("./ide_window_governance");
 const localProjectGovernance = require("./local_project_governance");
 const kcloudGovernance = require("./kcloud_governance");
 const githubProviderGovernance = require("./github_provider_governance");
+const evolutionAssignmentBridge = require("./evolution_assignment_bridge");
 
-function multiAiGovernance(action, value, flags = {}, deps = {}) {
-  const { appendAudit, rest = [] } = deps;
+function multiAiGovernance(action, value, flags = {}, deps = {}, extraDeps = {}) {
+  const mergedDeps = {
+    ...deps,
+    ...extraDeps
+  };
+  const { appendAudit, rest = [] } = mergedDeps;
   ensureWorkspace();
   if (isWifiAction(action)) {
     const report = wifiGovernance.multiAiWifiGovernance(action, value, flags, rest, { appendAudit });
@@ -54,6 +59,18 @@ function multiAiGovernance(action, value, flags = {}, deps = {}) {
   if (!localFileExists(file)) writeJsonFile(file, defaultMultiAiGovernanceState());
   const state = readJsonFile(file);
   ensureMultiAiGovernanceState(state);
+
+  if (isEvolutionBridgeAction(action)) {
+    ensureAutoLeaderSession(state, flags, appendAudit, "evolution");
+    const result = handleEvolutionBridgeAction(state, value, flags, appendAudit, rest, deps);
+    state.last_relay_sync = synchronizeRelayWithGovernance(state, { reason: "evolution" });
+    writeJsonFile(file, state);
+    const renderWorkflow = ["workflow", "guide", "handoff"].includes(normalizeSubaction(value, flags));
+    if (flags.json) console.log(JSON.stringify(result, null, 2));
+    else if (renderWorkflow && evolutionAssignmentBridge.renderEvolutionAssignmentWorkflowReport) console.log(evolutionAssignmentBridge.renderEvolutionAssignmentWorkflowReport(result));
+    else console.log(evolutionAssignmentBridge.renderEvolutionAssignmentBridgeReport ? evolutionAssignmentBridge.renderEvolutionAssignmentBridgeReport(result) : JSON.stringify(result, null, 2));
+    return result;
+  }
 
   if (!action || action === "status" || action === "summary") {
     ensureAutoLeaderSession(state, flags, appendAudit, "status");
@@ -134,6 +151,10 @@ function isKcloudAction(action) {
 
 function isGithubProviderAction(action) {
   return ["github-provider", "github_provider", "githubprovider", "github", "github-provider-governance"].includes(String(action || "").trim().toLowerCase());
+}
+
+function isEvolutionBridgeAction(action) {
+  return ["evolution", "evolution-bridge", "evolution_bridge", "evolution-assignment", "evolution_assignment"].includes(String(action || "").trim().toLowerCase());
 }
 
 function handleLeaderAction(state, value, flags, appendAudit, rest = []) {
@@ -1314,6 +1335,111 @@ function handleSyncAction(state, action, value, flags, appendAudit, rest = []) {
   throw new Error(`Unknown multi-ai sync action: ${subaction}`);
 }
 
+function handleEvolutionBridgeAction(state, value, flags, appendAudit, rest = [], deps = {}) {
+  const subaction = normalizeSubaction(value, flags) || "status";
+  const baseReport = evolutionAssignmentBridge.buildEvolutionAssignmentBridgeReport(state, flags, deps, {
+    operation: subaction
+  });
+
+  if (["status", "show", "report", "summary", "bridge"].includes(subaction)) {
+    if (appendAudit) {
+      appendAudit(
+        "multi_ai.evolution_assignment_status",
+        "multi_ai_evolution_assignment",
+        baseReport.current_assignment ? baseReport.current_assignment.assignment_id : "multi-ai-evolution-assignment",
+        `Evolution assignment bridge inspected: ${baseReport.status}`,
+        {
+          decision: baseReport.decision,
+          risk_level: baseReport.risk_level,
+          requires_owner_approval: baseReport.requires_owner_approval,
+          leader_ai_id: baseReport.current_assignment ? baseReport.current_assignment.leader_ai_id : null,
+          worker_ai_ids: baseReport.current_assignment ? baseReport.current_assignment.worker_ai_ids : []
+        }
+      );
+    }
+    return baseReport;
+  }
+
+  if (["workflow", "guide", "handoff"].includes(subaction)) {
+    const workflowReport = evolutionAssignmentBridge.buildEvolutionAssignmentWorkflowReport(state, flags, deps, {
+      operation: subaction
+    });
+    if (appendAudit) {
+      appendAudit(
+        "multi_ai.evolution_assignment_workflow",
+        "multi_ai_evolution_assignment",
+        workflowReport.current_assignment ? workflowReport.current_assignment.assignment_id : "multi-ai-evolution-assignment",
+        `Evolution two-laptop workflow generated: ${workflowReport.status}`,
+        {
+          decision: workflowReport.decision,
+          risk_level: workflowReport.risk_level,
+          requires_owner_approval: workflowReport.requires_owner_approval,
+          leader_ai_id: workflowReport.current_assignment ? workflowReport.current_assignment.leader_ai_id : null,
+          worker_ai_ids: workflowReport.current_assignment ? workflowReport.current_assignment.worker_ai_ids : []
+        }
+      );
+    }
+    return workflowReport;
+  }
+
+  if (["assign", "distribute", "plan", "route", "lead"].includes(subaction)) {
+    const plannedWorkers = Array.isArray(baseReport.distribution_plan && baseReport.distribution_plan.worker_ai_ids) ? baseReport.distribution_plan.worker_ai_ids : [];
+    const shouldDistribute = Boolean(baseReport.distribution_plan && baseReport.distribution_plan.should_distribute && !isTruthyFlag(flags["no-distribute"]));
+    const assignedAt = new Date().toISOString();
+    let distributionResult = null;
+    if (shouldDistribute) {
+      distributionResult = syncWithEvolution(state, {
+        ...flags,
+        leader_ai: baseReport.distribution_plan.leader_ai_id || (baseReport.current_assignment ? baseReport.current_assignment.leader_ai_id : null),
+        workers: plannedWorkers.join(","),
+        source: "evolution_bridge"
+      }, appendAudit, {
+        distribute: true,
+        rest
+      });
+      if (evolutionAssignmentBridge.markEvolutionAssignmentApplied && baseReport.current_assignment && baseReport.current_assignment.assignment_id) {
+        baseReport.current_assignment = evolutionAssignmentBridge.markEvolutionAssignmentApplied(baseReport.current_assignment.assignment_id, {
+          status: "applied",
+          applied_at: assignedAt,
+          distribution_result: distributionResult,
+          next_action: "Evolution assignment distributed through the existing worker queue path."
+        }) || baseReport.current_assignment;
+      }
+    }
+    const assignmentReport = {
+      ...baseReport,
+      report_type: "multi_ai_evolution_assignment_bridge",
+      operation: "assign",
+      assigned_at: assignedAt,
+      distribution_result: distributionResult,
+      next_action: shouldDistribute
+        ? "Evolution assignment distributed through the existing worker queue path."
+        : baseReport.next_action
+    };
+    if (appendAudit) {
+      appendAudit(
+        shouldDistribute ? "multi_ai.evolution_assignment_distributed" : "multi_ai.evolution_assignment_planned",
+        "multi_ai_evolution_assignment",
+        assignmentReport.current_assignment ? assignmentReport.current_assignment.assignment_id : "multi-ai-evolution-assignment",
+        shouldDistribute
+          ? "Evolution assignment distributed to workers."
+          : `Evolution assignment planned with decision ${assignmentReport.decision}.`,
+        {
+          decision: assignmentReport.decision,
+          risk_level: assignmentReport.risk_level,
+          requires_owner_approval: assignmentReport.requires_owner_approval,
+          should_distribute: shouldDistribute,
+          leader_ai_id: assignmentReport.current_assignment ? assignmentReport.current_assignment.leader_ai_id : null,
+          worker_ai_ids: plannedWorkers
+        }
+      );
+    }
+    return assignmentReport;
+  }
+
+  throw new Error(`Unknown multi-ai evolution action: ${subaction}`);
+}
+
 function buildMultiAiGovernanceReport(state) {
   const activeLeaderSession = getActiveLeaderSession(state);
   const activeQueues = state.worker_queues.filter((queue) => queue.status === "active");
@@ -1344,6 +1470,7 @@ function buildMultiAiGovernanceReport(state) {
     worker_queues: state.worker_queues,
     merge_bundles: state.merge_bundles,
     autonomy_board: buildAutonomyBoard(state),
+    evolution_assignment_bridge: evolutionAssignmentBridge.readEvolutionAssignmentBridgeState ? evolutionAssignmentBridge.readEvolutionAssignmentBridgeState().current_assignment : null,
     counts: {
       leader_sessions: state.leader_sessions.length,
       agents: state.agent_entries.length,
@@ -1423,6 +1550,7 @@ function renderMultiAiGovernanceReport(report) {
     `Dispatch threads: ${conversationHub.dispatch_threads || 0}`,
     `Leader lease: ${agentHub.leader_lease && agentHub.leader_lease.lease_expires_at ? `expires ${agentHub.leader_lease.lease_expires_at}` : "none"}`,
     `Current task: ${report.current_task ? `${report.current_task.task_id} - ${report.current_task.title}` : "none"}`,
+    `Evolution assignment bridge: ${report.evolution_assignment_bridge ? `${report.evolution_assignment_bridge.status || "ready"} (${report.evolution_assignment_bridge.assignment_mode || "master_only"})` : "none"}`,
     `Delegated execution: ${report.active_leader_session && report.active_leader_session.delegated_execution_allowed ? "enabled" : "disabled"}`,
     `Worker queues: ${report.worker_queues.length} (active ${report.counts.active_queues})`,
     `Distributed slices: ${report.counts.distributed_slices}`,
@@ -2497,5 +2625,9 @@ module.exports = {
   defaultMultiAiGovernanceState,
   ensureMultiAiGovernanceState,
   buildMultiAiGovernanceReport,
-  getCurrentEvolutionPriority
+  getCurrentEvolutionPriority,
+  buildEvolutionAssignmentBridgeReport: evolutionAssignmentBridge.buildEvolutionAssignmentBridgeReport,
+  buildEvolutionAssignmentBridgeAssignReport: evolutionAssignmentBridge.buildEvolutionAssignmentBridgeAssignReport,
+  renderEvolutionAssignmentBridgeReport: evolutionAssignmentBridge.renderEvolutionAssignmentBridgeReport,
+  readEvolutionAssignmentBridgeState: evolutionAssignmentBridge.readEvolutionAssignmentBridgeState
 };

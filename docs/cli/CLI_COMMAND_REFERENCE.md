@@ -800,6 +800,9 @@ kvdf multi-ai conversation reply --agent agent-002 --message-id multi-ai-message
 kvdf multi-ai conversation close --conversation multi-ai-conversation-001
 kvdf multi-ai sync
 kvdf multi-ai sync distribute --leader-ai agent-001 --workers agent-002,agent-003
+kvdf multi-ai evolution status
+kvdf multi-ai evolution assign
+kvdf multi-ai evolution workflow
 kvdf multi-ai queue add --ai agent-001 --priority evo-auto-017-multi-ai-governance --title "Schema slice" --files src/cli/index.js
 kvdf multi-ai queue list
 kvdf multi-ai queue start multi-ai-queue-001
@@ -823,18 +826,24 @@ entries and leader leases with heartbeat and call tracking, can sync and
 distribute the active Evolution temporary queue across worker AIs, advances
 queue slices through a durable lifecycle, and records semantic merge bundles
 with semantic surface plans so several AI tools can work from the same repo
-without trampling one another. The Leader does not execute by default;
-execution requires explicit Owner delegation for a scoped slice. Worker-only
-tools such as Gemini may still join the hub, but they remain non-leader
-participants unless leadership is explicitly allowed. If the Leader disappears
-or stops answering calls, the hub promotes the next active leader-eligible
-agent after the lease rules are exceeded. Optional wifi packet workflow can
-create transport-only governance packets, send them through trusted LAN nodes,
-and record inbox or consume receipts without auto-applying them back into
-governance state. Case 1 extends the same authority layer into IDE window
-governance so tools sharing one workspace register presence, claim task/file/
-folder leases, detect same-file conflicts, warn on ungoverned edits, and
-require owner approval for high-risk IDE actions.
+without trampling one another. The Evolution assignment bridge now links the
+owner/developer pipeline to governed worker assignment so the master laptop
+can stay the canonical output owner while distribution remains conflict-free.
+`kvdf multi-ai evolution workflow` prints a ready-to-use master checklist plus
+worker prompt for the current assignment, so the worker laptop can stay
+worker-only without guessing the handoff rules.
+The Leader does not execute by default; execution requires explicit Owner
+delegation for a scoped slice. Worker-only tools such as Gemini may still join
+the hub, but they remain non-leader participants unless leadership is
+explicitly allowed. If the Leader disappears or stops answering calls, the hub
+promotes the next active leader-eligible agent after the lease rules are
+exceeded. Optional wifi packet workflow can create transport-only governance
+packets, send them through trusted LAN nodes, and record inbox or consume
+receipts without auto-applying them back into governance state. Case 1 extends
+the same authority layer into IDE window governance so tools sharing one
+workspace register presence, claim task/file/folder leases, detect same-file
+conflicts, warn on ungoverned edits, and require owner approval for high-risk
+IDE actions.
 
 `kvdf multi-ai agent next --ai <agent-id> --count <n>` lets a worker claim the
 next available Evolution priorities in order, so AI tools can pull from the

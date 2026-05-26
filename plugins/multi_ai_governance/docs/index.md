@@ -10,9 +10,16 @@ Use this bundle for:
 - relay and conversation rules
 - merge provenance
 - token, lock, and assignment policy
+- Evolution assignment bridge for master/worker task distribution
+- Evolution two-laptop workflow report for safe master/worker handoff
 - IDE window governance for multiple AI tools in the same workspace
 - local project governance for the same machine and repository across IDEs, terminals, and local agents
 - GitHub provider governance for AI work that reaches GitHub through the existing `github_provider` layer
+
+Evolution bridge docs:
+
+- [Evolution Assignment Bridge](EVOLUTION_ASSIGNMENT_BRIDGE.md)
+- [Evolution Two-Laptop Workflow](EVOLUTION_TWO_LAPTOP_WORKFLOW.md)
 
 Case 1 docs:
 
@@ -56,5 +63,9 @@ Case 5 docs:
 - [GitHub Provider Integration](CASE_5_GITHUB_PROVIDER_INTEGRATION.md)
 - [GitHub Provider Boundary](CASE_5_GITHUB_PROVIDER_BOUNDARY.md)
 - [Case 5 Completion Report](CASE_5_COMPLETION_REPORT.md)
+
+Evolution bridge docs:
+
+- [Evolution Assignment Bridge](EVOLUTION_ASSIGNMENT_BRIDGE.md)
 
 The runtime state remains in `.kabeeri/multi_ai_governance.json` for the shared leader/queue layer, while Case 1, Case 2, and Case 3 maintain their own state files under `.kabeeri/multi_ai_governance/`.

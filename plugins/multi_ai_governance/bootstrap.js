@@ -6,6 +6,7 @@ const ideWindowGovernance = require("./commands/ide_window_governance");
 const localProjectGovernance = require("./commands/local_project_governance");
 const kcloudGovernance = require("./commands/kcloud_governance");
 const githubProviderGovernance = require("./commands/github_provider_governance");
+const evolutionAssignmentBridge = require("./commands/evolution_assignment_bridge");
 const wifiDataSharingClient = require("./integrations/wifi_data_sharing_client");
 
 module.exports = {
@@ -92,4 +93,10 @@ module.exports = {
   buildMultiAiGithubProviderAuditReport: githubProviderGovernance.buildGithubProviderAuditReport,
   buildMultiAiGithubProviderEvidenceReport: githubProviderGovernance.buildGithubProviderEvidenceReport,
   renderMultiAiGithubProviderReport: githubProviderGovernance.renderGithubProviderReport,
+  buildMultiAiEvolutionAssignmentBridgeReport: evolutionAssignmentBridge.buildEvolutionAssignmentBridgeReport,
+  buildMultiAiEvolutionAssignmentBridgeAssignReport: evolutionAssignmentBridge.buildEvolutionAssignmentBridgeAssignReport,
+  buildMultiAiEvolutionAssignmentWorkflowReport: evolutionAssignmentBridge.buildEvolutionAssignmentWorkflowReport,
+  renderMultiAiEvolutionAssignmentBridgeReport: evolutionAssignmentBridge.renderEvolutionAssignmentBridgeReport,
+  renderMultiAiEvolutionAssignmentWorkflowReport: evolutionAssignmentBridge.renderEvolutionAssignmentWorkflowReport,
+  readMultiAiEvolutionAssignmentBridgeState: evolutionAssignmentBridge.readEvolutionAssignmentBridgeState,
 };
