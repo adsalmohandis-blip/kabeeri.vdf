@@ -125,6 +125,12 @@ function buildEvolutionAssignmentBridgeReport(state = {}, flags = {}, deps = {},
     recovery_result: null,
     current_assignment: currentAssignment
   });
+  const sessionBadge = buildEvolutionSessionBadge({
+    session_health: sessionHealth.health,
+    session_health_reason: sessionHealth.reason,
+    assignment_freshness: assignmentFreshness.freshness,
+    assignment_freshness_reason: assignmentFreshness.reason
+  });
 
   return {
     report_type: "multi_ai_evolution_assignment_bridge",
@@ -156,6 +162,8 @@ function buildEvolutionAssignmentBridgeReport(state = {}, flags = {}, deps = {},
     },
     case_matrix: caseMatrix,
     master_summary: masterSummary,
+    session_badge: sessionBadge.badge,
+    session_badge_reason: sessionBadge.reason,
     assignment_freshness: assignmentFreshness.freshness,
     assignment_freshness_reason: assignmentFreshness.reason,
     session_health: sessionHealth.health,
@@ -187,6 +195,17 @@ function buildEvolutionAssignmentWorkflowReport(state = {}, flags = {}, deps = {
   });
   const assignment = bridgeReport.current_assignment || {};
   const workerIds = Array.isArray(assignment.worker_ai_ids) ? assignment.worker_ai_ids : [];
+  const sessionBadge = bridgeReport.session_badge
+    ? {
+        badge: bridgeReport.session_badge,
+        reason: bridgeReport.session_badge_reason || ""
+      }
+    : buildEvolutionSessionBadge({
+        session_health: bridgeReport.session_health,
+        session_health_reason: bridgeReport.session_health_reason,
+        assignment_freshness: bridgeReport.assignment_freshness,
+        assignment_freshness_reason: bridgeReport.assignment_freshness_reason
+      });
   const masterChecklist = [
     "Keep this laptop as the only push authority.",
     "Run `kvdf multi-ai evolution status` to review the live assignment.",
@@ -204,6 +223,8 @@ function buildEvolutionAssignmentWorkflowReport(state = {}, flags = {}, deps = {
     status: bridgeReport.status,
     risk_level: bridgeReport.risk_level,
     requires_owner_approval: bridgeReport.requires_owner_approval,
+    session_badge: sessionBadge.badge,
+    session_badge_reason: sessionBadge.reason,
     current_assignment: assignment,
     master_laptop: {
       machine_id: bridgeReport.master_context && bridgeReport.master_context.machine ? bridgeReport.master_context.machine.machine_id : null,
@@ -307,6 +328,12 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     current_assignment: bridgeReport.current_assignment,
     completed_assignment_ids: sessionRecord.completed_assignment_ids,
     session_record: sessionRecord
+  });
+  const sessionBadge = buildEvolutionSessionBadge({
+    session_health: sessionHealth.health,
+    session_health_reason: sessionHealth.reason,
+    assignment_freshness: assignmentFreshness.freshness,
+    assignment_freshness_reason: assignmentFreshness.reason
   });
   let completionResult = null;
   if (sessionRole === "master") {
@@ -672,6 +699,8 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     target_node: targetNode,
     worker_pool: workerPool,
     master_summary: masterSummary,
+    session_badge: sessionBadge.badge,
+    session_badge_reason: sessionBadge.reason,
     assignment_freshness: assignmentFreshness.freshness,
     assignment_freshness_reason: assignmentFreshness.reason,
     session_health: sessionHealth.health,
@@ -813,11 +842,43 @@ function buildEvolutionAssignmentFreshness(report = {}) {
   };
 }
 
+function buildEvolutionSessionBadge(report = {}) {
+  const sessionHealth = typeof report.session_health === "string" && report.session_health
+    ? String(report.session_health).trim().toLowerCase()
+    : buildEvolutionSessionHealth(report).health;
+  const assignmentFreshness = typeof report.assignment_freshness === "string" && report.assignment_freshness
+    ? String(report.assignment_freshness).trim().toLowerCase()
+    : buildEvolutionAssignmentFreshness(report).freshness;
+  const sessionReason = typeof report.session_health_reason === "string" && report.session_health_reason
+    ? String(report.session_health_reason).trim()
+    : buildEvolutionSessionHealth(report).reason;
+  const freshnessReason = typeof report.assignment_freshness_reason === "string" && report.assignment_freshness_reason
+    ? String(report.assignment_freshness_reason).trim()
+    : buildEvolutionAssignmentFreshness(report).reason;
+  const badge = `${sessionHealth || "healthy"} / ${assignmentFreshness || "fresh"}`;
+  const reasonParts = [sessionReason, freshnessReason].filter(Boolean);
+  return {
+    badge,
+    reason: reasonParts.join(" ")
+  };
+}
+
 function renderEvolutionAssignmentBridgeReport(report) {
   const assignment = report.current_assignment || {};
   const workerIds = Array.isArray(assignment.worker_ai_ids) ? assignment.worker_ai_ids : [];
   const cases = Array.isArray(report.case_matrix) ? report.case_matrix : [];
   const masterSummary = report.master_summary || buildEvolutionMasterSummary(report);
+  const sessionBadge = report.session_badge
+    ? {
+        badge: report.session_badge,
+        reason: report.session_badge_reason || ""
+      }
+    : buildEvolutionSessionBadge({
+        session_health: report.session_health,
+        session_health_reason: report.session_health_reason,
+        assignment_freshness: report.assignment_freshness,
+        assignment_freshness_reason: report.assignment_freshness_reason
+      });
   const assignmentFreshness = report.assignment_freshness || buildEvolutionAssignmentFreshness(report);
   const sessionHealth = report.session_health || buildEvolutionSessionHealth(report);
   const lines = [
@@ -833,6 +894,7 @@ function renderEvolutionAssignmentBridgeReport(report) {
     `Push authority: ${assignment.push_policy && assignment.push_policy.master_only ? "master_only" : "shared"}`,
     `Owner approval: ${report.requires_owner_approval ? "required" : "not required"}`,
     `Risk level: ${report.risk_level || "low"}`,
+    `Session badge: ${sessionBadge.badge || "healthy / fresh"}${sessionBadge.reason ? ` - ${sessionBadge.reason}` : ""}`,
     `Assignment freshness: ${assignmentFreshness.freshness || "fresh"}${assignmentFreshness.reason ? ` - ${assignmentFreshness.reason}` : ""}`,
     `Session health: ${sessionHealth.health || "healthy"}${sessionHealth.reason ? ` - ${sessionHealth.reason}` : ""}`,
     "",
@@ -856,11 +918,23 @@ function renderEvolutionAssignmentBridgeReport(report) {
 function renderEvolutionAssignmentWorkflowReport(report) {
   const assignment = report.current_assignment || {};
   const workerIds = Array.isArray(assignment.worker_ai_ids) ? assignment.worker_ai_ids : [];
+  const sessionBadge = report.session_badge
+    ? {
+        badge: report.session_badge,
+        reason: report.session_badge_reason || ""
+      }
+    : buildEvolutionSessionBadge({
+        session_health: report.session_health,
+        session_health_reason: report.session_health_reason,
+        assignment_freshness: report.assignment_freshness,
+        assignment_freshness_reason: report.assignment_freshness_reason
+      });
   const lines = [
     "Evolution Two-Laptop Workflow",
     "",
     `Status: ${report.status}`,
     `Decision: ${report.decision}`,
+    `Session badge: ${report.session_badge || sessionBadge.badge || "healthy / fresh"}${sessionBadge.reason ? ` - ${sessionBadge.reason}` : ""}`,
     `Risk level: ${report.risk_level || "low"}`,
     `Owner approval: ${report.requires_owner_approval ? "required" : "not required"}`,
     `Master laptop push authority: ${report.master_laptop ? report.master_laptop.push_authority : "master_laptop"}`,
@@ -881,6 +955,17 @@ function renderEvolutionAssignmentSessionReport(report) {
   const masterRole = report.role === "master";
   const workerPool = report.worker_pool || {};
   const masterSummary = report.master_summary || buildEvolutionMasterSummary(report);
+  const sessionBadge = report.session_badge
+    ? {
+        badge: report.session_badge,
+        reason: report.session_badge_reason || ""
+      }
+    : buildEvolutionSessionBadge({
+        session_health: report.session_health,
+        session_health_reason: report.session_health_reason,
+        assignment_freshness: report.assignment_freshness,
+        assignment_freshness_reason: report.assignment_freshness_reason
+      });
   const assignmentFreshness = report.assignment_freshness || buildEvolutionAssignmentFreshness(report);
   const sessionHealth = report.session_health || buildEvolutionSessionHealth(report);
   const targetNodeIds = Array.isArray(report.target_node_ids) ? report.target_node_ids : [];
@@ -893,6 +978,7 @@ function renderEvolutionAssignmentSessionReport(report) {
     `Role: ${report.role || "unknown"}`,
     `Status: ${report.status}`,
     `Decision: ${report.decision}`,
+    `Session badge: ${sessionBadge.badge || "healthy / fresh"}${sessionBadge.reason ? ` - ${sessionBadge.reason}` : ""}`,
     `Session health: ${sessionHealth.health || "healthy"}${sessionHealth.reason ? ` - ${sessionHealth.reason}` : ""}`,
     `Watch mode: ${report.watch_mode ? "on" : "off"}`,
     `Transport: ${report.transport_status && report.transport_status.status ? report.transport_status.status : "unavailable"}`,

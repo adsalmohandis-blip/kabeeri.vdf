@@ -14,6 +14,9 @@ be translated into a safe, master-led task assignment plan.
 - Records the assignment plan under `.kabeeri/multi_ai_governance/`.
 - Surfaces a master status summary with active, stale, recovered, pending, and
   completed counts.
+- Surfaces a combined session badge such as `attention / fresh` or
+  `healthy / stale` so the master can read the session state and assignment
+  freshness together at a glance.
 - Surfaces a session health indicator so the master view can distinguish
   healthy, attention, and recovery states at a glance.
 - Surfaces an assignment freshness indicator so the current assignment can be

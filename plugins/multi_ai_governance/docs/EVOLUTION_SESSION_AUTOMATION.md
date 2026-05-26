@@ -54,6 +54,8 @@ kvdf multi-ai evolution session worker --watch
   the master records the worker as recovered.
 - If the worker sends a completion packet, the master records the completion
   and keeps the session ready for the next assignment.
+- The session command also shows a combined badge like `attention / fresh` so
+  the health and assignment freshness are visible on one line.
 
 ## Outputs
 
