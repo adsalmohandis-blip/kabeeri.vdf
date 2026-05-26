@@ -12,12 +12,16 @@ be translated into a safe, master-led task assignment plan.
 - Keeps the master laptop as the canonical output owner.
 - Keeps GitHub push authority on the master laptop only.
 - Records the assignment plan under `.kabeeri/multi_ai_governance/`.
+- Surfaces a master status summary with active, stale, recovered, pending, and
+  completed counts.
 
 ## Commands
 
 - `kvdf multi-ai evolution status`
 - `kvdf multi-ai evolution assign`
 - `kvdf multi-ai evolution workflow`
+- `kvdf multi-ai evolution status --json` for the machine-readable master
+  summary
 
 ## Safety Rules
 

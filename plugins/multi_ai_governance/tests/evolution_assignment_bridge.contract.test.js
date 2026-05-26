@@ -136,10 +136,15 @@ test("safe evolution priorities can be assigned to the master/worker bridge", ()
   assert.strictEqual(statusReport.assignment_policy.canonical_output_owner, "master_laptop");
   assert.strictEqual(statusReport.assignment_policy.push_authority, "master_laptop");
   assert.ok(statusReport.distribution_plan.worker_ai_ids.includes("agent-worker"));
+  assert.ok(statusReport.master_summary);
+  assert.strictEqual(statusReport.master_summary.active_workers, 1);
+  assert.strictEqual(statusReport.master_summary.stale_workers, 0);
+  assert.strictEqual(statusReport.master_summary.pending_assignments, 1);
 
   assert.strictEqual(assignReport.report_type, "multi_ai_evolution_assignment_bridge");
   assert.ok(assignReport.distribution_plan.should_distribute);
   assert.ok(assignReport.distribution_result);
+  assert.ok(/Master summary:/i.test(bootstrap.renderMultiAiEvolutionAssignmentBridgeReport(statusReport)));
 
   const bridgeState = readState(dir, ".kabeeri/multi_ai_governance/evolution_assignments.json");
   assert.ok(bridgeState.current_assignment);

@@ -98,6 +98,16 @@ function buildEvolutionAssignmentBridgeReport(state = {}, flags = {}, deps = {},
     next_action: buildNextAction(decision, plannedWorkerAis.length),
     generated_at: generatedAt
   });
+  const masterSummary = buildEvolutionMasterSummary({
+    current_assignment: currentAssignment,
+    worker_pool: {
+      ready_worker_count: plannedWorkerAis.length,
+      stale_worker_count: 0,
+      trusted_worker_count: plannedWorkerAis.length,
+      discovered_worker_count: plannedWorkerAis.length
+    },
+    recovery_result: null
+  });
 
   return {
     report_type: "multi_ai_evolution_assignment_bridge",
@@ -128,6 +138,7 @@ function buildEvolutionAssignmentBridgeReport(state = {}, flags = {}, deps = {},
       developer_track: "vibe_app_developer"
     },
     case_matrix: caseMatrix,
+    master_summary: masterSummary,
     distribution_plan: {
       should_distribute: decision.decision === "allow" || decision.decision === "warn",
       leader_ai_id: leaderAiId || null,
@@ -248,6 +259,12 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     sessionRecord
   });
   const recoveryResult = resolveEvolutionWorkerRecovery(sessionRecord.worker_pool, workerPool, workerJoinRequests, workerHeartbeats, workerResults, generatedAt);
+  const masterSummary = buildEvolutionMasterSummary({
+    worker_pool: workerPool,
+    current_assignment: bridgeReport.current_assignment,
+    recovery_result: recoveryResult,
+    completed_assignment_ids: sessionRecord.completed_assignment_ids
+  });
   let completionResult = null;
   if (sessionRole === "master") {
     for (const heartbeat of workerHeartbeats) {
@@ -611,6 +628,7 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     target_node_ids: targetNodeIds.slice(),
     target_node: targetNode,
     worker_pool: workerPool,
+    master_summary: masterSummary,
     current_assignment: bridgeReport.current_assignment,
     heartbeats: Array.isArray(sessionState.heartbeats) ? sessionState.heartbeats.slice(-10).reverse() : [],
     results: Array.isArray(sessionState.results) ? sessionState.results.slice(-10).reverse() : [],
@@ -648,10 +666,37 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
   };
 }
 
+function buildEvolutionMasterSummary(report = {}) {
+  const workerPool = report.worker_pool || {};
+  const currentAssignment = report.current_assignment || {};
+  const currentStatus = String(currentAssignment.status || "").trim().toLowerCase();
+  const activeWorkers = Number(workerPool.ready_worker_count || 0);
+  const staleWorkers = Number(workerPool.stale_worker_count || 0);
+  const recoveredWorkers = Array.isArray(report.recovered_worker_ids)
+    ? report.recovered_worker_ids.length
+    : Array.isArray(report.recovery_result && report.recovery_result.recovered_worker_ids)
+      ? report.recovery_result.recovered_worker_ids.length
+      : 0;
+  const pendingAssignments = currentAssignment && currentAssignment.assignment_id && !["applied", "completed"].includes(currentStatus) ? 1 : 0;
+  const completedAssignments = Array.isArray(report.completed_assignment_ids)
+    ? report.completed_assignment_ids.length
+    : currentStatus === "completed"
+      ? 1
+      : 0;
+  return {
+    active_workers: activeWorkers,
+    stale_workers: staleWorkers,
+    recovered_workers: recoveredWorkers,
+    pending_assignments: pendingAssignments,
+    completed_assignments: completedAssignments
+  };
+}
+
 function renderEvolutionAssignmentBridgeReport(report) {
   const assignment = report.current_assignment || {};
   const workerIds = Array.isArray(assignment.worker_ai_ids) ? assignment.worker_ai_ids : [];
   const cases = Array.isArray(report.case_matrix) ? report.case_matrix : [];
+  const masterSummary = report.master_summary || buildEvolutionMasterSummary(report);
   const lines = [
     "Evolution Assignment Bridge",
     "",
@@ -665,6 +710,13 @@ function renderEvolutionAssignmentBridgeReport(report) {
     `Push authority: ${assignment.push_policy && assignment.push_policy.master_only ? "master_only" : "shared"}`,
     `Owner approval: ${report.requires_owner_approval ? "required" : "not required"}`,
     `Risk level: ${report.risk_level || "low"}`,
+    "",
+    "Master summary:",
+    `- Active workers: ${masterSummary.active_workers}`,
+    `- Stale workers: ${masterSummary.stale_workers}`,
+    `- Recovered workers: ${masterSummary.recovered_workers}`,
+    `- Pending assignments: ${masterSummary.pending_assignments}`,
+    `- Completed assignments: ${masterSummary.completed_assignments}`,
     "",
     "Case matrix:"
   ];
@@ -703,6 +755,7 @@ function renderEvolutionAssignmentWorkflowReport(report) {
 function renderEvolutionAssignmentSessionReport(report) {
   const masterRole = report.role === "master";
   const workerPool = report.worker_pool || {};
+  const masterSummary = report.master_summary || buildEvolutionMasterSummary(report);
   const targetNodeIds = Array.isArray(report.target_node_ids) ? report.target_node_ids : [];
   const broadcastResults = Array.isArray(report.broadcast_results) ? report.broadcast_results : [];
   const heartbeats = Array.isArray(report.heartbeats) ? report.heartbeats : [];
@@ -722,6 +775,9 @@ function renderEvolutionAssignmentSessionReport(report) {
   if (masterRole) {
     lines.push(
       `Worker pool: ${workerPool.ready_worker_count || 0} ready / ${workerPool.trusted_worker_count || 0} trusted / ${workerPool.discovered_worker_count || 0} discovered / ${workerPool.stale_worker_count || 0} stale`
+    );
+    lines.push(
+      `Master summary: ${masterSummary.active_workers || 0} active / ${masterSummary.stale_workers || 0} stale / ${masterSummary.recovered_workers || 0} recovered / ${masterSummary.pending_assignments || 0} pending / ${masterSummary.completed_assignments || 0} completed`
     );
     if (Array.isArray(workerPool.ready_workers) && workerPool.ready_workers.length) {
       lines.push("Ready workers:");
