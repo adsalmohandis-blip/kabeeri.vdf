@@ -258,6 +258,23 @@ function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCan
       const messageType = String(parsed.message_type || "").trim().toLowerCase();
       if (messageType === "query") return;
       if (["package", "worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(messageType)) {
+        const packetCandidate = normalizeCandidate({
+          ...parsed,
+          trust_role: parsed.trust_role || (messageType === "assignment_packet" ? "owner" : "worker"),
+          pairing_required: messageType !== "worker_join_request" ? parsed.pairing_required : false,
+          transfer_enabled: Boolean(parsed.transfer_enabled)
+        }, remote);
+        const index = candidates.findIndex((item) => item.node_id === packetCandidate.node_id);
+        if (index >= 0) {
+          candidates[index] = {
+            ...candidates[index],
+            ...packetCandidate,
+            first_seen_at: candidates[index].first_seen_at || packetCandidate.first_seen_at
+          };
+        } else {
+          candidates.push(packetCandidate);
+        }
+        if (typeof onCandidate === "function") onCandidate(packetCandidate, parsed, remote);
         if (typeof onPacket === "function") onPacket(parsed, remote);
         return;
       }
@@ -311,6 +328,23 @@ async function advertisePresence({ state, durationMs = 10000, loopback = false, 
     const messageType = String(parsed.message_type || "").trim().toLowerCase();
     if (state && state.local_node && parsed.node_id && parsed.node_id === state.local_node.node_id) return;
     if (["package", "worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(messageType)) {
+      const packetCandidate = normalizeCandidate({
+        ...parsed,
+        trust_role: parsed.trust_role || (messageType === "assignment_packet" ? "owner" : "worker"),
+        pairing_required: messageType !== "worker_join_request" ? parsed.pairing_required : false,
+        transfer_enabled: Boolean(parsed.transfer_enabled)
+      }, remote);
+      const index = candidates.findIndex((item) => item.node_id === packetCandidate.node_id);
+      if (index >= 0) {
+        candidates[index] = {
+          ...candidates[index],
+          ...packetCandidate,
+          first_seen_at: candidates[index].first_seen_at || packetCandidate.first_seen_at
+        };
+      } else {
+        candidates.push(packetCandidate);
+      }
+      if (typeof onCandidate === "function") onCandidate(packetCandidate, parsed, remote);
       if (typeof onPacket === "function") onPacket(parsed, remote);
       return;
     }

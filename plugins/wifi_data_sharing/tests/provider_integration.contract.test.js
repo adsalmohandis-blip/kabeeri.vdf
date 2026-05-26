@@ -6,6 +6,7 @@ const path = require("path");
 const provider = require("../provider");
 const state = require("../commands/state");
 const transfer = require("../commands/transfer");
+const discovery = require("../commands/discovery");
 const udpDiscovery = require("../transport/udp_discovery");
 const multiAiBootstrap = require("../../multi_ai_governance/bootstrap");
 const wifiClientPath = "../../multi_ai_governance/integrations/wifi_data_sharing_client";
@@ -187,6 +188,44 @@ test("bootstrap transport emits a direct worker join control packet when no mast
   assert.strictEqual(captured.packet.bootstrap, true);
   assert.strictEqual(captured.packet.service_name, "wifi_data_sharing");
   assert.strictEqual(captured.target.loopback, true);
+}));
+
+test("worker join packets are promoted into the visible candidate and trusted pools", () => withTempRepo(() => {
+  const current = state.initWifiDataSharingState({ name: "Master Laptop", role: "owner" });
+  discovery.recordInboundPacket({
+    ...current,
+    discovery: {
+      ...(current.discovery || {}),
+      enabled: true,
+      mode: "discover",
+      known_candidates: []
+    },
+    trusted_nodes: []
+  }, {
+    protocol: udpDiscovery.PROTOCOL,
+    protocol_version: udpDiscovery.PROTOCOL_VERSION,
+    service_name: udpDiscovery.DEFAULT_SERVICE_NAME,
+    message_type: "worker_join_request",
+    packet_type: "worker_join_request",
+    package_id: "wifi-pkg-join-001",
+    source_node_id: "wifi-node-worker",
+    display_name: "Worker Laptop",
+    hostname: "WORKER",
+    platform: "darwin",
+    trust_role: "worker",
+    payload: {
+      sender_node_id: "wifi-node-worker",
+      session_id: "session-001",
+      ready_flag: true
+    }
+  }, {
+    address: "192.168.1.17",
+    port: 47632
+  }, "discover");
+  const candidates = provider.listCandidates();
+  const trusted = provider.listTrustedNodes();
+  assert.ok(candidates.some((item) => item.node_id === "wifi-node-worker"));
+  assert.ok(trusted.some((item) => item.node_id === "wifi-node-worker"));
 }));
 
 test("discovery targets include subnet-directed broadcast addresses when interface broadcast is missing", () => {

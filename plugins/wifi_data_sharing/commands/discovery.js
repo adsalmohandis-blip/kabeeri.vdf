@@ -48,11 +48,31 @@ function recordDiscovery(state, candidate, message, remote, mode) {
 
 function recordInboundPacket(state, packet, remote, mode) {
   const now = new Date().toISOString();
-  ingestTransportPacket(packet, remote, {
+  const inboxRecord = ingestTransportPacket(packet, remote, {
     localNodeId: state && state.local_node ? state.local_node.node_id || null : null
   });
   const packetType = String(packet.packet_type || packet.message_type || "").trim().toLowerCase();
   const senderNodeId = String(packet.source_node_id || packet.node_id || packet.sender_node_id || "").trim();
+  if (senderNodeId && ["worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(packetType)) {
+    const candidateRecord = {
+      node_id: senderNodeId,
+      display_name: packet.display_name || packet.hostname || senderNodeId,
+      hostname: packet.hostname || null,
+      address: remote.address || null,
+      port: Number(remote.port || packet.port || DEFAULT_DISCOVERY_PORT),
+      platform: packet.platform || null,
+      trust_role: packet.trust_role || (packetType === "assignment_packet" ? "owner" : "worker"),
+      trust_status: "candidate",
+      first_seen_at: now,
+      last_seen_at: now,
+      pairing_required: packetType !== "worker_join_request" ? Boolean(packet.pairing_required) : false,
+      transfer_enabled: Boolean(packet.transfer_enabled),
+      kvdf_version: packet.kvdf_version || null,
+      plugin_version: packet.plugin_version || null,
+      capabilities: Array.isArray(packet.capabilities) ? packet.capabilities.slice() : []
+    };
+    mergeKnownCandidate(state, candidateRecord);
+  }
   if (senderNodeId && ["worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(packetType)) {
     const existing = findTrustedNodeRecord(state, senderNodeId) || {};
     upsertTrustedNode(state, {
@@ -90,7 +110,7 @@ function recordInboundPacket(state, packet, remote, mode) {
     observed_at: now,
     trust_status: "candidate"
   });
-  return state;
+  return inboxRecord;
 }
 
 async function runDiscoverCommand(flags = {}) {
