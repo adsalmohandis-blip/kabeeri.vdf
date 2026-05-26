@@ -719,6 +719,236 @@ test("evolution session worker sends a join request and master sees the ready wo
   assert.strictEqual(masterReport.target_node_ids[0], "wifi-node-worker");
 }));
 
+test("evolution session worker rejoins after timeout and the master records recovery", () => withTempRepo((dir) => {
+  registerBaseWorkspace(dir);
+  seedEvolutionPriority(dir, "Task Trash System", "Allow a stale worker to rejoin safely.");
+
+  const wire = { joinRequests: [], heartbeats: [] };
+  const workerWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker" },
+        next_action: "ok"
+      };
+    },
+    refreshWifiDataSharingDiscovery(mode) {
+      return {
+        status: "ok",
+        mode,
+        candidates: [
+          { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner", trust_status: "trusted" }
+        ]
+      };
+    },
+    listCandidates() {
+      return [
+        { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner", trust_status: "trusted" }
+      ];
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner", trust_status: "trusted" }
+      ];
+    },
+    listWifiDataSharingInbox() {
+      return [];
+    },
+    sendWorkerJoinRequest(packet, targetNodeId) {
+      const packageId = `join-${String(wire.joinRequests.length + 1).padStart(3, "0")}`;
+      wire.joinRequests.push({
+        packet_id: packageId,
+        package_id: packageId,
+        packet_type: "worker_join_request",
+        target_node_id: targetNodeId,
+        sender_node_id: packet.payload.sender_node_id,
+        payload: packet.payload,
+        received_at: new Date().toISOString(),
+        status: "requested"
+      });
+      return { status: "ok", package_id: packageId, packet_id: packageId };
+    },
+    sendWorkerHeartbeat(packet, targetNodeId) {
+      const packageId = `beat-${String(wire.heartbeats.length + 1).padStart(3, "0")}`;
+      wire.heartbeats.push({
+        packet_id: packageId,
+        package_id: packageId,
+        packet_type: "worker_heartbeat",
+        target_node_id: targetNodeId,
+        sender_node_id: packet.payload.sender_node_id,
+        payload: packet.payload,
+        received_at: new Date().toISOString(),
+        status: "alive"
+      });
+      return { status: "ok", package_id: packageId, packet_id: packageId };
+    },
+    getWifiDataSharingProvider() {
+      return {
+        listInbox() {
+          return [];
+        }
+      };
+    }
+  };
+
+  const firstWorkerReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker"
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  const staleSessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
+  staleSessionState.master_session = {
+    ...(staleSessionState.master_session || {}),
+    session_id: "multi-ai-evolution-session-master-001",
+    role: "master",
+    worker_pool: {
+      stale_worker_ids: ["wifi-node-worker"],
+      stale_workers: [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", stale: true }
+      ]
+    },
+    updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  };
+  staleSessionState.worker_session = {
+    ...(staleSessionState.worker_session || {}),
+    join_request_status: "requested",
+    join_request_packet_id: firstWorkerReport.join_request_result.packet_id,
+    join_request_target_node_id: "wifi-node-master",
+    join_request_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    heartbeat_status: "alive",
+    heartbeat_packet_id: firstWorkerReport.heartbeat_result.packet_id,
+    heartbeat_target_node_id: "wifi-node-master",
+    last_heartbeat_at: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    updated_at: new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  };
+  fs.writeFileSync(path.join(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json"), JSON.stringify(staleSessionState, null, 2));
+
+  const secondWorkerReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "worker",
+    join_request_timeout_ms: 1000,
+    heartbeat_timeout_ms: 1000
+  }, {
+    wifiClient: workerWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  const wireJoinCountAfterRecovery = wire.joinRequests.length;
+  const masterWifiClient = {
+    buildWifiDataSharingIntegrationStatus() {
+      return {
+        available: true,
+        status: "available",
+        local_node: { node_id: "wifi-node-master", display_name: "Master Laptop", trust_role: "owner" },
+        next_action: "ok"
+      };
+    },
+    refreshWifiDataSharingDiscovery(mode) {
+      return {
+        status: "ok",
+        mode,
+        candidates: [
+          { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker", trust_status: "trusted", last_seen_at: new Date().toISOString() }
+        ]
+      };
+    },
+    listCandidates() {
+      return [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker", trust_status: "trusted", last_seen_at: new Date().toISOString() }
+      ];
+    },
+    listTrustedWifiNodes() {
+      return [
+        { node_id: "wifi-node-worker", display_name: "Worker Laptop", trust_role: "worker", trust_status: "trusted", last_seen_at: new Date().toISOString() }
+      ];
+    },
+    listWifiDataSharingInbox() {
+      return [
+        ...wire.joinRequests.map((request) => ({
+          packet_id: request.packet_id,
+          package_id: request.package_id,
+          packet_type: request.packet_type,
+          target_node_id: request.target_node_id,
+          sender_node_id: request.sender_node_id,
+          payload: request.payload,
+          status: request.status,
+          received_at: request.received_at
+        })),
+        ...wire.heartbeats.map((heartbeat) => ({
+          packet_id: heartbeat.packet_id,
+          package_id: heartbeat.package_id,
+          packet_type: heartbeat.packet_type,
+          target_node_id: heartbeat.target_node_id,
+          sender_node_id: heartbeat.sender_node_id,
+          payload: heartbeat.payload,
+          status: heartbeat.status,
+          received_at: heartbeat.received_at
+        }))
+      ];
+    },
+    canSendGovernancePacket() {
+      return { status: "ok", can_send: true, next_action: "ok" };
+    },
+    sendGovernancePacket() {
+      return { status: "ok", package_id: "pkg-001", packet_id: "pkg-001" };
+    },
+    getWifiDataSharingProvider() {
+      return {
+        listInbox() {
+          return [
+            ...wire.joinRequests.map((request) => ({
+              packet_id: request.packet_id,
+              package_id: request.package_id,
+              packet_type: request.packet_type,
+              target_node_id: request.target_node_id,
+              sender_node_id: request.sender_node_id,
+              payload: request.payload,
+              status: request.status,
+              received_at: request.received_at
+            })),
+            ...wire.heartbeats.map((heartbeat) => ({
+              packet_id: heartbeat.packet_id,
+              package_id: heartbeat.package_id,
+              packet_type: heartbeat.packet_type,
+              target_node_id: heartbeat.target_node_id,
+              sender_node_id: heartbeat.sender_node_id,
+              payload: heartbeat.payload,
+              status: heartbeat.status,
+              received_at: heartbeat.received_at
+            }))
+          ];
+        }
+      };
+    }
+  };
+
+  const masterReport = silenceConsole(() => multiAiGovernance.multiAiGovernance("evolution", "session", {
+    json: true,
+    role: "master"
+  }, {
+    wifiClient: masterWifiClient
+  }, {
+    appendAudit: () => {}
+  }));
+
+  assert.strictEqual(firstWorkerReport.join_request_result.status, "requested");
+  assert.strictEqual(firstWorkerReport.heartbeat_result.status, "sent");
+  assert.strictEqual(secondWorkerReport.join_request_result.status, "requested");
+  assert.ok(wireJoinCountAfterRecovery > 1);
+  assert.strictEqual(masterReport.recovery_result.status, "recovered");
+  assert.ok(Array.isArray(masterReport.recovery_result.recovered_worker_ids));
+  assert.deepStrictEqual(masterReport.recovery_result.recovered_worker_ids, ["wifi-node-worker"]);
+  const sessionState = readState(dir, ".kabeeri/multi_ai_governance/evolution_sessions.json");
+  assert.ok(Array.isArray(sessionState.recovery_events));
+  assert.ok(sessionState.recovery_events.some((item) => item && item.target_node_id === "wifi-node-worker"));
+}));
+
 test("evolution session worker sends heartbeat and completion packets and the master acknowledges them", () => withTempRepo((dir) => {
   registerBaseWorkspace(dir);
   seedEvolutionPriority(dir, "Task Trash System", "Keep the worker heartbeat and completion flow auditable.");

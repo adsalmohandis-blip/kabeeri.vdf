@@ -38,6 +38,7 @@ This workflow keeps one machine as the master laptop and one or more machines as
 - The master laptop remains the final reviewer and merge coordinator.
 - If a conflict appears in any case, pause the assignment and re-run the bridge report before continuing.
 - If a worker stops heartbeating, do not assign new work until the worker is fresh again or the assignment is requeued.
+- If a worker times out and then rejoins, the master should treat it as a recovered worker and return it to the pool only after a fresh join or heartbeat.
 
 ## Outputs
 

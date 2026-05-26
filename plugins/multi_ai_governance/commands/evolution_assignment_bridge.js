@@ -247,6 +247,7 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     bridgeReport,
     sessionRecord
   });
+  const recoveryResult = resolveEvolutionWorkerRecovery(sessionRecord.worker_pool, workerPool, workerJoinRequests, workerHeartbeats, workerResults, generatedAt);
   let completionResult = null;
   if (sessionRole === "master") {
     for (const heartbeat of workerHeartbeats) {
@@ -301,6 +302,22 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
         sessionRecord.completed_assignment_ids = dedupeStrings([...(sessionRecord.completed_assignment_ids || []), acknowledgedCompletion.assignment_id]);
       }
     }
+    if (recoveryResult && Array.isArray(recoveryResult.recovered_worker_ids) && recoveryResult.recovered_worker_ids.length) {
+      sessionRecord.recovered_worker_ids = dedupeStrings([...(sessionRecord.recovered_worker_ids || []), ...recoveryResult.recovered_worker_ids]);
+      sessionRecord.last_recovery_at = generatedAt;
+      sessionRecord.recovery_status = "recovered";
+      for (const event of Array.isArray(recoveryResult.recovery_events) ? recoveryResult.recovery_events : []) {
+        if (!sessionState.recovery_events.some((item) => item && item.packet_id && item.packet_id === event.packet_id)) {
+          sessionState.recovery_events.push(event);
+        }
+      }
+      if (appendAudit) {
+        appendAudit("multi_ai.evolution_worker_recovered", "multi_ai_evolution_assignment", sessionRecord.session_id, `Recovered worker node(s): ${recoveryResult.recovered_worker_ids.join(", ")}`, {
+          recovered_worker_ids: recoveryResult.recovered_worker_ids.slice(),
+          recovery_count: recoveryResult.recovery_count || recoveryResult.recovered_worker_ids.length
+        });
+      }
+    }
   }
   const targetNodeIds = Array.isArray(workerPool.target_node_ids) && workerPool.target_node_ids.length
     ? workerPool.target_node_ids.slice()
@@ -335,6 +352,7 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
   sessionRecord.join_requests = workerJoinRequests.slice();
   sessionRecord.heartbeats = Array.isArray(sessionRecord.heartbeats) ? sessionRecord.heartbeats : [];
   sessionRecord.results = Array.isArray(sessionRecord.results) ? sessionRecord.results : [];
+  sessionRecord.recovered_worker_ids = Array.isArray(sessionRecord.recovered_worker_ids) ? sessionRecord.recovered_worker_ids : [];
   let broadcastResult = null;
   let broadcastResults = [];
   let receiptResult = null;
@@ -623,6 +641,7 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     receipt_result: receiptResult,
     heartbeat_result: heartbeatResult,
     completion_result: completionResult,
+    recovery_result: recoveryResult,
     inbox,
     dispatch_board: dispatchBoard,
     next_action: buildEvolutionSessionNextAction(sessionRole, broadcastResult, receiptResult, targetNodeIds, workerPool, completionResult)
@@ -746,6 +765,7 @@ function renderEvolutionAssignmentSessionReport(report) {
     lines.push(`Join request: ${report.join_request_result ? report.join_request_result.status || "requested" : sessionRecordStatusFromReport(report)}`);
     lines.push(`Heartbeat: ${report.heartbeat_result ? report.heartbeat_result.status || "sent" : "waiting"}`);
     lines.push(`Completion: ${report.completion_result ? report.completion_result.status || "sent" : "waiting"}`);
+    lines.push(`Recovery: ${report.recovery_result && report.recovery_result.recovered_worker_ids && report.recovery_result.recovered_worker_ids.length ? `recovered ${report.recovery_result.recovered_worker_ids.join(", ")}` : "waiting"}`);
     lines.push("Worker prompt:");
     lines.push(report.worker_prompt || "No worker prompt available.");
     lines.push("", "Inbox:");
@@ -859,6 +879,7 @@ function ensureEvolutionAssignmentSessionState(state) {
   state.heartbeats = Array.isArray(state.heartbeats) ? state.heartbeats : [];
   state.receipts = Array.isArray(state.receipts) ? state.receipts : [];
   state.results = Array.isArray(state.results) ? state.results : [];
+  state.recovery_events = Array.isArray(state.recovery_events) ? state.recovery_events : [];
   state.updated_at = state.updated_at || null;
   return state;
 }
@@ -899,8 +920,12 @@ function ensureEvolutionSessionRecord(state, role) {
     join_request_packet_id: current && current.join_request_packet_id ? current.join_request_packet_id : null,
     join_request_target_node_id: current && current.join_request_target_node_id ? current.join_request_target_node_id : null,
     join_request_at: current && current.join_request_at ? current.join_request_at : null,
+    join_request_timeout_ms: current && current.join_request_timeout_ms ? current.join_request_timeout_ms : null,
     completion_status: current && current.completion_status ? current.completion_status : null,
     completed_assignment_ids: Array.isArray(current && current.completed_assignment_ids) ? current.completed_assignment_ids.slice() : [],
+    recovered_worker_ids: Array.isArray(current && current.recovered_worker_ids) ? current.recovered_worker_ids.slice() : [],
+    last_recovery_at: current && current.last_recovery_at ? current.last_recovery_at : null,
+    recovery_status: current && current.recovery_status ? current.recovery_status : null,
     created_at: current && current.created_at ? current.created_at : now,
     updated_at: now
   };
@@ -1240,6 +1265,38 @@ function resolveEvolutionWorkerFreshness(node, heartbeatIndex = new Map(), timeo
   };
 }
 
+function resolveEvolutionWorkerRecovery(previousPool = null, currentPool = null, joinRequests = [], heartbeats = [], results = [], generatedAt = new Date().toISOString()) {
+  const previousStaleIds = new Set(dedupeStrings([
+    ...(Array.isArray(previousPool && previousPool.stale_worker_ids) ? previousPool.stale_worker_ids : []),
+    ...(Array.isArray(previousPool && previousPool.stale_workers) ? previousPool.stale_workers.map((item) => item && item.node_id ? item.node_id : null) : [])
+  ]));
+  const currentFreshIds = new Set(dedupeStrings([
+    ...(Array.isArray(currentPool && currentPool.ready_worker_ids) ? currentPool.ready_worker_ids : []),
+    ...(Array.isArray(currentPool && currentPool.ready_workers) ? currentPool.ready_workers.map((item) => item && item.node_id ? item.node_id : null) : [])
+  ]));
+  const activityIds = new Set(dedupeStrings([
+    ...(Array.isArray(joinRequests) ? joinRequests.map((item) => item && (item.node_id || item.sender_node_id || item.target_node_id)) : []),
+    ...(Array.isArray(heartbeats) ? heartbeats.map((item) => item && (item.node_id || item.sender_node_id || item.target_node_id)) : []),
+    ...(Array.isArray(results) ? results.map((item) => item && (item.node_id || item.sender_node_id || item.target_node_id)) : [])
+  ]));
+  const recoveredWorkerIds = dedupeStrings([...previousStaleIds].filter((nodeId) => currentFreshIds.has(nodeId) && activityIds.has(nodeId)));
+  const recoveryEvents = recoveredWorkerIds.map((nodeId, index) => ({
+    packet_id: `multi-ai-evolution-recovery-${String(index + 1).padStart(3, "0")}`,
+    target_node_id: nodeId,
+    assignment_id: currentPool && currentPool.assignment_signature ? currentPool.assignment_signature : null,
+    assignment_signature: currentPool && currentPool.assignment_signature ? currentPool.assignment_signature : null,
+    created_at: generatedAt,
+    status: "recovered"
+  }));
+  return {
+    status: recoveredWorkerIds.length ? "recovered" : "idle",
+    recovery_count: recoveredWorkerIds.length,
+    recovered_worker_ids: recoveredWorkerIds,
+    recovery_events: recoveryEvents,
+    next_action: recoveredWorkerIds.length ? `Recovered worker node(s): ${recoveredWorkerIds.join(", ")}.` : "No worker recovery detected."
+  };
+}
+
 function resolveEvolutionMasterTargetNode(nodes = [], localNode = null) {
   const list = Array.isArray(nodes) ? nodes : [];
   const ownerNode = list.find((node) => {
@@ -1269,7 +1326,11 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
       next_action: "Discover the master laptop first, then join the worker session."
     };
   }
-  if (sessionRecord.join_request_target_node_id && sessionRecord.join_request_target_node_id === masterTargetNode.node_id && sessionRecord.join_request_status === "requested") {
+  const joinRequestTimeoutMs = resolveEvolutionWorkerJoinRequestTimeoutMs(flags, sessionRecord);
+  const recentJoinRequest = sessionRecord.join_request_at && Number.isFinite(Date.parse(sessionRecord.join_request_at))
+    ? (Date.now() - Date.parse(sessionRecord.join_request_at)) < joinRequestTimeoutMs
+    : false;
+  if (sessionRecord.join_request_target_node_id && sessionRecord.join_request_target_node_id === masterTargetNode.node_id && sessionRecord.join_request_status === "requested" && recentJoinRequest) {
     return {
       status: "cached",
       packet_id: sessionRecord.join_request_packet_id || null,
@@ -1321,6 +1382,21 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
     sent_at: generatedAt,
     next_action: "Worker join request sent. Wait for the master to assign the next evolution task."
   };
+}
+
+function resolveEvolutionWorkerJoinRequestTimeoutMs(flags = {}, sessionRecord = null) {
+  const candidates = [
+    flags.join_request_timeout_ms,
+    flags["join-request-timeout-ms"],
+    sessionRecord && sessionRecord.join_request_timeout_ms,
+    flags.heartbeat_timeout_ms,
+    flags["heartbeat-timeout-ms"]
+  ];
+  for (const candidate of candidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value) && value > 0) return Math.max(1000, value);
+  }
+  return 120000;
 }
 
 function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClient, transportStatus, workerPool, flags = {}, generatedAt, workerPrompt } = {}) {

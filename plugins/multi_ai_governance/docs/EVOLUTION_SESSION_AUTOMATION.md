@@ -50,6 +50,8 @@ kvdf multi-ai evolution session worker --watch
 - If the bridge decision is blocked, the session does not broadcast.
 - If a worker stops heartbeating, the master requeues the assignment to a
   fresh ready worker instead of reusing the stale node.
+- If a worker comes back after a timeout, it can send a fresh join request and
+  the master records the worker as recovered.
 - If the worker sends a completion packet, the master records the completion
   and keeps the session ready for the next assignment.
 
