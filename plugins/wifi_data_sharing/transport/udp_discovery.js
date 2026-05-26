@@ -96,10 +96,14 @@ function normalizeCandidate(message, remote, now = new Date().toISOString()) {
   };
 }
 
-function createSocket({ loopback = false, port = DEFAULT_DISCOVERY_PORT } = {}) {
+async function createSocket({ loopback = false, port = DEFAULT_DISCOVERY_PORT } = {}) {
   const socket = dgram.createSocket({ type: "udp4", reuseAddr: true });
   socket.on("error", () => {});
-  socket.bind(Number(port) || DEFAULT_DISCOVERY_PORT);
+  await new Promise((resolve, reject) => {
+    socket.once("listening", resolve);
+    socket.once("error", reject);
+    socket.bind(Number(port) || DEFAULT_DISCOVERY_PORT);
+  });
   return { socket, loopback };
 }
 
@@ -301,7 +305,7 @@ function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCan
 }
 
 async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, port = DEFAULT_DISCOVERY_PORT, onCandidate, onPacket } = {}) {
-  const { socket } = createSocket({ loopback, port });
+  const { socket } = await createSocket({ loopback, port });
   const query = buildQueryMessage({ state, port });
   const listenPromise = listenForCandidates(socket, { state, timeoutMs, loopback, onCandidate, onPacket });
   await sendMessage(socket, query, { loopback, port }).catch(() => {});
@@ -309,7 +313,7 @@ async function discoverCandidates({ state, timeoutMs = 5000, loopback = false, p
 }
 
 async function advertisePresence({ state, durationMs = 10000, loopback = false, port = DEFAULT_DISCOVERY_PORT, intervalMs = 1000, onCandidate, onPacket } = {}) {
-  const { socket } = createSocket({ loopback, port });
+  const { socket } = await createSocket({ loopback, port });
   const announce = buildAnnounceMessage({ state, port });
   const startedAt = Date.now();
   const candidates = [];
@@ -387,7 +391,7 @@ async function advertisePresence({ state, durationMs = 10000, loopback = false, 
 }
 
 async function sendTransportPacket(message, { loopback = false, port = DEFAULT_DISCOVERY_PORT, targetHost = null, targetPort = null } = {}) {
-  const { socket } = createSocket({ loopback, port });
+  const { socket } = await createSocket({ loopback, port });
   try {
     await sendMessage(socket, message, { loopback, port, targetHost, targetPort });
   } finally {
