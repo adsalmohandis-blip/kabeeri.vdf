@@ -82,6 +82,18 @@ function refreshWifiDataSharingDiscovery(mode = "discover", flags = {}) {
 }
 
 function sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
+  return sendWorkerSessionPacket("worker_join_request", packet, targetNodeId, options);
+}
+
+function sendWorkerHeartbeat(packet, targetNodeId, options = {}) {
+  return sendWorkerSessionPacket("worker_heartbeat", packet, targetNodeId, options);
+}
+
+function sendWorkerResult(packet, targetNodeId, options = {}) {
+  return sendWorkerSessionPacket("worker_result", packet, targetNodeId, options);
+}
+
+function sendWorkerSessionPacket(packetType, packet, targetNodeId, options = {}) {
   const provider = getWifiDataSharingProvider();
   if (!provider || typeof provider.canSendPackage !== "function" || typeof provider.createPackage !== "function" || typeof provider.sendPackage !== "function") {
     return {
@@ -90,9 +102,9 @@ function sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
       next_action: "wifi_data_sharing is not available."
     };
   }
-  const payload = normalizeWorkerJoinRequest(packet);
+  const payload = normalizeWorkerSessionPacket(packetType, packet);
   const packageDescriptor = {
-    packet_type: "worker_join_request",
+    packet_type: packetType,
     title: payload.title,
     payload,
     payload_encoding: "json"
@@ -102,11 +114,11 @@ function sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
     return allowed || {
       status: "blocked",
       can_send: false,
-      next_action: "The worker join request cannot be sent."
+      next_action: `The ${packetType} cannot be sent.`
     };
   }
   const created = provider.createPackage({
-    packageType: "worker_join_request",
+    packageType: packetType,
     title: payload.title,
     payload,
     payloadEncoding: "json"
@@ -116,13 +128,19 @@ function sendWorkerJoinRequest(packet, targetNodeId, options = {}) {
 }
 
 function normalizeWorkerJoinRequest(packet = {}) {
+  return normalizeWorkerSessionPacket("worker_join_request", packet);
+}
+
+function normalizeWorkerSessionPacket(packetType, packet = {}) {
   const payload = packet && typeof packet === "object" ? packet : {};
+  const normalizedType = String(packetType || "worker_session").trim().toLowerCase();
   return {
-    report_type: "multi_ai_evolution_worker_join_request",
-    title: payload.title || "Evolution worker join request",
+    report_type: `multi_ai_evolution_${normalizedType}`,
+    title: payload.title || `Evolution ${normalizedType.replace(/_/g, " ")}`,
     request_id: payload.request_id || null,
     session_role: payload.session_role || "worker",
     session_id: payload.session_id || null,
+    packet_type: normalizedType,
     worker_ai_ids: Array.isArray(payload.worker_ai_ids) ? payload.worker_ai_ids.slice() : [],
     worker_pool: payload.worker_pool && typeof payload.worker_pool === "object" ? { ...payload.worker_pool } : null,
     assignment_signature: payload.assignment_signature || null,
@@ -130,6 +148,11 @@ function normalizeWorkerJoinRequest(packet = {}) {
     worker_prompt: payload.worker_prompt || null,
     ready_flag: payload.ready_flag === undefined ? true : Boolean(payload.ready_flag),
     source_machine: payload.source_machine && typeof payload.source_machine === "object" ? { ...payload.source_machine } : null,
+    result_status: payload.result_status || null,
+    result_summary: payload.result_summary || null,
+    result_artifacts: Array.isArray(payload.result_artifacts) ? payload.result_artifacts.slice() : [],
+    changed_files: Array.isArray(payload.changed_files) ? payload.changed_files.slice() : [],
+    tests: Array.isArray(payload.tests) ? payload.tests.slice() : [],
     requested_at: payload.requested_at || new Date().toISOString(),
     status: payload.status || "requested"
   };
@@ -205,8 +228,11 @@ module.exports = {
   listWifiDataSharingInbox,
   refreshWifiDataSharingDiscovery,
   sendWorkerJoinRequest,
+  sendWorkerHeartbeat,
+  sendWorkerResult,
   canSendGovernancePacket,
   sendGovernancePacket,
   buildUnavailableIntegrationStatus,
-  normalizeGovernancePacket
+  normalizeGovernancePacket,
+  normalizeWorkerSessionPacket
 };

@@ -232,18 +232,76 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
   const localNode = transportStatus && transportStatus.local_node ? transportStatus.local_node : null;
   const discoveredNodes = wifiClient && wifiClient.listWifiDataSharingCandidates ? wifiClient.listWifiDataSharingCandidates() : [];
   const trustedNodes = wifiClient && wifiClient.listTrustedWifiNodes ? wifiClient.listTrustedWifiNodes() : [];
-  const workerJoinRequests = wifiClient && wifiClient.listWifiDataSharingInbox
-    ? extractEvolutionWorkerJoinRequests(wifiClient.listWifiDataSharingInbox(), localNode)
-    : [];
+  const sessionInbox = wifiClient && wifiClient.listWifiDataSharingInbox ? wifiClient.listWifiDataSharingInbox() : [];
+  const workerJoinRequests = extractEvolutionWorkerJoinRequests(sessionInbox, localNode);
+  const workerHeartbeats = extractEvolutionWorkerHeartbeats(sessionInbox, localNode);
+  const workerResults = extractEvolutionWorkerResults(sessionInbox, localNode);
   const workerPool = buildEvolutionWorkerPool({
     localNode,
     trustedNodes,
     discoveredNodes,
     join_requests: workerJoinRequests,
+    heartbeats: workerHeartbeats,
+    results: workerResults,
     flags,
     bridgeReport,
     sessionRecord
   });
+  let completionResult = null;
+  if (sessionRole === "master") {
+    for (const heartbeat of workerHeartbeats) {
+      if (!sessionState.heartbeats.some((item) => item && item.packet_id && item.packet_id === heartbeat.packet_id)) {
+        sessionState.heartbeats.push({
+          packet_id: heartbeat.packet_id || null,
+          target_node_id: heartbeat.target_node_id || null,
+          assignment_id: heartbeat.assignment_id || null,
+          assignment_signature: heartbeat.assignment_signature || null,
+          created_at: heartbeat.requested_at || generatedAt,
+          status: heartbeat.status || "alive"
+        });
+      }
+    }
+    for (const result of workerResults) {
+      if (!sessionState.results.some((item) => item && item.packet_id && item.packet_id === result.packet_id)) {
+        sessionState.results.push({
+          packet_id: result.packet_id || null,
+          target_node_id: result.target_node_id || null,
+          assignment_id: result.assignment_id || null,
+          assignment_signature: result.assignment_signature || null,
+          created_at: result.requested_at || generatedAt,
+          status: result.result_status || result.status || "completed"
+        });
+      }
+    }
+    const matchingResult = [...workerResults].reverse().find((item) => {
+      const currentSignature = bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null;
+      const currentAssignmentId = bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : null;
+      return item && item.assignment_signature && currentSignature && item.assignment_signature === currentSignature && (!currentAssignmentId || !item.assignment_id || item.assignment_id === currentAssignmentId) && ["completed", "done", "applied"].includes(String(item.result_status || item.status || "").toLowerCase());
+    });
+    if (matchingResult && bridgeReport.current_assignment && bridgeReport.current_assignment.assignment_id) {
+      const acknowledgedCompletion = markEvolutionAssignmentCompleted(bridgeReport.current_assignment.assignment_id, {
+        status: "completed",
+        completed_at: matchingResult.requested_at || generatedAt,
+        completion_result: matchingResult
+      });
+      if (acknowledgedCompletion) {
+        bridgeReport.current_assignment = acknowledgedCompletion;
+        completionResult = {
+          status: "acknowledged",
+          result_status: matchingResult.result_status || matchingResult.status || "completed",
+          packet_id: matchingResult.packet_id || null,
+          target_node_id: matchingResult.target_node_id || null,
+          sent_at: matchingResult.requested_at || generatedAt,
+          next_action: "Worker completion acknowledged by the master session."
+        };
+        sessionRecord.completion_status = matchingResult.result_status || matchingResult.status || "completed";
+        sessionRecord.last_result_packet_id = matchingResult.packet_id || null;
+        sessionRecord.last_result_at = matchingResult.requested_at || generatedAt;
+        sessionRecord.last_result_status = matchingResult.result_status || matchingResult.status || "completed";
+        sessionRecord.completed_assignment_ids = dedupeStrings([...(sessionRecord.completed_assignment_ids || []), acknowledgedCompletion.assignment_id]);
+      }
+    }
+  }
   const targetNodeIds = Array.isArray(workerPool.target_node_ids) && workerPool.target_node_ids.length
     ? workerPool.target_node_ids.slice()
     : resolveEvolutionWorkerTargets({
@@ -275,10 +333,13 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
   sessionRecord.target_node_ids = targetNodeIds.slice();
   sessionRecord.target_node_id = targetNodeId || null;
   sessionRecord.join_requests = workerJoinRequests.slice();
+  sessionRecord.heartbeats = Array.isArray(sessionRecord.heartbeats) ? sessionRecord.heartbeats : [];
+  sessionRecord.results = Array.isArray(sessionRecord.results) ? sessionRecord.results : [];
   let broadcastResult = null;
   let broadcastResults = [];
   let receiptResult = null;
   let joinRequestResult = null;
+  let heartbeatResult = null;
 
   if (sessionRole === "worker") {
     joinRequestResult = refreshEvolutionWorkerJoinRequest({
@@ -309,6 +370,37 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
           packet_id: joinRequestResult.packet_id || null,
           target_node_id: joinRequestResult.target_node_id || null,
           status: joinRequestResult.status || "requested"
+        });
+      }
+    }
+    heartbeatResult = refreshEvolutionWorkerHeartbeat({
+      bridgeReport,
+      sessionRecord,
+      wifiClient,
+      transportStatus,
+      workerPool,
+      flags,
+      generatedAt,
+      workerPrompt
+    });
+    if (heartbeatResult && heartbeatResult.packet_id) {
+      sessionRecord.last_heartbeat_at = heartbeatResult.sent_at || generatedAt;
+      sessionRecord.heartbeat_status = heartbeatResult.status || "sent";
+      sessionRecord.heartbeat_packet_id = heartbeatResult.packet_id || null;
+      sessionRecord.heartbeat_target_node_id = heartbeatResult.target_node_id || null;
+      sessionState.heartbeats.push({
+        packet_id: heartbeatResult.packet_id || null,
+        target_node_id: heartbeatResult.target_node_id || null,
+        assignment_id: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : null,
+        assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
+        created_at: generatedAt,
+        status: heartbeatResult.status || "sent"
+      });
+      if (appendAudit) {
+        appendAudit("multi_ai.evolution_worker_heartbeat", "multi_ai_evolution_assignment", sessionRecord.session_id, `Worker heartbeat sent to ${heartbeatResult.target_node_id || "master"}`, {
+          packet_id: heartbeatResult.packet_id || null,
+          target_node_id: heartbeatResult.target_node_id || null,
+          status: heartbeatResult.status || "sent"
         });
       }
     }
@@ -403,9 +495,50 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
       sessionRecord.mode = "worker";
       sessionRecord.watch_mode = Boolean(isTruthyFlag(flags.watch) || isTruthyFlag(flags["watch-mode"]) || options.operation === "watch");
     }
+    completionResult = maybeSendEvolutionWorkerCompletion({
+      bridgeReport,
+      sessionRecord,
+      wifiClient,
+      transportStatus,
+      workerPool,
+      flags,
+      generatedAt,
+      workerPrompt,
+      appendAudit,
+      sessionState,
+      options
+    });
+    if (completionResult && completionResult.packet_id) {
+      sessionRecord.last_result_packet_id = completionResult.packet_id || null;
+      sessionRecord.last_result_at = completionResult.sent_at || generatedAt;
+      sessionRecord.last_result_status = completionResult.result_status || "completed";
+      sessionRecord.status = completionResult.status === "blocked" ? "attention" : "active";
+      sessionRecord.mode = "worker";
+      sessionRecord.watch_mode = Boolean(isTruthyFlag(flags.watch) || isTruthyFlag(flags["watch-mode"]) || options.operation === "watch");
+      sessionState.results.push({
+        packet_id: completionResult.packet_id || null,
+        target_node_id: completionResult.target_node_id || null,
+        assignment_id: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : null,
+        assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
+        created_at: generatedAt,
+        status: completionResult.result_status || "completed"
+      });
+      if (appendAudit) {
+        appendAudit("multi_ai.evolution_worker_result", "multi_ai_evolution_assignment", sessionRecord.session_id, `Worker result sent to ${completionResult.target_node_id || "master"}`, {
+          packet_id: completionResult.packet_id || null,
+          target_node_id: completionResult.target_node_id || null,
+          status: completionResult.result_status || "completed"
+        });
+      }
+    }
   }
 
       sessionRecord.updated_at = generatedAt;
+      sessionState.heartbeats = sessionState.heartbeats.slice(-100);
+      sessionState.results = sessionState.results.slice(-100);
+      sessionState.join_requests = sessionState.join_requests.slice(-100);
+      sessionState.broadcasts = sessionState.broadcasts.slice(-100);
+      sessionState.receipts = sessionState.receipts.slice(-100);
       sessionState.updated_at = generatedAt;
       writeJsonFile(SESSION_FILE, sessionState);
 
@@ -422,6 +555,7 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
         ready_worker_count: workerPool.ready_worker_count,
         trusted_worker_count: workerPool.trusted_worker_count,
         discovered_worker_count: workerPool.discovered_worker_count,
+        stale_worker_count: workerPool.stale_worker_count,
         broadcast_status: broadcastResult ? broadcastResult.status || "sent" : "waiting",
         last_broadcast_packet_id: sessionRecord.last_broadcast_packet_id || null,
         last_broadcast_packet_ids: Array.isArray(sessionRecord.last_broadcast_packet_ids) ? sessionRecord.last_broadcast_packet_ids.slice() : []
@@ -431,6 +565,11 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
         assignment_id: receiptResult ? receiptResult.applied_assignment_id || null : bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : null,
         last_received_packet_id: sessionRecord.last_received_packet_id || null,
         applied: Boolean(receiptResult && receiptResult.status === "applied"),
+        heartbeat_status: sessionRecord.heartbeat_status || null,
+        heartbeat_packet_id: sessionRecord.heartbeat_packet_id || null,
+        last_heartbeat_at: sessionRecord.last_heartbeat_at || null,
+        completion_status: sessionRecord.last_result_status || null,
+        last_result_packet_id: sessionRecord.last_result_packet_id || null,
         worker_prompt: receiptResult && receiptResult.worker_prompt ? receiptResult.worker_prompt : workerPrompt
       }];
 
@@ -440,9 +579,11 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     operation: options.operation || "session",
     status: sessionRole === "master"
       ? (broadcastResult
-        ? (broadcastResult.status === "blocked" ? "blocked" : bridgeReport.status)
-        : "attention")
-      : ((receiptResult && receiptResult.status === "applied") || sessionRecord.last_received_signature || (joinRequestResult && joinRequestResult.status && joinRequestResult.status !== "blocked")) ? "ready" : "attention",
+        ? (broadcastResult.status === "blocked" ? "blocked" : (workerPool.stale_worker_count > 0 ? "attention" : bridgeReport.status))
+        : (workerPool.stale_worker_count > 0 ? "attention" : "attention"))
+      : (completionResult && completionResult.status && completionResult.status !== "blocked")
+        ? "completed"
+        : ((receiptResult && receiptResult.status === "applied") || sessionRecord.last_received_signature || (joinRequestResult && joinRequestResult.status && joinRequestResult.status !== "blocked")) ? "ready" : "attention",
     decision: bridgeReport.decision,
     role: sessionRole,
     watch_mode: Boolean(isTruthyFlag(flags.watch) || isTruthyFlag(flags["watch-mode"]) || options.operation === "watch"),
@@ -453,6 +594,8 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     target_node: targetNode,
     worker_pool: workerPool,
     current_assignment: bridgeReport.current_assignment,
+    heartbeats: Array.isArray(sessionState.heartbeats) ? sessionState.heartbeats.slice(-10).reverse() : [],
+    results: Array.isArray(sessionState.results) ? sessionState.results.slice(-10).reverse() : [],
     master_laptop: bridgeReport.master_laptop ? bridgeReport.master_laptop : {
       machine_id: bridgeReport.master_context && bridgeReport.master_context.machine ? bridgeReport.master_context.machine.machine_id : null,
       repo_root: bridgeReport.master_context && bridgeReport.master_context.project ? bridgeReport.master_context.project.repo_root : repoRoot(),
@@ -478,9 +621,11 @@ function buildEvolutionAssignmentSessionReport(state = {}, flags = {}, deps = {}
     broadcast_results: broadcastResults,
     join_request_result: joinRequestResult,
     receipt_result: receiptResult,
+    heartbeat_result: heartbeatResult,
+    completion_result: completionResult,
     inbox,
     dispatch_board: dispatchBoard,
-    next_action: buildEvolutionSessionNextAction(sessionRole, broadcastResult, receiptResult, targetNodeIds)
+    next_action: buildEvolutionSessionNextAction(sessionRole, broadcastResult, receiptResult, targetNodeIds, workerPool, completionResult)
   };
 }
 
@@ -541,6 +686,8 @@ function renderEvolutionAssignmentSessionReport(report) {
   const workerPool = report.worker_pool || {};
   const targetNodeIds = Array.isArray(report.target_node_ids) ? report.target_node_ids : [];
   const broadcastResults = Array.isArray(report.broadcast_results) ? report.broadcast_results : [];
+  const heartbeats = Array.isArray(report.heartbeats) ? report.heartbeats : [];
+  const results = Array.isArray(report.results) ? report.results : [];
   const lines = [
     "Evolution Two-Laptop Session",
     "",
@@ -555,7 +702,7 @@ function renderEvolutionAssignmentSessionReport(report) {
   ];
   if (masterRole) {
     lines.push(
-      `Worker pool: ${workerPool.ready_worker_count || 0} ready / ${workerPool.trusted_worker_count || 0} trusted / ${workerPool.discovered_worker_count || 0} discovered`
+      `Worker pool: ${workerPool.ready_worker_count || 0} ready / ${workerPool.trusted_worker_count || 0} trusted / ${workerPool.discovered_worker_count || 0} discovered / ${workerPool.stale_worker_count || 0} stale`
     );
     if (Array.isArray(workerPool.ready_workers) && workerPool.ready_workers.length) {
       lines.push("Ready workers:");
@@ -576,11 +723,29 @@ function renderEvolutionAssignmentSessionReport(report) {
     } else {
       lines.push(report.broadcast_result ? JSON.stringify(report.broadcast_result, null, 2) : "No broadcast yet.");
     }
+    lines.push("", "Worker heartbeats:");
+    if (heartbeats.length) {
+      for (const heartbeat of heartbeats) {
+        lines.push(`- ${heartbeat.target_node_id || heartbeat.packet_id || "worker"}: ${heartbeat.status || "alive"}`);
+      }
+    } else {
+      lines.push("- none");
+    }
+    lines.push("", "Worker results:");
+    if (results.length) {
+      for (const result of results) {
+        lines.push(`- ${result.target_node_id || result.packet_id || "worker"}: ${result.status || "completed"}`);
+      }
+    } else {
+      lines.push("- none");
+    }
   } else {
     lines.push(
-      `Worker pool view: ${workerPool.ready_worker_count || 0} ready / ${workerPool.trusted_worker_count || 0} trusted / ${workerPool.discovered_worker_count || 0} discovered`
+      `Worker pool view: ${workerPool.ready_worker_count || 0} ready / ${workerPool.trusted_worker_count || 0} trusted / ${workerPool.discovered_worker_count || 0} discovered / ${workerPool.stale_worker_count || 0} stale`
     );
     lines.push(`Join request: ${report.join_request_result ? report.join_request_result.status || "requested" : sessionRecordStatusFromReport(report)}`);
+    lines.push(`Heartbeat: ${report.heartbeat_result ? report.heartbeat_result.status || "sent" : "waiting"}`);
+    lines.push(`Completion: ${report.completion_result ? report.completion_result.status || "sent" : "waiting"}`);
     lines.push("Worker prompt:");
     lines.push(report.worker_prompt || "No worker prompt available.");
     lines.push("", "Inbox:");
@@ -677,7 +842,9 @@ function defaultEvolutionAssignmentSessionState() {
     worker_session: null,
     broadcasts: [],
     join_requests: [],
+    heartbeats: [],
     receipts: [],
+    results: [],
     updated_at: null
   };
 }
@@ -689,7 +856,9 @@ function ensureEvolutionAssignmentSessionState(state) {
   state.worker_session = state.worker_session && typeof state.worker_session === "object" ? state.worker_session : null;
   state.broadcasts = Array.isArray(state.broadcasts) ? state.broadcasts : [];
   state.join_requests = Array.isArray(state.join_requests) ? state.join_requests : [];
+  state.heartbeats = Array.isArray(state.heartbeats) ? state.heartbeats : [];
   state.receipts = Array.isArray(state.receipts) ? state.receipts : [];
+  state.results = Array.isArray(state.results) ? state.results : [];
   state.updated_at = state.updated_at || null;
   return state;
 }
@@ -714,6 +883,13 @@ function ensureEvolutionSessionRecord(state, role) {
     last_received_packet_id: current && current.last_received_packet_id ? current.last_received_packet_id : null,
     last_received_at: current && current.last_received_at ? current.last_received_at : null,
     applied_assignment_id: current && current.applied_assignment_id ? current.applied_assignment_id : null,
+    last_heartbeat_at: current && current.last_heartbeat_at ? current.last_heartbeat_at : null,
+    heartbeat_status: current && current.heartbeat_status ? current.heartbeat_status : null,
+    heartbeat_packet_id: current && current.heartbeat_packet_id ? current.heartbeat_packet_id : null,
+    heartbeat_target_node_id: current && current.heartbeat_target_node_id ? current.heartbeat_target_node_id : null,
+    last_result_packet_id: current && current.last_result_packet_id ? current.last_result_packet_id : null,
+    last_result_at: current && current.last_result_at ? current.last_result_at : null,
+    last_result_status: current && current.last_result_status ? current.last_result_status : null,
     target_node_id: current && current.target_node_id ? current.target_node_id : null,
     target_node_ids: Array.isArray(current && current.target_node_ids) ? current.target_node_ids.slice() : [],
     worker_pool: current && typeof current.worker_pool === "object" ? { ...current.worker_pool } : null,
@@ -723,6 +899,8 @@ function ensureEvolutionSessionRecord(state, role) {
     join_request_packet_id: current && current.join_request_packet_id ? current.join_request_packet_id : null,
     join_request_target_node_id: current && current.join_request_target_node_id ? current.join_request_target_node_id : null,
     join_request_at: current && current.join_request_at ? current.join_request_at : null,
+    completion_status: current && current.completion_status ? current.completion_status : null,
+    completed_assignment_ids: Array.isArray(current && current.completed_assignment_ids) ? current.completed_assignment_ids.slice() : [],
     created_at: current && current.created_at ? current.created_at : now,
     updated_at: now
   };
@@ -766,11 +944,12 @@ function resolveEvolutionWorkerTarget({ localNode, trustedNodes, flags = {}, bri
   return targets.length ? targets[0] : null;
 }
 
-function resolveEvolutionWorkerTargets({ localNode, trustedNodes, discoveredNodes = [], flags = {}, bridgeReport = {}, sessionRecord = null } = {}) {
+function resolveEvolutionWorkerTargets({ localNode, trustedNodes, discoveredNodes = [], stale_worker_ids = [], flags = {}, bridgeReport = {}, sessionRecord = null } = {}) {
   const explicitTarget = String(flags.to || flags.target || flags.node || flags.node_id || flags["target-node"] || "").trim();
   const trusted = normalizeEvolutionWifiNodeList(trustedNodes, "trusted", localNode);
   const discovered = normalizeEvolutionWifiNodeList(discoveredNodes, "discovered", localNode);
-  const readyWorkers = trusted.filter((node) => node.ready !== false);
+  const staleIds = new Set(Array.isArray(stale_worker_ids) ? stale_worker_ids.map((value) => String(value).trim()).filter(Boolean) : []);
+  const readyWorkers = trusted.filter((node) => node.ready !== false && !staleIds.has(node.node_id));
   if (explicitTarget) {
     return [explicitTarget];
   }
@@ -785,18 +964,72 @@ function resolveEvolutionWorkerTargets({ localNode, trustedNodes, discoveredNode
   return dedupeStrings(targetIds);
 }
 
-function buildEvolutionWorkerPool({ localNode, trustedNodes, discoveredNodes = [], join_requests = [], flags = {}, bridgeReport = {}, sessionRecord = null } = {}) {
+function buildEvolutionWorkerPool({ localNode, trustedNodes, discoveredNodes = [], join_requests = [], heartbeats = [], results = [], flags = {}, bridgeReport = {}, sessionRecord = null } = {}) {
   const trustedWorkers = normalizeEvolutionWifiNodeList(trustedNodes, "trusted", localNode);
   const discoveredWorkers = normalizeEvolutionWifiNodeList(discoveredNodes, "discovered", localNode);
   const joinRequests = Array.isArray(join_requests) ? join_requests : [];
-  const readyWorkers = trustedWorkers.filter((node) => node.ready !== false);
+  const heartbeatPackets = Array.isArray(heartbeats) ? heartbeats : [];
+  const resultPackets = Array.isArray(results) ? results : [];
+  const heartbeatIndex = new Map();
+  for (const heartbeat of heartbeatPackets) {
+    const nodeId = String(heartbeat && (heartbeat.node_id || heartbeat.sender_node_id || heartbeat.target_node_id) || "").trim();
+    if (!nodeId) continue;
+    const current = heartbeatIndex.get(nodeId) || null;
+    const currentTime = Date.parse(heartbeat && heartbeat.requested_at ? heartbeat.requested_at : heartbeat && heartbeat.created_at ? heartbeat.created_at : null);
+    const previousTime = current && Date.parse(current.requested_at || current.created_at || 0);
+    if (!current || (!Number.isFinite(previousTime) || (Number.isFinite(currentTime) && currentTime >= previousTime))) {
+      heartbeatIndex.set(nodeId, heartbeat);
+    }
+  }
+  const resultIndex = new Map();
+  for (const result of resultPackets) {
+    const nodeId = String(result && (result.node_id || result.sender_node_id || result.target_node_id) || "").trim();
+    if (!nodeId) continue;
+    const current = resultIndex.get(nodeId) || null;
+    const currentTime = Date.parse(result && result.requested_at ? result.requested_at : result && result.created_at ? result.created_at : null);
+    const previousTime = current && Date.parse(current.requested_at || current.created_at || 0);
+    if (!current || (!Number.isFinite(previousTime) || (Number.isFinite(currentTime) && currentTime >= previousTime))) {
+      resultIndex.set(nodeId, result);
+    }
+  }
+  const staleAfterMs = resolveEvolutionWorkerHeartbeatTimeoutMs(flags, sessionRecord);
+  const now = Date.now();
+  const trustedWorkersWithFreshness = trustedWorkers.map((node) => {
+    const fresh = resolveEvolutionWorkerFreshness(node, heartbeatIndex, staleAfterMs, now);
+    const result = resultIndex.get(fresh.node_id) || null;
+    return {
+      ...fresh,
+      last_result_packet_id: result && result.packet_id ? result.packet_id : null,
+      last_result_status: result && result.result_status ? result.result_status : null,
+      last_result_at: result && result.requested_at ? result.requested_at : null,
+      completion_status: result && result.result_status ? result.result_status : null,
+      ready: Boolean(fresh.ready && !fresh.stale && (fresh.ready !== false))
+    };
+  });
+  const discoveredWorkersWithFreshness = discoveredWorkers.map((node) => {
+    const fresh = resolveEvolutionWorkerFreshness(node, heartbeatIndex, staleAfterMs, now);
+    const result = resultIndex.get(fresh.node_id) || null;
+    return {
+      ...fresh,
+      last_result_packet_id: result && result.packet_id ? result.packet_id : null,
+      last_result_status: result && result.result_status ? result.result_status : null,
+      last_result_at: result && result.requested_at ? result.requested_at : null,
+      completion_status: result && result.result_status ? result.result_status : null
+    };
+  });
+  const readyWorkers = trustedWorkersWithFreshness.filter((node) => node.ready !== false && !node.stale);
+  const staleWorkerIds = dedupeStrings([
+    ...trustedWorkersWithFreshness.filter((node) => node.stale).map((node) => node.node_id),
+    ...discoveredWorkersWithFreshness.filter((node) => node.stale).map((node) => node.node_id)
+  ].filter(Boolean));
   const readyWorkerIds = dedupeStrings(readyWorkers.map((node) => node.node_id).filter(Boolean));
   const discoveredWorkerIds = dedupeStrings(discoveredWorkers.map((node) => node.node_id).filter(Boolean));
   const joinRequestWorkerIds = dedupeStrings(joinRequests.map((item) => item.node_id || item.target_node_id || item.sender_node_id).filter(Boolean));
   const targetNodeIds = resolveEvolutionWorkerTargets({
     localNode,
-    trustedNodes: trustedWorkers,
-    discoveredNodes: discoveredWorkers,
+    trustedNodes: trustedWorkersWithFreshness,
+    discoveredNodes: discoveredWorkersWithFreshness,
+    stale_worker_ids: staleWorkerIds,
     flags,
     bridgeReport,
     sessionRecord
@@ -804,17 +1037,22 @@ function buildEvolutionWorkerPool({ localNode, trustedNodes, discoveredNodes = [
   const singleTarget = targetNodeIds.length ? targetNodeIds[0] : null;
   return {
     local_node_id: localNode && localNode.node_id ? localNode.node_id : null,
-    discovered_worker_count: discoveredWorkers.length,
-    trusted_worker_count: trustedWorkers.length,
+    discovered_worker_count: discoveredWorkersWithFreshness.length,
+    trusted_worker_count: trustedWorkersWithFreshness.length,
     ready_worker_count: readyWorkers.length,
+    stale_worker_count: staleWorkerIds.length,
     join_request_count: joinRequests.length,
-    discovered_workers: discoveredWorkers,
-    trusted_workers: trustedWorkers,
+    discovered_workers: discoveredWorkersWithFreshness,
+    trusted_workers: trustedWorkersWithFreshness,
     ready_workers: readyWorkers,
+    stale_workers: trustedWorkersWithFreshness.filter((node) => node.stale).concat(discoveredWorkersWithFreshness.filter((node) => node.stale)),
     join_requests: joinRequests,
+    heartbeats: heartbeatPackets,
+    results: resultPackets,
     ready_worker_ids: readyWorkerIds,
     discovered_worker_ids: discoveredWorkerIds,
     join_request_worker_ids: joinRequestWorkerIds,
+    stale_worker_ids: staleWorkerIds,
     target_node_ids: targetNodeIds,
     target_node_id: singleTarget,
     worker_pool_mode: targetNodeIds.length > 1 ? "multi_target" : targetNodeIds.length === 1 ? "single_target" : "wait",
@@ -863,7 +1101,10 @@ function dedupeStrings(values = []) {
 }
 
 function refreshEvolutionSessionDiscovery({ wifiClient, sessionRole, sessionRecord, flags = {} } = {}) {
-  const shouldRefresh = !sessionRecord || !sessionRecord.last_discovery_at;
+  const discoveryIntervalMs = Math.max(1000, Number(flags.discovery_interval_ms || flags["discovery-interval-ms"] || 5000) || 5000);
+  const lastDiscoveryAt = sessionRecord && sessionRecord.last_discovery_at ? Date.parse(sessionRecord.last_discovery_at) : NaN;
+  const elapsed = Number.isFinite(lastDiscoveryAt) ? Date.now() - lastDiscoveryAt : Infinity;
+  const shouldRefresh = !sessionRecord || !sessionRecord.last_discovery_at || Boolean(flags.refresh || flags.force_refresh || flags["force-refresh"] || flags.watch) || elapsed >= discoveryIntervalMs;
   if (!shouldRefresh) {
     return sessionRecord && sessionRecord.last_discovery_mode ? {
       status: "cached",
@@ -908,6 +1149,95 @@ function extractEvolutionWorkerJoinRequests(inbox = [], localNode = null) {
       };
     })
     .filter(Boolean);
+}
+
+function extractEvolutionWorkerHeartbeats(inbox = [], localNode = null) {
+  return (Array.isArray(inbox) ? inbox : [])
+    .map((item) => {
+      const payload = item && typeof item.payload === "object" ? item.payload : {};
+      const packetType = String(item && (item.packet_type || item.package_type) || payload.packet_type || payload.report_type || "").trim().toLowerCase();
+      const reportType = String(payload.report_type || "").trim().toLowerCase();
+      if (!["worker_heartbeat", "assignment_heartbeat"].includes(packetType) && !["multi_ai_evolution_worker_heartbeat", "multi_ai_evolution_assignment_heartbeat"].includes(reportType)) return null;
+      const targetNodeId = item.target_node_id || payload.target_node_id || null;
+      if (localNode && targetNodeId && targetNodeId !== localNode.node_id) return null;
+      return {
+        packet_id: item.packet_id || item.package_id || null,
+        node_id: item.sender_node_id || payload.sender_node_id || (payload.source_machine && payload.source_machine.node_id) || null,
+        target_node_id: targetNodeId,
+        sender_node_id: item.sender_node_id || payload.sender_node_id || (payload.source_machine && payload.source_machine.node_id) || null,
+        assignment_id: payload.assignment_id || null,
+        assignment_signature: payload.assignment_signature || null,
+        heartbeat_status: payload.status || item.status || "alive",
+        ready_flag: payload.ready_flag !== false,
+        requested_at: payload.requested_at || item.created_at || item.received_at || null,
+        status: item.status || payload.status || "alive",
+        source_machine: payload.source_machine && typeof payload.source_machine === "object" ? { ...payload.source_machine } : null
+      };
+    })
+    .filter(Boolean);
+}
+
+function extractEvolutionWorkerResults(inbox = [], localNode = null) {
+  return (Array.isArray(inbox) ? inbox : [])
+    .map((item) => {
+      const payload = item && typeof item.payload === "object" ? item.payload : {};
+      const packetType = String(item && (item.packet_type || item.package_type) || payload.packet_type || payload.report_type || "").trim().toLowerCase();
+      const reportType = String(payload.report_type || "").trim().toLowerCase();
+      if (!["worker_result", "assignment_result", "completion_packet"].includes(packetType) && !["multi_ai_evolution_worker_result", "multi_ai_evolution_assignment_result", "multi_ai_evolution_completion_packet"].includes(reportType)) return null;
+      const targetNodeId = item.target_node_id || payload.target_node_id || null;
+      if (localNode && targetNodeId && targetNodeId !== localNode.node_id) return null;
+      return {
+        packet_id: item.packet_id || item.package_id || null,
+        node_id: item.sender_node_id || payload.sender_node_id || (payload.source_machine && payload.source_machine.node_id) || null,
+        target_node_id: targetNodeId,
+        sender_node_id: item.sender_node_id || payload.sender_node_id || (payload.source_machine && payload.source_machine.node_id) || null,
+        assignment_id: payload.assignment_id || null,
+        assignment_signature: payload.assignment_signature || null,
+        result_status: payload.result_status || payload.status || item.status || "completed",
+        result_summary: payload.result_summary || null,
+        result_artifacts: Array.isArray(payload.result_artifacts) ? payload.result_artifacts.slice() : [],
+        changed_files: Array.isArray(payload.changed_files) ? payload.changed_files.slice() : [],
+        tests: Array.isArray(payload.tests) ? payload.tests.slice() : [],
+        requested_at: payload.requested_at || item.created_at || item.received_at || null,
+        status: item.status || payload.status || "completed",
+        source_machine: payload.source_machine && typeof payload.source_machine === "object" ? { ...payload.source_machine } : null
+      };
+    })
+    .filter(Boolean);
+}
+
+function resolveEvolutionWorkerHeartbeatTimeoutMs(flags = {}, sessionRecord = null) {
+  const candidates = [
+    flags.heartbeat_timeout_ms,
+    flags["heartbeat-timeout-ms"],
+    flags.worker_timeout_ms,
+    flags["worker-timeout-ms"],
+    sessionRecord && sessionRecord.heartbeat_timeout_ms
+  ];
+  for (const candidate of candidates) {
+    const value = Number(candidate);
+    if (Number.isFinite(value) && value > 0) return Math.max(1000, value);
+  }
+  return 120000;
+}
+
+function resolveEvolutionWorkerFreshness(node, heartbeatIndex = new Map(), timeoutMs = 120000, now = Date.now()) {
+  const nodeId = node && node.node_id ? node.node_id : null;
+  const heartbeat = nodeId ? heartbeatIndex.get(nodeId) || null : null;
+  const lastSeenAt = heartbeat && heartbeat.requested_at ? Date.parse(heartbeat.requested_at) : (node && node.last_seen_at ? Date.parse(node.last_seen_at) : NaN);
+  const hasFreshnessSignal = Number.isFinite(lastSeenAt);
+  const fresh = hasFreshnessSignal ? (now - lastSeenAt) <= timeoutMs : node && node.ready === false ? false : true;
+  return {
+    ...node,
+    last_heartbeat_at: heartbeat && heartbeat.requested_at ? heartbeat.requested_at : node.last_seen_at || null,
+    heartbeat_packet_id: heartbeat && heartbeat.packet_id ? heartbeat.packet_id : null,
+    heartbeat_status: heartbeat && heartbeat.status ? heartbeat.status : null,
+    result_packet_id: heartbeat && heartbeat.result_packet_id ? heartbeat.result_packet_id : null,
+    result_status: heartbeat && heartbeat.result_status ? heartbeat.result_status : null,
+    ready: Boolean(node.ready !== false && fresh),
+    stale: !fresh,
+    status: fresh ? (node.status || "ready") : "stale"
+  };
 }
 
 function resolveEvolutionMasterTargetNode(nodes = [], localNode = null) {
@@ -990,6 +1320,180 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
     target_node_id: masterTargetNode.node_id,
     sent_at: generatedAt,
     next_action: "Worker join request sent. Wait for the master to assign the next evolution task."
+  };
+}
+
+function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClient, transportStatus, workerPool, flags = {}, generatedAt, workerPrompt } = {}) {
+  if (!wifiClient || typeof wifiClient.sendWorkerHeartbeat !== "function") {
+    return {
+      status: "blocked",
+      next_action: "wifi_data_sharing is unavailable."
+    };
+  }
+  const localNode = transportStatus && transportStatus.local_node ? transportStatus.local_node : null;
+  const trustedWorkers = Array.isArray(workerPool && workerPool.trusted_workers) ? workerPool.trusted_workers : [];
+  const discoveredWorkers = Array.isArray(workerPool && workerPool.discovered_workers) ? workerPool.discovered_workers : [];
+  const masterTargetNode = resolveEvolutionMasterTargetNode([
+    ...trustedWorkers,
+    ...discoveredWorkers
+  ], localNode);
+  if (!masterTargetNode || !masterTargetNode.node_id) {
+    return {
+      status: "waiting",
+      next_action: "Discover the master laptop first, then send the worker heartbeat."
+    };
+  }
+  const recentHeartbeat = sessionRecord.last_heartbeat_at && Date.now() - Date.parse(sessionRecord.last_heartbeat_at) < Math.max(1000, Number(flags.heartbeat_interval_ms || flags["heartbeat-interval-ms"] || 5000));
+  if (recentHeartbeat && sessionRecord.heartbeat_target_node_id === masterTargetNode.node_id) {
+    return {
+      status: "cached",
+      packet_id: sessionRecord.heartbeat_packet_id || null,
+      target_node_id: sessionRecord.heartbeat_target_node_id || null,
+      sent_at: sessionRecord.last_heartbeat_at || generatedAt,
+      next_action: "Worker heartbeat already sent recently. Keep the session running."
+    };
+  }
+  const packet = {
+    packet_type: "worker_heartbeat",
+    title: `Worker heartbeat :: ${bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : "assignment"}`,
+    payload: {
+      report_type: "multi_ai_evolution_worker_heartbeat",
+      title: `Worker heartbeat :: ${bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : "assignment"}`,
+      session_role: "worker",
+      session_id: sessionRecord.session_id,
+      ready_flag: true,
+      sender_node_id: localNode ? localNode.node_id || null : null,
+      target_node_id: masterTargetNode.node_id,
+      worker_ai_ids: Array.isArray(bridgeReport.current_assignment && bridgeReport.current_assignment.worker_ai_ids) ? bridgeReport.current_assignment.worker_ai_ids.slice() : [],
+      worker_pool: workerPool || null,
+      assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
+      assignment_id: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : null,
+      worker_prompt: workerPrompt,
+      source_machine: localNode ? {
+        node_id: localNode.node_id || null,
+        display_name: localNode.display_name || null,
+        hostname: localNode.hostname || null
+      } : null,
+      requested_at: generatedAt,
+      status: "alive"
+    },
+    payload_encoding: "json"
+  };
+  const result = wifiClient.sendWorkerHeartbeat(packet, masterTargetNode.node_id, {
+    confirm: true,
+    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
+  });
+  if (!result || result.status === "blocked") {
+    return result || {
+      status: "blocked",
+      next_action: "The worker heartbeat could not be sent."
+    };
+  }
+  return {
+    status: "sent",
+    packet_id: result.package_id || result.packet_id || null,
+    target_node_id: masterTargetNode.node_id,
+    sent_at: generatedAt,
+    next_action: "Worker heartbeat sent. Keep the worker session running."
+  };
+}
+
+function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiClient, transportStatus, workerPool, flags = {}, generatedAt, workerPrompt, appendAudit, sessionState, options = {} } = {}) {
+  const completionRequested = Boolean(
+    isTruthyFlag(flags.complete) ||
+    isTruthyFlag(flags.done) ||
+    isTruthyFlag(flags.result) ||
+    isTruthyFlag(flags.completed) ||
+    (Array.isArray(options.rest) && options.rest.some((item) => ["complete", "completed", "done", "result"].includes(String(item).trim().toLowerCase())))
+  );
+  if (!completionRequested) {
+    return null;
+  }
+  if (sessionRecord.last_result_packet_id && sessionRecord.last_result_status && bridgeReport.current_assignment && sessionRecord.applied_assignment_id === bridgeReport.current_assignment.assignment_id) {
+    return {
+      status: sessionRecord.last_result_status,
+      packet_id: sessionRecord.last_result_packet_id,
+      target_node_id: sessionRecord.heartbeat_target_node_id || null,
+      sent_at: sessionRecord.last_result_at || generatedAt,
+      result_status: sessionRecord.last_result_status,
+      next_action: "Worker completion already submitted. Keep waiting for the master review."
+    };
+  }
+  if (!wifiClient || typeof wifiClient.sendWorkerResult !== "function") {
+    return {
+      status: "blocked",
+      next_action: "wifi_data_sharing is unavailable."
+    };
+  }
+  const localNode = transportStatus && transportStatus.local_node ? transportStatus.local_node : null;
+  const trustedWorkers = Array.isArray(workerPool && workerPool.trusted_workers) ? workerPool.trusted_workers : [];
+  const discoveredWorkers = Array.isArray(workerPool && workerPool.discovered_workers) ? workerPool.discovered_workers : [];
+  const masterTargetNode = resolveEvolutionMasterTargetNode([
+    ...trustedWorkers,
+    ...discoveredWorkers
+  ], localNode);
+  if (!masterTargetNode || !masterTargetNode.node_id) {
+    return {
+      status: "waiting",
+      next_action: "Discover the master laptop first, then send the worker completion packet."
+    };
+  }
+  const resultStatus = String(flags.result_status || flags.status || "completed").trim().toLowerCase() || "completed";
+  const packet = {
+    packet_type: "worker_result",
+    title: `Worker result :: ${bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : "assignment"}`,
+    payload: {
+      report_type: "multi_ai_evolution_worker_result",
+      title: `Worker result :: ${bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : "assignment"}`,
+      session_role: "worker",
+      session_id: sessionRecord.session_id,
+      sender_node_id: localNode ? localNode.node_id || null : null,
+      target_node_id: masterTargetNode.node_id,
+      worker_ai_ids: Array.isArray(bridgeReport.current_assignment && bridgeReport.current_assignment.worker_ai_ids) ? bridgeReport.current_assignment.worker_ai_ids.slice() : [],
+      worker_pool: workerPool || null,
+      assignment_signature: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_signature : null,
+      assignment_id: bridgeReport.current_assignment ? bridgeReport.current_assignment.assignment_id : null,
+      worker_prompt: workerPrompt,
+      result_status: resultStatus,
+      result_summary: flags.summary || flags.result_summary || flags.note || null,
+      result_artifacts: parseCsvLike(flags.artifacts || flags.result_artifacts),
+      changed_files: parseCsvLike(flags.changed || flags.changed_files),
+      tests: parseCsvLike(flags.tests || flags.test_results),
+      source_machine: localNode ? {
+        node_id: localNode.node_id || null,
+        display_name: localNode.display_name || null,
+        hostname: localNode.hostname || null
+      } : null,
+      completed_at: generatedAt,
+      requested_at: generatedAt,
+      status: resultStatus
+    },
+    payload_encoding: "json"
+  };
+  const result = wifiClient.sendWorkerResult(packet, masterTargetNode.node_id, {
+    confirm: true,
+    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
+  });
+  if (!result || result.status === "blocked") {
+    return result || {
+      status: "blocked",
+      next_action: "The worker completion packet could not be sent."
+    };
+  }
+  if (appendAudit) {
+    appendAudit("multi_ai.evolution_worker_result_packet", "multi_ai_evolution_assignment", sessionRecord.session_id, `Worker result packet sent to ${masterTargetNode.node_id}`, {
+      packet_id: result.package_id || result.packet_id || null,
+      target_node_id: masterTargetNode.node_id,
+      result_status: resultStatus
+    });
+  }
+  return {
+    status: resultStatus,
+    result_status: resultStatus,
+    packet_id: result.package_id || result.packet_id || null,
+    target_node_id: masterTargetNode.node_id,
+    sent_at: generatedAt,
+    next_action: "Worker result sent to the master laptop."
   };
 }
 
@@ -1121,12 +1625,19 @@ function receiveEvolutionSessionPacket({ bridgeReport, sessionRecord, flags = {}
   };
 }
 
-function buildEvolutionSessionNextAction(sessionRole, broadcastResult, receiptResult, targetNodeIds = []) {
+function buildEvolutionSessionNextAction(sessionRole, broadcastResult, receiptResult, targetNodeIds = [], workerPool = null, completionResult = null) {
   if (sessionRole === "master") {
     if (broadcastResult && broadcastResult.status === "blocked") return broadcastResult.next_action || "Resolve the transport blocker before broadcasting.";
+    if (workerPool && Number(workerPool.stale_worker_count || 0) > 0) {
+      return `Stale worker heartbeats detected (${workerPool.stale_worker_count}). Requeue the assignment to a fresh ready worker or wait for a heartbeat update.`;
+    }
+    if (completionResult && completionResult.status && completionResult.status !== "blocked") return "Worker completion acknowledged. Keep the master session running for the next assignment.";
     if (!Array.isArray(targetNodeIds) || !targetNodeIds.length) return "Pair and trust at least one worker node, or pass --to <node-id> for the broadcast.";
     if (targetNodeIds.length === 1) return "Keep the master session running so it can rebroadcast when the assignment changes.";
     return `Keep the master session running so it can rebroadcast to ${targetNodeIds.length} ready worker nodes when the assignment changes.`;
+  }
+  if (completionResult && completionResult.status && completionResult.status !== "blocked") {
+    return "Worker completion sent. Keep the worker session running and wait for the next broadcast.";
   }
   if (receiptResult && receiptResult.status === "applied") {
     return "Worker session is synced. Keep it running so new broadcasts are applied automatically.";
@@ -1148,6 +1659,26 @@ function markEvolutionAssignmentApplied(assignmentId, patch = {}) {
     assignment_id: assignmentId,
     status: patch.status || "applied",
     applied_at: patch.applied_at || now,
+    updated_at: now
+  };
+  state.assignments[index] = updated;
+  state.current_assignment = updated;
+  state.updated_at = now;
+  writeJsonFile(STATE_FILE, state);
+  return updated;
+}
+
+function markEvolutionAssignmentCompleted(assignmentId, patch = {}) {
+  const state = readEvolutionAssignmentBridgeState();
+  const now = new Date().toISOString();
+  const index = state.assignments.findIndex((item) => item.assignment_id === assignmentId);
+  if (index < 0) return null;
+  const updated = {
+    ...state.assignments[index],
+    ...patch,
+    assignment_id: assignmentId,
+    status: patch.status || "completed",
+    completed_at: patch.completed_at || now,
     updated_at: now
   };
   state.assignments[index] = updated;
@@ -1368,8 +1899,18 @@ function buildWorkerPrompt(report, workerIds = []) {
     "3. Edit only leased files.",
     "4. Run the relevant tests.",
     "5. Report changed files, results, blockers, and risks.",
-    "6. Wait for the master laptop to review and push."
+    "6. If the work is complete, send the worker completion packet to the master laptop.",
+    "7. Wait for the master laptop to review and push."
   ].join("\n");
+}
+
+function parseCsvLike(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean);
+  return String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function localFileExists(relativePath) {
@@ -1394,5 +1935,6 @@ module.exports = {
   ensureEvolutionAssignmentBridgeState,
   defaultEvolutionAssignmentSessionState,
   ensureEvolutionAssignmentSessionState,
-  markEvolutionAssignmentApplied
+  markEvolutionAssignmentApplied,
+  markEvolutionAssignmentCompleted
 };

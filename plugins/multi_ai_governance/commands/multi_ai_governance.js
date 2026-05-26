@@ -1391,7 +1391,8 @@ function handleEvolutionBridgeAction(state, value, flags, appendAudit, rest = []
     };
     const sessionReport = evolutionAssignmentBridge.buildEvolutionAssignmentSessionReport(state, flags, sessionDeps, {
       operation: sessionOperation,
-      role: flags.role || flags.mode || rest[0] || "master"
+      role: flags.role || flags.mode || rest[0] || "master",
+      rest
     });
     if (sessionOperation === "watch") {
       const result = watchMultiAiRelay(".kabeeri/multi_ai_governance/evolution_sessions.json", {
@@ -1400,7 +1401,8 @@ function handleEvolutionBridgeAction(state, value, flags, appendAudit, rest = []
       }, {
         readReport: () => evolutionAssignmentBridge.buildEvolutionAssignmentSessionReport(readJsonFile(".kabeeri/multi_ai_governance.json"), flags, sessionDeps, {
           operation: "watch",
-          role: flags.role || flags.mode || rest[0] || "master"
+          role: flags.role || flags.mode || rest[0] || "master",
+          rest
         }),
         renderReport: (report) => evolutionAssignmentBridge.renderEvolutionAssignmentSessionReport(report)
       });

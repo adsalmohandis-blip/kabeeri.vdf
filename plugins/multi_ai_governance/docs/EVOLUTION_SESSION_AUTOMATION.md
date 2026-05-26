@@ -20,8 +20,11 @@ workflow for a master laptop and a worker laptop.
    reads the Wi-Fi inbox.
 4. When the master discovers trusted ready worker nodes, it broadcasts the
    approved assignment packet to all of them automatically.
-5. When a worker receives an approved assignment packet, it records the
-   applied assignment locally and keeps waiting for later broadcasts.
+5. The worker laptop also sends periodic heartbeats so the master can tell
+   which workers are fresh, ready, or stale.
+6. When a worker receives an approved assignment packet, it records the
+   applied assignment locally, can submit a completion packet back to the
+   master, and keeps waiting for later broadcasts.
 
 ## Startup Commands
 
@@ -45,6 +48,10 @@ kvdf multi-ai evolution session worker --watch
   beyond the current bridge decision.
 - If Wi-Fi/LAN is unavailable, the session stays local and safe.
 - If the bridge decision is blocked, the session does not broadcast.
+- If a worker stops heartbeating, the master requeues the assignment to a
+  fresh ready worker instead of reusing the stale node.
+- If the worker sends a completion packet, the master records the completion
+  and keeps the session ready for the next assignment.
 
 ## Outputs
 
@@ -54,5 +61,7 @@ The session command reports:
 - transport status
 - broadcast status
 - received packet status
+- heartbeat status
+- completion status
 - the current assignment
 - the next safe action
