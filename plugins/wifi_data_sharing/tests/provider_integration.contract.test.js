@@ -164,7 +164,7 @@ test("worker join bootstrap packets can be broadcast without a discovered master
 }));
 
 test("bootstrap transport emits a direct worker join control packet when no master target is visible", () => withTempRepo((dir) => {
-  state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
+  const current = state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
   const input = path.join(dir, "payload.json");
   fs.writeFileSync(input, JSON.stringify({ ready: true }, null, 2), "utf8");
   const created = transfer.createPackage({
@@ -185,6 +185,7 @@ test("bootstrap transport emits a direct worker join control packet when no mast
   assert.ok(captured);
   assert.strictEqual(captured.packet.message_type, "worker_join_request");
   assert.strictEqual(captured.packet.packet_type, "worker_join_request");
+  assert.strictEqual(captured.packet.node_id, current.local_node.node_id);
   assert.strictEqual(captured.packet.bootstrap, true);
   assert.strictEqual(captured.packet.service_name, "wifi_data_sharing");
   assert.strictEqual(captured.target.loopback, true);

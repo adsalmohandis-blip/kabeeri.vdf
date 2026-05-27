@@ -77,8 +77,9 @@ function parseDiscoveryMessage(input) {
 }
 
 function normalizeCandidate(message, remote, now = new Date().toISOString()) {
+  const nodeId = message.node_id || message.source_node_id || message.sender_node_id || null;
   return {
-    node_id: message.node_id,
+    node_id: nodeId,
     display_name: message.display_name || null,
     hostname: message.hostname || null,
     address: remote.address || null,
@@ -264,6 +265,7 @@ function listenForCandidates(socket, { state, timeoutMs, loopback = false, onCan
       if (["package", "worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(messageType)) {
         const packetCandidate = normalizeCandidate({
           ...parsed,
+          node_id: parsed.node_id || parsed.source_node_id || parsed.sender_node_id || null,
           trust_role: parsed.trust_role || (messageType === "assignment_packet" ? "owner" : "worker"),
           pairing_required: messageType !== "worker_join_request" ? parsed.pairing_required : false,
           transfer_enabled: Boolean(parsed.transfer_enabled)
@@ -334,6 +336,7 @@ async function advertisePresence({ state, durationMs = 10000, loopback = false, 
     if (["package", "worker_join_request", "worker_heartbeat", "worker_result", "assignment_packet"].includes(messageType)) {
       const packetCandidate = normalizeCandidate({
         ...parsed,
+        node_id: parsed.node_id || parsed.source_node_id || parsed.sender_node_id || null,
         trust_role: parsed.trust_role || (messageType === "assignment_packet" ? "owner" : "worker"),
         pairing_required: messageType !== "worker_join_request" ? parsed.pairing_required : false,
         transfer_enabled: Boolean(parsed.transfer_enabled)
