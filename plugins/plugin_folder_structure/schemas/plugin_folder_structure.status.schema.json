@@ -1,0 +1,24 @@
+{
+  "type": "object",
+  "required": [
+    "report_type",
+    "plugin_id",
+    "track",
+    "status"
+  ],
+  "properties": {
+    "report_type": { "type": "string" },
+    "plugin_id": { "type": "string" },
+    "generated_at": { "type": "string" },
+    "track": { "type": "string", "enum": ["owner", "plugin_dev", "viber"] },
+    "status": { "type": "string" },
+    "target_message": { "type": "string" },
+    "owner_direct_plugin_creation": { "type": "boolean" },
+    "plugin_dev_workspace_creation": { "type": "boolean" },
+    "viber_blocked": { "type": "boolean" },
+    "marketplace_published": { "type": "boolean" },
+    "owner_direct_install_allowed": { "type": "boolean" },
+    "plugin_dev_marketplace_upload": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,9 @@
+{
+  "plugin_slug": "plugin_folder_structure",
+  "track": "owner_track",
+  "target_root": "./plugins/plugin_folder_structure/",
+  "status": "owner_direct_development",
+  "installed_path": "./plugins/plugin_folder_structure/",
+  "marketplace_published": false,
+  "owner_created_directly": true
+}

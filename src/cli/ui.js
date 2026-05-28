@@ -27,13 +27,21 @@ function parseArgs(argv) {
     } else if (item === "-v") {
       flags.version = true;
     } else if (item.startsWith("--")) {
-      const key = normalizeFlagName(item.slice(2));
-      const next = argv[index + 1];
-      if (!next || next.startsWith("--")) {
-        flags[key] = true;
+      const rawFlag = item.slice(2);
+      const equalsIndex = rawFlag.indexOf("=");
+      if (equalsIndex !== -1) {
+        const key = normalizeFlagName(rawFlag.slice(0, equalsIndex));
+        const value = rawFlag.slice(equalsIndex + 1);
+        flags[key] = value === "" ? true : value;
       } else {
-        flags[key] = next;
-        index += 1;
+        const key = normalizeFlagName(rawFlag);
+        const next = argv[index + 1];
+        if (!next || next.startsWith("--")) {
+          flags[key] = true;
+        } else {
+          flags[key] = next;
+          index += 1;
+        }
       }
     } else {
       positionals.push(item);
@@ -1594,6 +1602,15 @@ Notes:
 Notes:
   Naming governance keeps machine-readable IDs and human-readable titles stable for plans, versions, evolutions, and tasks. IDs are lowercase, deterministic, and track-separated so Owner and Viber records do not collide.
 `,
+    "plugin-folder": `Usage:
+  kvdf plugin-folder status
+  kvdf plugin-folder create <plugin-slug> --track=owner|plugin_dev|viber
+  kvdf plugin-folder validate <plugin-slug> --track=owner|plugin_dev
+  kvdf plugin-folder readiness <plugin-slug> --track=owner|plugin_dev
+
+Notes:
+  Plugin Folder Structure keeps new plugins track-aware. Owner Track can create directly under ./plugins/<plugin-slug>/, Plugin Development Track creates governed workspaces under ./workspaces/plugins/<plugin-slug>/, and Viber/App Track is blocked from direct plugin creation.
+`,
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
 }
@@ -1629,6 +1646,7 @@ function printHelp() {
     "  validate [scope]             Validate repo JSON, plans, workspace state, docs source-of-truth, historical source clarity, and blocked scenarios",
     "  generator list|show|create   List, show, or scaffold generator profiles",
     "  create --profile <name>      Shortcut for generator create",
+    "  plugin-folder                Create and validate track-aware plugin folder structures",
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",

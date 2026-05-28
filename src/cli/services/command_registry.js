@@ -170,6 +170,20 @@ const COMMAND_REGISTRY = [
     cli_role: "Canonicalize plugin state and keep it persisted."
   },
   {
+    key: "plugin-folder",
+    aliases: ["plugin_folder"],
+    category: "governance",
+    stage: "plugin-structure",
+    owner: "shared",
+    purpose: "Create and validate plugin folder structures for owner and plugin-development tracks.",
+    prerequisites: ["Plugin folder rules are loaded."],
+    outputs: ["Plugin folder status", "track-aware folder structures", "governed plugin workspace artifacts"],
+    next_commands: ["kvdf plugin-folder status", "kvdf plugin-folder create <plugin-slug> --track=owner", "kvdf contract"],
+    file_dependencies: ["plugins/plugin_folder_structure/plugin.json", "plugins/plugin_folder_structure/plugin_manifest.json"],
+    ai_role: "Use the track-aware folder contract before generating new plugin roots.",
+    cli_role: "Keep plugin folder creation explicit, track-aware, and fail-closed."
+  },
+  {
     key: "wifi-data-sharing",
     aliases: ["wifi_data_sharing", "wifidata", "wifi-share"],
     category: "integration",

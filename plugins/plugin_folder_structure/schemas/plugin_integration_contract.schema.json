@@ -1,0 +1,37 @@
+{
+  "type": "object",
+  "required": [
+    "integrations"
+  ],
+  "properties": {
+    "integrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "target",
+          "mode",
+          "required"
+        ],
+        "properties": {
+          "target": { "type": "string" },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "consume",
+              "provide",
+              "extend",
+              "listen",
+              "emit",
+              "delegate"
+            ]
+          },
+          "required": { "type": "boolean" },
+          "added_at": { "type": "string" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

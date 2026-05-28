@@ -1,0 +1,114 @@
+{
+  "plugin_id": "plugin_folder_structure",
+  "id": "plugin_folder_structure",
+  "name": "Plugin Folder Structure",
+  "plugin_version": "1.0.0",
+  "version": "1.0.0",
+  "bundle_type": "removable",
+  "load_strategy": "manifest_driven",
+  "command_entrypoint": "plugins/plugin_folder_structure/bootstrap.js",
+  "runtime_entrypoint": "plugins/plugin_folder_structure/bootstrap.js",
+  "entry": "bootstrap.js",
+  "runtime_path": "plugins/plugin_folder_structure/bootstrap.js",
+  "removable": true,
+  "track": "framework_owner",
+  "plugin_family": "framework_plugin",
+  "plugin_type": "kvdf_core",
+  "type": "kvdf_core",
+  "status": "owner_direct_development",
+  "enabled_by_default": true,
+  "description": "Track-aware plugin folder governance for owner and plugin_dev workflows.",
+  "commands": [
+    "status",
+    "create",
+    "validate",
+    "readiness",
+    "git-library",
+    "integration",
+    "request-owner-review",
+    "request-marketplace-upload",
+    "init-source"
+  ],
+  "depends_on": [],
+  "integrates_with": [
+    "plugin_loader",
+    "session_track",
+    "planner",
+    "evolution"
+  ],
+  "provides": [
+    "track-aware plugin folder creation",
+    "track-aware plugin workspace validation",
+    "governed plugin promotion requests"
+  ],
+  "consumes": [
+    "active track",
+    "plugin slug",
+    "git library input records",
+    "integration records"
+  ],
+  "conflicts_with": [
+    "viber_app_direct_plugin_creation"
+  ],
+  "permissions_required": [
+    "filesystem_write",
+    "workspace_state_read",
+    "plugin_registry_read"
+  ],
+  "schemas": [
+    "plugins/plugin_folder_structure/schemas/plugin_folder_structure.status.schema.json",
+    "plugins/plugin_folder_structure/schemas/git_library_inputs.schema.json",
+    "plugins/plugin_folder_structure/schemas/plugin_integration_contract.schema.json"
+  ],
+  "required_folders": [
+    "docs",
+    "prompts",
+    "runtime",
+    "dashboard",
+    "viber_blocking",
+    "src",
+    "schemas",
+    "tests"
+  ],
+  "optional_folders": [
+    "README.md",
+    "CHANGELOG.md",
+    "plugin_manifest.json"
+  ],
+  "domain_folders": [
+    "docs",
+    "prompts",
+    "runtime",
+    "dashboard",
+    "viber_blocking"
+  ],
+  "command_surface": [
+    "kvdf plugin-folder status",
+    "kvdf plugin-folder create <plugin-slug> --track=owner|plugin_dev|viber",
+    "kvdf plugin-folder validate <plugin-slug> --track=owner|plugin_dev",
+    "kvdf plugin-folder readiness <plugin-slug> --track=owner|plugin_dev",
+    "kvdf plugin-folder git-library add <plugin-slug> <url> --name=<name> --use=<proposed_use>",
+    "kvdf plugin-folder git-library list <plugin-slug>",
+    "kvdf plugin-folder git-library validate <plugin-slug>",
+    "kvdf plugin-folder integration add <plugin-slug> <target-plugin> --mode=<mode> --required=<true|false>",
+    "kvdf plugin-folder integration validate <plugin-slug>",
+    "kvdf plugin-folder request-owner-review <plugin-slug>",
+    "kvdf plugin-folder request-marketplace-upload <plugin-slug>",
+    "kvdf plugin-folder init-source <plugin-slug>"
+  ],
+  "docs_surface": [
+    "plugins/plugin_folder_structure/docs/README.md",
+    "plugins/plugin_folder_structure/docs/OVERVIEW.md",
+    "plugins/plugin_folder_structure/docs/TRACK_BOUNDARIES.md",
+    "plugins/plugin_folder_structure/docs/COMMANDS.md",
+    "plugins/plugin_folder_structure/docs/ACCEPTANCE_CRITERIA.md",
+    "plugins/plugin_folder_structure/docs/OWNER_TRACK_DIRECT_PLUGIN_FLOW.md",
+    "plugins/plugin_folder_structure/docs/PLUGIN_DEVELOPMENT_TRACK_FLOW.md",
+    "plugins/plugin_folder_structure/docs/VIBER_TRACK_BLOCKING_RULE.md",
+    "plugins/plugin_folder_structure/docs/GIT_LIBRARY_INPUTS.md",
+    "plugins/plugin_folder_structure/docs/INTEGRATIONS.md",
+    "plugins/plugin_folder_structure/docs/PLUGIN_INTEGRATION_LAYER.md",
+    "plugins/plugin_folder_structure/docs/MARKETPLACE_REQUEST_FLOW.md",
+    "plugins/plugin_folder_structure/docs/git_libraries/README.md"
+  ]
+}
