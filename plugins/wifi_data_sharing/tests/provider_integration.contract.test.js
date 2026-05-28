@@ -163,6 +163,48 @@ test("worker join bootstrap packets can be broadcast without a discovered master
   assert.strictEqual(sent.status, "ok");
 }));
 
+test("bootstrap peer endpoint is used for direct worker join transport when discovery is empty", () => withTempRepo((dir) => {
+  const current = state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
+  state.writeWifiDataSharingState({
+    ...current,
+    discovery: {
+      ...(current.discovery || {}),
+      enabled: true,
+      mode: "discover",
+      known_candidates: [],
+      bootstrap_peers: [
+        {
+          peer_id: "master-peer-001",
+          node_id: "wifi-node-master",
+          host: "192.168.1.5",
+          port: 47632,
+          trust_role: "owner",
+          enabled: true
+        }
+      ]
+    }
+  });
+  const created = transfer.createPackage({
+    packageType: "worker_join_request",
+    title: "Worker join request",
+    payload: { ready: true },
+    payloadEncoding: "json"
+  });
+  let captured = null;
+  const report = transfer.sendBootstrapPacket({
+    packageId: created.package.package_id,
+    targetNodeId: "wifi-node-master",
+    confirm: true,
+    transport: async (packet, target) => {
+      captured = { packet, target };
+    }
+  });
+  assert.strictEqual(report.status, "ok");
+  assert.ok(captured);
+  assert.strictEqual(captured.target.targetHost, "192.168.1.5");
+  assert.strictEqual(captured.target.targetPort, 47632);
+}));
+
 test("bootstrap transport emits a direct worker join control packet when no master target is visible", () => withTempRepo((dir) => {
   const current = state.initWifiDataSharingState({ name: "Worker Laptop", role: "worker" });
   const input = path.join(dir, "payload.json");

@@ -1,6 +1,6 @@
 {
   "report_type": "kvdf_capability_search_index",
-  "generated_at": "2026-05-24T15:10:58.348Z",
+  "generated_at": "2026-05-28T06:31:09.502Z",
   "query": "",
   "filters": {
     "track": "framework owner",
@@ -391,11 +391,11 @@
         "phase": "G. Commerce and Plugins",
         "capability": "integrations",
         "capability_name": "Plugins",
-        "command": "kvdf github, kvdf sync, kvdf release, kvdf github-provider, kvdf multi-ai",
+        "command": "kvdf github, kvdf sync, kvdf release, kvdf github-provider, kvdf multi-ai, kvdf multi-ai github-provider",
         "summary": "Capability registry entry for Plugins",
         "owner": "backend",
         "source": "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md, docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "search_text": "integrations plugins g commerce and plugins backend kvdf github kvdf sync kvdf release kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf capability registry"
+        "search_text": "integrations plugins g commerce and plugins backend kvdf github kvdf sync kvdf release kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf multi ai github provider kvdf capability registry"
       },
       {
         "kind": "capability",
@@ -404,11 +404,11 @@
         "phase": "G. Commerce and Plugins",
         "capability": "payments_billing",
         "capability_name": "Payments / Billing",
-        "command": "kvdf github, kvdf sync, kvdf release, kvdf github-provider, kvdf multi-ai",
+        "command": "kvdf github, kvdf sync, kvdf release, kvdf github-provider, kvdf multi-ai, kvdf multi-ai github-provider",
         "summary": "Capability registry entry for Payments / Billing",
         "owner": "backend",
         "source": "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md, docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "search_text": "payments billing payments billing g commerce and plugins backend kvdf github kvdf sync kvdf release kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf capability registry"
+        "search_text": "payments billing payments billing g commerce and plugins backend kvdf github kvdf sync kvdf release kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf multi ai github provider kvdf capability registry"
       },
       {
         "kind": "capability",
@@ -612,11 +612,11 @@
         "phase": "G. Commerce and Plugins",
         "capability": "multi_tenancy",
         "capability_name": "Multi-Tenancy",
-        "command": "kvdf github, kvdf sync, kvdf release, kvdf github-provider, kvdf multi-ai",
+        "command": "kvdf github, kvdf sync, kvdf release, kvdf github-provider, kvdf multi-ai, kvdf multi-ai github-provider",
         "summary": "Capability registry entry for Multi-Tenancy",
         "owner": "docs",
         "source": "knowledge/standard_systems/SYSTEM_AREAS_INDEX.md, docs/SYSTEM_CAPABILITIES_REFERENCE.md",
-        "search_text": "multi tenancy multi tenancy g commerce and plugins docs kvdf github kvdf sync kvdf release kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf capability registry"
+        "search_text": "multi tenancy multi tenancy g commerce and plugins docs kvdf github kvdf sync kvdf release kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf multi ai github provider kvdf capability registry"
       },
       {
         "kind": "capability",
@@ -1769,11 +1769,11 @@
         "phase": "complete",
         "capability": "integrations",
         "capability_name": "Plugins",
-        "command": "kvdf github-provider, kvdf github, kvdf sync, kvdf multi-ai",
+        "command": "kvdf github-provider, kvdf github, kvdf sync, kvdf multi-ai, kvdf multi-ai github-provider",
         "summary": "Capability documentation matrix for Plugins",
         "owner": "backend",
         "source": "docs/SYSTEM_CAPABILITIES_REFERENCE.md, plugins/github_provider/, knowledge/governance/MULTI_AI_GOVERNANCE.md, docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json, docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json, docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md",
-        "search_text": "integrations plugins g commerce and plugins backend docs system capabilities reference md plugins github provider knowledge governance multi ai governance md kvdf github provider kvdf github kvdf sync kvdf multi ai kabeeri multi ai governance json kabeeri github team feedback json tests cli integration test js tests service unit test js npm test docs reports kvdf capability doc matrix json docs reports kvdf capability cli surface json docs reports kvdf source capability mapping md complete kvdf capability matrix"
+        "search_text": "integrations plugins g commerce and plugins backend docs system capabilities reference md plugins github provider knowledge governance multi ai governance md kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf multi ai github provider kabeeri multi ai governance json kabeeri github team feedback json tests cli integration test js tests service unit test js npm test docs reports kvdf capability doc matrix json docs reports kvdf capability cli surface json docs reports kvdf source capability mapping md complete kvdf capability matrix"
       },
       {
         "kind": "matrix",
@@ -1782,11 +1782,11 @@
         "phase": "complete",
         "capability": "payments_billing",
         "capability_name": "Payments / Billing",
-        "command": "kvdf github-provider, kvdf github, kvdf sync, kvdf multi-ai",
+        "command": "kvdf github-provider, kvdf github, kvdf sync, kvdf multi-ai, kvdf multi-ai github-provider",
         "summary": "Capability documentation matrix for Payments / Billing",
         "owner": "backend",
         "source": "docs/SYSTEM_CAPABILITIES_REFERENCE.md, plugins/github_provider/, knowledge/governance/MULTI_AI_GOVERNANCE.md, docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json, docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json, docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md",
-        "search_text": "payments billing payments billing g commerce and plugins backend docs system capabilities reference md plugins github provider knowledge governance multi ai governance md kvdf github provider kvdf github kvdf sync kvdf multi ai kabeeri multi ai governance json kabeeri github team feedback json tests cli integration test js tests service unit test js npm test docs reports kvdf capability doc matrix json docs reports kvdf capability cli surface json docs reports kvdf source capability mapping md complete kvdf capability matrix"
+        "search_text": "payments billing payments billing g commerce and plugins backend docs system capabilities reference md plugins github provider knowledge governance multi ai governance md kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf multi ai github provider kabeeri multi ai governance json kabeeri github team feedback json tests cli integration test js tests service unit test js npm test docs reports kvdf capability doc matrix json docs reports kvdf capability cli surface json docs reports kvdf source capability mapping md complete kvdf capability matrix"
       },
       {
         "kind": "matrix",
@@ -1990,11 +1990,11 @@
         "phase": "complete",
         "capability": "multi_tenancy",
         "capability_name": "Multi-Tenancy",
-        "command": "kvdf github-provider, kvdf github, kvdf sync, kvdf multi-ai",
+        "command": "kvdf github-provider, kvdf github, kvdf sync, kvdf multi-ai, kvdf multi-ai github-provider",
         "summary": "Capability documentation matrix for Multi-Tenancy",
         "owner": "docs",
         "source": "docs/SYSTEM_CAPABILITIES_REFERENCE.md, plugins/github_provider/, knowledge/governance/MULTI_AI_GOVERNANCE.md, docs/reports/KVDF_CAPABILITY_DOC_MATRIX.json, docs/reports/KVDF_CAPABILITY_CLI_SURFACE.json, docs/reports/KVDF_SOURCE_CAPABILITY_MAPPING.md",
-        "search_text": "multi tenancy multi tenancy g commerce and plugins docs docs system capabilities reference md plugins github provider knowledge governance multi ai governance md kvdf github provider kvdf github kvdf sync kvdf multi ai kabeeri multi ai governance json kabeeri github team feedback json tests cli integration test js tests service unit test js npm test docs reports kvdf capability doc matrix json docs reports kvdf capability cli surface json docs reports kvdf source capability mapping md complete kvdf capability matrix"
+        "search_text": "multi tenancy multi tenancy g commerce and plugins docs docs system capabilities reference md plugins github provider knowledge governance multi ai governance md kvdf github provider kvdf github kvdf sync kvdf multi ai kvdf multi ai github provider kabeeri multi ai governance json kabeeri github team feedback json tests cli integration test js tests service unit test js npm test docs reports kvdf capability doc matrix json docs reports kvdf capability cli surface json docs reports kvdf source capability mapping md complete kvdf capability matrix"
       },
       {
         "kind": "matrix",

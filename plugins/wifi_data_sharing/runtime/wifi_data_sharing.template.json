@@ -16,7 +16,8 @@
     "enabled": false,
     "mode": "disabled",
     "last_scan_at": null,
-    "known_candidates": []
+    "known_candidates": [],
+    "bootstrap_peers": []
   },
   "pairing_sessions": [],
   "trusted_nodes": [],

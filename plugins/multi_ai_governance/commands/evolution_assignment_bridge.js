@@ -1574,13 +1574,39 @@ function resolveEvolutionWorkerRecovery(previousPool = null, currentPool = null,
   };
 }
 
-function resolveEvolutionMasterTargetNode(nodes = [], localNode = null) {
+function resolveEvolutionMasterTargetNode(nodes = [], localNode = null, bootstrapPeers = []) {
   const list = Array.isArray(nodes) ? nodes : [];
+  const peers = Array.isArray(bootstrapPeers) ? bootstrapPeers : [];
   const ownerNode = list.find((node) => {
     const trustRole = String(node && (node.trust_role || node.role || "")).trim().toLowerCase();
     return node && node.node_id && (!localNode || node.node_id !== localNode.node_id) && trustRole === "owner";
   });
-  return ownerNode || list.find((node) => node && node.node_id && (!localNode || node.node_id !== localNode.node_id)) || null;
+  if (ownerNode) return ownerNode;
+  const discovered = list.find((node) => node && node.node_id && (!localNode || node.node_id !== localNode.node_id));
+  if (discovered) return discovered;
+  const ownerPeer = peers.find((peer) => {
+    if (!peer || peer.enabled === false) return false;
+    const trustRole = String(peer.trust_role || peer.role || "").trim().toLowerCase();
+    return Boolean(peer.host || peer.node_id) && trustRole === "owner";
+  });
+  if (ownerPeer) {
+    return {
+      node_id: ownerPeer.node_id || null,
+      host: ownerPeer.host || null,
+      port: ownerPeer.port || null,
+      trust_role: "owner",
+      source: "bootstrap_peer"
+    };
+  }
+  const fallbackPeer = peers.find((peer) => peer && peer.enabled !== false && (peer.host || peer.node_id));
+  if (!fallbackPeer) return null;
+  return {
+    node_id: fallbackPeer.node_id || null,
+    host: fallbackPeer.host || null,
+    port: fallbackPeer.port || null,
+    trust_role: fallbackPeer.trust_role || null,
+    source: "bootstrap_peer"
+  };
 }
 
 function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiClient, transportStatus, workerPool, flags = {}, generatedAt, workerPrompt } = {}) {
@@ -1593,10 +1619,13 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
   const localNode = transportStatus && transportStatus.local_node ? transportStatus.local_node : null;
   const trustedWorkers = Array.isArray(workerPool && workerPool.trusted_workers) ? workerPool.trusted_workers : [];
   const discoveredWorkers = Array.isArray(workerPool && workerPool.discovered_workers) ? workerPool.discovered_workers : [];
+  const bootstrapPeers = wifiClient && typeof wifiClient.listWifiDataSharingBootstrapPeers === "function"
+    ? wifiClient.listWifiDataSharingBootstrapPeers()
+    : [];
   const masterTargetNode = resolveEvolutionMasterTargetNode([
     ...trustedWorkers,
     ...discoveredWorkers
-  ], localNode);
+  ], localNode, bootstrapPeers);
   const joinRequestTimeoutMs = resolveEvolutionWorkerJoinRequestTimeoutMs(flags, sessionRecord);
   const joinTargetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
   const bootstrapRetryMs = resolveEvolutionWorkerJoinRetryMs(flags, sessionRecord, joinTargetNodeId);
@@ -1643,7 +1672,9 @@ function refreshEvolutionWorkerJoinRequest({ bridgeReport, sessionRecord, wifiCl
   const result = wifiClient.sendWorkerJoinRequest(packet, joinTargetNodeId, {
     confirm: true,
     ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved)),
-    bootstrap: true
+    bootstrap: true,
+    targetHost: masterTargetNode && masterTargetNode.host ? masterTargetNode.host : null,
+    targetPort: masterTargetNode && masterTargetNode.port ? masterTargetNode.port : null
   });
   if (!result || result.status === "blocked") {
     return result || {
@@ -1702,10 +1733,13 @@ function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClie
   const localNode = transportStatus && transportStatus.local_node ? transportStatus.local_node : null;
   const trustedWorkers = Array.isArray(workerPool && workerPool.trusted_workers) ? workerPool.trusted_workers : [];
   const discoveredWorkers = Array.isArray(workerPool && workerPool.discovered_workers) ? workerPool.discovered_workers : [];
+  const bootstrapPeers = wifiClient && typeof wifiClient.listWifiDataSharingBootstrapPeers === "function"
+    ? wifiClient.listWifiDataSharingBootstrapPeers()
+    : [];
   const masterTargetNode = resolveEvolutionMasterTargetNode([
     ...trustedWorkers,
     ...discoveredWorkers
-  ], localNode);
+  ], localNode, bootstrapPeers);
   const targetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
   const recentHeartbeat = sessionRecord.last_heartbeat_at && Date.now() - Date.parse(sessionRecord.last_heartbeat_at) < Math.max(1000, Number(flags.heartbeat_interval_ms || flags["heartbeat-interval-ms"] || 5000));
   if (recentHeartbeat && sessionRecord.heartbeat_target_node_id === targetNodeId) {
@@ -1745,7 +1779,10 @@ function refreshEvolutionWorkerHeartbeat({ bridgeReport, sessionRecord, wifiClie
   };
   const result = wifiClient.sendWorkerHeartbeat(packet, targetNodeId, {
     confirm: true,
-    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
+    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved)),
+    bootstrap: true,
+    targetHost: masterTargetNode && masterTargetNode.host ? masterTargetNode.host : null,
+    targetPort: masterTargetNode && masterTargetNode.port ? masterTargetNode.port : null
   });
   if (!result || result.status === "blocked") {
     return result || {
@@ -1794,10 +1831,13 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
   const localNode = transportStatus && transportStatus.local_node ? transportStatus.local_node : null;
   const trustedWorkers = Array.isArray(workerPool && workerPool.trusted_workers) ? workerPool.trusted_workers : [];
   const discoveredWorkers = Array.isArray(workerPool && workerPool.discovered_workers) ? workerPool.discovered_workers : [];
+  const bootstrapPeers = wifiClient && typeof wifiClient.listWifiDataSharingBootstrapPeers === "function"
+    ? wifiClient.listWifiDataSharingBootstrapPeers()
+    : [];
   const masterTargetNode = resolveEvolutionMasterTargetNode([
     ...trustedWorkers,
     ...discoveredWorkers
-  ], localNode);
+  ], localNode, bootstrapPeers);
   const targetNodeId = masterTargetNode && masterTargetNode.node_id ? masterTargetNode.node_id : null;
   const resultStatus = String(flags.result_status || flags.status || "completed").trim().toLowerCase() || "completed";
   const packet = {
@@ -1833,7 +1873,10 @@ function maybeSendEvolutionWorkerCompletion({ bridgeReport, sessionRecord, wifiC
   };
   const result = wifiClient.sendWorkerResult(packet, targetNodeId, {
     confirm: true,
-    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved))
+    ownerApproved: Boolean(isTruthyFlag(flags["owner-approved"]) || isTruthyFlag(flags.approved)),
+    bootstrap: true,
+    targetHost: masterTargetNode && masterTargetNode.host ? masterTargetNode.host : null,
+    targetPort: masterTargetNode && masterTargetNode.port ? masterTargetNode.port : null
   });
   if (!result || result.status === "blocked") {
     return result || {

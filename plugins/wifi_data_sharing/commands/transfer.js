@@ -362,7 +362,16 @@ function sendPackage({ packageId, targetNodeId, confirm = false, bootstrap = fal
   };
 }
 
-function sendBootstrapPacket({ packageId, targetNodeId, confirm = false, loopback = false, port = DEFAULT_DISCOVERY_PORT, transport = sendTransportPacket } = {}) {
+function sendBootstrapPacket({
+  packageId,
+  targetNodeId,
+  confirm = false,
+  loopback = false,
+  port = DEFAULT_DISCOVERY_PORT,
+  targetHost = null,
+  targetPort = null,
+  transport = sendTransportPacket
+} = {}) {
   const state = ensureWifiDataSharingState();
   assertInitialized(state);
   if (!confirm) {
@@ -460,16 +469,14 @@ function sendBootstrapPacket({ packageId, targetNodeId, confirm = false, loopbac
     sent_at: now
   });
   updatePackageStatus(packageId, "sent", { target_node_id: targetNodeId || null });
-  void transport(directPacket, targetNodeId && state.discovery && Array.isArray(state.discovery.known_candidates)
-    ? {
-        loopback: Boolean(loopback),
-        targetHost: targetNodeId ? (findTrustedNodeRecord(state, targetNodeId) || {}).address || null : null,
-        targetPort: targetNodeId ? Number((findTrustedNodeRecord(state, targetNodeId) || {}).port || port || DEFAULT_DISCOVERY_PORT) : Number(port || DEFAULT_DISCOVERY_PORT)
-      }
-    : {
-        loopback: Boolean(loopback),
-        port: Number(port || DEFAULT_DISCOVERY_PORT)
-      }).catch(() => {});
+  const bootstrapTarget = resolveBootstrapTransportTarget(state, {
+    targetNodeId,
+    targetHost,
+    targetPort,
+    fallbackPort: port,
+    loopback: Boolean(loopback)
+  });
+  void transport(directPacket, bootstrapTarget).catch(() => {});
   appendWifiDataTransferEvent({
     event_type: "bootstrap_packet_dispatched",
     transfer_id: transferId,
@@ -488,6 +495,55 @@ function sendBootstrapPacket({ packageId, targetNodeId, confirm = false, loopbac
     outbox: outboxRecord,
     inbox_record: null,
     next_action: `Run \`kvdf wifi-data-sharing inbox show ${packageId}\` to review the received package.`
+  };
+}
+
+function resolveBootstrapTransportTarget(state, {
+  targetNodeId = null,
+  targetHost = null,
+  targetPort = null,
+  fallbackPort = DEFAULT_DISCOVERY_PORT,
+  loopback = false
+} = {}) {
+  const explicitHost = String(targetHost || "").trim();
+  const explicitPort = Number(targetPort || 0);
+  if (explicitHost) {
+    return {
+      loopback: false,
+      targetHost: explicitHost,
+      targetPort: Number.isFinite(explicitPort) && explicitPort > 0 ? explicitPort : Number(fallbackPort || DEFAULT_DISCOVERY_PORT)
+    };
+  }
+  const trusted = targetNodeId ? findTrustedNodeRecord(state, targetNodeId) : null;
+  const candidate = targetNodeId && state.discovery && Array.isArray(state.discovery.known_candidates)
+    ? state.discovery.known_candidates.find((item) => item && item.node_id === targetNodeId)
+    : null;
+  const bootstrapPeers = state.discovery && Array.isArray(state.discovery.bootstrap_peers)
+    ? state.discovery.bootstrap_peers
+    : [];
+  const peerByNode = targetNodeId
+    ? bootstrapPeers.find((item) => item && item.enabled !== false && item.node_id === targetNodeId)
+    : null;
+  const ownerPeer = bootstrapPeers.find((item) => item && item.enabled !== false && String(item.trust_role || "").toLowerCase() === "owner");
+  const fallbackPeer = bootstrapPeers.find((item) => item && item.enabled !== false);
+  const resolved = trusted || candidate || peerByNode || ownerPeer || fallbackPeer || null;
+  if (resolved && resolved.address) {
+    return {
+      loopback: false,
+      targetHost: resolved.address,
+      targetPort: Number(resolved.port || fallbackPort || DEFAULT_DISCOVERY_PORT)
+    };
+  }
+  if (resolved && resolved.host) {
+    return {
+      loopback: false,
+      targetHost: resolved.host,
+      targetPort: Number(resolved.port || fallbackPort || DEFAULT_DISCOVERY_PORT)
+    };
+  }
+  return {
+    loopback: Boolean(loopback),
+    port: Number(fallbackPort || DEFAULT_DISCOVERY_PORT)
   };
 }
 
@@ -983,6 +1039,7 @@ module.exports = {
   readTransferEvents,
   readPackagePayload,
   normalizeInlinePackagePayload,
+  resolveBootstrapTransportTarget,
   normalizePackageType,
   ALLOWED_PACKAGE_TYPES,
   PACKAGE_SIZE_LIMIT,

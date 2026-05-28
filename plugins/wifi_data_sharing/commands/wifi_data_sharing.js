@@ -5,7 +5,11 @@ const {
   readWifiDataSharingState,
   buildWifiDataSharingStatusReport: buildStatusReport,
   buildWifiDataSharingPolicyReport: buildPolicyReport,
-  buildWifiDataSharingCandidatesReport: buildCandidatesReport
+  buildWifiDataSharingCandidatesReport: buildCandidatesReport,
+  listBootstrapPeers,
+  upsertBootstrapPeer,
+  removeBootstrapPeer,
+  clearBootstrapPeers
 } = require("./state");
 const { runDiscoverCommand, runAdvertiseCommand } = require("./discovery");
 const { createPairing, verifyPairing, buildPairingReport } = require("./pairing");
@@ -74,6 +78,11 @@ function wifiDataSharing(action, value, flags = {}, rest = [], deps = {}) {
   }
   if (normalized === "candidates") {
     const report = buildCandidatesReport(ensureWifiDataSharingState());
+    outputReport(report, flags);
+    return report;
+  }
+  if (normalized === "bootstrap-peer" || normalized === "bootstrap_peers" || normalized === "bootstrap") {
+    const report = routeBootstrapPeer(value, flags, rest);
     outputReport(report, flags);
     return report;
   }
@@ -224,6 +233,61 @@ function routeTrusted(action, value, flags, rest) {
   return trustedNodes(action, value, flags, rest);
 }
 
+function routeBootstrapPeer(value, flags, rest) {
+  const action = String(value || rest[0] || "list").trim().toLowerCase();
+  const state = ensureWifiDataSharingState();
+  if (action === "list" || action === "show") {
+    return buildBootstrapPeersReport(state, "ok", null, "Bootstrap peers listed.");
+  }
+  if (action === "add" || action === "upsert") {
+    const nodeId = String(flags.node || flags.node_id || rest[1] || "").trim() || null;
+    const host = String(flags.host || flags.ip || rest[2] || "").trim() || null;
+    const port = Number(flags.port || flags.discovery_port || rest[3] || 47632);
+    const displayName = String(flags.name || flags.display_name || "").trim() || null;
+    const trustRole = String(flags.role || flags.trust_role || "owner").trim().toLowerCase();
+    if (!nodeId && !host) {
+      return buildBootstrapPeersReport(state, "blocked", null, "Provide --node <node-id> or --host <ip-or-host>.");
+    }
+    const result = upsertBootstrapPeer(state, {
+      node_id: nodeId,
+      host,
+      port,
+      display_name: displayName,
+      trust_role: trustRole
+    });
+    return buildBootstrapPeersReport(ensureWifiDataSharingState(), "ok", result.peer, "Bootstrap peer added or updated.");
+  }
+  if (action === "remove" || action === "delete") {
+    const target = String(flags.peer || flags.peer_id || flags.node || flags.node_id || flags.host || rest[1] || "").trim();
+    if (!target) {
+      return buildBootstrapPeersReport(state, "blocked", null, "Provide --peer <peer-id>, --node <node-id>, or --host <ip-or-host>.");
+    }
+    const result = removeBootstrapPeer(state, target);
+    if (!result.peer) {
+      return buildBootstrapPeersReport(ensureWifiDataSharingState(), "blocked", null, "Bootstrap peer was not found.");
+    }
+    return buildBootstrapPeersReport(ensureWifiDataSharingState(), "ok", result.peer, "Bootstrap peer removed.");
+  }
+  if (action === "clear") {
+    clearBootstrapPeers(state);
+    return buildBootstrapPeersReport(ensureWifiDataSharingState(), "ok", null, "Bootstrap peers cleared.");
+  }
+  return buildBootstrapPeersReport(state, "blocked", null, `Unknown bootstrap-peer action: ${action}`);
+}
+
+function buildBootstrapPeersReport(state, status = "ok", peer = null, nextAction = null) {
+  const peers = listBootstrapPeers(state);
+  return {
+    report_type: "wifi_data_sharing_bootstrap_peers",
+    plugin_id: "wifi_data_sharing",
+    status,
+    peer,
+    bootstrap_peers: peers,
+    count: peers.length,
+    next_action: nextAction || "Use bootstrap peers when discovery candidates are unavailable."
+  };
+}
+
 function normalizeAction(action) {
   const value = String(action || "").trim().toLowerCase();
   if (["wifi-data-sharing", "wifi_data_sharing", "wifidata", "wifi-share"].includes(value)) return "status";
@@ -259,10 +323,24 @@ function outputReport(report, flags) {
   }
   if (report && report.report_type === "wifi_data_sharing_candidates") {
     const candidates = Array.isArray(report.candidates) ? report.candidates : [];
+    const peers = Array.isArray(report.bootstrap_peers) ? report.bootstrap_peers : [];
     console.log(`Known candidates: ${candidates.length}`);
     for (const candidate of candidates) {
       console.log(`- ${candidate.display_name || candidate.node_id} @ ${candidate.address || "unknown"}:${candidate.port || ""}`);
     }
+    console.log(`Bootstrap peers: ${peers.length}`);
+    for (const peer of peers) {
+      console.log(`- ${peer.peer_id || peer.node_id || peer.host} @ ${peer.host || "node"}:${peer.port || ""}`);
+    }
+    return;
+  }
+  if (report && report.report_type === "wifi_data_sharing_bootstrap_peers") {
+    const peers = Array.isArray(report.bootstrap_peers) ? report.bootstrap_peers : [];
+    console.log(`Bootstrap peers: ${peers.length}`);
+    for (const peer of peers) {
+      console.log(`- ${peer.peer_id || peer.node_id || peer.host} @ ${peer.host || "node"}:${peer.port || ""}`);
+    }
+    if (report.next_action) console.log(`Next: ${report.next_action}`);
     return;
   }
   if (report && report.report_type === "wifi_data_sharing_provider") {

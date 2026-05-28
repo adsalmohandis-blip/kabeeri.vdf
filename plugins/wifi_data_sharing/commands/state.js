@@ -5,6 +5,7 @@ const path = require("path");
 const { version: kvdfVersion } = require("../../../package.json");
 
 const REPO_ROOT = path.resolve(__dirname, "../../../");
+const DEFAULT_DISCOVERY_PORT = 47632;
 const STATE_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_sharing.json");
 const DISCOVERY_LOG_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_discovery.jsonl");
 const PAIRING_LOG_FILE = path.join(REPO_ROOT, ".kabeeri", "wifi_data_pairing.jsonl");
@@ -136,7 +137,13 @@ function writeWifiDataSharingState(state) {
     },
     discovery: {
       ...defaultWifiDataSharingState().discovery,
-      ...(state && state.discovery ? state.discovery : {})
+      ...(state && state.discovery ? state.discovery : {}),
+      known_candidates: Array.isArray(state && state.discovery ? state.discovery.known_candidates : null)
+        ? state.discovery.known_candidates
+        : [],
+      bootstrap_peers: Array.isArray(state && state.discovery ? state.discovery.bootstrap_peers : null)
+        ? state.discovery.bootstrap_peers
+        : []
     },
     pairing_sessions: Array.isArray(state && state.pairing_sessions) ? state.pairing_sessions : [],
     policies: {
@@ -175,6 +182,8 @@ function initWifiDataSharingState({ name, role } = {}) {
   state.local_node.status = "initialized";
   state.discovery.enabled = false;
   state.discovery.mode = "disabled";
+  state.discovery.known_candidates = Array.isArray(state.discovery.known_candidates) ? state.discovery.known_candidates : [];
+  state.discovery.bootstrap_peers = Array.isArray(state.discovery.bootstrap_peers) ? state.discovery.bootstrap_peers : [];
   writeWifiDataSharingState(state);
   return state;
 }
@@ -632,7 +641,117 @@ function buildWifiDataSharingCandidatesReport(state = ensureWifiDataSharingState
     plugin_id: "wifi_data_sharing",
     status: "ok",
     candidates: Array.isArray(state.discovery && state.discovery.known_candidates) ? state.discovery.known_candidates : [],
+    bootstrap_peers: Array.isArray(state.discovery && state.discovery.bootstrap_peers) ? state.discovery.bootstrap_peers : [],
     discovery_enabled: Boolean(state.discovery && state.discovery.enabled)
+  };
+}
+
+function listBootstrapPeers(state = ensureWifiDataSharingState()) {
+  return Array.isArray(state.discovery && state.discovery.bootstrap_peers) ? state.discovery.bootstrap_peers.slice() : [];
+}
+
+function normalizeBootstrapPeer(input = {}) {
+  const host = String(input.host || "").trim();
+  const port = Number(input.port || input.discovery_port || DEFAULT_DISCOVERY_PORT);
+  const nodeId = String(input.node_id || "").trim();
+  const peerId = String(input.peer_id || "").trim();
+  if (!host && !nodeId) return null;
+  const resolvedPort = Number.isFinite(port) && port > 0 ? Math.floor(port) : DEFAULT_DISCOVERY_PORT;
+  return {
+    peer_id: peerId || (nodeId ? `node:${nodeId}` : `host:${host}:${resolvedPort}`),
+    node_id: nodeId || null,
+    host,
+    port: resolvedPort,
+    display_name: String(input.display_name || input.name || "").trim() || null,
+    trust_role: String(input.trust_role || input.role || "worker").trim().toLowerCase() || "worker",
+    transport: "udp",
+    enabled: input.enabled === false ? false : true,
+    created_at: input.created_at || new Date().toISOString(),
+    updated_at: input.updated_at || new Date().toISOString()
+  };
+}
+
+function upsertBootstrapPeer(state, peer = {}) {
+  const current = listBootstrapPeers(state);
+  const normalized = normalizeBootstrapPeer(peer);
+  if (!normalized) {
+    return {
+      peer: null,
+      peers: current
+    };
+  }
+  const index = current.findIndex((item) => item.peer_id === normalized.peer_id);
+  const now = new Date().toISOString();
+  if (index >= 0) {
+    current[index] = {
+      ...current[index],
+      ...normalized,
+      updated_at: now
+    };
+  } else {
+    current.push(normalized);
+  }
+  const nextState = {
+    ...state,
+    discovery: {
+      ...(state && state.discovery ? state.discovery : {}),
+      bootstrap_peers: current,
+      enabled: true
+    },
+    updated_at: now
+  };
+  writeWifiDataSharingState(nextState);
+  return {
+    peer: normalized,
+    peers: current
+  };
+}
+
+function removeBootstrapPeer(state, peerId) {
+  const peers = listBootstrapPeers(state);
+  const target = String(peerId || "").trim();
+  if (!target) {
+    return {
+      peer: null,
+      peers
+    };
+  }
+  const normalizedPeers = peers.filter((item) => item.peer_id !== target && item.node_id !== target && item.host !== target);
+  if (normalizedPeers.length === peers.length) {
+    return {
+      peer: null,
+      peers
+    };
+  }
+  const removed = peers.find((item) => item.peer_id === target || item.node_id === target || item.host === target) || null;
+  const now = new Date().toISOString();
+  writeWifiDataSharingState({
+    ...state,
+    discovery: {
+      ...(state && state.discovery ? state.discovery : {}),
+      bootstrap_peers: normalizedPeers
+    },
+    updated_at: now
+  });
+  return {
+    peer: removed,
+    peers: normalizedPeers
+  };
+}
+
+function clearBootstrapPeers(state) {
+  const now = new Date().toISOString();
+  writeWifiDataSharingState({
+    ...state,
+    discovery: {
+      ...(state && state.discovery ? state.discovery : {}),
+      bootstrap_peers: []
+    },
+    updated_at: now
+  });
+  return {
+    peer: null,
+    peers: []
   };
 }
 
@@ -707,5 +826,10 @@ module.exports = {
   getBackupsDir,
   mergeKnownCandidate,
   normalizeTrustRole,
-  generateNodeId
+  generateNodeId,
+  listBootstrapPeers,
+  normalizeBootstrapPeer,
+  upsertBootstrapPeer,
+  removeBootstrapPeer,
+  clearBootstrapPeers
 };

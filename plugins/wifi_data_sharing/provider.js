@@ -91,6 +91,14 @@ function listTrustedNodes(options = {}) {
   return applyLimit(trusted, options.limit);
 }
 
+function listBootstrapPeers(options = {}) {
+  const current = state.readWifiDataSharingState();
+  const peers = Array.isArray(current.discovery && current.discovery.bootstrap_peers)
+    ? current.discovery.bootstrap_peers.map((peer) => ({ ...peer }))
+    : [];
+  return applyLimit(peers, options.limit);
+}
+
 function listInbox(options = {}) {
   const inbox = transfer.listInboxRecords().map((record) => ({ ...record }));
   const filtered = inbox.filter((item) => {
@@ -160,7 +168,9 @@ function sendPackage(packageId, targetNodeId, options = {}) {
       packageId,
       targetNodeId,
       confirm: Boolean(options.confirm),
-      loopback: Boolean(options.loopback)
+      loopback: Boolean(options.loopback),
+      targetHost: options.targetHost || options.target_host || null,
+      targetPort: options.targetPort || options.target_port || null
     });
   }
   return transfer.sendPackage({
@@ -184,7 +194,9 @@ function sendBootstrapPacket(packageId, targetNodeId, options = {}) {
     packageId,
     targetNodeId,
     confirm: Boolean(options.confirm),
-    loopback: Boolean(options.loopback)
+    loopback: Boolean(options.loopback),
+    targetHost: options.targetHost || options.target_host || null,
+    targetPort: options.targetPort || options.target_port || null
   });
 }
 
@@ -194,6 +206,7 @@ function buildProviderReport(options = {}) {
   const localNode = getLocalNode();
   const candidates = listCandidates(options);
   const trusted = listTrustedNodes(options);
+  const bootstrapPeers = listBootstrapPeers(options);
   const inbox = listInbox(options);
   const packagesReport = transfer.listPackages();
   const transfersReport = transfer.listTransfers();
@@ -218,6 +231,7 @@ function buildProviderReport(options = {}) {
     summary: {
       local_node_initialized: Boolean(localNode.node_id),
       candidates_count: candidates.length,
+      bootstrap_peers_count: bootstrapPeers.length,
       trusted_nodes_count: trusted.length,
       revoked_nodes_count: trusted.filter((node) => node.trust_status === "revoked").length,
       packages_count: Array.isArray(packagesReport.packages) ? packagesReport.packages.length : 0,
@@ -239,6 +253,7 @@ function buildProviderReport(options = {}) {
     capabilities: providerInfo.capabilities,
     candidates,
     trusted_nodes: trusted,
+    bootstrap_peers: bootstrapPeers,
     inbox,
     outbox: Array.isArray(outboxReport.outbox) ? outboxReport.outbox.slice(-5).reverse() : [],
     packages: Array.isArray(packagesReport.packages) ? packagesReport.packages.slice(-5).reverse() : [],
@@ -356,6 +371,8 @@ function providerExportsApiAvailable() {
     getLocalNode,
     listCandidates,
     listTrustedNodes,
+    listBootstrapPeers,
+    listBootstrapPeers,
     canSendPackage,
     createPackage,
     sendPackage,
@@ -679,6 +696,7 @@ module.exports = {
   getLocalNode,
   listCandidates,
   listTrustedNodes,
+  listBootstrapPeers,
   canSendPackage,
   createPackage,
   sendPackage,

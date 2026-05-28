@@ -19,6 +19,7 @@ function buildWifiDataSharingIntegrationStatus() {
   }
   const providerInfo = typeof provider.getProviderInfo === "function" ? provider.getProviderInfo() : null;
   const trustedNodes = typeof provider.listTrustedNodes === "function" ? provider.listTrustedNodes() : [];
+  const bootstrapPeers = typeof provider.listBootstrapPeers === "function" ? provider.listBootstrapPeers() : [];
   const localNode = typeof provider.getLocalNode === "function" ? provider.getLocalNode() : null;
   return {
     report_type: "multi_ai_wifi_data_sharing_integration",
@@ -29,6 +30,7 @@ function buildWifiDataSharingIntegrationStatus() {
     provider: providerInfo,
     local_node: localNode,
     trusted_nodes_count: Array.isArray(trustedNodes) ? trustedNodes.length : 0,
+    bootstrap_peers_count: Array.isArray(bootstrapPeers) ? bootstrapPeers.length : 0,
     next_action: "Use the wifi data sharing provider to create, send, and review local governance packets."
   };
 }
@@ -43,6 +45,12 @@ function listWifiDataSharingCandidates() {
   const provider = getWifiDataSharingProvider();
   if (!provider || typeof provider.listCandidates !== "function") return [];
   return provider.listCandidates();
+}
+
+function listWifiDataSharingBootstrapPeers() {
+  const provider = getWifiDataSharingProvider();
+  if (!provider || typeof provider.listBootstrapPeers !== "function") return [];
+  return provider.listBootstrapPeers();
 }
 
 function listWifiDataSharingInbox() {
@@ -307,6 +315,7 @@ module.exports = {
   buildWifiDataSharingIntegrationStatus,
   listTrustedWifiNodes,
   listWifiDataSharingCandidates,
+  listWifiDataSharingBootstrapPeers,
   listWifiDataSharingInbox,
   refreshWifiDataSharingDiscovery,
   sendWorkerJoinRequest,

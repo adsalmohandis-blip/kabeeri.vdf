@@ -25,12 +25,16 @@
     },
     "discovery": {
       "type": "object",
-      "required": ["enabled", "mode", "last_scan_at", "known_candidates"],
+      "required": ["enabled", "mode", "last_scan_at", "known_candidates", "bootstrap_peers"],
       "properties": {
         "enabled": { "type": "boolean" },
         "mode": { "type": "string" },
         "last_scan_at": { "type": ["string", "null"] },
         "known_candidates": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "bootstrap_peers": {
           "type": "array",
           "items": { "type": "object" }
         }

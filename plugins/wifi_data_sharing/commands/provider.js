@@ -19,6 +19,7 @@ function renderProviderText(report) {
     `Status: ${report.status}`,
     `Local node: ${report.local_node && report.local_node.node_id ? report.local_node.node_id : "uninitialized"}`,
     `Candidates: ${report.summary.candidates_count}`,
+    `Bootstrap peers: ${report.summary.bootstrap_peers_count}`,
     `Trusted nodes: ${report.summary.trusted_nodes_count}`,
     `Revoked nodes: ${report.summary.revoked_nodes_count}`,
     `Packages: ${report.summary.packages_count}`,
