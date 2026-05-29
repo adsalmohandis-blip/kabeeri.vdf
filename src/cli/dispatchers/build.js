@@ -1,10 +1,12 @@
 const { handled } = require("./shared");
 const { pluginFolderStructure } = require("../../../plugins/plugin_folder_structure/bootstrap");
+const { pluginDev } = require("../../../plugins/plugin_dev/bootstrap");
 
 function dispatchBuildCommands({ group, action, value, flags, rest, rawGroup, c }) {
   if (group === "generator" || group === "generate") return handled(c.generator(action, value, flags, { appendAudit: c.appendAudit, refreshDashboardArtifacts: c.refreshDashboardArtifacts, fileExists: c.fileExists }));
   if (group === "create") return handled(c.generator("create", action, flags, { appendAudit: c.appendAudit, refreshDashboardArtifacts: c.refreshDashboardArtifacts, fileExists: c.fileExists }));
   if (group === "plugin-folder" || group === "plugin_folder") return handled(pluginFolderStructure(action, value, flags, rest));
+  if (group === "plugin-dev" || group === "plugin_dev") return handled(pluginDev(action, value, flags, rest));
   if (group === "prompt-pack") return handled(c.promptPack(action, value, flags, { composePromptPack: c.composePromptPackService }));
   if (group === "temp") return handled(c.tempCommand(action, value, flags, rest, { ensureWorkspace: c.ensureWorkspace, readJsonFile: c.readJsonFile, writeJsonFile: c.writeJsonFile, fileExists: c.fileExists, table: c.table, appendAudit: c.appendAudit }));
   if (group === "schedule" || group === "scheduler") return handled(c.taskScheduler(action, value, flags, rest, { ensureWorkspace: c.ensureWorkspace, readJsonFile: c.readJsonFile, writeJsonFile: c.writeJsonFile, fileExists: c.fileExists, table: c.table, appendAudit: c.appendAudit }));

@@ -1,0 +1,394 @@
+{
+  "status": "planned",
+  "track": "plugin_dev",
+  "scope": "plugin_dev plugin plan for the Plugin Development Track",
+  "mode": "planning",
+  "source": "docs/reports/PLUGIN_DEV_EVO_PLAN.md",
+  "purpose": "Machine-readable task punch breakdown for the plugin_dev Evo queue.",
+  "task_punches": [
+    {
+      "evo_id": "evo-pdev-000",
+      "evo_title": "Scope lock and architecture confirmation",
+      "task_punches": [
+        {
+          "task_id": "pdev-000-a",
+          "goal": "Map repo conventions for plugins, CLI registration, runtime state, docs, and tests",
+          "meaning": "Learn how this repo already registers plugins, exposes commands, writes runtime state, and documents behavior so the new plugin follows the same rules.",
+          "allowed_files": ["plugins/", "src/cli/", "schemas/", "docs/", ".kabeeri/"],
+          "forbidden_files": ["implementation code outside analysis scope"],
+          "acceptance": "A clear analysis report exists with repo conventions and integration points.",
+          "tests": ["Repository inspection only; no behavior changes."]
+        },
+        {
+          "task_id": "pdev-000-b",
+          "goal": "Define the plugin-dev planning dependency map",
+          "meaning": "Convert the phase brief into ordered slices so each later step has a clear start and end.",
+          "allowed_files": ["docs/reports/"],
+          "forbidden_files": ["all runtime/implementation folders"],
+          "acceptance": "The plugin-dev plan is split into safe Evo slices.",
+          "tests": ["Review report completeness."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-001",
+      "evo_title": "Plugin skeleton and discoverability",
+      "task_punches": [
+        {
+          "task_id": "pdev-001-a",
+          "goal": "Create the plugin shell and manifest",
+          "meaning": "Establish `plugin_dev` as a real plugin package with a manifest and entry point, but no development lifecycle logic yet.",
+          "allowed_files": ["plugins/plugin_dev/plugin.json", "plugins/plugin_dev/README.md", "plugins/plugin_dev/bootstrap.js", "plugins/plugin_dev/index.js"],
+          "forbidden_files": ["workspaces", "runtime", "unrelated plugins"],
+          "acceptance": "Plugin exists as a safe shell with documented purpose.",
+          "tests": ["Plugin metadata loads and surfaces a status command."]
+        },
+        {
+          "task_id": "pdev-001-b",
+          "goal": "Add status and doctor output only",
+          "meaning": "Give users and workers a read-only way to see what the plugin is for before any workspace logic is added.",
+          "allowed_files": ["plugins/plugin_dev/*", "src/cli/* if wiring is needed"],
+          "forbidden_files": ["workspace creation logic"],
+          "acceptance": "Status and doctor report plugin state without creating folders.",
+          "tests": ["CLI smoke for status/help."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-002",
+      "evo_title": "Core integration with plugin_folder_structure",
+      "task_punches": [
+        {
+          "task_id": "pdev-002-a",
+          "goal": "Create the workspace-contract integration layer",
+          "meaning": "Teach `plugin_dev` how to detect `plugin_folder_structure`, read its workspace contract, and decide whether workspace creation/checking can be delegated safely.",
+          "allowed_files": ["plugins/plugin_dev/*", "plugin integration code", "schemas", "docs"],
+          "forbidden_files": ["folder materialization logic copied from plugin_folder_structure"],
+          "acceptance": "`plugin_folder_structure` integration is explicit and read-only at first.",
+          "tests": ["Missing/disabled plugin handling tests."]
+        },
+        {
+          "task_id": "pdev-002-b",
+          "goal": "Add workspace ensure/check/status/contract commands",
+          "meaning": "Make workspace validation part of the development flow, but keep creation delegated to the workspace-contract owner.",
+          "allowed_files": ["plugins/plugin_dev/*", "CLI wiring", "docs"],
+          "forbidden_files": ["direct workspace creation code"],
+          "acceptance": "Workspace checks fail closed when the contract is missing or invalid.",
+          "tests": ["Workspace contract smoke tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-003",
+      "evo_title": "Plugin intake engine",
+      "task_punches": [
+        {
+          "task_id": "pdev-003-a",
+          "goal": "Create the intake reader and intake files",
+          "meaning": "Capture the plugin brief, target track, required capabilities, and missing information in the workspace.",
+          "allowed_files": ["workspace intake folders", "plugin docs", "plugin code"],
+          "forbidden_files": ["source generation or package logic"],
+          "acceptance": "Intake files are created only inside a valid plugin workspace.",
+          "tests": ["Intake JSON validation and question extraction."]
+        },
+        {
+          "task_id": "pdev-003-b",
+          "goal": "Add generic integration-question capture",
+          "meaning": "Collect the target-plugin integration questions without hardcoding any target list.",
+          "allowed_files": ["integration intake docs", "JSON outputs", "plugin code"],
+          "forbidden_files": ["hardcoded target plugin knowledge"],
+          "acceptance": "Integration needs are captured generically.",
+          "tests": ["Missing-details reports and question-set tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-004",
+      "evo_title": "Git library input analyzer",
+      "task_punches": [
+        {
+          "task_id": "pdev-004-a",
+          "goal": "Register and analyze library inputs",
+          "meaning": "Let the plugin store references to Git/library inputs and analyze them safely.",
+          "allowed_files": ["library input folders", "plugin code", "docs"],
+          "forbidden_files": ["blind code copying or unknown execution"],
+          "acceptance": "Library refs can be registered and analyzed.",
+          "tests": ["Structured analysis JSON and markdown."]
+        },
+        {
+          "task_id": "pdev-004-b",
+          "goal": "Add license, security, and reuse decision reporting",
+          "meaning": "Make legal and safety concerns visible before anything is reused.",
+          "allowed_files": ["library review folders", "plugin code"],
+          "forbidden_files": ["unapproved dependency install or code execution"],
+          "acceptance": "Unsafe or unknown licenses are flagged.",
+          "tests": ["License/security/reuse review tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-005",
+      "evo_title": "Plugin specification generator",
+      "task_punches": [
+        {
+          "task_id": "pdev-005-a",
+          "goal": "Generate the base plugin spec package",
+          "meaning": "Turn intake and library analysis into a complete plugin specification set.",
+          "allowed_files": ["spec docs", "plugin code", "workspace docs"],
+          "forbidden_files": ["source generation"],
+          "acceptance": "Specs are generated from intake and analysis.",
+          "tests": ["Spec validation and missing-data blocking checks."]
+        },
+        {
+          "task_id": "pdev-005-b",
+          "goal": "Add integration contract sections to the spec",
+          "meaning": "Document integration obligations for any target plugin slug, including roles, fallback, tests, and evidence.",
+          "allowed_files": ["integration spec docs", "plugin code"],
+          "forbidden_files": ["hardcoded integration only for known plugins"],
+          "acceptance": "Integration requirements are written generically.",
+          "tests": ["Integration-spec completeness tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-006",
+      "evo_title": "Governed task generator",
+      "task_punches": [
+        {
+          "task_id": "pdev-006-a",
+          "goal": "Convert specs into a governed task graph",
+          "meaning": "Create tasks from approved specs rather than inventing ad hoc work items.",
+          "allowed_files": ["task docs", "plugin code", "workspace docs"],
+          "forbidden_files": ["source output"],
+          "acceptance": "Task files are generated from specs.",
+          "tests": ["Task dependency and acceptance checks."]
+        },
+        {
+          "task_id": "pdev-006-b",
+          "goal": "Add integration tasks for declared targets",
+          "meaning": "Generate explicit integration tasks whenever another plugin is mentioned in the spec.",
+          "allowed_files": ["integration task docs", "plugin code"],
+          "forbidden_files": ["folder-structure creation tasks owned by plugin_folder_structure"],
+          "acceptance": "Integration tasks exist for declared targets.",
+          "tests": ["Integration-task coverage tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-007",
+      "evo_title": "Source builder orchestrator",
+      "task_punches": [
+        {
+          "task_id": "pdev-007-a",
+          "goal": "Build one task at a time",
+          "meaning": "Provide a controlled source builder that writes only inside allowed workspace paths.",
+          "allowed_files": ["source builder code", "workspace source folders"],
+          "forbidden_files": ["unrelated plugins", "core files", "folder creation logic"],
+          "acceptance": "A single task can be built safely.",
+          "tests": ["Path-restriction and diff/evidence checks."]
+        },
+        {
+          "task_id": "pdev-007-b",
+          "goal": "Emit build reports and changed-file lists",
+          "meaning": "Record what changed for auditability and later review.",
+          "allowed_files": ["source build reports", "evidence folders"],
+          "forbidden_files": ["hidden file mutation"],
+          "acceptance": "Build evidence exists for each task.",
+          "tests": ["Build-report and changed-file tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-008",
+      "evo_title": "Schema, runtime, and contract validation",
+      "task_punches": [
+        {
+          "task_id": "pdev-008-a",
+          "goal": "Validate manifest, schema, runtime, and command contracts",
+          "meaning": "Check that the plugin is internally consistent before packaging.",
+          "allowed_files": ["validators", "schemas", "docs", "reports"],
+          "forbidden_files": ["auto-fixing or rewriting source"],
+          "acceptance": "Invalid source or contracts are blocked.",
+          "tests": ["Validation report generation tests."]
+        },
+        {
+          "task_id": "pdev-008-b",
+          "goal": "Validate declared integration contracts read-only",
+          "meaning": "Confirm each target plugin integration has explicit fallback and boundary rules.",
+          "allowed_files": ["integration validators", "reports"],
+          "forbidden_files": ["contract mutation"],
+          "acceptance": "Invalid required integrations block packaging.",
+          "tests": ["Integration validation checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-009",
+      "evo_title": "Generic plugin integration builder",
+      "task_punches": [
+        {
+          "task_id": "pdev-009-a",
+          "goal": "Add generic integration contracts for any target plugin slug",
+          "meaning": "Let plugin_dev support any mentioned plugin without hardcoding a fixed list.",
+          "allowed_files": ["integration builder code", "docs", "schemas"],
+          "forbidden_files": ["special-casing only known plugins"],
+          "acceptance": "Generic integration contracts are generated safely.",
+          "tests": ["Unknown-target and missing-metadata tests."]
+        },
+        {
+          "task_id": "pdev-009-b",
+          "goal": "Generate integration tests and evidence",
+          "meaning": "Ensure every declared integration is proven, not just documented.",
+          "allowed_files": ["integration tests", "evidence folders"],
+          "forbidden_files": ["skipping required tests"],
+          "acceptance": "Required integration failures block readiness.",
+          "tests": ["Integration evidence and fallback-behavior checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-010",
+      "evo_title": "Test runner and quality gate",
+      "task_punches": [
+        {
+          "task_id": "pdev-010-a",
+          "goal": "Add a plugin-level test plan and runner",
+          "meaning": "Run plugin tests through existing repo test tooling.",
+          "allowed_files": ["test docs", "test runner code", "workspace fixtures"],
+          "forbidden_files": ["new test framework"],
+          "acceptance": "Tests can run for a developed plugin.",
+          "tests": ["Test-plan and test-report checks."]
+        },
+        {
+          "task_id": "pdev-010-b",
+          "goal": "Gate packaging on test quality",
+          "meaning": "Make test failures and required integration failures block packaging.",
+          "allowed_files": ["quality-gate code", "reports"],
+          "forbidden_files": ["packaging without quality checks"],
+          "acceptance": "Failed tests block packaging.",
+          "tests": ["Quality-gate blocking tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-011",
+      "evo_title": "Evidence and audit trail",
+      "task_punches": [
+        {
+          "task_id": "pdev-011-a",
+          "goal": "Collect evidence per major phase",
+          "meaning": "Write durable evidence records for workspace validation, intake, specs, tasks, source, tests, and integrations.",
+          "allowed_files": ["evidence folders", "audit reports", "plugin code"],
+          "forbidden_files": ["secret exposure"],
+          "acceptance": "Every major phase produces evidence.",
+          "tests": ["Evidence index completeness."]
+        },
+        {
+          "task_id": "pdev-011-b",
+          "goal": "Add evidence verification and reporting",
+          "meaning": "Give Owner Track a clear review trail.",
+          "allowed_files": ["evidence reports", "audit summaries"],
+          "forbidden_files": ["silent evidence loss"],
+          "acceptance": "Evidence verification detects missing records.",
+          "tests": ["Evidence verification checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-012",
+      "evo_title": "Readiness scoring and package gating",
+      "task_punches": [
+        {
+          "task_id": "pdev-012-a",
+          "goal": "Score readiness across all major categories",
+          "meaning": "Compute a 0-100 readiness picture with blockers and warnings.",
+          "allowed_files": ["readiness code", "reports", "docs"],
+          "forbidden_files": ["auto-promotion"],
+          "acceptance": "Readiness gives clear pass/fail.",
+          "tests": ["Readiness score/report tests."]
+        },
+        {
+          "task_id": "pdev-012-b",
+          "goal": "Gate package build on readiness",
+          "meaning": "Prevent packaging until the workspace, integrations, tests, and evidence are ready.",
+          "allowed_files": ["package gate code", "reports"],
+          "forbidden_files": ["packaging when critical categories fail"],
+          "acceptance": "Packaging is blocked when readiness is below threshold.",
+          "tests": ["Package-readiness blocking tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-013",
+      "evo_title": "Promotion request workflow",
+      "task_punches": [
+        {
+          "task_id": "pdev-013-a",
+          "goal": "Generate a formal Owner Track promotion request",
+          "meaning": "Create review artifacts that ask for install, marketplace review, or rework.",
+          "allowed_files": ["promotion request docs", "reports", "workspace evidence"],
+          "forbidden_files": ["direct install/publish logic"],
+          "acceptance": "Promotion requests are generated without auto-promotion.",
+          "tests": ["Promotion-request completeness checks."]
+        },
+        {
+          "task_id": "pdev-013-b",
+          "goal": "Include risks, evidence, and decision options",
+          "meaning": "Make the owner decision surface explicit and reviewable.",
+          "allowed_files": ["promotion docs", "evidence summaries"],
+          "forbidden_files": ["hidden approval logic"],
+          "acceptance": "Owner Track has clear decision options.",
+          "tests": ["Risk/evidence inclusion checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-014",
+      "evo_title": "Dashboard and status surfaces",
+      "task_punches": [
+        {
+          "task_id": "pdev-014-a",
+          "goal": "Add read-only status and summary outputs",
+          "meaning": "Show current workspace health without mutating files.",
+          "allowed_files": ["dashboard/status code", "reports"],
+          "forbidden_files": ["workspace mutation"],
+          "acceptance": "Users can inspect progress without mutating files.",
+          "tests": ["Status/dashboard smoke tests."]
+        },
+        {
+          "task_id": "pdev-014-b",
+          "goal": "Surface integration and readiness state in the dashboard",
+          "meaning": "Make blockers and progress visible in a machine-readable way.",
+          "allowed_files": ["dashboard JSON/markdown outputs"],
+          "forbidden_files": ["hidden state changes"],
+          "acceptance": "Integration status is visible.",
+          "tests": ["Dashboard-data completeness checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-015",
+      "evo_title": "Documentation and final hardening",
+      "task_punches": [
+        {
+          "task_id": "pdev-015-a",
+          "goal": "Finalize docs and command references",
+          "meaning": "Explain how the plugin works and how it relates to plugin_folder_structure.",
+          "allowed_files": ["docs", "README", "command reference"],
+          "forbidden_files": ["behavior changes disguised as docs"],
+          "acceptance": "The workflow is documented clearly.",
+          "tests": ["Documentation completeness review."]
+        },
+        {
+          "task_id": "pdev-015-b",
+          "goal": "Add hardening tests for failure and safety cases",
+          "meaning": "Prove the plugin fails closed for invalid workspaces, libraries, integrations, and promotion attempts.",
+          "allowed_files": ["tests", "validation fixtures"],
+          "forbidden_files": ["unsafe writes or auto-promotion"],
+          "acceptance": "The plugin is hardened and test-covered.",
+          "tests": ["Final safety-matrix tests."]
+        }
+      ]
+    }
+  ]
+}

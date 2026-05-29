@@ -28,6 +28,8 @@ const TRACK_ALIASES = {
   viber: "vibe",
   app: "vibe",
   app_developer: "vibe",
+  plugin_development_track: "plugin",
+  plugin_dev: "plugin",
   plugin: "plugin"
 };
 

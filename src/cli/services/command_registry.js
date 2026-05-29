@@ -170,6 +170,20 @@ const COMMAND_REGISTRY = [
     cli_role: "Canonicalize plugin state and keep it persisted."
   },
   {
+    key: "plugin-dev",
+    aliases: ["plugin_dev"],
+    category: "governance",
+    stage: "plugin-development",
+    owner: "shared",
+    purpose: "Orchestrate plugin development after a workspace has been validated by plugin_folder_structure.",
+    prerequisites: ["plugin_folder_structure is installed and discoverable."],
+    outputs: ["workspace validation", "intake", "specs", "tasks", "source build reports", "integration contracts", "readiness", "promotion requests"],
+    next_commands: ["kvdf plugin-dev status", "kvdf plugin-dev doctor", "kvdf plugin-dev workspace ensure <plugin-slug>"],
+    file_dependencies: ["plugins/plugin_dev/plugin.json", "plugins/plugin_dev/plugin_manifest.json", "plugins/plugin_folder_structure/plugin.json"],
+    ai_role: "Treat plugin development as a governed lifecycle that starts after workspace validation, not as a folder-creation tool.",
+    cli_role: "Keep plugin development explicit, workspace-aware, and fail-closed."
+  },
+  {
     key: "plugin-folder",
     aliases: ["plugin_folder"],
     category: "governance",

@@ -50,6 +50,10 @@ require("../plugins/wifi_data_sharing/tests/provider_integration.contract.test")
 require("../plugins/plugin_folder_structure/tests/unit/status_service.test");
 require("../plugins/plugin_folder_structure/tests/unit/target_path_service.test");
 require("../plugins/plugin_folder_structure/tests/contract/plugin_contract.test");
+require("../plugins/plugin_dev/tests/unit/status_service.test");
+require("../plugins/plugin_dev/tests/unit/doctor_service.test");
+require("../plugins/plugin_dev/tests/unit/workspace_service.test");
+require("../plugins/plugin_dev/tests/contract/plugin_contract.test");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");
 const { repoRoot } = require("../src/cli/fs_utils");

@@ -229,6 +229,18 @@ function buildSessionEntryRoute(report) {
       reason: "Show the app context brief first, then move directly into governed application task execution."
     };
   }
+  if (trackId === "plugin_development_track" || trackId === "plugin_dev") {
+    return {
+      track_id: "plugin_development_track",
+      track_label: "Plugin Development Track",
+      role_gate: "plugin_development",
+      route_command: "kvdf plugin-dev status",
+      follow_up_command: "kvdf plugin-dev doctor",
+      activated_features: ["plugin-dev", "workspace", "intake", "libraries", "spec", "tasks", "integrations", "test", "evidence", "readiness", "package", "promotion"],
+      blocked_features: ["direct folder creation", "direct install", "marketplace publish", "owner bypass"],
+      reason: "Enter the governed plugin-development lifecycle after workspace validation."
+    };
+  }
   return {
     track_id: "unclassified",
     track_label: "Unclassified Track",
@@ -282,6 +294,7 @@ function getSessionTrackSurface(sessionTrack) {
   if (!sessionTrack || !sessionTrack.active) return null;
   if (sessionTrack.active_track === "framework_owner") return "owner";
   if (sessionTrack.active_track === "vibe_app_developer") return "developer";
+  if (sessionTrack.active_track === "plugin_development_track" || sessionTrack.active_track === "plugin_dev") return "developer";
   return null;
 }
 

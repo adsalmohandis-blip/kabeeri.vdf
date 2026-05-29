@@ -1,0 +1,433 @@
+{
+  "status": "planned",
+  "track": "plugin_dev",
+  "scope": "plugin_dev plugin plan for the Plugin Development Track",
+  "mode": "planning",
+  "source": "user-provided plugin_dev phase brief",
+  "purpose": "Turn the plugin_dev phase brief into a machine-readable Evo queue with explicit dependencies, exit criteria, and task-punch coverage.",
+  "evolution_ids": [
+    "evo-pdev-000",
+    "evo-pdev-001",
+    "evo-pdev-002",
+    "evo-pdev-003",
+    "evo-pdev-004",
+    "evo-pdev-005",
+    "evo-pdev-006",
+    "evo-pdev-007",
+    "evo-pdev-008",
+    "evo-pdev-009",
+    "evo-pdev-010",
+    "evo-pdev-011",
+    "evo-pdev-012",
+    "evo-pdev-013",
+    "evo-pdev-014",
+    "evo-pdev-015"
+  ],
+  "evolutions": [
+    {
+      "evo_id": "evo-pdev-000",
+      "phase": "00",
+      "title": "Scope lock and architecture confirmation",
+      "source_phases": [0],
+      "summary": "Produce the repo-convention map, architecture boundary map, command-surface outline, and safety rules for plugin_dev before any implementation starts.",
+      "dependency_notes": "First slice. Must review repo conventions before implementation starts.",
+      "exit_criterion": "The plan is agreed and the plugin boundary is explicit.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-000-a", "pdev-000-b"],
+      "task_punch_titles": [
+        "Map repo conventions for plugins, CLI registration, runtime state, docs, and tests",
+        "Define the plugin-dev planning dependency map"
+      ],
+      "task_punch_summary": "2 task punches cover repo analysis and the planning dependency map.",
+      "acceptance_criteria": [
+        "Repo conventions are mapped.",
+        "Safe integration points are identified.",
+        "The architecture boundary is explicit.",
+        "The planning queue is split into safe Evo slices."
+      ],
+      "blocked_outputs": [
+        "./plugins/plugin_dev/",
+        "./workspaces/plugins/plugin_dev/",
+        "./marketplace/plugins/plugin_dev/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-001",
+      "phase": "01",
+      "title": "Plugin skeleton and discoverability",
+      "source_phases": [1],
+      "summary": "Create a minimal removable plugin package with metadata, bootstrap/entry wiring, docs, schemas, tests, and read-only status/doctor commands.",
+      "dependency_notes": "Depends on evo-pdev-000.",
+      "exit_criterion": "plugin_dev loads, is discoverable, and exposes status/doctor safely.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-001-a", "pdev-001-b"],
+      "task_punch_titles": [
+        "Create the plugin shell and manifest",
+        "Add status and doctor output only"
+      ],
+      "task_punch_summary": "2 task punches cover plugin shell creation and read-only discovery output.",
+      "acceptance_criteria": [
+        "Plugin exists as a safe shell with documented purpose.",
+        "Status reports plugin state without creating folders.",
+        "Doctor reports missing capabilities clearly."
+      ],
+      "blocked_outputs": [
+        "./plugins/plugin_dev/workspaces/",
+        "./plugins/plugin_dev/install/",
+        "./marketplace/plugins/plugin_dev/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-002",
+      "phase": "02",
+      "title": "Core integration with plugin_folder_structure",
+      "source_phases": [2],
+      "summary": "Add workspace lookup, workspace-contract reading, safe delegation checks, and strict refusal to create folders directly.",
+      "dependency_notes": "Depends on evo-pdev-000 and evo-pdev-001.",
+      "exit_criterion": "Workspace validation is delegated to plugin_folder_structure.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-002-a", "pdev-002-b"],
+      "task_punch_titles": [
+        "Create the workspace-contract integration layer",
+        "Add workspace ensure/check/status/contract commands"
+      ],
+      "task_punch_summary": "2 task punches cover contract integration and workspace verification commands.",
+      "acceptance_criteria": [
+        "plugin_folder_structure integration is explicit and read-only at first.",
+        "Workspace checks fail closed when the contract is missing or invalid.",
+        "plugin_dev does not duplicate workspace creation logic."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/",
+        "./workspaces/plugins/<plugin-slug>/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-003",
+      "phase": "03",
+      "title": "Plugin intake engine",
+      "source_phases": [3],
+      "summary": "Capture the plugin brief, target track, required capabilities, and missing information in the workspace.",
+      "dependency_notes": "Depends on evo-pdev-002.",
+      "exit_criterion": "Plugin intake is captured only after workspace validation passes.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-003-a", "pdev-003-b"],
+      "task_punch_titles": [
+        "Create the intake reader and intake files",
+        "Add generic integration-question capture"
+      ],
+      "task_punch_summary": "2 task punches cover intake capture and generic integration questioning.",
+      "acceptance_criteria": [
+        "Intake files are created only inside a valid plugin workspace.",
+        "Integration needs are captured generically.",
+        "Missing details are reported as questions."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-004",
+      "phase": "04",
+      "title": "Git library input analyzer",
+      "source_phases": [4],
+      "summary": "Register and analyze Git/library inputs safely with license, security, reuse, and attribution reviews.",
+      "dependency_notes": "Depends on evo-pdev-003.",
+      "exit_criterion": "Library refs can be registered and analyzed without blind code copying.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-004-a", "pdev-004-b"],
+      "task_punch_titles": [
+        "Register and analyze library inputs",
+        "Add license, security, and reuse decision reporting"
+      ],
+      "task_punch_summary": "2 task punches cover library registration and risk/reuse review.",
+      "acceptance_criteria": [
+        "Library refs can be registered and analyzed.",
+        "Unsafe or unknown licenses are flagged.",
+        "Security risks are reported.",
+        "No unapproved code is copied."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/source-copies/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-005",
+      "phase": "05",
+      "title": "Plugin specification generator",
+      "source_phases": [5],
+      "summary": "Turn intake and library analysis into a complete plugin specification set.",
+      "dependency_notes": "Depends on evo-pdev-003 and evo-pdev-004.",
+      "exit_criterion": "Approved specs can be generated and validated.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-005-a", "pdev-005-b"],
+      "task_punch_titles": [
+        "Generate the base plugin spec package",
+        "Add integration contract sections to the spec"
+      ],
+      "task_punch_summary": "2 task punches cover spec generation and integration contract documentation.",
+      "acceptance_criteria": [
+        "Specs are generated from intake and analysis.",
+        "Integration requirements are written generically.",
+        "Missing data blocks later phases."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/src/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-006",
+      "phase": "06",
+      "title": "Governed task generator",
+      "source_phases": [6],
+      "summary": "Create tasks from approved specs rather than inventing ad hoc work items.",
+      "dependency_notes": "Depends on evo-pdev-005.",
+      "exit_criterion": "Tasks are generated from specs, not invented ad hoc.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-006-a", "pdev-006-b"],
+      "task_punch_titles": [
+        "Convert specs into a governed task graph",
+        "Add integration tasks for declared targets"
+      ],
+      "task_punch_summary": "2 task punches cover task-graph generation and integration task creation.",
+      "acceptance_criteria": [
+        "Task files are generated from specs.",
+        "Integration tasks exist for declared targets.",
+        "Integration requirements become visible work items."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/tasks-generated-outside-spec/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-007",
+      "phase": "07",
+      "title": "Source builder orchestrator",
+      "source_phases": [7],
+      "summary": "Provide a controlled source builder that writes only inside allowed workspace paths.",
+      "dependency_notes": "Depends on evo-pdev-006.",
+      "exit_criterion": "A single task can be built safely.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-007-a", "pdev-007-b"],
+      "task_punch_titles": [
+        "Build one task at a time",
+        "Emit build reports and changed-file lists"
+      ],
+      "task_punch_summary": "2 task punches cover task-scoped source building and build evidence.",
+      "acceptance_criteria": [
+        "A single task can be built safely.",
+        "Build evidence exists for each task.",
+        "Path restrictions are enforced."
+      ],
+      "blocked_outputs": [
+        "./plugins/other-plugin/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-008",
+      "phase": "08",
+      "title": "Schema, runtime, and contract validation",
+      "source_phases": [8],
+      "summary": "Check that the plugin is internally consistent before packaging.",
+      "dependency_notes": "Depends on evo-pdev-005 through evo-pdev-007.",
+      "exit_criterion": "Invalid source or contracts are blocked from packaging.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-008-a", "pdev-008-b"],
+      "task_punch_titles": [
+        "Validate manifest, schema, runtime, and command contracts",
+        "Validate declared integration contracts read-only"
+      ],
+      "task_punch_summary": "2 task punches cover validation of the plugin core and integration contracts.",
+      "acceptance_criteria": [
+        "Invalid source or contracts are blocked.",
+        "Invalid required integrations block packaging.",
+        "Validation is read-only."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/package/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-009",
+      "phase": "09",
+      "title": "Generic plugin integration builder",
+      "source_phases": [9],
+      "summary": "Provide a reusable integration builder that supports any target plugin slug with contracts, adapters, tests, and evidence.",
+      "dependency_notes": "Depends on evo-pdev-005 and evo-pdev-008.",
+      "exit_criterion": "Generic integrations are generated and validated safely.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-009-a", "pdev-009-b"],
+      "task_punch_titles": [
+        "Add generic integration contracts for any target plugin slug",
+        "Generate integration tests and evidence"
+      ],
+      "task_punch_summary": "2 task punches cover generic integration generation and evidence-backed testing.",
+      "acceptance_criteria": [
+        "Generic integration contracts are generated safely.",
+        "Required integration failures block readiness.",
+        "Unknown target plugins are handled safely."
+      ],
+      "blocked_outputs": [
+        "./plugins/<target-plugin>/hardcoded-assumptions/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-010",
+      "phase": "10",
+      "title": "Test runner and quality gate",
+      "source_phases": [10],
+      "summary": "Run plugin tests through existing repo test tooling and gate packaging on quality.",
+      "dependency_notes": "Depends on evo-pdev-007 through evo-pdev-009.",
+      "exit_criterion": "Failed tests block packaging.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-010-a", "pdev-010-b"],
+      "task_punch_titles": [
+        "Add a plugin-level test plan and runner",
+        "Gate packaging on test quality"
+      ],
+      "task_punch_summary": "2 task punches cover test execution and quality blocking.",
+      "acceptance_criteria": [
+        "Tests can run for a developed plugin.",
+        "Failed tests block packaging.",
+        "Required integration failures block packaging."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/package/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-011",
+      "phase": "11",
+      "title": "Evidence and audit trail",
+      "source_phases": [11],
+      "summary": "Write durable evidence records for workspace validation, intake, specs, tasks, source, tests, and integrations.",
+      "dependency_notes": "Depends on evo-pdev-003 through evo-pdev-010.",
+      "exit_criterion": "Every major phase produces evidence.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-011-a", "pdev-011-b"],
+      "task_punch_titles": [
+        "Collect evidence per major phase",
+        "Add evidence verification and reporting"
+      ],
+      "task_punch_summary": "2 task punches cover evidence collection and verification.",
+      "acceptance_criteria": [
+        "Every major phase produces evidence.",
+        "Evidence verification detects missing records.",
+        "Integration evidence is included."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/evidence-hidden/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-012",
+      "phase": "12",
+      "title": "Readiness scoring and package gating",
+      "source_phases": [12, 13],
+      "summary": "Compute readiness and gate package build so unready plugins cannot be bundled or promoted.",
+      "dependency_notes": "Depends on evo-pdev-010 and evo-pdev-011.",
+      "exit_criterion": "Readiness is clear and package build is gated safely.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-012-a", "pdev-012-b"],
+      "task_punch_titles": [
+        "Score readiness across all major categories",
+        "Gate package build on readiness"
+      ],
+      "task_punch_summary": "2 task punches cover readiness scoring and package gating.",
+      "acceptance_criteria": [
+        "Readiness gives clear pass/fail.",
+        "Packaging is blocked when readiness is below threshold.",
+        "Critical categories cannot be bypassed."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/package/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-013",
+      "phase": "14",
+      "title": "Promotion request workflow",
+      "source_phases": [14],
+      "summary": "Create review artifacts that ask for install, marketplace review, or rework.",
+      "dependency_notes": "Depends on evo-pdev-012.",
+      "exit_criterion": "Promotion requests are generated without auto-promotion.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-013-a", "pdev-013-b"],
+      "task_punch_titles": [
+        "Generate a formal Owner Track promotion request",
+        "Include risks, evidence, and decision options"
+      ],
+      "task_punch_summary": "2 task punches cover the promotion request and owner decision surface.",
+      "acceptance_criteria": [
+        "Promotion requests are generated without auto-promotion.",
+        "Owner Track has clear decision options.",
+        "Integration risks are visible."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/installed/",
+        "./marketplace/plugins/<plugin-slug>/published/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-014",
+      "phase": "15",
+      "title": "Dashboard and status surfaces",
+      "source_phases": [15],
+      "summary": "Show current workspace health without mutating files.",
+      "dependency_notes": "Depends on evo-pdev-003 through evo-pdev-013.",
+      "exit_criterion": "Users can inspect progress without mutating files.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-014-a", "pdev-014-b"],
+      "task_punch_titles": [
+        "Add read-only status and summary outputs",
+        "Surface integration and readiness state in the dashboard"
+      ],
+      "task_punch_summary": "2 task punches cover read-only status and dashboard reporting.",
+      "acceptance_criteria": [
+        "Users can inspect progress without mutating files.",
+        "Integration status is visible.",
+        "Readiness blockers are visible."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/dashboard-write/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    },
+    {
+      "evo_id": "evo-pdev-015",
+      "phase": "16",
+      "title": "Documentation and final hardening",
+      "source_phases": [16],
+      "summary": "Explain how the plugin works, document its relationship with plugin_folder_structure, and prove the safety matrix with tests.",
+      "dependency_notes": "Depends on evo-pdev-001 through evo-pdev-014.",
+      "exit_criterion": "The plugin is documented, hardened, and ready for extension.",
+      "task_punch_count": 2,
+      "task_punch_ids": ["pdev-015-a", "pdev-015-b"],
+      "task_punch_titles": [
+        "Finalize docs and command references",
+        "Add hardening tests for failure and safety cases"
+      ],
+      "task_punch_summary": "2 task punches cover documentation and final hardening tests.",
+      "acceptance_criteria": [
+        "The workflow is documented clearly.",
+        "The plugin is hardened and test-covered.",
+        "Failure cases are blocked safely."
+      ],
+      "blocked_outputs": [
+        "./plugins/<plugin-slug>/unsafe/",
+        "./marketplace/plugins/<plugin-slug>/"
+      ]
+    }
+  ]
+}

@@ -10,6 +10,7 @@ function getActiveTrackSurface() {
     if (!state || !state.active) return null;
     if (state.active_track === "framework_owner") return "owner";
     if (state.active_track === "vibe_app_developer") return "developer";
+    if (state.active_track === "plugin_development_track" || state.active_track === "plugin_dev") return "developer";
   } catch {
     return null;
   }
@@ -1611,6 +1612,28 @@ Notes:
 Notes:
   Plugin Folder Structure keeps new plugins track-aware. Owner Track can create directly under ./plugins/<plugin-slug>/, Plugin Development Track creates governed workspaces under ./workspaces/plugins/<plugin-slug>/, and Viber/App Track is blocked from direct plugin creation.
 `,
+    "plugin-dev": `Usage:
+  kvdf plugin-dev status
+  kvdf plugin-dev doctor
+  kvdf plugin-dev workspace ensure <plugin-slug>
+  kvdf plugin-dev workspace check <plugin-slug>
+  kvdf plugin-dev workspace status <plugin-slug>
+  kvdf plugin-dev workspace contract <plugin-slug>
+  kvdf plugin-dev intake start <plugin-slug>
+  kvdf plugin-dev libraries add <plugin-slug> <library-ref>
+  kvdf plugin-dev spec generate <plugin-slug>
+  kvdf plugin-dev tasks generate <plugin-slug>
+  kvdf plugin-dev build task <plugin-slug> <task-id>
+  kvdf plugin-dev integrations generate-contract <plugin-slug> <target-plugin-slug>
+  kvdf plugin-dev test run <plugin-slug>
+  kvdf plugin-dev evidence collect <plugin-slug>
+  kvdf plugin-dev readiness <plugin-slug>
+  kvdf plugin-dev package build <plugin-slug>
+  kvdf plugin-dev promotion request <plugin-slug>
+
+Notes:
+  Plugin Dev orchestrates plugin development after a workspace has been validated by plugin_folder_structure. It does not create folder structure directly, and it supports generic plugin-to-plugin integration contracts for any target plugin slug.
+`,
   };
   console.log(help[command] || `No detailed help for "${command}". Run kvdf --help.`);
 }
@@ -1647,6 +1670,7 @@ function printHelp() {
     "  generator list|show|create   List, show, or scaffold generator profiles",
     "  create --profile <name>      Shortcut for generator create",
     "  plugin-folder                Create and validate track-aware plugin folder structures",
+    "  plugin-dev                   Orchestrate plugin development inside validated workspaces",
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",
     "  plan list|show <version>     Inspect v3/v4 milestone plans",

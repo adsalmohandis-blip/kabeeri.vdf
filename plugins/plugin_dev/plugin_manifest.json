@@ -1,0 +1,9 @@
+{
+  "plugin_slug": "plugin_dev",
+  "track": "plugin_development_track",
+  "target_root": "./workspaces/plugins/<plugin-slug>/",
+  "status": "draft",
+  "installed": false,
+  "marketplace_published": false,
+  "owner_approval_required_for_promotion": true
+}

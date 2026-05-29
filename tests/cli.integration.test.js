@@ -17,6 +17,7 @@ const { buildMultiAiRelayReport, watchMultiAiRelay } = require("../src/cli/comma
 const { resolveDashboardScope } = require("../src/cli/commands/site");
 const plannerVisualRenderer = require("../plugins/planner_visual/runtime");
 require("./plugin_folder_structure.integration.test");
+require("./plugin_dev.integration.test");
 
 const repoRoot = path.resolve(__dirname, "..");
 const PLUGIN_BUNDLE_DIRS = {
