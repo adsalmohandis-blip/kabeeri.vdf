@@ -6,6 +6,6 @@ dashboard.html
 RELEASE_NOTES.md
 RELEASE_CHECKLIST.md
 github-*.dry-run.txt
-KVDF_New_Features_Docs/
 lib_pack/
 workspace/apps/
+workspace/plugins/
