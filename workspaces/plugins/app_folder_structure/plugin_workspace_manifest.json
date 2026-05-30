@@ -1,0 +1,29 @@
+﻿{
+    "plugin_slug":  "app_folder_structure",
+    "track":  "plugin_development_track",
+    "workspace_root":  "D:\\My Project Ideas\\kabeeri.vdf\\kabeeri-vdf\\workspaces\\plugins\\app_folder_structure",
+    "package_root":  "D:\\My Project Ideas\\kabeeri.vdf\\kabeeri-vdf\\workspaces\\plugins\\app_folder_structure\\04_plugin_package",
+    "actual_plugin_package":  "04_plugin_package",
+    "direct_install_target":  "./plugins/app_folder_structure/",
+    "marketplace_target":  "./marketplace/plugins/app_folder_structure/",
+    "status":  "draft",
+    "installed":  false,
+    "marketplace_published":  false,
+    "owner_approval_required_for_promotion":  true,
+    "compatibility":  {
+                          "compact_folders_detected":  false,
+                          "compact_folders_preserved":  false,
+                          "canonical_full_set_enabled":  true,
+                          "actual_plugin_package":  "04_plugin_package",
+                          "canonical_package_folder":  "04_plugin_package",
+                          "previous_package_folder":  "03_plugin_package",
+                          "renumbering_migrated":  true,
+                          "removed_redundant_source_folder":  true
+                      },
+    "created_at":  "2026-05-29T02:37:04.243Z",
+    "updated_at":  "2026-05-29T09:37:25.9382468+03:00",
+    "canonical_package_folder":  "04_plugin_package",
+    "previous_package_folder":  "03_plugin_package",
+    "renumbering_migrated":  true,
+    "removed_redundant_source_folder":  true
+}

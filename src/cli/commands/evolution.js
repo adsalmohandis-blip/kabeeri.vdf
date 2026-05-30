@@ -19,6 +19,7 @@ const { buildTaskLifecycleState } = require("./task_lifecycle");
 const { buildSecurityGateState } = require("./security");
 const { readStateArray } = require("../services/state_utils");
 const { writeTextFile: writeLocalTextFile } = require("../fs_utils");
+const { normalizeTrackAssignment } = require("../services/track_control");
 
 const SCORECARDS_REPORT_PATH = "docs/reports/KVDF_SCORECARDS.md";
 const SCORECARDS_STATE_PATH = ".kabeeri/reports/kabeeri_scorecards.json";
@@ -92,16 +93,14 @@ function resolveEvolutionDeliveryMode(flags = {}, appMode = false) {
 }
 
 function resolveEvolutionWorkspaceTrack(workspaceKind = "", fallbackTrack = "framework_owner") {
-  const normalized = String(workspaceKind || "").trim().toLowerCase();
-  if (["developer_app", "vibe_app_developer", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
-  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  const normalized = normalizeTrackAssignment(workspaceKind);
+  if (normalized) return normalized;
   return fallbackTrack;
 }
 
 function resolveEvolutionRecordTrack(record = {}, workspaceTrack = "framework_owner") {
-  const normalized = String(record.track || record.audience || record.workspace_kind || "").trim().toLowerCase();
-  if (["vibe_app_developer", "developer_app", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
-  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  const normalized = normalizeTrackAssignment(record.track || record.audience || record.workspace_kind || "");
+  if (normalized) return normalized;
   return workspaceTrack;
 }
 

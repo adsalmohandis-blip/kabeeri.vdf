@@ -14,6 +14,7 @@ const { summarizeUsage, buildDeveloperEfficiency } = require("./usage_pricing");
 const { getPluginRuntimeStatus } = require("../services/plugin_loader");
 const { buildTailwindGuidanceSummary } = require("../services/ui_asset_provider");
 const { buildDashboardKitGuidanceSummary } = require("../services/ui_kit_provider");
+const { normalizeTrackAssignment, getTrackDisplayLabel, getTrackDisplayShortLabel } = require("../services/track_control");
 
 const UI_UX_INTELLIGENCE_PLUGIN_ID = "ui_ux_intelligence";
 const UI_UX_INTELLIGENCE_TARGET_DOCS = [
@@ -781,15 +782,12 @@ function buildDashboardUxGovernanceState(input = {}) {
 }
 
 function resolveWorkspaceTrack(workspaceKind = "") {
-  const normalized = String(workspaceKind || "").trim().toLowerCase();
-  if (["developer_app", "vibe_app_developer", "vibe", "app", "app_developer"].includes(normalized)) return "vibe_app_developer";
-  return "framework_owner";
+  return normalizeTrackAssignment(workspaceKind) || "framework_owner";
 }
 
 function resolveTaskTrack(taskItem = {}, fallbackTrack = "framework_owner") {
-  const normalized = String(taskItem.track || taskItem.evolution_track || taskItem.workspace_track || "").trim().toLowerCase();
-  if (["vibe_app_developer", "developer_app", "app_developer", "vibe"].includes(normalized)) return "vibe_app_developer";
-  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  const normalized = normalizeTrackAssignment(taskItem.track || taskItem.evolution_track || taskItem.workspace_track || "");
+  if (normalized) return normalized;
   if (taskItem.app_usernames && taskItem.app_usernames.length) return "vibe_app_developer";
   return fallbackTrack;
 }
@@ -799,9 +797,8 @@ function filterByTrack(items = [], workspaceTrack = "framework_owner") {
 }
 
 function resolveEvolutionTrack(value = "", fallbackTrack = "framework_owner") {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (["vibe_app_developer", "developer_app", "app_developer", "vibe"].includes(normalized)) return "vibe_app_developer";
-  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
+  const normalized = normalizeTrackAssignment(value);
+  if (normalized) return normalized;
   return fallbackTrack;
 }
 
@@ -1676,7 +1673,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
   const readiness = buildDashboardReadinessState(context, "owner");
   const namingGovernance = buildNamingGovernanceDashboardSummary();
   const commandCenterWidgets = [
-    dashboardWidget("owner_current_track", "Current Track", "status", "framework_owner", "ok", "framework_owner", "derived", "Stay on KVDF Core work."),
+    dashboardWidget("owner_current_track", "Current Track", "status", getTrackDisplayShortLabel("framework_owner"), "ok", "framework_owner", "derived", "Stay on KVDF Core work."),
     dashboardWidget("owner_current_plan", "Current Planner Plan", "status", currentPlan ? currentPlan.title || currentPlan.goal || currentPlan.plan_id : "none", currentPlan ? "ok" : "empty", "framework_owner", "derived", currentPlan ? "Review the approved plan." : "Create or approve an owner plan."),
     dashboardWidget("owner_current_evolution", "Current Evolution", "status", currentEvolution ? currentEvolution.title || currentEvolution.change_id : "none", currentEvolution ? "ok" : "empty", "framework_owner", "derived", currentEvolution ? "Continue the active evolution." : "Select the next evolution."),
     dashboardWidget("owner_next_evolution", "Next Evolution", "status", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? "ok" : "empty", "framework_owner", "derived", context.plannerState.next_action || "Run planner propose."),
@@ -1696,7 +1693,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     ]),
     command_center: createDashboardSection("command_center", "Command Center", commandCenterWidgets, [
       createDashboardTable("owner_command_center", "Owner Command Center", ["Metric", "Value", "Next Action"], [
-        ["Current Track", "framework_owner", "Stay on KVDF Core work."],
+        ["Current Track", getTrackDisplayLabel("framework_owner"), "Stay on KVDF Core work."],
         ["Current Planner Plan", currentPlan ? currentPlan.plan_id || currentPlan.title || currentPlan.goal || "approved" : "none", currentPlan ? "Review the approved plan." : "Create or approve an owner plan."],
         ["Current Evolution", currentEvolution ? currentEvolution.change_id || currentEvolution.title || "active" : "none", currentEvolution ? "Continue the active evolution." : "Select the next evolution."],
         ["Next Evolution", context.plannerState.next_evolution && context.plannerState.next_evolution.title ? context.plannerState.next_evolution.title : "none", context.plannerState.next_action || "Run planner propose."],
@@ -1758,7 +1755,7 @@ function buildOwnerDashboardState(context = {}, deps = {}) {
     dashboard_type: "owner",
     track: "framework_owner",
     title: "KVDF Owner Dashboard",
-    subtitle: "Owner Track / KVDF Core",
+    subtitle: `${getTrackDisplayLabel("framework_owner")} / KVDF Core`,
     widgets: flattenDashboardWidgets(sections),
     tables: flattenDashboardTables(sections),
     sections,
@@ -1927,7 +1924,7 @@ function buildViberDashboardState(context = {}, deps = {}) {
     includeDetails: false
   });
   const commandCenterWidgets = [
-    dashboardWidget("viber_current_track", "Current Track", "status", "vibe_app_developer", "ok", "vibe_app_developer", "derived", "Stay on app/product delivery work."),
+    dashboardWidget("viber_current_track", "Current Track", "status", getTrackDisplayShortLabel("vibe_app_developer"), "ok", "vibe_app_developer", "derived", "Stay on app/product delivery work."),
     dashboardWidget("viber_current_workspace", "Current App / Workspace", "status", currentApp.name || currentApp.username || context.project.name || "none", currentApp.username || currentApp.name ? "ok" : "empty", "vibe_app_developer", "derived", currentApp.username ? "Review app workspace state." : "Create or link an app workspace."),
     dashboardWidget("viber_current_request", "Current Idea / Request", "status", context.plannerState.current_plan && context.plannerState.current_plan.goal ? context.plannerState.current_plan.goal : "none", context.plannerState.current_plan ? "ok" : "empty", "vibe_app_developer", "derived", context.plannerState.next_action || "Run planner propose."),
     dashboardWidget("viber_current_plan", "Current Planner Plan", "status", currentPlan ? currentPlan.title || currentPlan.goal || currentPlan.plan_id : "none", currentPlan ? "ok" : "empty", "vibe_app_developer", "derived", currentPlan ? "Review the approved plan." : "Approve the app plan."),
@@ -2022,7 +2019,7 @@ function buildViberDashboardState(context = {}, deps = {}) {
     dashboard_type: "viber",
     track: "vibe_app_developer",
     title: "KVDF Viber Dashboard",
-    subtitle: "Viber/App Track",
+    subtitle: getTrackDisplayLabel("vibe_app_developer"),
     widgets: flattenDashboardWidgets(sections),
     tables: flattenDashboardTables(sections),
     sections,

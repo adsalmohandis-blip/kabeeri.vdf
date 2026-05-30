@@ -1,0 +1,41 @@
+{
+    "evo_id":  "appfs-011",
+    "title":  "Production governance folders",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-011-a",
+                        "goal":  "Add agents, tests, evidence, and reviews folders.",
+                        "meaning":  "Add the production governance areas needed for build quality and review.",
+                        "allowed_files":  [
+                                              "07_agents/",
+                                              "09_tests_quality/",
+                                              "10_evidence_audit/",
+                                              "11_reviews_approvals/"
+                                          ],
+                        "forbidden_files":  [
+                                                "Source generation"
+                                            ],
+                        "acceptance":  "Governance folders exist from agents to reviews.",
+                        "tests":  [
+                                      "Folder presence checks."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-011-b",
+                        "goal":  "Add release, owner portal, and archive folders.",
+                        "meaning":  "Add release/deployment and owner-facing summary areas plus archive.",
+                        "allowed_files":  [
+                                              "12_releases_deployment/",
+                                              "13_owner_portal/",
+                                              "99_archive/"
+                                          ],
+                        "forbidden_files":  [
+                                                "Direct publication"
+                                            ],
+                        "acceptance":  "Release and archive areas exist.",
+                        "tests":  [
+                                      "Folder presence checks."
+                                  ]
+                    }
+                ]
+}

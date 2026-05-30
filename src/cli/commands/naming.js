@@ -12,6 +12,7 @@ const {
   buildNamingValidationReport,
   buildNamingMigrationPlan
 } = require("../services/naming_governance");
+const { normalizeTrackAssignment } = require("../services/track_control");
 
 function naming(action, value, flags = {}, rest = [], deps = {}) {
   void deps;
@@ -134,10 +135,7 @@ function normalizeAction(action) {
 }
 
 function canonicalTrack(track) {
-  const value = String(track || "").trim().toLowerCase();
-  if (["owner", "framework_owner", "kvdf"].includes(value)) return "framework_owner";
-  if (["vibe", "app", "vibe_app_developer", "developer"].includes(value)) return "vibe_app_developer";
-  return "framework_owner";
+  return normalizeTrackAssignment(track) || "framework_owner";
 }
 
 module.exports = {

@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-003",
+    "title":  "Fixed app pipeline skeleton",
+    "phase":  "3",
+    "deliverables":  [
+                         "canonical app workspace root",
+                         "fixed pipeline skeleton",
+                         "app workspace creation"
+                     ],
+    "dependency_notes":  "Depends on appfs-002.",
+    "exit_criterion":  "A new app workspace is created with the canonical top-level pipeline."
+}

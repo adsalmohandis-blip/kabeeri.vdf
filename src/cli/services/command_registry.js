@@ -2,6 +2,20 @@ const { table } = require("../ui");
 
 const COMMAND_REGISTRY = [
   {
+    key: "app-category",
+    aliases: ["app_category"],
+    category: "governance",
+    stage: "category-intelligence",
+    owner: "shared",
+    purpose: "Resolve app categories, intake routing, questionnaire packs, docs, roadmaps, and workspace plans before app creation.",
+    prerequisites: ["Category registry data exists."],
+    outputs: ["Category profile", "source routing", "questionnaire routing", "spec contract", "roadmap order", "workspace plan"],
+    next_commands: ["kvdf app-category status", "kvdf app-category profile <category>", "kvdf app-category plan <category>", "kvdf contract"],
+    file_dependencies: ["plugins/app_category_registry/plugin.json", "plugins/app_category_registry/plugin_manifest.json"],
+    ai_role: "Choose categories by readiness and route intake into the right planning contract.",
+    cli_role: "Keep category selection data-driven, visible, and safe."
+  },
+  {
     key: "resume",
     aliases: ["start", "entry"],
     category: "session",
@@ -196,6 +210,20 @@ const COMMAND_REGISTRY = [
     file_dependencies: ["plugins/plugin_folder_structure/plugin.json", "plugins/plugin_folder_structure/plugin_manifest.json"],
     ai_role: "Use the track-aware folder contract before generating new plugin roots.",
     cli_role: "Keep plugin folder creation explicit, track-aware, and fail-closed."
+  },
+  {
+    key: "app-folder",
+    aliases: ["app_folder"],
+    category: "governance",
+    stage: "app-structure",
+    owner: "shared",
+    purpose: "Create and validate governed app workspaces under ./workspaces/apps/<app-slug>/.",
+    prerequisites: ["App folder rules are loaded."],
+    outputs: ["App folder status", "fixed app pipeline structure", "manifest", "validation and repair reports"],
+    next_commands: ["kvdf app-folder status", "kvdf app-folder create --app <app-slug> --category <category>", "kvdf contract"],
+    file_dependencies: ["plugins/app_folder_structure/plugin.json", "plugins/app_folder_structure/plugin_manifest.json"],
+    ai_role: "Use the governed app workspace contract before generating app roots.",
+    cli_role: "Keep app workspace creation explicit, category-aware, and fail-closed."
   },
   {
     key: "wifi-data-sharing",

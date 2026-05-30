@@ -1,0 +1,210 @@
+{
+  "status": "completed",
+  "track": "plugin_dev",
+  "scope": "app_folder_structure plugin workspace and app-workspace contract engine",
+  "mode": "implementation_history",
+  "source": "user-provided app-folder structure brief, canonical full-set correction, and implemented workspace contract",
+  "purpose": "Preserved Evo history for the Plugin Development Track; the plugin package, canonical folder set, and workspace contract are already implemented in the workspace.",
+  "intended_contract": [
+    "Create and validate app workspaces under workspaces/apps/<app_slug>/",
+    "Keep app workspaces governed by a fixed canonical pipeline",
+    "Integrate category-approved roadmap structure through app_category_registry",
+    "Keep 08_source stack-adaptive and neutral",
+    "Write manifests, evidence, validation, and repair records safely",
+    "Refuse unsafe slugs, unsafe paths, and missing category profiles",
+    "Preserve old compact folders only where legacy workspaces already exist"
+  ],
+  "evolutions": [
+    {
+      "evo_id": "appfs-000",
+      "title": "Repo analysis and scope lock",
+      "phase": "1",
+      "deliverables": [
+        "repo conventions",
+        "plugin-registration map",
+        "track model",
+        "implementation boundaries"
+      ],
+      "dependency_notes": "First slice. Confirm repository patterns before coding.",
+      "exit_criterion": "The boundary is explicit and preserved."
+    },
+    {
+      "evo_id": "appfs-001",
+      "title": "Plugin skeleton and status surface",
+      "phase": "1",
+      "deliverables": [
+        "plugin workspace shell",
+        "metadata",
+        "bootstrap wiring",
+        "docs",
+        "schemas",
+        "tests",
+        "read-only status output"
+      ],
+      "dependency_notes": "Depends on appfs-000.",
+      "exit_criterion": "app_folder_structure loads and reports status safely."
+    },
+    {
+      "evo_id": "appfs-002",
+      "title": "Workspace type registry",
+      "phase": "2",
+      "deliverables": [
+        "workspace-type registry",
+        "validation for unsupported types",
+        "listable workspace types"
+      ],
+      "dependency_notes": "Depends on appfs-000 and appfs-001.",
+      "exit_criterion": "Workspace types are listed and invalid types are rejected."
+    },
+    {
+      "evo_id": "appfs-003",
+      "title": "Fixed app pipeline skeleton",
+      "phase": "3",
+      "deliverables": [
+        "canonical app workspace root",
+        "fixed pipeline skeleton",
+        "app workspace creation"
+      ],
+      "dependency_notes": "Depends on appfs-002.",
+      "exit_criterion": "A new app workspace is created with the canonical top-level pipeline."
+    },
+    {
+      "evo_id": "appfs-004",
+      "title": "Viber input area",
+      "phase": "4",
+      "deliverables": [
+        "source-input area",
+        "snapshots",
+        "files",
+        "links",
+        "questions/answers"
+      ],
+      "dependency_notes": "Depends on appfs-003.",
+      "exit_criterion": "Viber inputs are separated from generated outputs."
+    },
+    {
+      "evo_id": "appfs-005",
+      "title": "Category registry integration",
+      "phase": "5",
+      "deliverables": [
+        "app_category_registry integration",
+        "approved folder-structure profiles",
+        "fail-closed category lookup"
+      ],
+      "dependency_notes": "Depends on appfs-003 and appfs-004.",
+      "exit_criterion": "Category-specific profile lookup is explicit and fail-closed."
+    },
+    {
+      "evo_id": "appfs-006",
+      "title": "Category-governed roadmap folders",
+      "phase": "6",
+      "deliverables": [
+        "UI/UX roadmap internals",
+        "system design roadmap internals",
+        "database/storage roadmap internals"
+      ],
+      "dependency_notes": "Depends on appfs-005.",
+      "exit_criterion": "Only approved roadmap sections are materialized."
+    },
+    {
+      "evo_id": "appfs-007",
+      "title": "Stack-adaptive source folder",
+      "phase": "7",
+      "deliverables": [
+        "neutral 08_source layer",
+        "source manifest",
+        "stack-adaptive source policy"
+      ],
+      "dependency_notes": "Depends on appfs-003.",
+      "exit_criterion": "08_source stays stack-adaptive and source-only."
+    },
+    {
+      "evo_id": "appfs-008",
+      "title": "Full specification contract",
+      "phase": "8",
+      "deliverables": [
+        "handoff-grade requirements placeholders",
+        "specification folders",
+        "traceable documentation scaffold"
+      ],
+      "dependency_notes": "Depends on appfs-003.",
+      "exit_criterion": "Specification folders exist and are traceable."
+    },
+    {
+      "evo_id": "appfs-009",
+      "title": "Version control governance",
+      "phase": "9",
+      "deliverables": [
+        "branch strategy docs",
+        "issues/PR governance",
+        "release and changelog governance"
+      ],
+      "dependency_notes": "Depends on appfs-003.",
+      "exit_criterion": "Version-control governance folders exist."
+    },
+    {
+      "evo_id": "appfs-010",
+      "title": "Evolutions and task punches",
+      "phase": "10",
+      "deliverables": [
+        "evolution-to-punch production model",
+        "task index and state folders"
+      ],
+      "dependency_notes": "Depends on appfs-003.",
+      "exit_criterion": "The workspace supports clear evolution and punch flow."
+    },
+    {
+      "evo_id": "appfs-011",
+      "title": "Production governance folders",
+      "phase": "11",
+      "deliverables": [
+        "agents",
+        "tests",
+        "evidence",
+        "reviews",
+        "releases",
+        "owner portal",
+        "archive"
+      ],
+      "dependency_notes": "Depends on appfs-003.",
+      "exit_criterion": "The governance pipeline exists from agents to archive."
+    },
+    {
+      "evo_id": "appfs-012",
+      "title": "Commands, validation, repair, and hardening",
+      "phase": "12",
+      "deliverables": [
+        "create/validate/repair/print/manifest commands",
+        "evidence",
+        "safe repair checks"
+      ],
+      "dependency_notes": "Depends on appfs-002 through appfs-011.",
+      "exit_criterion": "Workspace creation/validation/repair is safe and test-covered."
+    },
+    {
+      "evo_id": "appfs-013",
+      "title": "Full canonical folder set upgrade",
+      "phase": "13",
+      "deliverables": [
+        "additive upgrade path",
+        "backward compatibility for older compact folders",
+        "full canonical folder set"
+      ],
+      "dependency_notes": "Depends on appfs-003 through appfs-012.",
+      "exit_criterion": "Existing compact folders are preserved and the full set is present."
+    },
+    {
+      "evo_id": "appfs-014",
+      "title": "Lifecycle, audit, final acceptance",
+      "phase": "14",
+      "deliverables": [
+        "lifecycle state management",
+        "audit trails",
+        "final docs",
+        "acceptance hardening"
+      ],
+      "dependency_notes": "Depends on appfs-012 and appfs-013.",
+      "exit_criterion": "The plugin is documented, audited, and ready for extension."
+    }
+  ]
+}

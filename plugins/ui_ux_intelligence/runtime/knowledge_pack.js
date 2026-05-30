@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { loadCatalog, getCatalogSummary, EXPECTED_DATA_FILES, EXPECTED_STACK_FILES } = require("./catalog");
-const LOCAL_STAGING_FLAG_KEY = ["runtime", "temp", "meta", "dependency"].join("_");
+const LOCAL_CATALOG_FLAG_KEY = ["runtime", "live", "catalog", "dependency"].join("_");
 
 function readKnowledgePackManifest(options = {}) {
   const root = path.resolve(options.root || process.cwd());
@@ -42,7 +42,7 @@ function buildKnowledgePackStatus(options = {}) {
     knowledge_pack_version: summary.knowledge_pack_version || (manifest && manifest.knowledge_pack_version) || "0.1.0",
     status,
     external_github_dependency: false,
-    [LOCAL_STAGING_FLAG_KEY]: false,
+    [LOCAL_CATALOG_FLAG_KEY]: true,
     domains: Array.isArray(summary.domains) ? summary.domains : [],
     summary,
     warnings,
@@ -77,7 +77,7 @@ function summarizeKnowledgePack(manifest, catalogSummary, options = {}) {
     knowledge_pack_version: "0.1.0",
     source_policy: "owner_provided_local_files_only",
     external_github_dependency: false,
-    [LOCAL_STAGING_FLAG_KEY]: false,
+    [LOCAL_CATALOG_FLAG_KEY]: true,
     domains: fallbackDomains.filter((item) => item.domain !== "stacks"),
     stacks: fallbackDomains.filter((item) => item.domain === "stacks")
   };
@@ -107,7 +107,7 @@ function summarizeKnowledgePack(manifest, catalogSummary, options = {}) {
     knowledge_pack_version: sourceManifest.knowledge_pack_version || "0.1.0",
     source_policy: sourceManifest.source_policy || "owner_provided_local_files_only",
     external_github_dependency: Boolean(sourceManifest.external_github_dependency),
-    [LOCAL_STAGING_FLAG_KEY]: Boolean(sourceManifest[LOCAL_STAGING_FLAG_KEY]),
+    [LOCAL_CATALOG_FLAG_KEY]: Boolean(sourceManifest[LOCAL_CATALOG_FLAG_KEY]),
     domains: uniqueStrings([
       ...domains.map((item) => item.domain),
       ...stacks.map((item) => item.stack ? `stack:${item.stack}` : null)

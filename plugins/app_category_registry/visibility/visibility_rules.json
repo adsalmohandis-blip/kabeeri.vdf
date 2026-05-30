@@ -1,0 +1,11 @@
+{
+  "default_rule": {
+    "activation_status": "active",
+    "spec_status": ["ready", "verified"],
+    "visibility": "default"
+  },
+  "advanced_rule": {
+    "activation_status": ["active", "admin_only", "hidden"],
+    "visibility": ["advanced", "coming_soon", "hidden"]
+  }
+}

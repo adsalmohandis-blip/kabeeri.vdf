@@ -1,0 +1,16 @@
+{
+    "evo_id":  "appfs-001",
+    "title":  "Plugin skeleton and status surface",
+    "phase":  "1",
+    "deliverables":  [
+                         "minimal plugin workspace shell",
+                         "metadata",
+                         "bootstrap/entry wiring",
+                         "docs",
+                         "schemas",
+                         "tests",
+                         "read-only status output"
+                     ],
+    "dependency_notes":  "Depends on appfs-000.",
+    "exit_criterion":  "app_folder_structure loads and reports status safely."
+}

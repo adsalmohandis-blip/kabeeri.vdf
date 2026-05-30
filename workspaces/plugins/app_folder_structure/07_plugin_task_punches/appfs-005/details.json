@@ -1,0 +1,39 @@
+{
+    "evo_id":  "appfs-005",
+    "title":  "Category registry integration",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-005-a",
+                        "goal":  "Integrate with app_category_registry.",
+                        "meaning":  "Load approved folder-structure profiles for the selected category/platform.",
+                        "allowed_files":  [
+                                              "registry adapter",
+                                              "docs",
+                                              "schemas"
+                                          ],
+                        "forbidden_files":  [
+                                                "Randomly invented roadmap folders"
+                                            ],
+                        "acceptance":  "Category profiles are loaded and validated.",
+                        "tests":  [
+                                      "Category lookup tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-005-b",
+                        "goal":  "Require approved folder-structure profiles.",
+                        "meaning":  "Fail safely when the category profile is missing, invalid, or incomplete.",
+                        "allowed_files":  [
+                                              "validation code",
+                                              "reports"
+                                          ],
+                        "forbidden_files":  [
+                                                "Silent fallback to generic roadmap folders"
+                                            ],
+                        "acceptance":  "Missing profiles stop generation.",
+                        "tests":  [
+                                      "Missing-profile failure tests."
+                                  ]
+                    }
+                ]
+}

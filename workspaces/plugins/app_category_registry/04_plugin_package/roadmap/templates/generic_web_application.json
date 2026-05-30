@@ -1,0 +1,4 @@
+{
+  "id": "generic_web_application",
+  "tracks": ["requirements", "uiux", "system_design", "testing", "deployment"]
+}

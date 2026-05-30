@@ -1,0 +1,89 @@
+{
+  "status": "completed",
+  "track": "plugin_dev",
+  "scope": "category brain for KVDOS app creation",
+  "mode": "design_and_execution_planning",
+  "purpose": "Planning record for the app_category_registry implementation",
+  "evolutions": [
+    {
+      "evo_id": "acr-000",
+      "title": "Design Contract",
+      "phase": 0,
+      "outcome": "plugin boundary, output contracts, category universe model, active catalog model, readiness matrix model, visibility rules, profile model, compatibility model, routing models, workspace plan model, evidence model, approval gate model, MVP active list, future inactive list, test matrix, risks, and implementation phases",
+      "dependency_notes": "First slice. Lock the architecture before coding.",
+      "exit_criterion": "The design contract is complete and reviewable."
+    },
+    {
+      "evo_id": "acr-001",
+      "title": "Plugin Foundation",
+      "phase": 1,
+      "outcome": "plugin shell, schemas, loader, validator, registry reader, readiness loader, visibility engine, and basic status command",
+      "dependency_notes": "Depends on acr-000.",
+      "exit_criterion": "The plugin loads category files and reports status safely."
+    },
+    {
+      "evo_id": "acr-002",
+      "title": "Category Universe + Active Catalog",
+      "phase": 2,
+      "outcome": "full category universe storage, active catalog, readiness matrix, and visibility rules with common ready categories shown first",
+      "dependency_notes": "Depends on acr-001.",
+      "exit_criterion": "Registry stores the universe and exposes only active ready categories by default."
+    },
+    {
+      "evo_id": "acr-003",
+      "title": "Category Profile + Compatibility Engine",
+      "phase": 3,
+      "outcome": "selected category profile builder, compatibility engine, profile validator, and deterministic .kabeeri/app_category_profile.yaml",
+      "dependency_notes": "Depends on acr-001 and acr-002.",
+      "exit_criterion": "Valid profiles are generated and invalid combinations fail safely."
+    },
+    {
+      "evo_id": "acr-004",
+      "title": "Source Intake Router",
+      "phase": 4,
+      "outcome": "source classification, source map, confidence model, conflict tracking, and source inventory outputs",
+      "dependency_notes": "Depends on acr-003.",
+      "exit_criterion": "Sources are routed and conflicts are recorded, not hidden."
+    },
+    {
+      "evo_id": "acr-005",
+      "title": "Category Questionnaire Router",
+      "phase": 5,
+      "outcome": "questionnaire packs, missing-detail prioritization, conditional questions, and .kabeeri/questionnaire_profile.yaml",
+      "dependency_notes": "Depends on acr-003 and acr-004.",
+      "exit_criterion": "The router asks missing and high-risk questions first."
+    },
+    {
+      "evo_id": "acr-006",
+      "title": "Spec + Micro-Docs Contract Resolver",
+      "phase": 6,
+      "outcome": "required docs/spec contracts for UI/UX, system design, database, testing, deployment, security, and evidence",
+      "dependency_notes": "Depends on acr-003 and acr-005.",
+      "exit_criterion": "The plugin knows exactly which docs are required for the selected profile."
+    },
+    {
+      "evo_id": "acr-007",
+      "title": "Roadmap Tracks + Roadmap Order Engine",
+      "phase": 7,
+      "outcome": "ordered roadmap tracks, dependency validation, approval gates, and category-specific ordering rules",
+      "dependency_notes": "Depends on acr-003, acr-005, and acr-006.",
+      "exit_criterion": "Roadmaps are ordered and dependency-safe."
+    },
+    {
+      "evo_id": "acr-008",
+      "title": "Workspace Planner",
+      "phase": 8,
+      "outcome": "non-destructive workspace planning, dry-run/apply behavior, category templates, and folder evidence",
+      "dependency_notes": "Depends on acr-003, acr-006, and acr-007.",
+      "exit_criterion": "A category-specific workspace plan is generated safely."
+    },
+    {
+      "evo_id": "acr-009",
+      "title": "IDE Integration + Evidence + Tests",
+      "phase": 9,
+      "outcome": "Create New App selection flow, evidence outputs, approval gates, docs, tests, and final hardening",
+      "dependency_notes": "Depends on acr-001 through acr-008.",
+      "exit_criterion": "The category chooser is production-ready and test-covered."
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "ecommerce_platform",
+  "name": "E-commerce Platform",
+  "description": "Commerce-driven web application with catalog, cart, checkout, payment, and order flows.",
+  "group": "domain",
+  "layer": "domain",
+  "lifecycle_status": "stable",
+  "activation_status": "active",
+  "spec_status": "ready",
+  "visibility": "default",
+  "version": "1.0.0",
+  "schema_version": "1.0.0",
+  "compatible_with": ["web_application", "saas_platform", "marketplace_platform"],
+  "required_uiux_specs": ["screen_map", "product_journeys", "checkout_flows"],
+  "required_system_design_specs": ["architecture_overview", "payment_integration", "order_lifecycle"],
+  "required_database_specs": ["entity_map", "table_specs", "audit_log_model"],
+  "required_questionnaire_packs": ["business_goals", "core_features", "integrations"],
+  "required_roadmap_tracks": ["requirements", "uiux", "system_design", "database", "integrations", "testing", "deployment"],
+  "workspace_template": "ecommerce_platform",
+  "governance_profiles": ["payment_commerce_app"],
+  "testing_focus": ["checkout", "payments", "orders", "inventory"],
+  "readiness_checks": ["catalog", "cart", "checkout", "payments", "orders"]
+}

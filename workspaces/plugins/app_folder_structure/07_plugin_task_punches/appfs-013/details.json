@@ -1,0 +1,39 @@
+{
+    "evo_id":  "appfs-013",
+    "title":  "Full canonical folder set upgrade",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-013-a",
+                        "goal":  "Upgrade existing workspaces additively to the full canonical set.",
+                        "meaning":  "Add missing folders/files without deleting compact folders already present.",
+                        "allowed_files":  [
+                                              "workspace root",
+                                              "manifests",
+                                              "mapping docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Renaming or deleting compact folders"
+                                            ],
+                        "acceptance":  "Existing compact workspaces are upgraded additively.",
+                        "tests":  [
+                                      "Additive-upgrade tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-013-b",
+                        "goal":  "Add compatibility mapping documentation.",
+                        "meaning":  "Show how older compact folders map into the canonical layout.",
+                        "allowed_files":  [
+                                              "99_archive/compact_structure_mapping.md",
+                                              "manifests"
+                                          ],
+                        "forbidden_files":  [
+                                                "Content migration without approval"
+                                            ],
+                        "acceptance":  "Mapping is documented and preserved.",
+                        "tests":  [
+                                      "Compatibility mapping review."
+                                  ]
+                    }
+                ]
+}

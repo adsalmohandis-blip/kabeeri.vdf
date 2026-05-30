@@ -1,0 +1,4 @@
+{
+  "id": "ecommerce_platform",
+  "tracks": ["requirements", "uiux", "system_design", "database", "integrations", "testing", "deployment"]
+}

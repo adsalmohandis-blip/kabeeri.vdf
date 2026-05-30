@@ -1,0 +1,50 @@
+{
+  "plugin_id": "app_folder_structure",
+  "id": "app_folder_structure",
+  "name": "App Folder Structure",
+  "version": "1.0.0",
+  "type": "kvdf_plugin",
+  "track": "owner_track",
+  "status": "owner_direct_development",
+  "entry": "bootstrap.js",
+  "command_entrypoint": "plugins/app_folder_structure/bootstrap.js",
+  "runtime_entrypoint": "plugins/app_folder_structure/bootstrap.js",
+  "runtime_path": "plugins/app_folder_structure/bootstrap.js",
+  "commands": [
+    "status",
+    "create",
+    "validate",
+    "repair",
+    "print",
+    "manifest",
+    "readiness"
+  ],
+  "depends_on": [],
+  "integrates_with": [
+    "app_category_registry",
+    "app_workspace_contract",
+    "track_control"
+  ],
+  "provides": [
+    "app workspace creation",
+    "app workspace validation",
+    "app workspace repair",
+    "app workspace manifest generation"
+  ],
+  "consumes": [
+    "category profiles",
+    "workspace inputs",
+    "app workspace manifests"
+  ],
+  "conflicts_with": [],
+  "permissions_required": [
+    "filesystem_write",
+    "workspace_state_read"
+  ],
+  "runtime_path": "bootstrap.js",
+  "schemas": [
+    "schemas/app_workspace_manifest.schema.json",
+    "schemas/folder_structure_profile.schema.json",
+    "schemas/app_workspace_validation.schema.json"
+  ]
+}

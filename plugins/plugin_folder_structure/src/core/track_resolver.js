@@ -1,20 +1,13 @@
-const fs = require("fs");
-const path = require("path");
 const { repoRoot } = require("../../../../src/cli/fs_utils");
+const { normalizeTrackSurface, readSessionTrackSurface } = require("../../../../src/cli/services/track_control");
 const { pluginFolderError } = require("./errors");
 
 function readActiveTrack() {
-  const file = path.join(repoRoot(), ".kabeeri", "session_track.json");
-  if (!fs.existsSync(file)) return null;
-  try {
-    const state = JSON.parse(fs.readFileSync(file, "utf8"));
-    if (!state || !state.active) return null;
-    if (state.active_track === "framework_owner") return "owner";
-    if (state.active_track === "vibe_app_developer") return "viber";
-    if (state.active_track === "plugin_development_track" || state.active_track === "plugin_dev") return "plugin_dev";
-  } catch {
-    return null;
-  }
+  const surface = readSessionTrackSurface(repoRoot());
+  if (!surface) return null;
+  if (surface === "owner") return "owner";
+  if (surface === "viber") return "viber";
+  if (surface === "plugin") return "plugin_dev";
   return null;
 }
 
@@ -27,12 +20,14 @@ function resolveTrack(context = {}) {
 }
 
 function normalizeTrack(track) {
-  const value = String(track || "").trim().toLowerCase();
+  const value = String(track || "").trim();
   if (!value) return null;
-  if (["owner", "framework_owner", "owner_track", "owner-track"].includes(value)) return "owner";
-  if (["plugin_dev", "plugin-development", "plugin_development", "plugin-development-track", "plugin_development_track"].includes(value)) return "plugin_dev";
-  if (["viber", "vibe", "app", "vibe_app_developer", "viber_track"].includes(value)) return "viber";
-  throw pluginFolderError(`Invalid track: ${track}`);
+  const surface = normalizeTrackSurface(value);
+  if (!surface) throw pluginFolderError(`Invalid track: ${track}`);
+  if (surface === "owner") return "owner";
+  if (surface === "viber") return "viber";
+  if (surface === "plugin") return "plugin_dev";
+  return null;
 }
 
 function resolveTargetRoot(slug, track) {

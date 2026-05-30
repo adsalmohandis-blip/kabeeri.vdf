@@ -1,0 +1,39 @@
+{
+    "evo_id":  "appfs-008",
+    "title":  "Full specification contract",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-008-a",
+                        "goal":  "Create handoff-grade specification placeholders.",
+                        "meaning":  "Create product, requirements, and handoff-oriented docs for future teams.",
+                        "allowed_files":  [
+                                              "03_full_specifications/",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Generated runtime source"
+                                            ],
+                        "acceptance":  "Specification placeholders exist.",
+                        "tests":  [
+                                      "File-presence tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-008-b",
+                        "goal":  "Add spec index and traceability artifacts.",
+                        "meaning":  "Make it easy to see where requirements came from and where they go.",
+                        "allowed_files":  [
+                                              "spec index",
+                                              "traceability docs",
+                                              "evidence"
+                                          ],
+                        "forbidden_files":  [
+                                                "Free-form undocumented changes"
+                                            ],
+                        "acceptance":  "Specs are traceable.",
+                        "tests":  [
+                                      "Traceability checks."
+                                  ]
+                    }
+                ]
+}

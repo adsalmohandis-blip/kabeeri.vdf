@@ -1,7 +1,23 @@
 function registerPluginFolderStructure() {
   return {
     command: "plugin-folder",
-    actions: ["status", "create", "validate", "readiness", "git-library", "integration", "request-owner-review", "request-marketplace-upload", "init-source"]
+    actions: [
+      "status",
+      "create",
+      "upgrade-full-set",
+      "validate",
+      "readiness",
+      "fix-numbering",
+      "git-library",
+      "integration",
+      "request-owner-review",
+      "request-direct-install",
+      "request-marketplace-upload",
+      "archive-evidence",
+      "lifecycle",
+      "audit",
+      "init-source"
+    ]
   };
 }
 

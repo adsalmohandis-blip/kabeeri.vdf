@@ -1,0 +1,66 @@
+{
+  "id": "app_category_registry",
+  "name": "app_category_registry",
+  "version": "0.1.0",
+  "type": "plugin",
+  "status": "draft",
+  "entry": "./bootstrap.js",
+  "commands": [
+    "status",
+    "create",
+    "profile",
+    "plan",
+    "validate"
+  ],
+  "depends_on": [
+    "plugin_folder_structure"
+  ],
+  "integrates_with": [
+    "plugin_dev"
+  ],
+  "provides": {
+    "commands": [
+      "app-category"
+    ],
+    "schemas": [
+      "category.schema.json",
+      "app-category-profile.schema.json"
+    ],
+    "events": [],
+    "dashboard_widgets": [],
+    "capabilities": [
+      "category_selection",
+      "category_planning"
+    ]
+  },
+  "consumes": {
+    "commands": [
+      "plugin-folder status"
+    ],
+    "schemas": [
+      "app-workspace-manifest"
+    ],
+    "events": [],
+    "runtime_state": [
+      ".kabeeri/app_category_profile.yaml",
+      ".kabeeri/source_inventory.yaml"
+    ],
+    "capabilities": [
+      "workspace_governance"
+    ]
+  },
+  "conflicts_with": [],
+  "permissions_required": [
+    "read_category_registry",
+    "write_kabeeri_planning_artifacts",
+    "write_evidence"
+  ],
+  "runtime_path": "./workspace",
+  "schemas": [
+    "./schemas/category.schema.json",
+    "./schemas/category-group.schema.json",
+    "./schemas/category-readiness.schema.json",
+    "./schemas/category-visibility.schema.json",
+    "./schemas/app-category-profile.schema.json"
+  ]
+}

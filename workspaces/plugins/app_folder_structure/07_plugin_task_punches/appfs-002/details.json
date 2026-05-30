@@ -1,0 +1,40 @@
+{
+    "evo_id":  "appfs-002",
+    "title":  "Workspace type registry",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-002-a",
+                        "goal":  "Define the visible workspace-type registry.",
+                        "meaning":  "List supported workspace types for the app workspace root.",
+                        "allowed_files":  [
+                                              "plugin registry files",
+                                              "docs",
+                                              "schemas"
+                                          ],
+                        "forbidden_files":  [
+                                                "App workspace materialization"
+                                            ],
+                        "acceptance":  "Workspace types are listed explicitly.",
+                        "tests":  [
+                                      "Registry listing checks."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-002-b",
+                        "goal":  "Validate supported workspace types and reject unsupported ones.",
+                        "meaning":  "Fail closed for unrecognized workspace types and unsafe roots.",
+                        "allowed_files":  [
+                                              "validation code",
+                                              "schemas",
+                                              "reports"
+                                          ],
+                        "forbidden_files":  [
+                                                "Auto-creating unsupported types"
+                                            ],
+                        "acceptance":  "Invalid workspace types are rejected.",
+                        "tests":  [
+                                      "Unsupported-type validation tests."
+                                  ]
+                    }
+                ]
+}

@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kabeeri.local/schemas/app_workspace_manifest.schema.json",
+  "title": "App Workspace Manifest",
+  "type": "object",
+  "required": [
+    "plugin_slug",
+    "track",
+    "workspace_root",
+    "package_root",
+    "status",
+    "installed",
+    "marketplace_published",
+    "owner_approval_required_for_promotion",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "plugin_slug": { "type": "string" },
+    "track": { "type": "string" },
+    "workspace_root": { "type": "string" },
+    "package_root": { "type": "string" },
+    "actual_plugin_package": { "type": "string" },
+    "source_tracking_folder": { "type": "string" },
+    "direct_install_target": { "type": "string" },
+    "marketplace_target": { "type": "string" },
+    "status": { "type": "string" },
+    "installed": { "type": "boolean" },
+    "marketplace_published": { "type": "boolean" },
+    "owner_approval_required_for_promotion": { "type": "boolean" },
+    "compatibility": { "type": "object" },
+    "created_at": { "type": "string" },
+    "updated_at": { "type": "string" }
+  },
+  "additionalProperties": true
+}

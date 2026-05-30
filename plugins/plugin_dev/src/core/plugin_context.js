@@ -1,11 +1,11 @@
 const path = require("path");
 const { repoRoot } = require("../../../../src/cli/fs_utils");
 const { resolveTrack } = require("./track_resolver");
-const { slugify } = require("../utils/slugify");
+const { workspaceSlugify } = require("../utils/slugify");
 
 function buildPluginDevContext({ action, value, flags = {}, rest = [], deps = {} } = {}) {
   const normalizedAction = String(action || "").trim().toLowerCase();
-  const plugin_slug = slugify(
+  const plugin_slug = workspaceSlugify(
     flags.slug ||
     rest[0] ||
     (["status", "doctor"].includes(normalizedAction) ? value : "")

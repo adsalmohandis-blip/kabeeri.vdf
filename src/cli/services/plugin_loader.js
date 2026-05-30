@@ -5,6 +5,22 @@ const { buildPluginBundleContract } = require("./plugin_bundle_contract");
 const { isPluginMounted, getPluginMountPath } = require("./plugin_mounts");
 
 const PLUGIN_STATE_FILE = ".kabeeri/plugins.json";
+const PLUGIN_ID_ALIASES = {
+  blog_builder: "blog",
+  "blog-builder": "blog",
+  crm_builder: "crm",
+  "crm-builder": "crm",
+  company_profile_builder: "company-profile",
+  "company-profile-builder": "company-profile",
+  news_website_builder: "news-website",
+  "news-website-builder": "news-website",
+  pos_builder: "pos",
+  "pos-builder": "pos"
+};
+
+function normalizePluginId(pluginId) {
+  return PLUGIN_ID_ALIASES[pluginId] || pluginId;
+}
 
 function ensurePluginLoaderState() {
   const statePath = path.join(repoRoot(), PLUGIN_STATE_FILE);
@@ -156,10 +172,11 @@ function resolvePluginStates(manifests, state) {
 
 function getPluginRuntimeStatus(pluginId) {
   if (!pluginId) return null;
+  const normalizedPluginId = normalizePluginId(pluginId);
   const state = ensurePluginLoaderState();
   const manifests = scanPluginManifests();
   const plugins = resolvePluginStates(manifests, state);
-  return plugins.find((plugin) => plugin.plugin_id === pluginId || plugin.name === pluginId || plugin.bundle_path === pluginId) || null;
+  return plugins.find((plugin) => plugin.plugin_id === normalizedPluginId || plugin.name === normalizedPluginId || plugin.bundle_path === normalizedPluginId) || null;
 }
 
 function buildPluginLoaderReport() {
@@ -187,8 +204,9 @@ function buildPluginLoaderReport() {
 
 function setPluginEnabled(pluginId, enabled) {
   if (!pluginId) throw new Error("Missing plugin id.");
+  const normalizedPluginId = normalizePluginId(pluginId);
   const report = buildPluginLoaderReport();
-  const plugin = report.plugins.find((item) => item.plugin_id === pluginId || item.name === pluginId || item.bundle_path === pluginId);
+  const plugin = report.plugins.find((item) => item.plugin_id === normalizedPluginId || item.name === normalizedPluginId || item.bundle_path === normalizedPluginId);
   if (!plugin) throw new Error(`Plugin not found: ${pluginId}`);
   const statePath = path.join(repoRoot(), PLUGIN_STATE_FILE);
   const state = ensurePluginLoaderState();
@@ -197,13 +215,13 @@ function setPluginEnabled(pluginId, enabled) {
   if (enabled) {
     const { mountPluginBundle } = require("./plugin_mounts");
     mountPluginBundle(plugin);
-    enabledPlugins.add(pluginId);
-    disabledPlugins.delete(pluginId);
+    enabledPlugins.add(plugin.plugin_id);
+    disabledPlugins.delete(plugin.plugin_id);
   } else {
     const { unmountPluginBundle } = require("./plugin_mounts");
-    unmountPluginBundle(pluginId);
-    disabledPlugins.add(pluginId);
-    enabledPlugins.delete(pluginId);
+    unmountPluginBundle(plugin.plugin_id);
+    disabledPlugins.add(plugin.plugin_id);
+    enabledPlugins.delete(plugin.plugin_id);
   }
   state.enabled_plugins = Array.from(enabledPlugins).sort();
   state.disabled_plugins = Array.from(disabledPlugins).sort();
@@ -231,8 +249,9 @@ function renderPluginLoaderReport(report, table) {
 }
 
 function findPluginById(pluginId) {
+  const normalizedPluginId = normalizePluginId(pluginId);
   const report = buildPluginLoaderReport();
-  const plugin = report.plugins.find((item) => item.plugin_id === pluginId || item.name === pluginId || item.bundle_path === pluginId);
+  const plugin = report.plugins.find((item) => item.plugin_id === normalizedPluginId || item.name === normalizedPluginId || item.bundle_path === normalizedPluginId);
   if (!plugin) throw new Error(`Plugin not found: ${pluginId}`);
   return plugin;
 }

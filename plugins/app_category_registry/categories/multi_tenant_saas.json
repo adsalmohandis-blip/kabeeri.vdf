@@ -1,0 +1,23 @@
+{
+  "id": "multi_tenant_saas",
+  "name": "Multi Tenant SaaS",
+  "description": "SaaS application with tenant-aware architecture, billing, and onboarding.",
+  "group": "architecture",
+  "layer": "architecture",
+  "lifecycle_status": "stable",
+  "activation_status": "active",
+  "spec_status": "ready",
+  "visibility": "default",
+  "version": "1.0.0",
+  "schema_version": "1.0.0",
+  "compatible_with": ["saas_platform", "web_application", "crm_admin_system"],
+  "required_uiux_specs": ["screen_map", "tenant_journeys", "onboarding_flow"],
+  "required_system_design_specs": ["architecture_overview", "module_boundaries", "tenant_model"],
+  "required_database_specs": ["entity_map", "table_specs", "tenant_isolation_rules"],
+  "required_questionnaire_packs": ["business_goals", "target_users", "permissions", "reporting"],
+  "required_roadmap_tracks": ["requirements", "uiux", "system_design", "database", "security", "testing", "deployment"],
+  "workspace_template": "saas_platform",
+  "governance_profiles": ["multi_tenant_saas"],
+  "testing_focus": ["tenant_isolation", "billing", "onboarding", "security"],
+  "readiness_checks": ["tenant_model", "billing_model", "subscription_model", "onboarding"]
+}

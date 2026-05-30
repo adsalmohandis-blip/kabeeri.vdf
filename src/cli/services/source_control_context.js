@@ -3,13 +3,10 @@ const path = require("path");
 
 const { repoRoot } = require("../fs_utils");
 const { readGitRepositoryState } = require("./git_snapshot");
+const { normalizeTrackAssignment } = require("./track_control");
 
 function normalizeTrack(value) {
-  const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  if (normalized === "owner" || normalized === "framework_owner" || normalized === "framework-owner") return "framework_owner";
-  if (normalized === "vibe" || normalized === "viber" || normalized === "vibe_app_developer" || normalized === "vibe-app-developer") return "vibe_app_developer";
-  if (normalized === "plugin" || normalized === "plugins" || normalized === "plugin_dev" || normalized === "plugin-dev") return "plugin";
-  return normalized || "framework_owner";
+  return normalizeTrackAssignment(value) || "framework_owner";
 }
 
 function normalizeAppSlug(value) {
@@ -297,5 +294,6 @@ function summarizeGitContext(gitContext = {}) {
 module.exports = {
   buildGitContext,
   buildSourceControlContextReport,
-  summarizeGitContext
+  summarizeGitContext,
+  normalizeTrack
 };

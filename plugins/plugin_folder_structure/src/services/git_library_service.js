@@ -7,7 +7,7 @@ const { ensureDir, writeFileIfMissing } = require("../utils/fs_safe");
 const { readJson, writeJson } = require("../utils/json_safe");
 
 function getWorkspaceGitLibraryRoot(slug) {
-  return path.join(repoRoot(), "workspaces", "plugins", slug, "inputs", "git_libraries");
+  return path.join(repoRoot(), "workspaces", "plugins", slug, "00_plugin_inputs", "git_libraries");
 }
 
 function getOwnerGitLibraryRoot(slug) {

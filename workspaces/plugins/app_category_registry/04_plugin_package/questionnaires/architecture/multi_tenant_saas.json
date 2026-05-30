@@ -1,0 +1,6 @@
+{
+  "id": "multi_tenant_saas",
+  "questions": [
+    { "id": "tenant_strategy", "question": "What is the tenant isolation strategy?" }
+  ]
+}

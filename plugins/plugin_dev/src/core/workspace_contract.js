@@ -3,6 +3,7 @@ const path = require("path");
 const { repoRoot } = require("../../../../src/cli/fs_utils");
 const { buildPluginLoaderReport } = require("../../../../src/cli/services/plugin_loader");
 const { pluginFolderStructure } = require("../../../plugin_folder_structure/bootstrap");
+const { resolveTargetWorkspaceRoot } = require("../../../plugin_folder_structure/src/services/target_path_service");
 const { PLUGIN_FOLDER_STRUCTURE_TARGET_MESSAGES } = require("./constants");
 const { pluginDevError } = require("./errors");
 const { resolveTrack } = require("./track_resolver");
@@ -15,8 +16,14 @@ function getWorkspaceRoot(context) {
   if (context.flags && (context.flags.workspace || context.flags.root)) {
     return path.resolve(root, String(context.flags.workspace || context.flags.root));
   }
-  if (context.track === "owner") return path.join(root, "plugins", context.plugin_slug);
-  return path.join(root, "workspaces", "plugins", context.plugin_slug);
+  const track = resolveTrack(context);
+  const slug = String(context.plugin_slug || "").trim();
+  if (!slug) {
+    return track === "owner"
+      ? path.join(root, "plugins", "<plugin-slug>")
+      : path.join(root, "workspaces", "plugins", "<plugin-slug>");
+  }
+  return resolveTargetWorkspaceRoot(slug, track);
 }
 
 function getArtifactsRoot(workspaceRoot) {
@@ -46,6 +53,7 @@ function buildWorkspaceContractReport(context) {
   }
   const contractPath = path.join(repoRoot(), "plugins", "plugin_folder_structure", "plugin.json");
   const contract = readJsonFile(contractPath, null);
+  const contractAvailable = Boolean(contract);
   return {
     report_type: "plugin_dev_workspace_contract",
     plugin_id: "plugin_dev",
@@ -54,11 +62,13 @@ function buildWorkspaceContractReport(context) {
     track: context.track,
     workspace_root: workspaceRoot,
     exists,
-    contract_available: Boolean(contract),
+    contract_available: contractAvailable,
+    workspace_contract_source: "plugin_folder_structure",
+    workspace_contract_available: contractAvailable,
     plugin_folder_structure: loader,
     required_folders: REQUIRED_WORKSPACE_FOLDERS,
     missing,
-    valid: exists && missing.length === 0 && loader.installed && loader.enabled
+    valid: exists && missing.length === 0 && loader.installed && loader.enabled && contractAvailable
   };
 }
 

@@ -1,0 +1,41 @@
+{
+    "evo_id":  "appfs-012",
+    "title":  "Commands, validation, repair, and hardening",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-012-a",
+                        "goal":  "Implement create, validate, repair, print, and manifest commands.",
+                        "meaning":  "Add the command surface for managing app workspaces safely.",
+                        "allowed_files":  [
+                                              "CLI integration",
+                                              "plugin command surface",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Unsafe creation paths"
+                                            ],
+                        "acceptance":  "Commands exist and are safe.",
+                        "tests":  [
+                                      "CLI smoke tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-012-b",
+                        "goal":  "Add safe repair, manifest, evidence, and hardening tests.",
+                        "meaning":  "Ensure repair is additive only and produces evidence.",
+                        "allowed_files":  [
+                                              "validation",
+                                              "repair",
+                                              "evidence",
+                                              "tests"
+                                          ],
+                        "forbidden_files":  [
+                                                "Deletion or overwrite of user content"
+                                            ],
+                        "acceptance":  "Repair writes evidence and preserves content.",
+                        "tests":  [
+                                      "Repair/evidence tests."
+                                  ]
+                    }
+                ]
+}

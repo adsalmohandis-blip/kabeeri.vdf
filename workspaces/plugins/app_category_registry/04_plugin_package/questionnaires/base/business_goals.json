@@ -1,0 +1,6 @@
+{
+  "id": "business_goals",
+  "questions": [
+    { "id": "goal", "question": "What business goal does this app solve?" }
+  ]
+}

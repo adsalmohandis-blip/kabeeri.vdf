@@ -1,0 +1,238 @@
+{
+  "status": "completed",
+  "track": "plugin_dev",
+  "scope": "category brain for KVDOS app creation",
+  "mode": "detailed_task_punch_planning",
+  "punches": [
+    {
+      "evo_id": "acr-000",
+      "punches": [
+        {
+          "punch_id": "acr-000-a",
+          "goal": "Define the plugin boundary and file contract.",
+          "meaning": "Write down exactly what the plugin owns and what it does not own.",
+          "allowed_files": ["workspace docs", "design docs"],
+          "forbidden_files": ["Runtime behavior"],
+          "acceptance": "Boundary is explicit.",
+          "tests": ["Document review"]
+        },
+        {
+          "punch_id": "acr-000-b",
+          "goal": "Define the category data model and plan outputs.",
+          "meaning": "Specify the category universe, active catalog, visibility, readiness, and output files.",
+          "allowed_files": ["planning docs", "schema drafts"],
+          "forbidden_files": ["Command code"],
+          "acceptance": "Output contracts are clear.",
+          "tests": ["Contract review"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-001",
+      "punches": [
+        {
+          "punch_id": "acr-001-a",
+          "goal": "Create the plugin shell and schemas.",
+          "meaning": "Make the plugin loadable with schema scaffolding and metadata.",
+          "allowed_files": ["plugin package shell", "schemas"],
+          "forbidden_files": ["Universe hardcoding"],
+          "acceptance": "Plugin loads safely.",
+          "tests": ["Metadata load test"]
+        },
+        {
+          "punch_id": "acr-001-b",
+          "goal": "Add loader, validator, readiness, and status.",
+          "meaning": "Create the basic runtime services that can inspect category files without crashing on empties.",
+          "allowed_files": ["loader/validator services"],
+          "forbidden_files": ["App generation logic"],
+          "acceptance": "Status works and invalid categories fail clearly.",
+          "tests": ["Loader and validator tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-002",
+      "punches": [
+        {
+          "punch_id": "acr-002-a",
+          "goal": "Store the full category universe.",
+          "meaning": "Represent all category possibilities in data files.",
+          "allowed_files": ["category data folders and YAML files"],
+          "forbidden_files": ["Hardcoded category logic"],
+          "acceptance": "Universe is data-driven.",
+          "tests": ["Catalog load tests"]
+        },
+        {
+          "punch_id": "acr-002-b",
+          "goal": "Expose only active ready categories by default.",
+          "meaning": "Filter to categories with active/ready/default visibility.",
+          "allowed_files": ["active catalog and visibility files"],
+          "forbidden_files": ["Production selection of hidden categories"],
+          "acceptance": "Default view shows only safe categories.",
+          "tests": ["Visibility filtering tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-003",
+      "punches": [
+        {
+          "punch_id": "acr-003-a",
+          "goal": "Build the category profile builder.",
+          "meaning": "Combine delivery, domain, architecture, governance, and industry selections into one profile.",
+          "allowed_files": ["profile builder", "profile writer"],
+          "forbidden_files": ["App scaffolding"],
+          "acceptance": "Profile output is deterministic.",
+          "tests": ["Profile writer tests"]
+        },
+        {
+          "punch_id": "acr-003-b",
+          "goal": "Build the compatibility engine.",
+          "meaning": "Validate combinations and classify issues as info, warning, error, or blocking.",
+          "allowed_files": ["compatibility rules", "validator"],
+          "forbidden_files": ["Silent coercion"],
+          "acceptance": "Invalid combinations fail safely.",
+          "tests": ["Combination coverage tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-004",
+      "punches": [
+        {
+          "punch_id": "acr-004-a",
+          "goal": "Classify and route source inputs.",
+          "meaning": "Route screenshots, files, links, DBs, and repo inputs into roadmap tracks.",
+          "allowed_files": ["source router", "inventory outputs"],
+          "forbidden_files": ["Ignoring unknown inputs"],
+          "acceptance": "Sources are classified.",
+          "tests": ["Source routing tests"]
+        },
+        {
+          "punch_id": "acr-004-b",
+          "goal": "Record conflicts and confidence.",
+          "meaning": "Track inferred, assumed, conflicting, missing, and approved details.",
+          "allowed_files": ["conflict outputs", "evidence outputs"],
+          "forbidden_files": ["Silent conflict resolution"],
+          "acceptance": "Conflicts are explicit.",
+          "tests": ["Conflict handling tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-005",
+      "punches": [
+        {
+          "punch_id": "acr-005-a",
+          "goal": "Load category-specific question packs.",
+          "meaning": "Pull the right questions for the selected profile and source gaps.",
+          "allowed_files": ["questionnaire packs", "router"],
+          "forbidden_files": ["One-size-fits-all questions"],
+          "acceptance": "Missing details are asked first.",
+          "tests": ["Pack load tests"]
+        },
+        {
+          "punch_id": "acr-005-b",
+          "goal": "Mark answered questions and prioritize risk.",
+          "meaning": "Reduce noise by de-prioritizing already answered items.",
+          "allowed_files": ["questionnaire profile files"],
+          "forbidden_files": ["Re-asking confirmed inputs"],
+          "acceptance": "Critical missing questions rise to the top.",
+          "tests": ["Priority tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-006",
+      "punches": [
+        {
+          "punch_id": "acr-006-a",
+          "goal": "Resolve required spec docs.",
+          "meaning": "Define which specs must exist for UI/UX, system design, database, testing, deployment, and security.",
+          "allowed_files": ["spec resolver", "contract files"],
+          "forbidden_files": ["Writing the app itself"],
+          "acceptance": "Required docs are known.",
+          "tests": ["Contract resolution tests"]
+        },
+        {
+          "punch_id": "acr-006-b",
+          "goal": "Resolve micro-doc contracts.",
+          "meaning": "Specify required sections, inputs, outputs, approvals, and readiness checks for each doc type.",
+          "allowed_files": ["micro-doc contract files"],
+          "forbidden_files": ["Ignoring missing inputs"],
+          "acceptance": "Micro-doc requirements are explicit.",
+          "tests": ["Micro-doc contract tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-007",
+      "punches": [
+        {
+          "punch_id": "acr-007-a",
+          "goal": "Generate roadmap tracks and order.",
+          "meaning": "Build the ordered roadmap with dependencies and phase rules.",
+          "allowed_files": ["roadmap resolver", "order engine"],
+          "forbidden_files": ["Random track order"],
+          "acceptance": "Roadmap order is deterministic.",
+          "tests": ["Order tests"]
+        },
+        {
+          "punch_id": "acr-007-b",
+          "goal": "Enforce approval gates and dependency constraints.",
+          "meaning": "Block phases when required inputs or approvals are missing.",
+          "allowed_files": ["validators", "approval gate logic"],
+          "forbidden_files": ["Ignoring blockers"],
+          "acceptance": "Dependencies are enforced.",
+          "tests": ["Gate tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-008",
+      "punches": [
+        {
+          "punch_id": "acr-008-a",
+          "goal": "Plan the workspace safely.",
+          "meaning": "Produce a dry-run/apply workspace plan without destructive changes.",
+          "allowed_files": ["workspace planner", "plan outputs"],
+          "forbidden_files": ["Forced folder writes"],
+          "acceptance": "Workspace plan is generated.",
+          "tests": ["Dry-run tests"]
+        },
+        {
+          "punch_id": "acr-008-b",
+          "goal": "Emit folder evidence and category-specific templates.",
+          "meaning": "Record what was planned and what category template was used.",
+          "allowed_files": ["evidence outputs", "templates"],
+          "forbidden_files": ["Silent folder mutations"],
+          "acceptance": "The plan is auditable.",
+          "tests": ["Apply-mode tests"]
+        }
+      ]
+    },
+    {
+      "evo_id": "acr-009",
+      "punches": [
+        {
+          "punch_id": "acr-009-a",
+          "goal": "Integrate category selection into the Create New App flow.",
+          "meaning": "Show active categories, warnings, and previews before profile approval.",
+          "allowed_files": ["IDE integration docs", "evidence"],
+          "forbidden_files": ["Unsafe app build automation"],
+          "acceptance": "Selection flow works with warnings.",
+          "tests": ["UI flow tests"]
+        },
+        {
+          "punch_id": "acr-009-b",
+          "goal": "Finalize evidence and production tests.",
+          "meaning": "Save evidence for category selection, intake, questionnaire, spec resolution, roadmap, workspace plan, and approval gates.",
+          "allowed_files": ["evidence folder", "tests", "docs"],
+          "forbidden_files": ["Missing audit trail"],
+          "acceptance": "The plugin is production-ready.",
+          "tests": ["Evidence and regression tests"]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Category Readiness",
+  "type": "object",
+  "required": ["id", "activation_status", "spec_status", "visibility", "reason"],
+  "properties": {
+    "id": { "type": "string" },
+    "activation_status": { "type": "string" },
+    "spec_status": { "type": "string" },
+    "visibility": { "type": "string" },
+    "reason": { "type": "string" }
+  }
+}

@@ -12,6 +12,7 @@ const {
   readGitLatestTags
 } = require("../services/git_snapshot");
 const { buildGitContext } = require("../services/source_control_context");
+const { normalizeTrackAssignment, getTrackDisplayLabel } = require("../services/track_control");
 
 const CURRENT_STATE_REPORT_PATH = ".kabeeri/state_resync/current_state_report.json";
 const STATE_RESYNC_HISTORY_PATH = ".kabeeri/state_resync/state_resync_history.json";
@@ -122,6 +123,7 @@ function buildStateResyncReport(options = {}) {
     generated_at: generatedAt,
     status,
     track: track === "vibe_app_developer" ? "vibe_app_developer" : track === "plugin" ? "plugin" : "framework_owner",
+    track_label: getTrackDisplayLabel(track),
     state_freshness: freshness.state_freshness,
     repo: {
       root: cwd,
@@ -232,11 +234,7 @@ function evaluateStateResyncFreshness(report, evidence = {}) {
 }
 
 function resolveStateResyncTrack(flags = {}, value = "", rest = []) {
-  const candidate = String(flags.track || flags["planner-track"] || value || rest[0] || "owner").trim().toLowerCase();
-  if (["owner", "framework_owner", "kvdf"].includes(candidate)) return "framework_owner";
-  if (["vibe", "app", "vibe_app_developer", "developer"].includes(candidate)) return "vibe_app_developer";
-  if (["plugin", "plugins"].includes(candidate)) return "plugin";
-  return "framework_owner";
+  return normalizeTrackAssignment(flags.track || flags["planner-track"] || value || rest[0] || "owner") || "framework_owner";
 }
 
 function resolveStateResyncPluginId(flags = {}) {

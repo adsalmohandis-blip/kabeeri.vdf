@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const { repoRoot } = require("../fs_utils");
+const { normalizeTrackSurface } = require("./track_control");
 
 function readJsonFileIfExists(filePath) {
   if (!filePath || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) return null;
@@ -22,10 +23,10 @@ function normalizePath(value) {
 }
 
 function normalizeTrack(value) {
-  const text = String(value || "").trim().toLowerCase().replace(/[\s_-]+/g, "_");
-  if (text === "owner" || text === "framework_owner" || text === "kvdf") return "framework_owner";
-  if (text === "vibe" || text === "viber" || text === "vibe_app_developer" || text === "app") return "vibe_app_developer";
-  if (text === "plugin" || text === "plugins") return "plugin";
+  const surface = normalizeTrackSurface(value);
+  if (surface === "owner") return "framework_owner";
+  if (surface === "viber") return "vibe_app_developer";
+  if (surface === "plugin") return "plugin";
   return "unknown";
 }
 

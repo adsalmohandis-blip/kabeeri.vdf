@@ -1,4 +1,4 @@
-const assert = require("assert");
+﻿const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -61,8 +61,19 @@ test("status reports the new folder policy", () => {
     const result = runKvdf(["plugin-folder", "status", "--json"], repoRoot);
     const parsed = JSON.parse(result.stdout.trim());
     assert.strictEqual(parsed.plugin_id, "plugin_folder_structure");
-    assert.strictEqual(parsed.owner_direct_plugin_creation, true);
-    assert.strictEqual(parsed.plugin_dev_workspace_creation, true);
+    assert.strictEqual(parsed.standard_plugin_structure, "one");
+    assert.strictEqual(parsed.owner_track_target, "./plugins/<plugin-slug>/");
+    assert.strictEqual(parsed.plugin_dev_track_target, "./workspaces/plugins/<plugin-slug>/04_plugin_package/");
+    assert.strictEqual(parsed.canonical_full_set_enabled, true);
+    assert.strictEqual(parsed.actual_candidate_plugin_package, "./workspaces/plugins/<plugin-slug>/04_plugin_package/");
+    assert.strictEqual(parsed.canonical_package_folder, "04_plugin_package");
+    assert.strictEqual(parsed.previous_package_folder, "03_plugin_package");
+    assert.strictEqual(parsed.removed_redundant_source_folder, true);
+    assert.strictEqual(parsed.viber_track_plugin_creation, "blocked");
+    assert.strictEqual(parsed.deep_nested_plugin_root, "disabled");
+    assert.strictEqual(parsed.marketplace_publish_by_plugin_folder_structure, false);
+    assert.strictEqual(parsed.owner_approval_required_for_plugin_dev_promotion, true);
+    assert.strictEqual(parsed.compact_backward_compatibility, true);
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
@@ -94,9 +105,16 @@ test("plugin-dev creation builds the governed workspace shell", () => {
     const result = runKvdf(["plugin-folder", "create", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
     const parsed = JSON.parse(result.stdout.trim());
     assert.strictEqual(parsed.track, "plugin_dev");
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "plugin_workspace_manifest.json")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "inputs", "git_libraries")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "source", "beta-plugin")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "plugin_workspace_manifest.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "00_plugin_inputs", "git_libraries")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "04_plugin_package")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "04_plugin_package", "src", "index.js")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "08_plugin_agents")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "99_plugin_archive", "compact_structure_mapping.md")));
+
+    const upgrade = runKvdf(["plugin-folder", "upgrade-full-set", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
+    const upgraded = JSON.parse(upgrade.stdout.trim());
+    assert.ok(["created", "upgraded"].includes(upgraded.status));
 
     const gitAdd = runKvdf(["plugin-folder", "git-library", "add", "beta-plugin", "https://example.com/repo.git", "--name=Example", "--use=reference_only", "--track=plugin_dev", "--json"], repoRoot);
     const gitAdded = JSON.parse(gitAdd.stdout.trim());
@@ -118,22 +136,45 @@ test("plugin-dev creation builds the governed workspace shell", () => {
     const ownerReview = runKvdf(["plugin-folder", "request-owner-review", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
     const ownerReviewParsed = JSON.parse(ownerReview.stdout.trim());
     assert.strictEqual(ownerReviewParsed.status, "pending_owner_review");
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "reviews_approvals", "owner_approval_request.json")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "package_release", "promotion_manifest.json")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "evidence_audit", "owner_approval_evidence", "request_evidence.md")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "11_plugin_reviews_approvals", "owner_approval_request.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "12_plugin_package_release", "promotion_manifest.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "10_plugin_evidence_audit", "approval_summary.md")));
+
+    const directInstall = runKvdf(["plugin-folder", "request-direct-install", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
+    const directInstallParsed = JSON.parse(directInstall.stdout.trim());
+    assert.strictEqual(directInstallParsed.status, "pending_owner_approval");
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "12_plugin_package_release", "direct_install_request.json")));
 
     const marketplaceRequest = runKvdf(["plugin-folder", "request-marketplace-upload", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
     const marketplaceParsed = JSON.parse(marketplaceRequest.stdout.trim());
     assert.strictEqual(marketplaceParsed.status, "marketplace_pending_not_available");
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "package_release", "marketplace_upload_request.json")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "evidence_audit", "marketplace_request_evidence", "marketplace_upload_request_evidence.md")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "12_plugin_package_release", "marketplace_upload_request.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "10_plugin_evidence_audit", "approval_summary.md")));
+
+    const lifecycle = runKvdf(["plugin-folder", "lifecycle", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
+    const lifecycleParsed = JSON.parse(lifecycle.stdout.trim());
+    assert.strictEqual(lifecycleParsed.lifecycle, "marketplace_upload_requested");
+
+    const audit = runKvdf(["plugin-folder", "audit", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
+    const auditParsed = JSON.parse(audit.stdout.trim());
+    assert.strictEqual(auditParsed.status, "recorded");
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "10_plugin_evidence_audit", "audit_log.jsonl")));
+
+    const archive = runKvdf(["plugin-folder", "archive-evidence", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
+    const archiveParsed = JSON.parse(archive.stdout.trim());
+    assert.strictEqual(archiveParsed.status, "created");
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "12_plugin_package_release", "promotion_archive_manifest.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "12_plugin_package_release", "checksums.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "12_plugin_package_release", "private_evidence_bundle")));
 
     const initSource = runKvdf(["plugin-folder", "init-source", "beta-plugin", "--track=plugin_dev", "--json"], repoRoot);
     const initSourceParsed = JSON.parse(initSource.stdout.trim());
-    assert.strictEqual(initSourceParsed.status, "created");
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "source", "beta-plugin", "plugin.json")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "source", "beta-plugin", "src", "index.js")));
-    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta-plugin", "source", "beta-plugin", "src", "commands", "status.js")));
+    assert.strictEqual(initSourceParsed.status, "deprecated");
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "99_plugin_archive", "source_tracking_deprecated.md")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "99_plugin_archive", "package_folder_renumbering.md")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "04_plugin_package", "plugin.json")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "04_plugin_package", "src", "index.js")));
+    assert.ok(fs.existsSync(path.join(repoRoot, "workspaces", "plugins", "beta_plugin", "04_plugin_package", "src", "commands", "status.js")));
   } finally {
     fs.rmSync(repoRoot, { recursive: true, force: true });
   }
@@ -160,3 +201,4 @@ for (const item of tests) {
     process.exitCode = 1;
   }
 }
+

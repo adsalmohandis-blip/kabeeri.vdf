@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-007",
+    "title":  "Stack-adaptive source folder",
+    "phase":  "7",
+    "deliverables":  [
+                         "neutral 08_source layer",
+                         "source manifest",
+                         "stack-adaptive source policy"
+                     ],
+    "dependency_notes":  "Depends on appfs-003.",
+    "exit_criterion":  "08_source stays stack-adaptive and source-only."
+}

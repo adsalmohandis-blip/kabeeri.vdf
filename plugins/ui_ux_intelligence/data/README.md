@@ -1,20 +1,16 @@
 # UI UX Intelligence Data
 
-This folder stores KVDF-native data imported from the flat staging area:
+This folder stores the live catalog used by `ui_ux_intelligence`.
 
-- `plugins/ui_ux_intelligence/_temp_meta/`
+## Catalog Contract
 
-Runtime reads this folder only. Once relocation is complete, the plugin no longer depends on `_temp_meta/`.
-
-## Source Staging Contract
-
-- Data CSV files are relocated into `data/`.
-- Stack CSV files are relocated into `data/stacks/`.
+- Data CSV files live in `data/`.
+- Stack CSV files live in `data/stacks/`.
 - Reference Python files are never copied into runtime as executable code.
 - Reference Markdown files are not copied blindly into docs.
-- `_temp_meta/` is ignored by git and can be safely removed after relocation.
+- The runtime reads only the live catalog folders.
 
-## Expected Later-Phase Inputs
+## Expected Inputs
 
 Data files:
 - `products.csv`

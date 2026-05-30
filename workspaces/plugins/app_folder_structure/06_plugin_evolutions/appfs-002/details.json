@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-002",
+    "title":  "Workspace type registry",
+    "phase":  "2",
+    "deliverables":  [
+                         "workspace-type registry",
+                         "validation for unsupported types",
+                         "listable workspace types"
+                     ],
+    "dependency_notes":  "Depends on appfs-000 and appfs-001.",
+    "exit_criterion":  "Workspace types are listed and invalid types are rejected."
+}

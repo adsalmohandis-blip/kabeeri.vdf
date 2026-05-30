@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Core vs Plugins Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #06101d;
+      --panel: rgba(18, 31, 61, 0.92);
+      --panel-soft: rgba(255, 255, 255, 0.04);
+      --line: rgba(125, 159, 255, 0.28);
+      --text: #eef4ff;
+      --muted: #aab8d1;
+      --accent: #68e6ff;
+      --accent-2: #8b7dff;
+      --accent-3: #4ade80;
+      --warn: #fbbf24;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "IBM Plex Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(104, 230, 255, 0.18), transparent 28%),
+        radial-gradient(circle at 88% 8%, rgba(139, 125, 255, 0.18), transparent 24%),
+        linear-gradient(180deg, #091225 0%, var(--bg) 42%, #04070f 100%);
+    }
+
+    .page {
+      width: min(1480px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    .hero,
+    .panel {
+      background: linear-gradient(180deg, var(--panel), rgba(9, 18, 37, 0.9));
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero {
+      padding: 24px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(104, 230, 255, 0.22);
+      background: rgba(104, 230, 255, 0.08);
+      color: #c9f8ff;
+      font-size: 12px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: "JetBrains Mono", monospace;
+      font-size: clamp(30px, 4vw, 52px);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      max-width: 16ch;
+    }
+
+    .hero p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      max-width: 80ch;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 159, 255, 0.22);
+      background: rgba(255, 255, 255, 0.035);
+      color: #dce8ff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-3);
+      box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.12);
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .section {
+      padding: 20px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .section-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      max-width: 78ch;
+    }
+
+    .badge {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 222, 128, 0.22);
+      background: rgba(74, 222, 128, 0.08);
+      color: #c8ffd8;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .diagram {
+      width: 100%;
+      overflow-x: auto;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.18);
+      background: rgba(255, 255, 255, 0.025);
+    }
+
+    .diagram svg {
+      width: 100% !important;
+      height: auto !important;
+      max-width: none !important;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.18);
+      background: var(--panel-soft);
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .card p,
+    .card li {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .card ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px dashed rgba(125, 159, 255, 0.38);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    code {
+      background: rgba(255, 255, 255, 0.08);
+      color: #d6e7ff;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+
+    @media (max-width: 1120px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="eyebrow">temporary architecture dashboard</div>
+      <h1>Core decides. Plugins execute.</h1>
+      <p>
+        This temporary dashboard maps the clean separation between core orchestration and plugin execution, while showing how
+        <code>app_category_registry</code>, domain plugins, and <code>app_folder_structure</code> connect through hard contracts.
+      </p>
+      <div class="chips">
+        <span class="chip"><span class="dot"></span>core = law</span>
+        <span class="chip"><span class="dot"></span>plugins = workers</span>
+        <span class="chip"><span class="dot"></span>strict pipeline contract</span>
+        <span class="chip"><span class="dot"></span>temporary dashboard</span>
+      </div>
+    </section>
+
+    <div class="stack">
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>1. Core vs Plugins</h2>
+            <p>Core holds the rules and safety boundaries. Plugins stay separate, but they must all operate inside the same contract system.</p>
+          </div>
+          <div class="badge">system split</div>
+        </div>
+        <div class="diagram mermaid">
+flowchart TB
+  U[User / CLI] --> C[Core]
+
+  subgraph CORE[Core]
+    C1[Command routing]
+    C2[Session and track state]
+    C3[Pipeline contracts]
+    C4[Validation gates]
+    C5[Workspace safety]
+    C6[Plugin loading rules]
+    C7[Promotion boundaries]
+    C8[Shared schemas]
+  end
+
+  subgraph PLUGINS[Plugins]
+    P1[app_category_registry]
+    P2[app_folder_structure]
+    P3[plugin_folder_structure]
+    P4[domain plugins]
+    P5[ui_ux_intelligence]
+  end
+
+  C --> C1
+  C --> C2
+  C --> C3
+  C --> C4
+  C --> C5
+  C --> C6
+  C --> C7
+  C --> C8
+
+  C --> P1
+  C --> P2
+  C --> P3
+  C --> P4
+  C --> P5
+
+  P1 -.->|creates app plan| P2
+  P3 -.->|governs plugin lifecycle| P1
+  P3 -.->|governs plugin lifecycle| P2
+  P4 -.->|domain behavior| P1
+  P5 -.->|design guidance| P1
+        </div>
+      </section>
+
+      <div class="grid-2">
+        <section class="panel section">
+          <div class="section-head">
+            <div>
+              <h2>2. App Pipeline Handoff</h2>
+              <p>The category registry writes the app contract, the selected domain plugin fills in product behavior, and app_folder_structure materializes the workspace.</p>
+            </div>
+            <div class="badge">handoff chain</div>
+          </div>
+          <div class="diagram mermaid">
+flowchart LR
+  Core[Core] --> Reg[app_category_registry]
+  Reg --> Domain[Selected domain plugin]
+  Domain --> Folder[app_folder_structure]
+
+  Core --> Loader[Plugin loader]
+  Core --> Track[Track state]
+  Core --> Contract[Pipeline contract]
+
+  Reg --> Plan[App plan outputs]
+  Plan --> Contract
+
+  Domain --> Behavior[Category-specific behavior]
+  Behavior --> Contract
+
+  Folder --> Workspace[workspaces/apps/app-slug]
+  Folder --> Validate[Workspace validation]
+  Folder --> Repair[Workspace repair]
+        </div>
+        </section>
+
+        <section class="panel section">
+          <div class="section-head">
+            <div>
+              <h2>3. Plugin Governance</h2>
+              <p>plugin_folder_structure keeps plugin creation and promotion strict, while app-domain plugins remain separate bundles.</p>
+            </div>
+            <div class="badge" style="border-color: rgba(139, 125, 255, 0.22); background: rgba(139, 125, 255, 0.08); color: #e9e5ff;">promotion boundary</div>
+          </div>
+          <div class="diagram mermaid">
+flowchart LR
+  PF[plugin_folder_structure] --> WSP[Plugin Dev Workspace]
+  WSP --> PP[04_plugin_package]
+  PP --> OWN[Owner review]
+  OWN --> INST[direct plugin bundle]
+  OWN --> PUB[Marketplace request]
+
+  PF --> BLOCK[Viber App track blocked]
+  PF --> CFG[Manifest + schema rules]
+  PF --> VAL[Validation + readiness]
+        </div>
+      </section>
+      </div>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>4. Domain Plugin Handoff</h2>
+            <p>Domain builders like blog, crm, ecommerce_builder, and booking_builder stay separate but consume the same plan contract.</p>
+          </div>
+          <div class="badge">separate plugins</div>
+        </div>
+        <div class="diagram mermaid">
+flowchart TB
+  Registry[app_category_registry] --> Contract[.kabeeri/app_pipeline_contract.json]
+  Contract --> DomainSet[Domain plugin selected]
+
+  DomainSet --> Blog[blog_builder]
+  DomainSet --> CRM[crm_builder]
+  DomainSet --> Shop[ecommerce_builder]
+  DomainSet --> Booking[booking_builder]
+  DomainSet --> Company[company_profile_builder]
+
+  Blog --> AppPlan[App behavior]
+  CRM --> AppPlan
+  Shop --> AppPlan
+  Booking --> AppPlan
+  Company --> AppPlan
+
+ AppPlan --> Folder[app_folder_structure]
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>5. Viber Pipeline</h2>
+            <p>The Viber/App track is the user-facing app creation pipeline. It can plan and materialize apps, but it cannot create plugins directly.</p>
+          </div>
+          <div class="badge" style="border-color: rgba(251, 191, 36, 0.22); background: rgba(251, 191, 36, 0.08); color: #fff4cc;">app flow</div>
+        </div>
+        <div class="diagram mermaid">
+flowchart TB
+  U[User in Viber App Track] --> V[Viber pipeline]
+
+  subgraph CORE[Core]
+    C1[Command routing]
+    C2[Track state]
+    C3[Pipeline contract]
+    C4[Validation gates]
+    C5[Workspace safety]
+  end
+
+  subgraph PLUGINS[Plugins]
+    ACR[app_category_registry]
+    D1[Selected domain plugin]
+    AFS[app_folder_structure]
+    PF[plugin_folder_structure]
+    UI[ui_ux_intelligence]
+  end
+
+  V --> C1
+  V --> C2
+  V --> C3
+  V --> C4
+  V --> C5
+
+  V --> ACR
+  ACR -->|writes app pipeline contract| CP[.kabeeri app pipeline contract]
+  CP --> D1
+  CP --> AFS
+  UI -->|design guidance| D1
+  UI -->|design guidance| AFS
+
+  D1 -->|product behavior| APP[App planning outputs]
+  AFS -->|materializes| WS[workspaces/apps/app_slug]
+
+  V -.->|plugin creation blocked| BLOCK[Plugin creation blocked]
+  BLOCK --> PF
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>6. Plugin Pipeline</h2>
+            <p>The plugin pipeline is separate from the app pipeline. It governs how plugins are developed, validated, reviewed, and promoted.</p>
+          </div>
+          <div class="badge" style="border-color: rgba(139, 125, 255, 0.22); background: rgba(139, 125, 255, 0.08); color: #e9e5ff;">plugin flow</div>
+        </div>
+        <div class="diagram mermaid">
+flowchart TB
+  U[User / CLI] --> PF[plugin_folder_structure]
+
+  PF --> WSP[Create plugin workspace]
+  WSP --> DEV[Develop in plugin_dev]
+  DEV --> VAL[Validate and readiness]
+  VAL --> REV[Request owner review]
+  REV --> OWN[Owner approval]
+  OWN --> PROMOTE[Promote plugin package]
+  PROMOTE --> BUNDLE[direct plugin bundle]
+
+  PF --> BLOCK[Viber App track blocked]
+  BLOCK -.-> WSP
+
+  DEV --> WP[plugin package root]
+  VAL --> E[Evidence and audit]
+  REV --> R[Review request artifacts]
+  OWN --> M[Manifest update]
+  PROMOTE --> PB[plugin bundle files]
+        </div>
+      </section>
+
+      <section class="panel section">
+        <div class="section-head">
+          <div>
+            <h2>7. Owner Track</h2>
+            <p>The Owner Track is the promotion and authority layer. It approves plugin bundles, controls direct plugin installs, and keeps marketplace requests separate.</p>
+          </div>
+          <div class="badge" style="border-color: rgba(104, 230, 255, 0.22); background: rgba(104, 230, 255, 0.08); color: #c9f8ff;">owner flow</div>
+        </div>
+        <div class="diagram mermaid">
+flowchart TB
+  O[Owner Track] --> REV[Review request]
+  REV --> DEC[Decision]
+  DEC -->|approve| BUNDLE[direct plugin bundle]
+  DEC -->|changes| REWORK[Return to plugin_dev]
+  DEC -->|reject| STOP[Stop promotion]
+
+  BUNDLE --> INSTALL[installed plugin bundle]
+  BUNDLE --> MANIFEST[Owner manifest update]
+  BUNDLE --> SAFE[Promotion boundary respected]
+
+  REV --> GIT[Git library governance]
+  REV --> INT[Integration validation]
+  REV --> READINESS[Readiness check]
+  REV --> EVIDENCE[Evidence review]
+
+  O -.-> MARKET[Marketplace request separate]
+        </div>
+      </section>
+    </div>
+
+    <section class="footer">
+      This is a temporary dashboard for discussion and alignment. The key rule is unchanged:
+      <code>core</code> defines the contract and safety rules, while <code>plugins</code> execute inside those rules.
+      The app pipeline, plugin pipeline, and owner track are separate flows, but all are governed by the same core contract discipline.
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var diagrams = Array.prototype.slice.call(document.querySelectorAll(".mermaid"));
+      if (!window.mermaid || !diagrams.length) return;
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "loose",
+        theme: "dark",
+        themeVariables: {
+          fontSize: "18px",
+          fontFamily: '"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif'
+        },
+        flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" }
+      });
+      mermaid.run({ nodes: diagrams });
+    })();
+  </script>
+</body>
+</html>

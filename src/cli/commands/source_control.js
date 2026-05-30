@@ -1,4 +1,5 @@
 const { buildSourceControlContextReport } = require("../services/source_control_context");
+const { normalizeTrackAssignment } = require("../services/track_control");
 
 function sourceControl(action, value, flags = {}, rest = [], deps = {}) {
   const mode = normalizeSourceControlAction(action);
@@ -21,11 +22,7 @@ function normalizeSourceControlAction(value) {
 }
 
 function resolveSourceControlTrack(flags = {}, value = "", rest = []) {
-  const candidate = String(flags.track || value || rest[0] || "owner").trim().toLowerCase().replace(/[\s-]+/g, "_");
-  if (candidate === "owner" || candidate === "framework_owner" || candidate === "framework-owner" || candidate === "kvdf") return "framework_owner";
-  if (candidate === "vibe" || candidate === "viber" || candidate === "vibe_app_developer" || candidate === "vibe-app-developer" || candidate === "app") return "vibe_app_developer";
-  if (candidate === "plugin" || candidate === "plugins") return "plugin";
-  return "framework_owner";
+  return normalizeTrackAssignment(flags.track || value || rest[0] || "owner") || "framework_owner";
 }
 
 function resolveSourceControlApp(flags = {}, value = "", rest = []) {

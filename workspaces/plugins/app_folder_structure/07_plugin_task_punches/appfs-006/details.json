@@ -1,0 +1,39 @@
+{
+    "evo_id":  "appfs-006",
+    "title":  "Category-governed roadmap folders",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-006-a",
+                        "goal":  "Materialize category-governed roadmap folders.",
+                        "meaning":  "Create only approved UI/UX, system design, and database/storage internals.",
+                        "allowed_files":  [
+                                              "roadmap folders",
+                                              "category profile reader",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Unapproved roadmap sections"
+                                            ],
+                        "acceptance":  "Roadmaps are reproducible and profile-driven.",
+                        "tests":  [
+                                      "Roadmap materialization tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-006-b",
+                        "goal":  "Generate roadmap structure evidence.",
+                        "meaning":  "Save a machine-readable record of which profile created which folders.",
+                        "allowed_files":  [
+                                              "evidence folder",
+                                              "roadmap structure outputs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Hidden mutating behavior"
+                                            ],
+                        "acceptance":  "Roadmap evidence is emitted for each creation.",
+                        "tests":  [
+                                      "Evidence output tests."
+                                  ]
+                    }
+                ]
+}

@@ -1,0 +1,382 @@
+{
+  "status": "planned",
+  "track": "plugin_dev",
+  "scope": "app_folder_structure plugin workspace and app-workspace contract engine",
+  "mode": "planning_only",
+  "source": "docs/reports/APP_FOLDER_STRUCTURE_EVO_PLAN.md",
+  "purpose": "Implementation-ready task punches for the Plugin Development Track; no implementation changes are made by this artifact.",
+  "global_safety_rules": [
+    "Do not start implementation until the active Evo slice is approved.",
+    "Do not change unrelated plugins or runtime systems.",
+    "Do not duplicate plugin_folder_structure responsibilities.",
+    "Do not create app workspaces outside the canonical workspaces/apps/<app_slug>/ root.",
+    "Do not delete user files.",
+    "Do not overwrite non-empty files without explicit approval or a safe flag.",
+    "Do not allow path traversal or unsafe slugs.",
+    "Do not invent folder structures outside the approved contract.",
+    "Do not auto-migrate compact folders unless the change is explicitly additive.",
+    "Do not promote or publish anything directly."
+  ],
+  "evolutions": [
+    {
+      "evo_id": "appfs-000",
+      "title": "Repo analysis and scope lock",
+      "punches": [
+        {
+          "punch_id": "appfs-000-a",
+          "goal": "Map repo conventions and safe integration points.",
+          "meaning": "Learn how this repo already registers plugins, exposes commands, writes runtime state, and documents behavior so the new plugin follows the same rules.",
+          "allowed_files": ["plugins/", "src/cli/", "schemas/", "docs/", ".kabeeri/"],
+          "forbidden_files": ["Implementation code outside analysis scope"],
+          "acceptance": "A clear analysis report exists with repo conventions and integration points.",
+          "tests": ["Repository inspection only; no behavior changes."]
+        },
+        {
+          "punch_id": "appfs-000-b",
+          "goal": "Define the app-folder planning dependency map.",
+          "meaning": "Convert the phase brief into ordered slices so each later step has a clear start and end.",
+          "allowed_files": ["docs/reports/"],
+          "forbidden_files": ["All runtime/implementation folders"],
+          "acceptance": "The app-folder plan is split into safe Evo slices.",
+          "tests": ["Review report completeness."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-001",
+      "title": "Plugin skeleton and status surface",
+      "punches": [
+        {
+          "punch_id": "appfs-001-a",
+          "goal": "Create the plugin shell and manifest.",
+          "meaning": "Establish app_folder_structure as a real plugin package with a manifest and entry point, but no app-workspace logic yet.",
+          "allowed_files": ["plugins/app_folder_structure/plugin.json", "plugins/app_folder_structure/README.md", "plugins/app_folder_structure/bootstrap.js", "plugins/app_folder_structure/index.js"],
+          "forbidden_files": ["Workspaces", "runtime", "unrelated plugins"],
+          "acceptance": "Plugin exists as a safe shell with documented purpose.",
+          "tests": ["Plugin metadata loads and surfaces a status command."]
+        },
+        {
+          "punch_id": "appfs-001-b",
+          "goal": "Add status output and discoverability reporting.",
+          "meaning": "Give users and workers a read-only way to see what the plugin is for before any workspace logic is added.",
+          "allowed_files": ["plugins/app_folder_structure/*", "src/cli/*"],
+          "forbidden_files": ["Workspace creation logic"],
+          "acceptance": "Status reports plugin state without creating folders.",
+          "tests": ["CLI smoke for status/help."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-002",
+      "title": "Workspace type registry",
+      "punches": [
+        {
+          "punch_id": "appfs-002-a",
+          "goal": "Define the visible workspace-type registry.",
+          "meaning": "List supported workspace types for the app workspace root.",
+          "allowed_files": ["plugin registry files", "docs", "schemas"],
+          "forbidden_files": ["App workspace materialization"],
+          "acceptance": "Workspace types are listed explicitly.",
+          "tests": ["Registry listing checks."]
+        },
+        {
+          "punch_id": "appfs-002-b",
+          "goal": "Validate supported workspace types and reject unsupported ones.",
+          "meaning": "Fail closed for unrecognized workspace types and unsafe roots.",
+          "allowed_files": ["validation code", "schemas", "reports"],
+          "forbidden_files": ["Auto-creating unsupported types"],
+          "acceptance": "Invalid workspace types are rejected.",
+          "tests": ["Unsupported-type validation tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-003",
+      "title": "Fixed app pipeline skeleton",
+      "punches": [
+        {
+          "punch_id": "appfs-003-a",
+          "goal": "Create the fixed app pipeline skeleton.",
+          "meaning": "Create the canonical app workspace root and the top-level pipeline folders only.",
+          "allowed_files": ["workspaces/apps/<app_slug>/", "app folder templates", "docs"],
+          "forbidden_files": ["Source-layout forcing"],
+          "acceptance": "A new app workspace has the canonical top-level pipeline.",
+          "tests": ["Create/structure tests."]
+        },
+        {
+          "punch_id": "appfs-003-b",
+          "goal": "Write app manifest, state, and hidden metadata scaffolding.",
+          "meaning": "Add workspace state and manifest files that make the app workspace tractable.",
+          "allowed_files": [".kabeeri/", "manifest files", "docs"],
+          "forbidden_files": ["Source implementation files"],
+          "acceptance": "App manifest/state exists alongside the pipeline.",
+          "tests": ["Manifest/state presence checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-004",
+      "title": "Viber input area",
+      "punches": [
+        {
+          "punch_id": "appfs-004-a",
+          "goal": "Create the Viber input area.",
+          "meaning": "Create the input-only area for uploaded snapshots, files, links, and answers.",
+          "allowed_files": ["input area", "docs", "manifest files"],
+          "forbidden_files": ["Roadmap/spec outputs"],
+          "acceptance": "Viber-provided source material is separated cleanly.",
+          "tests": ["Input-area layout tests."]
+        },
+        {
+          "punch_id": "appfs-004-b",
+          "goal": "Separate inputs from generated outputs.",
+          "meaning": "Prevent generated roadmap/spec material from leaking into the input zone.",
+          "allowed_files": ["input docs", "validation code"],
+          "forbidden_files": ["Generated content paths"],
+          "acceptance": "Inputs and outputs are strictly separated.",
+          "tests": ["Separation invariant tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-005",
+      "title": "Category registry integration",
+      "punches": [
+        {
+          "punch_id": "appfs-005-a",
+          "goal": "Integrate with app_category_registry.",
+          "meaning": "Load approved folder-structure profiles for the selected category/platform.",
+          "allowed_files": ["registry adapter", "docs", "schemas"],
+          "forbidden_files": ["Randomly invented roadmap folders"],
+          "acceptance": "Category profiles are loaded and validated.",
+          "tests": ["Category lookup tests."]
+        },
+        {
+          "punch_id": "appfs-005-b",
+          "goal": "Require approved folder-structure profiles.",
+          "meaning": "Fail safely when the category profile is missing, invalid, or incomplete.",
+          "allowed_files": ["validation code", "reports"],
+          "forbidden_files": ["Silent fallback to generic roadmap folders"],
+          "acceptance": "Missing profiles stop generation.",
+          "tests": ["Missing-profile failure tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-006",
+      "title": "Category-governed roadmap folders",
+      "punches": [
+        {
+          "punch_id": "appfs-006-a",
+          "goal": "Materialize category-governed roadmap folders.",
+          "meaning": "Create only approved UI/UX, system design, and database/storage internals.",
+          "allowed_files": ["roadmap folders", "category profile reader", "docs"],
+          "forbidden_files": ["Unapproved roadmap sections"],
+          "acceptance": "Roadmaps are reproducible and profile-driven.",
+          "tests": ["Roadmap materialization tests."]
+        },
+        {
+          "punch_id": "appfs-006-b",
+          "goal": "Generate roadmap structure evidence.",
+          "meaning": "Save a machine-readable record of which profile created which folders.",
+          "allowed_files": ["evidence folder", "roadmap structure outputs"],
+          "forbidden_files": ["Hidden mutating behavior"],
+          "acceptance": "Roadmap evidence is emitted for each creation.",
+          "tests": ["Evidence output tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-007",
+      "title": "Stack-adaptive source folder",
+      "punches": [
+        {
+          "punch_id": "appfs-007-a",
+          "goal": "Keep 08_source stack-adaptive.",
+          "meaning": "Make the source area neutral and governed only by later stack/framework selection.",
+          "allowed_files": ["08_source/", "source manifest", "docs"],
+          "forbidden_files": ["Default frontend/backend/API trees"],
+          "acceptance": "Source remains stack-adaptive.",
+          "tests": ["Source neutrality tests."]
+        },
+        {
+          "punch_id": "appfs-007-b",
+          "goal": "Emit a neutral source manifest.",
+          "meaning": "Record that the real source layout will be created later by the selected stack/framework.",
+          "allowed_files": ["08_source/source_manifest.json", "docs"],
+          "forbidden_files": ["Package-specific source shape"],
+          "acceptance": "The manifest states source tracking only.",
+          "tests": ["Source-manifest content tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-008",
+      "title": "Full specification contract",
+      "punches": [
+        {
+          "punch_id": "appfs-008-a",
+          "goal": "Create handoff-grade specification placeholders.",
+          "meaning": "Create product, requirements, and handoff-oriented docs for future teams.",
+          "allowed_files": ["03_full_specifications/", "docs"],
+          "forbidden_files": ["Generated runtime source"],
+          "acceptance": "Specification placeholders exist.",
+          "tests": ["File-presence tests."]
+        },
+        {
+          "punch_id": "appfs-008-b",
+          "goal": "Add spec index and traceability artifacts.",
+          "meaning": "Make it easy to see where requirements came from and where they go.",
+          "allowed_files": ["spec index", "traceability docs", "evidence"],
+          "forbidden_files": ["Free-form undocumented changes"],
+          "acceptance": "Specs are traceable.",
+          "tests": ["Traceability checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-009",
+      "title": "Version control governance",
+      "punches": [
+        {
+          "punch_id": "appfs-009-a",
+          "goal": "Add version control governance folders.",
+          "meaning": "Add branch, commit, issue, PR, and release strategy docs.",
+          "allowed_files": ["04_version_control/", "docs"],
+          "forbidden_files": ["Git commands that mutate unrelated repos"],
+          "acceptance": "Governance folders exist.",
+          "tests": ["Presence and content checks."]
+        },
+        {
+          "punch_id": "appfs-009-b",
+          "goal": "Add GitHub and release governance docs.",
+          "meaning": "Document how version control and releases are governed when GitHub is connected.",
+          "allowed_files": ["governance docs", "release docs"],
+          "forbidden_files": ["Auto-publish logic"],
+          "acceptance": "Release governance is documented.",
+          "tests": ["Governance documentation checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-010",
+      "title": "Evolutions and task punches",
+      "punches": [
+        {
+          "punch_id": "appfs-010-a",
+          "goal": "Add evolutions governance folders.",
+          "meaning": "Add a place to track large change packages.",
+          "allowed_files": ["05_evolutions/", "docs"],
+          "forbidden_files": ["Execution logic inside planning docs"],
+          "acceptance": "Evolutions folders exist.",
+          "tests": ["Folder creation checks."]
+        },
+        {
+          "punch_id": "appfs-010-b",
+          "goal": "Add task punch governance folders.",
+          "meaning": "Add a place to track granular executable punches.",
+          "allowed_files": ["06_task_punches/", "docs"],
+          "forbidden_files": ["Hidden task execution side effects"],
+          "acceptance": "Task-punch folders exist.",
+          "tests": ["Folder creation checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-011",
+      "title": "Production governance folders",
+      "punches": [
+        {
+          "punch_id": "appfs-011-a",
+          "goal": "Add agents, tests, evidence, and reviews folders.",
+          "meaning": "Add the production governance areas needed for build quality and review.",
+          "allowed_files": ["07_agents/", "09_tests_quality/", "10_evidence_audit/", "11_reviews_approvals/"],
+          "forbidden_files": ["Source generation"],
+          "acceptance": "Governance folders exist from agents to reviews.",
+          "tests": ["Folder presence checks."]
+        },
+        {
+          "punch_id": "appfs-011-b",
+          "goal": "Add release, owner portal, and archive folders.",
+          "meaning": "Add release/deployment and owner-facing summary areas plus archive.",
+          "allowed_files": ["12_releases_deployment/", "13_owner_portal/", "99_archive/"],
+          "forbidden_files": ["Direct publication"],
+          "acceptance": "Release and archive areas exist.",
+          "tests": ["Folder presence checks."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-012",
+      "title": "Commands, validation, repair, and hardening",
+      "punches": [
+        {
+          "punch_id": "appfs-012-a",
+          "goal": "Implement create, validate, repair, print, and manifest commands.",
+          "meaning": "Add the command surface for managing app workspaces safely.",
+          "allowed_files": ["CLI integration", "plugin command surface", "docs"],
+          "forbidden_files": ["Unsafe creation paths"],
+          "acceptance": "Commands exist and are safe.",
+          "tests": ["CLI smoke tests."]
+        },
+        {
+          "punch_id": "appfs-012-b",
+          "goal": "Add safe repair, manifest, evidence, and hardening tests.",
+          "meaning": "Ensure repair is additive only and produces evidence.",
+          "allowed_files": ["validation", "repair", "evidence", "tests"],
+          "forbidden_files": ["Deletion or overwrite of user content"],
+          "acceptance": "Repair writes evidence and preserves content.",
+          "tests": ["Repair/evidence tests."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-013",
+      "title": "Full canonical folder set upgrade",
+      "punches": [
+        {
+          "punch_id": "appfs-013-a",
+          "goal": "Upgrade existing workspaces additively to the full canonical set.",
+          "meaning": "Add missing folders/files without deleting compact folders already present.",
+          "allowed_files": ["workspace root", "manifests", "mapping docs"],
+          "forbidden_files": ["Renaming or deleting compact folders"],
+          "acceptance": "Existing compact workspaces are upgraded additively.",
+          "tests": ["Additive-upgrade tests."]
+        },
+        {
+          "punch_id": "appfs-013-b",
+          "goal": "Add compatibility mapping documentation.",
+          "meaning": "Show how older compact folders map into the canonical layout.",
+          "allowed_files": ["99_archive/compact_structure_mapping.md", "manifests"],
+          "forbidden_files": ["Content migration without approval"],
+          "acceptance": "Mapping is documented and preserved.",
+          "tests": ["Compatibility mapping review."]
+        }
+      ]
+    },
+    {
+      "evo_id": "appfs-014",
+      "title": "Lifecycle, audit, final acceptance",
+      "punches": [
+        {
+          "punch_id": "appfs-014-a",
+          "goal": "Add lifecycle and audit services.",
+          "meaning": "Track workspace lifecycle transitions and audit records.",
+          "allowed_files": ["lifecycle", "audit", "evidence", "docs"],
+          "forbidden_files": ["Hidden state changes"],
+          "acceptance": "Lifecycle and audit records exist.",
+          "tests": ["Audit event tests."]
+        },
+        {
+          "punch_id": "appfs-014-b",
+          "goal": "Finalize docs and acceptance tests.",
+          "meaning": "Ensure the plugin is documented and the full safety matrix is covered.",
+          "allowed_files": ["docs", "tests", "reports"],
+          "forbidden_files": ["Auto-promotion or unsafe publish"],
+          "acceptance": "Final docs and acceptance tests pass.",
+          "tests": ["Final hardening tests."]
+        }
+      ]
+    }
+  ]
+}

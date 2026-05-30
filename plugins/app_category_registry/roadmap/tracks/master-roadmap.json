@@ -1,0 +1,18 @@
+{
+  "order": [
+    "app_category_setup",
+    "source_intake",
+    "questionnaire",
+    "requirements",
+    "uiux",
+    "system_design",
+    "database",
+    "backend_api",
+    "frontend_client",
+    "integrations",
+    "security",
+    "testing",
+    "deployment",
+    "evidence_readiness"
+  ]
+}

@@ -1,0 +1,1 @@
+# Integration Specification\n\nDetailed integration contract notes live in ../integration_specification.md and the workspace task index.\n

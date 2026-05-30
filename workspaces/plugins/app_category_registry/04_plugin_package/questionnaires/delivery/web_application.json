@@ -1,0 +1,6 @@
+{
+  "id": "web_application",
+  "questions": [
+    { "id": "responsive_breakpoints", "question": "Which responsive breakpoints are required?" }
+  ]
+}

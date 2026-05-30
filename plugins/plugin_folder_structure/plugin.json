@@ -21,12 +21,18 @@
   "commands": [
     "status",
     "create",
+    "upgrade-full-set",
     "validate",
     "readiness",
+    "fix-numbering",
     "git-library",
     "integration",
     "request-owner-review",
+    "request-direct-install",
     "request-marketplace-upload",
+    "archive-evidence",
+    "lifecycle",
+    "audit",
     "init-source"
   ],
   "depends_on": [],
@@ -85,6 +91,8 @@
   "command_surface": [
     "kvdf plugin-folder status",
     "kvdf plugin-folder create <plugin-slug> --track=owner|plugin_dev|viber",
+    "kvdf plugin-folder upgrade-full-set <plugin-slug> --track=owner|plugin_dev",
+    "kvdf plugin-folder fix-numbering <plugin-slug> --track=plugin_dev",
     "kvdf plugin-folder validate <plugin-slug> --track=owner|plugin_dev",
     "kvdf plugin-folder readiness <plugin-slug> --track=owner|plugin_dev",
     "kvdf plugin-folder git-library add <plugin-slug> <url> --name=<name> --use=<proposed_use>",
@@ -100,6 +108,8 @@
     "plugins/plugin_folder_structure/docs/README.md",
     "plugins/plugin_folder_structure/docs/OVERVIEW.md",
     "plugins/plugin_folder_structure/docs/TRACK_BOUNDARIES.md",
+    "plugins/plugin_folder_structure/docs/STANDARD_PLUGIN_STRUCTURE.md",
+    "plugins/plugin_folder_structure/docs/FOLDER_NUMBERING_RULES.md",
     "plugins/plugin_folder_structure/docs/COMMANDS.md",
     "plugins/plugin_folder_structure/docs/ACCEPTANCE_CRITERIA.md",
     "plugins/plugin_folder_structure/docs/OWNER_TRACK_DIRECT_PLUGIN_FLOW.md",
@@ -108,7 +118,11 @@
     "plugins/plugin_folder_structure/docs/GIT_LIBRARY_INPUTS.md",
     "plugins/plugin_folder_structure/docs/INTEGRATIONS.md",
     "plugins/plugin_folder_structure/docs/PLUGIN_INTEGRATION_LAYER.md",
+    "plugins/plugin_folder_structure/docs/VALIDATION_AND_READINESS.md",
+    "plugins/plugin_folder_structure/docs/OWNER_REVIEW_FLOW.md",
+    "plugins/plugin_folder_structure/docs/DIRECT_INSTALL_REQUEST_FLOW.md",
     "plugins/plugin_folder_structure/docs/MARKETPLACE_REQUEST_FLOW.md",
+    "plugins/plugin_folder_structure/docs/PRIVATE_EVIDENCE_ARCHIVE.md",
     "plugins/plugin_folder_structure/docs/git_libraries/README.md"
   ]
 }

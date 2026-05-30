@@ -5,6 +5,13 @@ const { spawnSync } = require("child_process");
 const { packageRoot, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 const { formatNextExactAction } = require("../services/command_registry");
+const {
+  buildTrackRoute,
+  buildTrackSessionContext,
+  persistSessionTrackState,
+  readSessionTrackState,
+  readSessionTrackSurface
+} = require("../services/track_control");
 const { purgeExpiredTaskTrash } = require("../services/task_trash");
 const { buildTaskMemory } = require("../services/task_memory");
 const { readGitStatus: readGitStatusService } = require("../services/git_snapshot");
@@ -205,83 +212,12 @@ function withSessionWorkspace(flags, fn) {
 
 function buildSessionEntryRoute(report) {
   const trackId = report.primary_track ? report.primary_track.id : "unclassified";
-  if (trackId === "framework_owner") {
-    return {
-      track_id: "framework_owner",
-      track_label: "Framework Owner Track",
-      role_gate: "owner_only",
-      route_command: "kvdf evolution priorities",
-      follow_up_command: "kvdf evolution temp",
-      activated_features: ["evolution", "evolution priorities", "evolution temp", "sync", "validate", "verify"],
-      blocked_features: ["vibe", "ask", "capture", "task tracker", "app creation"],
-      reason: "Show the ordered framework backlog first, then enter the active temporary queue for the current priority."
-    };
-  }
-  if (trackId === "vibe_app_developer") {
-    return {
-      track_id: "vibe_app_developer",
-      track_label: "Vibe App Developer Track",
-      role_gate: "app_only",
-      route_command: "kvdf vibe brief",
-      follow_up_command: "kvdf task tracker",
-      activated_features: ["vibe", "ask", "capture", "temp", "task tracker", "blueprint"],
-      blocked_features: ["evolution", "deferred restore", "framework edit surfaces", "owner-only verification"],
-      reason: "Show the app context brief first, then move directly into governed application task execution."
-    };
-  }
-  if (trackId === "plugin_development_track" || trackId === "plugin_dev") {
-    return {
-      track_id: "plugin_development_track",
-      track_label: "Plugin Development Track",
-      role_gate: "plugin_development",
-      route_command: "kvdf plugin-dev status",
-      follow_up_command: "kvdf plugin-dev doctor",
-      activated_features: ["plugin-dev", "workspace", "intake", "libraries", "spec", "tasks", "integrations", "test", "evidence", "readiness", "package", "promotion"],
-      blocked_features: ["direct folder creation", "direct install", "marketplace publish", "owner bypass"],
-      reason: "Enter the governed plugin-development lifecycle after workspace validation."
-    };
-  }
-  return {
-    track_id: "unclassified",
-    track_label: "Unclassified Track",
-    role_gate: "setup_required",
-    route_command: "kvdf init",
-    follow_up_command: "kvdf resume",
-    activated_features: [],
-    blocked_features: ["framework-owner track", "vibe app-developer track"],
-    reason: "Initialize the workspace before choosing a framework-owner or app-developer path."
-  };
+  const route = buildTrackRoute(trackId);
+  return route;
 }
 
 function buildTrackContext({ cwd, mode, hasWorkspace, appStack, hasOwnerState, pluginLoader }) {
-  const sessionTrack = readSessionTrack(cwd);
-  const sessionTrackSurface = getSessionTrackSurface(sessionTrack);
-  const derivedTrackSurface = deriveTrackSurfaceFromContext({ mode, hasWorkspace, appStack, hasOwnerState });
-  const effectiveTrackSurface = derivedTrackSurface || sessionTrackSurface || null;
-  const ownerTrackPlugin = pluginLoader && Array.isArray(pluginLoader.plugins)
-    ? pluginLoader.plugins.find((plugin) => plugin.plugin_id === "kvdf-dev")
-    : null;
-  const mismatch = Boolean(
-    derivedTrackSurface &&
-    sessionTrackSurface &&
-    derivedTrackSurface !== sessionTrackSurface
-  );
-  return {
-    mode,
-    has_workspace: hasWorkspace,
-    has_owner_state: hasOwnerState,
-    session_track_active: Boolean(sessionTrack && sessionTrack.active),
-    session_track_surface: sessionTrackSurface,
-    derived_track_surface: derivedTrackSurface,
-    effective_track_surface: effectiveTrackSurface,
-    lock_source: derivedTrackSurface ? "workspace_context" : (sessionTrackSurface ? "session_track" : "none"),
-    mismatch,
-    session_track_label: sessionTrack && sessionTrack.track_label ? sessionTrack.track_label : null,
-    session_role_gate: sessionTrack && sessionTrack.role_gate ? sessionTrack.role_gate : null,
-    plugin_loader_active: pluginLoader ? pluginLoader.active_plugins : 0,
-    owner_track_plugin_enabled: ownerTrackPlugin ? Boolean(ownerTrackPlugin.enabled) : null,
-    owner_track_plugin_status: ownerTrackPlugin ? ownerTrackPlugin.status : null
-  };
+  return buildTrackSessionContext({ cwd, mode, hasWorkspace, appStack, hasOwnerState, pluginLoader });
 }
 
 function deriveTrackSurfaceFromContext({ mode, hasWorkspace, appStack, hasOwnerState }) {
@@ -291,35 +227,17 @@ function deriveTrackSurfaceFromContext({ mode, hasWorkspace, appStack, hasOwnerS
 }
 
 function getSessionTrackSurface(sessionTrack) {
-  if (!sessionTrack || !sessionTrack.active) return null;
-  if (sessionTrack.active_track === "framework_owner") return "owner";
-  if (sessionTrack.active_track === "vibe_app_developer") return "developer";
-  if (sessionTrack.active_track === "plugin_development_track" || sessionTrack.active_track === "plugin_dev") return "developer";
-  return null;
+  const surface = sessionTrack && sessionTrack.track_surface
+    ? sessionTrack.track_surface
+    : readSessionTrackSurface(repoRoot());
+  if (!surface) return null;
+  if (surface === "owner") return "owner";
+  return "developer";
 }
 
 function persistSessionTrack(route, report, source = "entry") {
-  const cwd = repoRoot();
-  const filePath = path.join(cwd, ".kabeeri", "session_track.json");
-  const now = new Date().toISOString();
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  const payload = {
-    version: "v1",
-    active: source === "onboarding" ? true : route.track_id !== "unclassified",
-    active_track: route.track_id !== "unclassified" ? route.track_id : (source === "onboarding" ? "onboarding" : null),
-    track_label: route.track_label,
-    role_gate: route.role_gate,
-    route_command: route.route_command,
-    follow_up_command: route.follow_up_command,
-    activated_features: route.activated_features || [],
-    blocked_features: route.blocked_features || [],
-    started_from_mode: report.mode,
-    decision_source: source,
-    active_root: report.current_root,
-    activated_at: now,
-    updated_at: now
-  };
-  fs.writeFileSync(filePath, `${JSON.stringify(payload, null, 2)}\n`);
+  const payload = persistSessionTrackState({ cwd: repoRoot(), route, report, source });
+  return payload;
 }
 
 function writeSessionTrace(report, route, source = "resume", onboardingPayload = null) {
@@ -347,8 +265,7 @@ function writeSessionTrace(report, route, source = "resume", onboardingPayload =
 }
 
 function readSessionTrack(cwd) {
-  const filePath = path.join(cwd, ".kabeeri", "session_track.json");
-  return readLocalJson(filePath);
+  return readSessionTrackState(cwd);
 }
 
 function buildPrimaryTrack({ mode, hasWorkspace, appStack }) {

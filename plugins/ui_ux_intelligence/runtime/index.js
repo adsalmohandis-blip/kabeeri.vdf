@@ -135,14 +135,16 @@ function buildSourceStatusReport(options = {}) {
     data_root: normalizePathForReport(dataRoot, root),
     layout: "flat",
     status,
-    expected_files_total: EXPECTED_SOURCE_FILES.length,
+    expected_files_total: EXPECTED_DATA_FILES.length + EXPECTED_STACK_FILES.length,
+    expected_data_files_total: EXPECTED_DATA_FILES.length,
+    expected_stack_files_total: EXPECTED_STACK_FILES.length,
     installed_data_files: installedDataFiles,
     installed_stack_files: installedStackFiles,
     installed_data_files_total: installedDataFiles.length,
     installed_stack_files_total: installedStackFiles.length,
     catalog_ready: catalog.catalog_ready,
-    temp_meta_dependency: !catalog.catalog_ready,
-    temp_meta_ignored: true,
+    live_catalog_dependency: !catalog.catalog_ready,
+    live_catalog_only: true,
     next_action: catalog.catalog_ready
       ? "Use plugins/ui_ux_intelligence/data/ as the live catalog source."
       : "Run the relocation/import phase after all expected files are present."

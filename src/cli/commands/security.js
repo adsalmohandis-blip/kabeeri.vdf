@@ -7,6 +7,7 @@ const { table } = require("../ui");
 const { readStateArray, summarizeBy } = require("../services/state_utils");
 const { buildPluginLoaderReport } = require("../services/plugin_loader");
 const { buildSecurityGateState: buildSecurityGateStateService } = require("../services/security_gate");
+const { normalizeTrackAssignment, getTrackDisplayLabel, getTrackDisplayShortLabel } = require("../services/track_control");
 
 function security(action, value, flags = {}, deps = {}) {
   ensureWorkspace();
@@ -96,11 +97,11 @@ function buildSecurityGateState(options = {}) {
 }
 
 function normalizeSecurityGateTrack(value, fallback = "owner") {
-  const normalized = String(value || fallback || "owner").trim().toLowerCase();
-  if (["vibe", "viber", "app", "developer_app", "vibe_app_developer", "app_developer"].includes(normalized)) return "vibe";
-  if (["plugin", "security-auditor"].includes(normalized)) return "plugin";
-  if (["framework_owner", "owner_track"].includes(normalized)) return "owner";
-  return "owner";
+  const normalized = normalizeTrackAssignment(value);
+  if (normalized === "framework_owner") return "owner";
+  if (normalized === "vibe_app_developer") return "vibe";
+  if (normalized === "plugin") return "plugin";
+  return fallback;
 }
 
 function resolveSecurityGateScope(flags = {}, value = "") {
@@ -267,7 +268,7 @@ function resolveSecurityGateNextAction({ status, required, plugin, lastScan }) {
 function renderSecurityGateState(gate, tableRenderer = () => "") {
   const rows = [
     ["Status", gate.status || "unknown", gate.next_action || "n/a"],
-    ["Track", gate.track || "owner", gate.required ? "Required by policy" : "Optional for this scope"],
+    ["Track", getTrackDisplayShortLabel(gate.track || "owner"), gate.required ? "Required by policy" : "Optional for this scope"],
     ["Scope", gate.scope || "workspace", gate.target && (gate.target.task_id || gate.target.evolution_id || gate.target.handoff_id) ? JSON.stringify(gate.target) : "No recorded target"],
     ["Plugin", gate.plugin && gate.plugin.plugin_id ? gate.plugin.plugin_id : "security-auditor", `${gate.plugin && gate.plugin.installed ? "installed" : "missing"} / ${gate.plugin && gate.plugin.enabled ? "enabled" : "disabled"} / ${gate.plugin && gate.plugin.available ? "available" : "unavailable"} / ${gate.plugin && gate.plugin.active ? "active" : "inactive"}`],
     ["Policy", gate.policy_source || "default", `${gate.policy_path || ".kabeeri/policies/security_gate_policy.json"}${gate.strict_blocking ? " / strict" : ""}`],
@@ -277,7 +278,7 @@ function renderSecurityGateState(gate, tableRenderer = () => "") {
   return [
     "Security Gate",
     `Status: ${gate.status || "unknown"}`,
-    `Track: ${gate.track || "owner"}`,
+    `Track: ${getTrackDisplayLabel(gate.track || "owner")}`,
     `Scope: ${gate.scope || "workspace"}`,
     `Required: ${gate.required ? "yes" : "no"}`,
     `Strict blocking: ${gate.strict_blocking ? "yes" : "no"}`,

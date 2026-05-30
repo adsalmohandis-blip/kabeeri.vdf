@@ -18,6 +18,7 @@ const { resolveDashboardScope } = require("../src/cli/commands/site");
 const plannerVisualRenderer = require("../plugins/planner_visual/runtime");
 require("./plugin_folder_structure.integration.test");
 require("./plugin_dev.integration.test");
+require("./app_folder_structure.integration.test");
 
 const repoRoot = path.resolve(__dirname, "..");
 const PLUGIN_BUNDLE_DIRS = {
@@ -6095,30 +6096,30 @@ test("developer app workspace layout scaffolds isolated app roots", () => withTe
   runKvdf(["init"], { cwd: dir });
   const created = JSON.parse(runKvdf(["app", "workspace", "create", "--slug", "storefront-web", "--name", "Storefront Web", "--type", "frontend", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(created.report_type, "developer_app_workspace_scaffold");
-  assert.strictEqual(created.workspace.slug, "storefront-web");
-  assert.strictEqual(created.workspace.root, "workspaces/apps/storefront-web");
+  assert.strictEqual(created.workspace.slug, "storefront_web");
+  assert.strictEqual(created.workspace.root, "workspaces/apps/storefront_web");
   assert.strictEqual(created.validation.status, "compliant");
   assert.ok(Array.isArray(created.workspace.surface_scopes));
   for (const relative of [
-    "workspaces/apps/storefront-web/.kabeeri",
-    "workspaces/apps/storefront-web/src",
-    "workspaces/apps/storefront-web/tests",
-    "workspaces/apps/storefront-web/docs",
-    "workspaces/apps/storefront-web/.kabeeri/workspace.json",
-    "workspaces/apps/storefront-web/.kabeeri/project.json",
-    "workspaces/apps/storefront-web/.kabeeri/tasks.json",
-    "workspaces/apps/storefront-web/.kabeeri/task_trash.json",
-    "workspaces/apps/storefront-web/.kabeeri/scorecards.json",
-    "workspaces/apps/storefront-web/package.json"
+    "workspaces/apps/storefront_web/.kabeeri",
+    "workspaces/apps/storefront_web/src",
+    "workspaces/apps/storefront_web/tests",
+    "workspaces/apps/storefront_web/docs",
+    "workspaces/apps/storefront_web/.kabeeri/workspace.json",
+    "workspaces/apps/storefront_web/.kabeeri/project.json",
+    "workspaces/apps/storefront_web/.kabeeri/tasks.json",
+    "workspaces/apps/storefront_web/.kabeeri/task_trash.json",
+    "workspaces/apps/storefront_web/.kabeeri/scorecards.json",
+    "workspaces/apps/storefront_web/package.json"
   ]) {
     assert.ok(fs.existsSync(path.join(dir, relative)), `${relative} should exist`);
   }
   const list = JSON.parse(runKvdf(["app", "workspace", "list", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(list.report_type, "developer_app_workspaces");
-  assert.ok(list.workspaces.some((item) => item.slug === "storefront-web"));
+  assert.ok(list.workspaces.some((item) => item.slug === "storefront_web"));
   const show = JSON.parse(runKvdf(["app", "workspace", "show", "storefront-web", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(show.report_type, "developer_app_workspace");
-  assert.strictEqual(show.workspace.slug, "storefront-web");
+  assert.strictEqual(show.workspace.slug, "storefront_web");
   assert.strictEqual(show.contract.status, "compliant");
   const validation = JSON.parse(runKvdf(["app", "workspace", "validate", "storefront-web", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(validation.ok, true);
@@ -6126,19 +6127,19 @@ test("developer app workspace layout scaffolds isolated app roots", () => withTe
   assert.strictEqual(validation.validations[0].status, "compliant");
   const scorecards = JSON.parse(runKvdf(["app", "workspace", "scorecards", "storefront-web", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(scorecards.report_type, "developer_app_scorecards");
-  assert.strictEqual(scorecards.workspace_slug, "storefront-web");
+  assert.strictEqual(scorecards.workspace_slug, "storefront_web");
   assert.ok(Array.isArray(scorecards.cards));
   assert.ok(scorecards.summary.total >= 8);
   const reviewedScorecards = JSON.parse(runKvdf(["app", "workspace", "scorecards", "storefront-web", "--review", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(reviewedScorecards.review_state.status, "reviewed");
   const lockedScorecards = JSON.parse(runKvdf(["app", "workspace", "scorecards", "storefront-web", "--lock", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(lockedScorecards.review_state.status, "locked");
-  fs.unlinkSync(path.join(dir, "workspaces", "apps", "storefront-web", ".kabeeri", "session_track.json"));
+  fs.unlinkSync(path.join(dir, "workspaces", "apps", "storefront_web", ".kabeeri", "session_track.json"));
   const brokenValidation = JSON.parse(runKvdf(["app", "workspace", "validate", "storefront-web", "--json"], { cwd: dir, expectFailure: true }).stdout);
   assert.strictEqual(brokenValidation.ok, false);
   assert.ok(brokenValidation.validations[0].missing_paths.some((item) => item.endsWith("session_track.json")));
   const registry = JSON.parse(fs.readFileSync(path.join(dir, ".kabeeri/app_workspaces.json"), "utf8"));
-  assert.ok(registry.workspaces.some((item) => item.slug === "storefront-web"));
+  assert.ok(registry.workspaces.some((item) => item.slug === "storefront_web"));
 }));
 
 test("vibe maintainer cleanup supports current, all, and lifecycle workflow scopes", () => withTempDir((dir) => {
@@ -6149,7 +6150,7 @@ test("vibe maintainer cleanup supports current, all, and lifecycle workflow scop
   fs.cpSync(path.join(repoRoot, "plugins", "vibe_maintainer"), path.join(dir, "plugins", "vibe_maintainer"), { recursive: true });
   runKvdf(["plugins", "install", "vibe-maintainer"], { cwd: dir });
 
-  const appRoot = path.join(dir, "workspaces", "apps", "storefront-web");
+  const appRoot = path.join(dir, "workspaces", "apps", "storefront_web");
   const currentCleanup = JSON.parse(runKvdf(["vibe-maintainer", "cleanup", "--json"], { cwd: appRoot }).stdout);
   assert.strictEqual(currentCleanup.report_type, "vibe_maintainer_audit");
   assert.strictEqual(currentCleanup.workflow_mode, "fast");
@@ -6200,7 +6201,7 @@ test("vibe maintainer cleanup supports current, all, and lifecycle workflow scop
 test("developer app workspace dashboard renders the vibe developer view", () => withTempDir((dir) => {
   runKvdf(["init"], { cwd: dir });
   runKvdf(["app", "workspace", "create", "--slug", "storefront-web", "--name", "Storefront Web", "--type", "frontend"], { cwd: dir });
-  const appRoot = path.join(dir, "workspaces", "apps", "storefront-web");
+  const appRoot = path.join(dir, "workspaces", "apps", "storefront_web");
   runKvdf(["dashboard", "export", "--output", "client.html", "--dashboard-output", "dashboard.html"], { cwd: appRoot });
   const html = fs.readFileSync(path.join(appRoot, "dashboard.html"), "utf8");
   assert.match(html, /KVDF Viber Dashboard/);
@@ -9503,18 +9504,20 @@ test("ui_ux_intelligence source-status and catalog use relocated plugin data", (
   const readyStatus = JSON.parse(runKvdf(["ui-ux-intelligence", "source-status", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(readyStatus.report_type, "ui_ux_intelligence_source_status");
   assert.strictEqual(readyStatus.status, "ready");
-  assert.strictEqual(readyStatus.expected_files_total, 32);
-  assert.strictEqual(readyStatus.found_files_total, 32);
+  assert.strictEqual(readyStatus.expected_files_total, 27);
+  assert.strictEqual(readyStatus.expected_data_files_total, 11);
+  assert.strictEqual(readyStatus.expected_stack_files_total, 16);
+  assert.strictEqual(readyStatus.found_files_total, 27);
+  assert.strictEqual(readyStatus.installed_data_files_total, 11);
+  assert.strictEqual(readyStatus.installed_stack_files_total, 16);
   assert.strictEqual(readyStatus.missing_files.length, 0);
   assert.strictEqual(readyStatus.unexpected_files.length, 0);
   assert.strictEqual(readyStatus.catalog_ready, true);
-  assert.strictEqual(readyStatus.temp_meta_dependency, false);
+  assert.strictEqual(readyStatus.live_catalog_dependency, false);
   assert.ok(readyStatus.installed_data_files.includes("products.csv"));
   assert.ok(readyStatus.installed_stack_files.includes("react.csv"));
   assert.ok(readyStatus.data_files.includes("products.csv"));
   assert.ok(readyStatus.stack_files.includes("react.csv"));
-  assert.ok(readyStatus.reference_logic_files.includes("core.py"));
-  assert.ok(readyStatus.reference_doc_files.includes("quick-reference.md"));
 
   const catalog = JSON.parse(runKvdf(["ui-ux-intelligence", "catalog", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(catalog.report_type, "ui_ux_intelligence_catalog");
@@ -9602,7 +9605,6 @@ test("ui_ux_intelligence recommend survives a missing optional catalog file with
 
 test("ui_ux_intelligence checklist docs and audit stay local and produce handoff-ready output", () => withTempDir((dir) => {
   copyPluginBundle(dir, "ui_ux_intelligence");
-  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
 
   const checklist = JSON.parse(runKvdf(["ui-ux-intelligence", "checklist", "--idea", "Build dashboard app", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(checklist.report_type, "ui_ux_intelligence_checklist");
@@ -9695,7 +9697,7 @@ test("ui_ux_intelligence governance commands stay local and summarize the pack",
   assert.strictEqual(knowledgePack.report_type, "ui_ux_intelligence_knowledge_pack");
   assert.strictEqual(knowledgePack.knowledge_pack_version, "0.1.0");
   assert.strictEqual(knowledgePack.external_github_dependency, false);
-  assert.strictEqual(knowledgePack.runtime_temp_meta_dependency, false);
+  assert.strictEqual(knowledgePack.runtime_live_catalog_dependency, true);
   assert.ok(Array.isArray(knowledgePack.domains));
   assert.ok(knowledgePack.domains.length > 0);
 
@@ -9829,7 +9831,6 @@ test("planner review, visual, prompt, and tailwind guidance surface optional ui_
 
 test("ui_ux_intelligence evidence visual qa acceptance gate and regression stay metadata-only", () => withTempDir((dir) => {
   copyPluginBundle(dir, "ui_ux_intelligence");
-  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
 
   const evidence = JSON.parse(runKvdf(["ui-ux-intelligence", "evidence", "--app", "booking", "--evidence", "home.png,booking-error.png", "--screens", "home,booking", "--states", "default,error", "--json"], { cwd: dir }).stdout);
   assert.strictEqual(evidence.report_type, "ui_ux_intelligence_evidence_manifest");
@@ -10056,7 +10057,6 @@ test("ui_ux_intelligence patterns implementation guidance and prompt pack stay l
 
 test("ui_ux_intelligence audit scores rich UI text better than sparse text and strict mode can block", () => withTempDir((dir) => {
   copyPluginBundle(dir, "ui_ux_intelligence");
-  fs.rmSync(path.join(dir, "plugins", "ui_ux_intelligence", "_temp_meta"), { recursive: true, force: true });
 
   const sparseFile = path.join(dir, "sparse-ui.md");
   const richFile = path.join(dir, "rich-ui.md");
@@ -10122,7 +10122,6 @@ test("ui_ux_intelligence runtime stays offline and does not depend on an externa
     assert.ok(!/github\.com/i.test(source), `${path.basename(file)} should not reference external GitHub repositories`);
     assert.ok(!/\bfetch\s*\(/i.test(source), `${path.basename(file)} should not depend on fetch()`);
     assert.ok(!/\baxios\b/i.test(source), `${path.basename(file)} should not depend on axios`);
-    assert.ok(!/_temp_meta/i.test(source), `${path.basename(file)} should not depend on _temp_meta`);
   }
 });
 

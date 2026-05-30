@@ -3,6 +3,7 @@ const path = require("path");
 const { fileExists, listDirectories, readJsonFile, repoRoot, assertSafeName, writeJsonFile } = require("../fs_utils");
 const { seedDeveloperAppWorkspace } = require("../workspace");
 const { normalizeSurfaceScopes, summarizeWorkspaceContract, validateDeveloperAppWorkspace } = require("../services/app_workspace_contract");
+const { normalizeWorkspaceSlug } = require("../services/workspace_naming");
 const {
   buildAppScorecardReport,
   buildAppScorecardSummaryLine,
@@ -34,6 +35,16 @@ function normalizeWorkspaceType(value) {
     throw new Error("Invalid workspace type. Use application, backend, frontend, admin_frontend, mobile, api, service, or worker.");
   }
   return normalized;
+}
+
+function legacyWorkspaceSlug(value) {
+  return normalizeWorkspaceSlug(value).replace(/_/g, "-");
+}
+
+function resolveWorkspaceRecord(merged, rawSlug) {
+  const canonical = normalizeWorkspaceSlug(rawSlug);
+  const legacy = legacyWorkspaceSlug(rawSlug);
+  return merged.get(canonical) || merged.get(legacy) || null;
 }
 
 function discoverAppWorkspaces() {
@@ -114,10 +125,10 @@ function appWorkspace(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (action === "create") {
-    const slug = String(flags.slug || value || flags.username || "").trim().toLowerCase();
+    const slug = normalizeWorkspaceSlug(flags.slug || value || flags.username || "");
     if (!slug) throw new Error("Missing --slug.");
     assertSafeName(slug);
-    if (merged.has(slug)) throw new Error(`App workspace already exists: ${slug}`);
+    if (merged.has(slug) || merged.has(legacyWorkspaceSlug(slug))) throw new Error(`App workspace already exists: ${slug}`);
     const name = flags.name || slug;
     const appType = normalizeWorkspaceType(flags.type || flags["app-type"] || "application");
     const surfaceScopes = normalizeSurfaceScopes(flags.surfaces || flags.surface || flags["surface-scopes"], appType);
@@ -161,9 +172,9 @@ function appWorkspace(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (action === "show") {
-    const slug = String(flags.slug || value || flags.username || "").trim().toLowerCase();
+    const slug = normalizeWorkspaceSlug(flags.slug || value || flags.username || "");
     if (!slug) throw new Error("Missing app workspace slug.");
-    const workspace = merged.get(slug);
+    const workspace = resolveWorkspaceRecord(merged, slug);
     if (!workspace) throw new Error(`App workspace not found: ${slug}`);
     const localStatePath = path.join(repoRoot(), workspace.root, ".kabeeri", "workspace.json");
     const localState = fs.existsSync(localStatePath) ? readJsonFile(path.join(workspace.root, ".kabeeri/workspace.json")) : null;
@@ -184,8 +195,8 @@ function appWorkspace(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (action === "validate") {
-    const slug = String(flags.slug || value || flags.username || "").trim().toLowerCase();
-    const workspaces = slug ? [merged.get(slug)].filter(Boolean) : [...merged.values()];
+    const slug = normalizeWorkspaceSlug(flags.slug || value || flags.username || "");
+    const workspaces = slug ? [resolveWorkspaceRecord(merged, slug)].filter(Boolean) : [...merged.values()];
     if (!workspaces.length) throw new Error(slug ? `App workspace not found: ${slug}` : "No app workspaces found.");
     const validations = workspaces.map((workspace) => {
       const validation = validateDeveloperAppWorkspace(workspace.root);
@@ -221,8 +232,8 @@ function appWorkspace(action, value, flags = {}, rest = [], deps = {}) {
   }
 
   if (action === "scorecards" || action === "scorecard") {
-    const slug = String(flags.slug || value || flags.username || "").trim().toLowerCase();
-    const workspace = slug ? merged.get(slug) : null;
+    const slug = normalizeWorkspaceSlug(flags.slug || value || flags.username || "");
+    const workspace = slug ? resolveWorkspaceRecord(merged, slug) : null;
     const targetRoot = workspace ? workspace.root : process.cwd();
     const command = String(rest[0] || flags.mode || flags.action || "").trim().toLowerCase();
     const scorecards = flags.review || command === "review"

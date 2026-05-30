@@ -6,8 +6,10 @@
   "knowledge_pack_version": "0.1.0",
   "bundle_type": "removable",
   "load_strategy": "manifest_driven",
-  "runtime_entrypoint": "plugins/ui_ux_intelligence/runtime/index.js",
-  "command_entrypoint": "plugins/ui_ux_intelligence/runtime/index.js",
+  "runtime_entrypoint": "plugins/ui_ux_intelligence/bootstrap.js",
+  "command_entrypoint": "plugins/ui_ux_intelligence/bootstrap.js",
+  "entry": "bootstrap.js",
+  "runtime_path": "plugins/ui_ux_intelligence/bootstrap.js",
   "removable": true,
   "track": "shared",
   "plugin_family": "design",
@@ -39,6 +41,7 @@
     "kvdf plugins uninstall ui_ux_intelligence"
   ],
   "docs_surface": [
+    "plugins/ui_ux_intelligence/README.md",
     "plugins/ui_ux_intelligence/docs/index.md",
     "plugins/ui_ux_intelligence/docs/cli.md"
   ]

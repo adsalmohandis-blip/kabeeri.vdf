@@ -588,7 +588,7 @@ function buildCatalog(root = process.cwd()) {
     summary,
     catalog_ready: summary.catalog_ready,
     external_github_dependency: false,
-    temp_meta_dependency: false
+    live_catalog_dependency: true
   };
 }
 
@@ -630,7 +630,7 @@ function getCatalogSummary(options = {}) {
       warnings: catalog.summary.warnings
     },
     external_github_dependency: false,
-    temp_meta_dependency: false,
+    live_catalog_dependency: true,
     next_action: "Run kvdf ui-ux-intelligence search --query \"...\" --domain all --json."
   };
 }

@@ -1,0 +1,16 @@
+{
+  "categories": [
+    "web_application",
+    "mobile_application",
+    "desktop_application",
+    "api_only_backend",
+    "cms_platform",
+    "ecommerce_platform",
+    "saas_platform",
+    "marketplace_platform",
+    "crm_admin_system",
+    "booking_scheduling_system",
+    "ai_agent_automation_app",
+    "data_analytics_dashboard"
+  ]
+}

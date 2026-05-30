@@ -1,15 +1,21 @@
+const fs = require("fs");
 const path = require("path");
 
 function resolveRepoRootFromCli() {
+  const pluginRoot = path.resolve(__dirname, "..", "..", "..");
+  const commandRegistry = path.join(pluginRoot, "src", "cli", "services", "command_registry.js");
+  if (fs.existsSync(commandRegistry)) {
+    return pluginRoot;
+  }
   const cliEntry = process.argv[1] ? path.resolve(process.argv[1]) : null;
-  if (!cliEntry) {
-    throw new Error("KVDF Dev runtime blocked: unable to resolve CLI entrypoint.");
+  if (cliEntry) {
+    const normalized = cliEntry.replace(/\\/g, "/").toLowerCase();
+    if (normalized.endsWith("/src/cli/index.js")) {
+      return path.dirname(path.dirname(path.dirname(cliEntry)));
+    }
+    return path.dirname(path.dirname(cliEntry));
   }
-  const normalized = cliEntry.replace(/\\/g, "/").toLowerCase();
-  if (normalized.endsWith("/src/cli/index.js")) {
-    return path.dirname(path.dirname(path.dirname(cliEntry)));
-  }
-  return path.dirname(path.dirname(cliEntry));
+  throw new Error("KVDF Dev runtime blocked: unable to resolve CLI entrypoint.");
 }
 
 const repoRoot = resolveRepoRootFromCli();

@@ -1,0 +1,40 @@
+{
+    "evo_id":  "appfs-003",
+    "title":  "Fixed app pipeline skeleton",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-003-a",
+                        "goal":  "Create the fixed app pipeline skeleton.",
+                        "meaning":  "Create the canonical app workspace root and the top-level pipeline folders only.",
+                        "allowed_files":  [
+                                              "workspaces/apps/\u003capp_slug\u003e/",
+                                              "app folder templates",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Source-layout forcing"
+                                            ],
+                        "acceptance":  "A new app workspace has the canonical top-level pipeline.",
+                        "tests":  [
+                                      "Create/structure tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-003-b",
+                        "goal":  "Write app manifest, state, and hidden metadata scaffolding.",
+                        "meaning":  "Add workspace state and manifest files that make the app workspace tractable.",
+                        "allowed_files":  [
+                                              ".kabeeri/",
+                                              "manifest files",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Source implementation files"
+                                            ],
+                        "acceptance":  "App manifest/state exists alongside the pipeline.",
+                        "tests":  [
+                                      "Manifest/state presence checks."
+                                  ]
+                    }
+                ]
+}

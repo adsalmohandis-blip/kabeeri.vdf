@@ -1,0 +1,21 @@
+{
+  "dry_run": true,
+  "folders": [
+    "docs/requirements",
+    "docs/uiux",
+    "docs/system-design",
+    "docs/database",
+    "docs/api",
+    "docs/security",
+    "docs/testing",
+    "docs/deployment",
+    "docs/evidence",
+    "specs",
+    "roadmap",
+    "roadmap/tracks",
+    "tasks",
+    "prompts",
+    "evidence",
+    "tests"
+  ]
+}

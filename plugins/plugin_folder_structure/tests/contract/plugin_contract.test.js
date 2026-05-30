@@ -29,6 +29,7 @@ test("plugin manifest advertises the track-aware shell", () => {
   assert.ok(Array.isArray(manifest.commands));
   assert.ok(manifest.commands.includes("status"));
   assert.ok(manifest.commands.includes("create"));
+  assert.ok(manifest.commands.includes("upgrade-full-set"));
   assert.ok(Array.isArray(manifest.depends_on));
   assert.ok(Array.isArray(manifest.integrates_with));
   assert.ok(Array.isArray(manifest.provides));

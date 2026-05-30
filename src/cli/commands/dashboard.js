@@ -3,9 +3,7 @@ const { readJsonFile, writeJsonFile } = require("../workspace");
 const { fileExists, repoRoot } = require("../fs_utils");
 const { table } = require("../ui");
 const { collectDashboardStateForCurrentTrack, writeDashboardStateFilesForCurrentTrack } = require("./dashboard_state");
-
-const OWNER_SCOPE_ALIASES = new Set(["owner", "framework", "framework-owner", "framework_owner"]);
-const VIBER_SCOPE_ALIASES = new Set(["viber", "vibe", "app", "app-developer", "app_developer", "vibe_app_developer"]);
+const { normalizeTrackMode } = require("../services/track_control");
 const ACTION_ALIASES = new Set(["state", "export", "generate", "ux", "ux-audit", "audit-ux", "serve"]);
 
 function dashboard(action, value, flags = {}, deps = {}) {
@@ -97,9 +95,8 @@ function dashboard(action, value, flags = {}, deps = {}) {
 }
 
 function resolveDashboardScopeAction(action) {
-  const normalized = String(action || "").trim().toLowerCase().replace(/_/g, "-");
-  if (OWNER_SCOPE_ALIASES.has(normalized)) return "owner";
-  if (VIBER_SCOPE_ALIASES.has(normalized)) return "viber";
+  const normalized = normalizeTrackMode(action);
+  if (normalized) return normalized;
   return null;
 }
 

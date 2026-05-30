@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>app_category_registry + app_folder_structure Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --bg: #06101d;
+      --bg-2: #0b1630;
+      --panel: rgba(11, 22, 48, 0.84);
+      --panel-2: rgba(18, 31, 61, 0.88);
+      --panel-3: rgba(255, 255, 255, 0.04);
+      --line: rgba(125, 159, 255, 0.34);
+      --line-strong: rgba(125, 159, 255, 0.6);
+      --text: #eef4ff;
+      --muted: #aab8d1;
+      --muted-2: #8191b0;
+      --accent: #68e6ff;
+      --accent-2: #8b7dff;
+      --accent-3: #4ade80;
+      --warn: #fbbf24;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+      --radius-xl: 24px;
+      --radius-lg: 18px;
+      --radius-md: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "IBM Plex Sans", Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(104, 230, 255, 0.20), transparent 28%),
+        radial-gradient(circle at 90% 8%, rgba(139, 125, 255, 0.20), transparent 24%),
+        radial-gradient(circle at 50% 100%, rgba(74, 222, 128, 0.12), transparent 22%),
+        linear-gradient(180deg, #091225 0%, var(--bg) 42%, #04070f 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity: 0.18;
+      pointer-events: none;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.9), transparent 92%);
+    }
+
+    .page {
+      width: min(1480px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.9fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(18, 31, 61, 0.92), rgba(9, 18, 37, 0.9));
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero-main {
+      padding: 24px 24px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-main::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(104, 230, 255, 0.08), transparent 34%, rgba(139, 125, 255, 0.10));
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(104, 230, 255, 0.22);
+      background: rgba(104, 230, 255, 0.08);
+      color: #c9f8ff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-title {
+      margin: 0;
+      font-size: clamp(30px, 4vw, 54px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+      max-width: 12ch;
+      font-family: "JetBrains Mono", "IBM Plex Sans", monospace;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-copy {
+      margin: 14px 0 0;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .stat {
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.22);
+      background: rgba(255, 255, 255, 0.04);
+      min-height: 100px;
+    }
+
+    .stat-label {
+      margin: 0 0 8px;
+      color: var(--muted-2);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .stat-value {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .stat-note {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .hero-side {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .side-card {
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.22);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.03));
+    }
+
+    .side-card h2 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      line-height: 1.35;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .side-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(125, 159, 255, 0.22);
+      background: rgba(255, 255, 255, 0.035);
+      color: #dce8ff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .chip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--accent-3);
+      box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.12);
+    }
+
+    .design-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .design-card {
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.22);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.025));
+      min-height: 114px;
+    }
+
+    .design-card .label {
+      margin: 0 0 8px;
+      color: var(--muted-2);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+    }
+
+    .design-card .value {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .design-card .desc {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .chart-card {
+      padding: 22px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chart-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius-xl);
+      background: radial-gradient(circle at top right, rgba(104, 230, 255, 0.08), transparent 30%);
+      pointer-events: none;
+    }
+
+    .chart-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .chart-title-group h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .chart-title-group p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      max-width: 68ch;
+    }
+
+    .chart-badge {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(74, 222, 128, 0.22);
+      background: rgba(74, 222, 128, 0.08);
+      color: #c8ffd8;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .diagram {
+      width: 100%;
+      min-width: 0;
+      padding: 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.18);
+      background: rgba(255, 255, 255, 0.025);
+      position: relative;
+      z-index: 1;
+      overflow-x: auto;
+    }
+
+    .diagram svg {
+      width: 100% !important;
+      height: auto !important;
+      max-width: none !important;
+    }
+
+    .diagram-title {
+      margin: 0 0 12px;
+      color: #f1f6ff;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .note-row {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .note-panel {
+      padding: 18px;
+    }
+
+    .note-panel h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .note-panel p,
+    .note-panel li {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .note-panel ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    .fallback {
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px dashed rgba(125, 159, 255, 0.4);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .fallback strong {
+      display: block;
+      margin-bottom: 8px;
+      color: #f4f8ff;
+    }
+
+    code {
+      background: rgba(255, 255, 255, 0.08);
+      color: #d6e7ff;
+      padding: 2px 6px;
+      border-radius: 5px;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 16px 18px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(125, 159, 255, 0.18);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1120px) {
+      .hero,
+      .note-row,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div class="panel hero-main">
+        <div class="eyebrow">ui_ux_intelligence-informed plugin flow</div>
+        <h1 class="hero-title">A cleaner handoff from category planning to workspace building.</h1>
+        <p class="hero-copy">
+          This dashboard visualizes the pipeline from <code>app_category_registry</code> to a selected domain plugin and then into
+          <code>app_folder_structure</code>. The emphasis is on contract clarity, not just file generation.
+        </p>
+        <div class="hero-stats">
+          <div class="stat">
+            <p class="stat-label">Stage 1</p>
+            <p class="stat-value">Category planning</p>
+            <p class="stat-note">Resolve app type, questionnaire, specs, roadmap, and workspace plan.</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Stage 2</p>
+            <p class="stat-value">Domain plugin</p>
+            <p class="stat-note">Keep blog, CRM, ecommerce, booking, and similar builders separate.</p>
+          </div>
+          <div class="stat">
+            <p class="stat-label">Stage 3</p>
+            <p class="stat-value">Workspace build</p>
+            <p class="stat-note">Materialize the governed app workspace only after the contract is valid.</p>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel hero-side">
+        <div class="side-card">
+          <h2>Hard contract flow</h2>
+          <p>The pipeline is intentionally fail-closed. If the handoff contract is missing or mismatched, app-folder creation stops instead of guessing.</p>
+          <div class="chips">
+            <span class="chip"><span class="dot"></span>strict handoff</span>
+            <span class="chip"><span class="dot"></span>schema checked</span>
+            <span class="chip"><span class="dot"></span>no silent fallback</span>
+          </div>
+        </div>
+        <div class="side-card">
+          <h2>Contract artifacts</h2>
+          <p><code>.kabeeri/app_pipeline_contract.json</code> binds the plan to the workspace root and selected domain plugin.</p>
+        </div>
+        <div class="side-card">
+          <h2>Designed for handoff clarity</h2>
+          <p>The layout makes the pipeline easy to scan at a glance, which is exactly where design and implementation misunderstandings usually start.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="panel chart-card">
+      <div class="chart-head">
+        <div class="chart-title-group">
+          <h2>1. End-to-End Handoff</h2>
+          <p>Shows the complete flow from app category planning to the selected domain plugin and then to app workspace materialization.</p>
+        </div>
+        <div class="chart-badge">primary flow</div>
+      </div>
+      <div class="mermaid diagram" id="chart-end-to-end">
+flowchart LR
+  A[app_category_registry] --> B[Selected domain plugin]
+  B --> C[app_folder_structure]
+  A -->|emits plan artifacts| P1[Category profile]
+  A -->|emits plan artifacts| P2[Questionnaire profile]
+  A -->|emits plan artifacts| P3[Spec profile]
+  A -->|emits plan artifacts| P4[Roadmap order]
+  A -->|emits plan artifacts| P5[Workspace plan]
+  B -->|implements product logic| B1[Domain behavior]
+  C -->|materializes| C1[workspaces/apps/app_slug]
+      </div>
+    </section>
+
+    <section class="design-strip">
+      <div class="design-card">
+        <p class="label">Style</p>
+        <p class="value">Enterprise Clean</p>
+        <p class="desc">Professional, compliance-aware surfaces with crisp hierarchy.</p>
+      </div>
+      <div class="design-card">
+        <p class="label">Palette</p>
+        <p class="value">Technical</p>
+        <p class="desc">Dark surfaces, green accent, clear borders, and low-noise status cues.</p>
+      </div>
+      <div class="design-card">
+        <p class="label">Typography</p>
+        <p class="value">JetBrains Mono + IBM Plex Sans</p>
+        <p class="desc">Technical headings with readable body copy for dense planning views.</p>
+      </div>
+      <div class="design-card">
+        <p class="label">Handoff Check</p>
+        <p class="value">8 blockers / 24 warnings</p>
+        <p class="desc">The plugin output says the handoff is blocked until core UI/UX gaps are fixed.</p>
+      </div>
+    </section>
+
+    <section class="grid" style="margin-top: 18px;">
+      <section class="panel chart-card">
+        <div class="chart-head">
+          <div class="chart-title-group">
+            <h2>2. app_category_registry Internal Pipeline</h2>
+            <p>Category registry, compatibility, source intake, questionnaires, specs, roadmap order, and workspace plan all resolve here first.</p>
+          </div>
+          <div class="chart-badge">planning brain</div>
+        </div>
+        <div class="mermaid diagram" id="chart-category-registry">
+flowchart TD
+  S[Status / Profile / Plan / Validate / Create] --> U[Load category universe]
+  U --> A[Filter active catalog]
+  A --> P[Build category profile]
+  P --> I[Route source intake]
+  P --> Q[Build questionnaire profile]
+  P --> X[Resolve specs and micro-docs]
+  P --> R[Build roadmap order]
+  P --> W[Build workspace plan]
+  P --> E[Write evidence and readiness]
+  E --> O[.kabeeri outputs]
+
+  O --> O1[app_category_profile.yaml]
+  O --> O2[source_inventory.yaml]
+  O --> O3[source_map.yaml]
+  O --> O4[questionnaire_profile.yaml]
+  O --> O5[spec_profile.yaml]
+  O --> O6[micro_doc_contract.yaml]
+  O --> O7[roadmap_order.yaml]
+  O --> O8[workspace_plan.yaml]
+  O --> O9[readiness_profile.yaml]
+  O --> O10[category_evidence.json]
+        </div>
+      </section>
+
+      <section class="panel chart-card">
+        <div class="chart-head">
+          <div class="chart-title-group">
+            <h2>3. app_folder_structure Workspace Materialization</h2>
+            <p>Consumes the approved category profile and workspace plan, then creates the governed app workspace and its fixed pipeline.</p>
+          </div>
+          <div class="chart-badge" style="border-color: rgba(139, 125, 255, 0.24); background: rgba(139, 125, 255, 0.08); color: #e7e2ff;">workspace contract</div>
+        </div>
+        <div class="mermaid diagram" id="chart-folder-structure">
+flowchart TD
+  A[Read app_category_profile.yaml] --> B[Read workspace_plan.yaml]
+  B --> C[Validate app slug and track]
+  C --> D[Create governed app workspace]
+  D --> E[Materialize fixed pipeline]
+  E --> F[Write app manifest and evidence]
+  F --> G[Repair missing folders safely]
+
+  E --> E1[00_viber_inputs]
+  E --> E2[01_category]
+  E --> E3[02_roadmaps_plans]
+  E --> E4[03_full_specifications]
+  E --> E5[04_version_control]
+  E --> E6[05_evolutions]
+  E --> E7[06_task_punches]
+  E --> E8[07_agents]
+  E --> E9[08_source]
+  E --> E10[09_tests_quality]
+  E --> E11[10_evidence_audit]
+  E --> E12[11_reviews_approvals]
+  E --> E13[12_releases_deployment]
+  E --> E14[13_owner_portal]
+  E --> E15[99_archive]
+
+  F --> F1[app.kvdos.yaml]
+  F --> F2[.kabeeri/app_folder_manifest.json]
+  F --> F3[.kabeeri/app_state.json]
+  F --> F4[structure evidence / validation reports]
+        </div>
+      </section>
+
+      <section class="panel chart-card">
+        <div class="chart-head">
+          <div class="chart-title-group">
+            <h2>4. Plugin Promotion Path</h2>
+            <p>Shows how a workspace package is reviewed, promoted, and copied into the direct plugin bundle without dragging the private workspace along with it.</p>
+          </div>
+          <div class="chart-badge">promotion boundary</div>
+        </div>
+        <div class="mermaid diagram" id="chart-plugin-promotion">
+flowchart LR
+  WS[workspace package root] --> PROMOTE[Owner promotion review]
+  PROMOTE --> DIRECT[direct plugin bundle]
+  PROMOTE --> REJECT[Reject or request changes]
+  DIRECT --> M1[plugin.json]
+  DIRECT --> M2[bootstrap.js]
+  DIRECT --> M3[README.md]
+  DIRECT --> M4[plugin_manifest.json]
+  DIRECT --> M5[package structure files]
+        </div>
+      </section>
+
+      <section class="panel note-panel">
+        <h3>How to read the chart</h3>
+        <p>
+          The registry decides the app shape, the domain plugin owns the category-specific behavior, and <code>app_folder_structure</code>
+          turns the approved plan into a governed app workspace.
+        </p>
+        <ul>
+          <li><code>app_category_registry</code> writes the plan and contract.</li>
+          <li>The selected domain plugin fills in domain-specific behavior.</li>
+          <li><code>app_folder_structure</code> only materializes once the contract validates.</li>
+          <li>Promotion is separate and remains owner-controlled.</li>
+        </ul>
+        <p style="margin-top: 14px;">
+          The dashboard visuals now follow the plugin’s own output: dashboard product shape, enterprise clean style, technical palette,
+          accessible data surfaces, and a bento-grid presentation pattern.
+        </p>
+      </section>
+    </section>
+
+    <section class="footer">
+      If Mermaid fails to load, the flow is still the same:
+      <code>app_category_registry</code> → <code>Selected domain plugin</code> → <code>app_folder_structure</code>.
+      The approved promotion target remains <code>./plugins/&lt;plugin-slug&gt;/</code>, while the workspace stays private until promotion.
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      var diagrams = Array.prototype.slice.call(document.querySelectorAll(".mermaid.diagram"));
+      if (!window.mermaid || !diagrams.length) return;
+      mermaid.initialize({
+        startOnLoad: false,
+        securityLevel: "loose",
+        theme: "dark",
+        themeVariables: {
+          fontSize: "18px",
+          fontFamily: '"IBM Plex Sans", "Segoe UI", system-ui, -apple-system, sans-serif'
+        },
+        flowchart: { useMaxWidth: true, htmlLabels: true, curve: "basis" }
+      });
+      mermaid.run({ nodes: diagrams });
+    })();
+  </script>
+</body>
+</html>

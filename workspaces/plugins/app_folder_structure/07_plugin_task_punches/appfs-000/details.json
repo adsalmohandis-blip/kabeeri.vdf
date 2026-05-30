@@ -1,0 +1,40 @@
+{
+    "evo_id":  "appfs-000",
+    "title":  "Repo analysis and scope lock",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-000-a",
+                        "goal":  "Map repo conventions and safe integration points.",
+                        "meaning":  "Learn how this repo already registers plugins, exposes commands, writes runtime state, and documents behavior so the new plugin follows the same rules.",
+                        "allowed_files":  [
+                                              "plugins/",
+                                              "src/cli/",
+                                              "schemas/",
+                                              "docs/",
+                                              ".kabeeri/"
+                                          ],
+                        "forbidden_files":  [
+                                                "Implementation code outside analysis scope"
+                                            ],
+                        "acceptance":  "A clear analysis report exists with repo conventions and integration points.",
+                        "tests":  [
+                                      "Repository inspection only; no behavior changes."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-000-b",
+                        "goal":  "Define the app-folder planning dependency map.",
+                        "meaning":  "Convert the phase brief into ordered slices so each later step has a clear start and end.",
+                        "allowed_files":  [
+                                              "docs/reports/"
+                                          ],
+                        "forbidden_files":  [
+                                                "All runtime/implementation folders"
+                                            ],
+                        "acceptance":  "The app-folder plan is split into safe Evo slices.",
+                        "tests":  [
+                                      "Review report completeness."
+                                  ]
+                    }
+                ]
+}

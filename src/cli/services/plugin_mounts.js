@@ -5,13 +5,23 @@ const { repoRoot, packageRoot } = require("../fs_utils");
 const PLUGIN_MOUNT_ROOT = ".kabeeri/plugin-links";
 
 const PLUGIN_BUNDLE_DIRS = {
+  blog_builder: "blog",
+  "blog-builder": "blog",
+  crm_builder: "crm",
+  "crm-builder": "crm",
+  company_profile_builder: "company_profile",
+  "company-profile-builder": "company_profile",
   "ai-learning": "ai_learning",
   "booking-builder": "booking_builder",
   "company-profile": "company_profile",
   "ecommerce-builder": "ecommerce_builder",
   "ecommerce-mobile-app": "ecommerce_mobile_app",
+  news_website_builder: "news_website",
+  "news-website-builder": "news_website",
   "kvdf-dev": "kvdf_dev",
   "news-website": "news_website",
+  pos_builder: "pos",
+  "pos-builder": "pos",
   "planner-visual": "planner_visual",
   "security-auditor": "security_auditor",
   "vibe-maintainer": "vibe_maintainer"

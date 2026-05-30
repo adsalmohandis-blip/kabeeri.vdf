@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-008",
+    "title":  "Full specification contract",
+    "phase":  "8",
+    "deliverables":  [
+                         "handoff-grade requirements placeholders",
+                         "specification folders",
+                         "traceable documentation scaffold"
+                     ],
+    "dependency_notes":  "Depends on appfs-003.",
+    "exit_criterion":  "Specification folders exist and are traceable."
+}

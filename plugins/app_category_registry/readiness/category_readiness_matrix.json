@@ -1,0 +1,32 @@
+{
+  "categories": [
+    {
+      "id": "web_application",
+      "activation_status": "active",
+      "spec_status": "ready",
+      "visibility": "default",
+      "reason": "Baseline web workflow is ready."
+    },
+    {
+      "id": "ecommerce_platform",
+      "activation_status": "active",
+      "spec_status": "ready",
+      "visibility": "default",
+      "reason": "Commerce flow contract is ready."
+    },
+    {
+      "id": "multi_tenant_saas",
+      "activation_status": "active",
+      "spec_status": "ready",
+      "visibility": "default",
+      "reason": "Tenant-aware SaaS profile is ready."
+    },
+    {
+      "id": "healthcare_platform",
+      "activation_status": "hidden",
+      "spec_status": "partial",
+      "visibility": "coming_soon",
+      "reason": "Sensitive compliance docs still missing."
+    }
+  ]
+}

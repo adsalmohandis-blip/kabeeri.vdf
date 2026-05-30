@@ -2,7 +2,9 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const { readJsonFile, writeJsonFile, fileExists } = require("../fs_utils");
+const { repoRoot } = require("../fs_utils");
 const { parseCsv, uniqueList, uniqueBy } = require("../services/collections");
+const { normalizeTrackSurface, readSessionTrackSurface } = require("../services/track_control");
 const { table } = require("../ui");
 
 const AI_LEARNING_STATE_FILE = ".kabeeri/ai_learning/failure_patterns.json";
@@ -1663,22 +1665,17 @@ function resolveTrack(track) {
   const normalized = normalizeText(track);
   if (!normalized) return resolveDefaultTrack();
   if (normalizeKey(normalized) === "all" || normalizeKey(normalized) === "shared") return "all";
-  const value = TRACK_ALIASES[normalizeKey(normalized)];
-  if (!value) throw new Error("Invalid track. Use owner, vibe, or plugin.");
-  return value;
+  const resolved = normalizeTrackSurface(normalized);
+  if (!resolved) throw new Error("Invalid track. Use owner, vibe, or plugin.");
+  return resolved === "owner" ? "owner" : (resolved === "viber" ? "vibe" : "plugin");
 }
 
 function resolveDefaultTrack() {
-  if (!fileExists(".kabeeri/session_track.json")) return "owner";
-  try {
-    const sessionTrack = readJsonFile(".kabeeri/session_track.json");
-    if (sessionTrack && sessionTrack.active_track) {
-      const normalized = TRACK_ALIASES[normalizeKey(sessionTrack.active_track)];
-      if (normalized) return normalized;
-    }
-  } catch (error) {
-    return "owner";
-  }
+  const sessionSurface = readSessionTrackSurface(repoRoot());
+  if (!sessionSurface) return "owner";
+  if (sessionSurface === "owner") return "owner";
+  if (sessionSurface === "viber") return "vibe";
+  if (sessionSurface === "plugin") return "plugin";
   return "owner";
 }
 

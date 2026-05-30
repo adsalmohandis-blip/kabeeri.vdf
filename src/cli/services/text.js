@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { fileExists, readJsonFile } = require("../fs_utils");
 
 function matchesWords(text, words) {
@@ -5,7 +7,10 @@ function matchesWords(text, words) {
 }
 
 function detectLanguage(text) {
-  return /[\u0600-\u06ff]/.test(String(text || "")) ? "ar" : "en";
+  const value = String(text || "");
+  if (/[\u0600-\u06ff]/.test(value)) return "ar";
+  if (/[ÙØ]/.test(value) && !/[A-Za-z]/.test(value)) return "ar";
+  return "en";
 }
 
 function resolveOutputLanguage(flags = {}, text = "") {
@@ -14,7 +19,10 @@ function resolveOutputLanguage(flags = {}, text = "") {
     return String(requested).toLowerCase();
   }
   const projectPath = ".kabeeri/project.json";
-  const project = fileExists(projectPath) ? readJsonFile(projectPath) : {};
+  const cwdProjectPath = path.resolve(process.cwd(), projectPath);
+  const project = fs.existsSync(cwdProjectPath)
+    ? JSON.parse(fs.readFileSync(cwdProjectPath, "utf8"))
+    : (fileExists(projectPath) ? readJsonFile(projectPath) : {});
   const projectLanguage = String(project.language || "").toLowerCase();
   if (projectLanguage && !["both", "auto", "user"].includes(projectLanguage)) return projectLanguage;
   return detectLanguage(text);

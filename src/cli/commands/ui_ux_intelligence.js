@@ -52,15 +52,15 @@ function uiUxIntelligence(action, value, flags = {}, rest = [], deps = {}) {
   if (mode === "source-status") {
     const root = process.cwd();
     const dataReport = buildSourceStatusReport({ root });
-    const tempReport = inspectTempMetaSourceStatus({
+    const liveReport = inspectLiveCatalogSourceStatus({
       root,
       sourceRoot: flags.source_root || flags.sourceRoot || flags.root
     });
     const report = {
       ...dataReport,
-      ...tempReport,
-      status: dataReport.catalog_ready ? "ready" : tempReport.status,
-      temp_meta_dependency: !dataReport.catalog_ready
+      ...liveReport,
+      status: dataReport.catalog_ready ? "ready" : liveReport.status,
+      live_catalog_dependency: !dataReport.catalog_ready
     };
     if (flags.json) console.log(JSON.stringify(report, null, 2));
     else console.log(renderSourceStatus(report, table));
@@ -289,64 +289,10 @@ function resolveDomain(flags = {}) {
   return result ? String(result).trim() : "all";
 }
 
-function inspectTempMetaSourceStatus({ root, sourceRoot }) {
-  const resolvedSourceRoot = path.resolve(sourceRoot || path.join(root, "plugins", "ui_ux_intelligence", "_temp_meta"));
-  const exists = fs.existsSync(resolvedSourceRoot);
-  const expectedFiles = [
-    "products.csv",
-    "styles.csv",
-    "colors.csv",
-    "typography.csv",
-    "ui-reasoning.csv",
-    "ux-guidelines.csv",
-    "charts.csv",
-    "landing.csv",
-    "icons.csv",
-    "app-interface.csv",
-    "react-performance.csv",
-    "angular.csv",
-    "astro.csv",
-    "flutter.csv",
-    "html-tailwind.csv",
-    "jetpack-compose.csv",
-    "laravel.csv",
-    "nextjs.csv",
-    "nuxt-ui.csv",
-    "nuxtjs.csv",
-    "react-native.csv",
-    "react.csv",
-    "shadcn.csv",
-    "svelte.csv",
-    "swiftui.csv",
-    "threejs.csv",
-    "vue.csv",
-    "core.py",
-    "search.py",
-    "design_system.py",
-    "quick-reference.md",
-    "skill-content.md"
-  ];
-
-  if (!exists) {
-    return {
-      source_root: path.relative(root, resolvedSourceRoot).replace(/\\/g, "/"),
-      layout: "flat",
-      found_files_total: 0,
-      missing_files: [...expectedFiles],
-      found_files: [],
-      data_files: [],
-      stack_files: [],
-      reference_logic_files: [],
-      reference_doc_files: [],
-      unexpected_files: [],
-      temp_meta_ignored: true
-    };
-  }
-
-  const entries = fs.readdirSync(resolvedSourceRoot, { withFileTypes: true });
-  const fileNames = entries.filter((entry) => entry.isFile()).map((entry) => entry.name);
-  const directories = entries.filter((entry) => entry.isDirectory()).map((entry) => `${entry.name}/`);
-  const dataFiles = fileNames.filter((name) => [
+function inspectLiveCatalogSourceStatus({ root, sourceRoot }) {
+  const resolvedDataRoot = path.resolve(sourceRoot || path.join(root, "plugins", "ui_ux_intelligence", "data"));
+  const resolvedStacksRoot = path.join(resolvedDataRoot, "stacks");
+  const dataFilesExpected = [
     "products.csv",
     "styles.csv",
     "colors.csv",
@@ -358,8 +304,8 @@ function inspectTempMetaSourceStatus({ root, sourceRoot }) {
     "icons.csv",
     "app-interface.csv",
     "react-performance.csv"
-  ].includes(name));
-  const stackFiles = fileNames.filter((name) => [
+  ];
+  const stackFilesExpected = [
     "angular.csv",
     "astro.csv",
     "flutter.csv",
@@ -376,28 +322,33 @@ function inspectTempMetaSourceStatus({ root, sourceRoot }) {
     "swiftui.csv",
     "threejs.csv",
     "vue.csv"
-  ].includes(name));
-  const referenceLogicFiles = fileNames.filter((name) => ["core.py", "search.py", "design_system.py"].includes(name));
-  const referenceDocFiles = fileNames.filter((name) => ["quick-reference.md", "skill-content.md"].includes(name));
-  const recognized = [...dataFiles, ...stackFiles, ...referenceLogicFiles, ...referenceDocFiles];
-  const unexpectedFiles = [
-    ...fileNames.filter((name) => !expectedFiles.includes(name)),
-    ...directories
-  ].sort();
-  const missingFiles = expectedFiles.filter((name) => !recognized.includes(name));
+  ];
+
+  const readFileNames = (directory) => {
+    if (!fs.existsSync(directory)) return [];
+    return fs.readdirSync(directory, { withFileTypes: true }).filter((entry) => entry.isFile()).map((entry) => entry.name);
+  };
+
+  const dataFiles = readFileNames(resolvedDataRoot).filter((name) => dataFilesExpected.includes(name));
+  const stackFiles = readFileNames(resolvedStacksRoot).filter((name) => stackFilesExpected.includes(name));
+  const unexpectedDataFiles = readFileNames(resolvedDataRoot).filter((name) => !dataFilesExpected.includes(name)).sort();
+  const unexpectedStackFiles = readFileNames(resolvedStacksRoot).filter((name) => !stackFilesExpected.includes(name)).sort();
+  const missingFiles = [
+    ...dataFilesExpected.filter((name) => !dataFiles.includes(name)),
+    ...stackFilesExpected.filter((name) => !stackFiles.includes(name))
+  ];
+
   return {
-    source_root: path.relative(root, resolvedSourceRoot).replace(/\\/g, "/"),
-    layout: "flat",
-    found_files_total: fileNames.length + directories.length,
+    source_root: path.relative(root, resolvedDataRoot).replace(/\\/g, "/"),
+    stack_root: path.relative(root, resolvedStacksRoot).replace(/\\/g, "/"),
+    layout: "catalog",
+    found_files_total: dataFiles.length + stackFiles.length,
     missing_files: missingFiles,
-    found_files: [...recognized, ...unexpectedFiles].sort(),
+    found_files: [...dataFiles, ...stackFiles].sort(),
     data_files: dataFiles,
     stack_files: stackFiles,
-    reference_logic_files: referenceLogicFiles,
-    reference_doc_files: referenceDocFiles,
-    unexpected_files: unexpectedFiles,
-    temp_meta_ignored: true,
-    temp_meta_found_files_total: fileNames.length + directories.length
+    unexpected_files: [...unexpectedDataFiles, ...unexpectedStackFiles],
+    live_catalog_only: true
   };
 }
 
@@ -554,7 +505,7 @@ function renderStatus(report) {
 
 function renderSourceStatus(report, table) {
   const rows = [
-    ["Temp source files", String(report.found_files_total || 0)],
+    ["Live catalog files", String(report.found_files_total || 0)],
     ["Installed data files", String(report.installed_data_files_total || 0)],
     ["Installed stack files", String(report.installed_stack_files_total || 0)],
     ["Layout", report.layout],

@@ -1,4 +1,4 @@
-const assert = require("assert");
+﻿const assert = require("assert");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -50,10 +50,42 @@ require("../plugins/wifi_data_sharing/tests/provider_integration.contract.test")
 require("../plugins/plugin_folder_structure/tests/unit/status_service.test");
 require("../plugins/plugin_folder_structure/tests/unit/target_path_service.test");
 require("../plugins/plugin_folder_structure/tests/contract/plugin_contract.test");
+require("./contract/full_canonical_workspace_contract.test");
+require("./contract/canonical_folder_numbering_contract.test");
+require("./contract/no_duplicate_03_folder_contract.test");
+require("./contract/package_folder_is_04_contract.test");
+require("./contract/no_08_plugin_source_contract.test");
+require("./contract/migrate_03_package_to_04_package_contract.test");
+require("./contract/package_root_references_updated_contract.test");
+require("./contract/standard_plugin_package_contract.test");
+require("./contract/no_deep_nested_plugin_root_contract.test");
+require("./contract/no_remove_existing_folders_contract.test");
+require("./contract/owner_and_plugin_dev_package_match_contract.test");
+require("./contract/compact_backward_compatibility_contract.test");
+require("./contract/app_pipeline_contract.test");
+require("../workspaces/plugins/app_folder_structure/04_plugin_package/tests/unit/status_service.test");
+require("../workspaces/plugins/app_folder_structure/04_plugin_package/tests/unit/package_structure_service.test");
+require("../workspaces/plugins/app_folder_structure/04_plugin_package/tests/unit/target_path_service.test");
+require("../workspaces/plugins/app_folder_structure/04_plugin_package/tests/contract/plugin_contract.test");
+require("./app_folder_structure.integration.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/registry_loader.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/status_service.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/profile_service.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/source_intake_router.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/questionnaire_router.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/spec_resolver.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/roadmap_order_engine.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/workspace_planner.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/unit/validation_service.test");
+require("../workspaces/plugins/app_category_registry/04_plugin_package/tests/contract/plugin_contract.test");
+require("./app_category_registry.integration.test");
+require("./promoted_plugins.test");
 require("../plugins/plugin_dev/tests/unit/status_service.test");
 require("../plugins/plugin_dev/tests/unit/doctor_service.test");
 require("../plugins/plugin_dev/tests/unit/workspace_service.test");
 require("../plugins/plugin_dev/tests/contract/plugin_contract.test");
+require("./scaffold_target.unit.test");
+require("./track_control.unit.test");
 const { serveSite } = require("../src/cli/commands/site");
 const { seedAppDocsPackage } = require("../src/cli/workspace");
 const { repoRoot } = require("../src/cli/fs_utils");
@@ -612,7 +644,7 @@ test("text helpers match words and resolve output language from project state", 
 
       assert.strictEqual(matchesWords("Hello world", ["world"]), true);
       assert.strictEqual(matchesWords("Hello world", ["planet"]), false);
-      assert.strictEqual(detectLanguage("مرحبا"), "ar");
+      assert.strictEqual(detectLanguage("Ù…Ø±Ø­Ø¨Ø§"), "ar");
       assert.strictEqual(detectLanguage("Hello"), "en");
       assert.strictEqual(resolveOutputLanguage({}, "Hello"), "fr");
       assert.strictEqual(resolveOutputLanguage({ language: "es" }, "Hello"), "es");
@@ -1131,3 +1163,4 @@ test("planner visual previews write files and open only when explicitly requeste
     assert.match(html, /Validation/);
   });
 });
+

@@ -1,34 +1,28 @@
 # App Folder Structure Evo Plan
 
-**Status:** `planned`
-**Track:** `owner`
-**Scope:** `app_folder_structure` plugin plan on the owner track
-**Mode:** planning only, no implementation yet
-**Source:** user-provided phase brief
+**Status:** `planned`  
+**Track:** `plugin_dev` workspace for `app_folder_structure`  
+**Scope:** `app_folder_structure` plugin workspace and app-workspace contract engine  
+**Mode:** planning only, no implementation yet  
+**Source:** user-provided app-folder structure brief and canonical full-set correction
 
 ---
 
 ## Purpose
 
-This report turns the requested `app_folder_structure` phase brief into an ordered Evo queue for the owner-track dev process. It is a planning artifact only. No plugin code, schema, runtime, or command changes are made by this report.
+This report converts the `app_folder_structure` brief into an ordered Evo queue for the Plugin Development Track. It is planning-only. No workspace code, app-folder creation logic, schema wiring, or command changes are made by this report.
 
-The intended target is the official folder contract engine for KVDOS/KVDF app workspaces under:
+The intended target is a plugin workspace contract engine that:
 
-`./workspaces/apps/<app-slug>/`
+- creates and validates app workspaces under `workspaces/apps/<app_slug>/`
+- keeps app workspaces governed by a fixed canonical pipeline
+- integrates category-approved roadmap structure through `app_category_registry`
+- keeps `08_source` stack-adaptive and neutral
+- writes manifests, evidence, validation, and repair records safely
+- refuses unsafe slugs, unsafe paths, and missing category profiles
+- preserves old compact folders for backward compatibility where they already exist
 
-### Plain-English Goal
-
-We want one plugin to define and safely create the complete app workspace shape for every app project. That plugin should:
-
-- understand the workspace root
-- know which workspace types are allowed
-- build the fixed production pipeline
-- separate Viber inputs from generated outputs
-- respect category-approved roadmap structures
-- keep source layout stack-adaptive
-- produce manifests, validation, repair, and evidence
-
-It must do this without inventing random folders or overwriting user files.
+`app_folder_structure` must not invent a second plugin structure. It owns app-workspace governance, not plugin package promotion. The plugin workspace itself must remain track-aware and safe.
 
 ---
 
@@ -36,72 +30,70 @@ It must do this without inventing random folders or overwriting user files.
 
 | Evo ID | Planned Title | Source Phase(s) | What It Delivers | Dependency Notes | Exit Criterion |
 |---|---|---:|---|---|---|
-| `evo-appfs-000` | App Folder Structure intake and repo analysis | Phase 00 + Phase 01 | A repo-convention map, a plugin boundary map, and a list of safe integration points. | First slice. Must review repo conventions before any implementation. | Analysis report and repo-convention map exist. |
-| `evo-appfs-001` | Plugin shell, metadata, and status command | Phase 01 | A discoverable plugin package with metadata and a read-only status/help surface. | Depends on `evo-appfs-000`. | Plugin shell exists and exposes a safe status surface. |
-| `evo-appfs-002` | Workspace type registry and root resolver | Phase 02 | An explicit allow-list for workspace types and a safe resolver for `./workspaces/`. | Depends on `evo-appfs-000`. | Supported workspace roots are defined and invalid types are rejected. |
-| `evo-appfs-003` | Fixed app pipeline core and create/validate skeleton | Phase 03 | The top-level workspace pipeline and safe create/validate behavior for app workspaces. | Depends on `evo-appfs-001` and `evo-appfs-002`. | App workspace skeleton can be created and validated safely. |
-| `evo-appfs-004` | Viber input area materialization | Phase 04 | The source-intake zone for Viber-provided text, files, links, snapshots, and Q&A. | Depends on `evo-appfs-003`. | `00_viber_inputs/` is materialized as source-only input space. |
-| `evo-appfs-005` | Category registry integration and profile validation | Phase 05 | Approved category-driven roadmap profiles and the adapter that loads them. | Depends on `evo-appfs-002` and `evo-appfs-003`. | Approved category profiles are loaded and validated safely. |
-| `evo-appfs-006` | Category-governed roadmap folder materialization | Phase 06 | The generated roadmap folders for UI/UX, system design, and database, based on the approved profile. | Depends on `evo-appfs-005`. | UI/UX, system design, and database roadmap subfolders are generated from category profiles. |
-| `evo-appfs-007` | Stack-adaptive source folder contract | Phase 07 | A neutral `08_source/` container with no forced framework tree. | Depends on `evo-appfs-003`. | `08_source/` remains neutral and stack-adaptive. |
-| `evo-appfs-008` | Full specifications handoff package | Phase 08 | The handoff-grade documentation contract for product, requirements, architecture, testing, and operations. | Depends on `evo-appfs-003`. | Handoff-grade spec placeholders and manifests exist. |
-| `evo-appfs-009` | Version control and GitHub governance folders | Phase 09 | Local documentation and policy surfaces for branch, commit, issue, PR, and release governance. | Depends on `evo-appfs-003`. | Version control governance folders exist without replacing GitHub. |
-| `evo-appfs-010` | Evolutions and task punches folders | Phase 10 | The internal production flow folders for larger changes and small executable tasks. | Depends on `evo-appfs-003`. | Evolution and task punch production flow folders exist. |
-| `evo-appfs-011` | Agents, quality, evidence, review, release, owner, archive | Phase 11 | The remaining production governance folders that support traceability, quality, approvals, and archiving. | Depends on `evo-appfs-003`. | Remaining governance folders exist end to end. |
-| `evo-appfs-012` | Safe commands, validation, repair, evidence, and tests | Phase 12 + revision closeout | The safe command surface, repair flow, evidence generation, validation, and tests needed to ship the plugin. | Depends on `evo-appfs-001` through `evo-appfs-011`. | Create/validate/repair/print/manifest commands and test coverage are complete. |
+| `appfs-000` | Repo analysis and scope lock | Phase 1 | A repo-convention map, plugin-registration map, track model, and implementation boundaries for `app_folder_structure`. | First slice. Confirm repository patterns before coding. | The plan is agreed and the plugin boundary is explicit. |
+| `appfs-001` | Plugin skeleton and status surface | Phase 1 | A minimal plugin workspace shell with metadata, bootstrap/entry wiring, docs, schemas, tests, and read-only status output. | Depends on `appfs-000`. | `app_folder_structure` loads and reports status safely. |
+| `appfs-002` | Workspace type registry | Phase 2 | A visible workspace-type registry for apps, plugins, blueprints, and benchmarks, plus validation for unsupported types. | Depends on `appfs-000` and `appfs-001`. | Workspace types are listed and invalid types are rejected. |
+| `appfs-003` | Fixed app pipeline skeleton | Phase 3 | The canonical app workspace root and fixed pipeline skeleton under `workspaces/apps/<app_slug>/`. | Depends on `appfs-002`. | A new app workspace is created with the canonical top-level pipeline. |
+| `appfs-004` | Viber input area | Phase 4 | A dedicated source-input area for snapshots, files, links, and questions/answers before generation. | Depends on `appfs-003`. | Viber inputs are separated from generated outputs. |
+| `appfs-005` | Category registry integration | Phase 5 | Safe integration with `app_category_registry` and approved folder-structure profiles. | Depends on `appfs-003` and `appfs-004`. | Category-specific profile lookup is explicit and fail-closed. |
+| `appfs-006` | Category-governed roadmap folders | Phase 6 | Category-approved roadmap internals for UI/UX, system design, and database/storage. | Depends on `appfs-005`. | Only approved roadmap sections are materialized. |
+| `appfs-007` | Stack-adaptive source folder | Phase 7 | A neutral `08_source` layer that does not force frontend/backend/API structure. | Depends on `appfs-003`. | `08_source` stays stack-adaptive and source-only. |
+| `appfs-008` | Full specification contract | Phase 8 | Handoff-grade requirements and specification placeholders for future software delivery. | Depends on `appfs-003`. | Specification folders exist and are traceable. |
+| `appfs-009` | Version control governance | Phase 9 | Branch, commit, issue, pull request, release, and GitHub governance documentation. | Depends on `appfs-003`. | Version-control governance folders exist. |
+| `appfs-010` | Evolutions and task punches | Phase 10 | The evolution-to-task-punch production model inside every app workspace. | Depends on `appfs-003`. | The workspace supports clear evolution and punch flow. |
+| `appfs-011` | Production governance folders | Phase 11 | Agents, tests, evidence, review, release, owner portal, and archive folders. | Depends on `appfs-003`. | The governance pipeline exists from agents to archive. |
+| `appfs-012` | Commands, validation, repair, and hardening | Phase 12 | The create/validate/repair/print/manifest commands, evidence, and safe repair checks. | Depends on `appfs-002` through `appfs-011`. | Workspace creation/validation/repair is safe and test-covered. |
+| `appfs-013` | Full canonical folder set upgrade | Phase 13 | Additive upgrade to the full canonical folder set with backward compatibility for older compact folders. | Depends on `appfs-003` through `appfs-012`. | Existing compact folders are preserved and the full set is present. |
+| `appfs-014` | Lifecycle, audit, final acceptance | Phase 14 | Lifecycle state management, audit trails, final docs, and acceptance hardening. | Depends on `appfs-012` and `appfs-013`. | The plugin is documented, audited, and ready for extension. |
 
 ---
 
 ## Recommended Execution Order
 
-1. `evo-appfs-000`
-2. `evo-appfs-001`
-3. `evo-appfs-002`
-4. `evo-appfs-003`
-5. `evo-appfs-004`
-6. `evo-appfs-005`
-7. `evo-appfs-006`
-8. `evo-appfs-007`
-9. `evo-appfs-008`
-10. `evo-appfs-009`
-11. `evo-appfs-010`
-12. `evo-appfs-011`
-13. `evo-appfs-012`
+1. `appfs-000`
+2. `appfs-001`
+3. `appfs-002`
+4. `appfs-003`
+5. `appfs-004`
+6. `appfs-005`
+7. `appfs-006`
+8. `appfs-007`
+9. `appfs-008`
+10. `appfs-009`
+11. `appfs-010`
+12. `appfs-011`
+13. `appfs-012`
+14. `appfs-013`
+15. `appfs-014`
 
-This ordering keeps the workspace contract, category profiles, and safe creation rules ahead of the higher-level documentation and governance surfaces.
-
-### Why This Order Matters
-
-- The repository conventions must be understood before any new plugin is added.
-- Workspace types and root safety must exist before any folder creation.
-- The fixed pipeline must exist before source, specs, or governance subfolders are generated.
-- Category profiles must be validated before roadmap internals are materialized.
-- Safe commands and repair are the last step because they depend on every previous contract being defined.
+This keeps the workspace contract, category profiles, and app-pipeline design ahead of validation, repair, and final acceptance.
 
 ---
 
 ## Safety Rules For The Future Implementation
 
 - Do not start implementation until the active Evo slice is confirmed.
-- Do not invent folder structures outside the fixed pipeline.
-- Do not add roadmap internals unless the category profile authorizes them.
-- Do not force a source tree layout inside `08_source/`.
-- Do not overwrite user files or delete existing content.
-- Do not allow path traversal or unsafe app slugs.
-- Do not create unsupported workspace types.
-- Do not treat the planning report as a substitute for execution.
+- Do not create app workspaces directly from undocumented paths.
+- Do not duplicate `plugin_folder_structure` responsibilities.
+- Do not let `08_source` invent stack-specific folders by default.
+- Do not skip category profile validation.
+- Do not delete or rename older compact folders if they already exist.
+- Do not overwrite non-empty files without explicit approval or a safe flag.
+- Do not move content automatically when a safe additive mapping is enough.
+- Do not promote or publish anything directly.
+- Do not treat this planning report as a substitute for execution.
 
 ### Summary Of The Intended Contract
 
 The plugin should eventually make these guarantees:
 
-- app workspaces always start with the same top-level pipeline
-- Viber inputs stay separated from system-generated outputs
-- roadmap internals are category-governed, not AI-invented
-- source layout stays flexible for different stacks
-- validation and repair are safe and non-destructive
-- evidence is generated for every structural action
-- the plugin fails closed when the category profile is missing or invalid
+- app workspaces are created only under `workspaces/apps/<app_slug>/`
+- category-controlled roadmap internals come from approved profiles
+- `08_source` remains neutral and stack-adaptive
+- handoff-grade specs, version control governance, evolutions, task punches, and evidence are all represented
+- validation and repair are safe, additive, and auditable
+- older compact folders remain compatible and preserved
+- Owner Track approval remains the final promotion surface
 
 ---
 
@@ -115,7 +107,7 @@ When this queue is ready to execute, each Evo should produce:
 - risks
 - next phase readiness
 
-The first implementation slice should begin only after the analysis slice is complete and the repo conventions have been confirmed.
+The first implementation slice should begin only after the scope lock is complete and the repo conventions have been confirmed.
 
 ---
 
@@ -123,13 +115,20 @@ The first implementation slice should begin only after the analysis slice is com
 
 If you only read one thing from this plan:
 
-1. `evo-appfs-000` learns the repo.
-2. `evo-appfs-001` creates the plugin shell.
-3. `evo-appfs-002` defines which workspace types exist.
-4. `evo-appfs-003` creates the fixed app pipeline.
-5. `evo-appfs-004` separates Viber input from generated output.
-6. `evo-appfs-005` makes roadmap structure category-driven.
-7. `evo-appfs-007` keeps source layout stack-adaptive.
-8. `evo-appfs-012` adds the safe command and repair surface.
+1. `appfs-000` learns the repo and locks the architecture.
+2. `appfs-001` creates the plugin shell.
+3. `appfs-002` creates the workspace type registry.
+4. `appfs-003` creates the fixed app pipeline.
+5. `appfs-004` captures Viber inputs.
+6. `appfs-005` validates category profiles.
+7. `appfs-006` materializes category-governed roadmap folders.
+8. `appfs-007` keeps `08_source` stack-adaptive.
+9. `appfs-008` creates handoff-grade specs.
+10. `appfs-009` adds version-control governance.
+11. `appfs-010` adds evolutions and task punches.
+12. `appfs-011` adds agents, tests, evidence, reviews, releases, owner portal, and archive.
+13. `appfs-012` adds create/validate/repair/manifest commands.
+14. `appfs-013` upgrades to the full canonical folder set.
+15. `appfs-014` hardens lifecycle, audit, and final acceptance.
 
 Everything else exists to support those rules safely.

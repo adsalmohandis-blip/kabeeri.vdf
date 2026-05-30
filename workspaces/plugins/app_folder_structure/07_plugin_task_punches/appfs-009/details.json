@@ -1,0 +1,38 @@
+{
+    "evo_id":  "appfs-009",
+    "title":  "Version control governance",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-009-a",
+                        "goal":  "Add version control governance folders.",
+                        "meaning":  "Add branch, commit, issue, PR, and release strategy docs.",
+                        "allowed_files":  [
+                                              "04_version_control/",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Git commands that mutate unrelated repos"
+                                            ],
+                        "acceptance":  "Governance folders exist.",
+                        "tests":  [
+                                      "Presence and content checks."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-009-b",
+                        "goal":  "Add GitHub and release governance docs.",
+                        "meaning":  "Document how version control and releases are governed when GitHub is connected.",
+                        "allowed_files":  [
+                                              "governance docs",
+                                              "release docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Auto-publish logic"
+                                            ],
+                        "acceptance":  "Release governance is documented.",
+                        "tests":  [
+                                      "Governance documentation checks."
+                                  ]
+                    }
+                ]
+}

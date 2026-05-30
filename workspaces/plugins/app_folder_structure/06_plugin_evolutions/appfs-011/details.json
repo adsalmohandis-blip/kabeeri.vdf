@@ -1,0 +1,16 @@
+{
+    "evo_id":  "appfs-011",
+    "title":  "Production governance folders",
+    "phase":  "11",
+    "deliverables":  [
+                         "agents",
+                         "tests",
+                         "evidence",
+                         "reviews",
+                         "releases",
+                         "owner portal",
+                         "archive"
+                     ],
+    "dependency_notes":  "Depends on appfs-003.",
+    "exit_criterion":  "The governance pipeline exists from agents to archive."
+}

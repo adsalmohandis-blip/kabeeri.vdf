@@ -1,0 +1,1 @@
+# Integration Plan\n\nDetailed integration planning lives in ../integration_plan.md and the workspace Evo/task indexes.\n

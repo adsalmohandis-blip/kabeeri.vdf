@@ -1,0 +1,23 @@
+{
+  "id": "web_application",
+  "name": "Web Application",
+  "description": "General web application category for browser-based apps.",
+  "group": "delivery",
+  "layer": "delivery",
+  "lifecycle_status": "stable",
+  "activation_status": "active",
+  "spec_status": "ready",
+  "visibility": "default",
+  "version": "1.0.0",
+  "schema_version": "1.0.0",
+  "compatible_with": ["ecommerce_platform", "saas_platform", "crm_admin_system"],
+  "required_uiux_specs": ["screen_map", "navigation_structure", "responsive_rules"],
+  "required_system_design_specs": ["architecture_overview", "module_boundaries"],
+  "required_database_specs": ["entity_map", "table_specs"],
+  "required_questionnaire_packs": ["app_identity", "business_goals", "target_users"],
+  "required_roadmap_tracks": ["requirements", "uiux", "system_design", "testing", "deployment"],
+  "workspace_template": "generic_web_application",
+  "governance_profiles": ["general_business_app"],
+  "testing_focus": ["ui", "integration", "e2e"],
+  "readiness_checks": ["category_profile", "source_intake", "questionnaire", "workspace_plan"]
+}

@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-009",
+    "title":  "Version control governance",
+    "phase":  "9",
+    "deliverables":  [
+                         "branch strategy docs",
+                         "issues/PR governance",
+                         "release and changelog governance"
+                     ],
+    "dependency_notes":  "Depends on appfs-003.",
+    "exit_criterion":  "Version-control governance folders exist."
+}

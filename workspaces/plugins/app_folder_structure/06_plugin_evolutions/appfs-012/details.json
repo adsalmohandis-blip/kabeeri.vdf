@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-012",
+    "title":  "Commands, validation, repair, and hardening",
+    "phase":  "12",
+    "deliverables":  [
+                         "create/validate/repair/print/manifest commands",
+                         "evidence",
+                         "safe repair checks"
+                     ],
+    "dependency_notes":  "Depends on appfs-002 through appfs-011.",
+    "exit_criterion":  "Workspace creation/validation/repair is safe and test-covered."
+}

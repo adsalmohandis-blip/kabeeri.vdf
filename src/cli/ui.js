@@ -1,19 +1,12 @@
 const fs = require("fs");
 const path = require("path");
 const { repoRoot } = require("./fs_utils");
+const { readSessionTrackSurface } = require("./services/track_control");
 
 function getActiveTrackSurface() {
-  const file = path.join(repoRoot(), ".kabeeri", "session_track.json");
-  if (!fs.existsSync(file)) return null;
-  try {
-    const state = JSON.parse(fs.readFileSync(file, "utf8"));
-    if (!state || !state.active) return null;
-    if (state.active_track === "framework_owner") return "owner";
-    if (state.active_track === "vibe_app_developer") return "developer";
-    if (state.active_track === "plugin_development_track" || state.active_track === "plugin_dev") return "developer";
-  } catch {
-    return null;
-  }
+  const surface = readSessionTrackSurface(repoRoot());
+  if (surface === "owner") return "owner";
+  if (surface === "viber" || surface === "plugin") return "developer";
   return null;
 }
 
@@ -94,10 +87,20 @@ function normalizeCommandName(command) {
     git_context: "source-control",
     gitcontext: "source-control",
     company_profile: "company-profile",
+    company_profile_builder: "company-profile",
+    "company-profile-builder": "company-profile",
     news_website: "news-website",
+    news_website_builder: "news-website",
+    "news-website-builder": "news-website",
     ecommerce_mobile_app: "ecommerce-mobile-app",
     vibe_maintainer: "vibe-maintainer",
     maintainer: "vibe-maintainer",
+    blog_builder: "blog",
+    "blog-builder": "blog",
+    crm_builder: "crm",
+    "crm-builder": "crm",
+    pos_builder: "pos",
+    "pos-builder": "pos",
     generate: "generator",
     "software-design": "software-design",
     "software_design": "software-design",
@@ -1404,49 +1407,49 @@ Notes:
   WordPress Builder is the plugin-owned planning surface for WordPress sites, themes, plugins, WooCommerce, and security cleanup planning. It stays optional, removable, and planning-first.
 `,
     "company-profile": `Usage:
-  kvdf company-profile status
-  kvdf company-profile init --mode corporate
-  kvdf company-profile questionnaire
-  kvdf company-profile brief
-  kvdf company-profile design
-  kvdf company-profile modules
-  kvdf company-profile tasks
-  kvdf company-profile approve
-  kvdf company-profile report
-  kvdf plugins install company-profile
-  kvdf plugins uninstall company-profile
+  kvdf company_profile_builder status
+  kvdf company_profile_builder init --mode corporate
+  kvdf company_profile_builder questionnaire
+  kvdf company_profile_builder brief
+  kvdf company_profile_builder design
+  kvdf company_profile_builder modules
+  kvdf company_profile_builder tasks
+  kvdf company_profile_builder approve
+  kvdf company_profile_builder report
+  kvdf plugins install company_profile_builder
+  kvdf plugins uninstall company_profile_builder
 
 Notes:
   Company Profile Builder is a removable app-track plugin for company profile sites. Its live runtime state is stored in .kabeeri/company_profile.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
 `,
     "news-website": `Usage:
-  kvdf news-website status
-  kvdf news-website init --mode editorial
-  kvdf news-website questionnaire
-  kvdf news-website brief
-  kvdf news-website design
-  kvdf news-website modules
-  kvdf news-website tasks
-  kvdf news-website approve
-  kvdf news-website report
-  kvdf plugins install news-website
-  kvdf plugins uninstall news-website
+  kvdf news_website_builder status
+  kvdf news_website_builder init --mode editorial
+  kvdf news_website_builder questionnaire
+  kvdf news_website_builder brief
+  kvdf news_website_builder design
+  kvdf news_website_builder modules
+  kvdf news_website_builder tasks
+  kvdf news_website_builder approve
+  kvdf news_website_builder report
+  kvdf plugins install news_website_builder
+  kvdf plugins uninstall news_website_builder
 
 Notes:
   News Website Builder is a removable app-track plugin for news and editorial sites. Its live runtime state is stored in .kabeeri/news_website.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
 `,
     blog: `Usage:
-  kvdf blog status
-  kvdf blog init --mode personal
-  kvdf blog questionnaire
-  kvdf blog brief
-  kvdf blog design
-  kvdf blog modules
-  kvdf blog tasks
-  kvdf blog approve
-  kvdf blog report
-  kvdf plugins install blog
-  kvdf plugins uninstall blog
+  kvdf blog_builder status
+  kvdf blog_builder init --mode personal
+  kvdf blog_builder questionnaire
+  kvdf blog_builder brief
+  kvdf blog_builder design
+  kvdf blog_builder modules
+  kvdf blog_builder tasks
+  kvdf blog_builder approve
+  kvdf blog_builder report
+  kvdf plugins install blog_builder
+  kvdf plugins uninstall blog_builder
 
 Notes:
   Blog Builder is a removable app-track plugin for personal, business, and technical blogs. Its live runtime state is stored in .kabeeri/blog.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
@@ -1468,33 +1471,33 @@ Notes:
   Ecommerce Mobile App Builder is a removable app-track plugin for mobile commerce apps. Its live runtime state is stored in .kabeeri/ecommerce_mobile_app.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
 `,
     crm: `Usage:
-  kvdf crm status
-  kvdf crm init --mode sales
-  kvdf crm questionnaire
-  kvdf crm brief
-  kvdf crm design
-  kvdf crm modules
-  kvdf crm tasks
-  kvdf crm approve
-  kvdf crm report
-  kvdf plugins install crm
-  kvdf plugins uninstall crm
+  kvdf crm_builder status
+  kvdf crm_builder init --mode sales
+  kvdf crm_builder questionnaire
+  kvdf crm_builder brief
+  kvdf crm_builder design
+  kvdf crm_builder modules
+  kvdf crm_builder tasks
+  kvdf crm_builder approve
+  kvdf crm_builder report
+  kvdf plugins install crm_builder
+  kvdf plugins uninstall crm_builder
 
 Notes:
   CRM Builder is a removable app-track plugin for customer relationship management systems. Its live runtime state is stored in .kabeeri/crm.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
 `,
     pos: `Usage:
-  kvdf pos status
-  kvdf pos init --mode retail
-  kvdf pos questionnaire
-  kvdf pos brief
-  kvdf pos design
-  kvdf pos modules
-  kvdf pos tasks
-  kvdf pos approve
-  kvdf pos report
-  kvdf plugins install pos
-  kvdf plugins uninstall pos
+  kvdf pos_builder status
+  kvdf pos_builder init --mode retail
+  kvdf pos_builder questionnaire
+  kvdf pos_builder brief
+  kvdf pos_builder design
+  kvdf pos_builder modules
+  kvdf pos_builder tasks
+  kvdf pos_builder approve
+  kvdf pos_builder report
+  kvdf plugins install pos_builder
+  kvdf plugins uninstall pos_builder
 
 Notes:
   POS Builder is a removable app-track plugin for point-of-sale systems. Its live runtime state is stored in .kabeeri/pos.json. The runtime pipeline is strict: init, questionnaire, brief, design, modules, tasks, approve, report.
@@ -1558,7 +1561,7 @@ Notes:
   kvdf plugins uninstall ui_ux_intelligence
 
 Notes:
-  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, implementation guidance, evidence packs, acceptance gates, regression checks, and prompt packs. Runtime data comes from plugins/ui_ux_intelligence/data/ only and it does not depend on external GitHub repositories or _temp_meta at runtime.
+  UI UX Intelligence is an optional standalone plugin for offline UI/UX recommendations, checklists, docs support, implementation guidance, evidence packs, acceptance gates, regression checks, and prompt packs. Runtime data comes from plugins/ui_ux_intelligence/data/ only and it does not depend on external GitHub repositories or any staging cache at runtime.
 `,
     "ui-dashboard-kits": `Usage:
   kvdf ui-dashboard-kits status
@@ -1611,6 +1614,27 @@ Notes:
 
 Notes:
   Plugin Folder Structure keeps new plugins track-aware. Owner Track can create directly under ./plugins/<plugin-slug>/, Plugin Development Track creates governed workspaces under ./workspaces/plugins/<plugin-slug>/, and Viber/App Track is blocked from direct plugin creation.
+`,
+    "app-folder": `Usage:
+  kvdf app-folder status
+  kvdf app-folder create --app <app-slug> --category <category>
+  kvdf app-folder validate --app <app-slug>
+  kvdf app-folder repair --app <app-slug>
+  kvdf app-folder print --category <category>
+  kvdf app-folder manifest --app <app-slug>
+
+Notes:
+  App Folder Structure governs app workspaces under ./workspaces/apps/<app-slug>/ with a fixed top-level pipeline, stack-adaptive source, and category-gated roadmap internals.
+`,
+    "app-category": `Usage:
+  kvdf app-category status
+  kvdf app-category profile <category>
+  kvdf app-category plan <category>
+  kvdf app-category validate <category>
+  kvdf app-category create <category>
+
+Notes:
+  App Category Registry resolves category selection, intake routing, questionnaire packs, doc contracts, roadmap order, workspace planning, and evidence before app creation begins.
 `,
     "plugin-dev": `Usage:
   kvdf plugin-dev status
@@ -1670,6 +1694,8 @@ function printHelp() {
     "  generator list|show|create   List, show, or scaffold generator profiles",
     "  create --profile <name>      Shortcut for generator create",
     "  plugin-folder                Create and validate track-aware plugin folder structures",
+    "  app-folder                   Create and validate governed app workspaces",
+    "  app-category                 Resolve app categories, routing, docs, and plans",
     "  plugin-dev                   Orchestrate plugin development inside validated workspaces",
     "  prompt-pack list|show|export|scale List, show, export, scale, or compose prompt packs",
     "  schedule status|route|history Orchestrate task movement across temp, trash, deferred, and agents",

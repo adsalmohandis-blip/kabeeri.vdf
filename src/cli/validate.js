@@ -3,6 +3,7 @@ const { fileExists, listDirectories, listFiles, readJsonFile, readTextFile } = r
 const { isManualFeatureDocsInbox } = require("./services/manual_feature_docs");
 const { defaultWorkstreams } = require("./workspace");
 const { validateDeveloperAppWorkspace } = require("./services/app_workspace_contract");
+const { normalizeTrackAssignment } = require("./services/track_control");
 const { buildResumeReport } = require("./commands/resume");
 const { buildTaskVerificationCoverage } = require("./services/task_verification");
 
@@ -563,7 +564,7 @@ function validatePlannerState(pass, fail) {
       const status = String(plan.status || "").toLowerCase();
       if (!status || !["proposed", "approved", "rejected", "completed"].includes(status)) fail(`planner plan ${plan.plan_id || "unknown"} has invalid status`);
       if (!plan.planner_mode || !["owner", "vibe", "plugin"].includes(String(plan.planner_mode).toLowerCase())) fail(`planner plan ${plan.plan_id || "unknown"} has invalid planner_mode`);
-      if (!plan.track || !["framework_owner", "vibe_app_developer", "plugin"].includes(String(plan.track).toLowerCase())) fail(`planner plan ${plan.plan_id || "unknown"} has invalid track`);
+      if (!normalizeTrackAssignment(plan.track) && String(plan.track || "").toLowerCase() !== "plugin") fail(`planner plan ${plan.plan_id || "unknown"} has invalid track`);
       if (status === "approved") approvedPlans.push(plan);
     }
     if (approvedPlans.length > 0 && !data.current_plan_id) fail("planner state has approved plans but missing current_plan_id");

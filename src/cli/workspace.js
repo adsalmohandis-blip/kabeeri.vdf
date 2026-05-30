@@ -3,6 +3,9 @@ const path = require("path");
 const { repoRoot, fileExists, readJsonFile, writeJsonFile, assertSafeName } = require("./fs_utils");
 const { DEFAULT_RETENTION_DAYS } = require("./services/task_trash");
 const { normalizeSurfaceScopes } = require("./services/app_workspace_contract");
+const { resolveTrackSurface } = require("./services/track_control");
+const { resolveScaffoldTarget } = require("./services/scaffold_target");
+const { normalizeWorkspaceSlug } = require("./services/workspace_naming");
 
 function getStateDir() {
   return ".kabeeri";
@@ -1180,10 +1183,18 @@ Owner approval is required before final delivery, release, publish, or scope clo
 
 function seedDeveloperAppWorkspace(workspaceSlug, options = {}) {
   const root = repoRoot();
-  const slug = String(workspaceSlug || "").trim().toLowerCase();
+  const slug = normalizeWorkspaceSlug(workspaceSlug);
   if (!slug) throw new Error("Missing app workspace slug.");
   assertSafeName(slug);
-  const workspaceRoot = path.join(root, "workspaces", "apps", slug);
+  const trackSurface = resolveTrackSurface({ track: options.track, fallback: options.fallbackTrack, cwd: root }) || "viber";
+  const scaffold = resolveScaffoldTarget({
+    targetKind: "app_workspace",
+    slug,
+    targetRoot: path.join("workspaces", "apps", slug),
+    repoRootPath: root,
+    track: trackSurface
+  });
+  const workspaceRoot = scaffold.canonical_root;
   const rootProject = fileExists(".kabeeri/project.json") ? readJsonFile(".kabeeri/project.json") : {};
   const productName = String(options.productName || rootProject.product_name || rootProject.name || "").trim();
   const forbidUnrelatedApps = rootProject.forbid_unrelated_apps !== false;

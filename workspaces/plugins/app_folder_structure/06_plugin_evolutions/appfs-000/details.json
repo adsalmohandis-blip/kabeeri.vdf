@@ -1,0 +1,13 @@
+{
+    "evo_id":  "appfs-000",
+    "title":  "Repo analysis and scope lock",
+    "phase":  "1",
+    "deliverables":  [
+                         "repo-convention map",
+                         "plugin-registration map",
+                         "track model",
+                         "implementation boundaries"
+                     ],
+    "dependency_notes":  "First slice. Confirm repository patterns before coding.",
+    "exit_criterion":  "The plan is agreed and the plugin boundary is explicit."
+}

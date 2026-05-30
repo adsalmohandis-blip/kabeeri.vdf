@@ -1,0 +1,39 @@
+{
+    "evo_id":  "appfs-007",
+    "title":  "Stack-adaptive source folder",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-007-a",
+                        "goal":  "Keep 08_source stack-adaptive.",
+                        "meaning":  "Make the source area neutral and governed only by later stack/framework selection.",
+                        "allowed_files":  [
+                                              "08_source/",
+                                              "source manifest",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Default frontend/backend/API trees"
+                                            ],
+                        "acceptance":  "Source remains stack-adaptive.",
+                        "tests":  [
+                                      "Source neutrality tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-007-b",
+                        "goal":  "Emit a neutral source manifest.",
+                        "meaning":  "Record that the real source layout will be created later by the selected stack/framework.",
+                        "allowed_files":  [
+                                              "08_source/source_manifest.json",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Package-specific source shape"
+                                            ],
+                        "acceptance":  "The manifest states source tracking only.",
+                        "tests":  [
+                                      "Source-manifest content tests."
+                                  ]
+                    }
+                ]
+}

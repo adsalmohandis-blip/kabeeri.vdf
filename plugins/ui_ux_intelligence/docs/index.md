@@ -3,7 +3,7 @@
 `ui_ux_intelligence` is an optional KVDF design plugin that provides:
 
 - product type detection
-- a local catalog and search layer over the relocated CSV data
+- a local catalog and search layer over the live CSV data
 - deterministic recommendation and design-system generation
 - UI/UX checklist generation
 - UI/UX docs section generation for Viber app planning
@@ -22,13 +22,14 @@
 
 This plugin works offline in the MVP and does not depend on external GitHub repositories, paid APIs, or any AI API. Runtime data is loaded from `plugins/ui_ux_intelligence/data/` and `plugins/ui_ux_intelligence/data/stacks/` only.
 
-## Phase 2 Data Relocation
+## Data Lifecycle
 
-The only approved staging area for incoming reference material was:
+The plugin runtime reads only the live catalog folders:
 
-`plugins/ui_ux_intelligence/_temp_meta/`
+- `plugins/ui_ux_intelligence/data/`
+- `plugins/ui_ux_intelligence/data/stacks/`
 
-That folder is flat. Approved CSV files are relocated into `data/` and `data/stacks/`. Reference scripts and markdown notes remain staging-only and are not used as runtime dependencies. The runtime never reads `_temp_meta/`.
+Temporary import or review material stays outside the runtime contract.
 
 ## Checklist, Docs, And Audit
 
@@ -38,7 +39,7 @@ The plugin also produces handoff-oriented validation material:
 - `docs` creates Markdown-ready sections for `docs/ui-ux/UI_UX_DESIGN.md`, `docs/ui-ux/UX_PRINCIPLES.md`, `docs/ui-ux/INFORMATION_ARCHITECTURE.md`, `docs/ui-ux/USER_FLOWS.md`, `docs/ui-ux/WIREFRAMES.md`, `docs/ui-ux/UI_SPECIFICATION.md`, `docs/ui-ux/ACCESSIBILITY.md`, and `docs/delivery/QA_CHECKLIST.md`.
 - `audit` checks a target file or inline UI/UX text and returns warnings or blockers without writing files.
 - `audit --strict` can escalate critical missing sections to blockers for handoff review.
-- All three commands run offline, use only `plugins/ui_ux_intelligence/data/`, and never write to `_temp_meta/` or `.kabeeri/`.
+- All three commands run offline, use only `plugins/ui_ux_intelligence/data/`, and never write to `.kabeeri/`.
 
 ## Implementation Artifacts
 
@@ -71,7 +72,7 @@ These commands are offline and deterministic. They do not write files unless the
 
 KVDF Planner and the Viber dashboard can consume `ui_ux_intelligence` as an optional provider when the operator explicitly passes `--include-ui-ux-intelligence` or `--ui-ux-intelligence`. Planner review, visual, prompt, docs, and Viber dashboard summaries can surface the provider when it is available, but the core planner still continues normally if the plugin is missing, disabled, or intentionally suppressed with `--no-ui-ux-intelligence`. The handoff pack and implementation artifacts are read-only planning outputs unless the operator explicitly requests Markdown export with `handoff-pack --output <path>`.
 
-The integration stays read-only unless you are already using planner docs materialization, and even then the plugin only enriches the existing Viber UI/UX docs pipeline. It never reads `_temp_meta/` at runtime and never calls external GitHub or AI APIs.
+The integration stays read-only unless you are already using planner docs materialization, and even then the plugin only enriches the existing Viber UI/UX docs pipeline. It never calls external GitHub or AI APIs.
 
 ## Recommendation Layer
 

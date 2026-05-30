@@ -1,0 +1,11 @@
+{
+    "evo_id":  "appfs-010",
+    "title":  "Evolutions and task punches",
+    "phase":  "10",
+    "deliverables":  [
+                         "evolution-to-punch production model",
+                         "task index and state folders"
+                     ],
+    "dependency_notes":  "Depends on appfs-003.",
+    "exit_criterion":  "The workspace supports clear evolution and punch flow."
+}

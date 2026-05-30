@@ -1,0 +1,39 @@
+{
+    "evo_id":  "appfs-004",
+    "title":  "Viber input area",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-004-a",
+                        "goal":  "Create the Viber input area.",
+                        "meaning":  "Create the input-only area for uploaded snapshots, files, links, and answers.",
+                        "allowed_files":  [
+                                              "input area",
+                                              "docs",
+                                              "manifest files"
+                                          ],
+                        "forbidden_files":  [
+                                                "Roadmap/spec outputs"
+                                            ],
+                        "acceptance":  "Viber-provided source material is separated cleanly.",
+                        "tests":  [
+                                      "Input-area layout tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-004-b",
+                        "goal":  "Separate inputs from generated outputs.",
+                        "meaning":  "Prevent generated roadmap/spec material from leaking into the input zone.",
+                        "allowed_files":  [
+                                              "input docs",
+                                              "validation code"
+                                          ],
+                        "forbidden_files":  [
+                                                "Generated content paths"
+                                            ],
+                        "acceptance":  "Inputs and outputs are strictly separated.",
+                        "tests":  [
+                                      "Separation invariant tests."
+                                  ]
+                    }
+                ]
+}

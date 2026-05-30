@@ -27,20 +27,41 @@ function addIntegration(context) {
   const required = String(context.flags.required || "false").toLowerCase() === "true";
   const root = track === "owner" ? ownerRoot(slug) : workspaceRoot(slug);
   if (track === "viber") throw pluginFolderError("Viber/App Track cannot create plugins directly. Switch to Plugin Development Track.");
-  const integrationDir = track === "owner"
+  const canonicalIntegrationDir = track === "owner"
     ? path.join(root, "docs")
-    : path.join(root, "specifications", "integration_specification");
-  ensureDir(integrationDir);
-  const filePath = path.join(integrationDir, "integrations.json");
-  const current = readJson(filePath, { integrations: [] });
+    : path.join(root, "03_plugin_specifications", "integration_specification");
+  const canonicalPlanDir = track === "owner"
+    ? path.join(root, "docs")
+    : path.join(root, "02_plugin_roadmaps_plans", "integration_plan");
+  const canonicalEvidenceDir = track === "owner"
+    ? path.join(root, "docs")
+    : path.join(root, "10_plugin_evidence_audit", "integration_evidence");
+  ensureDir(canonicalIntegrationDir);
+  ensureDir(canonicalPlanDir);
+  ensureDir(canonicalEvidenceDir);
+  const canonicalFilePath = track === "owner"
+    ? path.join(canonicalIntegrationDir, "INTEGRATIONS.md")
+    : path.join(canonicalIntegrationDir, "integration_contracts.md");
+  const current = readJson(track === "owner"
+    ? path.join(root, "docs", "integrations.json")
+    : path.join(canonicalEvidenceDir, "integrations.json"), { integrations: [] });
   current.integrations = Array.isArray(current.integrations) ? current.integrations : [];
   current.integrations.push({ target, mode, required, added_at: new Date().toISOString() });
-  writeJson(filePath, current);
+  if (track === "owner") {
+    writeJson(path.join(root, "docs", "integrations.json"), current);
+    writeFileIfMissing(canonicalFilePath, "# Integrations\n");
+  } else {
+    writeJson(path.join(canonicalEvidenceDir, "integrations.json"), current);
+    writeFileIfMissing(canonicalFilePath, "# Integration contracts\n");
+    writeFileIfMissing(path.join(canonicalPlanDir, "required_integrations.md"), "# Required integrations\n");
+    writeFileIfMissing(path.join(canonicalPlanDir, "optional_integrations.md"), "# Optional integrations\n");
+  }
   if (track === "owner") {
     writeFileIfMissing(path.join(root, "docs", "INTEGRATIONS.md"), "# Integrations\n");
   } else {
-    ensureDir(path.join(root, "roadmaps_plans", "integration_plan"));
-    ensureDir(path.join(root, "specifications", "integration_specification"));
+    ensureDir(path.join(root, "10_plugin_evidence_audit"));
+    writeFileIfMissing(path.join(root, "10_plugin_evidence_audit", "integration_summary.md"), "# Integration summary\n");
+    writeFileIfMissing(path.join(canonicalEvidenceDir, "integration_contract_evidence.md"), "# Integration contract evidence\n");
   }
   return { report_type: "plugin_folder_structure_integration_add", status: "recorded", track, slug, target, mode, required, root };
 }
@@ -51,9 +72,10 @@ function validateIntegration(context) {
   const track = resolveTrack(context);
   if (track === "viber") throw pluginFolderError("Viber/App Track cannot create plugins directly. Switch to Plugin Development Track.");
   const ownerFile = path.join(ownerRoot(slug), "docs", "INTEGRATIONS.md");
-  const workspaceFile = path.join(workspaceRoot(slug), "specifications", "integration_specification", "integrations.json");
-  const ok = fs.existsSync(ownerFile) || fs.existsSync(workspaceFile);
-  return { report_type: "plugin_folder_structure_integration_validate", slug, ok, ownerFile, workspaceFile };
+  const workspaceFile = path.join(workspaceRoot(slug), "03_plugin_specifications", "integration_specification", "integration_contracts.md");
+  const evidenceWorkspaceFile = path.join(workspaceRoot(slug), "10_plugin_evidence_audit", "integration_evidence", "integrations.json");
+  const ok = fs.existsSync(ownerFile) || fs.existsSync(workspaceFile) || fs.existsSync(evidenceWorkspaceFile);
+  return { report_type: "plugin_folder_structure_integration_validate", slug, ok, ownerFile, workspaceFile, evidenceWorkspaceFile };
 }
 
 function runIntegrationCommand(context) {

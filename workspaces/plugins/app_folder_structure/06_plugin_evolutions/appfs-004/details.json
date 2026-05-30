@@ -1,0 +1,14 @@
+{
+    "evo_id":  "appfs-004",
+    "title":  "Viber input area",
+    "phase":  "4",
+    "deliverables":  [
+                         "source-input area",
+                         "snapshots",
+                         "files",
+                         "links",
+                         "questions/answers"
+                     ],
+    "dependency_notes":  "Depends on appfs-003.",
+    "exit_criterion":  "Viber inputs are separated from generated outputs."
+}

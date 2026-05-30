@@ -1,0 +1,41 @@
+{
+    "evo_id":  "appfs-014",
+    "title":  "Lifecycle, audit, final acceptance",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-014-a",
+                        "goal":  "Add lifecycle and audit services.",
+                        "meaning":  "Track workspace lifecycle transitions and audit records.",
+                        "allowed_files":  [
+                                              "lifecycle",
+                                              "audit",
+                                              "evidence",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Hidden state changes"
+                                            ],
+                        "acceptance":  "Lifecycle and audit records exist.",
+                        "tests":  [
+                                      "Audit event tests."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-014-b",
+                        "goal":  "Finalize docs and acceptance tests.",
+                        "meaning":  "Ensure the plugin is documented and the full safety matrix is covered.",
+                        "allowed_files":  [
+                                              "docs",
+                                              "tests",
+                                              "reports"
+                                          ],
+                        "forbidden_files":  [
+                                                "Auto-promotion or unsafe publish"
+                                            ],
+                        "acceptance":  "Final docs and acceptance tests pass.",
+                        "tests":  [
+                                      "Final hardening tests."
+                                  ]
+                    }
+                ]
+}

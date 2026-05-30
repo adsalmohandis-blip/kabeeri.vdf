@@ -1,4 +1,5 @@
 const { ensureTaskTrashState, taskTrashSummary, buildTaskArchivePolicy } = require("../services/task_trash");
+const { normalizeTrackAssignment, getTrackDisplayLabel, getTrackDisplayShortLabel } = require("../services/track_control");
 
 const LIFECYCLE_STAGES = ["intake", "ready", "execution", "validation", "closure", "blocked", "archived"];
 
@@ -32,6 +33,7 @@ function buildTaskLifecycleState(taskItem, options = {}) {
     evolution_milestone_id: evolution.evolution_milestone_id,
     evolution_milestone_title: evolution.evolution_milestone_title,
     track: evolution.track,
+    track_label: getTrackDisplayLabel(evolution.track),
     branch_name: evolution.branch_name,
     merge_target_branch: evolution.merge_target_branch,
     sync_policy: evolution.sync_policy,
@@ -113,6 +115,7 @@ function renderTaskLifecycleState(state) {
     `Status: ${state.status || "unknown"}`,
     `Stage: ${state.current_stage || "intake"}${state.stage_label ? ` (${state.stage_label})` : ""}`,
     state.evolution_milestone_id ? `Evolution: ${state.evolution_milestone_id}${state.evolution_milestone_title ? ` (${state.evolution_milestone_title})` : ""}` : "Evolution: n/a",
+    `Track: ${state.track_label || getTrackDisplayLabel(state.track)}`,
     state.branch_name ? `Branch: ${state.branch_name}` : "Branch: n/a",
     state.merge_target_branch ? `Merge target: ${state.merge_target_branch}` : "Merge target: n/a",
     state.sync_policy ? `Sync policy: ${state.sync_policy}${state.github_sync_enabled === false ? " (local-only)" : ""}` : "Sync policy: n/a",
@@ -158,7 +161,7 @@ function renderTaskLifecycleBoard(board) {
       item.title || "",
       item.status || "",
       item.lifecycle_stage || "",
-      item.track || "",
+      getTrackDisplayShortLabel(item.track),
       item.evolution_milestone_id || "",
       item.branch_name || "",
       item.review_gate || "",
@@ -348,10 +351,9 @@ function extractTaskEvolutionContext(taskItem = {}, evolutionState = null) {
 }
 
 function normalizeLifecycleTrack(value = "") {
-  const normalized = String(value || "").trim().toLowerCase();
-  if (["vibe_app_developer", "developer_app", "app_developer", "vibe", "app"].includes(normalized)) return "vibe_app_developer";
-  if (["framework_owner", "owner", "owner_track"].includes(normalized)) return "framework_owner";
-  return normalized === "shared" ? "shared" : "framework_owner";
+  const normalized = normalizeTrackAssignment(value);
+  if (normalized) return normalized;
+  return String(value || "").trim().toLowerCase() === "shared" ? "shared" : "framework_owner";
 }
 
 function resolveLifecycleTaskTrack(taskItem = {}, fallbackTrack = "framework_owner") {

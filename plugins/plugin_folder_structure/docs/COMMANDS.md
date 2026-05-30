@@ -2,6 +2,8 @@
 
 - `kvdf plugin-folder status`
 - `kvdf plugin-folder create <plugin-slug> --track=owner|plugin_dev|viber`
+- `kvdf plugin-folder upgrade-full-set <plugin-slug> --track=owner|plugin_dev`
+- `kvdf plugin-folder fix-numbering <plugin-slug> --track=plugin_dev`
 - `kvdf plugin-folder validate <plugin-slug> --track=owner|plugin_dev`
 - `kvdf plugin-folder readiness <plugin-slug> --track=owner|plugin_dev`
 - `kvdf plugin-folder git-library add <plugin-slug> <url> --name=<name> --use=<proposed_use>`

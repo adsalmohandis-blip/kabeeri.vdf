@@ -3,7 +3,7 @@
   "knowledge_pack_version": "0.1.0",
   "source_policy": "owner_provided_local_files_only",
   "external_github_dependency": false,
-  "runtime_temp_meta_dependency": false,
+  "runtime_live_catalog_dependency": true,
   "domains": [
     {
       "domain": "products",

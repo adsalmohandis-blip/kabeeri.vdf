@@ -7,7 +7,7 @@ const { PLUGIN_ID, PLUGIN_NAME, PLUGIN_VERSION, COMMAND_GROUPS, LIMITED_COMMANDS
 const { buildPluginDevContext } = require("../core/plugin_context");
 const { buildWorkspaceContractReport, ensureWorkspace, getArtifactsRoot, getPluginFolderStructureStatus, getWorkspaceRoot, REQUIRED_WORKSPACE_FOLDERS } = require("../core/workspace_contract");
 const { ensureDir, readJsonFile, writeJsonFile, writeTextFile, readTextFile } = require("../utils/json_safe");
-const { slugify } = require("../utils/slugify");
+const { slugify, workspaceSlugify } = require("../utils/slugify");
 
 function dispatchPluginDevCommand(action, value, flags = {}, rest = [], deps = {}) {
   const context = buildPluginDevContext({ action, value, flags, rest, deps });
@@ -128,6 +128,7 @@ function buildWorkspaceContract(context) {
     plugin_slug: context.plugin_slug,
     track: context.track,
     workspace_root: report.workspace_root,
+    workspace_contract_source: report.workspace_contract_source,
     plugin_folder_structure: report.plugin_folder_structure,
     required_folders: REQUIRED_WORKSPACE_FOLDERS,
     valid: report.valid
@@ -1021,7 +1022,7 @@ function ensureArtifacts(context) {
 }
 
 function resolveSlug(context) {
-  return slugify(context.plugin_slug || context.flags.slug || context.rest[0] || "");
+  return workspaceSlugify(context.plugin_slug || context.flags.slug || context.rest[0] || "");
 }
 
 function requireSlug(context) {

@@ -1,0 +1,7 @@
+{
+  "id": "app_identity",
+  "questions": [
+    { "id": "app_name", "question": "What is the app name?" },
+    { "id": "app_id", "question": "What is the internal app ID or slug?" }
+  ]
+}

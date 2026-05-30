@@ -1,0 +1,13 @@
+{
+    "evo_id":  "appfs-014",
+    "title":  "Lifecycle, audit, final acceptance",
+    "phase":  "14",
+    "deliverables":  [
+                         "lifecycle state management",
+                         "audit trails",
+                         "final docs",
+                         "acceptance hardening"
+                     ],
+    "dependency_notes":  "Depends on appfs-012 and appfs-013.",
+    "exit_criterion":  "The plugin is documented, audited, and ready for extension."
+}

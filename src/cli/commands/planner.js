@@ -38,6 +38,7 @@ const { buildCurrentStateReport: buildCurrentStateReportService, buildStaleState
 const { buildWorkspaceBoundaryReport: buildWorkspaceBoundaryReportService } = require("../services/workspace_boundary");
 const { getPluginRuntimeStatus } = require("../services/plugin_loader");
 const { loadStateResyncReport, evaluateStateResyncFreshness, CURRENT_STATE_REPORT_PATH } = require("./state_resync");
+const { normalizeTrackAssignment, normalizeTrackMode } = require("../services/track_control");
 const { buildEvolutionOrderValidationReport } = require("./evolution");
 const { readGitHeadCommit, readGitRepositoryState } = require("../services/git_snapshot");
 const { getPluginSourcePath } = require("../services/plugin_mounts");
@@ -2333,7 +2334,7 @@ function buildPlannerDraftMarkdown({ title, goal, plannerMode, track, method, so
     `- Planning method: ${method || ""}`,
     `- Method reason: ${sourcePipeline.method_reason || sourcePipeline.method && sourcePipeline.method.reason || ""}`,
     `- Planner mode: ${plannerMode || ""}`,
-    `- Track: ${track || ""}`,
+    `- Track: ${getTrackDisplayLabel(track || "framework_owner")}`,
     pluginId ? `- Plugin: ${pluginId}` : null,
     `- Source control: ${sourcePipeline.source_control ? summarizeSourceControl(sourcePipeline.source_control) : "none"}`,
     "",
@@ -8448,7 +8449,7 @@ function renderPlannerPipelineStageInspectionReport(report, tableRenderer) {
   const headerLines = [
     "# KVDF Viber Pipeline Stage Inspection",
     "",
-    `- Track: ${report.track || "vibe_app_developer"}`,
+    `- Track: ${getTrackDisplayLabel(report.track || "vibe_app_developer")}`,
     `- Planning method: ${report.planning_method || "hybrid"}`,
     `- Planning authority: ${report.planning_authority ? report.planning_authority.level || "placeholder" : "placeholder"}`,
     `- Mode: read-only`,
@@ -10876,9 +10877,7 @@ function normalizePlannerAction(value) {
 }
 
 function normalizeTrackAlias(value) {
-  if (!value) return null;
-  const normalized = String(value).trim().toLowerCase().replace(/[\s_-]+/g, "_");
-  return MODE_ALIASES[normalized] || null;
+  return normalizeTrackMode(value);
 }
 
 function normalizePluginId(value) {
@@ -11510,9 +11509,7 @@ function normalizePlannerMethod(value) {
 }
 
 function normalizePlannerTrack(value) {
-  const track = String(value || "framework_owner").trim().toLowerCase();
-  if (track === "vibe_app_developer" || track === "plugin") return track;
-  return "framework_owner";
+  return normalizeTrackAssignment(value) || "framework_owner";
 }
 
 function allocatePlannerPlanId(state = {}) {
@@ -11902,7 +11899,7 @@ function renderPlannerMaterializationReport(report, tableRenderer) {
   const rows = [
     ["Plan ID", report.plan_id || ""],
     ["Planner mode", report.planner_mode || ""],
-    ["Track", report.track || ""],
+    ["Track", getTrackDisplayLabel(report.track || "framework_owner")],
     ["Delivery mode", report.delivery_mode || ""],
     ["Status", report.status || ""],
     ["Evolution", report.evolution && report.evolution.change_id ? report.evolution.change_id : ""]
@@ -11939,7 +11936,7 @@ function renderPlannerStateSummaryReport(report, tableRenderer) {
   if (report.plan_id) rows.push(["Plan ID", report.plan_id]);
   if (report.status) rows.push(["Status", report.status]);
   if (report.planner_mode) rows.push(["Planner mode", report.planner_mode]);
-  if (report.track) rows.push(["Track", report.track]);
+  if (report.track) rows.push(["Track", getTrackDisplayLabel(report.track)]);
   if (report.delivery_mode) rows.push(["Delivery mode", report.delivery_mode]);
   if (report.current_plan_id) rows.push(["Current plan", report.current_plan_id]);
   if (report.rejection_reason) rows.push(["Rejection reason", report.rejection_reason]);
@@ -12069,7 +12066,7 @@ function renderPlannerTaskPunchReport(report, tableRenderer) {
     tableRenderer(["Task ID", "Title", "Status", "Allowed files"], rows),
     "",
     `Planner mode: ${report.planner_mode || ""}`,
-    `Track: ${report.track || ""}`,
+    `Track: ${getTrackDisplayLabel(report.track || "framework_owner")}`,
     `Delivery mode: ${report.delivery_mode || ""}`,
     `Source control: ${report.source_control ? summarizeSourceControl(report.source_control) : "none"}`,
     `Evolution: ${report.evolution_id || ""}`

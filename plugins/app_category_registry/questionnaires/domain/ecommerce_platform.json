@@ -1,0 +1,6 @@
+{
+  "id": "ecommerce_platform",
+  "questions": [
+    { "id": "checkout_type", "question": "What checkout flow is required?" }
+  ]
+}

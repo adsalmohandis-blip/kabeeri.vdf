@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-013",
+    "title":  "Full canonical folder set upgrade",
+    "phase":  "13",
+    "deliverables":  [
+                         "additive upgrade path",
+                         "backward compatibility for older compact folders",
+                         "full canonical folder set"
+                     ],
+    "dependency_notes":  "Depends on appfs-003 through appfs-012.",
+    "exit_criterion":  "Existing compact folders are preserved and the full set is present."
+}

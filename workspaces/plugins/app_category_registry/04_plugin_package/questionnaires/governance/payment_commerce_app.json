@@ -1,0 +1,6 @@
+{
+  "id": "payment_commerce_app",
+  "questions": [
+    { "id": "payment_provider", "question": "Which payment provider(s) are required?" }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+    "evo_id":  "appfs-010",
+    "title":  "Evolutions and task punches",
+    "punches":  [
+                    {
+                        "punch_id":  "appfs-010-a",
+                        "goal":  "Add evolutions governance folders.",
+                        "meaning":  "Add a place to track large change packages.",
+                        "allowed_files":  [
+                                              "05_evolutions/",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Execution logic inside planning docs"
+                                            ],
+                        "acceptance":  "Evolutions folders exist.",
+                        "tests":  [
+                                      "Folder creation checks."
+                                  ]
+                    },
+                    {
+                        "punch_id":  "appfs-010-b",
+                        "goal":  "Add task punch governance folders.",
+                        "meaning":  "Add a place to track granular executable punches.",
+                        "allowed_files":  [
+                                              "06_task_punches/",
+                                              "docs"
+                                          ],
+                        "forbidden_files":  [
+                                                "Hidden task execution side effects"
+                                            ],
+                        "acceptance":  "Task-punch folders exist.",
+                        "tests":  [
+                                      "Folder creation checks."
+                                  ]
+                    }
+                ]
+}

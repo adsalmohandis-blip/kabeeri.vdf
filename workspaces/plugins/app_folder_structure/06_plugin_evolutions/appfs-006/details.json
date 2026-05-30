@@ -1,0 +1,12 @@
+{
+    "evo_id":  "appfs-006",
+    "title":  "Category-governed roadmap folders",
+    "phase":  "6",
+    "deliverables":  [
+                         "UI/UX roadmap internals",
+                         "system design roadmap internals",
+                         "database/storage roadmap internals"
+                     ],
+    "dependency_notes":  "Depends on appfs-005.",
+    "exit_criterion":  "Only approved roadmap sections are materialized."
+}

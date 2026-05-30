@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://kabeeri.local/schemas/folder_structure_profile.schema.json",
+  "title": "Folder Structure Profile",
+  "type": "object",
+  "required": [
+    "selected_category",
+    "platform_type",
+    "profile_version",
+    "uiux_sections",
+    "system_design_sections",
+    "database_sections",
+    "required_docs",
+    "optional_docs",
+    "source_plugin"
+  ],
+  "properties": {
+    "selected_category": { "type": "string" },
+    "platform_type": { "type": "string" },
+    "profile_version": { "type": "string" },
+    "uiux_sections": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "system_design_sections": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "database_sections": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "required_docs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "optional_docs": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "source_plugin": { "type": "string" }
+  },
+  "additionalProperties": true
+}
