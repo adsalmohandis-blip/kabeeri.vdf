@@ -7,5 +7,5 @@ RELEASE_NOTES.md
 RELEASE_CHECKLIST.md
 github-*.dry-run.txt
 lib_pack/
-workspace/apps/
-workspace/plugins/
+workspaces/apps/
+workspaces/plugins/
