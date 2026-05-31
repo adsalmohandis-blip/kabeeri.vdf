@@ -2,19 +2,20 @@
 
 **Priority ID:** `evo-auto-005`  
 **Title:** Manual source package intake  
-**Status:** `in_progress`  
+**Status:** `done`
 **Date:** 2026-05-12
 
 ---
 
 ## Executive Summary
 
-This priority keeps `KVDF_New_Features_Docs/` as a manually requested source
-package, not a normal runtime source tree. The package contains both a
-reference software-design system and a project-documentation generator system.
-The remaining work is to keep that manual-only import contract visible in the
-priority system, owner checkpoint, and dependency report surfaces so future
-sessions do not treat the folder like a generic inbox.
+This priority kept `KVDF_New_Features_Docs/` as a manually requested source
+package, not a normal runtime source tree, until its contents were
+redistributed into the permanent Kabeeri homes and the source folder was
+decommissioned. The package contained both a reference software-design system
+and a project-documentation generator system. The manual-only import contract
+is now preserved in the priority system, owner checkpoint, and dependency
+report surfaces so future sessions do not treat the folder like a generic inbox.
 
 ## Exact Scope
 
@@ -38,8 +39,8 @@ sessions do not treat the folder like a generic inbox.
 
 ## Expected Outcomes
 
-- `KVDF_New_Features_Docs/` remains a protected source package.
-- The active priority documents the source-package contract clearly.
+- `KVDF_New_Features_Docs/` is decommissioned after redistribution.
+- The priority documents the source-package contract clearly as completed history.
 - The owner can resume without guessing whether the folder is a generic inbox.
 - Related reports and state files agree about the manual-only import behavior.
 
@@ -70,5 +71,5 @@ sessions do not treat the folder like a generic inbox.
 ## Slice Handoff Notes
 
 This scope statement completes the first slice for `evo-auto-005`.
-The next step is to map every dependent surface and confirm that the source
-package behavior is visible in the docs/state/report layer.
+The next step was to map every dependent surface and confirm that the source
+package behavior was visible in the docs/state/report layer.

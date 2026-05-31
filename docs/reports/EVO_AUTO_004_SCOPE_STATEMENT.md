@@ -2,7 +2,7 @@
 
 **Priority ID:** `evo-auto-004`  
 **Title:** Runtime services layer  
-**Status:** `in_progress`  
+**Status:** `done`  
 **Date:** 2026-05-12
 
 ---

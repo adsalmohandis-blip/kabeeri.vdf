@@ -2,7 +2,7 @@
 
 Generated while the active Evolution temporary queue is on the `map` slice.
 
-## Current Target: Runtime Services Layer
+## Completed Target: Runtime Services Layer
 
 We are extracting reusable runtime logic out of command handlers so the planner, relay, scheduler, and governance surfaces share one target-selection path instead of drifting between routers.
 
@@ -50,6 +50,6 @@ The implementation is still responsible for:
 
 ## Sync Checkpoint
 
-The runtime-services sync slice is now reflected in the owner checkpoint and the
-main capability/command references. The dependency map remains the canonical
-surface list for the remaining validation step.
+The runtime-services sync slice has been extracted into `src/cli/services/` and
+the command facades now call the shared runtime helpers. This dependency map is
+retained as the implementation history for the completed refactor.

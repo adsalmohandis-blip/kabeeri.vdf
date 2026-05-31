@@ -2,13 +2,14 @@
 
 Generated while the active Evolution temporary queue is on the `scope` slice.
 
-## Current Target: Manual source package intake
+## Completed Target: Manual source package intake
 
-The folder `KVDF_New_Features_Docs/` is intentionally handled as a manual-only
-source package. The runtime already blocks it from automatic repository scans,
-and task memory preserves it as a protected dual-purpose source package that
-contains both reference software design material and project documentation
-generator material.
+The folder `KVDF_New_Features_Docs/` was intentionally handled as a manual-only
+source package. The runtime blocked it from automatic repository scans, and
+task memory preserved it as a protected dual-purpose source package that
+contained both reference software design material and project documentation
+generator material. The folder is now decommissioned and the permanent
+reference homes are the canonical record.
 
 ### Core runtime surfaces
 
@@ -53,7 +54,7 @@ checkpoint, and Evolution summary should stay aligned. This prevents the folder
 from silently becoming a normal scan target in a future session.
 
 The implementation is still responsible for:
-- keeping the source package manually requested only
+- keeping the source package manually requested only while it existed
 - preserving the protected-folder rule in task memory
 - keeping automatic scans from treating the source package as current source
 - avoiding new scope outside `evo-auto-005`
